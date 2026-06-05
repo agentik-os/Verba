@@ -23,6 +23,7 @@ export default function Home() {
       <LogosStrip />
       <TryNow />
       <ModesModels />
+      <Bento />
       <Features />
       <How />
       <CompareTeaser />
@@ -130,6 +131,68 @@ function TryNow() {
       </Reveal>
       <div className="mt-10"><TryIt /></div>
     </section>
+  );
+}
+
+function Bento() {
+  return (
+    <section className="py-24">
+      <Reveal>
+        <p className="text-center text-xs uppercase tracking-widest muted">Private by design</p>
+        <h2 className="mt-3 text-center text-3xl font-semibold tracking-tight sm:text-4xl">Your voice stays yours</h2>
+        <p className="mx-auto mt-4 max-w-xl text-center muted text-balance">
+          Verba runs open speech models (Whisper and Parakeet) right on your Mac. No servers, no
+          uploads, no markup. Here is what that gets you.
+        </p>
+      </Reveal>
+
+      <div className="mt-12 grid auto-rows-[150px] grid-cols-2 gap-4 lg:grid-cols-4">
+        {/* big privacy tile */}
+        <Reveal className="col-span-2 row-span-2">
+          <div className="glass-strong flex h-full flex-col justify-between rounded-3xl p-7">
+            <div className="text-5xl font-semibold tracking-tight">0 bytes</div>
+            <div>
+              <p className="font-medium">of audio leave your Mac</p>
+              <p className="mt-1 text-sm muted">On-device mode transcribes locally and writes nothing to disk. Cloud tools upload every word; Verba doesn't have to.</p>
+            </div>
+          </div>
+        </Reveal>
+
+        <Reveal delay={60}><BentoStat big="99+" label="languages, on-device" sub="Whisper runs worldwide" /></Reveal>
+        <Reveal delay={120}><BentoStat big="$9.99" label="vs $15 at Wispr Flow" sub="and you bring your own AI" /></Reveal>
+        <Reveal delay={180}><BentoStat big="10,000" label="free words / month" sub="no card, no trial clock" /></Reveal>
+        <Reveal delay={240}><BentoStat big="100%" label="works offline" sub="no internet required" /></Reveal>
+
+        <Reveal delay={120} className="col-span-2">
+          <div className="glass flex h-full items-center gap-4 rounded-3xl p-7">
+            <div className="text-3xl">🔑</div>
+            <div>
+              <p className="font-medium">Bring your own AI account</p>
+              <p className="mt-1 text-sm muted">Use your Claude plan or your own key. Heavy users never subsidize a vendor's GPU bill.</p>
+            </div>
+          </div>
+        </Reveal>
+        <Reveal delay={180} className="col-span-2">
+          <div className="glass flex h-full items-center gap-4 rounded-3xl p-7">
+            <div className="text-3xl">⚡️</div>
+            <div>
+              <p className="font-medium">5 modes + your own, the right model each time</p>
+              <p className="mt-1 text-sm muted">Haiku for quick polish, Sonnet for intent, Opus for code. You control cost and quality.</p>
+            </div>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+function BentoStat({ big, label, sub }: { big: string; label: string; sub: string }) {
+  return (
+    <div className="glass flex h-full flex-col justify-center rounded-3xl p-6">
+      <div className="text-3xl font-semibold tracking-tight">{big}</div>
+      <p className="mt-1 text-sm font-medium">{label}</p>
+      <p className="text-xs muted">{sub}</p>
+    </div>
   );
 }
 

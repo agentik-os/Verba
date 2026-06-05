@@ -72,6 +72,38 @@ export const competitors: Competitor[] = [
     ],
   },
   {
+    slug: "talktastic",
+    name: "TalkTastic",
+    tagline: "AI dictation for Mac power users, but cloud-based and pricier than $9.99.",
+    platforms: "macOS",
+    price: "~$15/mo",
+    priceNote: "free trial",
+    transcription: "Cloud",
+    onDevice: "no",
+    aiEditing: "AI rewriting, app-aware actions and commands",
+    privacy: "Cloud-based: your audio is processed on their servers.",
+    strengths: [
+      "Slick Mac-native dictation experience",
+      "App-aware AI actions",
+      "Good formatting and commands",
+    ],
+    weaknesses: [
+      "Cloud only, no on-device option",
+      "Around $15/mo",
+      "Your voice leaves your Mac",
+    ],
+    verbaWins: [
+      "On-device transcription by default, your audio never leaves your Mac.",
+      "$9.99/mo with a 10,000 words/month free tier.",
+      "Bring your own AI account (Claude Code / keys), no markup on a vendor's cloud.",
+      "Per-mode models and intent mode for finer control.",
+    ],
+    theirEdge: [
+      "Mature app-aware action library.",
+      "Polished onboarding and command set.",
+    ],
+  },
+  {
     slug: "superwhisper",
     name: "Superwhisper",
     tagline: "Local-capable and loved, but it writes your audio to disk by default.",

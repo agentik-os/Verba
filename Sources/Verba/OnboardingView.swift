@@ -185,7 +185,9 @@ struct OnboardingView: View {
                     Text("Verba swallows the globe key so macOS won't show the keyboard/emoji popup.").font(.caption).foregroundStyle(.secondary)
                 }
             }
-            .padding(14).glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             if !settings.useFnAsPrimary {
                 HStack {
                     Text("Or pick a shortcut:").font(.callout)
