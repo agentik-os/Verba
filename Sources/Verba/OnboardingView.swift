@@ -110,7 +110,7 @@ struct OnboardingView: View {
                     .disabled(!(micGranted && axGranted))
             }
         }
-        .padding(.horizontal, 30).padding(.top, 12).padding(.bottom, 26)   // roomy — not glued to the edge
+        .padding(.horizontal, 30).padding(.top, 14).padding(.bottom, 46)   // roomy — not glued to the edge
     }
 
     /// Gating: account needs sign-in; permissions are on the last step (handled there).
