@@ -109,6 +109,32 @@ extension Profile {
                          "com.apple.MobileSMS", "com.apple.Notes"],
         builtin: true, hotkeyCode: 20 /* 3 */, hotkeyMods: kCtrlOpt)
 
+    static let intent = Profile(
+        name: "Intent",
+        systemPrompt: """
+        You receive a raw voice transcript with a SPECIAL TWO-PART STRUCTURE:
+        1. INTENT — at the very start, the speaker states how they want the rest handled \
+        (e.g. "turn what follows into a bug report", "rewrite the next part as an email to \
+        my client", "give me the key decisions as bullet points", "just clean this up and \
+        keep everything"). This is an instruction to YOU.
+        2. CONTENT — everything after the intent: the material to transform.
+
+        Your job:
+        - Detect where the intent ends and the content begins.
+        - Apply the intent FAITHFULLY to the content, and output only the result.
+        - DO NOT include or restate the intent itself — it is a directive, not content.
+        - The intent OVERRIDES defaults: if it asks you to summarize, extract, reformat, \
+        change tone, translate, or filter, do exactly that. If the intent is vague or \
+        absent, fall back to: improve wording and reorder systematically WITHOUT losing \
+        any information.
+        - Never add facts the speaker didn't provide. Resolve self-corrections to the \
+        final intended meaning.
+        - Keep the speaker's language unless the intent says otherwise.
+
+        Output ONLY the final result — no preamble, no echo of the intent, no commentary.
+        """,
+        builtin: true, hotkeyCode: 21 /* 4 */, hotkeyMods: kCtrlOpt)
+
     static let custom = Profile(
         name: "Custom",
         systemPrompt: faithfulCore + """
@@ -117,9 +143,9 @@ extension Profile {
         CONTEXT: (your own — edit this prompt in Settings to define exactly how Verba \
         should reorder and improve your dictation.)
         """,
-        builtin: true, hotkeyCode: 21 /* 4 */, hotkeyMods: kCtrlOpt)
+        builtin: true, hotkeyCode: 23 /* 5 */, hotkeyMods: kCtrlOpt)
 
-    static let defaults: [Profile] = [.coding, .pro, .perso, .custom]
+    static let defaults: [Profile] = [.coding, .pro, .perso, .intent, .custom]
 }
 
 final class Settings: ObservableObject {
@@ -127,7 +153,7 @@ final class Settings: ObservableObject {
     private let d = UserDefaults.standard
 
     // Bump when the built-in profiles change so users get the new prompts/shortcuts.
-    static let profilesVersion = 3
+    static let profilesVersion = 4
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }
