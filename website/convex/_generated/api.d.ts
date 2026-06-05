@@ -9,6 +9,7 @@
  */
 
 import type * as leaderboard from "../leaderboard.js";
+import type * as wishlist from "../wishlist.js";
 
 import type {
   ApiFromModules,
@@ -18,6 +19,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   leaderboard: typeof leaderboard;
+  wishlist: typeof wishlist;
 }>;
 
 /**

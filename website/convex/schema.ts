@@ -3,11 +3,15 @@ import { v } from "convex/values";
 
 export default defineSchema({
   scores: defineTable({
-    uid: v.string(),      // stable per-account id (referral code); never the email
-    alias: v.string(),    // public display name
-    words: v.number(),    // total words dictated
-    wpm: v.number(),      // average words per minute
-    streak: v.number(),   // consecutive-day streak
-    updated: v.number(),
+    uid: v.string(), alias: v.string(),
+    words: v.number(), wpm: v.number(), streak: v.number(), updated: v.number(),
   }).index("by_uid", ["uid"]),
+
+  wishlist: defineTable({
+    text: v.string(),
+    author: v.string(),     // alias only, never email
+    votes: v.number(),
+    voters: v.array(v.string()),  // uids who upvoted
+    created: v.number(),
+  }),
 });

@@ -6,6 +6,7 @@ import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/n
 import LiveDemo from "@/components/LiveDemo";
 import Reveal from "@/components/Reveal";
 import TryIt from "@/components/TryIt";
+import JokeBubbles from "@/components/JokeBubbles";
 import { getRef } from "@/components/RefCapture";
 
 const PRICE = {
@@ -24,6 +25,7 @@ export default function Home() {
       <TryNow />
       <ModesModels />
       <Bento />
+      <Jokes />
       <Features />
       <How />
       <CompareTeaser />
@@ -130,6 +132,36 @@ function TryNow() {
         </p>
       </Reveal>
       <div className="mt-10"><TryIt /></div>
+    </section>
+  );
+}
+
+function Jokes() {
+  const themes = [
+    "Geek", "Dad jokes", "Dry & deadpan", "Absurdist", "Sarcastic", "Wholesome",
+    "Corporate", "Film-noir", "Pirate", "Shakespeare", "Zen", "Sci-fi",
+    "Gamer", "Cooking show", "Motivational", "Conspiracy", "Surreal", "Off",
+  ];
+  return (
+    <section className="py-24">
+      <Reveal>
+        <p className="text-center text-xs uppercase tracking-widest muted">While Claude works</p>
+        <h2 className="mt-3 text-center text-3xl font-semibold tracking-tight sm:text-4xl">Loading screens that make you smile</h2>
+        <p className="mx-auto mt-4 max-w-xl text-center muted text-balance">
+          Every time Verba is restructuring your words, it shows a short, ever-changing one-liner.
+          Pick from 17 humor themes, or switch it off. It's never the same joke twice in a day.
+        </p>
+      </Reveal>
+
+      <div className="relative mt-8 overflow-hidden rounded-3xl glass-strong">
+        <JokeBubbles />
+      </div>
+
+      <div className="mt-8 flex flex-wrap justify-center gap-2">
+        {themes.map((t) => (
+          <span key={t} className="glass rounded-full px-4 py-1.5 text-sm muted">{t}</span>
+        ))}
+      </div>
     </section>
   );
 }
