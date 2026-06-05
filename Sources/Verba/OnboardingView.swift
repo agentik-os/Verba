@@ -302,10 +302,11 @@ struct OnboardingView: View {
         AuthSession.shared.signIn { email in
             DispatchQueue.main.async {
                 signingIn = false
-                if let email {
-                    settings.proEmail = email
-                    Task { _ = await settings.verifyPro() }
-                }
+                guard let email else { return }
+                settings.proEmail = email
+                Task { _ = await settings.verifyPro() }
+                // Signed in → the web window is already closed; move straight to the next step.
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { if step == 1 { step += 1 } }
             }
         }
     }

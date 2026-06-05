@@ -51,6 +51,9 @@ export default function AppAuth() {
       ) : (
         <SignIn
           routing="hash"
+          forceRedirectUrl="/app-auth"
+          signUpForceRedirectUrl="/app-auth"
+          fallbackRedirectUrl="/app-auth"
           appearance={{
             variables: {
               colorPrimary: dark ? "#ffffff" : "#0b0b0f",
