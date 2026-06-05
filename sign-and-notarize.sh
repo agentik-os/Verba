@@ -35,7 +35,20 @@ PLIST
 echo "▸ Building app…"
 ./bundle.sh >/dev/null
 
-echo "▸ Signing (hardened runtime)…"
+echo "▸ Signing Sparkle (inside-out) + app (hardened runtime)…"
+# Sparkle must be signed inside-out (XPC services, Autoupdate, Updater.app, then
+# the framework), then the app WITHOUT --deep (--deep breaks notarization).
+SPARKLE="$APP/Contents/Frameworks/Sparkle.framework"
+if [ -d "$SPARKLE" ]; then
+  for c in \
+    "Versions/B/XPCServices/Downloader.xpc" \
+    "Versions/B/XPCServices/Installer.xpc" \
+    "Versions/B/Autoupdate" \
+    "Versions/B/Updater.app"; do
+    [ -e "$SPARKLE/$c" ] && codesign --force --options runtime --timestamp --sign "$DEVID" "$SPARKLE/$c"
+  done
+  codesign --force --options runtime --timestamp --sign "$DEVID" "$SPARKLE"
+fi
 codesign --force --options runtime --timestamp \
   --entitlements "$ENTITLEMENTS" --sign "$DEVID" "$APP"
 codesign --verify --deep --strict --verbose=2 "$APP"

@@ -10,9 +10,13 @@ echo "▸ Building release (arm64)…"
 swift build -c release
 
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks"
 cp ".build/release/Verba" "$APP/Contents/MacOS/Verba"
 [ -f AppIcon.icns ] && cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+
+# Embed Sparkle (silent auto-update). The binary loads @rpath/Sparkle.framework.
+ditto ".build/release/Sparkle.framework" "$APP/Contents/Frameworks/Sparkle.framework"
+install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP/Contents/MacOS/Verba" 2>/dev/null || true
 
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -31,6 +35,11 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>LSUIElement</key>             <true/>
     <key>NSMicrophoneUsageDescription</key><string>Verba records your voice to transcribe it into text.</string>
     <key>NSHighResolutionCapable</key> <true/>
+    <key>SUFeedURL</key>               <string>https://github.com/agentik-os/Verba/releases/latest/download/appcast.xml</string>
+    <key>SUPublicEDKey</key>           <string>tUNn6q4RYRTmz5eB73hBC7Gh/RQfeCk8LHbGoczQGhs=</string>
+    <key>SUEnableAutomaticChecks</key> <true/>
+    <key>SUAutomaticallyUpdate</key>   <true/>
+    <key>SUScheduledCheckInterval</key><integer>3600</integer>
 </dict>
 </plist>
 PLIST

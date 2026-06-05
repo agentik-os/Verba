@@ -37,6 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ChordMonitor.shared.onFnUp = { [weak self] in self?.fnReleased() }
         ChordMonitor.shared.start()
         applyTriggers()
+        _ = Updater.shared   // start Sparkle (scheduled background update checks)
 
         // Re-apply hotkeys when the primary shortcut, profiles, or Fn option change.
         Publishers.MergeMany(
@@ -364,6 +365,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             add(menu, "Enable auto-paste…", #selector(enableAccessibility), "")
         }
         menu.addItem(.separator())
+        add(menu, "Check for Updates…", #selector(checkUpdates), "")
         add(menu, "Quit Verba", #selector(quit), "q")
         return menu
     }
@@ -376,6 +378,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func menuToggle() { trigger(forced: nil) }
     @objc private func enableAccessibility() { Output.promptAccessibility() }
+    @objc private func checkUpdates() { Updater.shared.checkForUpdates() }
     @objc private func quit() { NSApp.terminate(nil) }
 
     // MARK: - Windows
