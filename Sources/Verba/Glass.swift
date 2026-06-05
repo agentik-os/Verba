@@ -79,7 +79,7 @@ extension View {
 /// Solid black button with white text — matches Verba's minimalist B&W design.
 struct DarkButton: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View { Body(configuration: configuration) }
-    private struct Body: View {
+    struct Body: View {
         let configuration: ButtonStyleConfiguration
         @Environment(\.isEnabled) private var enabled
         var body: some View {
