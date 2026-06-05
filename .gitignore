@@ -1,0 +1,15 @@
+.build/
+.swiftpm/
+*.xcodeproj
+.DS_Store
+/tmp/
+
+Awish.app/
+Awish.dmg
+Awish.zip
+
+# website (Next.js) build artifacts
+website/node_modules
+website/.next
+website/.vercel
+website/next-env.d.ts
