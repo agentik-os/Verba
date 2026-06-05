@@ -27,53 +27,43 @@ struct SettingsView: View {
         .tint(.primary)   // B&W accents
     }
 
-    // MARK: General
+    // MARK: General (ordered: Account → Transcription → AI → Recording → Output → Loading → App)
     @ViewBuilder private var generalSections: some View {
         Group {
-            Section("Account & alias") {
-                TextField("Username / alias", text: $settings.username)
-                    .frame(width: 260)
+            Section {
+                TextField("Username / alias", text: $settings.username).frame(width: 260)
+            } header: { Text("Account") } footer: {
                 Text("Your public name on the leaderboard, never your real name or email. Change it anytime.")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Section("Engine") {
+
+            Section {
                 Picker("Engine", selection: $engineTab) {
                     ForEach(TranscriptionEngine.allCases) { Text($0.label).tag($0) }
                 }
                 engineLifecycle
-            }
-            Section("Transcription") {
-                TextField("Language (ISO code, blank = auto)", text: $settings.language)
-                    .frame(width: 220)
+                TextField("Language (ISO code, blank = auto)", text: $settings.language).frame(width: 220)
                 Toggle("Voice commands", isOn: $settings.voiceCommands)
                 if settings.voiceCommands {
-                    Text("Say “new line / new paragraph”, “comma / period / question mark”, “bullet point”, or “scratch that” and Verba turns them into real formatting (works in any mode, incl. Flow). EN + FR.")
+                    Text("Say “new line / new paragraph”, “comma / period / question mark”, “bullet point”, or “scratch that” and Verba turns them into real formatting (any mode, incl. Flow). EN + FR.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
-            }
-            Section("Loading line") {
-                Picker("Joke style", selection: $settings.quipTone) {
-                    ForEach(QuipTone.allCases) { Text($0.label).tag($0) }
-                }
-                Text(settings.quipTone == .off
-                     ? "While Claude restructures, Verba shows a neutral “\(Quips.neutral)”."
-                     : "While Claude restructures, Verba shows a short AI-generated joke in this style, never the same twice in a day.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            Section("Reprompting (Claude)") {
+            } header: { Text("Transcription") }
+
+            Section {
                 Toggle("Restructure transcript with Claude", isOn: $settings.repromptEnabled)
                 Picker("Run via", selection: $settings.repromptBackend) {
                     ForEach(RepromptBackend.allCases) { Text($0.label).tag($0) }
                 }
                 if settings.repromptBackend == .claudeCode {
-                    Label(ClaudeCode.isAvailable ? "Claude Code detected, uses your Claude Max/Pro (or free) plan, no API key."
+                    Label(ClaudeCode.isAvailable ? "Claude Code detected, uses your Claude plan, no API key."
                                                   : "Claude Code not found. Install it and run `claude` once to sign in.",
                           systemImage: ClaudeCode.isAvailable ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
                         .font(.caption).foregroundStyle(ClaudeCode.isAvailable ? .green : .orange)
                 }
                 if settings.repromptBackend == .openRouter {
                     TextField("OpenRouter model (e.g. anthropic/claude-3.7-sonnet)", text: $settings.openRouterModel)
-                    Text("Any model on openrouter.ai, e.g. openai/gpt-4o, google/gemini-2.0-flash, meta-llama/llama-3.3-70b. Add your key in the API Keys tab.")
+                    Text("Any model on openrouter.ai (openai/gpt-4o, google/gemini-2.0-flash…). Add your key in API Keys below.")
                         .font(.caption).foregroundStyle(.secondary)
                 } else {
                     Picker("Claude model", selection: $settings.claudeModel) {
@@ -83,25 +73,22 @@ struct SettingsView: View {
                 Toggle("Auto-pick profile from the active app", isOn: $settings.autoDetectProfile)
                 Toggle("Use selected text as context", isOn: $settings.useSelectionContext)
                 if settings.useSelectionContext {
-                    Text("If you have text selected when you dictate, your words are treated as an instruction on that selection, the result replaces it.")
+                    Text("If text is selected when you dictate, your words become an instruction on that selection, and the result replaces it.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
-            }
-            Section("Recording") {
+            } header: { Text("AI rewriting") }
+
+            Section {
                 Picker("Indicator", selection: $settings.overlayStyle) {
                     ForEach(OverlayStyle.allCases) { Text($0.label).tag($0) }
                 }
-                Text("Floating glass pill at the bottom, a dark island at the top of the screen, or a tiny minimal top bar for power users.")
-                    .font(.caption).foregroundStyle(.secondary)
-
                 Picker("Style", selection: $settings.recordStyle) {
                     ForEach(RecordStyle.allCases) { Text($0.label).tag($0) }
                 }
                 Text(settings.recordStyle.help).font(.caption).foregroundStyle(.secondary)
-
                 Toggle("Use the Fn (🌐 globe) key", isOn: $settings.useFnAsPrimary)
                 if settings.useFnAsPrimary {
-                    Text("Fn is your trigger (like Wispr Flow): quick tap = record the active mode (tap again to send) · hold = push-to-talk (release sends) · double-tap = mode picker (← → / 1-9 / click sets your default). Verba swallows the globe key so macOS won’t show the keyboard/emoji HUD.")
+                    Text("Quick tap = record the active mode (tap again to send) · hold = push-to-talk · double-tap = mode picker. ⌃ pauses. Esc cancels.")
                         .font(.caption).foregroundStyle(.secondary)
                 } else {
                     HStack {
@@ -114,22 +101,12 @@ struct SettingsView: View {
                         )
                     }
                 }
-                Text("Hold ⌃⌥ to pop the mode picker; press 1-6 to dictate straight into a mode. Esc cancels a recording.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            Section("App") {
-                Toggle("Show in Dock (full window app)", isOn: $settings.showInDock)
-                Text("Off = menu-bar only. The dictation hotkeys work either way.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            Section("Output") {
+            } header: { Text("Recording & trigger") }
+
+            Section {
                 Toggle("Auto-paste into the active field", isOn: $settings.autoPaste)
                 Toggle("Copy to clipboard", isOn: $settings.copyToClipboard)
                 Toggle("Paste with formatting (render Markdown)", isOn: $settings.richTextPaste)
-                if settings.richTextPaste {
-                    Text("Bold, headings and lists paste as real formatting in apps that support it (Notes, Mail, Slack…); plain-text fields get clean text without the * and #.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
                 Toggle("Review / edit before sending", isOn: $settings.reviewBeforeSend)
                 if !Output.accessibilityTrusted {
                     HStack {
@@ -138,6 +115,27 @@ struct SettingsView: View {
                         Button("Enable…") { Output.promptAccessibility() }
                     }
                 }
+            } header: { Text("Output") } footer: {
+                Text("Formatting pastes as real bold/headings/lists in apps that support it; plain fields get clean text.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
+            Section {
+                Picker("Joke style", selection: $settings.quipTone) {
+                    ForEach(QuipTone.allCases) { Text($0.label).tag($0) }
+                }
+            } header: { Text("Loading screen") } footer: {
+                Text(settings.quipTone == .off
+                     ? "While Claude works, Verba shows a neutral “\(Quips.neutral)”."
+                     : "While Claude works, Verba shows a short AI-generated joke in this style, never the same twice in a day.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
+            Section {
+                Toggle("Show in Dock (full window app)", isOn: $settings.showInDock)
+            } header: { Text("App") } footer: {
+                Text("Off = menu-bar only. The dictation hotkeys work either way.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
         }
     }
