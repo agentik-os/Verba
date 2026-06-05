@@ -1,8 +1,33 @@
 import SwiftUI
 import AppKit
+import AVFoundation
+
+/// In-app audio preview so you can play AND stop a dictation from History.
+final class AudioPreview: NSObject, ObservableObject, AVAudioPlayerDelegate {
+    @Published var playingURL: URL?
+    private var player: AVAudioPlayer?
+
+    func toggle(_ url: URL) {
+        if playingURL == url { stop(); return }
+        stop()
+        player = try? AVAudioPlayer(contentsOf: url)
+        player?.delegate = self
+        player?.play()
+        playingURL = url
+    }
+
+    func stop() {
+        player?.stop(); player = nil; playingURL = nil
+    }
+
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        DispatchQueue.main.async { self.playingURL = nil }
+    }
+}
 
 struct HistoryView: View {
     @ObservedObject var history = History.shared
+    @StateObject private var audio = AudioPreview()
     @State private var selection: HistoryEntry.ID?
     @State private var query = ""
 
@@ -23,7 +48,7 @@ struct HistoryView: View {
                 HStack {
                     Text("History").font(.system(size: 26, weight: .bold))
                     Spacer()
-                    Button(role: .destructive) { history.clear() } label: { Image(systemName: "trash") }
+                    Button(role: .destructive) { audio.stop(); history.clear() } label: { Image(systemName: "trash") }
                         .buttonStyle(.borderless).help("Clear all")
                 }
                 .padding(.horizontal, 18).padding(.top, 24).padding(.bottom, 10)
@@ -71,6 +96,8 @@ struct HistoryView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onChange(of: selection) { _, _ in audio.stop() }   // stop when switching entry
+        .onDisappear { audio.stop() }
     }
 
     private func card(_ e: HistoryEntry, selected: Bool) -> some View {
@@ -101,10 +128,13 @@ struct HistoryView: View {
                 section("Raw transcript", e.original)
                 HStack {
                     if let url = history.audioURL(for: e) {
-                        Button { NSWorkspace.shared.open(url) } label: { Label("Play audio", systemImage: "play.circle") }
+                        let playing = audio.playingURL == url
+                        Button { audio.toggle(url) } label: {
+                            Label(playing ? "Stop" : "Play audio", systemImage: playing ? "stop.circle" : "play.circle")
+                        }
                     }
                     Spacer()
-                    Button(role: .destructive) { history.delete(e); selection = nil } label: { Label("Delete", systemImage: "trash") }
+                    Button(role: .destructive) { audio.stop(); history.delete(e); selection = nil } label: { Label("Delete", systemImage: "trash") }
                 }
             }.padding(24)
         }
