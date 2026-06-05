@@ -18,6 +18,11 @@ struct Reprompter {
     var model: String
 
     func reprompt(transcript: String, systemPrompt: String) async throws -> String {
+        let userText = "Here is the raw voice transcript to restructure:\n\n<transcript>\n\(transcript)\n</transcript>"
+        // Claude Code (Max plan) path — no API key, uses the user's subscription.
+        if Settings.shared.repromptBackend == .claudeCode {
+            return try await ClaudeCode.reprompt(systemPrompt: systemPrompt, userText: userText, model: model)
+        }
         guard let key = Keychain.anthropicKey, !key.isEmpty else { throw RepromptError.missingKey }
 
         var req = URLRequest(url: URL(string: "https://api.anthropic.com/v1/messages")!)
@@ -32,8 +37,7 @@ struct Reprompter {
             "max_tokens": 16000,
             "system": systemPrompt,
             "messages": [
-                ["role": "user",
-                 "content": "Here is the raw voice transcript to restructure:\n\n<transcript>\n\(transcript)\n</transcript>"]
+                ["role": "user", "content": userText]
             ],
         ]
         req.httpBody = try JSONSerialization.data(withJSONObject: payload)

@@ -46,9 +46,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         .sink { [weak self] in self?.applyTriggers() }
         .store(in: &cancellables)
 
-        LocalTranscriber.shared.onStatus = { [weak self] s in
+        let statusRelay: (String) -> Void = { [weak self] s in
             DispatchQueue.main.async { guard !s.isEmpty else { return }; self?.statusLine = s; self?.overlay.model.title = s; self?.refreshUI() }
         }
+        LocalTranscriber.shared.onStatus = statusRelay
+        ParakeetTranscriber.shared.onStatus = statusRelay
 
         // React to the Dock toggle live.
         Settings.shared.$showInDock

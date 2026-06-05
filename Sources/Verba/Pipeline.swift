@@ -16,11 +16,14 @@ enum Pipeline {
         let s = Settings.shared
 
         // 1. Transcribe with the selected engine.
-        status(s.engine == .local ? "Transcribing locally…" : "Transcribing…")
+        status(s.engine.isLocal ? "Transcribing locally…" : "Transcribing…")
         let lang = s.language.isEmpty ? nil : s.language
-        let transcriber: Transcriber = (s.engine == .local)
-            ? LocalTranscriber.shared
-            : OpenAITranscriber()
+        let transcriber: Transcriber
+        switch s.engine {
+        case .openAI:   transcriber = OpenAITranscriber()
+        case .whisper:  transcriber = LocalTranscriber.shared
+        case .parakeet: transcriber = ParakeetTranscriber.shared
+        }
         var original = try await transcriber.transcribe(fileURL: audioURL, language: lang,
                                                          hint: DictionaryStore.shared.hint())
         // Apply custom dictionary spellings to the raw transcript.
@@ -47,6 +50,14 @@ enum Pipeline {
         return PipelineResult(original: original,
                               reprompted: reprompted,
                               profileName: profile.name,
-                              engine: s.engine == .local ? "local:\(s.localModel)" : "openai:gpt-4o-transcribe")
+                              engine: engineLabel(s))
+    }
+
+    private static func engineLabel(_ s: Settings) -> String {
+        switch s.engine {
+        case .openAI:   return "openai:gpt-4o-transcribe"
+        case .whisper:  return "whisper:\(s.localModel)"
+        case .parakeet: return "parakeet:v3"
+        }
     }
 }

@@ -27,11 +27,13 @@ struct SettingsView: View {
                 Picker("Engine", selection: $settings.engine) {
                     ForEach(TranscriptionEngine.allCases) { Text($0.label).tag($0) }
                 }
-                if settings.engine == .local {
-                    Picker("Local model", selection: $settings.localModel) {
+                if settings.engine == .whisper {
+                    Picker("Whisper model", selection: $settings.localModel) {
                         ForEach(localModels, id: \.self) { Text($0).tag($0) }
                     }
-                    Text("First use downloads the model (~runs fully offline after).")
+                }
+                if settings.engine.isLocal {
+                    Text("On-device & free. First use downloads the model (a few hundred MB), then runs fully offline — no API key needed.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 TextField("Language (ISO code, blank = auto)", text: $settings.language)
@@ -39,6 +41,15 @@ struct SettingsView: View {
             }
             Section("Reprompting (Claude)") {
                 Toggle("Restructure transcript with Claude", isOn: $settings.repromptEnabled)
+                Picker("Run via", selection: $settings.repromptBackend) {
+                    ForEach(RepromptBackend.allCases) { Text($0.label).tag($0) }
+                }
+                if settings.repromptBackend == .claudeCode {
+                    Label(ClaudeCode.isAvailable ? "Claude Code detected — uses your Max/Pro plan, no API key."
+                                                  : "Claude Code not found. Install it and run `claude` once to sign in.",
+                          systemImage: ClaudeCode.isAvailable ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+                        .font(.caption).foregroundStyle(ClaudeCode.isAvailable ? .green : .orange)
+                }
                 Picker("Claude model", selection: $settings.claudeModel) {
                     ForEach(claudeModels, id: \.self) { Text($0).tag($0) }
                 }

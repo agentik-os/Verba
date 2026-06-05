@@ -14,15 +14,26 @@ enum RecordStyle: String, Codable, CaseIterable, Identifiable {
 }
 
 enum TranscriptionEngine: String, Codable, CaseIterable, Identifiable {
-    case openAI         // gpt-4o-transcribe (cloud, BYOK)
-    case local          // WhisperKit large-v3-turbo (on-device)
+    case openAI                 // gpt-4o-transcribe (cloud, BYOK)
+    case whisper = "local"      // WhisperKit (on-device); rawValue kept for migration
+    case parakeet               // NVIDIA Parakeet TDT v3 (on-device, multilingual)
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .openAI: return "OpenAI (cloud)"
-        case .local:  return "Local (on-device)"
+        case .openAI:   return "OpenAI (cloud)"
+        case .whisper:  return "Whisper (local)"
+        case .parakeet: return "Parakeet (local · NVIDIA)"
         }
     }
+    var isLocal: Bool { self != .openAI }
+}
+
+/// Where the Claude reprompting runs: pay-per-token API key, or the user's
+/// Claude Code subscription (Max/Pro plan) via the local `claude` CLI.
+enum RepromptBackend: String, Codable, CaseIterable, Identifiable {
+    case apiKey, claudeCode
+    var id: String { rawValue }
+    var label: String { self == .apiKey ? "Anthropic API key" : "Claude Code (Max plan)" }
 }
 
 // Carbon modifier masks (avoid importing Carbon here): control|option = 4096|2048.
@@ -172,6 +183,7 @@ final class Settings: ObservableObject {
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }
     @Published var claudeModel: String { didSet { d.set(claudeModel, forKey: "claudeModel") } }
+    @Published var repromptBackend: RepromptBackend { didSet { d.set(repromptBackend.rawValue, forKey: "repromptBackend") } }
     @Published var language: String { didSet { d.set(language, forKey: "language") } }   // "" = auto-detect
 
     @Published var autoPaste: Bool { didSet { d.set(autoPaste, forKey: "autoPaste") } }
@@ -214,6 +226,7 @@ final class Settings: ObservableObject {
         engine = TranscriptionEngine(rawValue: d.string(forKey: "engine") ?? "") ?? .openAI
         localModel = d.string(forKey: "localModel") ?? "large-v3-v20240930_turbo"
         claudeModel = d.string(forKey: "claudeModel") ?? "claude-sonnet-4-6"
+        repromptBackend = RepromptBackend(rawValue: d.string(forKey: "repromptBackend") ?? "") ?? .apiKey
         language = d.string(forKey: "language") ?? ""
         autoPaste = d.object(forKey: "autoPaste") as? Bool ?? true
         copyToClipboard = d.object(forKey: "copyToClipboard") as? Bool ?? true
