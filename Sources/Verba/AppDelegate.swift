@@ -86,6 +86,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             win.toolbarStyle = .unified
             win.contentViewController = NSHostingController(rootView: MainWindow())
             win.isReleasedWhenClosed = false
+            win.contentMinSize = NSSize(width: 900, height: 560)   // stop the layout squishing when resized
             win.setContentSize(NSSize(width: 1040, height: 680))
             win.center()
             mainWC = NSWindowController(window: win)

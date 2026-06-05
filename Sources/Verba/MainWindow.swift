@@ -76,20 +76,21 @@ struct MainWindow: View {
     }
 
     private var sidebarFooter: some View {
-        HStack(spacing: 10) {
-            VerbaMark(size: 26)
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Verba").font(.callout.weight(.semibold))
-                Text(settings.isPro ? "Pro" : "Free").font(.caption2).foregroundStyle(.secondary)
-            }
-            Spacer()
+        HStack(spacing: 8) {
+            VerbaMark(size: 22)
+            Text("Verba").font(.callout.weight(.semibold)).fixedSize()
+            Text(settings.isPro ? "Pro" : "Free")
+                .font(.caption2.weight(.medium)).foregroundStyle(.secondary)
+                .padding(.horizontal, 6).padding(.vertical, 1)
+                .background(.quaternary, in: Capsule())
+                .fixedSize()
+            Spacer(minLength: 6)
             Button { selection = .settings } label: { Image(systemName: "gearshape") }
                 .buttonStyle(.borderless).help("Settings")
             Button { withAnimation { columnVisibility = .detailOnly } } label: { Image(systemName: "sidebar.leading") }
                 .buttonStyle(.borderless).help("Hide sidebar")
         }
-        .padding(.horizontal, 14).padding(.vertical, 10)
-        .background(.bar)
+        .padding(.horizontal, 14).padding(.vertical, 9)
     }
 
     @ViewBuilder
