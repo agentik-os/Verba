@@ -40,6 +40,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         FnTap.shared.onFnDown = { [weak self] in self?.fnDown() }
         FnTap.shared.onFnUp = { [weak self] in self?.fnUp() }
         FnTap.shared.onDigit = { [weak self] n in self?.fnDigit(n) ?? false }
+        FnTap.shared.onArrow = { [weak self] d in self?.fnArrow(d) ?? false }
+        FnTap.shared.onEnter = { [weak self] in self?.fnEnter() ?? false }
         overlay.model.onCancel = { [weak self] in self?.cancelEverything() }
         ChordMonitor.shared.start()
         applyTriggers()
@@ -74,6 +76,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else if Settings.shared.showInDock {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in self?.openMain() }
         }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        FnTap.shared.stop()   // restores the system "Press 🌐 to:" setting
     }
 
     private func applyDockPolicy() {
@@ -195,51 +201,66 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             overlay.model.recording = false; overlay.model.menu = false
             overlay.hide(); SoundFX.stop(); state = .idle
         case .idle:
-            if overlay.model.menu { overlay.model.menu = false; overlay.hide(); FnTap.shared.consumeDigits = false }
+            if overlay.model.menu { overlay.model.menu = false; overlay.hide(); FnTap.shared.menuActive = false }
         }
     }
 
     // Fn (globe) as the primary trigger — Wispr-Flow style:
-    //   • single Fn (idle) → instantly show the numbered mode picker; press 1–9 to choose
-    //   • double-tap Fn    → record straight away with the ACTIVE (default) mode
+    //   • single tap  → record straight away with the ACTIVE (default) mode (fast)
+    //   • double-tap  → open the mode picker (← → change the default, 1–9 / click choose)
     //   • Fn while recording → stop & send
     private func fnDown() {
         guard Settings.shared.useFnAsPrimary else { return }
-        if state == .recording { stopAndProcess(); lastFnDown = nil; return }
+        if state == .recording { stopAndProcess(); lastFnDown = nil; fnHoldTimer?.invalidate(); return }
         if state == .processing { return }
 
         let now = Date()
         if let last = lastFnDown, now.timeIntervalSince(last) < 0.35 {
-            // double-tap → active mode, no menu
+            // DOUBLE TAP → open the picker
             lastFnDown = nil
             fnHoldTimer?.invalidate(); fnHoldTimer = nil
-            overlay.model.menu = false
-            FnTap.shared.consumeDigits = false
-            startRecording(forced: Settings.shared.activeProfile)
+            showModeMenu()
             return
         }
-        // first tap → show the picker instantly (latched until a digit / Esc / timeout)
+        // First tap → wait briefly to see if a second tap comes; if not, record active mode.
         lastFnDown = now
-        showModeMenu()
-        FnTap.shared.consumeDigits = true
         fnHoldTimer?.invalidate()
-        fnHoldTimer = Timer.scheduledTimer(withTimeInterval: 6.0, repeats: false) { [weak self] _ in
-            guard let self, self.state == .idle, self.overlay.model.menu else { return }
-            self.overlay.model.menu = false; self.overlay.hide(); FnTap.shared.consumeDigits = false
+        fnHoldTimer = Timer.scheduledTimer(withTimeInterval: 0.32, repeats: false) { [weak self] _ in
+            guard let self, self.state == .idle, !self.overlay.model.menu else { return }
+            self.lastFnDown = nil
+            self.startRecording(forced: Settings.shared.activeProfile)
         }
     }
-    private func fnUp() { /* picker is latched; nothing to do on release */ }
+    private func fnUp() { /* nothing on release */ }
 
     private func fnDigit(_ n: Int) -> Bool {
         guard Settings.shared.useFnAsPrimary, overlay.model.menu else { return false }
         let profiles = Settings.shared.profiles
         guard n >= 1, n <= profiles.count else { return false }
+        dismissMenu()
+        trigger(forced: profiles[n - 1])
+        return true
+    }
+    private func fnArrow(_ delta: Int) -> Bool {
+        guard overlay.model.menu else { return false }
+        let s = Settings.shared
+        guard let i = s.profiles.firstIndex(where: { $0.id == s.activeProfileID }), !s.profiles.isEmpty else { return false }
+        let next = ((i + delta) % s.profiles.count + s.profiles.count) % s.profiles.count
+        s.activeProfileID = s.profiles[next].id            // live-change the default
+        overlay.model.activeID = s.activeProfileID
+        return true
+    }
+    private func fnEnter() -> Bool {
+        guard overlay.model.menu else { return false }
+        dismissMenu()
+        trigger(forced: Settings.shared.activeProfile)
+        return true
+    }
+    private func dismissMenu() {
         fnHoldTimer?.invalidate(); fnHoldTimer = nil
         lastFnDown = nil
         overlay.model.menu = false
-        FnTap.shared.consumeDigits = false
-        trigger(forced: profiles[n - 1])
-        return true
+        FnTap.shared.menuActive = false
     }
 
     private func showModeMenu() {
@@ -247,7 +268,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         overlay.model.menu = true
         overlay.model.recording = false
         overlay.model.profiles = s.profiles
-        overlay.model.onStart = { [weak self] p in self?.trigger(forced: p) }
+        overlay.model.activeID = s.activeProfileID
+        overlay.model.onStart = { [weak self] p in self?.dismissMenu(); self?.trigger(forced: p) }
+        FnTap.shared.menuActive = true
         overlay.show()
     }
 
@@ -350,8 +373,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                profileName: result.profileName, engine: result.engine, audioURL: audioURL)
             let dur = self.recordStartedAt.map { Date().timeIntervalSince($0) } ?? 0
             Stats.shared.record(words: wordCount(text), seconds: dur)
-            self.overlay.hide()
-            self.state = .idle
+            self.flashDone()
         }
 
         if Settings.shared.reviewBeforeSend {
@@ -359,8 +381,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             state = .idle
             showReview(original: result.original, text: result.reprompted, onConfirm: deliver)
         } else {
-            SoundFX.done()
             deliver(result.reprompted)
+        }
+    }
+
+    /// A brief, soft "✓ Done" flash in the overlay instead of an abrupt disappearance.
+    private func flashDone() {
+        overlay.model.recording = false
+        overlay.model.menu = false
+        overlay.model.done = true
+        overlay.model.title = "Done"
+        overlay.show()
+        SoundFX.done()
+        state = .idle
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.85) { [weak self] in
+            guard let self, self.state == .idle else { return }
+            self.overlay.model.done = false
+            self.overlay.hide()
         }
     }
 

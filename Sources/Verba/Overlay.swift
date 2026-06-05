@@ -5,9 +5,11 @@ final class OverlayModel: ObservableObject {
     @Published var level: Float = 0      // 0...1 mic level
     @Published var title: String = ""    // "Listening…" / "Transcribing…" / etc.
     @Published var recording = false
+    @Published var done = false          // brief success flash
     @Published var menu = false          // pre-record: show numbered modes to pick
     @Published var profiles: [Profile] = []
     @Published var selectedID: UUID?
+    @Published var activeID: UUID?       // the default mode (highlighted in the picker)
     var onSelect: ((Profile) -> Void)?   // user switched mode mid-recording
     var onStart: ((Profile) -> Void)?    // user picked a mode from the menu → start recording
     var onCancel: (() -> Void)?          // discard / abort whatever is happening
@@ -21,7 +23,10 @@ struct OverlayView: View {
     var body: some View {
         VStack(spacing: 8) {
             HStack(spacing: 12) {
-                if model.menu {
+                if model.done {
+                    Image(systemName: "checkmark.circle.fill").font(.system(size: 14)).foregroundStyle(.green)
+                    Text(model.title.isEmpty ? "Done" : model.title).font(.system(size: 13, weight: .medium))
+                } else if model.menu {
                     Image(systemName: "mic").font(.system(size: 13)).foregroundStyle(.secondary)
                     Text("Choose a mode").font(.system(size: 13, weight: .medium))
                 } else {
@@ -37,7 +42,7 @@ struct OverlayView: View {
                     Text(model.title).font(.system(size: 13, weight: .medium)).lineLimit(1)
                 }
                 // Cancel (×) — discard recording or abort processing.
-                if model.recording || (!model.menu && !model.recording) {
+                if !model.menu && !model.done {
                     Button { model.onCancel?() } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 15)).foregroundStyle(.secondary)
@@ -49,7 +54,9 @@ struct OverlayView: View {
             if (model.menu || model.recording) && !model.profiles.isEmpty {
                 HStack(spacing: 6) {
                     ForEach(Array(model.profiles.enumerated()), id: \.element.id) { i, p in
-                        let selected = !model.menu && p.id == model.selectedID
+                        let isActive = model.menu && p.id == model.activeID         // default in picker
+                        let isSwitch = !model.menu && p.id == model.selectedID       // current while recording
+                        let hot = isActive || isSwitch
                         Button {
                             if model.menu { model.onStart?(p) }
                             else { model.selectedID = p.id; model.onSelect?(p) }
@@ -57,16 +64,23 @@ struct OverlayView: View {
                             HStack(spacing: 4) {
                                 if model.menu {
                                     Text("\(i + 1)").font(.system(size: 10, weight: .bold))
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(hot ? Color.white.opacity(0.9) : .secondary)
                                 }
-                                Text(p.name).font(.system(size: 11, weight: selected ? .semibold : .regular))
+                                Text(p.name).font(.system(size: 11, weight: hot ? .semibold : .regular))
                             }
                             .padding(.horizontal, 10).padding(.vertical, 4)
-                            .background(Capsule().fill(selected ? Color.primary.opacity(0.9) : Color.primary.opacity(0.08)))
-                            .foregroundStyle(selected ? Color(nsColor: .windowBackgroundColor) : Color.primary.opacity(0.85))
+                            .background(Capsule().fill(
+                                isActive ? Color.accentColor.opacity(0.95)
+                                         : isSwitch ? Color.primary.opacity(0.9)
+                                         : Color.primary.opacity(0.08)))
+                            .foregroundStyle(hot ? Color.white : Color.primary.opacity(0.85))
                         }
                         .buttonStyle(.plain)
                     }
+                }
+                if model.menu {
+                    Text("← → change default · 1–9 or click to dictate")
+                        .font(.system(size: 9)).foregroundStyle(.secondary)
                 }
             }
         }

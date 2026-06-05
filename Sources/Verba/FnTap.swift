@@ -1,18 +1,19 @@
 import AppKit
 import Carbon.HIToolbox
 
-/// A CGEventTap for the Fn (globe) key when it's the primary trigger. Unlike an
-/// NSEvent monitor, a tap can *consume* events — so we can swallow the bare globe
-/// key (no emoji/keyboard-switch popup) and capture digit keys for the mode picker
-/// without them typing into the focused app. Requires Accessibility trust.
+/// CGEventTap for the Fn (globe) key when it's the primary trigger. Unlike an
+/// NSEvent monitor, a tap can *consume* events — so we swallow the bare globe key
+/// (no emoji/keyboard popup) and capture digit/arrow/enter keys for the mode
+/// picker without them reaching the focused app. Requires Accessibility trust.
 final class FnTap {
     static let shared = FnTap()
 
     var onFnDown: (() -> Void)?
     var onFnUp: (() -> Void)?
-    /// Called for digit keys while `consumeDigits` is true; return true to consume.
-    var onDigit: ((Int) -> Bool)?
-    var consumeDigits = false
+    var onDigit: ((Int) -> Bool)?     // 1–9 while menuActive; return true to consume
+    var onArrow: ((Int) -> Bool)?     // -1 left / +1 right while menuActive
+    var onEnter: (() -> Bool)?        // return / enter while menuActive
+    var menuActive = false
 
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?
@@ -20,14 +21,14 @@ final class FnTap {
 
     func start() {
         guard tap == nil else { return }
+        FnSystemPref.suppress()   // also set "Press 🌐 to: Do Nothing" so macOS shows no HUD
         let mask = (1 << CGEventType.flagsChanged.rawValue) | (1 << CGEventType.keyDown.rawValue)
         let me = Unmanaged.passUnretained(self).toOpaque()
         guard let t = CGEvent.tapCreate(
             tap: .cgSessionEventTap, place: .headInsertEventTap, options: .defaultTap,
             eventsOfInterest: CGEventMask(mask),
             callback: { _, type, event, refcon in
-                let tap = Unmanaged<FnTap>.fromOpaque(refcon!).takeUnretainedValue()
-                return tap.handle(type, event)
+                Unmanaged<FnTap>.fromOpaque(refcon!).takeUnretainedValue().handle(type, event)
             }, userInfo: me) else { return }
         tap = t
         source = CFMachPortCreateRunLoopSource(nil, t, 0)
@@ -38,10 +39,10 @@ final class FnTap {
     func stop() {
         if let t = tap { CGEvent.tapEnable(tap: t, enable: false) }
         if let s = source { CFRunLoopRemoveSource(CFRunLoopGetCurrent(), s, .commonModes) }
-        tap = nil; source = nil; fnDown = false; consumeDigits = false
+        tap = nil; source = nil; fnDown = false; menuActive = false
+        FnSystemPref.restore()
     }
 
-    // Runs on the main run loop (we add the source to the current/main loop).
     private func handle(_ type: CGEventType, _ event: CGEvent) -> Unmanaged<CGEvent>? {
         switch type {
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
@@ -50,19 +51,19 @@ final class FnTap {
 
         case .flagsChanged:
             let fn = event.flags.contains(.maskSecondaryFn)
-            // Only act on (and swallow) a *bare* globe press — no other modifiers —
-            // so Fn+Fkey etc. still pass through untouched.
             let bareFn = event.flags.subtracting([.maskSecondaryFn, .maskNonCoalesced]).isEmpty
             if fn && !fnDown { fnDown = true; onFnDown?() }
             else if !fn && fnDown { fnDown = false; onFnUp?() }
-            if bareFn { return nil }   // consume → macOS never sees Fn (no emoji/keyboard popup)
-            return Unmanaged.passUnretained(event)
+            return bareFn ? nil : Unmanaged.passUnretained(event)
 
         case .keyDown:
-            let code = event.getIntegerValueField(.keyboardEventKeycode)
-            if code == 63 { return nil }   // swallow the bare globe key (kill the popup/switch)
-            if consumeDigits, let n = Self.digit(forKeyCode: Int(code)), onDigit?(n) == true {
-                return nil
+            let code = Int(event.getIntegerValueField(.keyboardEventKeycode))
+            if code == 63 { return nil }                          // bare globe key
+            if menuActive {
+                if let n = Self.digit(code), onDigit?(n) == true { return nil }
+                if code == kVK_LeftArrow,  onArrow?(-1) == true { return nil }
+                if code == kVK_RightArrow, onArrow?(1) == true { return nil }
+                if (code == kVK_Return || code == kVK_ANSI_KeypadEnter), onEnter?() == true { return nil }
             }
             return Unmanaged.passUnretained(event)
 
@@ -71,12 +72,33 @@ final class FnTap {
         }
     }
 
-    private static func digit(forKeyCode code: Int) -> Int? {
+    private static func digit(_ code: Int) -> Int? {
         switch code {
         case kVK_ANSI_1: return 1; case kVK_ANSI_2: return 2; case kVK_ANSI_3: return 3
         case kVK_ANSI_4: return 4; case kVK_ANSI_5: return 5; case kVK_ANSI_6: return 6
         case kVK_ANSI_7: return 7; case kVK_ANSI_8: return 8; case kVK_ANSI_9: return 9
         default: return nil
         }
+    }
+}
+
+/// Sets the system "Press 🌐 to:" action to "Do Nothing" while Verba owns the Fn
+/// key, then restores it. This is how dictation apps stop macOS from popping the
+/// input-source / emoji HUD on Fn.
+enum FnSystemPref {
+    private static let key = "AppleFnUsageType"
+    private static let domain = ".GlobalPreferences"
+    private static var saved: Int??
+
+    static func suppress() {
+        let d = UserDefaults(suiteName: domain)
+        if saved == nil { saved = .some(d?.object(forKey: key) as? Int) }  // remember once
+        d?.set(0, forKey: key)   // 0 = Do Nothing
+    }
+    static func restore() {
+        guard let saved else { return }
+        let d = UserDefaults(suiteName: domain)
+        if let v = saved { d?.set(v, forKey: key) } else { d?.removeObject(forKey: key) }
+        Self.saved = nil
     }
 }
