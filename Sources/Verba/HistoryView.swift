@@ -6,30 +6,30 @@ struct HistoryView: View {
     @State private var selection: HistoryEntry.ID?
 
     var body: some View {
-        HSplitView {
+        HStack(spacing: 0) {
+            // List column — block cards, no separator lines.
             VStack(spacing: 0) {
                 HStack {
-                    Text("History").font(.title2.bold())
+                    Text("History").font(.system(size: 26, weight: .bold))
                     Spacer()
                     Button(role: .destructive) { history.clear() } label: { Image(systemName: "trash") }
                         .buttonStyle(.borderless).help("Clear all")
                 }
-                .padding(.horizontal, 16).padding(.vertical, 12)
-                List(history.entries, selection: $selection) { e in
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(e.reprompted.isEmpty ? e.original : e.reprompted)
-                            .lineLimit(2).font(.callout)
-                        Text("\(e.date.formatted(date: .abbreviated, time: .shortened)) · \(e.profileName)")
-                            .font(.caption2).foregroundStyle(.secondary)
-                    }
-                    .padding(.vertical, 3)
-                    .tag(e.id)
-                }
-                .listStyle(.inset)
-                .scrollContentBackground(.hidden)
-            }
-            .frame(minWidth: 270, idealWidth: 310)
+                .padding(.horizontal, 18).padding(.top, 24).padding(.bottom, 12)
 
+                ScrollView {
+                    LazyVStack(spacing: 8) {
+                        ForEach(history.entries) { e in
+                            Button { selection = e.id } label: { card(e, selected: e.id == selection) }
+                                .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 14).padding(.bottom, 16)
+                }
+            }
+            .frame(width: 340)
+
+            // Detail.
             Group {
                 if let e = history.entries.first(where: { $0.id == selection }) {
                     detail(e)
@@ -38,9 +38,31 @@ struct HistoryView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(nsColor: .windowBackgroundColor))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    private func card(_ e: HistoryEntry, selected: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(e.reprompted.isEmpty ? e.original : e.reprompted)
+                .lineLimit(2).font(.callout).foregroundStyle(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text("\(e.date.formatted(date: .abbreviated, time: .shortened)) · \(e.profileName)")
+                .font(.caption2).foregroundStyle(.secondary)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(selected ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.05))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color.accentColor.opacity(selected ? 0.5 : 0), lineWidth: 1)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private func detail(_ e: HistoryEntry) -> some View {
@@ -55,7 +77,7 @@ struct HistoryView: View {
                     Spacer()
                     Button(role: .destructive) { history.delete(e); selection = nil } label: { Label("Delete", systemImage: "trash") }
                 }
-            }.padding(20)
+            }.padding(24)
         }
     }
 

@@ -42,8 +42,6 @@ struct ModesView: View {
             }
             .frame(width: 232)
 
-            Divider()
-
             Group {
                 if let id = selectedID, settings.profiles.contains(where: { $0.id == id }) {
                     editor(id: id)
