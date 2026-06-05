@@ -64,6 +64,7 @@ struct Profile: Codable, Identifiable, Equatable {
     var builtin: Bool = false
     var hotkeyCode: UInt32? = nil       // dedicated shortcut (Carbon keycode)
     var hotkeyMods: UInt32? = nil       // Carbon modifier mask
+    var raw: Bool = false               // true = pure dictation, no Claude reprompting
 }
 
 extension Profile {
@@ -72,13 +73,21 @@ extension Profile {
         systemPrompt: faithfulCore + """
 
 
-        CONTEXT: the text is a prompt/feedback for a coding agent (Claude Code, Cursor, \
-        etc.). The speaker may talk for a long time, jumping between ideas. Reorder it \
-        into a clear, well-structured instruction — group related points, put context \
-        first, then the concrete changes/steps, then constraints and open questions. \
-        You may use short paragraphs or bullet lists ONLY to mirror structure the \
-        speaker already implied. Keep every technical detail, file name, and step \
-        exactly as said. Improve the wording; never summarize or drop anything.
+        CONTEXT: the output is a prompt for a coding agent (Claude Code, Cursor, etc.).
+        The speaker dictated feedback or a request, often long and out of order. Turn it
+        into a precise, well-engineered prompt that an agent can act on without guessing:
+
+        - Open with a one-line statement of the goal / desired outcome.
+        - Then give the needed context (what exists today, the problem, where it happens).
+        - Then the concrete work: an ordered list of changes/steps, in a logical sequence.
+        - Then constraints, acceptance criteria, edge cases, and any open questions — \
+        each only if the speaker mentioned them.
+        - Keep EVERY technical detail verbatim: file paths, function/variable names, \
+        commands, error messages, library/version names, numbers. Never paraphrase these.
+        - Group related points; resolve self-corrections to the final intent.
+        - Be unambiguous and imperative ("Add…", "Change…", "Fix…"), but do NOT invent \
+        requirements, scope, or solutions the speaker didn't state, and do not over-engineer.
+        - Use clean markdown (short headers / bullet lists) when it aids clarity.
         """,
         matchBundleIDs: ["com.todesktop.230313mzl4w4u92", "com.microsoft.VSCode", "com.apple.dt.Xcode",
                          "com.googlecode.iterm2", "com.apple.Terminal", "dev.warp.Warp-Stable"],
@@ -135,6 +144,11 @@ extension Profile {
         """,
         builtin: true, hotkeyCode: 21 /* 4 */, hotkeyMods: kCtrlOpt)
 
+    static let free = Profile(
+        name: "Free",
+        systemPrompt: "(Free dictation — your words are transcribed exactly, with no AI reprompting or reordering.)",
+        builtin: true, hotkeyCode: 22 /* 6 */, hotkeyMods: kCtrlOpt, raw: true)
+
     static let custom = Profile(
         name: "Custom",
         systemPrompt: faithfulCore + """
@@ -145,7 +159,7 @@ extension Profile {
         """,
         builtin: true, hotkeyCode: 23 /* 5 */, hotkeyMods: kCtrlOpt)
 
-    static let defaults: [Profile] = [.coding, .pro, .perso, .intent, .custom]
+    static let defaults: [Profile] = [.coding, .pro, .perso, .intent, .free, .custom]
 }
 
 final class Settings: ObservableObject {
@@ -153,7 +167,7 @@ final class Settings: ObservableObject {
     private let d = UserDefaults.standard
 
     // Bump when the built-in profiles change so users get the new prompts/shortcuts.
-    static let profilesVersion = 4
+    static let profilesVersion = 5
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }

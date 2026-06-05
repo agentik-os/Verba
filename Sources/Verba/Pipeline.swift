@@ -26,7 +26,8 @@ enum Pipeline {
         // 2. A dedicated-shortcut profile wins; else auto-detect / active profile.
         let profile = forcedProfile ?? s.profile(forBundleID: frontmostBundleID)
         var reprompted = original
-        if s.repromptEnabled {
+        // Raw/Free mode (or reprompting off) → return the transcript untouched, no Claude.
+        if s.repromptEnabled && !profile.raw {
             status("Restructuring with Claude…")
             let r = Reprompter(model: s.claudeModel)
             reprompted = try await r.reprompt(transcript: original, systemPrompt: profile.systemPrompt)
