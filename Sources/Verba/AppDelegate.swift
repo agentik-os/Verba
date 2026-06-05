@@ -32,7 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         applyDockPolicy()
         installMainMenu()   // menu-bar apps have no main menu → no ⌘C/⌘V in text fields without this
-        Quips.refillIfLow()  // pre-warm the AI-generated geek loading lines
+        Quips.refillIfLow(tone: Settings.shared.quipTone)  // pre-warm the AI-generated loading lines
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         refreshUI()
@@ -324,6 +324,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Dictation flow
 
     private func startRecording(forced: Profile?) {
+        // The tool is locked until onboarding is finished (no using it from the onboarding).
+        if !Settings.shared.onboarded { openOnboarding(); return }
         // Free-tier word limit: block new dictations once the monthly quota is spent.
         if Entitlement.freeLimitReached() { showPaywall(); return }
         recorder.requestPermission { [weak self] ok in
@@ -539,10 +541,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func openOnboarding() {
+        if let wc = onboardingWC { present(wc); return }   // already open → just focus it
         let view = OnboardingView { [weak self] in
             self?.onboardingWC?.close(); self?.onboardingWC = nil
         }
-        onboardingWC = makeWindow(title: "Welcome to Verba", view: view, size: NSSize(width: 560, height: 660), glass: true)
+        onboardingWC = makeWindow(title: "Welcome to Verba", view: view, size: NSSize(width: 620, height: 720), glass: true)
         present(onboardingWC)
     }
 

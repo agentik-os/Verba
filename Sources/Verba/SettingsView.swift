@@ -45,6 +45,15 @@ struct SettingsView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
+            Section("Loading line") {
+                Picker("Joke style", selection: $settings.quipTone) {
+                    ForEach(QuipTone.allCases) { Text($0.label).tag($0) }
+                }
+                Text(settings.quipTone == .off
+                     ? "While Claude restructures, Verba shows a neutral “\(Quips.neutral)”."
+                     : "While Claude restructures, Verba shows a short AI-generated joke in this style — never the same twice in a day.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section("Reprompting (Claude)") {
                 Toggle("Restructure transcript with Claude", isOn: $settings.repromptEnabled)
                 Picker("Run via", selection: $settings.repromptBackend) {

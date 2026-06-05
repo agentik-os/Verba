@@ -28,6 +28,60 @@ enum TranscriptionEngine: String, Codable, CaseIterable, Identifiable {
     var isLocal: Bool { self != .openAI }
 }
 
+/// The humor style of the "loading" lines shown while Claude restructures.
+/// `.off` shows a neutral word instead of a joke.
+enum QuipTone: String, Codable, CaseIterable, Identifiable {
+    case off
+    case geek, dad, dry, absurdist, sarcastic, wholesome, corporate, noir
+    case pirate, shakespeare, zen, scifi, gamer, chef, motivational, conspiracy, surreal
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .off: return "Off — just “Transmuting…”"
+        case .geek: return "Geek / programmer"
+        case .dad: return "Dad jokes"
+        case .dry: return "Dry & deadpan"
+        case .absurdist: return "Absurdist"
+        case .sarcastic: return "Sarcastic"
+        case .wholesome: return "Wholesome"
+        case .corporate: return "Corporate buzzword"
+        case .noir: return "Film-noir detective"
+        case .pirate: return "Pirate"
+        case .shakespeare: return "Shakespearean"
+        case .zen: return "Zen koan"
+        case .scifi: return "Sci-fi space crew"
+        case .gamer: return "Gamer / RPG"
+        case .chef: return "Cooking show"
+        case .motivational: return "Over-the-top motivational"
+        case .conspiracy: return "Conspiracy theorist"
+        case .surreal: return "Surreal dream-logic"
+        }
+    }
+    /// Instruction handed to Claude so the generated one-liners match the chosen humor.
+    var styleInstruction: String {
+        switch self {
+        case .off: return ""
+        case .geek: return "programmer / sci-fi / internet geek humor"
+        case .dad: return "groan-worthy dad jokes and puns"
+        case .dry: return "dry, deadpan, understated British wit"
+        case .absurdist: return "absurdist, non-sequitur humor"
+        case .sarcastic: return "sarcastic, lightly snarky humor (never mean)"
+        case .wholesome: return "wholesome, warm, gently funny encouragement"
+        case .corporate: return "satirical corporate buzzword-speak"
+        case .noir: return "hard-boiled 1940s film-noir detective narration"
+        case .pirate: return "swashbuckling pirate speak"
+        case .shakespeare: return "mock-Shakespearean Elizabethan English"
+        case .zen: return "calm zen koans, gently funny"
+        case .scifi: return "dramatic sci-fi starship-crew chatter"
+        case .gamer: return "RPG / video-game humor (loot, XP, quests)"
+        case .chef: return "enthusiastic cooking-show narration"
+        case .motivational: return "over-the-top motivational gym-coach hype"
+        case .conspiracy: return "playful tinfoil-hat conspiracy humor"
+        case .surreal: return "surreal dream-logic humor"
+        }
+    }
+}
+
 /// Look & position of the recording indicator.
 enum OverlayStyle: String, Codable, CaseIterable, Identifiable {
     case floating   // glass pill, bottom-center (default)
@@ -211,6 +265,7 @@ final class Settings: ObservableObject {
     @Published var repromptBackend: RepromptBackend { didSet { d.set(repromptBackend.rawValue, forKey: "repromptBackend") } }
     @Published var openRouterModel: String { didSet { d.set(openRouterModel, forKey: "openRouterModel") } }
     @Published var overlayStyle: OverlayStyle { didSet { d.set(overlayStyle.rawValue, forKey: "overlayStyle") } }
+    @Published var quipTone: QuipTone { didSet { d.set(quipTone.rawValue, forKey: "quipTone"); Quips.onToneChanged() } }
     @Published var language: String { didSet { d.set(language, forKey: "language") } }   // "" = auto-detect
 
     @Published var autoPaste: Bool { didSet { d.set(autoPaste, forKey: "autoPaste") } }
@@ -262,6 +317,7 @@ final class Settings: ObservableObject {
         repromptBackend = RepromptBackend(rawValue: d.string(forKey: "repromptBackend") ?? "") ?? .claudeCode
         openRouterModel = d.string(forKey: "openRouterModel") ?? "anthropic/claude-3.7-sonnet"
         overlayStyle = OverlayStyle(rawValue: d.string(forKey: "overlayStyle") ?? "") ?? .floating
+        quipTone = QuipTone(rawValue: d.string(forKey: "quipTone") ?? "") ?? .geek
         language = d.string(forKey: "language") ?? ""
         autoPaste = d.object(forKey: "autoPaste") as? Bool ?? true
         copyToClipboard = d.object(forKey: "copyToClipboard") as? Bool ?? true
