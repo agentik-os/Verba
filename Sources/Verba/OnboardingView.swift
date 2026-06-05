@@ -24,7 +24,7 @@ struct OnboardingView: View {
                     .textFieldStyle(.roundedBorder)
                 }
 
-                step("2", "How to talk", "Press your shortcut (default ⌃⌥Space) or switch to the Fn key in Settings. Press to start, again to stop. Each profile (vibe-coding, message, ideation) also has its own ⌃⌥1/2/3 shortcut.") {
+                step("2", "How to talk", "Press ⌃⌥Space and talk — or hold ⌃⌥ to pop the mode picker and tap a number (1–6). Lock style: press again to send. Direct style: release to send. Esc cancels.") {
                     HStack {
                         ShortcutRecorder(
                             label: shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods),

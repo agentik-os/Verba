@@ -77,14 +77,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func openMain() {
         if mainWC == nil {
-            let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1000, height: 660),
+            // Clear any stale saved frame so the window always opens centered.
+            UserDefaults.standard.removeObject(forKey: "NSWindow Frame VerbaMain")
+            let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1040, height: 680),
                                styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
             win.title = "Verba"
             win.titlebarAppearsTransparent = true
+            win.toolbarStyle = .unified
             win.contentViewController = NSHostingController(rootView: MainWindow())
-            win.center()
             win.isReleasedWhenClosed = false
-            win.setFrameAutosaveName("VerbaMain")
+            win.setContentSize(NSSize(width: 1040, height: 680))
+            win.center()
             mainWC = NSWindowController(window: win)
         }
         present(mainWC)
@@ -178,6 +181,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = recorder.stop()
         forcedProfile = nil
         overlay.model.menu = false
+        overlay.model.recording = false
         overlay.hide()
         SoundFX.stop()
         state = .idle
