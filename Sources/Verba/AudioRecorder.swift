@@ -62,11 +62,12 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         return currentURL
     }
 
-    /// Current input level 0...1 for a simple meter.
+    /// Current input level 0...1 for the meter — boosted so quiet speech still moves.
     func level() -> Float {
         guard let rec = recorder, rec.isRecording else { return 0 }
         rec.updateMeters()
         let db = rec.averagePower(forChannel: 0)        // ~ -160 ... 0
-        return max(0, min(1, (db + 60) / 60))
+        let norm = max(0, min(1, (db + 52) / 52))       // tighter floor = more sensitive
+        return powf(norm, 0.55)                          // lift low end for a livelier meter
     }
 }

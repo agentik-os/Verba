@@ -91,19 +91,30 @@ struct OverlayView: View {
     }
 }
 
+/// Lively meter: bars wobble continuously and scale with the live mic level.
 private struct Waveform: View {
     let level: Float
-    private let bars = 9
+    private let bars = 11
+    private let maxH: CGFloat = 24
+
     var body: some View {
-        HStack(spacing: 3) {
-            ForEach(0..<bars, id: \.self) { i in
-                let phase = Float(i) / Float(bars)
-                let h = max(0.12, min(1, level * (0.5 + 0.9 * sinf((phase + level) * .pi))))
-                Capsule().fill(.primary.opacity(0.85)).frame(width: 4, height: CGFloat(h) * 22)
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { ctx in
+            let t = ctx.date.timeIntervalSinceReferenceDate
+            let lvl = CGFloat(max(0.05, min(1, level)))
+            HStack(spacing: 2.5) {
+                ForEach(0..<bars, id: \.self) { i in
+                    // two detuned sines per bar → organic motion; amplitude follows the level
+                    let w = (sin(t * 7.5 + Double(i) * 0.9) + sin(t * 11.3 + Double(i) * 1.7)) / 2.0
+                    let wobble = CGFloat((w + 1) / 2)                  // 0…1
+                    let center = 1 - abs(CGFloat(i) - CGFloat(bars - 1) / 2) / CGFloat(bars)  // taller in middle
+                    let h = max(0.10, min(1, lvl * (0.35 + 0.95 * wobble) * (0.6 + 0.6 * center)))
+                    Capsule()
+                        .fill(.primary.opacity(0.55 + 0.4 * Double(h)))
+                        .frame(width: 3, height: h * maxH)
+                }
             }
+            .frame(height: maxH, alignment: .center)
         }
-        .animation(.easeOut(duration: 0.08), value: level)
-        .frame(maxHeight: 22, alignment: .center)
     }
 }
 

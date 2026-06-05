@@ -1,5 +1,6 @@
 import AppKit
 import Carbon.HIToolbox
+import IOKit.hid
 
 /// CGEventTap for the Fn (globe) key when it's the primary trigger. Unlike an
 /// NSEvent monitor, a tap can *consume* events — so we swallow the bare globe key
@@ -21,7 +22,9 @@ final class FnTap {
 
     func start() {
         guard tap == nil else { return }
-        FnSystemPref.suppress()   // also set "Press 🌐 to: Do Nothing" so macOS shows no HUD
+        // Ask for Input Monitoring so the HID-level tap can actually consume events.
+        IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
+        FnSystemPref.suppress()   // "Press 🌐 to: Do Nothing" + disable input-source symbolic hotkeys
         let mask = (1 << CGEventType.flagsChanged.rawValue) | (1 << CGEventType.keyDown.rawValue)
         let me = Unmanaged.passUnretained(self).toOpaque()
         // HID-level tap: sees the globe key before HIToolbox, so consuming it kills
@@ -98,15 +101,40 @@ enum FnSystemPref {
     private static let domain = ".GlobalPreferences"
     private static var saved: Int??
 
+    // Input-source symbolic hotkeys (the "A / US" HUD): previous / next source.
+    private static let inputSourceHotKeys: [Int32] = [60, 61]
+    private static var disabledSHK: [Int32] = []
+
+    // Private SkyLight API to toggle a symbolic hotkey at runtime (how Wispr Flow
+    // stops the globe HUD without a logout).
+    private typealias SetSHK = @convention(c) (Int32, Bool) -> Int32
+    private typealias GetSHK = @convention(c) (Int32, UnsafeMutablePointer<DarwinBoolean>) -> Int32
+    private static let setEnabled: SetSHK? = sym("CGSSetSymbolicHotKeyEnabled")
+    private static let getEnabled: GetSHK? = sym("CGSIsSymbolicHotKeyEnabled")
+    private static func sym<T>(_ name: String) -> T? {
+        guard let h = dlopen(nil, RTLD_NOW), let p = dlsym(h, name) else { return nil }
+        return unsafeBitCast(p, to: T.self)
+    }
+
     static func suppress() {
         let d = UserDefaults(suiteName: domain)
-        if saved == nil { saved = .some(d?.object(forKey: key) as? Int) }  // remember once
+        if saved == nil { saved = .some(d?.object(forKey: key) as? Int) }
         d?.set(0, forKey: key)   // 0 = Do Nothing
+
+        // Disable the input-source switch symbolic hotkeys at runtime.
+        for id in inputSourceHotKeys {
+            var on = DarwinBoolean(true)
+            if let get = getEnabled { _ = get(id, &on) }
+            if on.boolValue, let set = setEnabled, set(id, false) == 0 { disabledSHK.append(id) }
+        }
     }
     static func restore() {
-        guard let saved else { return }
-        let d = UserDefaults(suiteName: domain)
-        if let v = saved { d?.set(v, forKey: key) } else { d?.removeObject(forKey: key) }
-        Self.saved = nil
+        if let saved {
+            let d = UserDefaults(suiteName: domain)
+            if let v = saved { d?.set(v, forKey: key) } else { d?.removeObject(forKey: key) }
+            Self.saved = nil
+        }
+        for id in disabledSHK { _ = setEnabled?(id, true) }   // re-enable what we turned off
+        disabledSHK = []
     }
 }
