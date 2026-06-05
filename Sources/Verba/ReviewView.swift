@@ -26,9 +26,9 @@ struct ReviewView: View {
                     .font(.caption)
             }
             TextEditor(text: $text)
-                .font(.system(.body))
-                .frame(minWidth: 460, minHeight: 220)
-                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary))
+                .font(.system(.body)).scrollContentBackground(.hidden)
+                .frame(minWidth: 460, minHeight: 220).padding(10)
+                .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             HStack {
                 Button("Cancel", role: .cancel) { onCancel() }
                 Spacer()

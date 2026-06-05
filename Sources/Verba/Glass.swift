@@ -14,6 +14,32 @@ struct VisualEffectView: NSViewRepresentable {
     func updateNSView(_ v: NSVisualEffectView, context: Context) { v.material = material }
 }
 
+// Clean, borderless design helpers (modern, no harsh stroke lines).
+
+extension ShapeStyle where Self == Color {
+    /// Subtle fill for inputs/cards that adapts to light/dark, no border needed.
+    static var softFill: Color { Color.primary.opacity(0.055) }
+}
+
+extension View {
+    /// Borderless text-field look: subtle fill, comfortable padding, no stroke.
+    func cleanField() -> some View {
+        self
+            .textFieldStyle(.plain)
+            .padding(.horizontal, 11)
+            .padding(.vertical, 8)
+            .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+    }
+
+    /// Borderless card: soft fill, rounded, generous padding.
+    func cleanCard(padding: CGFloat = 16) -> some View {
+        self
+            .padding(padding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.softFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
 // Liquid Glass shim (mirrors kaset's approach): use Apple's real `.glassEffect`
 // on macOS 26+ (Tahoe), fall back to `.ultraThinMaterial` on macOS 14/15.
 

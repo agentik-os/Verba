@@ -7,39 +7,52 @@ struct ModesView: View {
 
     var body: some View {
         HSplitView {
-            List(selection: $selectedID) {
-                ForEach(settings.profiles) { p in
-                    HStack {
-                        if p.raw { Image(systemName: "waveform").foregroundStyle(.secondary) }
-                        Text(p.name)
-                        if let c = p.hotkeyCode, let m = p.hotkeyMods {
-                            Text(shortcutLabel(keyCode: c, modifiers: m)).font(.caption2).foregroundStyle(.secondary)
+            VStack(spacing: 0) {
+                List(selection: $selectedID) {
+                    ForEach(settings.profiles) { p in
+                        HStack(spacing: 8) {
+                            Image(systemName: p.raw ? "waveform" : "wand.and.stars")
+                                .foregroundStyle(.secondary).frame(width: 18)
+                            Text(p.name)
+                            Spacer()
+                            if let c = p.hotkeyCode, let m = p.hotkeyMods {
+                                Text(shortcutLabel(keyCode: c, modifiers: m))
+                                    .font(.caption2).foregroundStyle(.tertiary)
+                            }
+                            if p.id == settings.activeProfileID {
+                                Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint).font(.caption)
+                            }
                         }
-                        if p.id == settings.activeProfileID {
-                            Spacer(); Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint)
-                        }
-                    }.tag(p.id)
+                        .padding(.vertical, 2)
+                        .tag(p.id)
+                    }
+                }
+                .listStyle(.inset)
+                HStack(spacing: 10) {
+                    Button { addProfile() } label: { Image(systemName: "plus") }
+                        .disabled(!settings.isPro)
+                        .help(settings.isPro ? "New mode" : "Custom modes are a Pro feature")
+                    Button { settings.resetProfilesToDefaults(); selectedID = settings.activeProfileID } label: {
+                        Image(systemName: "arrow.counterclockwise")
+                    }.help("Restore the built-in modes")
+                    Spacer()
+                }
+                .buttonStyle(.borderless)
+                .padding(.horizontal, 14).padding(.vertical, 10)
+            }
+            .frame(minWidth: 210, idealWidth: 240)
+
+            Group {
+                if let id = selectedID, settings.profiles.contains(where: { $0.id == id }) {
+                    editor(id: id)
+                } else {
+                    ContentUnavailableView("Select a mode", systemImage: "wand.and.stars",
+                                           description: Text("Each mode is a different way Claude reorders and improves your dictation."))
                 }
             }
-            .frame(minWidth: 180)
-            .toolbar {
-                Button { addProfile() } label: { Image(systemName: "plus") }
-                    .disabled(!settings.isPro)
-                    .help(settings.isPro ? "New mode" : "Custom modes are a Pro feature")
-                Button {
-                    settings.resetProfilesToDefaults(); selectedID = settings.activeProfileID
-                } label: { Image(systemName: "arrow.counterclockwise") }
-                    .help("Restore the built-in modes")
-            }
-
-            if let id = selectedID, settings.profiles.contains(where: { $0.id == id }) {
-                editor(id: id)
-            } else {
-                ContentUnavailableView("Select a mode", systemImage: "wand.and.stars",
-                                       description: Text("Each mode is a different way Claude reorders and improves your dictation."))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .background(Color(nsColor: .windowBackgroundColor))
         .onAppear { if selectedID == nil { selectedID = settings.activeProfileID } }
     }
 
@@ -59,52 +72,72 @@ struct ModesView: View {
         let shortcut: String = { guard let p, let c = p.hotkeyCode, let m = p.hotkeyMods else { return "" }
             return shortcutLabel(keyCode: c, modifiers: m) }()
 
-        return Form {
-            TextField("Name", text: nameB)
-            if isRaw {
-                Section { Text("Free-flow dictation: your words are transcribed exactly, with no AI reprompting.")
-                    .foregroundStyle(.secondary) }
-            } else {
-                Section {
-                    TextEditor(text: promptB)
-                        .font(.system(.body, design: .monospaced)).frame(minHeight: 200)
-                        .disabled(!settings.isPro).opacity(settings.isPro ? 1 : 0.55)
-                } header: {
-                    HStack {
-                        Text("System prompt (how Claude reinterprets your audio)")
-                        if !settings.isPro { Spacer(); Label("Pro", systemImage: "lock.fill").font(.caption).foregroundStyle(.tint) }
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                field("Name") { TextField("", text: nameB).cleanField().frame(maxWidth: 280) }
+
+                if isRaw {
+                    field("Behaviour") {
+                        Text("Free-flow dictation — your words are transcribed exactly, with no AI reprompting.")
+                            .foregroundStyle(.secondary)
                     }
-                } footer: {
-                    if !settings.isPro {
-                        Text("Editing modes is a Pro feature. Free includes the built-in modes as-is.")
-                            .font(.caption).foregroundStyle(.secondary)
+                } else {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 6) {
+                            Text("System prompt").font(.subheadline.weight(.semibold))
+                            Text("how Claude reinterprets your audio").font(.caption).foregroundStyle(.secondary)
+                            Spacer()
+                            if !settings.isPro { Label("Pro", systemImage: "lock.fill").font(.caption).foregroundStyle(.tint) }
+                        }
+                        TextEditor(text: promptB)
+                            .font(.system(.callout, design: .monospaced)).scrollContentBackground(.hidden)
+                            .frame(minHeight: 220).padding(12)
+                            .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .disabled(!settings.isPro).opacity(settings.isPro ? 1 : 0.55)
+                        if !settings.isPro {
+                            Text("Editing modes is a Pro feature. Free includes the built-in modes as-is.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
                     }
                 }
-            }
-            Section("Dedicated shortcut") {
-                HStack {
-                    Text("Dictate straight into this mode"); Spacer()
+
+                field("Dedicated shortcut") {
                     ShortcutRecorder(label: shortcut,
                         onCapture: { c, m in if let i = index(of: id) { settings.profiles[i].hotkeyCode = c; settings.profiles[i].hotkeyMods = m } },
                         onClear: { if let i = index(of: id) { settings.profiles[i].hotkeyCode = nil; settings.profiles[i].hotkeyMods = nil } })
                 }
-            }
-            Section("Auto-match app bundle IDs (comma-separated)") {
-                TextField("com.apple.dt.Xcode, …", text: bundlesB)
-            }
-            HStack {
-                Button("Make active") { settings.activeProfileID = id }
-                Spacer()
-                if !isBuiltin {
-                    Button("Delete", role: .destructive) {
-                        selectedID = nil
-                        settings.profiles.removeAll { $0.id == id }
-                        if settings.activeProfileID == id { settings.activeProfileID = settings.profiles.first?.id ?? id }
+
+                field("Auto-match apps", hint: "comma-separated bundle IDs") {
+                    TextField("com.apple.dt.Xcode, …", text: bundlesB).cleanField()
+                }
+
+                HStack {
+                    Button("Make active") { settings.activeProfileID = id }.buttonStyle(.borderedProminent)
+                    Spacer()
+                    if !isBuiltin {
+                        Button("Delete", role: .destructive) {
+                            selectedID = nil
+                            settings.profiles.removeAll { $0.id == id }
+                            if settings.activeProfileID == id { settings.activeProfileID = settings.profiles.first?.id ?? id }
+                        }.buttonStyle(.borderless)
                     }
                 }
+                .padding(.top, 4)
             }
+            .padding(28)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .formStyle(.grouped).frame(minWidth: 340)
+    }
+
+    @ViewBuilder
+    private func field<C: View>(_ title: String, hint: String? = nil, @ViewBuilder content: () -> C) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Text(title).font(.subheadline.weight(.semibold))
+                if let hint { Text(hint).font(.caption).foregroundStyle(.secondary) }
+            }
+            content()
+        }
     }
 
     private func addProfile() {

@@ -80,7 +80,8 @@ struct MainWindow: View {
         case .insights: InsightsView()
         case .modes:
             VStack(alignment: .leading, spacing: 0) {
-                Text("Modes").font(.largeTitle.bold()).padding(.horizontal, 28).padding(.top, 28)
+                Text("Modes").font(.system(size: 28, weight: .bold))
+                    .padding(.horizontal, 28).padding(.top, 28).padding(.bottom, 6)
                 ModesView()
             }
         case .dictionary: DictionaryView()

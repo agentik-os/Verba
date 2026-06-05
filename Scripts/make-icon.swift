@@ -8,26 +8,15 @@ let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(size), pixelsH
 NSGraphicsContext.saveGraphicsState()
 NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
 
-// Rounded-rect background with a vibrant gradient.
+// Black squircle background — clean monochrome, no gradient.
 let inset = size * 0.06
 let rect = NSRect(x: inset, y: inset, width: size - inset * 2, height: size - inset * 2)
 let path = NSBezierPath(roundedRect: rect, xRadius: size * 0.225, yRadius: size * 0.225)
-let grad = NSGradient(colors: [
-    NSColor(calibratedRed: 0.40, green: 0.32, blue: 0.95, alpha: 1),   // indigo
-    NSColor(calibratedRed: 0.20, green: 0.70, blue: 0.85, alpha: 1),   // teal
-])!
-grad.draw(in: path, angle: -60)
-
-// Soft top highlight for a glassy feel.
-NSColor.white.withAlphaComponent(0.18).setFill()
-let hi = NSBezierPath(roundedRect: NSRect(x: inset, y: size * 0.52, width: size - inset * 2, height: size * 0.42),
-                      xRadius: size * 0.2, yRadius: size * 0.2)
-path.addClip()
-hi.fill()
-NSGraphicsContext.current?.cgContext.resetClip()
+NSColor.black.setFill()
+path.fill()
 
 // White microphone glyph (SF Symbol) centered.
-let cfg = NSImage.SymbolConfiguration(pointSize: size * 0.5, weight: .semibold)
+let cfg = NSImage.SymbolConfiguration(pointSize: size * 0.46, weight: .regular)
 if let sym = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: nil)?
     .withSymbolConfiguration(cfg) {
     let tinted = NSImage(size: sym.size)
