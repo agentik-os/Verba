@@ -35,3 +35,42 @@ body {
 
 @keyframes floaty { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
 .float { animation: floaty 6s ease-in-out infinite; }
+
+/* Live waveform bars */
+@keyframes bar {
+  0%, 100% { height: 8px; }
+  50%      { height: 34px; }
+}
+
+/* Slow aurora drift behind the hero */
+@keyframes aurora {
+  0%   { transform: translate3d(0,0,0) scale(1); }
+  50%  { transform: translate3d(4%, -3%, 0) scale(1.12); }
+  100% { transform: translate3d(0,0,0) scale(1); }
+}
+.aurora {
+  position: absolute; inset: -20% -10% auto -10%; height: 70vh; z-index: -1;
+  background:
+    radial-gradient(40% 50% at 25% 30%, rgba(120,140,255,0.16), transparent 60%),
+    radial-gradient(38% 48% at 75% 25%, rgba(80,200,220,0.14), transparent 60%),
+    radial-gradient(45% 55% at 55% 70%, rgba(180,120,255,0.12), transparent 60%);
+  filter: blur(40px);
+  animation: aurora 18s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Logo marquee */
+@keyframes scrollx { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+.marquee { display: flex; width: max-content; animation: scrollx 28s linear infinite; }
+.marquee:hover { animation-play-state: paused; }
+
+@keyframes shimmer { 0% { background-position: -200% 0 } 100% { background-position: 200% 0 } }
+.shine {
+  background: linear-gradient(90deg, #fff 20%, rgba(255,255,255,.45) 50%, #fff 80%);
+  background-size: 200% auto;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: shimmer 6s linear infinite;
+}
+
+.grid-row td { border-top: 1px solid rgba(255,255,255,0.07); }
+.tick { color: #6ee7a8; } .cross { color: rgba(255,255,255,0.35); }

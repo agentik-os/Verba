@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/nextjs";
+import LiveDemo from "@/components/LiveDemo";
+import Reveal from "@/components/Reveal";
 
 const PRICE = {
   monthly: { amount: "$9", sub: "/month" },
@@ -11,12 +14,15 @@ const DOWNLOAD_URL = "https://github.com/agentik-os/Verba/releases/latest/downlo
 
 export default function Home() {
   return (
-    <main className="mx-auto max-w-6xl px-6">
+    <main className="relative mx-auto max-w-6xl px-6">
+      <div className="aurora" />
       <Nav />
       <Hero />
       <LogosStrip />
+      <ModesModels />
       <Features />
       <How />
+      <CompareTeaser />
       <Pricing />
       <FAQ />
       <Footer />
@@ -45,6 +51,7 @@ function Nav() {
       <div className="hidden items-center gap-7 text-sm muted sm:flex">
         <a href="#features" className="hover:text-white">Features</a>
         <a href="#how" className="hover:text-white">How it works</a>
+        <Link href="/compare" className="hover:text-white">Compare</Link>
         <a href="#pricing" className="hover:text-white">Pricing</a>
         <a href="/account" className="hover:text-white">Account</a>
       </div>
@@ -86,37 +93,77 @@ function Hero() {
       </div>
       <p className="mt-4 text-xs muted">Free to start · 7-day Pro trial · cancel anytime</p>
 
-      <div className="mt-16 mx-auto max-w-3xl">
-        <div className="glass-strong float rounded-3xl p-2">
-          <div className="rounded-[20px] bg-black/40 p-8 text-left">
-            <div className="flex items-center gap-2 text-xs muted">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
-              <span className="h-2.5 w-2.5 rounded-full bg-yellow-400/70" />
-              <span className="h-2.5 w-2.5 rounded-full bg-green-400/70" />
-              <span className="ml-3">Listening…</span>
-            </div>
-            <p className="mt-6 text-sm muted">You say:</p>
-            <p className="mt-1 text-[15px]">“ok so uh tell the team standup moved to 10 comma and we ship friday new line need final copy by thursday”</p>
-            <p className="mt-5 text-sm muted">Verba writes:</p>
-            <p className="mt-1 text-[15px] leading-relaxed">
-              Standup is moved to 10:00, and we ship Friday.<br />Need the final copy by Thursday.
-            </p>
-          </div>
-        </div>
+      <div className="mt-16">
+        <LiveDemo />
       </div>
     </section>
   );
 }
 
 function LogosStrip() {
+  const apps = ["Slack", "Mail", "Notes", "VS Code", "Messages", "Notion", "Safari", "Terminal", "Cursor", "Linear", "Figma", "Obsidian"];
   return (
-    <section className="border-y hairline py-8">
+    <section className="overflow-hidden border-y hairline py-8">
       <p className="text-center text-xs uppercase tracking-widest muted">Works in the apps you already use</p>
-      <div className="mt-5 flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-sm muted">
-        {["Slack", "Mail", "Notes", "VS Code", "Messages", "Notion", "Safari", "Terminal"].map((a) => (
-          <span key={a}>{a}</span>
+      <div className="relative mt-5">
+        <div className="marquee gap-x-10 text-sm muted">
+          {[...apps, ...apps].map((a, i) => (
+            <span key={i} className="whitespace-nowrap">{a}</span>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ModesModels() {
+  const rows = [
+    ["Coding", "Opus 4.8", "Turns rambling feedback into a precise prompt for Cursor or Claude Code."],
+    ["Polish", "Haiku 4.5", "Fast, clean work messages and emails — your voice, tightened."],
+    ["Casual", "Haiku 4.5", "Warm, natural texts to friends and family."],
+    ["Intent", "Sonnet 4.6", "Say how you want it handled — “make this bullet points” — and it obeys."],
+  ];
+  return (
+    <section className="py-24">
+      <Reveal>
+        <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">The right model for the job</h2>
+        <p className="mx-auto mt-4 max-w-xl text-center muted text-balance">
+          Every mode routes to the model that fits — cheap and instant for quick polish, more
+          powerful where it matters. You stay in control of cost and quality.
+        </p>
+      </Reveal>
+      <div className="mt-12 grid gap-4 sm:grid-cols-2">
+        {rows.map(([mode, model, desc], i) => (
+          <Reveal key={mode} delay={i * 80}>
+            <div className="glass flex h-full flex-col rounded-2xl p-6">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium">{mode}</h3>
+                <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs">{model}</span>
+              </div>
+              <p className="mt-2 text-sm muted">{desc}</p>
+            </div>
+          </Reveal>
         ))}
       </div>
+    </section>
+  );
+}
+
+function CompareTeaser() {
+  return (
+    <section className="py-24">
+      <Reveal>
+        <div className="glass-strong overflow-hidden rounded-3xl p-10 text-center">
+          <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Cloud tools upload your voice. Verba doesn't.</h2>
+          <p className="mx-auto mt-4 max-w-xl muted text-balance">
+            Wispr Flow, Aqua and Willow send every word to their servers and charge $12–17/mo.
+            Verba runs on your Mac, lets you bring your own AI account, and costs $9.99.
+          </p>
+          <Link href="/compare" className="mt-8 inline-block rounded-full bg-white px-7 py-3 font-medium text-black hover:bg-white/90">
+            See the full comparison
+          </Link>
+        </div>
+      </Reveal>
     </section>
   );
 }
@@ -211,7 +258,7 @@ function Pricing() {
           <div className="mt-3 text-4xl font-semibold">$0</div>
           <p className="mt-1 text-sm muted">To get the feel of it.</p>
           <ul className="mt-6 space-y-2 text-sm muted">
-            {["Dictation in any app", "On-device or cloud", "Daily limit", "Basic modes"].map((b) => (
+            {["Dictation in any app", "On-device or cloud", "10,000 words / month", "Built-in modes"].map((b) => (
               <li key={b} className="flex gap-2"><span className="text-white/80">•</span>{b}</li>
             ))}
           </ul>
@@ -283,12 +330,14 @@ function Footer() {
     <footer className="flex flex-col items-center gap-3 border-t hairline py-12 text-sm muted">
       <Logo />
       <p>Speak it. Send it clean.</p>
-      <div className="flex gap-5">
+      <div className="flex flex-wrap justify-center gap-5">
         <a href="/account" className="hover:text-white">Account</a>
+        <Link href="/compare" className="hover:text-white">Compare</Link>
         <a href="#pricing" className="hover:text-white">Pricing</a>
+        <Link href="/acknowledgements" className="hover:text-white">Acknowledgements</Link>
         <a href={DOWNLOAD_URL} className="hover:text-white">Download</a>
       </div>
-      <p className="text-xs">© 2026 Verba</p>
+      <p className="text-xs">© 2026 Verba · Runs on-device with open models</p>
     </footer>
   );
 }
