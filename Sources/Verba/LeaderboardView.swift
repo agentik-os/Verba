@@ -81,7 +81,9 @@ struct LeaderboardView: View {
 
             ScrollView {
                 LazyVStack(spacing: 6) {
-                    ForEach(filtered, id: \.entry.id) { item in
+                    // When the user is pinned on top (no search), don't list them again below.
+                    let items = query.isEmpty ? filtered.filter { $0.entry.uid != myUID } : filtered
+                    ForEach(items, id: \.entry.id) { item in
                         row(item.rank, item.entry, highlighted: item.entry.uid == myUID)
                     }
                 }
