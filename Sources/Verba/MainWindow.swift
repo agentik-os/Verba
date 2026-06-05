@@ -105,19 +105,27 @@ struct MainWindow: View {
     }
 
     private var sidebarFooter: some View {
-        HStack(spacing: 8) {
-            VerbaMark(size: 22)
-            Text("Verba").font(.callout.weight(.semibold)).fixedSize()
-            Text(settings.isPro ? "Pro" : "Free")
-                .font(.caption2.weight(.medium)).foregroundStyle(.secondary)
-                .padding(.horizontal, 6).padding(.vertical, 1)
-                .background(.quaternary, in: Capsule())
-                .fixedSize()
-            Spacer(minLength: 6)
-            Button { selection = .settings } label: { Image(systemName: "gearshape") }
-                .buttonStyle(.borderless).help("Settings")
+        Button { selection = .settings } label: {
+            HStack(spacing: 9) {
+                VerbaMark(size: 26)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(settings.proEmail.isEmpty ? "Not signed in" : settings.proEmail)
+                        .font(.caption.weight(.medium)).lineLimit(1).truncationMode(.middle)
+                    Text(settings.isPro ? "Pro plan" : "Free trial")
+                        .font(.caption2)
+                        .foregroundStyle(settings.isPro ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
+                }
+                Spacer(minLength: 4)
+                Image(systemName: "gearshape").foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 10).padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(.quaternary.opacity(0.4)))
+            .contentShape(RoundedRectangle(cornerRadius: 10))
         }
-        .padding(.horizontal, 14).padding(.vertical, 10)
+        .buttonStyle(.plain)
+        .padding(.horizontal, 10).padding(.vertical, 10)
+        .onAppear { if !settings.proEmail.isEmpty { Task { _ = await settings.verifyPro() } } }
     }
 
     @ViewBuilder

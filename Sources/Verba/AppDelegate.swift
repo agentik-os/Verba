@@ -92,6 +92,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         FnTap.shared.stop()   // restores the system "Press 🌐 to:" setting
     }
 
+    /// Re-check the subscription whenever the app regains focus (e.g. right after the
+    /// user upgrades in the browser), so Pro unlocks without a relaunch.
+    func applicationDidBecomeActive(_ notification: Notification) {
+        if !Settings.shared.proEmail.isEmpty {
+            Task { _ = await Settings.shared.verifyPro() }
+        }
+    }
+
     private func applyDockPolicy() {
         NSApp.setActivationPolicy(Settings.shared.showInDock ? .regular : .accessory)
     }
