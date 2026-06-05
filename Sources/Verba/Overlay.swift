@@ -5,9 +5,11 @@ final class OverlayModel: ObservableObject {
     @Published var level: Float = 0      // 0...1 mic level
     @Published var title: String = ""    // "Listening…" / "Transcribing…" / etc.
     @Published var recording = false
+    @Published var menu = false          // pre-record: show numbered modes to pick
     @Published var profiles: [Profile] = []
     @Published var selectedID: UUID?
     var onSelect: ((Profile) -> Void)?   // user switched mode mid-recording
+    var onStart: ((Profile) -> Void)?    // user picked a mode from the menu → start recording
 }
 
 /// The floating glass pill shown while recording / processing, with a live mode
@@ -18,35 +20,41 @@ struct OverlayView: View {
     var body: some View {
         VStack(spacing: 8) {
             HStack(spacing: 12) {
-                Circle()
-                    .fill(model.recording ? Color.red : Color.accentColor)
-                    .frame(width: 10, height: 10)
-                    .opacity(model.recording ? 0.6 + Double(model.level) * 0.4 : 1)
-                if model.recording {
-                    Waveform(level: model.level).frame(width: 72, height: 22)
+                if model.menu {
+                    Image(systemName: "mic").font(.system(size: 13)).foregroundStyle(.secondary)
+                    Text("Choose a mode").font(.system(size: 13, weight: .medium))
                 } else {
-                    ProgressView().controlSize(.small).scaleEffect(0.8)
+                    Circle()
+                        .fill(model.recording ? Color.red : Color.primary)
+                        .frame(width: 10, height: 10)
+                        .opacity(model.recording ? 0.6 + Double(model.level) * 0.4 : 1)
+                    if model.recording {
+                        Waveform(level: model.level).frame(width: 72, height: 22)
+                    } else {
+                        ProgressView().controlSize(.small).scaleEffect(0.8)
+                    }
+                    Text(model.title).font(.system(size: 13, weight: .medium)).lineLimit(1)
                 }
-                Text(model.title)
-                    .font(.system(size: 13, weight: .medium))
-                    .lineLimit(1)
             }
 
-            if model.recording && !model.profiles.isEmpty {
+            if (model.menu || model.recording) && !model.profiles.isEmpty {
                 HStack(spacing: 6) {
-                    ForEach(model.profiles) { p in
-                        let selected = p.id == model.selectedID
+                    ForEach(Array(model.profiles.enumerated()), id: \.element.id) { i, p in
+                        let selected = !model.menu && p.id == model.selectedID
                         Button {
-                            model.selectedID = p.id
-                            model.onSelect?(p)
+                            if model.menu { model.onStart?(p) }
+                            else { model.selectedID = p.id; model.onSelect?(p) }
                         } label: {
-                            Text(p.name)
-                                .font(.system(size: 11, weight: selected ? .semibold : .regular))
-                                .padding(.horizontal, 10).padding(.vertical, 4)
-                                .background(
-                                    Capsule().fill(selected ? Color.accentColor.opacity(0.9) : Color.white.opacity(0.08))
-                                )
-                                .foregroundStyle(selected ? Color.white : Color.primary.opacity(0.8))
+                            HStack(spacing: 4) {
+                                if model.menu {
+                                    Text("\(i + 1)").font(.system(size: 10, weight: .bold))
+                                        .foregroundStyle(.secondary)
+                                }
+                                Text(p.name).font(.system(size: 11, weight: selected ? .semibold : .regular))
+                            }
+                            .padding(.horizontal, 10).padding(.vertical, 4)
+                            .background(Capsule().fill(selected ? Color.primary.opacity(0.9) : Color.primary.opacity(0.08)))
+                            .foregroundStyle(selected ? Color(nsColor: .windowBackgroundColor) : Color.primary.opacity(0.85))
                         }
                         .buttonStyle(.plain)
                     }
@@ -56,7 +64,6 @@ struct OverlayView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .glass(in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(.white.opacity(0.12)))
         .fixedSize()
     }
 }

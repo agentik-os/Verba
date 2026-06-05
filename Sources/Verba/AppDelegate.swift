@@ -29,13 +29,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         refreshUI()
 
-        FnMonitor.shared.onDown = { [weak self] in self?.fnDown() }
-        FnMonitor.shared.onUp = { [weak self] in self?.fnUp() }
+        ChordMonitor.shared.onChordDown = { [weak self] in self?.chordDown() }
+        ChordMonitor.shared.onChordUp = { [weak self] in self?.chordUp() }
+        ChordMonitor.shared.onEscape = { [weak self] in self?.escapePressed() }
+        ChordMonitor.shared.start()
         applyTriggers()
 
-        // Re-apply triggers when the mode, primary shortcut, or profiles change.
-        Publishers.Merge4(
-            Settings.shared.$triggerMode.map { _ in () },
+        // Re-apply hotkeys when the primary shortcut or profiles change.
+        Publishers.Merge3(
             Settings.shared.$primaryKeyCode.map { _ in () },
             Settings.shared.$primaryMods.map { _ in () },
             Settings.shared.$profiles.map { _ in () }
@@ -119,16 +120,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         HotKeys.shared.unregisterAll()
         let s = Settings.shared
         // Primary trigger (active/auto-detected profile).
-        switch s.triggerMode {
-        case .hotkey:
-            FnMonitor.shared.stop()
-            HotKeys.shared.register(id: 1, keyCode: s.primaryKeyCode, modifiers: s.primaryMods) { [weak self] in
-                self?.trigger(forced: nil)
-            }
-        case .fnHold, .fnToggle:
-            FnMonitor.shared.start()
+        HotKeys.shared.register(id: 1, keyCode: s.primaryKeyCode, modifiers: s.primaryMods) { [weak self] in
+            self?.trigger(forced: nil)
         }
-        // Per-profile dedicated shortcuts — work no matter the primary mode.
+        // Per-profile dedicated shortcuts (⌃⌥1–6).
         for (i, p) in s.profiles.enumerated() {
             guard let code = p.hotkeyCode, let mods = p.hotkeyMods else { continue }
             let pid = p.id
@@ -143,19 +138,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func trigger(forced: Profile?) {
         switch state {
         case .idle: startRecording(forced: forced)
-        case .recording: stopAndProcess()
+        case .recording: stopAndProcess()   // re-press = send (Lock); Direct stops on key release
         case .processing: break
         }
     }
-    private func fnDown() {
-        switch Settings.shared.triggerMode {
-        case .fnHold: if state == .idle { startRecording(forced: nil) }
-        case .fnToggle: trigger(forced: nil)
-        case .hotkey: break
+
+    /// ⌃⌥ held with nothing recording → show the numbered mode picker.
+    private func chordDown() {
+        guard state == .idle else { return }
+        showModeMenu()
+    }
+
+    /// ⌃⌥ released.
+    private func chordUp() {
+        if Settings.shared.recordStyle == .direct, state == .recording {
+            stopAndProcess()                 // push-to-talk: release = send
+        } else if state == .idle, overlay.model.menu {
+            overlay.hide(); overlay.model.menu = false   // dismissed the picker without recording
         }
     }
-    private func fnUp() {
-        if Settings.shared.triggerMode == .fnHold, state == .recording { stopAndProcess() }
+
+    private func escapePressed() {
+        if state == .recording || (state == .idle && overlay.model.menu) { cancelRecording() }
+    }
+
+    private func showModeMenu() {
+        let s = Settings.shared
+        overlay.model.menu = true
+        overlay.model.recording = false
+        overlay.model.profiles = s.profiles
+        overlay.model.onStart = { [weak self] p in self?.trigger(forced: p) }
+        overlay.show()
+    }
+
+    private func cancelRecording() {
+        levelTimer?.invalidate(); levelTimer = nil
+        _ = recorder.stop()
+        forcedProfile = nil
+        overlay.model.menu = false
+        overlay.hide()
+        SoundFX.stop()
+        state = .idle
     }
 
     // MARK: - Dictation flow
@@ -180,6 +203,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.forcedProfile = p
                 self?.overlay.model.title = "Listening · \(p.name)"
             }
+            self.overlay.model.menu = false   // hide the numbers once recording starts
             self.overlay.model.recording = true
             self.overlay.model.title = "Listening · \(initial.name)"
             self.overlay.model.level = 0
@@ -274,9 +298,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .recording: title = "Stop & process"
         case .processing: title = statusLine.isEmpty ? "Working…" : statusLine
         }
-        let trigger = Settings.shared.triggerMode == .hotkey
-            ? shortcutLabel(keyCode: Settings.shared.primaryKeyCode, modifiers: Settings.shared.primaryMods)
-            : Settings.shared.triggerMode.label
+        let trigger = shortcutLabel(keyCode: Settings.shared.primaryKeyCode, modifiers: Settings.shared.primaryMods)
         let item = NSMenuItem(title: "\(title)  (\(trigger))", action: #selector(menuToggle), keyEquivalent: "")
         item.target = self
         item.isEnabled = state != .processing

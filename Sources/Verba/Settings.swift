@@ -1,17 +1,15 @@
 import Foundation
 import Combine
 
-enum TriggerMode: String, Codable, CaseIterable, Identifiable {
-    case hotkey     // a key combo (Carbon), toggles recording
-    case fnHold     // hold the Fn (globe) key to talk, release to send
-    case fnToggle   // tap Fn to start, tap again to stop
+enum RecordStyle: String, Codable, CaseIterable, Identifiable {
+    case lock      // press to start, press again to send (Esc cancels)
+    case direct    // hold ⌃⌥ to talk, release to send (push-to-talk)
     var id: String { rawValue }
-    var label: String {
-        switch self {
-        case .hotkey:   return "Shortcut (toggle)"
-        case .fnHold:   return "Hold Fn to talk"
-        case .fnToggle: return "Tap Fn to toggle"
-        }
+    var label: String { self == .lock ? "Lock" : "Direct" }
+    var help: String {
+        self == .lock
+            ? "Press a shortcut to start, press again to send. Esc cancels."
+            : "Hold ⌃⌥ while you talk, release to send. Esc cancels."
     }
 }
 
@@ -161,7 +159,7 @@ extension Profile {
         """,
         builtin: true, hotkeyCode: 23 /* 5 */, hotkeyMods: kCtrlOpt)
 
-    static let defaults: [Profile] = [.coding, .polish, .casual, .intent, .flow, .custom]
+    static let defaults: [Profile] = [.coding, .polish, .casual, .intent, .custom, .flow]
 }
 
 final class Settings: ObservableObject {
@@ -169,7 +167,7 @@ final class Settings: ObservableObject {
     private let d = UserDefaults.standard
 
     // Bump when the built-in profiles change so users get the new prompts/shortcuts.
-    static let profilesVersion = 6
+    static let profilesVersion = 7
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }
@@ -181,7 +179,7 @@ final class Settings: ObservableObject {
     @Published var reviewBeforeSend: Bool { didSet { d.set(reviewBeforeSend, forKey: "reviewBeforeSend") } }
     @Published var autoDetectProfile: Bool { didSet { d.set(autoDetectProfile, forKey: "autoDetectProfile") } }
     @Published var repromptEnabled: Bool { didSet { d.set(repromptEnabled, forKey: "repromptEnabled") } }
-    @Published var triggerMode: TriggerMode { didSet { d.set(triggerMode.rawValue, forKey: "triggerMode") } }
+    @Published var recordStyle: RecordStyle { didSet { d.set(recordStyle.rawValue, forKey: "recordStyle") } }
     @Published var onboarded: Bool { didSet { d.set(onboarded, forKey: "onboarded") } }
     @Published var showInDock: Bool { didSet { d.set(showInDock, forKey: "showInDock") } }
 
@@ -189,7 +187,7 @@ final class Settings: ObservableObject {
     @Published var styleEnabled: Bool { didSet { d.set(styleEnabled, forKey: "styleEnabled") } }
     @Published var styleText: String { didSet { d.set(styleText, forKey: "styleText") } }
 
-    // Primary trigger shortcut (used when triggerMode == .hotkey). Default ⌃⌥Space.
+    // Primary trigger shortcut (active/auto-detected mode). Default ⌃⌥Space.
     @Published var primaryKeyCode: UInt32 { didSet { d.set(Int(primaryKeyCode), forKey: "primaryKeyCode") } }
     @Published var primaryMods: UInt32 { didSet { d.set(Int(primaryMods), forKey: "primaryMods") } }
 
@@ -222,7 +220,7 @@ final class Settings: ObservableObject {
         reviewBeforeSend = d.object(forKey: "reviewBeforeSend") as? Bool ?? false
         autoDetectProfile = d.object(forKey: "autoDetectProfile") as? Bool ?? true
         repromptEnabled = d.object(forKey: "repromptEnabled") as? Bool ?? true
-        triggerMode = TriggerMode(rawValue: d.string(forKey: "triggerMode") ?? "") ?? .hotkey
+        recordStyle = RecordStyle(rawValue: d.string(forKey: "recordStyle") ?? "") ?? .lock
         onboarded = d.object(forKey: "onboarded") as? Bool ?? false
         showInDock = d.object(forKey: "showInDock") as? Bool ?? true
         styleEnabled = d.object(forKey: "styleEnabled") as? Bool ?? false

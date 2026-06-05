@@ -80,9 +80,7 @@ struct HomeView: View {
     }
 
     private var triggerLabel: String {
-        settings.triggerMode == .hotkey
-            ? shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods)
-            : settings.triggerMode.label
+        shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods)
     }
 
     private func stat(_ value: String, _ label: String, _ icon: String) -> some View {

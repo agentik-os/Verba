@@ -44,25 +44,21 @@ struct SettingsView: View {
                 }
                 Toggle("Auto-pick profile from the active app", isOn: $settings.autoDetectProfile)
             }
-            Section("Trigger") {
-                Picker("How to start", selection: $settings.triggerMode) {
-                    ForEach(TriggerMode.allCases) { Text($0.label).tag($0) }
+            Section("Recording") {
+                Picker("Style", selection: $settings.recordStyle) {
+                    ForEach(RecordStyle.allCases) { Text($0.label).tag($0) }
                 }
-                if settings.triggerMode == .hotkey {
-                    HStack {
-                        Text("Primary shortcut")
-                        Spacer()
-                        ShortcutRecorder(
-                            label: shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods),
-                            onCapture: { code, mods in settings.primaryKeyCode = code; settings.primaryMods = mods }
-                        )
-                    }
-                    Text("Each profile can also have its own shortcut (Profiles tab) to dictate straight into that mode.")
-                        .font(.caption).foregroundStyle(.secondary)
-                } else {
-                    Text("Verba watches the Fn (globe) key. macOS may ask for Input Monitoring / Accessibility access the first time. Per-profile shortcuts (Profiles tab) still work.")
-                        .font(.caption).foregroundStyle(.secondary)
+                Text(settings.recordStyle.help).font(.caption).foregroundStyle(.secondary)
+                HStack {
+                    Text("Primary shortcut")
+                    Spacer()
+                    ShortcutRecorder(
+                        label: shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods),
+                        onCapture: { code, mods in settings.primaryKeyCode = code; settings.primaryMods = mods }
+                    )
                 }
+                Text("Hold ⌃⌥ to pop the mode picker; press 1–6 to dictate straight into a mode. Esc cancels a recording.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
             Section("App") {
                 Toggle("Show in Dock (full window app)", isOn: $settings.showInDock)
