@@ -10,7 +10,7 @@
   --tint: rgba(10, 10, 20, 0.045);
   --tint-strong: rgba(10, 10, 20, 0.09);
   --border: rgba(10, 10, 20, 0.11);
-  --dot: rgba(10, 10, 20, 0.13);
+  --dot: rgba(10, 10, 20, 0.055);
   --glow: rgba(90, 110, 160, 0.10);
   color-scheme: light;
 }
@@ -21,7 +21,7 @@
   --tint: rgba(255, 255, 255, 0.055);
   --tint-strong: rgba(255, 255, 255, 0.12);
   --border: rgba(255, 255, 255, 0.1);
-  --dot: rgba(255, 255, 255, 0.1);
+  --dot: rgba(255, 255, 255, 0.05);
   --glow: rgba(120, 140, 200, 0.14);
   color-scheme: dark;
 }
@@ -30,7 +30,7 @@
   :root:not([data-theme]) {
     --bg: #08080b; --fg: #f3f4f7; --muted: rgba(243,244,247,0.6);
     --tint: rgba(255,255,255,0.055); --tint-strong: rgba(255,255,255,0.12);
-    --border: rgba(255,255,255,0.1); --dot: rgba(255,255,255,0.1); --glow: rgba(120,140,200,0.14);
+    --border: rgba(255,255,255,0.1); --dot: rgba(255,255,255,0.05); --glow: rgba(120,140,200,0.14);
     color-scheme: dark;
   }
 }
@@ -47,18 +47,18 @@ body {
 /* ---- Twinkling dot background (two offset layers) ---- */
 body::before, body::after {
   content: ""; position: fixed; inset: -10%; z-index: -2; pointer-events: none;
-  background-image: radial-gradient(var(--dot) 1px, transparent 1.6px);
+  background-image: radial-gradient(var(--dot) 1px, transparent 1.8px);
 }
 body::before {
-  background-size: 24px 24px;
-  animation: twinkle 4.5s ease-in-out infinite;
+  background-size: 32px 32px;
+  animation: twinkle 6s ease-in-out infinite;
 }
 body::after {
-  background-size: 24px 24px; background-position: 12px 12px;
-  animation: twinkle 4.5s ease-in-out infinite 2.25s;
-  opacity: .5;
+  background-size: 32px 32px; background-position: 16px 16px;
+  animation: twinkle 6s ease-in-out infinite 3s;
+  opacity: .4;
 }
-@keyframes twinkle { 0%, 100% { opacity: .35 } 50% { opacity: .85 } }
+@keyframes twinkle { 0%, 100% { opacity: .25 } 50% { opacity: .55 } }
 
 /* Soft glow accent behind hero areas */
 .aurora {
