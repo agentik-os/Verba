@@ -1,0 +1,54 @@
+VERBA — ACKNOWLEDGEMENTS
+
+Verba is built with the following open-source software and on-device models.
+We are grateful to their authors. Speech recognition runs on your Mac using
+these models; nothing is sent to a server unless you choose a cloud engine.
+
+SPEECH-RECOGNITION MODELS
+- OpenAI Whisper — © 2022 OpenAI. Licensed under the MIT License.
+  https://github.com/openai/whisper
+- NVIDIA Parakeet TDT 0.6B v3 — © NVIDIA Corporation.
+  Licensed under CC-BY-4.0 (https://creativecommons.org/licenses/by/4.0/).
+  Used in Verba as a Core ML conversion (modified from the original).
+  https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3
+
+FRAMEWORKS & CONVERTED MODEL WEIGHTS
+- WhisperKit — © 2024 argmax, inc. Licensed under the MIT License.
+  https://github.com/argmaxinc/WhisperKit
+- Whisper Core ML weights — converted by Argmax (argmaxinc/whisperkit-coreml),
+  derived from OpenAI Whisper (MIT).
+- FluidAudio — © FluidInference. Licensed under the Apache License 2.0.
+  https://github.com/FluidInference/FluidAudio
+- Parakeet Core ML weights — converted by FluidInference
+  (FluidInference/parakeet-tdt-0.6b-v3-coreml), derived from NVIDIA Parakeet
+  TDT v3, under CC-BY-4.0.
+
+SUPPORTING LIBRARIES
+- Sparkle (MIT) — https://sparkle-project.org
+- swift-transformers, swift-jinja (Apache-2.0, Hugging Face)
+- Apple swift-argument-parser, swift-asn1, swift-collections, swift-crypto (Apache-2.0)
+
+--------------------------------------------------------------------------------
+The MIT License (MIT)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+--------------------------------------------------------------------------------
+Apache License 2.0 and CC-BY-4.0 full texts:
+  https://www.apache.org/licenses/LICENSE-2.0
+  https://creativecommons.org/licenses/by/4.0/legalcode

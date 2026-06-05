@@ -13,6 +13,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks"
 cp ".build/release/Verba" "$APP/Contents/MacOS/Verba"
 [ -f AppIcon.icns ] && cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+[ -f ACKNOWLEDGEMENTS.txt ] && cp ACKNOWLEDGEMENTS.txt "$APP/Contents/Resources/ACKNOWLEDGEMENTS.txt"
 
 # Embed Sparkle (silent auto-update). The binary loads @rpath/Sparkle.framework.
 ditto ".build/release/Sparkle.framework" "$APP/Contents/Frameworks/Sparkle.framework"
