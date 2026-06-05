@@ -445,6 +445,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                profileName: result.profileName, engine: result.engine, audioURL: audioURL)
             let dur = self.recordStartedAt.map { Date().timeIntervalSince($0) } ?? 0
             Stats.shared.record(words: wordCount(text), seconds: dur)
+            Leaderboard.submit()   // keep the public leaderboard up to date
             self.flashDone()
         }
 

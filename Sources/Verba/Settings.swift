@@ -302,6 +302,7 @@ final class Settings: ObservableObject {
     @Published var proEmail: String { didSet { d.set(proEmail, forKey: "verba.email") } }
     @Published var referralCode: String { didSet { d.set(referralCode, forKey: "verba.referral") } }
     var referralLink: String { "https://verba.run/?ref=\(referralCode)" }
+    @Published var username: String { didSet { d.set(username, forKey: "verba.username") } }
 
     var activeProfile: Profile {
         profiles.first { $0.id == activeProfileID } ?? profiles.first ?? .coding
@@ -342,7 +343,16 @@ final class Settings: ObservableObject {
         primaryMods = UInt32(d.object(forKey: "primaryMods") as? Int ?? Int(kCtrlOpt))
         isPro = (ProcessInfo.processInfo.environment["VERBA_PRO"] != nil) || d.bool(forKey: "verba.pro")
         proEmail = d.string(forKey: "verba.email") ?? ""
-        // Stable per-install referral code (8 chars) used for the affiliate link.
+        // Public alias for the leaderboard (never the email). Fun default if unset.
+        if let u = d.string(forKey: "verba.username"), !u.isEmpty {
+            username = u
+        } else {
+            let adjectives = ["Swift", "Clever", "Bold", "Lucid", "Rapid", "Sharp", "Calm", "Witty", "Zen", "Turbo"]
+            let nouns = ["Falcon", "Otter", "Comet", "Vox", "Scribe", "Quill", "Echo", "Nova", "Pilot", "Sage"]
+            let name = "\(adjectives.randomElement()!)\(nouns.randomElement()!)\(Int.random(in: 10...99))"
+            username = name
+            d.set(name, forKey: "verba.username")
+        }
         if let saved = d.string(forKey: "verba.referral"), !saved.isEmpty {
             referralCode = saved
         } else {

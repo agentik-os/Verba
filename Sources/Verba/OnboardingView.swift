@@ -177,6 +177,14 @@ struct OnboardingView: View {
                 }
             }
             .padding(16).frame(maxWidth: .infinity, alignment: .leading).glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Your alias").font(.callout.weight(.medium))
+                TextField("Alias", text: $settings.username).textFieldStyle(.roundedBorder)
+                Text("Shown on the leaderboard, never your name or email. We picked one for you, change it if you like.")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading).glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
     }
 

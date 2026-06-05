@@ -45,6 +45,12 @@ struct SettingsView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
+            Section("Public alias (leaderboard)") {
+                TextField("Alias", text: $settings.username)
+                    .frame(width: 240)
+                Text("Shown on the leaderboard instead of your name or email. Change it anytime.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section("Loading line") {
                 Picker("Joke style", selection: $settings.quipTone) {
                     ForEach(QuipTone.allCases) { Text($0.label).tag($0) }

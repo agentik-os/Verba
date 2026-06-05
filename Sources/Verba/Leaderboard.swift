@@ -1,0 +1,53 @@
+import Foundation
+
+/// Public leaderboard entry (no email, ever, only the alias + metrics).
+struct LeaderEntry: Identifiable, Decodable {
+    let uid: String
+    let alias: String
+    let words: Double
+    let wpm: Double
+    let streak: Double
+    var id: String { uid }
+}
+
+/// Talks to the shared Convex leaderboard over its HTTP API.
+enum Leaderboard {
+    private static let base = "https://fortunate-aardvark-443.convex.cloud"
+
+    /// Push this account's current stats (alias + totals). Fire-and-forget.
+    static func submit() {
+        let s = Settings.shared
+        let uid = s.referralCode.isEmpty ? "anon-" + (s.proEmail.isEmpty ? "local" : s.proEmail) : s.referralCode
+        let alias = s.username.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !alias.isEmpty else { return }
+        let args: [String: Any] = [
+            "uid": uid, "alias": alias,
+            "words": Stats.shared.totalWords, "wpm": Stats.shared.avgWPM, "streak": Stats.shared.streak,
+        ]
+        post("mutation", path: "leaderboard:submit", args: args) { _ in }
+    }
+
+    /// Fetch the whole board (alias + metrics only).
+    static func fetch(_ done: @escaping ([LeaderEntry]) -> Void) {
+        post("query", path: "leaderboard:board", args: [:]) { data in
+            guard let data,
+                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  obj["status"] as? String == "success",
+                  let value = obj["value"],
+                  let vd = try? JSONSerialization.data(withJSONObject: value),
+                  let entries = try? JSONDecoder().decode([LeaderEntry].self, from: vd) else {
+                DispatchQueue.main.async { done([]) }; return
+            }
+            DispatchQueue.main.async { done(entries) }
+        }
+    }
+
+    private static func post(_ kind: String, path: String, args: [String: Any], _ done: @escaping (Data?) -> Void) {
+        guard let url = URL(string: "\(base)/api/\(kind)") else { done(nil); return }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "content-type")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: ["path": path, "args": args, "format": "json"])
+        URLSession.shared.dataTask(with: req) { data, _, _ in done(data) }.resume()
+    }
+}
