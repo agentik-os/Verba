@@ -10,6 +10,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var fnHoldTimer: Timer?
     private var fnActionTaken = false
     private var lastFnDown: Date?
+    private var fnPressAt: Date?        // when the current hold started (push-to-talk)
+    private let fnHoldThreshold = 0.5   // hold longer than this → release auto-finishes
     private var processingTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
 
@@ -104,8 +106,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             win.title = "Verba"
             win.titlebarAppearsTransparent = true
             win.titleVisibility = .hidden
-            win.isOpaque = false
-            win.backgroundColor = .clear   // let the SwiftUI material/gradient show, no flat white
+            win.isOpaque = true
+            win.backgroundColor = .windowBackgroundColor   // solid white, no desktop bleed
             let host = NSHostingController(rootView: MainWindow())
             host.sizingOptions = []   // don't let SwiftUI content shrink the window
             win.contentViewController = host
@@ -210,9 +212,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // Fn (globe) as the primary trigger — Wispr-Flow style:
-    //   • single tap (idle) → start recording the ACTIVE mode INSTANTLY
-    //   • double-tap (a 2nd tap right after) → open the mode picker instead
-    //   • tap while recording → stop & send
+    //   • quick tap (idle) → start recording the ACTIVE mode, latched (tap again to send)
+    //   • press & HOLD, then release → push-to-talk: the release sends automatically
+    //   • double-tap (a 2nd quick tap right after) → open the mode picker instead
     private func fnDown() {
         guard Settings.shared.useFnAsPrimary else { return }
         if state == .processing { return }
@@ -221,27 +223,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if state == .recording {
             if quick {                       // 2nd tap right after starting → it was a double-tap
-                lastFnDown = nil
+                lastFnDown = nil; fnPressAt = nil
                 cancelRecording()
                 showModeMenu()
             } else {                         // normal tap after speaking → stop & send
-                lastFnDown = nil
+                lastFnDown = nil; fnPressAt = nil
                 stopAndProcess()
             }
             return
         }
         if overlay.model.menu { dismissMenu(); lastFnDown = nil; return }
 
-        // Idle → record instantly with the active mode.
+        // Idle → record instantly with the active mode. Remember the press so a
+        // sustained hold-then-release can auto-finish (push-to-talk).
         lastFnDown = now
+        fnPressAt = now
         startRecording(forced: Settings.shared.activeProfile)
     }
-    private func fnUp() { /* nothing on release */ }
+
+    private func fnUp() {
+        guard Settings.shared.useFnAsPrimary, state == .recording, let pressed = fnPressAt else { return }
+        fnPressAt = nil
+        // Held long enough to be a deliberate push-to-talk → release sends.
+        // A quick tap leaves it latched (stop on the next tap).
+        if Date().timeIntervalSince(pressed) >= fnHoldThreshold {
+            lastFnDown = nil
+            stopAndProcess()
+        }
+    }
 
     private func fnDigit(_ n: Int) -> Bool {
         guard Settings.shared.useFnAsPrimary, overlay.model.menu else { return false }
         let profiles = Settings.shared.profiles
         guard n >= 1, n <= profiles.count else { return false }
+        Settings.shared.activeProfileID = profiles[n - 1].id   // picking sets the default too
         dismissMenu()
         trigger(forced: profiles[n - 1])
         return true
@@ -284,7 +299,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         overlay.model.paused = false
         overlay.model.profiles = s.profiles
         overlay.model.activeID = s.activeProfileID
-        overlay.model.onStart = { [weak self] p in self?.dismissMenu(); self?.trigger(forced: p) }
+        overlay.model.onStart = { [weak self] p in
+            Settings.shared.activeProfileID = p.id   // picking sets the default too
+            self?.dismissMenu(); self?.trigger(forced: p)
+        }
         FnTap.shared.menuActive = true
         overlay.show()
     }

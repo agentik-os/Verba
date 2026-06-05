@@ -79,7 +79,7 @@ struct OverlayView: View {
                     }
                 }
                 if model.menu {
-                    Text("← → change default · 1–9 or click to dictate")
+                    Text("← → · 1–9 · click — sets your default mode & dictates")
                         .font(.system(size: 9)).foregroundStyle(.secondary)
                 }
             }

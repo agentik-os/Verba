@@ -70,7 +70,7 @@ struct SettingsView: View {
 
                 Toggle("Use the Fn (🌐 globe) key", isOn: $settings.useFnAsPrimary)
                 if settings.useFnAsPrimary {
-                    Text("Fn is your trigger (like Wispr Flow): single tap = record the active mode · double-tap = mode picker (← → change default, 1–9 or click to choose). Verba swallows the globe key so macOS won’t show the keyboard/emoji HUD.")
+                    Text("Fn is your trigger (like Wispr Flow): quick tap = record the active mode (tap again to send) · hold = push-to-talk (release sends) · double-tap = mode picker (← → / 1–9 / click sets your default). Verba swallows the globe key so macOS won’t show the keyboard/emoji HUD.")
                         .font(.caption).foregroundStyle(.secondary)
                 } else {
                     HStack {

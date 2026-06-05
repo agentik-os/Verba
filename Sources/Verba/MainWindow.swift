@@ -34,60 +34,36 @@ struct VerbaMark: View {
     }
 }
 
-/// The main, dockable window: a fully custom sidebar + detail (NO toolbar / top bar).
-/// The sidebar extends to the top of the window; the collapse control lives inside
-/// it (ChatGPT-style). Window is full-size-content + transparent titlebar.
+/// The main, dockable window: a fixed left sidebar (always visible) + detail.
+/// The sidebar is flush to the window edge and the traffic lights sit over its
+/// top. No collapse control. Solid white backgrounds.
 struct MainWindow: View {
     @ObservedObject var settings = Settings.shared
     @State private var selection: NavItem? = .home
-    @State private var sidebarOpen = true
 
-    private let sidebarWidth: CGFloat = 250
+    private let sidebarWidth: CGFloat = 240
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            // Frosted material + a faint gradient — modern, no flat white.
-            VisualEffectView(material: .underWindowBackground).ignoresSafeArea()
-            LinearGradient(
-                colors: [Color.accentColor.opacity(0.06), .clear, Color.accentColor.opacity(0.04)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            ).ignoresSafeArea()
+        HStack(spacing: 0) {
+            sidebar
+                .frame(width: sidebarWidth)
+                .background(Color(nsColor: .windowBackgroundColor).ignoresSafeArea())
 
-            HStack(spacing: 0) {
-                if sidebarOpen {
-                    sidebar
-                        .frame(width: sidebarWidth)
-                        .padding(.top, 40)        // float below the traffic lights
-                        .padding(.leading, 12)
-                        .padding(.bottom, 12)
-                        .padding(.trailing, 8)    // gap → clean separation, no line
-                        .transition(.move(edge: .leading).combined(with: .opacity))
-                }
-                detail(selection ?? .home)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            // When collapsed, a single reopen control floats just right of the traffic lights.
-            if !sidebarOpen {
-                toggle(open: true)
-                    .padding(.leading, 78)
-                    .padding(.top, 11)
-            }
+            Divider().opacity(0.4)
+
+            detail(selection ?? .home)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(nsColor: .textBackgroundColor).ignoresSafeArea())  // crisp white content
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
-        .animation(.easeInOut(duration: 0.22), value: sidebarOpen)
     }
 
-    // MARK: Sidebar (floating rounded card)
+    // MARK: Sidebar (flush, full height; traffic lights overlap its top)
 
     private var sidebar: some View {
         VStack(spacing: 0) {
-            HStack {
-                Spacer()
-                toggle(open: false)
-            }
-            .frame(height: 34)
-            .padding(.horizontal, 10)
+            Color.clear.frame(height: 36)        // leave room for the traffic lights
 
             List(selection: $selection) {
                 Section { row(.home); row(.insights); row(.history) }
@@ -100,17 +76,6 @@ struct MainWindow: View {
 
             sidebarFooter
         }
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: .black.opacity(0.16), radius: 14, x: 0, y: 5)
-    }
-
-    private func toggle(open: Bool) -> some View {
-        Button { withAnimation { sidebarOpen = open } } label: {
-            Image(systemName: "sidebar.leading").font(.system(size: 15))
-                .foregroundStyle(.secondary)
-        }
-        .buttonStyle(.borderless)
-        .help(open ? "Show sidebar" : "Hide sidebar")
     }
 
     private func row(_ item: NavItem) -> some View {
