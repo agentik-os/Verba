@@ -176,7 +176,7 @@ struct SettingsView: View {
             let ok = await EngineManager.install(e)
             await MainActor.run {
                 installing = false
-                installMsg = ok ? "" : "Download failed — check your connection."
+                installMsg = ok ? "" : "Install failed: \(EngineManager.lastInstallError ?? "check your connection.")"
                 if ok { settings.engine = e }
                 engineRefresh += 1
             }

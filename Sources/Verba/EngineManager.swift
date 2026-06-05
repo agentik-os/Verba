@@ -39,6 +39,9 @@ enum EngineManager {
         }
     }
 
+    /// Last install/load failure, surfaced in Settings so the user sees the real cause.
+    static var lastInstallError: String?
+
     /// Download + load the model. Returns true on success.
     static func install(_ engine: TranscriptionEngine) async -> Bool {
         do {
@@ -47,9 +50,12 @@ enum EngineManager {
             case .parakeet: _ = try await ParakeetTranscriber.shared.ensureLoaded()
             case .openAI:   break
             }
+            lastInstallError = nil
             return true
         } catch {
+            let msg = (error as NSError).localizedDescription
             NSLog("Verba: install \(engine.rawValue) failed: \(error)")
+            lastInstallError = msg
             return false
         }
     }

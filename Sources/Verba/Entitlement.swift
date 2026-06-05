@@ -9,7 +9,7 @@ enum Entitlement {
     private static let endpoint = "https://verba.run/api/entitlement"
 
     /// Free plan: words you can dictate per calendar month before Pro is required.
-    static let freeMonthlyWords = 2500
+    static let freeMonthlyWords = 10_000
 
     /// True when a non-Pro user has used up their free monthly words.
     static func freeLimitReached() -> Bool {
