@@ -2,35 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: dark;
-}
+:root { color-scheme: dark; }
+
+html, body { height: 100%; }
 
 body {
   background:
-    radial-gradient(1100px 600px at 15% -10%, rgba(102, 81, 242, 0.30), transparent 60%),
-    radial-gradient(900px 600px at 100% 0%, rgba(51, 179, 217, 0.22), transparent 55%),
-    #07070b;
-  color: #f5f6fa;
+    radial-gradient(900px 520px at 12% -8%, rgba(120, 130, 160, 0.12), transparent 60%),
+    radial-gradient(800px 520px at 100% 0%, rgba(90, 110, 140, 0.10), transparent 55%),
+    #08080b;
+  color: #f3f4f7;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* Liquid-glass surfaces */
 .glass {
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.045);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
-
 .glass-strong {
-  background: rgba(255, 255, 255, 0.09);
-  backdrop-filter: blur(28px) saturate(160%);
-  -webkit-backdrop-filter: blur(28px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(34px) saturate(160%);
+  -webkit-backdrop-filter: blur(34px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
+.hairline { border-color: rgba(255, 255, 255, 0.08); }
 
-.text-gradient {
-  background: linear-gradient(100deg, #8b7bff, #46c8e6);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
+.muted { color: rgba(243, 244, 247, 0.6); }
+.text-balance { text-wrap: balance; }
+
+@keyframes floaty { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
+.float { animation: floaty 6s ease-in-out infinite; }

@@ -1,82 +1,77 @@
 "use client";
 
-import { useState } from "react";
-
-type Ent = { active: boolean; plan: string; currentPeriodEnd?: number };
+import { useEffect, useState } from "react";
+import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/nextjs";
 
 export default function Account() {
-  const [email, setEmail] = useState("");
-  const [ent, setEnt] = useState<Ent | null>(null);
-  const [loading, setLoading] = useState(false);
+  return (
+    <main className="mx-auto max-w-md px-6 py-20">
+      <a href="/" className="text-sm muted hover:text-white">← Verba</a>
+      <div className="mt-6 flex items-center justify-between">
+        <h1 className="text-3xl font-semibold tracking-tight">Account</h1>
+        <SignedIn><UserButton afterSignOutUrl="/" /></SignedIn>
+      </div>
 
-  async function check() {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/entitlement?email=${encodeURIComponent(email)}`);
-      setEnt(await res.json());
-    } finally {
-      setLoading(false);
-    }
-  }
+      <SignedOut>
+        <div className="mt-8 glass-strong rounded-2xl p-6 text-center">
+          <p className="muted">Sign in to manage your subscription and sync your dictations.</p>
+          <SignInButton mode="modal">
+            <button className="mt-5 w-full rounded-xl bg-white px-6 py-3 font-medium text-black">Sign in</button>
+          </SignInButton>
+        </div>
+      </SignedOut>
+
+      <SignedIn><Panel /></SignedIn>
+    </main>
+  );
+}
+
+function Panel() {
+  const { user } = useUser();
+  const [plan, setPlan] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/me").then((r) => r.json()).then((d) => setPlan(d.plan ?? "free")).catch(() => setPlan("free"));
+  }, []);
 
   async function manage() {
     const res = await fetch("/api/portal", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email: user?.primaryEmailAddress?.emailAddress }),
     });
     const data = await res.json();
     if (data.url) window.location.href = data.url;
-    else alert(data.error ?? "No subscription found for that email.");
+    else alert(data.error ?? "No subscription found.");
   }
 
   return (
-    <main className="mx-auto max-w-md px-6 py-24">
-      <a href="/" className="text-sm text-white/50 hover:text-white">← Verba</a>
-      <h1 className="mt-6 text-3xl font-bold">Your subscription</h1>
-      <p className="mt-2 text-white/60">Enter the email you used at checkout.</p>
-
-      <div className="mt-6 glass-strong rounded-2xl p-6">
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@email.com"
-          className="w-full rounded-xl bg-black/30 px-4 py-3 outline-none ring-1 ring-white/10 focus:ring-white/30"
-        />
-        <button
-          onClick={check}
-          disabled={loading || !email}
-          className="mt-3 w-full rounded-xl bg-white px-6 py-3 font-semibold text-black hover:bg-white/90 disabled:opacity-60"
-        >
-          {loading ? "Checking…" : "Check status"}
-        </button>
-
-        {ent && (
-          <div className="mt-5 rounded-xl bg-black/20 p-4 text-sm">
-            {ent.active ? (
-              <>
-                <p className="font-semibold text-teal-brand">Active — {ent.plan}</p>
-                {ent.currentPeriodEnd && (
-                  <p className="mt-1 text-white/60">
-                    Renews {new Date(ent.currentPeriodEnd * 1000).toLocaleDateString()}
-                  </p>
-                )}
-                <button onClick={manage} className="mt-3 w-full rounded-xl glass px-4 py-2 hover:bg-white/10">
-                  Manage subscription
-                </button>
-              </>
-            ) : (
-              <>
-                <p className="text-white/70">No active Verba subscription for this email.</p>
-                <a href="/#pricing" className="mt-3 block w-full rounded-xl bg-white px-4 py-2 text-center font-semibold text-black">
-                  Start free trial
-                </a>
-              </>
-            )}
-          </div>
+    <div className="mt-8 space-y-4">
+      <div className="glass-strong rounded-2xl p-6">
+        <p className="text-sm muted">Signed in as</p>
+        <p className="mt-1 font-medium">{user?.primaryEmailAddress?.emailAddress}</p>
+        <div className="mt-4 flex items-center gap-2">
+          <span className="text-sm muted">Plan</span>
+          <span className={`rounded-full px-2.5 py-1 text-xs ${plan === "pro" ? "bg-white text-black" : "bg-white/10"}`}>
+            {plan === null ? "…" : plan === "pro" ? "Pro" : "Free"}
+          </span>
+        </div>
+        {plan === "pro" ? (
+          <button onClick={manage} className="mt-5 w-full rounded-xl glass px-6 py-3 font-medium hover:bg-white/10">
+            Manage subscription
+          </button>
+        ) : (
+          <a href="/#pricing" className="mt-5 block w-full rounded-xl bg-white px-6 py-3 text-center font-medium text-black">
+            Upgrade to Pro
+          </a>
         )}
       </div>
-    </main>
+      <a
+        href="https://github.com/agentik-os/Verba/releases/latest/download/Verba.dmg"
+        className="block glass rounded-2xl p-5 text-center font-medium hover:bg-white/10"
+      >
+        Download Verba for macOS
+      </a>
+    </div>
   );
 }

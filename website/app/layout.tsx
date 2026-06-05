@@ -1,24 +1,30 @@
 import type { Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Verba — talk, and Claude cleans it up",
+  title: "Verba — speak it, send it clean",
   description:
-    "A macOS menu-bar dictation app. Speak your mind; Verba transcribes you and uses Claude to restructure the mess into a clean prompt or message. Bring your own keys.",
+    "A macOS menu-bar app that turns your speech into clean, well-structured text anywhere on your Mac. Dictate in any app, in your style, hands free.",
   metadataBase: new URL("https://verba.run"),
   openGraph: {
-    title: "Verba — talk, and Claude cleans it up",
+    title: "Verba — speak it, send it clean",
     description:
-      "macOS menu-bar dictation with AI reprompting. OpenAI or on-device transcription + Claude restructuring. BYOK.",
+      "Speak naturally; Verba writes it cleanly into any app on your Mac. Fast, private, hands-free.",
     url: "https://verba.run",
     siteName: "Verba",
+    type: "website",
   },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="font-sans antialiased">{children}</body>
-    </html>
+    <ClerkProvider
+      appearance={{ variables: { colorPrimary: "#ffffff", colorBackground: "#0b0b0f", borderRadius: "0.8rem" } }}
+    >
+      <html lang="en">
+        <body className="font-sans antialiased">{children}</body>
+      </html>
+    </ClerkProvider>
   );
 }
