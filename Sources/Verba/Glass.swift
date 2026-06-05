@@ -1,4 +1,18 @@
 import SwiftUI
+import AppKit
+
+/// A translucent window background (NSVisualEffectView) for that frosted-glass Apple feel.
+struct VisualEffectView: NSViewRepresentable {
+    var material: NSVisualEffectView.Material = .underWindowBackground
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let v = NSVisualEffectView()
+        v.material = material
+        v.blendingMode = .behindWindow
+        v.state = .active
+        return v
+    }
+    func updateNSView(_ v: NSVisualEffectView, context: Context) { v.material = material }
+}
 
 // Liquid Glass shim (mirrors kaset's approach): use Apple's real `.glassEffect`
 // on macOS 26+ (Tahoe), fall back to `.ultraThinMaterial` on macOS 14/15.

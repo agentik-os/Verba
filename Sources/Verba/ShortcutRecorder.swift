@@ -2,22 +2,34 @@ import SwiftUI
 import AppKit
 import Carbon.HIToolbox
 
-/// A small "click to record a shortcut" control. Captures the next key combo and
-/// rebinds the global Carbon hotkey.
+/// "Click to record a shortcut" control. Captures the next key combo and reports
+/// it back via `onCapture(keyCode, carbonModifiers)`. Generic so it drives both
+/// the primary trigger and each profile's dedicated shortcut.
 struct ShortcutRecorder: View {
+    let label: String
+    var onCapture: (UInt32, UInt32) -> Void
+    var onClear: (() -> Void)? = nil
+
     @State private var recording = false
-    @State private var label = HotKey.shared.label
     @State private var monitor: Any?
 
     var body: some View {
-        Button {
-            recording ? cancel() : begin()
-        } label: {
-            Text(recording ? "Press a shortcut…  (Esc to cancel)" : label)
-                .frame(minWidth: 180)
-                .monospacedDigit()
+        HStack(spacing: 6) {
+            Button {
+                recording ? cancel() : begin()
+            } label: {
+                Text(recording ? "Press keys…  (Esc)" : (label.isEmpty ? "None" : label))
+                    .frame(minWidth: 110)
+                    .monospacedDigit()
+            }
+            .glass(interactive: true, in: Capsule())
+
+            if let onClear, !label.isEmpty, !recording {
+                Button { onClear() } label: { Image(systemName: "xmark.circle.fill") }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
+            }
         }
-        .glass(interactive: true, in: Capsule())
         .onDisappear { cancel() }
     }
 
@@ -26,10 +38,9 @@ struct ShortcutRecorder: View {
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             if event.keyCode == UInt16(kVK_Escape) { cancel(); return nil }
             let mods = carbonModifiers(from: event.modifierFlags)
-            // Require at least one non-shift modifier so the combo is globally safe.
+            // Require a non-shift modifier so the global shortcut is safe.
             guard mods & UInt32(cmdKey | optionKey | controlKey) != 0 else { return nil }
-            HotKey.shared.rebind(keyCode: UInt32(event.keyCode), modifiers: mods)
-            label = HotKey.shared.label
+            onCapture(UInt32(event.keyCode), mods)
             cancel()
             return nil
         }

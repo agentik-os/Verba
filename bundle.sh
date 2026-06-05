@@ -35,7 +35,15 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-# Ad-hoc sign for local runs (replace with Developer ID via sign-and-notarize.sh for release).
-codesign --force --deep --sign - "$APP" 2>/dev/null || true
+# Sign with a STABLE identity if available (Developer ID) so macOS keeps the
+# Accessibility/Microphone grant across rebuilds. Falls back to ad-hoc otherwise.
+SIGN_ID="${SIGN_ID:-Developer ID Application: Gareth Moison (975755H4ZC)}"
+if security find-identity -v -p codesigning 2>/dev/null | grep -q "$SIGN_ID"; then
+  codesign --force --deep --sign "$SIGN_ID" "$APP"
+  echo "▸ Signed with: $SIGN_ID"
+else
+  codesign --force --deep --sign - "$APP" 2>/dev/null || true
+  echo "▸ Ad-hoc signed (set SIGN_ID for a stable signature)"
+fi
 
 echo "✅ Built $APP (v$VERSION)"

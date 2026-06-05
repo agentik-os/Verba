@@ -11,6 +11,7 @@ struct PipelineResult {
 enum Pipeline {
     static func run(audioURL: URL,
                     frontmostBundleID: String?,
+                    forcedProfile: Profile?,
                     status: @escaping (String) -> Void) async throws -> PipelineResult {
         let s = Settings.shared
 
@@ -22,8 +23,8 @@ enum Pipeline {
             : OpenAITranscriber()
         let original = try await transcriber.transcribe(fileURL: audioURL, language: lang)
 
-        // 2. Pick a profile (auto by frontmost app, or the active one) and reprompt.
-        let profile = s.profile(forBundleID: frontmostBundleID)
+        // 2. A dedicated-shortcut profile wins; else auto-detect / active profile.
+        let profile = forcedProfile ?? s.profile(forBundleID: frontmostBundleID)
         var reprompted = original
         if s.repromptEnabled {
             status("Restructuring with Claude…")

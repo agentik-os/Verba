@@ -5,40 +5,62 @@ final class OverlayModel: ObservableObject {
     @Published var level: Float = 0      // 0...1 mic level
     @Published var title: String = ""    // "Listening…" / "Transcribing…" / etc.
     @Published var recording = false
+    @Published var profiles: [Profile] = []
+    @Published var selectedID: UUID?
+    var onSelect: ((Profile) -> Void)?   // user switched mode mid-recording
 }
 
-/// The floating glass pill shown while recording / processing.
+/// The floating glass pill shown while recording / processing, with a live mode
+/// switcher so you can pick the reprompting style on the fly.
 struct OverlayView: View {
     @ObservedObject var model: OverlayModel
 
     var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
                 Circle()
                     .fill(model.recording ? Color.red : Color.accentColor)
                     .frame(width: 10, height: 10)
                     .opacity(model.recording ? 0.6 + Double(model.level) * 0.4 : 1)
+                if model.recording {
+                    Waveform(level: model.level).frame(width: 72, height: 22)
+                } else {
+                    ProgressView().controlSize(.small).scaleEffect(0.8)
+                }
+                Text(model.title)
+                    .font(.system(size: 13, weight: .medium))
+                    .lineLimit(1)
             }
-            if model.recording {
-                Waveform(level: model.level)
-                    .frame(width: 72, height: 22)
-            } else {
-                ProgressView().controlSize(.small).scaleEffect(0.8)
+
+            if model.recording && !model.profiles.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(model.profiles) { p in
+                        let selected = p.id == model.selectedID
+                        Button {
+                            model.selectedID = p.id
+                            model.onSelect?(p)
+                        } label: {
+                            Text(p.name)
+                                .font(.system(size: 11, weight: selected ? .semibold : .regular))
+                                .padding(.horizontal, 10).padding(.vertical, 4)
+                                .background(
+                                    Capsule().fill(selected ? Color.accentColor.opacity(0.9) : Color.white.opacity(0.08))
+                                )
+                                .foregroundStyle(selected ? Color.white : Color.primary.opacity(0.8))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
-            Text(model.title)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.primary)
-                .lineLimit(1)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .glass(in: Capsule())
-        .overlay(Capsule().strokeBorder(.white.opacity(0.12)))
+        .glass(in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(.white.opacity(0.12)))
         .fixedSize()
     }
 }
 
-/// Simple animated level bars.
 private struct Waveform: View {
     let level: Float
     private let bars = 9
@@ -47,9 +69,7 @@ private struct Waveform: View {
             ForEach(0..<bars, id: \.self) { i in
                 let phase = Float(i) / Float(bars)
                 let h = max(0.12, min(1, level * (0.5 + 0.9 * sinf((phase + level) * .pi))))
-                Capsule()
-                    .fill(.primary.opacity(0.85))
-                    .frame(width: 4, height: CGFloat(h) * 22)
+                Capsule().fill(.primary.opacity(0.85)).frame(width: 4, height: CGFloat(h) * 22)
             }
         }
         .animation(.easeOut(duration: 0.08), value: level)
@@ -64,7 +84,7 @@ final class OverlayController {
 
     func show() {
         if panel == nil {
-            let p = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 220, height: 48),
+            let p = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 260, height: 80),
                             styleMask: [.borderless, .nonactivatingPanel],
                             backing: .buffered, defer: false)
             p.isFloatingPanel = true
@@ -73,7 +93,7 @@ final class OverlayController {
             p.backgroundColor = .clear
             p.isOpaque = false
             p.hasShadow = true
-            p.ignoresMouseEvents = true
+            p.ignoresMouseEvents = false   // chips must be clickable
             p.contentViewController = NSHostingController(rootView: OverlayView(model: model))
             panel = p
         }
@@ -86,11 +106,9 @@ final class OverlayController {
     private func reposition() {
         guard let panel, let screen = NSScreen.main else { return }
         panel.layoutIfNeeded()
-        let size = panel.contentView?.fittingSize ?? NSSize(width: 220, height: 48)
+        let size = panel.contentView?.fittingSize ?? NSSize(width: 260, height: 80)
         panel.setContentSize(size)
         let vf = screen.visibleFrame
-        let x = vf.midX - size.width / 2
-        let y = vf.minY + 90   // floats above the Dock area
-        panel.setFrameOrigin(NSPoint(x: x, y: y))
+        panel.setFrameOrigin(NSPoint(x: vf.midX - size.width / 2, y: vf.minY + 90))
     }
 }

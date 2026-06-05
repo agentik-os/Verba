@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var state: State = .idle { didSet { refreshUI() } }
     private var statusLine = ""
     private var capturedBundleID: String?
+    private var forcedProfile: Profile?     // set when a profile-specific shortcut started the dictation
 
     private var settingsWC: NSWindowController?
     private var historyWC: NSWindowController?
@@ -26,17 +27,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         refreshUI()
 
-        HotKey.shared.onPress = { [weak self] in self?.toggleDictation() }
         FnMonitor.shared.onDown = { [weak self] in self?.fnDown() }
         FnMonitor.shared.onUp = { [weak self] in self?.fnUp() }
-        applyTriggerMode()
+        applyTriggers()
 
-        // Re-apply the trigger whenever the user changes it in Settings.
-        Settings.shared.$triggerMode
-            .dropFirst()
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in self?.applyTriggerMode() }
-            .store(in: &cancellables)
+        // Re-apply triggers when the mode, primary shortcut, or profiles change.
+        Publishers.Merge4(
+            Settings.shared.$triggerMode.map { _ in () },
+            Settings.shared.$primaryKeyCode.map { _ in () },
+            Settings.shared.$primaryMods.map { _ in () },
+            Settings.shared.$profiles.map { _ in () }
+        )
+        .dropFirst()
+        .receive(on: RunLoop.main)
+        .sink { [weak self] in self?.applyTriggers() }
+        .store(in: &cancellables)
 
         LocalTranscriber.shared.onStatus = { [weak self] s in
             DispatchQueue.main.async { guard !s.isEmpty else { return }; self?.statusLine = s; self?.overlay.model.title = s; self?.refreshUI() }
@@ -75,30 +80,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.mainMenu = main
     }
 
-    private func applyTriggerMode() {
-        switch Settings.shared.triggerMode {
+    private func applyTriggers() {
+        HotKeys.shared.unregisterAll()
+        let s = Settings.shared
+        // Primary trigger (active/auto-detected profile).
+        switch s.triggerMode {
         case .hotkey:
             FnMonitor.shared.stop()
-            HotKey.shared.register()
+            HotKeys.shared.register(id: 1, keyCode: s.primaryKeyCode, modifiers: s.primaryMods) { [weak self] in
+                self?.trigger(forced: nil)
+            }
         case .fnHold, .fnToggle:
-            HotKey.shared.unregister()
             FnMonitor.shared.start()
+        }
+        // Per-profile dedicated shortcuts — work no matter the primary mode.
+        for (i, p) in s.profiles.enumerated() {
+            guard let code = p.hotkeyCode, let mods = p.hotkeyMods else { continue }
+            let pid = p.id
+            HotKeys.shared.register(id: UInt32(100 + i), keyCode: code, modifiers: mods) { [weak self] in
+                self?.trigger(forced: Settings.shared.profiles.first { $0.id == pid })
+            }
         }
     }
 
     // MARK: - Trigger handlers
 
-    private func toggleDictation() {
+    private func trigger(forced: Profile?) {
         switch state {
-        case .idle: startRecording()
+        case .idle: startRecording(forced: forced)
         case .recording: stopAndProcess()
         case .processing: break
         }
     }
     private func fnDown() {
         switch Settings.shared.triggerMode {
-        case .fnHold: if state == .idle { startRecording() }
-        case .fnToggle: toggleDictation()
+        case .fnHold: if state == .idle { startRecording(forced: nil) }
+        case .fnToggle: trigger(forced: nil)
         case .hotkey: break
         }
     }
@@ -108,16 +125,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Dictation flow
 
-    private func startRecording() {
+    private func startRecording(forced: Profile?) {
         recorder.requestPermission { [weak self] ok in
             guard let self else { return }
             guard ok else { self.notify("Microphone access denied", "Enable it in System Settings ▸ Privacy & Security ▸ Microphone."); return }
+            self.forcedProfile = forced
             self.capturedBundleID = Output.frontmostBundleID()
             guard self.recorder.start() else { self.notify("Couldn't start recording", ""); return }
             self.state = .recording
             SoundFX.start()
+
+            // Populate the live mode switcher in the overlay.
+            let s = Settings.shared
+            let initial = forced ?? s.profile(forBundleID: self.capturedBundleID)
+            self.overlay.model.profiles = s.repromptEnabled ? s.profiles : []
+            self.overlay.model.selectedID = initial.id
+            self.overlay.model.onSelect = { [weak self] p in
+                self?.forcedProfile = p
+                self?.overlay.model.title = "Listening · \(p.name)"
+            }
             self.overlay.model.recording = true
-            self.overlay.model.title = "Listening…"
+            self.overlay.model.title = "Listening · \(initial.name)"
             self.overlay.model.level = 0
             self.overlay.show()
             self.levelTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
@@ -137,9 +165,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshUI()
 
         let bundleID = capturedBundleID
+        let forced = forcedProfile
+        forcedProfile = nil
         Task {
             do {
-                let result = try await Pipeline.run(audioURL: url, frontmostBundleID: bundleID) { [weak self] s in
+                let result = try await Pipeline.run(audioURL: url, frontmostBundleID: bundleID, forcedProfile: forced) { [weak self] s in
                     DispatchQueue.main.async { self?.statusLine = s; self?.overlay.model.title = s; self?.refreshUI() }
                 }
                 await MainActor.run { self.finish(result: result, audioURL: url) }
@@ -206,7 +236,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .recording: title = "Stop & process"
         case .processing: title = statusLine.isEmpty ? "Working…" : statusLine
         }
-        let trigger = Settings.shared.triggerMode == .hotkey ? HotKey.shared.label : Settings.shared.triggerMode.label
+        let trigger = Settings.shared.triggerMode == .hotkey
+            ? shortcutLabel(keyCode: Settings.shared.primaryKeyCode, modifiers: Settings.shared.primaryMods)
+            : Settings.shared.triggerMode.label
         let item = NSMenuItem(title: "\(title)  (\(trigger))", action: #selector(menuToggle), keyEquivalent: "")
         item.target = self
         item.isEnabled = state != .processing
@@ -240,7 +272,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(i)
     }
 
-    @objc private func menuToggle() { toggleDictation() }
+    @objc private func menuToggle() { trigger(forced: nil) }
     @objc private func enableAccessibility() { Output.promptAccessibility() }
     @objc private func quit() { NSApp.terminate(nil) }
 
@@ -260,7 +292,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let view = OnboardingView { [weak self] in
             self?.onboardingWC?.close(); self?.onboardingWC = nil
         }
-        onboardingWC = makeWindow(title: "Welcome to Verba", view: view, size: NSSize(width: 560, height: 640))
+        onboardingWC = makeWindow(title: "Welcome to Verba", view: view, size: NSSize(width: 560, height: 660), glass: true)
         present(onboardingWC)
     }
 
@@ -271,24 +303,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let view = ReviewView(original: original, text: text,
                               onConfirm: { t in onConfirm(t); close() },
                               onCancel: { close() })
-        let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 520, height: 380),
-                           styleMask: [.titled, .closable], backing: .buffered, defer: false)
-        win.title = "Review dictation"
-        win.contentViewController = NSHostingController(rootView: view)
-        win.center()
-        win.isReleasedWhenClosed = false
-        reviewWindow = win
-        NSApp.activate(ignoringOtherApps: true)
-        win.makeKeyAndOrderFront(nil)
+        let wc = makeWindow(title: "Review dictation", view: view, size: NSSize(width: 520, height: 420), glass: true, resizable: false)
+        reviewWindow = wc.window
+        present(wc)
     }
 
-    private func makeWindow<V: View>(title: String, view: V, size: NSSize) -> NSWindowController {
-        let win = NSWindow(contentRect: NSRect(origin: .zero, size: size),
-                           styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
+    private func makeWindow<V: View>(title: String, view: V, size: NSSize,
+                                     glass: Bool = false, resizable: Bool = true) -> NSWindowController {
+        var style: NSWindow.StyleMask = [.titled, .closable]
+        if resizable { style.insert(.resizable) }
+        if glass { style.insert(.fullSizeContentView) }
+        let win = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: style, backing: .buffered, defer: false)
         win.title = title
-        win.contentViewController = NSHostingController(rootView: view)
-        win.center()
+        win.titlebarAppearsTransparent = true   // unified, less heavy chrome
         win.isReleasedWhenClosed = false
+        if glass {
+            // Frosted-glass panel: material fills the whole window; SwiftUI content
+            // still respects the titlebar safe area automatically.
+            win.titleVisibility = .hidden
+            win.isOpaque = false
+            win.backgroundColor = .clear
+            win.isMovableByWindowBackground = true
+            let root = view.background(VisualEffectView().ignoresSafeArea())
+            win.contentViewController = NSHostingController(rootView: root)
+        } else {
+            win.contentViewController = NSHostingController(rootView: view)
+        }
+        win.center()
         return NSWindowController(window: win)
     }
 

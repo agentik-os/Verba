@@ -24,8 +24,14 @@ struct OnboardingView: View {
                     .textFieldStyle(.roundedBorder)
                 }
 
-                step("2", "How to talk", "Press your shortcut (default ⌃⌥Space) or switch to the Fn key in Settings. Press to start, again to stop.") {
-                    HStack { ShortcutRecorder(); Spacer() }
+                step("2", "How to talk", "Press your shortcut (default ⌃⌥Space) or switch to the Fn key in Settings. Press to start, again to stop. Each profile (vibe-coding, message, ideation) also has its own ⌃⌥1/2/3 shortcut.") {
+                    HStack {
+                        ShortcutRecorder(
+                            label: shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods),
+                            onCapture: { code, mods in settings.primaryKeyCode = code; settings.primaryMods = mods }
+                        )
+                        Spacer()
+                    }
                 }
 
                 step("3", "Allow auto-paste", "Grant Accessibility so Verba can paste straight into the active field. You can skip and use the clipboard instead.") {
