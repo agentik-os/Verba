@@ -266,6 +266,7 @@ struct OnboardingView: View {
     private var pauseAndFormatting: some View {
         VStack(alignment: .leading, spacing: 16) {
             title("Pause without lifting a finger", "Start a recording with Fn, then press Control to try it.")
+            actionRow("hand.tap", "Single tap", "Tap Fn once to start recording your default mode. Tap again to send.", done: coach.singleFn)
             HStack(spacing: 12) {
                 Text(coach.control ? "✓" : "⌃").font(.system(size: 24, weight: .semibold))
                     .frame(width: 46, height: 46)
