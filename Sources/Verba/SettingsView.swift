@@ -170,19 +170,41 @@ struct SettingsView: View {
                     .help("Restore the built-in modes")
             }
 
-            if let idx = settings.profiles.firstIndex(where: { $0.id == selectedProfileID }) {
-                profileEditor(idx)
+            if let id = selectedProfileID, settings.profiles.contains(where: { $0.id == id }) {
+                profileEditor(id: id)
             } else {
-                Text("Select a profile").foregroundStyle(.secondary).frame(maxWidth: .infinity)
+                Text("Select a mode").foregroundStyle(.secondary).frame(maxWidth: .infinity)
             }
         }
     }
 
-    private func profileEditor(_ idx: Int) -> some View {
-        Form {
-            TextField("Name", text: $settings.profiles[idx].name)
+    /// Index of a profile by id, resolved fresh on every binding access so a
+    /// mutating array (delete / reset / reseed) can never crash on a stale index.
+    private func index(of id: UUID) -> Int? { settings.profiles.firstIndex { $0.id == id } }
+
+    private func profileEditor(id: UUID) -> some View {
+        let nameB = Binding(
+            get: { settings.profiles.first { $0.id == id }?.name ?? "" },
+            set: { v in if let i = index(of: id) { settings.profiles[i].name = v } })
+        let promptB = Binding(
+            get: { settings.profiles.first { $0.id == id }?.systemPrompt ?? "" },
+            set: { v in if let i = index(of: id) { settings.profiles[i].systemPrompt = v } })
+        let bundlesB = Binding(
+            get: { settings.profiles.first { $0.id == id }?.matchBundleIDs.joined(separator: ", ") ?? "" },
+            set: { v in if let i = index(of: id) {
+                settings.profiles[i].matchBundleIDs = v.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+            } })
+        let p = settings.profiles.first { $0.id == id }
+        let isBuiltin = p?.builtin ?? true
+        let shortcut: String = {
+            guard let p, let c = p.hotkeyCode, let m = p.hotkeyMods else { return "" }
+            return shortcutLabel(keyCode: c, modifiers: m)
+        }()
+
+        return Form {
+            TextField("Name", text: nameB)
             Section {
-                TextEditor(text: $settings.profiles[idx].systemPrompt)
+                TextEditor(text: promptB)
                     .font(.system(.body, design: .monospaced))
                     .frame(minHeight: 160)
                     .disabled(!settings.isPro)
@@ -197,43 +219,38 @@ struct SettingsView: View {
                 }
             } footer: {
                 if !settings.isPro {
-                    Text("Editing modes is a Pro feature. Free includes the built-in Coding / Pro / Perso modes as-is.")
+                    Text("Editing modes is a Pro feature. Free includes the built-in modes as-is.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
             Section("Dedicated shortcut") {
                 HStack {
-                    Text("Dictate straight into this profile")
+                    Text("Dictate straight into this mode")
                     Spacer()
                     ShortcutRecorder(
-                        label: profileShortcutLabel(idx),
+                        label: shortcut,
                         onCapture: { code, mods in
-                            settings.profiles[idx].hotkeyCode = code
-                            settings.profiles[idx].hotkeyMods = mods
+                            if let i = index(of: id) { settings.profiles[i].hotkeyCode = code; settings.profiles[i].hotkeyMods = mods }
                         },
                         onClear: {
-                            settings.profiles[idx].hotkeyCode = nil
-                            settings.profiles[idx].hotkeyMods = nil
+                            if let i = index(of: id) { settings.profiles[i].hotkeyCode = nil; settings.profiles[i].hotkeyMods = nil }
                         }
                     )
                 }
             }
             Section("Auto-match app bundle IDs (comma-separated)") {
-                TextField("com.apple.dt.Xcode, …", text: Binding(
-                    get: { settings.profiles[idx].matchBundleIDs.joined(separator: ", ") },
-                    set: { settings.profiles[idx].matchBundleIDs =
-                        $0.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty } }
-                ))
+                TextField("com.apple.dt.Xcode, …", text: bundlesB)
             }
             HStack {
-                Button("Make active") { settings.activeProfileID = settings.profiles[idx].id }
+                Button("Make active") { settings.activeProfileID = id }
                 Spacer()
-                if !settings.profiles[idx].builtin {
+                if !isBuiltin {
                     Button("Delete", role: .destructive) {
-                        let id = settings.profiles[idx].id
+                        selectedProfileID = nil   // detach the editor before mutating the array
                         settings.profiles.removeAll { $0.id == id }
-                        if settings.activeProfileID == id { settings.activeProfileID = settings.profiles.first!.id }
-                        selectedProfileID = settings.activeProfileID
+                        if settings.activeProfileID == id {
+                            settings.activeProfileID = settings.profiles.first?.id ?? id
+                        }
                     }
                 }
             }
@@ -242,13 +259,8 @@ struct SettingsView: View {
         .frame(minWidth: 320)
     }
 
-    private func profileShortcutLabel(_ idx: Int) -> String {
-        guard let c = settings.profiles[idx].hotkeyCode, let m = settings.profiles[idx].hotkeyMods else { return "" }
-        return shortcutLabel(keyCode: c, modifiers: m)
-    }
-
     private func addProfile() {
-        let p = Profile(name: "New profile", systemPrompt: "You clean and restructure the transcript. Output only the result.")
+        let p = Profile(name: "New mode", systemPrompt: Profile.custom.systemPrompt)
         settings.profiles.append(p)
         selectedProfileID = p.id
     }
