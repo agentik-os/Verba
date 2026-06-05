@@ -68,7 +68,7 @@ struct MainWindow: View {
                     .padding(.top, 11)
             }
         }
-        .frame(minWidth: 880, minHeight: 600)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
         .animation(.easeInOut(duration: 0.22), value: sidebarOpen)
     }

@@ -89,9 +89,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             win.title = "Verba"
             win.titlebarAppearsTransparent = true
             win.titleVisibility = .hidden
-            win.contentViewController = NSHostingController(rootView: MainWindow())
+            let host = NSHostingController(rootView: MainWindow())
+            host.sizingOptions = []   // don't let SwiftUI content shrink the window
+            win.contentViewController = host
             win.isReleasedWhenClosed = false
-            win.contentMinSize = NSSize(width: 900, height: 560)   // stop the layout squishing when resized
+            win.contentMinSize = NSSize(width: 900, height: 560)
             win.setContentSize(NSSize(width: 1040, height: 680))
             win.center()
             mainWC = NSWindowController(window: win)
@@ -423,10 +425,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             win.backgroundColor = .clear
             win.isMovableByWindowBackground = true
             let root = view.background(VisualEffectView().ignoresSafeArea())
-            win.contentViewController = NSHostingController(rootView: root)
+            let host = NSHostingController(rootView: root)
+            host.sizingOptions = []
+            win.contentViewController = host
         } else {
-            win.contentViewController = NSHostingController(rootView: view)
+            let host = NSHostingController(rootView: view)
+            host.sizingOptions = []
+            win.contentViewController = host
         }
+        win.contentMinSize = NSSize(width: min(size.width, 480), height: min(size.height, 360))
+        win.setContentSize(size)
         win.center()
         return NSWindowController(window: win)
     }
