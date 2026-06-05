@@ -12,6 +12,7 @@ struct OnboardingView: View {
     @State private var step = 0
     @StateObject private var dictation = OnboardingDictation()
     @State private var tryMode = "Polish"
+    @State private var customPrompt = "Convert my text into binary code (just 0s and 1s)."
     @State private var anthropicKey = Keychain.anthropicKey ?? ""
     @State private var copied = false
     @State private var signingIn = false
@@ -308,12 +309,18 @@ struct OnboardingView: View {
         let left = dictation.remaining(key)
         return VStack(alignment: .leading, spacing: 10) {
             Picker("", selection: $tryMode) {
-                ForEach(["Polish", "Casual", "Intent", "Coding"], id: \.self) { Text($0).tag($0) }
+                ForEach(["Flow", "Polish", "Casual", "Intent", "Coding", "Custom"], id: \.self) { Text($0).tag($0) }
             }.pickerStyle(.segmented).labelsHidden()
+
+            if tryMode == "Custom" {
+                TextField("Your instruction…", text: $customPrompt, axis: .vertical)
+                    .textFieldStyle(.plain).lineLimit(1...3)
+                    .padding(10).background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
 
             HStack {
                 Button {
-                    if let p = settings.profiles.first(where: { $0.name == key }) { dictation.toggle(modeKey: key, profile: p) }
+                    if let p = profileForTry(key) { dictation.toggle(modeKey: key, profile: p) }
                 } label: {
                     Label(dictation.state == .recording ? "Stop & transcribe"
                           : dictation.state == .working ? "Working…" : "Record & try",
@@ -340,6 +347,17 @@ struct OnboardingView: View {
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
         .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    /// Resolve the profile for a try-block mode. Custom builds an ad-hoc profile from the
+    /// user's typed instruction; Flow and the built-ins come from settings.
+    private func profileForTry(_ key: String) -> Profile? {
+        if key == "Custom" {
+            let p = customPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !p.isEmpty else { return nil }
+            return Profile(name: "Custom", systemPrompt: p + "\n\nKeep the speaker's language. Output ONLY the result.")
+        }
+        return settings.profiles.first { $0.name == key }
     }
 
     // MARK: actions
