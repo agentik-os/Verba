@@ -80,10 +80,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Clear any stale saved frame so the window always opens centered.
             UserDefaults.standard.removeObject(forKey: "NSWindow Frame VerbaMain")
             let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1040, height: 680),
-                               styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
+                               styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+                               backing: .buffered, defer: false)
             win.title = "Verba"
             win.titlebarAppearsTransparent = true
-            win.toolbarStyle = .unified
+            win.titleVisibility = .hidden
             win.contentViewController = NSHostingController(rootView: MainWindow())
             win.isReleasedWhenClosed = false
             win.contentMinSize = NSSize(width: 900, height: 560)   // stop the layout squishing when resized

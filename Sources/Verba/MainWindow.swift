@@ -34,32 +34,74 @@ struct VerbaMark: View {
     }
 }
 
-/// The main, dockable window: kaset-style sidebar + section detail.
+/// The main, dockable window: a fully custom sidebar + detail (NO toolbar / top bar).
+/// The sidebar extends to the top of the window; the collapse control lives inside
+/// it (ChatGPT-style). Window is full-size-content + transparent titlebar.
 struct MainWindow: View {
     @ObservedObject var settings = Settings.shared
     @State private var selection: NavItem? = .home
+    @State private var sidebarOpen = true
+
+    private let sidebarWidth: CGFloat = 250
 
     var body: some View {
-        NavigationSplitView {
-            List(selection: $selection) {
-                Section {
-                    row(.home); row(.insights); row(.history)
+        ZStack(alignment: .topLeading) {
+            HStack(spacing: 0) {
+                if sidebarOpen {
+                    sidebar
+                        .frame(width: sidebarWidth)
+                        .transition(.move(edge: .leading))
                 }
+                detail(selection ?? .home)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(nsColor: .windowBackgroundColor))
+            }
+            // When collapsed, a single reopen control floats just right of the traffic lights.
+            if !sidebarOpen {
+                toggle(open: true)
+                    .padding(.leading, 78)
+                    .padding(.top, 9)
+            }
+        }
+        .frame(minWidth: 880, minHeight: 600)
+        .ignoresSafeArea()
+        .animation(.easeInOut(duration: 0.2), value: sidebarOpen)
+    }
+
+    // MARK: Sidebar
+
+    private var sidebar: some View {
+        VStack(spacing: 0) {
+            // Top region: leave room for the traffic lights, collapse control on the right.
+            HStack(spacing: 0) {
+                Spacer(minLength: 70)   // traffic-light clearance
+                Spacer()
+                toggle(open: false)
+            }
+            .frame(height: 40)
+            .padding(.horizontal, 12)
+
+            List(selection: $selection) {
+                Section { row(.home); row(.insights); row(.history) }
                 Section("Library") {
                     row(.modes); row(.dictionary); row(.snippets); row(.style); row(.transforms); row(.scratchpad)
                 }
             }
             .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(min: 210, ideal: 230, max: 290)
-            .safeAreaInset(edge: .bottom) { sidebarFooter }
-        } detail: {
-            detail(selection ?? .home)
-                .frame(minWidth: 560, maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(nsColor: .windowBackgroundColor))
+            .scrollContentBackground(.hidden)
+
+            sidebarFooter
         }
-        .frame(minWidth: 940, minHeight: 620)
-        // The system sidebar toggle sits top-left next to the traffic lights (ChatGPT-style).
-        // No custom detail toolbar → no extra top bar / divider.
+        .background(.ultraThinMaterial)
+    }
+
+    private func toggle(open: Bool) -> some View {
+        Button { withAnimation { sidebarOpen = open } } label: {
+            Image(systemName: "sidebar.leading").font(.system(size: 15))
+                .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.borderless)
+        .help(open ? "Show sidebar" : "Hide sidebar")
     }
 
     private func row(_ item: NavItem) -> some View {
@@ -79,7 +121,7 @@ struct MainWindow: View {
             Button { selection = .settings } label: { Image(systemName: "gearshape") }
                 .buttonStyle(.borderless).help("Settings")
         }
-        .padding(.horizontal, 14).padding(.vertical, 9)
+        .padding(.horizontal, 14).padding(.vertical, 10)
     }
 
     @ViewBuilder

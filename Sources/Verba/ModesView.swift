@@ -17,30 +17,33 @@ struct ModesView: View {
                                 .foregroundStyle(.secondary).frame(width: 16)
                             Text(p.name).lineLimit(1)
                             Spacer(minLength: 6)
-                            if let c = p.hotkeyCode, let m = p.hotkeyMods {
-                                Text(shortcutLabel(keyCode: c, modifiers: m))
-                                    .font(.caption2).foregroundStyle(.tertiary)
-                            }
                             if p.id == settings.activeProfileID {
                                 Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint).font(.caption)
                             }
+                            if let c = p.hotkeyCode, let m = p.hotkeyMods {
+                                keycap(shortcutLabel(keyCode: c, modifiers: m))
+                            }
                         }
-                        .padding(.vertical, 2)
+                        .padding(.vertical, 3)
                         .tag(p.id)
                     }
+                    .onMove { from, to in settings.profiles.move(fromOffsets: from, toOffset: to) }
                 }
                 .listStyle(.inset)
-                HStack(spacing: 12) {
-                    Button { addProfile() } label: { Image(systemName: "plus") }
+                HStack(spacing: 14) {
+                    Button { addProfile() } label: { Label("New", systemImage: "plus") }
                         .disabled(!settings.isPro)
                         .help(settings.isPro ? "New mode" : "Custom modes are a Pro feature")
-                    Button { settings.resetProfilesToDefaults(); selectedID = settings.activeProfileID } label: {
-                        Image(systemName: "arrow.counterclockwise")
-                    }.help("Restore the built-in modes")
                     Spacer()
+                    Button { settings.resetProfilesToDefaults(); selectedID = settings.activeProfileID } label: {
+                        Label("Reset defaults", systemImage: "arrow.counterclockwise")
+                    }.help("Restore Coding / Polish / Casual / Intent / Custom / Flow")
                 }
                 .buttonStyle(.borderless)
-                .padding(.horizontal, 14).padding(.vertical, 8)
+                .font(.callout)
+                .padding(.horizontal, 14).padding(.vertical, 9)
+                Text("Drag to reorder").font(.caption2).foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity).padding(.bottom, 6)
             }
             .frame(width: 232)
 
@@ -177,6 +180,14 @@ struct ModesView: View {
             }
             content()
         }
+    }
+
+    private func keycap(_ s: String) -> some View {
+        Text(s)
+            .font(.system(size: 11, weight: .semibold, design: .rounded))
+            .padding(.horizontal, 6).padding(.vertical, 2)
+            .background(.quaternary, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+            .foregroundStyle(.secondary)
     }
 
     private func addProfile() {
