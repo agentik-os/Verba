@@ -30,6 +30,7 @@ struct ModesView: View {
                     .onMove { from, to in settings.profiles.move(fromOffsets: from, toOffset: to) }
                 }
                 .listStyle(.inset)
+                .scrollContentBackground(.hidden)
                 HStack(spacing: 14) {
                     Button { addProfile() } label: { Label("New", systemImage: "plus") }
                         .disabled(!settings.isPro)
@@ -42,7 +43,7 @@ struct ModesView: View {
                 .buttonStyle(.borderless)
                 .font(.callout)
                 .padding(.horizontal, 14).padding(.vertical, 9)
-                Text("Drag to reorder · the active mode (✓) is the default for a quick double-tap of Fn")
+                Text("Drag to reorder · the active mode (✓) is what a single Fn tap dictates with")
                     .font(.caption2).foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity).padding(.horizontal, 10).padding(.bottom, 6)
@@ -59,7 +60,6 @@ struct ModesView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
         .onAppear { if selectedID == nil { selectedID = settings.activeProfileID } }
     }
 

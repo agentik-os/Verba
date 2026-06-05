@@ -104,6 +104,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             win.title = "Verba"
             win.titlebarAppearsTransparent = true
             win.titleVisibility = .hidden
+            win.isOpaque = false
+            win.backgroundColor = .clear   // let the SwiftUI material/gradient show, no flat white
             let host = NSHostingController(rootView: MainWindow())
             host.sizingOptions = []   // don't let SwiftUI content shrink the window
             win.contentViewController = host
@@ -208,30 +210,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // Fn (globe) as the primary trigger — Wispr-Flow style:
-    //   • single tap  → record straight away with the ACTIVE (default) mode (fast)
-    //   • double-tap  → open the mode picker (← → change the default, 1–9 / click choose)
-    //   • Fn while recording → stop & send
+    //   • single tap (idle) → start recording the ACTIVE mode INSTANTLY
+    //   • double-tap (a 2nd tap right after) → open the mode picker instead
+    //   • tap while recording → stop & send
     private func fnDown() {
         guard Settings.shared.useFnAsPrimary else { return }
-        if state == .recording { stopAndProcess(); lastFnDown = nil; fnHoldTimer?.invalidate(); return }
         if state == .processing { return }
-
         let now = Date()
-        if let last = lastFnDown, now.timeIntervalSince(last) < 0.35 {
-            // DOUBLE TAP → open the picker
-            lastFnDown = nil
-            fnHoldTimer?.invalidate(); fnHoldTimer = nil
-            showModeMenu()
+        let quick = lastFnDown.map { now.timeIntervalSince($0) < 0.35 } ?? false
+
+        if state == .recording {
+            if quick {                       // 2nd tap right after starting → it was a double-tap
+                lastFnDown = nil
+                cancelRecording()
+                showModeMenu()
+            } else {                         // normal tap after speaking → stop & send
+                lastFnDown = nil
+                stopAndProcess()
+            }
             return
         }
-        // First tap → wait briefly to see if a second tap comes; if not, record active mode.
+        if overlay.model.menu { dismissMenu(); lastFnDown = nil; return }
+
+        // Idle → record instantly with the active mode.
         lastFnDown = now
-        fnHoldTimer?.invalidate()
-        fnHoldTimer = Timer.scheduledTimer(withTimeInterval: 0.32, repeats: false) { [weak self] _ in
-            guard let self, self.state == .idle, !self.overlay.model.menu else { return }
-            self.lastFnDown = nil
-            self.startRecording(forced: Settings.shared.activeProfile)
-        }
+        startRecording(forced: Settings.shared.activeProfile)
     }
     private func fnUp() { /* nothing on release */ }
 

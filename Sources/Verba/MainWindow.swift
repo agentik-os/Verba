@@ -46,7 +46,12 @@ struct MainWindow: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            Color(nsColor: .windowBackgroundColor).ignoresSafeArea()
+            // Frosted material + a faint gradient — modern, no flat white.
+            VisualEffectView(material: .underWindowBackground).ignoresSafeArea()
+            LinearGradient(
+                colors: [Color.accentColor.opacity(0.06), .clear, Color.accentColor.opacity(0.04)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            ).ignoresSafeArea()
 
             HStack(spacing: 0) {
                 if sidebarOpen {

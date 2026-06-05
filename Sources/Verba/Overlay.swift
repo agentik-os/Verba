@@ -59,7 +59,7 @@ struct OverlayView: View {
 
             if (model.menu || model.recording) && !model.profiles.isEmpty {
                 HStack(spacing: 6) {
-                    ForEach(Array(model.profiles.enumerated()), id: \.element.id) { i, p in
+                    ForEach(model.profiles) { p in
                         let isActive = model.menu && p.id == model.activeID         // default in picker
                         let isSwitch = !model.menu && p.id == model.selectedID       // current while recording
                         let hot = isActive || isSwitch
@@ -67,13 +67,7 @@ struct OverlayView: View {
                             if model.menu { model.onStart?(p) }
                             else { model.selectedID = p.id; model.onSelect?(p) }
                         } label: {
-                            HStack(spacing: 4) {
-                                if model.menu {
-                                    Text("\(i + 1)").font(.system(size: 10, weight: .bold))
-                                        .foregroundStyle(hot ? Color.white.opacity(0.9) : .secondary)
-                                }
-                                Text(p.name).font(.system(size: 11, weight: hot ? .semibold : .regular))
-                            }
+                            Text(p.name).font(.system(size: 11, weight: hot ? .semibold : .regular))
                             .padding(.horizontal, 10).padding(.vertical, 4)
                             .background(Capsule().fill(
                                 isActive ? Color.accentColor.opacity(0.95)
