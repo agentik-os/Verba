@@ -70,7 +70,7 @@ struct OverlayView: View {
                             Text(p.name).font(.system(size: 11, weight: hot ? .semibold : .regular))
                             .padding(.horizontal, 10).padding(.vertical, 4)
                             .background(Capsule().fill(
-                                isActive ? Color.accentColor.opacity(0.95)
+                                isActive ? Color.primary.opacity(0.95)
                                          : isSwitch ? Color.primary.opacity(0.9)
                                          : Color.primary.opacity(0.08)))
                             .foregroundStyle(hot ? Color.white : Color.primary.opacity(0.85))
@@ -88,6 +88,7 @@ struct OverlayView: View {
         .padding(.vertical, 10)
         .glass(in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .fixedSize()
+        .tint(.primary)   // B&W accents
     }
 }
 

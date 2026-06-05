@@ -57,6 +57,7 @@ struct MainWindow: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
+        .tint(.primary)   // full B&W: selection / accents are black, not blue
     }
 
     // MARK: Sidebar (flush, full height; traffic lights overlap its top)

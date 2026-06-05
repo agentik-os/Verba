@@ -54,11 +54,11 @@ struct HistoryView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(selected ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.05))
+                .fill(selected ? Color.primary.opacity(0.12) : Color.primary.opacity(0.05))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Color.accentColor.opacity(selected ? 0.5 : 0), lineWidth: 1)
+                .strokeBorder(Color.primary.opacity(selected ? 0.45 : 0), lineWidth: 1)
         )
         .contentShape(RoundedRectangle(cornerRadius: 12))
     }

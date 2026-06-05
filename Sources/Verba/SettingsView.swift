@@ -21,6 +21,7 @@ struct SettingsView: View {
             planTab.tabItem { Label("Plan", systemImage: "sparkles") }
         }
         .frame(minWidth: 540, maxWidth: .infinity, minHeight: 460, maxHeight: .infinity)
+        .tint(.primary)   // B&W accents
     }
 
     // MARK: General
