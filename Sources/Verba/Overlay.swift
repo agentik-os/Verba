@@ -3,6 +3,7 @@ import AppKit
 
 final class OverlayModel: ObservableObject {
     @Published var level: Float = 0      // 0...1 mic level
+    @Published var phase: Double = 0     // advanced by our own timer → animation never stalls
     @Published var title: String = ""    // "Listening…" / "Transcribing…" / etc.
     @Published var recording = false
     @Published var paused = false        // dictation paused
@@ -41,7 +42,7 @@ struct OverlayView: View {
                             Image(systemName: model.paused ? "play.fill" : "pause.fill").font(.system(size: 11))
                                 .foregroundStyle(.secondary)
                         }.buttonStyle(.plain).help(model.paused ? "Resume" : "Pause")
-                        Waveform(level: model.paused ? 0 : model.level).frame(width: 64, height: 22)
+                        Waveform(level: model.paused ? 0 : model.level, phase: model.phase).frame(width: 64, height: 24)
                     } else {
                         ProgressView().controlSize(.small).scaleEffect(0.8)
                     }
@@ -92,30 +93,30 @@ struct OverlayView: View {
     }
 }
 
-/// Lively meter: bars wobble continuously and scale with the live mic level.
+/// Lively meter. Motion is driven by `phase` (advanced by our own recording timer),
+/// so it never stalls — unlike TimelineView, which pauses while another app is active.
 private struct Waveform: View {
     let level: Float
+    let phase: Double
     private let bars = 11
     private let maxH: CGFloat = 24
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { ctx in
-            let t = ctx.date.timeIntervalSinceReferenceDate
-            let lvl = CGFloat(max(0.05, min(1, level)))
-            HStack(spacing: 2.5) {
-                ForEach(0..<bars, id: \.self) { i in
-                    // two detuned sines per bar → organic motion; amplitude follows the level
-                    let w = (sin(t * 7.5 + Double(i) * 0.9) + sin(t * 11.3 + Double(i) * 1.7)) / 2.0
-                    let wobble = CGFloat((w + 1) / 2)                  // 0…1
-                    let center = 1 - abs(CGFloat(i) - CGFloat(bars - 1) / 2) / CGFloat(bars)  // taller in middle
-                    let h = max(0.10, min(1, lvl * (0.35 + 0.95 * wobble) * (0.6 + 0.6 * center)))
-                    Capsule()
-                        .fill(.primary.opacity(0.55 + 0.4 * Double(h)))
-                        .frame(width: 3, height: h * maxH)
-                }
+        let lvl = CGFloat(max(0.05, min(1, level)))
+        HStack(spacing: 2.5) {
+            ForEach(0..<bars, id: \.self) { i in
+                // two detuned sines per bar → organic motion; amplitude follows the level
+                let w = (sin(phase * 7.5 + Double(i) * 0.9) + sin(phase * 11.3 + Double(i) * 1.7)) / 2.0
+                let wobble = CGFloat((w + 1) / 2)                  // 0…1
+                let center = 1 - abs(CGFloat(i) - CGFloat(bars - 1) / 2) / CGFloat(bars)  // taller in middle
+                let h = max(0.10, min(1, lvl * (0.35 + 0.95 * wobble) * (0.6 + 0.6 * center)))
+                Capsule()
+                    .fill(.primary.opacity(0.55 + 0.4 * Double(h)))
+                    .frame(width: 3, height: h * maxH)
             }
-            .frame(height: maxH, alignment: .center)
         }
+        .frame(height: maxH, alignment: .center)
+        .animation(.linear(duration: 0.05), value: phase)
     }
 }
 

@@ -349,9 +349,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.overlay.model.title = "Listening · \(initial.name)"
             self.overlay.model.level = 0
             self.overlay.show()
-            self.levelTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
-                self?.overlay.model.level = self?.recorder.level() ?? 0
+            // Drive both the level and the animation phase ourselves so the meter keeps
+            // moving even though the focused app (not Verba) owns the run loop.
+            let t = Timer(timeInterval: 0.04, repeats: true) { [weak self] _ in
+                guard let self else { return }
+                self.overlay.model.level = self.recorder.level()
+                self.overlay.model.phase += 0.16
             }
+            RunLoop.main.add(t, forMode: .common)
+            self.levelTimer = t
         }
     }
 

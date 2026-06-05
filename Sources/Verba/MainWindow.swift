@@ -66,21 +66,46 @@ struct MainWindow: View {
         VStack(spacing: 0) {
             Color.clear.frame(height: 36)        // leave room for the traffic lights
 
-            List(selection: $selection) {
-                Section { row(.home); row(.insights); row(.history) }
-                Section("Library") {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 2) {
+                    row(.home); row(.insights); row(.history)
+                    Text("Library")
+                        .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 4)
                     row(.modes); row(.dictionary); row(.snippets); row(.style); row(.transforms); row(.scratchpad)
                 }
+                .padding(.horizontal, 8).padding(.top, 4)
             }
-            .listStyle(.sidebar)
             .scrollContentBackground(.hidden)
 
             sidebarFooter
         }
     }
 
+    /// A nav row. Selected = white pill with black text so it clearly stands out.
     private func row(_ item: NavItem) -> some View {
-        Label(item.title, systemImage: item.icon).tag(item)
+        let isSel = selection == item
+        return Button { selection = item } label: {
+            HStack(spacing: 10) {
+                Image(systemName: item.icon).frame(width: 18)
+                Text(item.title)
+                Spacer(minLength: 0)
+            }
+            .font(.system(size: 13, weight: isSel ? .semibold : .regular))
+            .foregroundStyle(isSel ? Color.black : Color.primary)
+            .padding(.horizontal, 10).padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isSel ? Color.white : Color.clear)
+                    .shadow(color: .black.opacity(isSel ? 0.10 : 0), radius: 3, y: 1)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(Color.black.opacity(isSel ? 0.08 : 0), lineWidth: 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 
     private var sidebarFooter: some View {
