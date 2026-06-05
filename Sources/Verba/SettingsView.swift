@@ -30,6 +30,12 @@ struct SettingsView: View {
     // MARK: General
     @ViewBuilder private var generalSections: some View {
         Group {
+            Section("Account & alias") {
+                TextField("Username / alias", text: $settings.username)
+                    .frame(width: 260)
+                Text("Your public name on the leaderboard, never your real name or email. Change it anytime.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section("Engine") {
                 Picker("Engine", selection: $engineTab) {
                     ForEach(TranscriptionEngine.allCases) { Text($0.label).tag($0) }
@@ -44,12 +50,6 @@ struct SettingsView: View {
                     Text("Say “new line / new paragraph”, “comma / period / question mark”, “bullet point”, or “scratch that” and Verba turns them into real formatting (works in any mode, incl. Flow). EN + FR.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
-            }
-            Section("Public alias (leaderboard)") {
-                TextField("Alias", text: $settings.username)
-                    .frame(width: 240)
-                Text("Shown on the leaderboard instead of your name or email. Change it anytime.")
-                    .font(.caption).foregroundStyle(.secondary)
             }
             Section("Loading line") {
                 Picker("Joke style", selection: $settings.quipTone) {

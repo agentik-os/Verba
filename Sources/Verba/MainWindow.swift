@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum NavItem: String, CaseIterable, Identifiable {
-    case home, insights, modes, dictionary, snippets, style, transforms, scratchpad, history, leaderboard, wishlist, settings
+    case home, insights, modes, dictionary, snippets, style, transforms, scratchpad, history, leaderboard, wishlist, freeMonth, settings
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -9,7 +9,7 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .dictionary: return "Dictionary"; case .snippets: return "Snippets"; case .style: return "Style"
         case .transforms: return "Transforms"; case .scratchpad: return "Scratchpad"
         case .history: return "History"; case .leaderboard: return "Leaderboard"
-        case .wishlist: return "Wishlist"; case .settings: return "Settings"
+        case .wishlist: return "Wishlist"; case .freeMonth: return "Free Month"; case .settings: return "Settings"
         }
     }
     var icon: String {
@@ -18,7 +18,8 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .dictionary: return "character.book.closed"; case .snippets: return "text.badge.plus"
         case .style: return "paintbrush"; case .transforms: return "arrow.triangle.2.circlepath"
         case .scratchpad: return "note.text"; case .history: return "clock.arrow.circlepath"
-        case .leaderboard: return "trophy"; case .wishlist: return "lightbulb"; case .settings: return "gearshape"
+        case .leaderboard: return "trophy"; case .wishlist: return "lightbulb"
+        case .freeMonth: return "gift"; case .settings: return "gearshape"
         }
     }
 }
@@ -73,7 +74,7 @@ struct MainWindow: View {
                     Text("Library")
                         .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                         .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 4)
-                    row(.modes); row(.dictionary); row(.snippets); row(.style); row(.transforms); row(.scratchpad); row(.leaderboard); row(.wishlist)
+                    row(.modes); row(.dictionary); row(.snippets); row(.style); row(.transforms); row(.scratchpad); row(.leaderboard); row(.wishlist); row(.freeMonth)
                 }
                 .padding(.horizontal, 8).padding(.top, 4)
             }
@@ -151,6 +152,7 @@ struct MainWindow: View {
         case .history: HistoryView()
         case .leaderboard: LeaderboardView()
         case .wishlist: WishlistView()
+        case .freeMonth: FreeMonthView()
         case .settings: SettingsView().frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }

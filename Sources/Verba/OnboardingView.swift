@@ -356,6 +356,22 @@ struct OnboardingView: View {
                 Text("Optional, your own Claude key").font(.callout.weight(.medium))
                 SecureField("sk-ant-… (skip if you use Claude Code or OpenRouter)", text: $anthropicKey).textFieldStyle(.roundedBorder)
             }
+
+            // Last thing they see: share to earn a free month.
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Get a free month", systemImage: "gift.fill").font(.callout.weight(.semibold))
+                Text("Share your link. Every friend who subscribes and dictates 15,000+ words gives you a free month of Pro, unlimited.")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    Text(settings.referralLink).font(.system(.caption, design: .monospaced)).lineLimit(1).truncationMode(.middle)
+                    Spacer()
+                    Button(copied ? "Copied ✓" : "Copy link") {
+                        let pb = NSPasteboard.general; pb.clearContents(); pb.setString(settings.referralLink, forType: .string); copied = true
+                    }.glassButton()
+                }
+                .padding(10).frame(maxWidth: .infinity).background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading).glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
     }
 
