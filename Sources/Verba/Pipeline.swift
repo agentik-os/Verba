@@ -61,7 +61,7 @@ enum Pipeline {
                 let userText = "SELECTED TEXT:\n<<<\n\(sel)\n>>>\n\nSPOKEN INSTRUCTION:\n\(original)"
                 reprompted = try await r.reprompt(transcript: userText, systemPrompt: sys)
             } else {
-                status("Restructuring with Claude…")
+                status(Quips.current())   // fun, ever-changing geek line instead of "Restructuring…"
                 reprompted = try await r.reprompt(transcript: original, systemPrompt: sys)
             }
         }
