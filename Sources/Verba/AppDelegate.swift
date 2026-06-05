@@ -7,6 +7,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let recorder = AudioRecorder()
     private let overlay = OverlayController()
     private var levelTimer: Timer?
+    private var fnHoldTimer: Timer?
+    private var fnActionTaken = false
     private var cancellables = Set<AnyCancellable>()
 
     private enum State { case idle, recording, processing }
@@ -33,8 +35,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ChordMonitor.shared.onChordDown = { [weak self] in self?.chordDown() }
         ChordMonitor.shared.onChordUp = { [weak self] in self?.chordUp() }
         ChordMonitor.shared.onEscape = { [weak self] in self?.escapePressed() }
-        ChordMonitor.shared.onFnDown = { [weak self] in self?.fnPressed() }
-        ChordMonitor.shared.onFnUp = { [weak self] in self?.fnReleased() }
+        FnTap.shared.onFnDown = { [weak self] in self?.fnDown() }
+        FnTap.shared.onFnUp = { [weak self] in self?.fnUp() }
+        FnTap.shared.onDigit = { [weak self] n in self?.fnDigit(n) ?? false }
         ChordMonitor.shared.start()
         applyTriggers()
         _ = Updater.shared   // start Sparkle (scheduled background update checks)
@@ -148,6 +151,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.trigger(forced: Settings.shared.profiles.first { $0.id == pid })
             }
         }
+        // Fn-as-primary needs an event tap (to consume the globe key + digit picks).
+        if s.useFnAsPrimary { FnTap.shared.start() } else { FnTap.shared.stop() }
     }
 
     // MARK: - Trigger handlers
@@ -183,18 +188,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    // Fn (globe) as the primary trigger — Wispr-Flow style.
-    private func fnPressed() {
+    // Fn (globe) as the primary trigger — Wispr-Flow style:
+    //   • quick tap (< 1s) → start/stop recording in the active mode
+    //   • hold (≥ 1s)      → show the numbered mode picker, then a digit chooses the mode
+    private func fnDown() {
         guard Settings.shared.useFnAsPrimary else { return }
-        switch Settings.shared.recordStyle {
-        case .lock:   trigger(forced: nil)                       // tap to start, tap again to send
-        case .direct: if state == .idle { startRecording(forced: nil) }   // hold to talk
+        fnActionTaken = false
+        fnHoldTimer?.invalidate()
+        guard state == .idle else { return }
+        fnHoldTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] _ in
+            guard let self, self.state == .idle else { return }
+            self.showModeMenu()
+            FnTap.shared.consumeDigits = true
         }
     }
-    private func fnReleased() {
-        guard Settings.shared.useFnAsPrimary,
-              Settings.shared.recordStyle == .direct, state == .recording else { return }
-        stopAndProcess()                                          // release to send
+    private func fnUp() {
+        guard Settings.shared.useFnAsPrimary else { return }
+        fnHoldTimer?.invalidate(); fnHoldTimer = nil
+        FnTap.shared.consumeDigits = false
+        if fnActionTaken { fnActionTaken = false; return }   // a digit already started recording
+        if overlay.model.menu {                              // held >1s, released without picking
+            if state == .idle { overlay.hide(); overlay.model.menu = false }
+            return
+        }
+        trigger(forced: nil)                                 // quick tap → toggle
+    }
+    private func fnDigit(_ n: Int) -> Bool {
+        guard Settings.shared.useFnAsPrimary, overlay.model.menu else { return false }
+        let profiles = Settings.shared.profiles
+        guard n >= 1, n <= profiles.count else { return false }
+        fnActionTaken = true
+        overlay.model.menu = false
+        FnTap.shared.consumeDigits = false
+        trigger(forced: profiles[n - 1])
+        return true
     }
 
     private func showModeMenu() {

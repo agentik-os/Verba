@@ -72,7 +72,7 @@ struct SettingsView: View {
 
                 Toggle("Use the Fn (🌐 globe) key", isOn: $settings.useFnAsPrimary)
                 if settings.useFnAsPrimary {
-                    Text("Fn is now your trigger (like Wispr Flow). In System Settings ▸ Keyboard, set “Press 🌐 to: Do Nothing” so macOS doesn’t steal it.")
+                    Text("Fn is your trigger (like Wispr Flow): quick tap = record · hold >1s = mode picker, then press 1–9 to choose. Verba swallows the globe key so it won’t switch keyboards. If it still does, set System Settings ▸ Keyboard ▸ “Press 🌐 to: Do Nothing”.")
                         .font(.caption).foregroundStyle(.secondary)
                 } else {
                     HStack {
