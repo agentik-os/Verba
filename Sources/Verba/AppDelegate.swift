@@ -366,8 +366,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let lvl = self.recorder.level()
                 self.overlay.model.level = lvl
                 // Animation speed follows how energetically you're speaking: quiet → slow,
-                // loud/fast speech → the waveform visibly speeds up.
-                self.overlay.model.phase += 0.07 + 0.55 * Double(lvl)
+                // loud/fast speech → a bit faster — but kept gentle so it stays readable.
+                self.overlay.model.phase += 0.025 + 0.18 * Double(lvl)
             }
             RunLoop.main.add(t, forMode: .common)
             self.levelTimer = t

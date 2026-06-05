@@ -164,7 +164,7 @@ private struct Waveform: View {
         HStack(spacing: 2.5) {
             ForEach(0..<bars, id: \.self) { i in
                 // two detuned sines per bar → organic motion; amplitude follows the level
-                let w = (sin(phase * 7.5 + Double(i) * 0.9) + sin(phase * 11.3 + Double(i) * 1.7)) / 2.0
+                let w = (sin(phase * 3.4 + Double(i) * 0.9) + sin(phase * 5.1 + Double(i) * 1.7)) / 2.0
                 let wobble = CGFloat((w + 1) / 2)                  // 0…1
                 let center = 1 - abs(CGFloat(i) - CGFloat(bars - 1) / 2) / CGFloat(bars)  // taller in middle
                 let h = max(0.10, min(1, lvl * (0.35 + 0.95 * wobble) * (0.6 + 0.6 * center)))
