@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   const stripe = stripeClient();
   if (!stripe) return NextResponse.json({ error: "billing not configured" }, { status: 503, headers: cors });
 
-  let body: { plan?: PlanId; email?: string };
+  let body: { plan?: PlanId; email?: string; ref?: string };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "bad request" }, { status: 400, headers: cors }); }
 
   const plan = body.plan;
@@ -34,14 +34,20 @@ export async function POST(req: NextRequest) {
     email = user?.primaryEmailAddress?.emailAddress?.toLowerCase() ?? email;
   } catch {}
 
+  // Referral attribution: carried from the ?ref link → Stripe metadata, so a webhook
+  // can later reward the referrer once this subscriber qualifies.
+  const ref = (body.ref ?? "").toString().slice(0, 64).trim();
+  const meta: Record<string, string> = { product: "verba", plan };
+  if (ref) meta.referredBy = ref;
+
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price, quantity: 1 }],
       allow_promotion_codes: true,
       customer_email: email || undefined,
-      subscription_data: { trial_period_days: 7 },
-      metadata: { product: "verba", plan },
+      subscription_data: { trial_period_days: 7, metadata: meta },
+      metadata: meta,
       success_url: `${SITE_URL}/account?status=success`,
       cancel_url: `${SITE_URL}/#pricing`,
     });

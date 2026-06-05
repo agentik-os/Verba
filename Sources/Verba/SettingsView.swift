@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct SettingsView: View {
     @ObservedObject var settings = Settings.shared
@@ -252,6 +253,17 @@ struct SettingsView: View {
                         ProgressView(value: Double(min(used, limit)), total: Double(limit))
                     }
                 }
+            }
+            Section("Refer friends — give a month, get a month") {
+                HStack {
+                    Text(settings.referralLink).font(.system(.callout, design: .monospaced)).lineLimit(1).truncationMode(.middle)
+                    Spacer()
+                    Button("Copy") {
+                        let pb = NSPasteboard.general; pb.clearContents(); pb.setString(settings.referralLink, forType: .string)
+                    }
+                }
+                Text("Every friend who subscribes through your link and dictates 15,000+ words earns you a free month — unlimited, no cap.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
             Section("Restore your subscription") {
                 TextField("Email used at checkout", text: $settings.proEmail)

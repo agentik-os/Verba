@@ -195,7 +195,7 @@ extension Profile {
         """,
         builtin: true, hotkeyCode: 23 /* 5 */, hotkeyMods: kCtrlOpt)
 
-    static let defaults: [Profile] = [.coding, .polish, .casual, .intent, .custom, .flow]
+    static let defaults: [Profile] = [.flow, .intent, .polish, .coding, .casual, .custom]
 }
 
 final class Settings: ObservableObject {
@@ -203,7 +203,7 @@ final class Settings: ObservableObject {
     private let d = UserDefaults.standard
 
     // Bump when the built-in profiles change so users get the new prompts/shortcuts.
-    static let profilesVersion = 8   // bumped: per-mode model defaults
+    static let profilesVersion = 9   // bumped: default order flow/intent/polish/coding/casual/custom
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }
@@ -240,6 +240,8 @@ final class Settings: ObservableObject {
     // Pro entitlement (editing system prompts / custom modes is Pro-only).
     @Published var isPro: Bool { didSet { d.set(isPro, forKey: "verba.pro") } }
     @Published var proEmail: String { didSet { d.set(proEmail, forKey: "verba.email") } }
+    @Published var referralCode: String { didSet { d.set(referralCode, forKey: "verba.referral") } }
+    var referralLink: String { "https://verba.run/?ref=\(referralCode)" }
 
     var activeProfile: Profile {
         profiles.first { $0.id == activeProfileID } ?? profiles.first ?? .coding
@@ -279,6 +281,14 @@ final class Settings: ObservableObject {
         primaryMods = UInt32(d.object(forKey: "primaryMods") as? Int ?? Int(kCtrlOpt))
         isPro = (ProcessInfo.processInfo.environment["VERBA_PRO"] != nil) || d.bool(forKey: "verba.pro")
         proEmail = d.string(forKey: "verba.email") ?? ""
+        // Stable per-install referral code (8 chars) used for the affiliate link.
+        if let saved = d.string(forKey: "verba.referral"), !saved.isEmpty {
+            referralCode = saved
+        } else {
+            let code = String(UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(8)).lowercased()
+            referralCode = code
+            d.set(code, forKey: "verba.referral")
+        }
 
         // Re-seed built-ins when the profiles version bumps (new prompts/shortcuts).
         let upToDate = d.integer(forKey: "profilesVersion") >= Self.profilesVersion
@@ -290,7 +300,8 @@ final class Settings: ObservableObject {
             loaded = Profile.defaults
         }
         let savedActive = (upToDate ? d.string(forKey: "activeProfileID").flatMap(UUID.init) : nil)
-        activeProfileID = savedActive ?? loaded.first!.id
+        // Fresh installs default to Polish (a good general writing mode), not Flow (raw).
+        activeProfileID = savedActive ?? loaded.first(where: { $0.name == "Polish" })?.id ?? loaded.first!.id
         profiles = loaded
         if !upToDate {
             d.set(Self.profilesVersion, forKey: "profilesVersion")

@@ -40,6 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ChordMonitor.shared.onChordDown = { [weak self] in self?.chordDown() }
         ChordMonitor.shared.onChordUp = { [weak self] in self?.chordUp() }
         ChordMonitor.shared.onEscape = { [weak self] in self?.escapePressed() }
+        ChordMonitor.shared.onControl = { [weak self] in self?.togglePause() }   // ⌃ pauses/resumes
         FnTap.shared.onFnDown = { [weak self] in self?.fnDown() }
         FnTap.shared.onFnUp = { [weak self] in self?.fnUp() }
         FnTap.shared.onDigit = { [weak self] n in self?.fnDigit(n) ?? false }

@@ -13,6 +13,7 @@ final class ChordMonitor {
     var onEscape: (() -> Void)?      // Esc pressed
     var onFnDown: (() -> Void)?      // Fn (globe) pressed
     var onFnUp: (() -> Void)?        // Fn (globe) released
+    var onControl: (() -> Void)?     // plain ⌃ tapped (used to pause/resume while recording)
 
     private var globalFlags: Any?
     private var localFlags: Any?
@@ -20,7 +21,9 @@ final class ChordMonitor {
     private var localKeys: Any?
     private var chordHeld = false
     private var fnHeld = false
+    private var controlHeld = false
     private static let fnKeyCode: UInt16 = 63   // the globe / Fn key
+    private static let controlKeyCodes: Set<UInt16> = [59, 62]   // left / right Control
 
     func start() {
         stop()
@@ -51,6 +54,17 @@ final class ChordMonitor {
         } else if !both && chordHeld {
             chordHeld = false
             DispatchQueue.main.async { self.onChordUp?() }
+        }
+
+        // Plain Control tap (not the ⌃⌥ chord) → pause/resume the recording.
+        if Self.controlKeyCodes.contains(e.keyCode) {
+            let down = f.contains(.control) && !f.contains(.option)
+            if down && !controlHeld {
+                controlHeld = true
+                DispatchQueue.main.async { self.onControl?() }
+            } else if !f.contains(.control) && controlHeld {
+                controlHeld = false
+            }
         }
 
         // Fn / globe key — isolate by its own keyCode so other keys held with Fn don't fire it.

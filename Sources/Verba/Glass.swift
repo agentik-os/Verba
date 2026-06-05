@@ -65,6 +65,15 @@ extension View {
             self.buttonStyle(.borderedProminent)
         }
     }
+
+    @ViewBuilder
+    func glassButton() -> some View {
+        if #available(macOS 26.0, *) {
+            self.buttonStyle(.glass)
+        } else {
+            self.buttonStyle(.bordered)
+        }
+    }
 }
 
 /// Wraps content in a GlassEffectContainer on macOS 26+ so multiple glass shapes

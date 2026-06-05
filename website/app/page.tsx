@@ -5,6 +5,7 @@ import Link from "next/link";
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import LiveDemo from "@/components/LiveDemo";
 import Reveal from "@/components/Reveal";
+import { getRef } from "@/components/RefCapture";
 
 const PRICE = {
   monthly: { amount: "$9", sub: "/month" },
@@ -226,7 +227,7 @@ function Pricing() {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, ref: getRef() }),
       });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
