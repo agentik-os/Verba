@@ -5,19 +5,22 @@ import { useRef, useState } from "react";
 type State = "idle" | "recording" | "working" | "done" | "error";
 
 const MODES = [
-  { key: "polish", label: "Polish", model: "Haiku 4.5" },
-  { key: "casual", label: "Casual", model: "Haiku 4.5" },
-  { key: "intent", label: "Intent", model: "Sonnet 4.6" },
-  { key: "coding", label: "Coding", model: "Sonnet 4.6" },
+  { key: "flow", label: "Flow", model: "No AI", tip: "Raw dictation. Your exact words, transcribed with no AI rewriting." },
+  { key: "polish", label: "Polish", model: "Haiku 4.5", tip: "Clear, courteous work messages and emails in your own voice." },
+  { key: "casual", label: "Casual", model: "Haiku 4.5", tip: "Warm, natural texts to friends. Keeps your relaxed tone." },
+  { key: "intent", label: "Intent", model: "Sonnet 4.6", tip: "Say how you want it handled first (e.g. make this bullet points), then the content. Verba obeys." },
+  { key: "coding", label: "Coding", model: "Sonnet 4.6", tip: "Turns rambling feedback into a precise prompt for a coding agent, keeping every detail." },
+  { key: "custom", label: "Custom", model: "Sonnet 4.6", tip: "Write your own instruction and test it live." },
 ];
 
 const darkCard = { color: "#f4f5f8", "--muted": "rgba(244,245,248,0.55)" } as Record<string, string>;
 
-/// In-browser taste of Verba: pick a mode, record ~45s, we transcribe + restructure with
-/// the same pipeline the app uses. Limited to 7 free runs (cookie + IP) to deter farming.
+/// In-browser taste of Verba: pick a mode (or write a custom one), record ~45s, we transcribe
+/// + restructure with the same pipeline the app uses. 7 free runs (cookie + IP).
 export default function TryIt() {
   const [state, setState] = useState<State>("idle");
   const [mode, setMode] = useState("polish");
+  const [custom, setCustom] = useState("Rewrite this as a friendly tweet, keep it under 200 characters.");
   const [result, setResult] = useState("");
   const [original, setOriginal] = useState("");
   const [error, setError] = useState("");
@@ -56,6 +59,7 @@ export default function TryIt() {
       const fd = new FormData();
       fd.append("audio", blob, "clip.webm");
       fd.append("mode", mode);
+      if (mode === "custom") fd.append("customPrompt", custom);
       const res = await fetch("/api/try", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "Something went wrong."); setState("error"); return; }
@@ -68,16 +72,18 @@ export default function TryIt() {
   }
 
   const current = MODES.find((x) => x.key === mode)!;
+  const busy = state === "recording" || state === "working";
 
   return (
     <div className="mx-auto max-w-2xl">
-      {/* mode picker */}
-      <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
+      {/* mode picker with tooltips */}
+      <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
         {MODES.map((x) => (
           <button
             key={x.key}
+            title={x.tip}
             onClick={() => setMode(x.key)}
-            disabled={state === "recording" || state === "working"}
+            disabled={busy}
             className={`rounded-full px-4 py-1.5 text-sm transition disabled:opacity-50 ${
               x.key === mode ? "bg-[var(--fg)] text-[var(--bg)]" : "glass muted hover:text-[var(--fg)]"
             }`}
@@ -86,6 +92,18 @@ export default function TryIt() {
           </button>
         ))}
       </div>
+      <p className="mb-4 text-center text-xs muted">{current.tip}</p>
+
+      {mode === "custom" && (
+        <textarea
+          value={custom}
+          onChange={(e) => setCustom(e.target.value)}
+          disabled={busy}
+          rows={2}
+          placeholder="Your instruction, e.g. summarize this as 3 bullet points"
+          className="mb-4 w-full resize-none rounded-2xl glass px-4 py-3 text-sm outline-none placeholder:opacity-50"
+        />
+      )}
 
       <div className="glass-strong rounded-3xl p-8 text-center">
         <div className="mb-4 text-xs muted">{current.label} · {current.model}</div>

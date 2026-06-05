@@ -54,14 +54,19 @@ export async function POST(req: NextRequest) {
 
   let audio: File | null = null;
   let modeKey = "polish";
+  let customPrompt = "";
   try {
     const form = await req.formData();
     audio = form.get("audio") as File | null;
     modeKey = (form.get("mode") as string | null) ?? "polish";
+    customPrompt = ((form.get("customPrompt") as string | null) ?? "").slice(0, 800).trim();
   } catch {
     return NextResponse.json({ error: "bad request" }, { status: 400 });
   }
-  const mode = MODES[modeKey] ?? MODES.polish;
+  const mode =
+    modeKey === "custom" && customPrompt
+      ? { model: "claude-sonnet-4-6", system: `${customPrompt}\n\n${NODASH} Output ONLY the resulting text.` }
+      : MODES[modeKey] ?? MODES.polish;
   if (!audio) return NextResponse.json({ error: "no audio" }, { status: 400 });
   if (audio.size > 8_000_000) return NextResponse.json({ error: "clip too long (max ~1 min)" }, { status: 413 });
 
@@ -79,7 +84,15 @@ export async function POST(req: NextRequest) {
     const original = ((await tr.json()).text ?? "").trim();
     if (!original) return NextResponse.json({ error: "We couldn't hear anything, try again." }, { status: 422 });
 
-    // 2. Restructure with Claude Haiku.
+    // Flow mode: raw dictation, no AI rewriting.
+    if (modeKey === "flow") {
+      ipHits.set(ip, ipUsed + 1);
+      const res = NextResponse.json({ original, result: original, remaining: FREE_TRIES - (used + 1) });
+      res.cookies.set("verba_try", String(used + 1), { path: "/", maxAge: 60 * 60 * 24 * 30, httpOnly: true, sameSite: "lax" });
+      return res;
+    }
+
+    // 2. Restructure with Claude.
     const cr = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "x-api-key": anthropic, "anthropic-version": "2023-06-01", "content-type": "application/json" },

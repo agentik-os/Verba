@@ -140,10 +140,10 @@ export default function LiveDemo() {
           </div>
 
           <p className="text-xs uppercase tracking-widest muted">You say</p>
-          <p className="mt-1 text-[15px] leading-relaxed text-white/70">“{m.said}”</p>
+          <p className="mt-1 min-h-[3.2em] text-[15px] leading-relaxed text-white/70">“{m.said}”</p>
 
           <p className="mt-5 text-xs uppercase tracking-widest muted">Verba writes</p>
-          <p className="mt-1 min-h-[3.5em] whitespace-pre-line text-[15px] leading-relaxed">
+          <p className="mt-1 min-h-[6.5em] whitespace-pre-line text-[15px] leading-relaxed">
             {typed}
             {phase === "writing" && typed.length < m.wrote.length && (
               <span className="ml-0.5 inline-block h-4 w-[2px] animate-pulse bg-[var(--fg)] align-middle" />
