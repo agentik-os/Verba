@@ -100,11 +100,11 @@ struct OnboardingView: View {
                 Button {
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { step += 1 }
                 } label: { Text("Continue").frame(minWidth: 110) }
-                    .glassProminentButton().controlSize(.large)
+                    .buttonStyle(DarkButton())
                     .disabled(!canAdvance)
             } else {
                 Button(action: finish) { Text("Start using Verba").frame(minWidth: 140) }
-                    .glassProminentButton().controlSize(.large)
+                    .buttonStyle(DarkButton())
                     .disabled(!(micGranted && axGranted))
             }
         }
@@ -156,7 +156,7 @@ struct OnboardingView: View {
                         Text(settings.proEmail.isEmpty ? "Continue with Google / email" : "Signed in")
                     }.frame(maxWidth: .infinity)
                 }
-                .glassProminentButton().controlSize(.large).disabled(signingIn || !settings.proEmail.isEmpty)
+                .buttonStyle(DarkButton()).disabled(signingIn || !settings.proEmail.isEmpty)
 
                 if !settings.proEmail.isEmpty {
                     Label("Signed in as \(settings.proEmail)", systemImage: "checkmark.seal.fill")

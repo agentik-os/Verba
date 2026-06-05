@@ -76,6 +76,24 @@ extension View {
     }
 }
 
+/// Solid black button with white text — matches Verba's minimalist B&W design.
+struct DarkButton: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View { Body(configuration: configuration) }
+    private struct Body: View {
+        let configuration: ButtonStyleConfiguration
+        @Environment(\.isEnabled) private var enabled
+        var body: some View {
+            configuration.label
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 22).padding(.vertical, 12)
+                .background(Color.black, in: Capsule())
+                .opacity(!enabled ? 0.35 : (configuration.isPressed ? 0.85 : 1))
+                .contentShape(Capsule())
+        }
+    }
+}
+
 /// Wraps content in a GlassEffectContainer on macOS 26+ so multiple glass shapes
 /// blend together; passthrough otherwise.
 struct GlassContainer<Content: View>: View {
