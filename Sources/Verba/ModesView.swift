@@ -42,8 +42,10 @@ struct ModesView: View {
                 .buttonStyle(.borderless)
                 .font(.callout)
                 .padding(.horizontal, 14).padding(.vertical, 9)
-                Text("Drag to reorder").font(.caption2).foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity).padding(.bottom, 6)
+                Text("Drag to reorder · the active mode (✓) is the default for a quick double-tap of Fn")
+                    .font(.caption2).foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity).padding(.horizontal, 10).padding(.bottom, 6)
             }
             .frame(width: 232)
 

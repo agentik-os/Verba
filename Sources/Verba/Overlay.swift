@@ -10,6 +10,7 @@ final class OverlayModel: ObservableObject {
     @Published var selectedID: UUID?
     var onSelect: ((Profile) -> Void)?   // user switched mode mid-recording
     var onStart: ((Profile) -> Void)?    // user picked a mode from the menu → start recording
+    var onCancel: (() -> Void)?          // discard / abort whatever is happening
 }
 
 /// The floating glass pill shown while recording / processing, with a live mode
@@ -34,6 +35,14 @@ struct OverlayView: View {
                         ProgressView().controlSize(.small).scaleEffect(0.8)
                     }
                     Text(model.title).font(.system(size: 13, weight: .medium)).lineLimit(1)
+                }
+                // Cancel (×) — discard recording or abort processing.
+                if model.recording || (!model.menu && !model.recording) {
+                    Button { model.onCancel?() } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 15)).foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain).help("Cancel (Esc)")
                 }
             }
 

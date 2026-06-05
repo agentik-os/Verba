@@ -50,8 +50,12 @@ final class FnTap {
 
         case .flagsChanged:
             let fn = event.flags.contains(.maskSecondaryFn)
+            // Only act on (and swallow) a *bare* globe press — no other modifiers —
+            // so Fn+Fkey etc. still pass through untouched.
+            let bareFn = event.flags.subtracting([.maskSecondaryFn, .maskNonCoalesced]).isEmpty
             if fn && !fnDown { fnDown = true; onFnDown?() }
             else if !fn && fnDown { fnDown = false; onFnUp?() }
+            if bareFn { return nil }   // consume → macOS never sees Fn (no emoji/keyboard popup)
             return Unmanaged.passUnretained(event)
 
         case .keyDown:

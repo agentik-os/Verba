@@ -79,6 +79,8 @@ actor LocalTranscriber: Transcriber {
     /// Called with human-readable load status (e.g. while downloading the model the first time).
     nonisolated(unsafe) var onStatus: ((String) -> Void)?
 
+    func unload() { pipe = nil; loadedModel = nil }
+
     func ensureLoaded(model: String) async throws -> WhisperKit {
         if let pipe, loadedModel == model { return pipe }
         onStatus?("Loading local model \(model)… (first run downloads it)")

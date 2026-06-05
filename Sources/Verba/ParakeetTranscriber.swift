@@ -11,7 +11,9 @@ actor ParakeetTranscriber: Transcriber {
     /// Human-readable load status (e.g. while downloading the model the first time).
     nonisolated(unsafe) var onStatus: ((String) -> Void)?
 
-    private func ensureLoaded() async throws -> AsrManager {
+    func unload() { manager = nil }
+
+    func ensureLoaded() async throws -> AsrManager {
         if let manager { return manager }
         onStatus?("Loading Parakeet model… (first run downloads it)")
         let models = try await AsrModels.downloadAndLoad(version: .v3)

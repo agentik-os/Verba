@@ -9,6 +9,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var levelTimer: Timer?
     private var fnHoldTimer: Timer?
     private var fnActionTaken = false
+    private var lastFnDown: Date?
+    private var processingTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
 
     private enum State { case idle, recording, processing }
@@ -38,6 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         FnTap.shared.onFnDown = { [weak self] in self?.fnDown() }
         FnTap.shared.onFnUp = { [weak self] in self?.fnUp() }
         FnTap.shared.onDigit = { [weak self] n in self?.fnDigit(n) ?? false }
+        overlay.model.onCancel = { [weak self] in self?.cancelEverything() }
         ChordMonitor.shared.start()
         applyTriggers()
         _ = Updater.shared   // start Sparkle (scheduled background update checks)
@@ -180,44 +183,59 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func escapePressed() {
-        if state == .recording {
-            stopAndProcess()                 // Esc = treat as end of recording → transcribe & send
-        } else if state == .idle, overlay.model.menu {
-            overlay.hide(); overlay.model.menu = false   // just dismiss the mode picker
+    private func escapePressed() { cancelEverything() }
+
+    /// Esc / the × in the overlay: discard a recording, abort processing, or dismiss the picker.
+    private func cancelEverything() {
+        switch state {
+        case .recording:
+            cancelRecording()
+        case .processing:
+            processingTask?.cancel(); processingTask = nil
+            overlay.model.recording = false; overlay.model.menu = false
+            overlay.hide(); SoundFX.stop(); state = .idle
+        case .idle:
+            if overlay.model.menu { overlay.model.menu = false; overlay.hide(); FnTap.shared.consumeDigits = false }
         }
     }
 
     // Fn (globe) as the primary trigger — Wispr-Flow style:
-    //   • quick tap (< 1s) → start/stop recording in the active mode
-    //   • hold (≥ 1s)      → show the numbered mode picker, then a digit chooses the mode
+    //   • single Fn (idle) → instantly show the numbered mode picker; press 1–9 to choose
+    //   • double-tap Fn    → record straight away with the ACTIVE (default) mode
+    //   • Fn while recording → stop & send
     private func fnDown() {
         guard Settings.shared.useFnAsPrimary else { return }
-        fnActionTaken = false
-        fnHoldTimer?.invalidate()
-        guard state == .idle else { return }
-        fnHoldTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] _ in
-            guard let self, self.state == .idle else { return }
-            self.showModeMenu()
-            FnTap.shared.consumeDigits = true
-        }
-    }
-    private func fnUp() {
-        guard Settings.shared.useFnAsPrimary else { return }
-        fnHoldTimer?.invalidate(); fnHoldTimer = nil
-        FnTap.shared.consumeDigits = false
-        if fnActionTaken { fnActionTaken = false; return }   // a digit already started recording
-        if overlay.model.menu {                              // held >1s, released without picking
-            if state == .idle { overlay.hide(); overlay.model.menu = false }
+        if state == .recording { stopAndProcess(); lastFnDown = nil; return }
+        if state == .processing { return }
+
+        let now = Date()
+        if let last = lastFnDown, now.timeIntervalSince(last) < 0.35 {
+            // double-tap → active mode, no menu
+            lastFnDown = nil
+            fnHoldTimer?.invalidate(); fnHoldTimer = nil
+            overlay.model.menu = false
+            FnTap.shared.consumeDigits = false
+            startRecording(forced: Settings.shared.activeProfile)
             return
         }
-        trigger(forced: nil)                                 // quick tap → toggle
+        // first tap → show the picker instantly (latched until a digit / Esc / timeout)
+        lastFnDown = now
+        showModeMenu()
+        FnTap.shared.consumeDigits = true
+        fnHoldTimer?.invalidate()
+        fnHoldTimer = Timer.scheduledTimer(withTimeInterval: 6.0, repeats: false) { [weak self] _ in
+            guard let self, self.state == .idle, self.overlay.model.menu else { return }
+            self.overlay.model.menu = false; self.overlay.hide(); FnTap.shared.consumeDigits = false
+        }
     }
+    private func fnUp() { /* picker is latched; nothing to do on release */ }
+
     private func fnDigit(_ n: Int) -> Bool {
         guard Settings.shared.useFnAsPrimary, overlay.model.menu else { return false }
         let profiles = Settings.shared.profiles
         guard n >= 1, n <= profiles.count else { return false }
-        fnActionTaken = true
+        fnHoldTimer?.invalidate(); fnHoldTimer = nil
+        lastFnDown = nil
         overlay.model.menu = false
         FnTap.shared.consumeDigits = false
         trigger(forced: profiles[n - 1])
@@ -293,15 +311,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let selection = capturedSelection
         forcedProfile = nil
         capturedSelection = nil
-        Task {
+        processingTask = Task {
             do {
                 let result = try await Pipeline.run(audioURL: url, frontmostBundleID: bundleID, forcedProfile: forced, selection: selection) { [weak self] s in
                     DispatchQueue.main.async { self?.statusLine = s; self?.overlay.model.title = s; self?.refreshUI() }
                 }
-                await MainActor.run { self.finish(result: result, audioURL: url) }
+                if Task.isCancelled { return }
+                await MainActor.run { self.processingTask = nil; self.finish(result: result, audioURL: url) }
+            } catch is CancellationError {
+                // user cancelled — handled by cancelEverything()
             } catch {
+                if Task.isCancelled { return }
                 await MainActor.run {
-                    self.overlay.hide()
+                    self.processingTask = nil
+                    self.overlay.hide(); self.overlay.model.recording = false
                     self.state = .idle
                     self.notify("Verba failed", error.localizedDescription)
                 }

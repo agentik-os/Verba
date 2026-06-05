@@ -6,6 +6,10 @@ struct SettingsView: View {
     @State private var anthropicKey = Keychain.anthropicKey ?? ""
     @State private var verifying = false
     @State private var verifyMsg = ""
+    @State private var engineTab: TranscriptionEngine = Settings.shared.engine
+    @State private var installing = false
+    @State private var installMsg = ""
+    @State private var engineRefresh = 0
 
     private let claudeModels = ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-8"]
     private let localModels = ["base", "small", "large-v3-v20240930_turbo", "large-v3"]
@@ -22,19 +26,13 @@ struct SettingsView: View {
     // MARK: General
     private var general: some View {
         Form {
-            Section("Transcription") {
-                Picker("Engine", selection: $settings.engine) {
+            Section("Engine") {
+                Picker("Engine", selection: $engineTab) {
                     ForEach(TranscriptionEngine.allCases) { Text($0.label).tag($0) }
                 }
-                if settings.engine == .whisper {
-                    Picker("Whisper model", selection: $settings.localModel) {
-                        ForEach(localModels, id: \.self) { Text($0).tag($0) }
-                    }
-                }
-                if settings.engine.isLocal {
-                    Text("On-device & free. First use downloads the model (a few hundred MB), then runs fully offline — no API key needed.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
+                engineLifecycle
+            }
+            Section("Transcription") {
                 TextField("Language (ISO code, blank = auto)", text: $settings.language)
                     .frame(width: 220)
                 Toggle("Voice commands", isOn: $settings.voiceCommands)
@@ -112,6 +110,72 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    // MARK: Engine lifecycle (local engines: install / use / uninstall)
+    @ViewBuilder private var engineLifecycle: some View {
+        let _ = engineRefresh
+        let active = settings.engine == engineTab
+        if engineTab == .openAI {
+            Text("Remote — no download. Uses your OpenAI key.")
+                .font(.caption).foregroundStyle(.secondary)
+            if active { activeLabel } else { Button("Use OpenAI") { settings.engine = .openAI } }
+        } else {
+            if engineTab == .whisper {
+                Picker("Whisper model", selection: $settings.localModel) {
+                    ForEach(localModels, id: \.self) { Text($0).tag($0) }
+                }
+                .onChange(of: settings.localModel) { _, _ in engineRefresh += 1 }
+            }
+            if installing {
+                HStack {
+                    ProgressView().controlSize(.small)
+                    Text(installMsg.isEmpty ? "Installing…" : installMsg).font(.caption).foregroundStyle(.secondary)
+                }
+            } else if EngineManager.isInstalled(engineTab) {
+                HStack {
+                    Label("Installed", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                    Spacer()
+                    if active { activeLabel } else {
+                        Button("Use") { settings.engine = engineTab }.buttonStyle(.borderedProminent)
+                    }
+                    Button("Uninstall", role: .destructive) { uninstallEngine(engineTab) }
+                }
+            } else {
+                HStack {
+                    Text("Not installed · download \(EngineManager.sizeGB(engineTab))").foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Download & install") { installEngine(engineTab) }.buttonStyle(.borderedProminent)
+                }
+            }
+            Text("Runs fully offline & free once installed — no API key needed.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+    private var activeLabel: some View {
+        Label("Active", systemImage: "checkmark.seal.fill").foregroundStyle(.green).font(.caption)
+    }
+    private func installEngine(_ e: TranscriptionEngine) {
+        installing = true
+        installMsg = "Downloading \(EngineManager.sizeGB(e))… (first run can take a few minutes)"
+        Task {
+            let ok = await EngineManager.install(e)
+            await MainActor.run {
+                installing = false
+                installMsg = ok ? "" : "Download failed — check your connection."
+                if ok { settings.engine = e }
+                engineRefresh += 1
+            }
+        }
+    }
+    private func uninstallEngine(_ e: TranscriptionEngine) {
+        Task {
+            await EngineManager.uninstall(e)
+            await MainActor.run {
+                if settings.engine == e { settings.engine = .openAI }
+                engineRefresh += 1
+            }
+        }
     }
 
     // MARK: Keys
