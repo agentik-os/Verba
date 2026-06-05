@@ -323,6 +323,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Dictation flow
 
     private func startRecording(forced: Profile?) {
+        // Free-tier word limit: block new dictations once the monthly quota is spent.
+        if Entitlement.freeLimitReached() { showPaywall(); return }
         recorder.requestPermission { [weak self] ok in
             guard let self else { return }
             guard ok else { self.notify("Microphone access denied", "Enable it in System Settings ▸ Privacy & Security ▸ Microphone."); return }
@@ -586,5 +588,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         a.messageText = title
         a.informativeText = body
         a.runModal()
+    }
+
+    /// Shown when a free user hits the monthly word limit.
+    private func showPaywall() {
+        state = .idle
+        overlay.hide()
+        NSApp.activate(ignoringOtherApps: true)
+        let a = NSAlert()
+        a.messageText = "You've reached your free monthly limit"
+        a.informativeText = "Free includes \(Entitlement.freeMonthlyWords.formatted()) dictated words per month. Upgrade to Verba Pro for unlimited dictation — $9.99/month."
+        a.addButton(withTitle: "Upgrade to Pro")
+        a.addButton(withTitle: "I already subscribed")
+        a.addButton(withTitle: "Later")
+        switch a.runModal() {
+        case .alertFirstButtonReturn:
+            if let u = URL(string: Entitlement.pricingURL) { NSWorkspace.shared.open(u) }
+        case .alertSecondButtonReturn:
+            openMain()   // Settings ▸ Plan to restore via email
+        default: break
+        }
     }
 }

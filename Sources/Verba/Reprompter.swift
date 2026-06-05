@@ -19,9 +19,14 @@ struct Reprompter {
 
     func reprompt(transcript: String, systemPrompt: String) async throws -> String {
         let userText = "Here is the raw voice transcript to restructure:\n\n<transcript>\n\(transcript)\n</transcript>"
-        // Claude Code (Max plan) path — no API key, uses the user's subscription.
-        if Settings.shared.repromptBackend == .claudeCode {
+        switch Settings.shared.repromptBackend {
+        case .claudeCode:
+            // No API key — uses the user's Claude subscription via the CLI.
             return try await ClaudeCode.reprompt(systemPrompt: systemPrompt, userText: userText, model: model)
+        case .openRouter:
+            return try await openRouter(systemPrompt: systemPrompt, userText: userText)
+        case .apiKey:
+            break   // falls through to the Anthropic path below
         }
         guard let key = Keychain.anthropicKey, !key.isEmpty else { throw RepromptError.missingKey }
 
@@ -58,5 +63,44 @@ struct Reprompter {
     private struct ClaudeResponse: Decodable {
         struct Block: Decodable { let type: String; let text: String? }
         let content: [Block]
+    }
+
+    // MARK: OpenRouter (OpenAI-compatible) — BYO key, any model the user picks.
+    private func openRouter(systemPrompt: String, userText: String) async throws -> String {
+        guard let key = Keychain.openRouterKey, !key.isEmpty else { throw RepromptError.missingKey }
+        let chosen = Settings.shared.openRouterModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        let modelID = chosen.isEmpty ? "anthropic/claude-3.7-sonnet" : chosen
+
+        var req = URLRequest(url: URL(string: "https://openrouter.ai/api/v1/chat/completions")!)
+        req.httpMethod = "POST"
+        req.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "content-type")
+        req.setValue("https://verba.run", forHTTPHeaderField: "HTTP-Referer")
+        req.setValue("Verba", forHTTPHeaderField: "X-Title")
+        req.timeoutInterval = 180
+
+        let payload: [String: Any] = [
+            "model": modelID,
+            "messages": [
+                ["role": "system", "content": systemPrompt],
+                ["role": "user", "content": userText],
+            ],
+        ]
+        req.httpBody = try JSONSerialization.data(withJSONObject: payload)
+
+        let (data, resp) = try await URLSession.shared.data(for: req)
+        let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(code) else {
+            throw RepromptError.http(code, String(data: data, encoding: .utf8) ?? "")
+        }
+        let parsed = try JSONDecoder().decode(OpenAIResponse.self, from: data)
+        let text = (parsed.choices.first?.message.content ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { throw RepromptError.empty }
+        return text
+    }
+
+    private struct OpenAIResponse: Decodable {
+        struct Choice: Decodable { struct Msg: Decodable { let content: String? }; let message: Msg }
+        let choices: [Choice]
     }
 }

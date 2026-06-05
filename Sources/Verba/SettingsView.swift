@@ -4,6 +4,7 @@ struct SettingsView: View {
     @ObservedObject var settings = Settings.shared
     @State private var openAIKey = Keychain.openAIKey ?? ""
     @State private var anthropicKey = Keychain.anthropicKey ?? ""
+    @State private var openRouterKey = Keychain.openRouterKey ?? ""
     @State private var verifying = false
     @State private var verifyMsg = ""
     @State private var engineTab: TranscriptionEngine = Settings.shared.engine
@@ -48,13 +49,19 @@ struct SettingsView: View {
                     ForEach(RepromptBackend.allCases) { Text($0.label).tag($0) }
                 }
                 if settings.repromptBackend == .claudeCode {
-                    Label(ClaudeCode.isAvailable ? "Claude Code detected — uses your Max/Pro plan, no API key."
+                    Label(ClaudeCode.isAvailable ? "Claude Code detected — uses your Claude Max/Pro (or free) plan, no API key."
                                                   : "Claude Code not found. Install it and run `claude` once to sign in.",
                           systemImage: ClaudeCode.isAvailable ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
                         .font(.caption).foregroundStyle(ClaudeCode.isAvailable ? .green : .orange)
                 }
-                Picker("Claude model", selection: $settings.claudeModel) {
-                    ForEach(claudeModels, id: \.self) { Text($0).tag($0) }
+                if settings.repromptBackend == .openRouter {
+                    TextField("OpenRouter model (e.g. anthropic/claude-3.7-sonnet)", text: $settings.openRouterModel)
+                    Text("Any model on openrouter.ai — e.g. openai/gpt-4o, google/gemini-2.0-flash, meta-llama/llama-3.3-70b. Add your key in the API Keys tab.")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else {
+                    Picker("Claude model", selection: $settings.claudeModel) {
+                        ForEach(claudeModels, id: \.self) { Text($0).tag($0) }
+                    }
                 }
                 Toggle("Auto-pick profile from the active app", isOn: $settings.autoDetectProfile)
                 Toggle("Use selected text as context", isOn: $settings.useSelectionContext)
@@ -189,13 +196,19 @@ struct SettingsView: View {
             }
             Section("Anthropic (Claude reprompting)") {
                 SecureField("sk-ant-…", text: $anthropicKey)
-                Text("Used for restructuring. Stored in your macOS Keychain.")
+                Text("Used for restructuring with the Anthropic API key backend. Stored in your macOS Keychain.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Section("OpenRouter (any writing model)") {
+                SecureField("sk-or-…", text: $openRouterKey)
+                Text("Bring your own OpenRouter key to use any model for restructuring. Pick the model in General ▸ Reprompting. Stored in your macOS Keychain.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section {
                 Button("Save keys") {
                     Keychain.openAIKey = openAIKey.trimmingCharacters(in: .whitespacesAndNewlines)
                     Keychain.anthropicKey = anthropicKey.trimmingCharacters(in: .whitespacesAndNewlines)
+                    Keychain.openRouterKey = openRouterKey.trimmingCharacters(in: .whitespacesAndNewlines)
                 }
             }
         }
@@ -216,9 +229,24 @@ struct SettingsView: View {
                 }
             } header: { Text("Your plan") } footer: {
                 Text(settings.isPro
-                     ? "Thanks! You can edit every mode's system prompt and create custom modes."
-                     : "Free includes the built-in Coding / Pro / Perso modes. Pro unlocks editing the system prompts (full control over how Verba reinterprets your audio) and creating your own modes.")
+                     ? "Thanks! Unlimited dictation, editable mode prompts and custom modes."
+                     : "Free includes \(Entitlement.freeMonthlyWords.formatted()) dictated words per month. Pro ($9.99/mo) unlocks unlimited dictation, editable system prompts and custom modes.")
                     .font(.caption).foregroundStyle(.secondary)
+            }
+            if !settings.isPro {
+                Section("This month") {
+                    let used = Stats.shared.wordsThisMonth
+                    let limit = Entitlement.freeMonthlyWords
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text("\(used.formatted()) / \(limit.formatted()) words")
+                            Spacer()
+                            Text("\(max(0, limit - used).formatted()) left").foregroundStyle(.secondary)
+                        }
+                        .font(.callout)
+                        ProgressView(value: Double(min(used, limit)), total: Double(limit))
+                    }
+                }
             }
             Section("Restore your subscription") {
                 TextField("Email used at checkout", text: $settings.proEmail)

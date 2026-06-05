@@ -28,6 +28,7 @@ enum Output {
     /// plain text, so formatting apps render bold/headings/lists and plain fields
     /// get the de-marked text.
     static func copyToClipboard(_ text: String, rich: Bool = false) {
+        let text = trimTrailingNewlines(text)
         let pb = NSPasteboard.general
         pb.clearContents()
         if rich {
@@ -35,6 +36,15 @@ enum Output {
         } else {
             pb.setString(text, forType: .string)
         }
+    }
+
+    /// Strip trailing newlines/whitespace so auto-paste never lands a stray Return —
+    /// a trailing newline submits the message in Slack/iMessage/search fields. We never
+    /// synthesize Enter; this also kills any newline the transcript/Markdown left behind.
+    static func trimTrailingNewlines(_ text: String) -> String {
+        var t = Substring(text)
+        while let last = t.last, last == "\n" || last == "\r" || last == " " || last == "\t" { t = t.dropLast() }
+        return String(t)
     }
 
     /// Whether we're trusted for Accessibility (needed to synthesize ⌘V into other apps).
@@ -51,7 +61,7 @@ enum Output {
     /// Returns false if Accessibility isn't granted (caller can fall back to clipboard only).
     @discardableResult
     static func paste(_ text: String, rich: Bool = false) -> Bool {
-        copyToClipboard(text, rich: rich)
+        copyToClipboard(text, rich: rich)   // already trims trailing newlines
         guard accessibilityTrusted else { return false }
 
         let src = CGEventSource(stateID: .combinedSessionState)

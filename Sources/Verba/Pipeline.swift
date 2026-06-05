@@ -42,6 +42,7 @@ enum Pipeline {
             if s.styleEnabled && !style.isEmpty {
                 sys += "\n\nADDITIONAL STYLE PREFERENCES (apply while staying faithful): \(style)"
             }
+            sys += SnippetsStore.shared.promptContext()   // intent-based snippet insertion
             let r = Reprompter(model: s.claudeModel)
 
             let sel = selection?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -66,8 +67,11 @@ enum Pipeline {
             }
         }
 
-        // Expand snippets in the final text.
-        reprompted = SnippetsStore.shared.apply(to: reprompted)
+        // Raw/Flow mode (no AI) → fall back to literal snippet expansion. In AI modes the
+        // model already handled snippets by intent via the system prompt above.
+        if !s.repromptEnabled || profile.raw {
+            reprompted = SnippetsStore.shared.apply(to: reprompted)
+        }
 
         return PipelineResult(original: original,
                               reprompted: reprompted,

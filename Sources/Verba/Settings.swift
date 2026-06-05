@@ -31,9 +31,15 @@ enum TranscriptionEngine: String, Codable, CaseIterable, Identifiable {
 /// Where the Claude reprompting runs: pay-per-token API key, or the user's
 /// Claude Code subscription (Max/Pro plan) via the local `claude` CLI.
 enum RepromptBackend: String, Codable, CaseIterable, Identifiable {
-    case apiKey, claudeCode
+    case claudeCode, apiKey, openRouter
     var id: String { rawValue }
-    var label: String { self == .apiKey ? "Anthropic API key" : "Claude Code (Max plan)" }
+    var label: String {
+        switch self {
+        case .claudeCode: return "Claude Code (Max/Pro plan)"
+        case .apiKey:     return "Anthropic API key"
+        case .openRouter: return "OpenRouter (any model)"
+        }
+    }
 }
 
 // Carbon modifier masks (avoid importing Carbon here): control|option = 4096|2048.
@@ -187,6 +193,7 @@ final class Settings: ObservableObject {
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }
     @Published var claudeModel: String { didSet { d.set(claudeModel, forKey: "claudeModel") } }
     @Published var repromptBackend: RepromptBackend { didSet { d.set(repromptBackend.rawValue, forKey: "repromptBackend") } }
+    @Published var openRouterModel: String { didSet { d.set(openRouterModel, forKey: "openRouterModel") } }
     @Published var language: String { didSet { d.set(language, forKey: "language") } }   // "" = auto-detect
 
     @Published var autoPaste: Bool { didSet { d.set(autoPaste, forKey: "autoPaste") } }
@@ -233,7 +240,8 @@ final class Settings: ObservableObject {
         engine = TranscriptionEngine(rawValue: d.string(forKey: "engine") ?? "") ?? .openAI
         localModel = d.string(forKey: "localModel") ?? "large-v3-v20240930_turbo"
         claudeModel = d.string(forKey: "claudeModel") ?? "claude-sonnet-4-6"
-        repromptBackend = RepromptBackend(rawValue: d.string(forKey: "repromptBackend") ?? "") ?? .apiKey
+        repromptBackend = RepromptBackend(rawValue: d.string(forKey: "repromptBackend") ?? "") ?? .claudeCode
+        openRouterModel = d.string(forKey: "openRouterModel") ?? "anthropic/claude-3.7-sonnet"
         language = d.string(forKey: "language") ?? ""
         autoPaste = d.object(forKey: "autoPaste") as? Bool ?? true
         copyToClipboard = d.object(forKey: "copyToClipboard") as? Bool ?? true

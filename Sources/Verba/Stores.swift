@@ -38,6 +38,12 @@ final class Stats: ObservableObject {
         saveJSON("stats.days", days)
     }
 
+    /// Words dictated in the current calendar month (drives the free-tier limit).
+    var wordsThisMonth: Int {
+        let prefix = String(dayKey().prefix(7))   // "yyyy-MM"
+        return days.filter { $0.key.hasPrefix(prefix) }.values.reduce(0) { $0 + $1.words }
+    }
+
     var totalWords: Int { days.values.reduce(0) { $0 + $1.words } }
     var totalCount: Int { days.values.reduce(0) { $0 + $1.count } }
     var totalSeconds: Double { days.values.reduce(0) { $0 + $1.seconds } }
@@ -96,12 +102,33 @@ final class SnippetsStore: ObservableObject {
     @Published var items: [Snippet] { didSet { saveJSON("snippets.items", items) } }
     private init() { items = loadJSON("snippets.items", [Snippet].self) ?? [] }
 
+    /// Literal trigger→expansion replacement. Used only in raw/Flow mode (no AI to
+    /// understand intent); AI modes use `promptContext()` instead.
     func apply(to text: String) -> String {
         var out = text
         for s in items where !s.trigger.isEmpty {
             out = out.replacingOccurrences(of: s.trigger, with: s.expansion, options: [.caseInsensitive])
         }
         return out
+    }
+
+    /// Snippet list to hand to Claude so it inserts a block ONLY when the user asks for
+    /// it by intent ("put my signature here") — not just because they mention the topic.
+    func promptContext() -> String {
+        let valid = items.filter { !$0.trigger.isEmpty && !$0.expansion.isEmpty }
+        guard !valid.isEmpty else { return "" }
+        let list = valid.map { "- \"\($0.trigger)\": \($0.expansion)" }.joined(separator: "\n")
+        return """
+
+
+        AVAILABLE SNIPPETS (saved blocks the user may ask you to insert):
+        \(list)
+
+        Insert a snippet's content ONLY when the user explicitly asks to, by intent — \
+        e.g. "put my signature here", "insert my address", "add my booking link". If the \
+        user merely mentions or describes the topic without asking to insert it, do NOT \
+        add the snippet. When inserting, output the snippet content verbatim at the right place.
+        """
     }
 }
 

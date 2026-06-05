@@ -39,4 +39,5 @@ enum Keychain {
     // Convenience accounts
     static var openAIKey: String? { get { get("openai_api_key") } set { set(newValue ?? "", for: "openai_api_key") } }
     static var anthropicKey: String? { get { get("anthropic_api_key") } set { set(newValue ?? "", for: "anthropic_api_key") } }
+    static var openRouterKey: String? { get { get("openrouter_api_key") } set { set(newValue ?? "", for: "openrouter_api_key") } }
 }

@@ -82,7 +82,7 @@ struct MainWindow: View {
         }
     }
 
-    /// A nav row. Selected = white pill with black text so it clearly stands out.
+    /// A nav row. Selected = solid black pill with white text so it clearly stands out.
     private func row(_ item: NavItem) -> some View {
         let isSel = selection == item
         return Button { selection = item } label: {
@@ -92,16 +92,12 @@ struct MainWindow: View {
                 Spacer(minLength: 0)
             }
             .font(.system(size: 13, weight: isSel ? .semibold : .regular))
-            .foregroundStyle(isSel ? Color.black : Color.primary)
+            .foregroundStyle(isSel ? Color.white : Color.primary)
             .padding(.horizontal, 10).padding(.vertical, 6)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(isSel ? Color.white : Color.clear)
-                    .shadow(color: .black.opacity(isSel ? 0.10 : 0), radius: 3, y: 1)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(Color.black.opacity(isSel ? 0.08 : 0), lineWidth: 1)
+                    .fill(isSel ? Color.black : Color.clear)
+                    .shadow(color: .black.opacity(isSel ? 0.18 : 0), radius: 3, y: 1)
             )
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }

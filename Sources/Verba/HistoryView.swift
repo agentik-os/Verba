@@ -4,6 +4,17 @@ import AppKit
 struct HistoryView: View {
     @ObservedObject var history = History.shared
     @State private var selection: HistoryEntry.ID?
+    @State private var query = ""
+
+    private var filtered: [HistoryEntry] {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !q.isEmpty else { return history.entries }
+        return history.entries.filter {
+            $0.reprompted.lowercased().contains(q)
+            || $0.original.lowercased().contains(q)
+            || $0.profileName.lowercased().contains(q)
+        }
+    }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -15,11 +26,31 @@ struct HistoryView: View {
                     Button(role: .destructive) { history.clear() } label: { Image(systemName: "trash") }
                         .buttonStyle(.borderless).help("Clear all")
                 }
-                .padding(.horizontal, 18).padding(.top, 24).padding(.bottom, 12)
+                .padding(.horizontal, 18).padding(.top, 24).padding(.bottom, 10)
+
+                // Search field.
+                HStack(spacing: 7) {
+                    Image(systemName: "magnifyingglass").foregroundStyle(.secondary).font(.system(size: 12))
+                    TextField("Search your dictations", text: $query)
+                        .textFieldStyle(.plain)
+                    if !query.isEmpty {
+                        Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
+                            .buttonStyle(.plain).foregroundStyle(.tertiary)
+                    }
+                }
+                .padding(.horizontal, 10).padding(.vertical, 7)
+                .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .padding(.horizontal, 14).padding(.bottom, 10)
 
                 ScrollView {
                     LazyVStack(spacing: 8) {
-                        ForEach(history.entries) { e in
+                        let items = filtered
+                        if items.isEmpty {
+                            Text(query.isEmpty ? "No dictations yet." : "No matches for “\(query)”.")
+                                .font(.callout).foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity).padding(.top, 30)
+                        }
+                        ForEach(items) { e in
                             Button { selection = e.id } label: { card(e, selected: e.id == selection) }
                                 .buttonStyle(.plain)
                         }
