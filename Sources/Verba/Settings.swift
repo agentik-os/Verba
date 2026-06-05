@@ -28,6 +28,21 @@ enum TranscriptionEngine: String, Codable, CaseIterable, Identifiable {
     var isLocal: Bool { self != .openAI }
 }
 
+/// Look & position of the recording indicator.
+enum OverlayStyle: String, Codable, CaseIterable, Identifiable {
+    case floating   // glass pill, bottom-center (default)
+    case island     // dark pill at the top of the screen, Dynamic-Island style
+    case minimal    // tiny top bar — just the moving waveform, for power users
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .floating: return "Floating glass (bottom)"
+        case .island:   return "Top island"
+        case .minimal:  return "Minimal bar (top)"
+        }
+    }
+}
+
 /// Where the Claude reprompting runs: pay-per-token API key, or the user's
 /// Claude Code subscription (Max/Pro plan) via the local `claude` CLI.
 enum RepromptBackend: String, Codable, CaseIterable, Identifiable {
@@ -194,6 +209,7 @@ final class Settings: ObservableObject {
     @Published var claudeModel: String { didSet { d.set(claudeModel, forKey: "claudeModel") } }
     @Published var repromptBackend: RepromptBackend { didSet { d.set(repromptBackend.rawValue, forKey: "repromptBackend") } }
     @Published var openRouterModel: String { didSet { d.set(openRouterModel, forKey: "openRouterModel") } }
+    @Published var overlayStyle: OverlayStyle { didSet { d.set(overlayStyle.rawValue, forKey: "overlayStyle") } }
     @Published var language: String { didSet { d.set(language, forKey: "language") } }   // "" = auto-detect
 
     @Published var autoPaste: Bool { didSet { d.set(autoPaste, forKey: "autoPaste") } }
@@ -242,6 +258,7 @@ final class Settings: ObservableObject {
         claudeModel = d.string(forKey: "claudeModel") ?? "claude-sonnet-4-6"
         repromptBackend = RepromptBackend(rawValue: d.string(forKey: "repromptBackend") ?? "") ?? .claudeCode
         openRouterModel = d.string(forKey: "openRouterModel") ?? "anthropic/claude-3.7-sonnet"
+        overlayStyle = OverlayStyle(rawValue: d.string(forKey: "overlayStyle") ?? "") ?? .floating
         language = d.string(forKey: "language") ?? ""
         autoPaste = d.object(forKey: "autoPaste") as? Bool ?? true
         copyToClipboard = d.object(forKey: "copyToClipboard") as? Bool ?? true

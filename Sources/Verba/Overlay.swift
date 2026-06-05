@@ -16,80 +16,138 @@ final class OverlayModel: ObservableObject {
     var onSelect: ((Profile) -> Void)?   // user switched mode mid-recording
     var onStart: ((Profile) -> Void)?    // user picked a mode from the menu → start recording
     var onCancel: (() -> Void)?          // discard / abort whatever is happening
+    @Published var style: OverlayStyle = .floating
 }
 
-/// The floating glass pill shown while recording / processing, with a live mode
-/// switcher so you can pick the reprompting style on the fly.
+/// The recording indicator. Three looks (set in Settings ▸ Recording):
+///   • floating — glass pill at the bottom (default)
+///   • island   — dark pill at the top of the screen (Dynamic-Island style)
+///   • minimal  — tiny top bar, just the moving waveform (for power users)
 struct OverlayView: View {
     @ObservedObject var model: OverlayModel
 
     var body: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 12) {
-                if model.done {
-                    Image(systemName: "checkmark.circle.fill").font(.system(size: 14)).foregroundStyle(.green)
-                    Text(model.title.isEmpty ? "Done" : model.title).font(.system(size: 13, weight: .medium))
-                } else if model.menu {
-                    Image(systemName: "mic").font(.system(size: 13)).foregroundStyle(.secondary)
-                    Text("Choose a mode").font(.system(size: 13, weight: .medium))
-                } else {
-                    Circle()
-                        .fill(model.recording ? (model.paused ? Color.orange : Color.red) : Color.primary)
-                        .frame(width: 10, height: 10)
-                        .opacity(model.recording && !model.paused ? 0.6 + Double(model.level) * 0.4 : 1)
-                    if model.recording {
-                        Button { model.onPauseToggle?() } label: {
-                            Image(systemName: model.paused ? "play.fill" : "pause.fill").font(.system(size: 11))
-                                .foregroundStyle(.secondary)
-                        }.buttonStyle(.plain).help(model.paused ? "Resume" : "Pause")
-                        Waveform(level: model.paused ? 0 : model.level, phase: model.phase).frame(width: 64, height: 24)
-                    } else {
-                        ProgressView().controlSize(.small).scaleEffect(0.8)
-                    }
-                    Text(model.paused ? "Paused" : model.title).font(.system(size: 13, weight: .medium)).lineLimit(1)
-                }
-                // Cancel (×) — discard recording or abort processing.
-                if !model.menu && !model.done {
-                    Button { model.onCancel?() } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 15)).foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain).help("Cancel (Esc)")
-                }
-            }
-
-            if (model.menu || model.recording) && !model.profiles.isEmpty {
-                HStack(spacing: 6) {
-                    ForEach(model.profiles) { p in
-                        let isActive = model.menu && p.id == model.activeID         // default in picker
-                        let isSwitch = !model.menu && p.id == model.selectedID       // current while recording
-                        let hot = isActive || isSwitch
-                        Button {
-                            if model.menu { model.onStart?(p) }
-                            else { model.selectedID = p.id; model.onSelect?(p) }
-                        } label: {
-                            Text(p.name).font(.system(size: 11, weight: hot ? .semibold : .regular))
-                            .padding(.horizontal, 10).padding(.vertical, 4)
-                            .background(Capsule().fill(
-                                isActive ? Color.primary.opacity(0.95)
-                                         : isSwitch ? Color.primary.opacity(0.9)
-                                         : Color.primary.opacity(0.08)))
-                            .foregroundStyle(hot ? Color.white : Color.primary.opacity(0.85))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                if model.menu {
-                    Text("← → · 1–9 · click — sets your default mode & dictates")
-                        .font(.system(size: 9)).foregroundStyle(.secondary)
-                }
+        Group {
+            switch model.style {
+            case .floating: floating
+            case .island:   island
+            case .minimal:  minimal
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .tint(.primary)
+    }
+
+    // MARK: Floating glass (full)
+    private var floating: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                leading(big: true)
+                if model.recording {
+                    Button { model.onPauseToggle?() } label: {
+                        Image(systemName: model.paused ? "play.fill" : "pause.fill").font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }.buttonStyle(.plain).help(model.paused ? "Resume" : "Pause")
+                    Waveform(level: model.paused ? 0 : model.level, phase: model.phase).frame(width: 64, height: 24)
+                }
+                label(size: 13)
+                if !model.menu && !model.done {
+                    Button { model.onCancel?() } label: {
+                        Image(systemName: "xmark.circle.fill").font(.system(size: 15)).foregroundStyle(.secondary)
+                    }.buttonStyle(.plain).help("Cancel (Esc)")
+                }
+            }
+            picker(font: 11)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 10)
         .glass(in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .fixedSize()
-        .tint(.primary)   // B&W accents
+    }
+
+    // MARK: Top island (dark pill)
+    private var island: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 10) {
+                leading(big: false)
+                if model.recording {
+                    Waveform(level: model.paused ? 0 : model.level, phase: model.phase).frame(width: 72, height: 18)
+                }
+                label(size: 12)
+            }
+            picker(font: 11)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 9)
+        .background(Color.black.opacity(0.92), in: Capsule(style: .continuous))
+        .overlay(Capsule(style: .continuous).strokeBorder(.white.opacity(0.08)))
+        .environment(\.colorScheme, .dark)
+        .fixedSize()
+    }
+
+    // MARK: Minimal top bar
+    private var minimal: some View {
+        VStack(spacing: 6) {
+            HStack(spacing: 8) {
+                leading(big: false)
+                Waveform(level: model.paused ? 0 : model.level, phase: model.phase).frame(width: 54, height: 14)
+                if !model.title.isEmpty { Text(model.title).font(.system(size: 11, weight: .medium)).lineLimit(1) }
+            }
+            if model.menu { picker(font: 10) }   // only surfaces when picking a mode
+        }
+        .padding(.horizontal, 12).padding(.vertical, 6)
+        .background(Color.black.opacity(0.9), in: Capsule(style: .continuous))
+        .environment(\.colorScheme, .dark)
+        .fixedSize()
+    }
+
+    // MARK: Shared pieces
+    @ViewBuilder private func leading(big: Bool) -> some View {
+        if model.done {
+            Image(systemName: "checkmark.circle.fill").font(.system(size: big ? 14 : 12)).foregroundStyle(.green)
+        } else if model.menu {
+            Image(systemName: "mic").font(.system(size: big ? 13 : 12)).foregroundStyle(.secondary)
+        } else if model.recording {
+            Circle()
+                .fill(model.paused ? Color.orange : Color.red)
+                .frame(width: big ? 10 : 8, height: big ? 10 : 8)
+                .opacity(model.paused ? 1 : 0.6 + Double(model.level) * 0.4)
+        } else {
+            ProgressView().controlSize(.small).scaleEffect(big ? 0.8 : 0.6)
+        }
+    }
+
+    @ViewBuilder private func label(size: CGFloat) -> some View {
+        if model.done {
+            Text(model.title.isEmpty ? "Done" : model.title).font(.system(size: size, weight: .medium)).lineLimit(1)
+        } else if model.menu {
+            Text("Choose a mode").font(.system(size: size, weight: .medium)).lineLimit(1)
+        } else {
+            Text(model.paused ? "Paused" : model.title).font(.system(size: size, weight: .medium)).lineLimit(1)
+        }
+    }
+
+    @ViewBuilder private func picker(font: CGFloat) -> some View {
+        if (model.menu || (model.recording && model.style == .floating)) && !model.profiles.isEmpty {
+            HStack(spacing: 6) {
+                ForEach(model.profiles) { p in
+                    let isActive = model.menu && p.id == model.activeID
+                    let isSwitch = !model.menu && p.id == model.selectedID
+                    let hot = isActive || isSwitch
+                    Button {
+                        if model.menu { model.onStart?(p) }
+                        else { model.selectedID = p.id; model.onSelect?(p) }
+                    } label: {
+                        Text(p.name).font(.system(size: font, weight: hot ? .semibold : .regular))
+                            .padding(.horizontal, 10).padding(.vertical, 4)
+                            .background(Capsule().fill(hot ? Color.primary.opacity(0.95) : Color.primary.opacity(0.1)))
+                            .foregroundStyle(hot ? (model.style == .floating ? Color.white : Color.black) : Color.primary.opacity(0.85))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            if model.menu {
+                Text("← → · 1–9 · click — sets your default mode & dictates")
+                    .font(.system(size: max(9, font - 1))).foregroundStyle(.secondary)
+            }
+        }
     }
 }
 
@@ -146,18 +204,26 @@ final class OverlayController {
 
     func show() {
         prepare()
+        model.style = Settings.shared.overlayStyle
         reposition()
         panel?.orderFrontRegardless()
     }
 
     func hide() { panel?.orderOut(nil) }
 
-    private func reposition() {
+    func reposition() {
         guard let panel, let screen = NSScreen.main else { return }
         panel.layoutIfNeeded()
         let size = panel.contentView?.fittingSize ?? NSSize(width: 260, height: 80)
         panel.setContentSize(size)
         let vf = screen.visibleFrame
-        panel.setFrameOrigin(NSPoint(x: vf.midX - size.width / 2, y: vf.minY + 90))
+        let x = vf.midX - size.width / 2
+        let y: CGFloat
+        switch model.style {
+        case .floating: y = vf.minY + 90                  // bottom center
+        case .island:   y = vf.maxY - size.height - 6     // just below the menu bar
+        case .minimal:  y = vf.maxY - size.height - 4
+        }
+        panel.setFrameOrigin(NSPoint(x: x, y: y))
     }
 }

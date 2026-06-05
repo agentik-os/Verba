@@ -93,7 +93,7 @@ struct MainWindow: View {
             }
             .font(.system(size: 13, weight: isSel ? .semibold : .regular))
             .foregroundStyle(isSel ? Color.white : Color.primary)
-            .padding(.horizontal, 10).padding(.vertical, 6)
+            .padding(.horizontal, 11).padding(.vertical, 9)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(isSel ? Color.black : Color.clear)

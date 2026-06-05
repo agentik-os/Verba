@@ -32,7 +32,13 @@ enum Output {
         let pb = NSPasteboard.general
         pb.clearContents()
         if rich {
-            pb.writeObjects([Markdown.attributed(text)])
+            // HTML→NSAttributedString leaves a trailing newline that would submit in
+            // single-line fields — strip any trailing whitespace from the rich text too.
+            let m = NSMutableAttributedString(attributedString: Markdown.attributed(text))
+            while let last = m.string.last, last == "\n" || last == "\r" || last == " " || last == "\t" {
+                m.deleteCharacters(in: NSRange(location: m.length - 1, length: 1))
+            }
+            pb.writeObjects([m])
         } else {
             pb.setString(text, forType: .string)
         }

@@ -351,12 +351,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.overlay.model.title = "Listening · \(initial.name)"
             self.overlay.model.level = 0
             self.overlay.show()
+            // Minimal style: show the mode name briefly, then leave just the moving bar.
+            if Settings.shared.overlayStyle == .minimal {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak self] in
+                    guard let self, self.state == .recording else { return }
+                    self.overlay.model.title = ""
+                    self.overlay.reposition()
+                }
+            }
             // Drive both the level and the animation phase ourselves so the meter keeps
             // moving even though the focused app (not Verba) owns the run loop.
             let t = Timer(timeInterval: 0.04, repeats: true) { [weak self] _ in
                 guard let self else { return }
-                self.overlay.model.level = self.recorder.level()
-                self.overlay.model.phase += 0.16
+                let lvl = self.recorder.level()
+                self.overlay.model.level = lvl
+                // Animation speed follows how energetically you're speaking: quiet → slow,
+                // loud/fast speech → the waveform visibly speeds up.
+                self.overlay.model.phase += 0.07 + 0.55 * Double(lvl)
             }
             RunLoop.main.add(t, forMode: .common)
             self.levelTimer = t

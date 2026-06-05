@@ -16,18 +16,19 @@ struct SettingsView: View {
     private let localModels = ["base", "small", "large-v3-v20240930_turbo", "large-v3"]
 
     var body: some View {
-        TabView {
-            general.tabItem { Label("General", systemImage: "gearshape") }
-            keys.tabItem { Label("API Keys", systemImage: "key") }
-            planTab.tabItem { Label("Plan", systemImage: "sparkles") }
+        Form {
+            generalSections
+            keySections
+            planSections
         }
+        .formStyle(.grouped)
         .frame(minWidth: 540, maxWidth: .infinity, minHeight: 460, maxHeight: .infinity)
         .tint(.primary)   // B&W accents
     }
 
     // MARK: General
-    private var general: some View {
-        Form {
+    @ViewBuilder private var generalSections: some View {
+        Group {
             Section("Engine") {
                 Picker("Engine", selection: $engineTab) {
                     ForEach(TranscriptionEngine.allCases) { Text($0.label).tag($0) }
@@ -71,6 +72,12 @@ struct SettingsView: View {
                 }
             }
             Section("Recording") {
+                Picker("Indicator", selection: $settings.overlayStyle) {
+                    ForEach(OverlayStyle.allCases) { Text($0.label).tag($0) }
+                }
+                Text("Floating glass pill at the bottom, a dark island at the top of the screen, or a tiny minimal top bar for power users.")
+                    .font(.caption).foregroundStyle(.secondary)
+
                 Picker("Style", selection: $settings.recordStyle) {
                     ForEach(RecordStyle.allCases) { Text($0.label).tag($0) }
                 }
@@ -117,7 +124,6 @@ struct SettingsView: View {
                 }
             }
         }
-        .formStyle(.grouped)
     }
 
     // MARK: Engine lifecycle (local engines: install / use / uninstall)
@@ -187,8 +193,8 @@ struct SettingsView: View {
     }
 
     // MARK: Keys
-    private var keys: some View {
-        Form {
+    @ViewBuilder private var keySections: some View {
+        Group {
             Section("OpenAI (cloud transcription)") {
                 SecureField("sk-…", text: $openAIKey)
                 Text("Used for gpt-4o-transcribe. Stored in your macOS Keychain.")
@@ -212,12 +218,11 @@ struct SettingsView: View {
                 }
             }
         }
-        .formStyle(.grouped)
     }
 
     // MARK: Plan
-    private var planTab: some View {
-        Form {
+    @ViewBuilder private var planSections: some View {
+        Group {
             Section {
                 HStack {
                     Label(settings.isPro ? "Pro" : "Free", systemImage: settings.isPro ? "sparkles" : "circle")
@@ -267,7 +272,6 @@ struct SettingsView: View {
                 }
             }
         }
-        .formStyle(.grouped)
     }
 
 }
