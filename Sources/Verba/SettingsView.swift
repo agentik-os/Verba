@@ -16,7 +16,7 @@ struct SettingsView: View {
             keys.tabItem { Label("API Keys", systemImage: "key") }
             planTab.tabItem { Label("Plan", systemImage: "sparkles") }
         }
-        .frame(minWidth: 540, minHeight: 460, maxWidth: .infinity, maxHeight: .infinity)
+        .frame(minWidth: 540, maxWidth: .infinity, minHeight: 460, maxHeight: .infinity)
     }
 
     // MARK: General
