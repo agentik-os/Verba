@@ -11,8 +11,7 @@ export default function ThemeToggle() {
 
   useEffect(() => {
     const stored = (localStorage.getItem("verba_theme") as Mode | null) ?? null;
-    const sys = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    setMode(stored ?? sys);
+    setMode(stored ?? "dark");   // dark by default
   }, []);
 
   function apply(next: Mode) {

@@ -2,19 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ---- Theme tokens (light default; dark via [data-theme] / system) ---- */
+/* ---- Theme tokens (DARK is the default; light via [data-theme="light"]) ---- */
 :root {
-  --bg: #f7f7f9;
-  --fg: #0b0b0f;
-  --muted: rgba(11, 11, 15, 0.58);
-  --tint: rgba(10, 10, 20, 0.045);
-  --tint-strong: rgba(10, 10, 20, 0.09);
-  --border: rgba(10, 10, 20, 0.11);
-  --dot: rgba(10, 10, 20, 0.055);
-  --glow: rgba(90, 110, 160, 0.10);
-  color-scheme: light;
-}
-[data-theme="dark"] {
   --bg: #08080b;
   --fg: #f3f4f7;
   --muted: rgba(243, 244, 247, 0.6);
@@ -25,14 +14,16 @@
   --glow: rgba(120, 140, 200, 0.14);
   color-scheme: dark;
 }
-/* Follow the machine when the user hasn't picked a theme. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) {
-    --bg: #08080b; --fg: #f3f4f7; --muted: rgba(243,244,247,0.6);
-    --tint: rgba(255,255,255,0.055); --tint-strong: rgba(255,255,255,0.12);
-    --border: rgba(255,255,255,0.1); --dot: rgba(255,255,255,0.05); --glow: rgba(120,140,200,0.14);
-    color-scheme: dark;
-  }
+[data-theme="light"] {
+  --bg: #f7f7f9;
+  --fg: #0b0b0f;
+  --muted: rgba(11, 11, 15, 0.58);
+  --tint: rgba(10, 10, 20, 0.045);
+  --tint-strong: rgba(10, 10, 20, 0.09);
+  --border: rgba(10, 10, 20, 0.11);
+  --dot: rgba(10, 10, 20, 0.055);
+  --glow: rgba(90, 110, 160, 0.10);
+  color-scheme: light;
 }
 
 html, body { height: 100%; }

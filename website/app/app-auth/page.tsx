@@ -12,8 +12,8 @@ export default function AppAuth() {
   const [dark, setDark] = useState(true);
 
   useEffect(() => {
-    const t = document.documentElement.getAttribute("data-theme");
-    setDark(t === "dark" || (t === null && window.matchMedia("(prefers-color-scheme: dark)").matches));
+    // Dark is the default; only an explicit light choice flips it.
+    setDark(document.documentElement.getAttribute("data-theme") !== "light");
   }, []);
 
   useEffect(() => {
@@ -66,20 +66,23 @@ export default function AppAuth() {
             },
             elements: {
               rootBox: "w-[360px] max-w-full",
-              card: "bg-[var(--tint)] backdrop-blur-xl border border-[var(--border)] shadow-2xl rounded-3xl px-7 py-8",
+              cardBox: "!bg-transparent !shadow-none",
+              card: "!bg-[var(--tint)] backdrop-blur-xl border border-[var(--border)] !shadow-2xl rounded-3xl px-7 py-8",
               headerTitle: "text-xl font-semibold",
-              headerSubtitle: "text-[var(--muted)]",
+              headerSubtitle: "!text-[var(--muted)]",
               socialButtonsBlockButton:
-                "min-h-[52px] text-base bg-[var(--tint)] border border-[var(--border)] hover:bg-[var(--tint-strong)] rounded-2xl",
+                "min-h-[52px] text-base !bg-[var(--tint)] border border-[var(--border)] hover:!bg-[var(--tint-strong)] rounded-2xl",
               socialButtonsBlockButtonText: "font-medium",
-              dividerLine: "bg-[var(--border)]",
-              dividerText: "text-[var(--muted)]",
-              formFieldLabel: "text-[var(--muted)]",
-              formFieldInput: "min-h-[52px] text-base rounded-2xl px-4 !text-black",
+              dividerLine: "!bg-[var(--border)]",
+              dividerText: "!text-[var(--muted)]",
+              formFieldLabel: "!text-[var(--muted)]",
+              formFieldInput: "min-h-[52px] text-base rounded-2xl px-4 !bg-white !text-black",
               formButtonPrimary:
-                "min-h-[52px] text-base bg-[var(--fg)] text-[var(--bg)] hover:opacity-90 rounded-2xl font-semibold",
-              footerActionLink: "text-[var(--fg)] font-medium",
-              footer: "text-[var(--muted)]",
+                "min-h-[52px] text-base !bg-[var(--fg)] !text-[var(--bg)] hover:opacity-90 rounded-2xl font-semibold",
+              footer: "!bg-transparent",
+              footerAction: "!bg-transparent",
+              footerActionText: "!text-[var(--muted)]",
+              footerActionLink: "!text-[var(--fg)] font-medium",
             },
           }}
         />
