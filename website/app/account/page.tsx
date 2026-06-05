@@ -67,7 +67,7 @@ function Panel() {
         )}
       </div>
       <a
-        href="https://github.com/agentik-os/Verba/releases/latest/download/Verba.dmg"
+        href="https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg"
         className="block glass rounded-2xl p-5 text-center font-medium hover:bg-white/10"
       >
         Download Verba for macOS

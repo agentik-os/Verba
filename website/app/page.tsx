@@ -5,13 +5,14 @@ import Link from "next/link";
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import LiveDemo from "@/components/LiveDemo";
 import Reveal from "@/components/Reveal";
+import TryIt from "@/components/TryIt";
 import { getRef } from "@/components/RefCapture";
 
 const PRICE = {
-  monthly: { amount: "$9", sub: "/month" },
-  annual: { amount: "$7", sub: "/month", note: "billed $84/year" },
+  monthly: { amount: "$9.99", sub: "/month", note: "billed monthly · cancel anytime" },
+  annual: { amount: "$84", sub: "/year", note: "≈ $7/mo · save 30%" },
 };
-const DOWNLOAD_URL = "https://github.com/agentik-os/Verba/releases/latest/download/Verba.dmg";
+const DOWNLOAD_URL = "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg";
 
 export default function Home() {
   return (
@@ -20,6 +21,7 @@ export default function Home() {
       <Nav />
       <Hero />
       <LogosStrip />
+      <TryNow />
       <ModesModels />
       <Features />
       <How />
@@ -113,6 +115,21 @@ function LogosStrip() {
           ))}
         </div>
       </div>
+    </section>
+  );
+}
+
+function TryNow() {
+  return (
+    <section id="try" className="py-24">
+      <Reveal>
+        <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">Try it right now</h2>
+        <p className="mx-auto mt-4 max-w-xl text-center muted text-balance">
+          No download, no sign-up. Record a rambling message and watch Verba turn it into clean text —
+          the exact same pipeline the app uses.
+        </p>
+      </Reveal>
+      <div className="mt-10"><TryIt /></div>
     </section>
   );
 }
@@ -278,7 +295,7 @@ function Pricing() {
             <span className="text-4xl font-semibold">{PRICE[plan].amount}</span>
             <span className="mb-1 text-sm muted">{PRICE[plan].sub}</span>
           </div>
-          <p className="mt-1 text-sm muted">{annual ? PRICE.annual.note : "billed monthly"} · 7-day trial</p>
+          <p className="mt-1 text-sm muted">{PRICE[plan].note} · 7-day trial</p>
           <ul className="mt-6 space-y-2 text-sm">
             {["Unlimited dictation", "All modes + custom modes", "Voice-command formatting", "Sync across your Macs", "Priority support"].map((b) => (
               <li key={b} className="flex gap-2"><span className="text-white">✓</span>{b}</li>
@@ -304,22 +321,30 @@ function Pricing() {
 function FAQ() {
   const qa = [
     ["Does it work in every app?", "Yes — Verba pastes into whatever you’re typing in: editors, browsers, chat apps, mail, notes. If your cursor is there, Verba can write there."],
-    ["Can it work offline?", "Yes. There’s an on-device option that transcribes entirely on your Mac, no internet required."],
-    ["What languages?", "90+ languages, with great results in English and French. It writes back in the language you spoke."],
-    ["Can it handle long recordings?", "Absolutely — talk for twenty minutes and Verba turns the whole thing into a clean, well-ordered piece of text."],
-    ["Is my data private?", "Your dictations are yours. The on-device option keeps everything local; your history is tied to your account and synced securely."],
+    ["Can it work offline?", "Yes. On-device transcription (Whisper or Parakeet) runs entirely on your Mac — no internet needed, and your audio never leaves the device."],
+    ["What languages does it understand?", "On-device Whisper covers ~99 languages worldwide. Parakeet is a faster option for 25 European languages. It writes back in the language you spoke."],
+    ["How do the AI modes work?", "Each mode is a system prompt that tells the model how to rewrite your speech, routed to the right model — Haiku for quick polish, Sonnet for intent, Opus for code. You can edit any prompt or create your own."],
+    ["Do I need an API key?", "No. Verba uses your Claude Code plan if it's installed. Otherwise bring an OpenRouter or Anthropic key — you’re never paying a markup on someone’s cloud."],
+    ["Can it handle long recordings?", "Yes — talk for twenty minutes and Verba turns the whole thing into clean, well-ordered text."],
+    ["Is my data private?", "On-device mode keeps everything local and writes nothing to disk. API keys live in your macOS Keychain. Your history is yours."],
   ];
   return (
     <section className="py-24">
-      <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">Questions</h2>
-      <div className="mx-auto mt-10 max-w-2xl divide-y divide-white/8">
-        {qa.map(([q, a]) => (
-          <details key={q} className="group py-5">
-            <summary className="flex cursor-pointer list-none items-center justify-between font-medium">
-              {q}<span className="muted transition group-open:rotate-45">+</span>
-            </summary>
-            <p className="mt-3 text-sm muted">{a}</p>
-          </details>
+      <Reveal>
+        <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">Questions, answered</h2>
+        <p className="mx-auto mt-4 max-w-lg text-center muted text-balance">Everything you’d want to know before you press the key.</p>
+      </Reveal>
+      <div className="mx-auto mt-12 grid max-w-3xl gap-3">
+        {qa.map(([q, a], i) => (
+          <Reveal key={q} delay={i * 50}>
+            <details className="group glass rounded-2xl px-6 py-5 transition hover:bg-white/[0.07]">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
+                {q}
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/10 text-lg leading-none transition-transform duration-300 group-open:rotate-45">+</span>
+              </summary>
+              <p className="mt-4 text-sm leading-relaxed muted">{a}</p>
+            </details>
+          </Reveal>
         ))}
       </div>
     </section>

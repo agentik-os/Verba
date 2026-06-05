@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { competitors, getCompetitor, VERBA, onDeviceLabel } from "@/lib/competitors";
 
-const DOWNLOAD = "https://github.com/agentik-os/Verba/releases/latest/download/Verba.dmg";
+const DOWNLOAD = "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg";
 
 export function generateStaticParams() {
   return competitors.map((c) => ({ slug: c.slug }));

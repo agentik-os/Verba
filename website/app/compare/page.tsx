@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     "How Verba compares to Wispr Flow, Superwhisper, MacWhisper, Aqua Voice, Willow, VoiceInk, Apple Dictation and Otter. Local-first, private, $9.99/mo.",
 };
 
-const DOWNLOAD = "https://github.com/agentik-os/Verba/releases/latest/download/Verba.dmg";
+const DOWNLOAD = "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg";
 
 export default function Compare() {
   return (
