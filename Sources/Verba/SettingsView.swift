@@ -90,6 +90,11 @@ struct SettingsView: View {
             Section("Output") {
                 Toggle("Auto-paste into the active field", isOn: $settings.autoPaste)
                 Toggle("Copy to clipboard", isOn: $settings.copyToClipboard)
+                Toggle("Paste with formatting (render Markdown)", isOn: $settings.richTextPaste)
+                if settings.richTextPaste {
+                    Text("Bold, headings and lists paste as real formatting in apps that support it (Notes, Mail, Slack…); plain-text fields get clean text without the * and #.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
                 Toggle("Review / edit before sending", isOn: $settings.reviewBeforeSend)
                 if !Output.accessibilityTrusted {
                     HStack {

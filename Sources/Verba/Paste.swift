@@ -24,10 +24,17 @@ enum Output {
         return text
     }
 
-    static func copyToClipboard(_ text: String) {
+    /// `rich` writes a styled (RTF) representation from Markdown alongside clean
+    /// plain text, so formatting apps render bold/headings/lists and plain fields
+    /// get the de-marked text.
+    static func copyToClipboard(_ text: String, rich: Bool = false) {
         let pb = NSPasteboard.general
         pb.clearContents()
-        pb.setString(text, forType: .string)
+        if rich {
+            pb.writeObjects([Markdown.attributed(text)])
+        } else {
+            pb.setString(text, forType: .string)
+        }
     }
 
     /// Whether we're trusted for Accessibility (needed to synthesize ⌘V into other apps).
@@ -43,8 +50,8 @@ enum Output {
     /// Put text on the clipboard and paste it into the frontmost app via ⌘V.
     /// Returns false if Accessibility isn't granted (caller can fall back to clipboard only).
     @discardableResult
-    static func paste(_ text: String) -> Bool {
-        copyToClipboard(text)
+    static func paste(_ text: String, rich: Bool = false) -> Bool {
+        copyToClipboard(text, rich: rich)
         guard accessibilityTrusted else { return false }
 
         let src = CGEventSource(stateID: .combinedSessionState)

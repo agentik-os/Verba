@@ -188,6 +188,7 @@ final class Settings: ObservableObject {
 
     @Published var autoPaste: Bool { didSet { d.set(autoPaste, forKey: "autoPaste") } }
     @Published var copyToClipboard: Bool { didSet { d.set(copyToClipboard, forKey: "copyToClipboard") } }
+    @Published var richTextPaste: Bool { didSet { d.set(richTextPaste, forKey: "richTextPaste") } }
     @Published var reviewBeforeSend: Bool { didSet { d.set(reviewBeforeSend, forKey: "reviewBeforeSend") } }
     @Published var autoDetectProfile: Bool { didSet { d.set(autoDetectProfile, forKey: "autoDetectProfile") } }
     @Published var useSelectionContext: Bool { didSet { d.set(useSelectionContext, forKey: "useSelectionContext") } }
@@ -232,6 +233,7 @@ final class Settings: ObservableObject {
         language = d.string(forKey: "language") ?? ""
         autoPaste = d.object(forKey: "autoPaste") as? Bool ?? true
         copyToClipboard = d.object(forKey: "copyToClipboard") as? Bool ?? true
+        richTextPaste = d.object(forKey: "richTextPaste") as? Bool ?? true
         reviewBeforeSend = d.object(forKey: "reviewBeforeSend") as? Bool ?? false
         autoDetectProfile = d.object(forKey: "autoDetectProfile") as? Bool ?? true
         useSelectionContext = d.object(forKey: "useSelectionContext") as? Bool ?? true

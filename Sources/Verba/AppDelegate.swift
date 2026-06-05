@@ -283,14 +283,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func finish(result: PipelineResult, audioURL: URL) {
         let deliver: (String) -> Void = { [weak self] text in
             guard let self else { return }
+            let rich = Settings.shared.richTextPaste
             if Settings.shared.autoPaste {
-                if !Output.paste(text) {
-                    Output.copyToClipboard(text)
+                if !Output.paste(text, rich: rich) {
+                    Output.copyToClipboard(text, rich: rich)
                     Output.promptAccessibility()
                     self.notify("Copied to clipboard", "Grant Accessibility to enable auto-paste.")
                 }
             } else if Settings.shared.copyToClipboard {
-                Output.copyToClipboard(text)
+                Output.copyToClipboard(text, rich: rich)
             }
             History.shared.add(original: result.original, reprompted: result.reprompted,
                                profileName: result.profileName, engine: result.engine, audioURL: audioURL)
