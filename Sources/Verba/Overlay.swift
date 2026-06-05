@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import Combine
 
 final class OverlayModel: ObservableObject {
     @Published var level: Float = 0      // 0...1 mic level
@@ -182,6 +183,8 @@ private struct Waveform: View {
 final class OverlayController {
     let model = OverlayModel()
     private var panel: NSPanel?
+    private var sizeObserver: AnyCancellable?
+    private var lastSize: NSSize = .zero
 
     /// Build the panel ahead of time so the first show() is instant.
     func prepare() {
@@ -200,6 +203,19 @@ final class OverlayController {
         p.alphaValue = 1
         panel = p
         p.layoutIfNeeded()             // warm the SwiftUI render
+        // Keep the pill centered when its content size changes (recording → transcribing →
+        // done all have different widths, which otherwise leaves it visibly off-center).
+        sizeObserver = model.objectWillChange.sink { [weak self] in
+            DispatchQueue.main.async { self?.recenterIfSizeChanged() }
+        }
+    }
+
+    private func recenterIfSizeChanged() {
+        guard let panel, panel.isVisible else { return }
+        panel.layoutIfNeeded()
+        guard let size = panel.contentView?.fittingSize, size != lastSize else { return }
+        lastSize = size
+        reposition()
     }
 
     func show() {
@@ -215,6 +231,7 @@ final class OverlayController {
         guard let panel, let screen = NSScreen.main else { return }
         panel.layoutIfNeeded()
         let size = panel.contentView?.fittingSize ?? NSSize(width: 260, height: 80)
+        lastSize = size
         panel.setContentSize(size)
         let vf = screen.visibleFrame
         let x = vf.midX - size.width / 2
