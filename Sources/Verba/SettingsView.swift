@@ -245,18 +245,18 @@ struct SettingsView: View {
             } header: { Text("Your plan") } footer: {
                 Text(settings.isPro
                      ? "Thanks! Unlimited dictation, editable mode prompts and custom modes."
-                     : "Free includes \(Entitlement.freeMonthlyWords.formatted()) dictated words per month. Pro ($9.99/mo) unlocks unlimited dictation, editable system prompts and custom modes.")
+                     : "Free is a full-Pro trial of \(Entitlement.freeTrialDictations) dictations. Pro ($9.99/mo) unlocks unlimited dictation, editable system prompts and custom modes.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             if !settings.isPro {
-                Section("This month") {
-                    let used = Stats.shared.wordsThisMonth
-                    let limit = Entitlement.freeMonthlyWords
+                Section("Free trial") {
+                    let used = Stats.shared.totalCount
+                    let limit = Entitlement.freeTrialDictations
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
-                            Text("\(used.formatted()) / \(limit.formatted()) words")
+                            Text("\(min(used, limit)) / \(limit) dictations")
                             Spacer()
-                            Text("\(max(0, limit - used).formatted()) left").foregroundStyle(.secondary)
+                            Text("\(max(0, limit - used)) left").foregroundStyle(.secondary)
                         }
                         .font(.callout)
                         ProgressView(value: Double(min(used, limit)), total: Double(limit))

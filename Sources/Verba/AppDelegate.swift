@@ -324,9 +324,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Dictation flow
 
     private func startRecording(forced: Profile?) {
-        // The tool is locked until onboarding is finished (no using it from the onboarding).
-        if !Settings.shared.onboarded { openOnboarding(); return }
-        // Free-tier word limit: block new dictations once the monthly quota is spent.
+        // Free Pro-trial: block new dictations once the trial allowance is spent.
         if Entitlement.freeLimitReached() { showPaywall(); return }
         recorder.requestPermission { [weak self] ok in
             guard let self else { return }
@@ -611,8 +609,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         overlay.hide()
         NSApp.activate(ignoringOtherApps: true)
         let a = NSAlert()
-        a.messageText = "You've reached your free monthly limit"
-        a.informativeText = "Free includes \(Entitlement.freeMonthlyWords.formatted()) dictated words per month. Upgrade to Verba Pro for unlimited dictation, $9.99/month."
+        a.messageText = "Your free trial is used up"
+        a.informativeText = "You've used your \(Entitlement.freeTrialDictations) free Pro dictations. Upgrade to Verba Pro for unlimited dictation, $9.99/month."
         a.addButton(withTitle: "Upgrade to Pro")
         a.addButton(withTitle: "I already subscribed")
         a.addButton(withTitle: "Later")

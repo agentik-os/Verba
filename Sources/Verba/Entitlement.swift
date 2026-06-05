@@ -8,16 +8,16 @@ enum Entitlement {
     static let accountURL = "https://verba.run/account"
     private static let endpoint = "https://verba.run/api/entitlement"
 
-    /// Free plan: words you can dictate per calendar month before Pro is required.
-    static let freeMonthlyWords = 10_000
+    /// Free plan = a full-Pro trial of this many dictations, then the paywall kicks in.
+    static let freeTrialDictations = 33
 
-    /// True when a non-Pro user has used up their free monthly words.
+    /// True when a non-Pro user has used up their free Pro-trial dictations.
     static func freeLimitReached() -> Bool {
-        !Settings.shared.isPro && Stats.shared.wordsThisMonth >= freeMonthlyWords
+        !Settings.shared.isPro && Stats.shared.totalCount >= freeTrialDictations
     }
 
-    static func wordsRemaining() -> Int {
-        max(0, freeMonthlyWords - Stats.shared.wordsThisMonth)
+    static func trialsRemaining() -> Int {
+        max(0, freeTrialDictations - Stats.shared.totalCount)
     }
 
     /// Verify an email against the live subscription and return whether it's active.

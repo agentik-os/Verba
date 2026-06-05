@@ -10,9 +10,6 @@ struct OnboardingView: View {
     let onDone: () -> Void
 
     @State private var step = 0
-    @StateObject private var dictation = OnboardingDictation()
-    @State private var tryMode = "Polish"
-    @State private var customPrompt = "Convert my text into binary code (just 0s and 1s)."
     @State private var anthropicKey = Keychain.anthropicKey ?? ""
     @State private var copied = false
     @State private var signingIn = false
@@ -210,8 +207,17 @@ struct OnboardingView: View {
 
     private var modes: some View {
         VStack(alignment: .leading, spacing: 14) {
-            title("Five modes, one per moment", "Verba cleans your speech differently per mode. Try it live below:")
-            tryBlock
+            title("Five modes, one per moment", "Verba cleans your speech differently per mode.")
+            HStack(spacing: 12) {
+                Image(systemName: "wand.and.stars").font(.system(size: 17)).frame(width: 26)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Try it live right now").font(.callout.weight(.medium))
+                    Text("Press Fn (or your shortcut) and speak. The floating widget appears and the result lands where your cursor is.").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(13).frame(maxWidth: .infinity, alignment: .leading)
+            .glass(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             modeCard("Flow", "Haiku", "Raw dictation, your exact words, no AI.", nil)
             modeCard("Intent", "Sonnet", "The power mode. Say what you want, then the content, Verba does exactly that.",
                      "“Turn the following into three bullet points: we ship dark mode, postpone billing, hire a designer in Q3.”")
@@ -302,64 +308,6 @@ struct OnboardingView: View {
         }
     }
 
-    // Live, in-onboarding dictation. The result lands in this field only, never on the
-    // clipboard, so it can't be used before finishing onboarding. 6 tries per mode.
-    private var tryBlock: some View {
-        let key = tryMode
-        let left = dictation.remaining(key)
-        return VStack(alignment: .leading, spacing: 10) {
-            Picker("", selection: $tryMode) {
-                ForEach(["Flow", "Polish", "Casual", "Intent", "Coding", "Custom"], id: \.self) { Text($0).tag($0) }
-            }.pickerStyle(.segmented).labelsHidden()
-
-            if tryMode == "Custom" {
-                TextField("Your instruction…", text: $customPrompt, axis: .vertical)
-                    .textFieldStyle(.plain).lineLimit(1...3)
-                    .padding(10).background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            }
-
-            HStack {
-                Button {
-                    if let p = profileForTry(key) { dictation.toggle(modeKey: key, profile: p) }
-                } label: {
-                    Label(dictation.state == .recording ? "Stop & transcribe"
-                          : dictation.state == .working ? "Working…" : "Record & try",
-                          systemImage: dictation.state == .recording ? "stop.circle.fill" : "mic.fill")
-                }
-                .buttonStyle(DarkButton())
-                .opacity(left == 0 || dictation.state == .working ? 0.4 : 1)
-                .disabled(left == 0 || dictation.state == .working)
-                Spacer()
-                Text("\(left)/6 left").font(.caption).foregroundStyle(.secondary)
-            }
-
-            ScrollView {
-                Text(dictation.error.isEmpty ? (dictation.result.isEmpty ? "Your cleaned-up text will appear here." : dictation.result) : dictation.error)
-                    .font(.callout)
-                    .foregroundStyle(dictation.error.isEmpty ? (dictation.result.isEmpty ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary)) : AnyShapeStyle(.red))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(height: 96).padding(10)
-            .background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .textSelection(.enabled)
-
-            Text("Stays here during setup. Not copied to your clipboard yet.").font(.caption2).foregroundStyle(.tertiary)
-        }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-        .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-    }
-
-    /// Resolve the profile for a try-block mode. Custom builds an ad-hoc profile from the
-    /// user's typed instruction; Flow and the built-ins come from settings.
-    private func profileForTry(_ key: String) -> Profile? {
-        if key == "Custom" {
-            let p = customPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !p.isEmpty else { return nil }
-            return Profile(name: "Custom", systemPrompt: p + "\n\nKeep the speaker's language. Output ONLY the result.")
-        }
-        return settings.profiles.first { $0.name == key }
-    }
-
     // MARK: actions
     private func doSignIn() {
         signingIn = true
@@ -434,52 +382,6 @@ struct OnboardingView: View {
             Spacer()
             if granted { Label("Granted", systemImage: "checkmark.seal.fill").labelStyle(.iconOnly).foregroundStyle(.green) }
             else { Button("Enable", action: action).glassButton() }
-        }
-    }
-}
-
-/// Runs a real dictation during onboarding, delivering the result into the onboarding
-/// field only (never the clipboard or another app). Capped at 6 tries per mode.
-@MainActor final class OnboardingDictation: ObservableObject {
-    enum S { case idle, recording, working }
-    @Published var state: S = .idle
-    @Published var result = ""
-    @Published var error = ""
-    @Published private var counts: [String: Int] = [:]
-    private let recorder = AudioRecorder()
-    let maxPerStep = 6
-
-    func remaining(_ key: String) -> Int { max(0, maxPerStep - (counts[key] ?? 0)) }
-
-    func toggle(modeKey: String, profile: Profile) {
-        switch state {
-        case .working: return
-        case .recording: stopAndRun(modeKey: modeKey, profile: profile)
-        case .idle:
-            guard remaining(modeKey) > 0 else { return }
-            recorder.requestPermission { [weak self] ok in
-                guard let self else { return }
-                guard ok, self.recorder.start() else { self.error = "Microphone access is needed."; return }
-                self.state = .recording
-            }
-        }
-    }
-
-    private func stopAndRun(modeKey: String, profile: Profile) {
-        guard let url = recorder.stop() else { state = .idle; return }
-        state = .working; error = ""; result = ""
-        Task { [weak self] in
-            do {
-                let r = try await Pipeline.run(audioURL: url, frontmostBundleID: nil, forcedProfile: profile, selection: nil) { _ in }
-                await MainActor.run {
-                    guard let self else { return }
-                    self.result = Output.trimTrailingNewlines(r.reprompted)
-                    self.counts[modeKey, default: 0] += 1
-                    self.state = .idle
-                }
-            } catch {
-                await MainActor.run { self?.error = error.localizedDescription; self?.state = .idle }
-            }
         }
     }
 }
