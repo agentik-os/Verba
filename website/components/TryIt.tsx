@@ -4,10 +4,20 @@ import { useRef, useState } from "react";
 
 type State = "idle" | "recording" | "working" | "done" | "error";
 
-/// A real, in-browser taste of Verba: record up to ~45s, we transcribe + clean it with
-/// the same pipeline the app uses. Limited to 2 free runs (cookie + IP) to deter farming.
+const MODES = [
+  { key: "polish", label: "Polish", model: "Haiku 4.5" },
+  { key: "casual", label: "Casual", model: "Haiku 4.5" },
+  { key: "intent", label: "Intent", model: "Sonnet 4.6" },
+  { key: "coding", label: "Coding", model: "Sonnet 4.6" },
+];
+
+const darkCard = { color: "#f4f5f8", "--muted": "rgba(244,245,248,0.55)" } as Record<string, string>;
+
+/// In-browser taste of Verba: pick a mode, record ~45s, we transcribe + restructure with
+/// the same pipeline the app uses. Limited to 7 free runs (cookie + IP) to deter farming.
 export default function TryIt() {
   const [state, setState] = useState<State>("idle");
+  const [mode, setMode] = useState("polish");
   const [result, setResult] = useState("");
   const [original, setOriginal] = useState("");
   const [error, setError] = useState("");
@@ -27,7 +37,7 @@ export default function TryIt() {
       rec.current = mr;
       mr.start();
       setState("recording");
-      stopTimer.current = setTimeout(() => stop(), 45_000); // hard cap ~45s
+      stopTimer.current = setTimeout(() => stop(), 45_000);
     } catch {
       setError("Microphone access is needed for the live demo.");
       setState("error");
@@ -45,6 +55,7 @@ export default function TryIt() {
       const blob = new Blob(chunks.current, { type: "audio/webm" });
       const fd = new FormData();
       fd.append("audio", blob, "clip.webm");
+      fd.append("mode", mode);
       const res = await fetch("/api/try", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "Something went wrong."); setState("error"); return; }
@@ -56,14 +67,33 @@ export default function TryIt() {
     }
   }
 
+  const current = MODES.find((x) => x.key === mode)!;
+
   return (
     <div className="mx-auto max-w-2xl">
+      {/* mode picker */}
+      <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
+        {MODES.map((x) => (
+          <button
+            key={x.key}
+            onClick={() => setMode(x.key)}
+            disabled={state === "recording" || state === "working"}
+            className={`rounded-full px-4 py-1.5 text-sm transition disabled:opacity-50 ${
+              x.key === mode ? "bg-[var(--fg)] text-[var(--bg)]" : "glass muted hover:text-[var(--fg)]"
+            }`}
+          >
+            {x.label}
+          </button>
+        ))}
+      </div>
+
       <div className="glass-strong rounded-3xl p-8 text-center">
+        <div className="mb-4 text-xs muted">{current.label} · {current.model}</div>
         <button
           onClick={state === "recording" ? stop : start}
           disabled={state === "working"}
           className={`group relative mx-auto flex h-20 w-20 items-center justify-center rounded-full transition ${
-            state === "recording" ? "bg-red-500" : "bg-[var(--fg)] text-[var(--bg)] hover:scale-105"
+            state === "recording" ? "bg-red-500 text-white" : "bg-[var(--fg)] text-[var(--bg)] hover:scale-105"
           } disabled:opacity-50`}
         >
           {state === "recording" ? (
@@ -79,24 +109,24 @@ export default function TryIt() {
           {state === "idle" && "Tap to record, ramble a message, then tap to stop."}
           {state === "recording" && "Listening… tap to stop (max 45s)."}
           {state === "working" && "Transcribing and cleaning it up…"}
-          {state === "done" && (remaining !== null ? `${remaining} free demo${remaining === 1 ? "" : "s"} left.` : "Done.")}
-          {state === "error" && <span className="text-red-300">{error}</span>}
+          {state === "done" && (remaining !== null ? `${remaining} free ${remaining === 1 ? "try" : "tries"} left.` : "Done.")}
+          {state === "error" && <span className="text-red-400">{error}</span>}
         </p>
 
         {(original || result) && (
           <div className="mt-6 grid gap-3 text-left sm:grid-cols-2">
-            <div className="rounded-2xl bg-black/30 p-4">
+            <div className="rounded-2xl bg-[#0c0c10] p-4" style={darkCard}>
               <p className="text-xs uppercase tracking-widest muted">You said</p>
-              <p className="mt-1 text-sm text-white/70">{original}</p>
+              <p className="mt-1 text-sm">{original}</p>
             </div>
-            <div className="rounded-2xl bg-[var(--tint)] p-4">
+            <div className="rounded-2xl bg-[#0c0c10] p-4" style={darkCard}>
               <p className="text-xs uppercase tracking-widest muted">Verba writes</p>
               <p className="mt-1 whitespace-pre-line text-sm">{result}</p>
             </div>
           </div>
         )}
       </div>
-      <p className="mt-3 text-center text-xs muted">No sign-up needed · 2 free tries · your clip isn't stored.</p>
+      <p className="mt-3 text-center text-xs muted">No sign-up needed · 7 free tries · your clip isn't stored.</p>
     </div>
   );
 }
