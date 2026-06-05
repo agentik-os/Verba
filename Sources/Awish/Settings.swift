@@ -1,6 +1,20 @@
 import Foundation
 import Combine
 
+enum TriggerMode: String, Codable, CaseIterable, Identifiable {
+    case hotkey     // a key combo (Carbon), toggles recording
+    case fnHold     // hold the Fn (globe) key to talk, release to send
+    case fnToggle   // tap Fn to start, tap again to stop
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .hotkey:   return "Shortcut (toggle)"
+        case .fnHold:   return "Hold Fn to talk"
+        case .fnToggle: return "Tap Fn to toggle"
+        }
+    }
+}
+
 enum TranscriptionEngine: String, Codable, CaseIterable, Identifiable {
     case openAI         // gpt-4o-transcribe (cloud, BYOK)
     case local          // WhisperKit large-v3-turbo (on-device)
@@ -77,6 +91,8 @@ final class Settings: ObservableObject {
     @Published var reviewBeforeSend: Bool { didSet { d.set(reviewBeforeSend, forKey: "reviewBeforeSend") } }
     @Published var autoDetectProfile: Bool { didSet { d.set(autoDetectProfile, forKey: "autoDetectProfile") } }
     @Published var repromptEnabled: Bool { didSet { d.set(repromptEnabled, forKey: "repromptEnabled") } }
+    @Published var triggerMode: TriggerMode { didSet { d.set(triggerMode.rawValue, forKey: "triggerMode") } }
+    @Published var onboarded: Bool { didSet { d.set(onboarded, forKey: "onboarded") } }
 
     @Published var profiles: [Profile] { didSet { persistProfiles() } }
     @Published var activeProfileID: UUID { didSet { d.set(activeProfileID.uuidString, forKey: "activeProfileID") } }
@@ -95,6 +111,8 @@ final class Settings: ObservableObject {
         reviewBeforeSend = d.object(forKey: "reviewBeforeSend") as? Bool ?? false
         autoDetectProfile = d.object(forKey: "autoDetectProfile") as? Bool ?? true
         repromptEnabled = d.object(forKey: "repromptEnabled") as? Bool ?? true
+        triggerMode = TriggerMode(rawValue: d.string(forKey: "triggerMode") ?? "") ?? .hotkey
+        onboarded = d.object(forKey: "onboarded") as? Bool ?? false
 
         // Load profiles, seeding built-ins on first launch. Use a local so we never
         // read self.profiles before both stored properties are initialized.

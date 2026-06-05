@@ -43,15 +43,30 @@ struct SettingsView: View {
                 }
                 Toggle("Auto-pick profile from the active app", isOn: $settings.autoDetectProfile)
             }
+            Section("Trigger") {
+                Picker("How to start", selection: $settings.triggerMode) {
+                    ForEach(TriggerMode.allCases) { Text($0.label).tag($0) }
+                }
+                if settings.triggerMode == .hotkey {
+                    HStack {
+                        Text("Shortcut")
+                        Spacer()
+                        ShortcutRecorder()
+                    }
+                } else {
+                    Text("Awish watches the Fn (globe) key. macOS may ask for Input Monitoring / Accessibility access the first time.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
             Section("Output") {
                 Toggle("Auto-paste into the active field", isOn: $settings.autoPaste)
                 Toggle("Copy to clipboard", isOn: $settings.copyToClipboard)
                 Toggle("Review / edit before sending", isOn: $settings.reviewBeforeSend)
-                HStack {
-                    Text("Dictation hotkey: \(HotKey.shared.label)")
-                    Spacer()
-                    if !Output.accessibilityTrusted {
-                        Button("Enable auto-paste…") { Output.promptAccessibility() }
+                if !Output.accessibilityTrusted {
+                    HStack {
+                        Text("Auto-paste needs Accessibility access")
+                        Spacer()
+                        Button("Enable…") { Output.promptAccessibility() }
                     }
                 }
             }
