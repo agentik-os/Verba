@@ -38,10 +38,9 @@ struct VerbaMark: View {
 struct MainWindow: View {
     @ObservedObject var settings = Settings.shared
     @State private var selection: NavItem? = .home
-    @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     var body: some View {
-        NavigationSplitView(columnVisibility: $columnVisibility) {
+        NavigationSplitView {
             List(selection: $selection) {
                 Section {
                     row(.home); row(.insights); row(.history)
@@ -51,24 +50,16 @@ struct MainWindow: View {
                 }
             }
             .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 280)
-            .toolbar(removing: .sidebarToggle)        // drop the default toggle + its titlebar divider
+            .navigationSplitViewColumnWidth(min: 210, ideal: 230, max: 290)
             .safeAreaInset(edge: .bottom) { sidebarFooter }
         } detail: {
             detail(selection ?? .home)
                 .frame(minWidth: 560, maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color(nsColor: .windowBackgroundColor))
-                .toolbar {
-                    if columnVisibility == .detailOnly {
-                        ToolbarItem(placement: .navigation) {
-                            Button { withAnimation { columnVisibility = .all } } label: {
-                                Image(systemName: "sidebar.leading")
-                            }.help("Show sidebar")
-                        }
-                    }
-                }
         }
         .frame(minWidth: 940, minHeight: 620)
+        // The system sidebar toggle sits top-left next to the traffic lights (ChatGPT-style).
+        // No custom detail toolbar → no extra top bar / divider.
     }
 
     private func row(_ item: NavItem) -> some View {
@@ -87,8 +78,6 @@ struct MainWindow: View {
             Spacer(minLength: 6)
             Button { selection = .settings } label: { Image(systemName: "gearshape") }
                 .buttonStyle(.borderless).help("Settings")
-            Button { withAnimation { columnVisibility = .detailOnly } } label: { Image(systemName: "sidebar.leading") }
-                .buttonStyle(.borderless).help("Hide sidebar")
         }
         .padding(.horizontal, 14).padding(.vertical, 9)
     }
