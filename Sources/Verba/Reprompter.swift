@@ -6,7 +6,7 @@ enum RepromptError: LocalizedError {
     case empty
     var errorDescription: String? {
         switch self {
-        case .missingKey: return "No Anthropic API key set. Add it in Awish ▸ Settings."
+        case .missingKey: return "No Anthropic API key set. Add it in Verba ▸ Settings."
         case .http(let code, let body): return "Claude reprompting failed (\(code)): \(body)"
         case .empty: return "Claude returned no text."
         }

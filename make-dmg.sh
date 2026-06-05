@@ -1,12 +1,12 @@
 #!/bin/bash
-# Build a drag-and-drop Awish.dmg (app on the left, Applications on the right).
+# Build a drag-and-drop Verba.dmg (app on the left, Applications on the right).
 set -e
 cd "$(dirname "$0")"
 
-APP="Awish.app"
-VOL="Awish"
-DMG="Awish.dmg"
-TMP="Awish-rw.dmg"
+APP="Verba.app"
+VOL="Verba"
+DMG="Verba.dmg"
+TMP="Verba-rw.dmg"
 
 [ -d "$APP" ] || { echo "Build $APP first (./bundle.sh)"; exit 1; }
 

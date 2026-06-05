@@ -22,7 +22,7 @@ final class History: ObservableObject {
 
     private init() {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Awish/History", isDirectory: true)
+            .appendingPathComponent("Verba/History", isDirectory: true)
         try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
         dir = base
         indexURL = base.appendingPathComponent("index.json")

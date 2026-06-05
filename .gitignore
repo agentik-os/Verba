@@ -4,9 +4,9 @@
 .DS_Store
 /tmp/
 
-Awish.app/
-Awish.dmg
-Awish.zip
+Verba.app/
+Verba.dmg
+Verba.zip
 
 # website (Next.js) build artifacts
 website/node_modules

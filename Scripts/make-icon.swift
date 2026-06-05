@@ -1,4 +1,4 @@
-// Renders Awish's app icon to a 1024px PNG. Run: swift Scripts/make-icon.swift
+// Renders Verba's app icon to a 1024px PNG. Run: swift Scripts/make-icon.swift
 import AppKit
 
 let size = 1024.0
@@ -43,6 +43,6 @@ if let sym = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: nil
 
 NSGraphicsContext.restoreGraphicsState()
 
-let out = URL(fileURLWithPath: "/tmp/awish-1024.png")
+let out = URL(fileURLWithPath: "/tmp/verba-1024.png")
 try! rep.representation(using: .png, properties: [:])!.write(to: out)
 print("wrote \(out.path)")

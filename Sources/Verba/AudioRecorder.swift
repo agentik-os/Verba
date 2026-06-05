@@ -25,7 +25,7 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
 
     @discardableResult
     func start() -> Bool {
-        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("Awish", isDirectory: true)
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("Verba", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let url = dir.appendingPathComponent("rec-\(Int(Date().timeIntervalSince1970)).m4a")
         let settings: [String: Any] = [
@@ -43,7 +43,7 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
             currentURL = url
             return true
         } catch {
-            NSLog("Awish: recorder start failed: \(error)")
+            NSLog("Verba: recorder start failed: \(error)")
             return false
         }
     }

@@ -54,7 +54,7 @@ struct SettingsView: View {
                         ShortcutRecorder()
                     }
                 } else {
-                    Text("Awish watches the Fn (globe) key. macOS may ask for Input Monitoring / Accessibility access the first time.")
+                    Text("Verba watches the Fn (globe) key. macOS may ask for Input Monitoring / Accessibility access the first time.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }

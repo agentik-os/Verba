@@ -1,11 +1,11 @@
 #!/bin/bash
-# Sign + notarize Awish so it installs with NO Gatekeeper warning.
+# Sign + notarize Verba so it installs with NO Gatekeeper warning.
 #
 # ONE-TIME SETUP (paid Apple Developer account):
 #  1. "Developer ID Application" certificate in your login keychain.
 #       security find-identity -v -p codesigning
 #  2. Store a notarization profile once (app-specific password from appleid.apple.com):
-#       xcrun notarytool store-credentials awish-notary \
+#       xcrun notarytool store-credentials verba-notary \
 #         --apple-id "you@example.com" --team-id "YOURTEAMID" \
 #         --password "xxxx-xxxx-xxxx-xxxx"
 #
@@ -15,9 +15,9 @@ set -e
 cd "$(dirname "$0")"
 
 DEVID="${DEVID:?Set DEVID to your \"Developer ID Application: …\" identity}"
-PROFILE="${NOTARY_PROFILE:-awish-notary}"
-APP="Awish.app"
-DMG="Awish.dmg"
+PROFILE="${NOTARY_PROFILE:-verba-notary}"
+APP="Verba.app"
+DMG="Verba.dmg"
 ENTITLEMENTS="$(mktemp).plist"
 
 cat > "$ENTITLEMENTS" <<'PLIST'

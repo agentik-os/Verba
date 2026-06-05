@@ -118,7 +118,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 await MainActor.run {
                     self.overlay.hide()
                     self.state = .idle
-                    self.notify("Awish failed", error.localizedDescription)
+                    self.notify("Verba failed", error.localizedDescription)
                 }
             }
         }
@@ -163,7 +163,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .recording: symbol = "mic.fill"
         case .processing: symbol = "waveform"
         }
-        button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Awish")
+        button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Verba")
         button.image?.isTemplate = true
         button.contentTintColor = (state == .recording) ? .systemRed : nil
         statusItem.menu = buildMenu()
@@ -201,7 +201,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             add(menu, "Enable auto-paste…", #selector(enableAccessibility), "")
         }
         menu.addItem(.separator())
-        add(menu, "Quit Awish", #selector(quit), "q")
+        add(menu, "Quit Verba", #selector(quit), "q")
         return menu
     }
 
@@ -218,12 +218,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Windows
 
     @objc private func openSettings() {
-        if settingsWC == nil { settingsWC = makeWindow(title: "Awish Settings", view: SettingsView(), size: NSSize(width: 560, height: 480)) }
+        if settingsWC == nil { settingsWC = makeWindow(title: "Verba Settings", view: SettingsView(), size: NSSize(width: 560, height: 480)) }
         present(settingsWC)
     }
 
     @objc private func openHistory() {
-        if historyWC == nil { historyWC = makeWindow(title: "Awish History", view: HistoryView(), size: NSSize(width: 780, height: 500)) }
+        if historyWC == nil { historyWC = makeWindow(title: "Verba History", view: HistoryView(), size: NSSize(width: 780, height: 500)) }
         present(historyWC)
     }
 
@@ -231,7 +231,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let view = OnboardingView { [weak self] in
             self?.onboardingWC?.close(); self?.onboardingWC = nil
         }
-        onboardingWC = makeWindow(title: "Welcome to Awish", view: view, size: NSSize(width: 560, height: 640))
+        onboardingWC = makeWindow(title: "Welcome to Verba", view: view, size: NSSize(width: 560, height: 640))
         present(onboardingWC)
     }
 

@@ -35,7 +35,7 @@ final class HotKey {
             return noErr
         }, 1, &eventType, selfPtr, &handler)
 
-        let hotKeyID = EventHotKeyID(signature: OSType(0x41575348 /* 'AWSH' */), id: 1)
+        let hotKeyID = EventHotKeyID(signature: OSType(0x56455242 /* 'VERB' */), id: 1)
         RegisterEventHotKey(keyCode, modifiers, hotKeyID, GetApplicationEventTarget(), 0, &ref)
     }
 

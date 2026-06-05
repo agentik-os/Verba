@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "Awish",
+    name: "Verba",
     platforms: [.macOS(.v14)],
     dependencies: [
         // Local, on-device transcription (Whisper large-v3-turbo on Apple Silicon).
@@ -10,11 +10,11 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: "Awish",
+            name: "Verba",
             dependencies: [
                 .product(name: "WhisperKit", package: "WhisperKit"),
             ],
-            path: "Sources/Awish",
+            path: "Sources/Verba",
             swiftSettings: [ .swiftLanguageMode(.v5) ]
         )
     ]

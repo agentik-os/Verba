@@ -1,6 +1,6 @@
-# Awish
+# Verba
 
-A macOS **menu-bar** dictation app — talk, and Awish transcribes you and uses
+A macOS **menu-bar** dictation app — talk, and Verba transcribes you and uses
 **Claude** to restructure your rambling stream-of-consciousness into a clean,
 well-ordered prompt or message. Think Wispr Flow, but the cleanup is done by an
 LLM you control, with your own API keys.
@@ -23,7 +23,7 @@ profiles.
    (with the audio), Wispr-Flow style. Optionally review/edit before it lands.
 
 **BYOK** — you bring your own OpenAI + Anthropic keys (stored in the macOS
-Keychain). Awish makes no API calls of its own.
+Keychain). Verba makes no API calls of its own.
 
 ## Profiles
 
@@ -34,7 +34,7 @@ Claude system prompt you can edit, plus a list of app bundle IDs it auto-matches
 ## Build
 
 ```sh
-swift build -c release        # or ./bundle.sh to assemble Awish.app
+swift build -c release        # or ./bundle.sh to assemble Verba.app
 ```
 
 Requires macOS 14+, Swift 6 (Xcode 26). Local transcription downloads the
@@ -43,7 +43,7 @@ WhisperKit model on first use, then runs fully offline.
 ## Permissions
 
 - **Microphone** — to record you.
-- **Accessibility** — to auto-paste (⌘V) into other apps. Without it, Awish
+- **Accessibility** — to auto-paste (⌘V) into other apps. Without it, Verba
   falls back to copying to the clipboard.
 
 ---

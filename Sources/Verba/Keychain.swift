@@ -3,7 +3,7 @@ import Security
 
 /// Tiny Keychain wrapper for BYOK API keys. Keys never touch UserDefaults or disk in plaintext.
 enum Keychain {
-    private static let service = "com.agentik.awish"
+    private static let service = "com.agentik.verba"
 
     static func set(_ value: String, for account: String) {
         let data = Data(value.utf8)

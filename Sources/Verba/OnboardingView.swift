@@ -11,7 +11,7 @@ struct OnboardingView: View {
         GlassContainer(spacing: 16) {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Welcome to Awish").font(.largeTitle.bold())
+                    Text("Welcome to Verba").font(.largeTitle.bold())
                     Text("Talk, and Claude turns your rambling into a clean prompt or message.")
                         .foregroundStyle(.secondary)
                 }
@@ -28,7 +28,7 @@ struct OnboardingView: View {
                     HStack { ShortcutRecorder(); Spacer() }
                 }
 
-                step("3", "Allow auto-paste", "Grant Accessibility so Awish can paste straight into the active field. You can skip and use the clipboard instead.") {
+                step("3", "Allow auto-paste", "Grant Accessibility so Verba can paste straight into the active field. You can skip and use the clipboard instead.") {
                     HStack {
                         Button("Open Accessibility…") { Output.promptAccessibility() }
                         if Output.accessibilityTrusted {
@@ -39,7 +39,7 @@ struct OnboardingView: View {
 
                 HStack {
                     Spacer()
-                    Button("Start using Awish") {
+                    Button("Start using Verba") {
                         Keychain.openAIKey = openAIKey.trimmingCharacters(in: .whitespacesAndNewlines)
                         Keychain.anthropicKey = anthropicKey.trimmingCharacters(in: .whitespacesAndNewlines)
                         settings.onboarded = true

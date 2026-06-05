@@ -7,7 +7,7 @@ enum TranscribeError: LocalizedError {
     case empty
     var errorDescription: String? {
         switch self {
-        case .missingKey: return "No OpenAI API key set. Add it in Awish ▸ Settings."
+        case .missingKey: return "No OpenAI API key set. Add it in Verba ▸ Settings."
         case .http(let code, let body): return "OpenAI transcription failed (\(code)): \(body)"
         case .empty: return "Nothing was transcribed (silent or unreadable audio)."
         }
@@ -27,7 +27,7 @@ struct OpenAITranscriber: Transcriber {
     func transcribe(fileURL: URL, language: String?) async throws -> String {
         guard let key = Keychain.openAIKey, !key.isEmpty else { throw TranscribeError.missingKey }
 
-        let boundary = "awish-\(UUID().uuidString)"
+        let boundary = "verba-\(UUID().uuidString)"
         var req = URLRequest(url: URL(string: "https://api.openai.com/v1/audio/transcriptions")!)
         req.httpMethod = "POST"
         req.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
