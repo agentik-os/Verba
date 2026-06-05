@@ -97,8 +97,8 @@ struct ModesView: View {
                 // Shortcut — moved up, right under the name.
                 field("Dedicated shortcut") {
                     ShortcutRecorder(label: shortcut,
-                        onCapture: { c, m in if let i = index(of: id) { settings.profiles[i].hotkeyCode = c; settings.profiles[i].hotkeyMods = m } },
-                        onClear: { if let i = index(of: id) { settings.profiles[i].hotkeyCode = nil; settings.profiles[i].hotkeyMods = nil } })
+                        onCapture: { c, m in settings.assignShortcut(keyCode: c, modifiers: m, to: .profile(id)) },
+                        onClear: { settings.clearShortcut(.profile(id)) })
                 }
 
                 if isRaw {

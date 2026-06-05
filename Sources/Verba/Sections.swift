@@ -80,8 +80,10 @@ struct HomeView: View {
     }
 
     private var triggerLabel: String {
-        settings.useFnAsPrimary ? "Fn 🌐"
-            : shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods)
+        if settings.useFnAsPrimary { return "Fn 🌐" }
+        return settings.primaryHasShortcut
+            ? shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods)
+            : "⌃⌥ + number"
     }
 
     private func stat(_ value: String, _ label: String, _ icon: String) -> some View {

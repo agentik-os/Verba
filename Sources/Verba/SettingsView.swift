@@ -74,8 +74,9 @@ struct SettingsView: View {
                         Text("Primary shortcut")
                         Spacer()
                         ShortcutRecorder(
-                            label: shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods),
-                            onCapture: { code, mods in settings.primaryKeyCode = code; settings.primaryMods = mods }
+                            label: settings.primaryHasShortcut ? shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods) : "",
+                            onCapture: { code, mods in settings.assignShortcut(keyCode: code, modifiers: mods, to: .primary) },
+                            onClear: { settings.clearShortcut(.primary) }
                         )
                     }
                 }

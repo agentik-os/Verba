@@ -39,6 +39,9 @@ enum RepromptBackend: String, Codable, CaseIterable, Identifiable {
 // Carbon modifier masks (avoid importing Carbon here): control|option = 4096|2048.
 private let kCtrlOpt: UInt32 = 4096 | 2048
 
+/// What a shortcut is being assigned to (for conflict resolution).
+enum ShortcutTarget: Equatable { case primary; case profile(UUID) }
+
 /// The shared editing contract for every profile: improve HOW it's written,
 /// never change WHAT was said. This is the fix for "Claude interprets too much".
 private let faithfulCore = """
@@ -269,6 +272,46 @@ final class Settings: ObservableObject {
 
     private func persistProfiles() {
         if let data = try? JSONEncoder().encode(profiles) { d.set(data, forKey: "profiles") }
+    }
+
+    // MARK: Shortcut assignment with conflict swap
+
+    /// Assign a shortcut, swapping it away from whoever currently holds it.
+    func assignShortcut(keyCode: UInt32, modifiers: UInt32, to target: ShortcutTarget) {
+        if let holder = holder(ofKey: keyCode, mods: modifiers), holder != target {
+            setCombo(combo(of: target), on: holder)   // previous holder inherits target's old combo
+        }
+        setCombo((keyCode, modifiers), on: target)
+    }
+
+    func clearShortcut(_ target: ShortcutTarget) { setCombo(nil, on: target) }
+
+    var primaryHasShortcut: Bool { primaryMods != 0 }
+
+    private func combo(of t: ShortcutTarget) -> (UInt32, UInt32)? {
+        switch t {
+        case .primary: return primaryMods == 0 ? nil : (primaryKeyCode, primaryMods)
+        case .profile(let id):
+            guard let p = profiles.first(where: { $0.id == id }), let c = p.hotkeyCode, let m = p.hotkeyMods else { return nil }
+            return (c, m)
+        }
+    }
+    private func setCombo(_ combo: (UInt32, UInt32)?, on t: ShortcutTarget) {
+        switch t {
+        case .primary:
+            primaryKeyCode = combo?.0 ?? 0
+            primaryMods = combo?.1 ?? 0
+        case .profile(let id):
+            if let i = profiles.firstIndex(where: { $0.id == id }) {
+                profiles[i].hotkeyCode = combo?.0
+                profiles[i].hotkeyMods = combo?.1
+            }
+        }
+    }
+    private func holder(ofKey k: UInt32, mods m: UInt32) -> ShortcutTarget? {
+        if let p = profiles.first(where: { $0.hotkeyCode == k && $0.hotkeyMods == m }) { return .profile(p.id) }
+        if primaryMods != 0, primaryKeyCode == k, primaryMods == m { return .primary }
+        return nil
     }
 
     /// Restore the built-in profiles (used after prompt changes ship in an update).

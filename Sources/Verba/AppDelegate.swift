@@ -134,7 +134,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let s = Settings.shared
         // Primary trigger (active/auto-detected profile). When Fn is the primary,
         // it's handled by ChordMonitor.onFn* instead of a Carbon hotkey.
-        if !s.useFnAsPrimary {
+        if !s.useFnAsPrimary, s.primaryHasShortcut {
             HotKeys.shared.register(id: 1, keyCode: s.primaryKeyCode, modifiers: s.primaryMods) { [weak self] in
                 self?.trigger(forced: nil)
             }
@@ -337,7 +337,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .recording: title = "Stop & process"
         case .processing: title = statusLine.isEmpty ? "Working…" : statusLine
         }
-        let trigger = shortcutLabel(keyCode: Settings.shared.primaryKeyCode, modifiers: Settings.shared.primaryMods)
+        let s = Settings.shared
+        let trigger: String = s.useFnAsPrimary ? "Fn"
+            : (s.primaryHasShortcut ? shortcutLabel(keyCode: s.primaryKeyCode, modifiers: s.primaryMods) : "⌃⌥+number")
         let item = NSMenuItem(title: "\(title)  (\(trigger))", action: #selector(menuToggle), keyEquivalent: "")
         item.target = self
         item.isEnabled = state != .processing
