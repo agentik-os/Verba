@@ -195,6 +195,7 @@ final class Settings: ObservableObject {
     @Published var reviewBeforeSend: Bool { didSet { d.set(reviewBeforeSend, forKey: "reviewBeforeSend") } }
     @Published var autoDetectProfile: Bool { didSet { d.set(autoDetectProfile, forKey: "autoDetectProfile") } }
     @Published var useSelectionContext: Bool { didSet { d.set(useSelectionContext, forKey: "useSelectionContext") } }
+    @Published var voiceCommands: Bool { didSet { d.set(voiceCommands, forKey: "voiceCommands") } }
     @Published var repromptEnabled: Bool { didSet { d.set(repromptEnabled, forKey: "repromptEnabled") } }
     @Published var recordStyle: RecordStyle { didSet { d.set(recordStyle.rawValue, forKey: "recordStyle") } }
     @Published var useFnAsPrimary: Bool { didSet { d.set(useFnAsPrimary, forKey: "useFnAsPrimary") } }
@@ -240,6 +241,7 @@ final class Settings: ObservableObject {
         reviewBeforeSend = d.object(forKey: "reviewBeforeSend") as? Bool ?? false
         autoDetectProfile = d.object(forKey: "autoDetectProfile") as? Bool ?? true
         useSelectionContext = d.object(forKey: "useSelectionContext") as? Bool ?? true
+        voiceCommands = d.object(forKey: "voiceCommands") as? Bool ?? true
         repromptEnabled = d.object(forKey: "repromptEnabled") as? Bool ?? true
         recordStyle = RecordStyle(rawValue: d.string(forKey: "recordStyle") ?? "") ?? .lock
         useFnAsPrimary = d.object(forKey: "useFnAsPrimary") as? Bool ?? false

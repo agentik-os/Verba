@@ -29,6 +29,8 @@ enum Pipeline {
                                                          hint: DictionaryStore.shared.hint())
         // Apply custom dictionary spellings to the raw transcript.
         original = DictionaryStore.shared.apply(to: original)
+        // Voice commands ("new line", "comma", "scratch that", …) → real formatting.
+        if s.voiceCommands { original = VoiceCommands.apply(original) }
 
         // 2. A dedicated-shortcut profile wins; else auto-detect / active profile.
         let profile = forcedProfile ?? s.profile(forBundleID: frontmostBundleID)

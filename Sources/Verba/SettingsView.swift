@@ -37,6 +37,11 @@ struct SettingsView: View {
                 }
                 TextField("Language (ISO code, blank = auto)", text: $settings.language)
                     .frame(width: 220)
+                Toggle("Voice commands", isOn: $settings.voiceCommands)
+                if settings.voiceCommands {
+                    Text("Say “new line / new paragraph”, “comma / period / question mark”, “bullet point”, or “scratch that” and Verba turns them into real formatting (works in any mode, incl. Flow). EN + FR.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             }
             Section("Reprompting (Claude)") {
                 Toggle("Restructure transcript with Claude", isOn: $settings.repromptEnabled)
