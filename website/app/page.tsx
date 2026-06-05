@@ -36,7 +36,7 @@ export default function Home() {
 function Logo() {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] bg-black ring-1 ring-white/15">
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] bg-black ring-1 ring-[var(--border)]">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
           <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z" />
           <path d="M5 11a1 1 0 1 1 2 0 5 5 0 0 0 10 0 1 1 0 1 1 2 0 7 7 0 0 1-6 6.93V21a1 1 0 1 1-2 0v-3.07A7 7 0 0 1 5 11Z" />
@@ -52,22 +52,22 @@ function Nav() {
     <nav className="flex items-center justify-between py-6">
       <Logo />
       <div className="hidden items-center gap-7 text-sm muted sm:flex">
-        <a href="#features" className="hover:text-white">Features</a>
-        <a href="#how" className="hover:text-white">How it works</a>
-        <Link href="/compare" className="hover:text-white">Compare</Link>
-        <a href="#pricing" className="hover:text-white">Pricing</a>
-        <a href="/account" className="hover:text-white">Account</a>
+        <a href="#features" className="hover:text-[var(--fg)]">Features</a>
+        <a href="#how" className="hover:text-[var(--fg)]">How it works</a>
+        <Link href="/compare" className="hover:text-[var(--fg)]">Compare</Link>
+        <a href="#pricing" className="hover:text-[var(--fg)]">Pricing</a>
+        <a href="/account" className="hover:text-[var(--fg)]">Account</a>
       </div>
       <div className="flex items-center gap-3">
         <SignedOut>
           <SignInButton mode="modal">
-            <button className="text-sm muted hover:text-white">Sign in</button>
+            <button className="text-sm muted hover:text-[var(--fg)]">Sign in</button>
           </SignInButton>
         </SignedOut>
         <SignedIn>
           <UserButton afterSignOutUrl="/" />
         </SignedIn>
-        <a href={DOWNLOAD_URL} className="rounded-full bg-white px-4 py-2 text-sm font-medium text-black hover:bg-white/90">
+        <a href={DOWNLOAD_URL} className="rounded-full bg-[var(--fg)] px-4 py-2 text-sm font-medium text-[var(--bg)] hover:opacity-90">
           Download
         </a>
       </div>
@@ -89,10 +89,10 @@ function Hero() {
         Press a key, talk, and it lands polished in whatever app you’re in.
       </p>
       <div className="mt-10 flex items-center justify-center gap-3">
-        <a href={DOWNLOAD_URL} className="rounded-full bg-white px-7 py-3 font-medium text-black hover:bg-white/90">
+        <a href={DOWNLOAD_URL} className="rounded-full bg-[var(--fg)] px-7 py-3 font-medium text-[var(--bg)] hover:opacity-90">
           Download for macOS
         </a>
-        <a href="#how" className="rounded-full glass px-7 py-3 font-medium hover:bg-white/10">See how it works</a>
+        <a href="#how" className="rounded-full glass px-7 py-3 font-medium hover:bg-[var(--tint-strong)]">See how it works</a>
       </div>
       <p className="mt-4 text-xs muted">Free to start · 7-day Pro trial · cancel anytime</p>
 
@@ -156,7 +156,7 @@ function ModesModels() {
             <div className="glass flex h-full flex-col rounded-2xl p-6">
               <div className="flex items-center justify-between">
                 <h3 className="font-medium">{mode}</h3>
-                <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs">{model}</span>
+                <span className="rounded-full bg-[var(--tint)] px-2.5 py-1 text-xs">{model}</span>
               </div>
               <p className="mt-2 text-sm muted">{desc}</p>
             </div>
@@ -177,7 +177,7 @@ function CompareTeaser() {
             Wispr Flow, Aqua and Willow send every word to their servers and charge $12–17/mo.
             Verba runs on your Mac, lets you bring your own AI account, and costs $9.99.
           </p>
-          <Link href="/compare" className="mt-8 inline-block rounded-full bg-white px-7 py-3 font-medium text-black hover:bg-white/90">
+          <Link href="/compare" className="mt-8 inline-block rounded-full bg-[var(--fg)] px-7 py-3 font-medium text-[var(--bg)] hover:opacity-90">
             See the full comparison
           </Link>
         </div>
@@ -262,7 +262,7 @@ function Pricing() {
           <button
             key={String(label)}
             onClick={() => setAnnual(a as boolean)}
-            className={`rounded-full px-5 py-2 transition ${annual === a ? "bg-white text-black" : "muted"}`}
+            className={`rounded-full px-5 py-2 transition ${annual === a ? "bg-[var(--fg)] text-[var(--bg)]" : "muted"}`}
           >
             {label}
           </button>
@@ -280,16 +280,16 @@ function Pricing() {
               <li key={b} className="flex gap-2"><span className="text-white/80">•</span>{b}</li>
             ))}
           </ul>
-          <a href={DOWNLOAD_URL} className="mt-7 block w-full rounded-xl glass px-6 py-3 text-center font-medium hover:bg-white/10">
+          <a href={DOWNLOAD_URL} className="mt-7 block w-full rounded-xl glass px-6 py-3 text-center font-medium hover:bg-[var(--tint-strong)]">
             Download free
           </a>
         </div>
 
         {/* Pro */}
-        <div className="glass-strong rounded-3xl p-8 ring-1 ring-white/15">
+        <div className="glass-strong rounded-3xl p-8 ring-1 ring-[var(--border)]">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium">Pro</h3>
-            <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs">Most popular</span>
+            <span className="rounded-full bg-[var(--tint)] px-2.5 py-1 text-xs">Most popular</span>
           </div>
           <div className="mt-3 flex items-end gap-1">
             <span className="text-4xl font-semibold">{PRICE[plan].amount}</span>
@@ -298,16 +298,16 @@ function Pricing() {
           <p className="mt-1 text-sm muted">{PRICE[plan].note} · 7-day trial</p>
           <ul className="mt-6 space-y-2 text-sm">
             {["Unlimited dictation", "All modes + custom modes", "Voice-command formatting", "Sync across your Macs", "Priority support"].map((b) => (
-              <li key={b} className="flex gap-2"><span className="text-white">✓</span>{b}</li>
+              <li key={b} className="flex gap-2"><span className="text-[var(--fg)]">✓</span>{b}</li>
             ))}
           </ul>
           {isSignedIn ? (
-            <button onClick={checkout} disabled={loading} className="mt-7 w-full rounded-xl bg-white px-6 py-3 font-medium text-black hover:bg-white/90 disabled:opacity-60">
+            <button onClick={checkout} disabled={loading} className="mt-7 w-full rounded-xl bg-[var(--fg)] px-6 py-3 font-medium text-[var(--bg)] hover:opacity-90 disabled:opacity-60">
               {loading ? "Redirecting…" : "Start 7-day trial"}
             </button>
           ) : (
             <SignInButton mode="modal" forceRedirectUrl="/#pricing">
-              <button className="mt-7 w-full rounded-xl bg-white px-6 py-3 font-medium text-black hover:bg-white/90">
+              <button className="mt-7 w-full rounded-xl bg-[var(--fg)] px-6 py-3 font-medium text-[var(--bg)] hover:opacity-90">
                 Sign in to start trial
               </button>
             </SignInButton>
@@ -337,10 +337,10 @@ function FAQ() {
       <div className="mx-auto mt-12 grid max-w-3xl gap-3">
         {qa.map(([q, a], i) => (
           <Reveal key={q} delay={i * 50}>
-            <details className="group glass rounded-2xl px-6 py-5 transition hover:bg-white/[0.07]">
+            <details className="group glass rounded-2xl px-6 py-5 transition hover:bg-[var(--tint-strong)]">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
                 {q}
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/10 text-lg leading-none transition-transform duration-300 group-open:rotate-45">+</span>
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--tint)] text-lg leading-none transition-transform duration-300 group-open:rotate-45">+</span>
               </summary>
               <p className="mt-4 text-sm leading-relaxed muted">{a}</p>
             </details>
@@ -357,11 +357,11 @@ function Footer() {
       <Logo />
       <p>Speak it. Send it clean.</p>
       <div className="flex flex-wrap justify-center gap-5">
-        <a href="/account" className="hover:text-white">Account</a>
-        <Link href="/compare" className="hover:text-white">Compare</Link>
-        <a href="#pricing" className="hover:text-white">Pricing</a>
-        <Link href="/acknowledgements" className="hover:text-white">Acknowledgements</Link>
-        <a href={DOWNLOAD_URL} className="hover:text-white">Download</a>
+        <a href="/account" className="hover:text-[var(--fg)]">Account</a>
+        <Link href="/compare" className="hover:text-[var(--fg)]">Compare</Link>
+        <a href="#pricing" className="hover:text-[var(--fg)]">Pricing</a>
+        <Link href="/acknowledgements" className="hover:text-[var(--fg)]">Acknowledgements</Link>
+        <a href={DOWNLOAD_URL} className="hover:text-[var(--fg)]">Download</a>
       </div>
       <p className="text-xs">© 2026 Verba · Runs on-device with open models</p>
     </footer>

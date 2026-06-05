@@ -9,6 +9,12 @@ import { SignIn, useUser } from "@clerk/nextjs";
 export default function AppAuth() {
   const { isSignedIn, user, isLoaded } = useUser();
   const [msg, setMsg] = useState("Finishing sign-in…");
+  const [dark, setDark] = useState(true);
+
+  useEffect(() => {
+    const t = document.documentElement.getAttribute("data-theme");
+    setDark(t === "dark" || (t === null && window.matchMedia("(prefers-color-scheme: dark)").matches));
+  }, []);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !user) return;
@@ -43,13 +49,40 @@ export default function AppAuth() {
           <p className="mt-2 text-sm muted">You can close this window if it doesn't return automatically.</p>
         </div>
       ) : (
-        <div className="text-center">
-          <h1 className="mb-6 text-2xl font-semibold tracking-tight">Sign in to Verba</h1>
-          <SignIn
-            routing="hash"
-            appearance={{ variables: { colorPrimary: "#ffffff", colorBackground: "#0b0b0f", borderRadius: "0.8rem" } }}
-          />
-        </div>
+        <SignIn
+          routing="hash"
+          appearance={{
+            variables: {
+              colorPrimary: dark ? "#ffffff" : "#0b0b0f",
+              colorBackground: "transparent",
+              colorText: dark ? "#f4f5f8" : "#0b0b0f",
+              colorTextSecondary: dark ? "rgba(244,245,248,0.6)" : "rgba(11,11,15,0.6)",
+              colorInputBackground: dark ? "#ffffff" : "#ffffff",
+              colorInputText: "#0b0b0f",
+              colorTextOnPrimaryBackground: dark ? "#0b0b0f" : "#ffffff",
+              borderRadius: "0.85rem",
+              fontSize: "1rem",
+              spacingUnit: "1.15rem",
+            },
+            elements: {
+              rootBox: "w-[360px] max-w-full",
+              card: "bg-[var(--tint)] backdrop-blur-xl border border-[var(--border)] shadow-2xl rounded-3xl px-7 py-8",
+              headerTitle: "text-xl font-semibold",
+              headerSubtitle: "text-[var(--muted)]",
+              socialButtonsBlockButton:
+                "min-h-[52px] text-base bg-[var(--tint)] border border-[var(--border)] hover:bg-[var(--tint-strong)] rounded-2xl",
+              socialButtonsBlockButtonText: "font-medium",
+              dividerLine: "bg-[var(--border)]",
+              dividerText: "text-[var(--muted)]",
+              formFieldLabel: "text-[var(--muted)]",
+              formFieldInput: "min-h-[52px] text-base rounded-2xl px-4 !text-black",
+              formButtonPrimary:
+                "min-h-[52px] text-base bg-[var(--fg)] text-[var(--bg)] hover:opacity-90 rounded-2xl font-semibold",
+              footerActionLink: "text-[var(--fg)] font-medium",
+              footer: "text-[var(--muted)]",
+            },
+          }}
+        />
       )}
     </main>
   );

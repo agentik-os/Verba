@@ -39,12 +39,12 @@ export default async function Vs({ params }: { params: Promise<{ slug: string }>
       <div className="aurora" />
       <nav className="flex items-center justify-between py-6">
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] bg-black ring-1 ring-white/15">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] bg-black ring-1 ring-[var(--border)]">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z" /><path d="M5 11a1 1 0 1 1 2 0 5 5 0 0 0 10 0 1 1 0 1 1 2 0 7 7 0 0 1-6 6.93V21a1 1 0 1 1-2 0v-3.07A7 7 0 0 1 5 11Z" /></svg>
           </span>
           <span className="text-[17px] font-semibold tracking-tight">Verba</span>
         </Link>
-        <Link href="/compare" className="text-sm muted hover:text-white">All comparisons →</Link>
+        <Link href="/compare" className="text-sm muted hover:text-[var(--fg)]">All comparisons →</Link>
       </nav>
 
       <section className="py-14 text-center">
@@ -98,7 +98,7 @@ export default async function Vs({ params }: { params: Promise<{ slug: string }>
       </div>
 
       <div className="mt-16 text-center">
-        <a href={DOWNLOAD} className="rounded-full bg-white px-7 py-3 font-medium text-black hover:bg-white/90">
+        <a href={DOWNLOAD} className="rounded-full bg-[var(--fg)] px-7 py-3 font-medium text-[var(--bg)] hover:opacity-90">
           Try Verba free
         </a>
         <p className="mt-3 text-xs muted">10,000 words/month free · Pro $9.99/mo · 7-day trial</p>

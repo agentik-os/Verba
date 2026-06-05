@@ -6,7 +6,7 @@ import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/n
 export default function Account() {
   return (
     <main className="mx-auto max-w-md px-6 py-20">
-      <a href="/" className="text-sm muted hover:text-white">← Verba</a>
+      <a href="/" className="text-sm muted hover:text-[var(--fg)]">← Verba</a>
       <div className="mt-6 flex items-center justify-between">
         <h1 className="text-3xl font-semibold tracking-tight">Account</h1>
         <SignedIn><UserButton afterSignOutUrl="/" /></SignedIn>
@@ -16,7 +16,7 @@ export default function Account() {
         <div className="mt-8 glass-strong rounded-2xl p-6 text-center">
           <p className="muted">Sign in to manage your subscription and sync your dictations.</p>
           <SignInButton mode="modal">
-            <button className="mt-5 w-full rounded-xl bg-white px-6 py-3 font-medium text-black">Sign in</button>
+            <button className="mt-5 w-full rounded-xl bg-[var(--fg)] px-6 py-3 font-medium text-[var(--bg)]">Sign in</button>
           </SignInButton>
         </div>
       </SignedOut>
@@ -52,23 +52,23 @@ function Panel() {
         <p className="mt-1 font-medium">{user?.primaryEmailAddress?.emailAddress}</p>
         <div className="mt-4 flex items-center gap-2">
           <span className="text-sm muted">Plan</span>
-          <span className={`rounded-full px-2.5 py-1 text-xs ${plan === "pro" ? "bg-white text-black" : "bg-white/10"}`}>
+          <span className={`rounded-full px-2.5 py-1 text-xs ${plan === "pro" ? "bg-[var(--fg)] text-[var(--bg)]" : "bg-[var(--tint)]"}`}>
             {plan === null ? "…" : plan === "pro" ? "Pro" : "Free"}
           </span>
         </div>
         {plan === "pro" ? (
-          <button onClick={manage} className="mt-5 w-full rounded-xl glass px-6 py-3 font-medium hover:bg-white/10">
+          <button onClick={manage} className="mt-5 w-full rounded-xl glass px-6 py-3 font-medium hover:bg-[var(--tint-strong)]">
             Manage subscription
           </button>
         ) : (
-          <a href="/#pricing" className="mt-5 block w-full rounded-xl bg-white px-6 py-3 text-center font-medium text-black">
+          <a href="/#pricing" className="mt-5 block w-full rounded-xl bg-[var(--fg)] px-6 py-3 text-center font-medium text-[var(--bg)]">
             Upgrade to Pro
           </a>
         )}
       </div>
       <a
         href="https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg"
-        className="block glass rounded-2xl p-5 text-center font-medium hover:bg-white/10"
+        className="block glass rounded-2xl p-5 text-center font-medium hover:bg-[var(--tint-strong)]"
       >
         Download Verba for macOS
       </a>

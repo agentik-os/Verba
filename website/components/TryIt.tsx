@@ -63,13 +63,13 @@ export default function TryIt() {
           onClick={state === "recording" ? stop : start}
           disabled={state === "working"}
           className={`group relative mx-auto flex h-20 w-20 items-center justify-center rounded-full transition ${
-            state === "recording" ? "bg-red-500" : "bg-white text-black hover:scale-105"
+            state === "recording" ? "bg-red-500" : "bg-[var(--fg)] text-[var(--bg)] hover:scale-105"
           } disabled:opacity-50`}
         >
           {state === "recording" ? (
             <span className="h-6 w-6 rounded-[4px] bg-white" />
           ) : state === "working" ? (
-            <span className="h-6 w-6 animate-spin rounded-full border-2 border-black/30 border-t-black" />
+            <span className="h-6 w-6 animate-spin rounded-full border-2 border-current/40 border-t-current" />
           ) : (
             <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z" /><path d="M5 11a1 1 0 1 1 2 0 5 5 0 0 0 10 0 1 1 0 1 1 2 0 7 7 0 0 1-6 6.93V21a1 1 0 1 1-2 0v-3.07A7 7 0 0 1 5 11Z" /></svg>
           )}
@@ -89,7 +89,7 @@ export default function TryIt() {
               <p className="text-xs uppercase tracking-widest muted">You said</p>
               <p className="mt-1 text-sm text-white/70">{original}</p>
             </div>
-            <div className="rounded-2xl bg-white/10 p-4">
+            <div className="rounded-2xl bg-[var(--tint)] p-4">
               <p className="text-xs uppercase tracking-widest muted">Verba writes</p>
               <p className="mt-1 whitespace-pre-line text-sm">{result}</p>
             </div>

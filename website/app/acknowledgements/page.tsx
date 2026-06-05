@@ -38,7 +38,7 @@ export default function Acknowledgements() {
     <main className="mx-auto max-w-3xl px-6 pb-24">
       <nav className="flex items-center justify-between py-6">
         <Link href="/" className="text-[17px] font-semibold tracking-tight">Verba</Link>
-        <Link href="/" className="text-sm muted hover:text-white">← Home</Link>
+        <Link href="/" className="text-sm muted hover:text-[var(--fg)]">← Home</Link>
       </nav>
       <section className="py-12">
         <h1 className="text-4xl font-semibold tracking-tight">Acknowledgements</h1>
@@ -52,7 +52,7 @@ export default function Acknowledgements() {
               <h2 className="text-sm uppercase tracking-widest muted">{g.title}</h2>
               <div className="mt-3 space-y-2">
                 {g.items.map((it) => (
-                  <a key={it.name} href={it.url} target="_blank" rel="noreferrer" className="glass block rounded-xl p-4 transition hover:bg-white/10">
+                  <a key={it.name} href={it.url} target="_blank" rel="noreferrer" className="glass block rounded-xl p-4 transition hover:bg-[var(--tint-strong)]">
                     <div className="font-medium">{it.name}</div>
                     <div className="text-sm muted">{it.note}</div>
                   </a>

@@ -2,62 +2,95 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: dark; }
+/* ---- Theme tokens (light default; dark via [data-theme] / system) ---- */
+:root {
+  --bg: #f7f7f9;
+  --fg: #0b0b0f;
+  --muted: rgba(11, 11, 15, 0.58);
+  --tint: rgba(10, 10, 20, 0.045);
+  --tint-strong: rgba(10, 10, 20, 0.09);
+  --border: rgba(10, 10, 20, 0.11);
+  --dot: rgba(10, 10, 20, 0.13);
+  --glow: rgba(90, 110, 160, 0.10);
+  color-scheme: light;
+}
+[data-theme="dark"] {
+  --bg: #08080b;
+  --fg: #f3f4f7;
+  --muted: rgba(243, 244, 247, 0.6);
+  --tint: rgba(255, 255, 255, 0.055);
+  --tint-strong: rgba(255, 255, 255, 0.12);
+  --border: rgba(255, 255, 255, 0.1);
+  --dot: rgba(255, 255, 255, 0.1);
+  --glow: rgba(120, 140, 200, 0.14);
+  color-scheme: dark;
+}
+/* Follow the machine when the user hasn't picked a theme. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #08080b; --fg: #f3f4f7; --muted: rgba(243,244,247,0.6);
+    --tint: rgba(255,255,255,0.055); --tint-strong: rgba(255,255,255,0.12);
+    --border: rgba(255,255,255,0.1); --dot: rgba(255,255,255,0.1); --glow: rgba(120,140,200,0.14);
+    color-scheme: dark;
+  }
+}
 
 html, body { height: 100%; }
 
 body {
-  background:
-    radial-gradient(900px 520px at 12% -8%, rgba(120, 130, 160, 0.12), transparent 60%),
-    radial-gradient(800px 520px at 100% 0%, rgba(90, 110, 140, 0.10), transparent 55%),
-    #08080b;
-  color: #f3f4f7;
+  background: var(--bg);
+  color: var(--fg);
   -webkit-font-smoothing: antialiased;
+  transition: background-color .4s ease, color .4s ease;
 }
 
-/* Liquid-glass surfaces */
+/* ---- Twinkling dot background (two offset layers) ---- */
+body::before, body::after {
+  content: ""; position: fixed; inset: -10%; z-index: -2; pointer-events: none;
+  background-image: radial-gradient(var(--dot) 1px, transparent 1.6px);
+}
+body::before {
+  background-size: 24px 24px;
+  animation: twinkle 4.5s ease-in-out infinite;
+}
+body::after {
+  background-size: 24px 24px; background-position: 12px 12px;
+  animation: twinkle 4.5s ease-in-out infinite 2.25s;
+  opacity: .5;
+}
+@keyframes twinkle { 0%, 100% { opacity: .35 } 50% { opacity: .85 } }
+
+/* Soft glow accent behind hero areas */
+.aurora {
+  position: absolute; inset: -20% -10% auto -10%; height: 60vh; z-index: -1;
+  background:
+    radial-gradient(40% 50% at 25% 25%, var(--glow), transparent 60%),
+    radial-gradient(38% 48% at 78% 20%, var(--glow), transparent 60%);
+  filter: blur(50px); pointer-events: none;
+}
+
+/* ---- Liquid-glass surfaces (theme-aware) ---- */
 .glass {
-  background: rgba(255, 255, 255, 0.045);
+  background: var(--tint);
   backdrop-filter: blur(24px) saturate(140%);
   -webkit-backdrop-filter: blur(24px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
 }
 .glass-strong {
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--tint-strong);
   backdrop-filter: blur(34px) saturate(160%);
   -webkit-backdrop-filter: blur(34px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border);
 }
-.hairline { border-color: rgba(255, 255, 255, 0.08); }
-
-.muted { color: rgba(243, 244, 247, 0.6); }
+.hairline { border-color: var(--border); }
+.muted { color: var(--muted); }
 .text-balance { text-wrap: balance; }
 
 @keyframes floaty { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
 .float { animation: floaty 6s ease-in-out infinite; }
 
 /* Live waveform bars */
-@keyframes bar {
-  0%, 100% { height: 8px; }
-  50%      { height: 34px; }
-}
-
-/* Slow aurora drift behind the hero */
-@keyframes aurora {
-  0%   { transform: translate3d(0,0,0) scale(1); }
-  50%  { transform: translate3d(4%, -3%, 0) scale(1.12); }
-  100% { transform: translate3d(0,0,0) scale(1); }
-}
-.aurora {
-  position: absolute; inset: -20% -10% auto -10%; height: 70vh; z-index: -1;
-  background:
-    radial-gradient(40% 50% at 25% 30%, rgba(120,140,255,0.16), transparent 60%),
-    radial-gradient(38% 48% at 75% 25%, rgba(80,200,220,0.14), transparent 60%),
-    radial-gradient(45% 55% at 55% 70%, rgba(180,120,255,0.12), transparent 60%);
-  filter: blur(40px);
-  animation: aurora 18s ease-in-out infinite;
-  pointer-events: none;
-}
+@keyframes bar { 0%, 100% { height: 8px; } 50% { height: 34px; } }
 
 /* Logo marquee */
 @keyframes scrollx { from { transform: translateX(0) } to { transform: translateX(-50%) } }
@@ -66,11 +99,16 @@ body {
 
 @keyframes shimmer { 0% { background-position: -200% 0 } 100% { background-position: 200% 0 } }
 .shine {
-  background: linear-gradient(90deg, #fff 20%, rgba(255,255,255,.45) 50%, #fff 80%);
+  background: linear-gradient(90deg, var(--fg) 20%, var(--muted) 50%, var(--fg) 80%);
   background-size: 200% auto;
   -webkit-background-clip: text; background-clip: text; color: transparent;
   animation: shimmer 6s linear infinite;
 }
 
-.grid-row td { border-top: 1px solid rgba(255,255,255,0.07); }
-.tick { color: #6ee7a8; } .cross { color: rgba(255,255,255,0.35); }
+.grid-row td { border-top: 1px solid var(--border); }
+.tick { color: #16a34a; } [data-theme="dark"] .tick { color: #6ee7a8; }
+.cross { color: var(--muted); opacity: .7; }
+
+/* ---- Inverted CTA (black on light, white on dark) ---- */
+.btn-invert { background: var(--fg); color: var(--bg); }
+.btn-invert:hover { opacity: .9; }

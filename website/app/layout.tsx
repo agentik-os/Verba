@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import RefCapture from "@/components/RefCapture";
+import ThemeToggle from "@/components/ThemeToggle";
+
+// Apply the saved theme before paint to avoid a flash; no choice → follow the machine.
+const themeScript = `(function(){try{var t=localStorage.getItem('verba_theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`;
 
 export const metadata: Metadata = {
   title: "Verba — speak it, send it clean",
@@ -23,8 +27,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <ClerkProvider
       appearance={{ variables: { colorPrimary: "#ffffff", colorBackground: "#0b0b0f", borderRadius: "0.8rem" } }}
     >
-      <html lang="en">
-        <body className="font-sans antialiased"><RefCapture />{children}</body>
+      <html lang="en" suppressHydrationWarning>
+        <head><script dangerouslySetInnerHTML={{ __html: themeScript }} /></head>
+        <body className="font-sans antialiased">
+          <RefCapture />
+          <ThemeToggle />
+          {children}
+        </body>
       </html>
     </ClerkProvider>
   );

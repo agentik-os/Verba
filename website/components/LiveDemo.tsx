@@ -112,7 +112,7 @@ export default function LiveDemo() {
             key={x.name}
             onClick={() => setMode(i)}
             className={`rounded-full px-4 py-1.5 text-sm transition ${
-              i === mode ? "bg-white text-black" : "glass muted hover:text-white"
+              i === mode ? "bg-[var(--fg)] text-[var(--bg)]" : "glass muted hover:text-[var(--fg)]"
             }`}
           >
             {x.name}
@@ -129,7 +129,7 @@ export default function LiveDemo() {
               <span className="h-2.5 w-2.5 rounded-full bg-green-400/70" />
               <span className="ml-2">{phase === "listening" ? "Listening…" : `Pasting into ${m.app}`}</span>
             </div>
-            <span className="rounded-full bg-white/10 px-2.5 py-1 font-medium text-white/80">
+            <span className="rounded-full bg-[var(--tint)] px-2.5 py-1 font-medium text-white/80">
               {m.name} · {m.model}
             </span>
           </div>
@@ -145,7 +145,7 @@ export default function LiveDemo() {
           <p className="mt-1 min-h-[3.5em] whitespace-pre-line text-[15px] leading-relaxed">
             {typed}
             {phase === "writing" && typed.length < m.wrote.length && (
-              <span className="ml-0.5 inline-block h-4 w-[2px] animate-pulse bg-white align-middle" />
+              <span className="ml-0.5 inline-block h-4 w-[2px] animate-pulse bg-[var(--fg)] align-middle" />
             )}
           </p>
         </div>
