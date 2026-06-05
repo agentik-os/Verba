@@ -10,6 +10,7 @@ struct OnboardingView: View {
     let onDone: () -> Void
 
     @State private var step = 0
+    @ObservedObject private var coach = InputCoach.shared
     @State private var anthropicKey = Keychain.anthropicKey ?? ""
     @State private var copied = false
     @State private var signingIn = false
@@ -49,7 +50,7 @@ struct OnboardingView: View {
             }
         }
         .frame(width: 620, height: 720)
-        .onAppear { pulse = true }
+        .onAppear { pulse = true; coach.reset() }
         .onReceive(poll) { _ in
             micGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
             axGranted = Output.accessibilityTrusted
@@ -172,7 +173,7 @@ struct OnboardingView: View {
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .padding(16).glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading).glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
     }
 
@@ -196,13 +197,40 @@ struct OnboardingView: View {
                     Spacer()
                 }
             }
-            Text("Three ways to use it").font(.headline)
-            grid([
-                ("hand.tap", "Single tap", "Start recording your default mode. Tap again to send."),
-                ("hand.tap.fill", "Press & hold", "Push-to-talk: hold while you speak, release to send."),
-                ("rectangle.2.swap", "Double-tap", "Open the mode picker, choose a mode on the fly."),
-            ])
+            HStack {
+                Text("Three ways to use it").font(.headline)
+                Spacer()
+                Text("Try each one now 👇").font(.caption).foregroundStyle(.secondary)
+            }
+            actionRow("hand.tap", "Single tap", "Tap Fn once to start recording your default mode. Tap again to send.", done: coach.singleFn)
+            actionRow("hand.tap.fill", "Press & hold", "Hold Fn while you speak, release to send (push-to-talk).", done: coach.holdFn)
+            actionRow("rectangle.2.swap", "Double-tap", "Double-tap Fn to open the mode picker.", done: coach.doubleFn)
+            if coach.singleFn && coach.holdFn && coach.doubleFn {
+                Label("Nice, you've got the trigger key down.", systemImage: "checkmark.seal.fill")
+                    .font(.caption).foregroundStyle(.green)
+            }
         }
+    }
+
+    /// A guided row that lights up green with a checkmark once the user performs the action.
+    private func actionRow(_ icon: String, _ title: String, _ desc: String, done: Bool) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: done ? "checkmark.circle.fill" : icon)
+                .font(.system(size: 17)).frame(width: 26)
+                .foregroundStyle(done ? AnyShapeStyle(.green) : AnyShapeStyle(.primary))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.callout.weight(.medium))
+                Text(desc).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(13).frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(done ? Color.green.opacity(0.12) : Color.clear)
+        )
+        .glass(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: done)
     }
 
     private var modes: some View {
@@ -234,15 +262,22 @@ struct OnboardingView: View {
 
     private var pauseAndFormatting: some View {
         VStack(alignment: .leading, spacing: 16) {
-            title("Pause without lifting a finger", "")
+            title("Pause without lifting a finger", "Start a recording with Fn, then press Control to try it.")
             HStack(spacing: 12) {
-                Text("⌃").font(.system(size: 26, weight: .semibold)).frame(width: 46, height: 46).glass(in: RoundedRectangle(cornerRadius: 12))
+                Text(coach.control ? "✓" : "⌃").font(.system(size: 24, weight: .semibold))
+                    .frame(width: 46, height: 46)
+                    .foregroundStyle(coach.control ? AnyShapeStyle(.green) : AnyShapeStyle(.primary))
+                    .glass(in: RoundedRectangle(cornerRadius: 12))
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Tap Control to pause / resume").font(.callout.weight(.medium))
+                    Text(coach.control ? "You paused with Control" : "Tap Control to pause / resume").font(.callout.weight(.medium))
                     Text("While recording, press ⌃ (Control) to pause listening, and again to resume. Esc cancels.").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
+                Spacer(minLength: 0)
             }
-            .padding(14).glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(coach.control ? Color.green.opacity(0.12) : .clear))
+            .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: coach.control)
             title("Format with your voice", "")
             grid([
                 ("text.append", "Say the punctuation", "“new line”, “new paragraph”, “comma”, “bullet point”."),
@@ -275,9 +310,9 @@ struct OnboardingView: View {
                         let pb = NSPasteboard.general; pb.clearContents(); pb.setString(settings.referralLink, forType: .string); copied = true
                     }.glassButton()
                 }
-                .padding(12).glass(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .padding(12).frame(maxWidth: .infinity).glass(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
-            .padding(16).glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading).glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             grid([
                 ("gift.fill", "1 free month per friend", "Every person who subscribes through your link earns you a free month, unlimited."),
                 ("checkmark.seal", "How it validates", "They count once they're a paying subscriber and have dictated 15,000+ words."),
@@ -297,7 +332,7 @@ struct OnboardingView: View {
                     Output.promptAccessibility()
                 }
             }
-            .padding(16).glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading).glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             if !(micGranted && axGranted) {
                 Label("Grant both to start using Verba.", systemImage: "lock.fill").font(.caption).foregroundStyle(.orange)
             }

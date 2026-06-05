@@ -40,7 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ChordMonitor.shared.onChordDown = { [weak self] in self?.chordDown() }
         ChordMonitor.shared.onChordUp = { [weak self] in self?.chordUp() }
         ChordMonitor.shared.onEscape = { [weak self] in self?.escapePressed() }
-        ChordMonitor.shared.onControl = { [weak self] in self?.togglePause() }   // ⌃ pauses/resumes
+        ChordMonitor.shared.onControl = { [weak self] in InputCoach.shared.note(.control); self?.togglePause() }   // ⌃ pauses/resumes
         FnTap.shared.onFnDown = { [weak self] in self?.fnDown() }
         FnTap.shared.onFnUp = { [weak self] in self?.fnUp() }
         FnTap.shared.onDigit = { [weak self] n in self?.fnDigit(n) ?? false }
@@ -226,6 +226,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if state == .recording {
             if quick {                       // 2nd tap right after starting → it was a double-tap
                 lastFnDown = nil; fnPressAt = nil
+                InputCoach.shared.note(.doubleFn)
                 cancelRecording()
                 showModeMenu()
             } else {                         // normal tap after speaking → stop & send
@@ -240,6 +241,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // sustained hold-then-release can auto-finish (push-to-talk).
         lastFnDown = now
         fnPressAt = now
+        InputCoach.shared.note(.singleFn)
         startRecording(forced: Settings.shared.activeProfile)
     }
 
@@ -249,6 +251,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Held long enough to be a deliberate push-to-talk → release sends.
         // A quick tap leaves it latched (stop on the next tap).
         if Date().timeIntervalSince(pressed) >= fnHoldThreshold {
+            InputCoach.shared.note(.holdFn)
             lastFnDown = nil
             stopAndProcess()
         }
