@@ -33,6 +33,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         applyDockPolicy()
         installMainMenu()   // menu-bar apps have no main menu → no ⌘C/⌘V in text fields without this
         Quips.refillIfLow(tone: Settings.shared.quipTone)  // pre-warm the AI-generated loading lines
+        // Re-check the real subscription on launch so Pro reflects Stripe, not just sign-in.
+        if !Settings.shared.proEmail.isEmpty {
+            Task { _ = await Settings.shared.verifyPro() }
+        }
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         refreshUI()

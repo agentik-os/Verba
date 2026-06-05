@@ -42,11 +42,7 @@ struct ModesView: View {
                 }
                 .buttonStyle(.borderless)
                 .font(.callout)
-                .padding(.horizontal, 14).padding(.vertical, 9)
-                Text("Drag to reorder · the active mode (✓) is what a single Fn tap dictates with")
-                    .font(.caption2).foregroundStyle(.tertiary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity).padding(.horizontal, 10).padding(.bottom, 6)
+                .padding(.horizontal, 14).padding(.vertical, 9).padding(.bottom, 4)
             }
             .frame(width: 232)
 

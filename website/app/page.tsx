@@ -336,9 +336,9 @@ function Pricing() {
         <div className="glass rounded-3xl p-8">
           <h3 className="text-lg font-medium">Free</h3>
           <div className="mt-3 text-4xl font-semibold">$0</div>
-          <p className="mt-1 text-sm muted">To get the feel of it.</p>
+          <p className="mt-1 text-sm muted">Try everything, 33 dictations, no card.</p>
           <ul className="mt-6 space-y-2 text-sm muted">
-            {["Dictation in any app", "On-device or cloud", "10,000 words / month", "Built-in modes"].map((b) => (
+            {["33 dictations to try, full Pro features", "On-device or cloud transcription", "All modes + voice formatting", "No card required"].map((b) => (
               <li key={b} className="flex gap-2"><span className="text-white/80">•</span>{b}</li>
             ))}
           </ul>

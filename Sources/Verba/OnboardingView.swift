@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import AVFoundation
+import IOKit.hid
 
 /// First-run flow. Real sign-in (Clerk via the web), guided tour, and BLOCKING gates:
 /// you can't pass the account step until signed in, can't finish until macOS permissions
@@ -16,6 +17,7 @@ struct OnboardingView: View {
     @State private var signingIn = false
     @State private var micGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
     @State private var axGranted = Output.accessibilityTrusted
+    @State private var imGranted = IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted
     @State private var pulse = false
 
     private let total = 8
@@ -54,6 +56,7 @@ struct OnboardingView: View {
         .onReceive(poll) { _ in
             micGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
             axGranted = Output.accessibilityTrusted
+            imGranted = IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted
         }
     }
 
@@ -107,8 +110,8 @@ struct OnboardingView: View {
             } else {
                 Button(action: finish) { Text("Start using Verba").frame(minWidth: 140) }
                     .buttonStyle(DarkButton())
-                    .opacity(micGranted && axGranted ? 1 : 0.35)
-                    .disabled(!(micGranted && axGranted))
+                    .opacity(micGranted && axGranted && imGranted ? 1 : 0.35)
+                    .disabled(!(micGranted && axGranted && imGranted))
             }
         }
         .padding(.horizontal, 30).padding(.top, 14).padding(.bottom, 46)   // roomy, not glued to the edge
@@ -331,10 +334,14 @@ struct OnboardingView: View {
                 permRow("hand.point.up.left.fill", "Accessibility", "To paste into the active field.", granted: axGranted) {
                     Output.promptAccessibility()
                 }
+                permRow("keyboard", "Input Monitoring", "To use the Fn key and stop the macOS keyboard popup.", granted: imGranted) {
+                    _ = IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
+                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent")!)
+                }
             }
             .padding(16).frame(maxWidth: .infinity, alignment: .leading).glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            if !(micGranted && axGranted) {
-                Label("Grant both to start using Verba.", systemImage: "lock.fill").font(.caption).foregroundStyle(.orange)
+            if !(micGranted && axGranted && imGranted) {
+                Label("Grant all three to start using Verba.", systemImage: "lock.fill").font(.caption).foregroundStyle(.orange)
             }
             VStack(alignment: .leading, spacing: 8) {
                 Text("Optional, your own Claude key").font(.callout.weight(.medium))

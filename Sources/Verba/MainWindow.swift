@@ -128,7 +128,10 @@ struct MainWindow: View {
         case .modes:
             VStack(alignment: .leading, spacing: 0) {
                 Text("Modes").font(.system(size: 28, weight: .bold))
-                    .padding(.horizontal, 28).padding(.top, 28).padding(.bottom, 6)
+                    .padding(.horizontal, 28).padding(.top, 28).padding(.bottom, 2)
+                Text("Drag to reorder. The active mode (✓) is what a single Fn tap dictates with.")
+                    .font(.callout).foregroundStyle(.secondary)
+                    .padding(.horizontal, 28).padding(.bottom, 10)
                 ModesView()
             }
         case .dictionary: DictionaryView()

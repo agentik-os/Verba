@@ -36,7 +36,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>LSUIElement</key>             <true/>
     <key>NSMicrophoneUsageDescription</key><string>Verba records your voice to transcribe it into text.</string>
     <key>NSHighResolutionCapable</key> <true/>
-    <key>SUFeedURL</key>               <string>https://github.com/agentik-os/Verba/releases/latest/download/appcast.xml</string>
+    <key>SUFeedURL</key>               <string>https://github.com/agentik-os/Verba-releases/releases/latest/download/appcast.xml</string>
     <key>SUPublicEDKey</key>           <string>tUNn6q4RYRTmz5eB73hBC7Gh/RQfeCk8LHbGoczQGhs=</string>
     <key>SUEnableAutomaticChecks</key> <true/>
     <key>SUAutomaticallyUpdate</key>   <true/>
