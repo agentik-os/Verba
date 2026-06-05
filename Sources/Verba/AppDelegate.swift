@@ -32,14 +32,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ChordMonitor.shared.onChordDown = { [weak self] in self?.chordDown() }
         ChordMonitor.shared.onChordUp = { [weak self] in self?.chordUp() }
         ChordMonitor.shared.onEscape = { [weak self] in self?.escapePressed() }
+        ChordMonitor.shared.onFnDown = { [weak self] in self?.fnPressed() }
+        ChordMonitor.shared.onFnUp = { [weak self] in self?.fnReleased() }
         ChordMonitor.shared.start()
         applyTriggers()
 
-        // Re-apply hotkeys when the primary shortcut or profiles change.
-        Publishers.Merge3(
-            Settings.shared.$primaryKeyCode.map { _ in () },
-            Settings.shared.$primaryMods.map { _ in () },
-            Settings.shared.$profiles.map { _ in () }
+        // Re-apply hotkeys when the primary shortcut, profiles, or Fn option change.
+        Publishers.MergeMany(
+            Settings.shared.$primaryKeyCode.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$primaryMods.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$profiles.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$useFnAsPrimary.map { _ in () }.eraseToAnyPublisher()
         )
         .dropFirst()
         .receive(on: RunLoop.main)
@@ -126,9 +129,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func applyTriggers() {
         HotKeys.shared.unregisterAll()
         let s = Settings.shared
-        // Primary trigger (active/auto-detected profile).
-        HotKeys.shared.register(id: 1, keyCode: s.primaryKeyCode, modifiers: s.primaryMods) { [weak self] in
-            self?.trigger(forced: nil)
+        // Primary trigger (active/auto-detected profile). When Fn is the primary,
+        // it's handled by ChordMonitor.onFn* instead of a Carbon hotkey.
+        if !s.useFnAsPrimary {
+            HotKeys.shared.register(id: 1, keyCode: s.primaryKeyCode, modifiers: s.primaryMods) { [weak self] in
+                self?.trigger(forced: nil)
+            }
         }
         // Per-profile dedicated shortcuts (⌃⌥1–6).
         for (i, p) in s.profiles.enumerated() {
@@ -167,6 +173,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func escapePressed() {
         if state == .recording || (state == .idle && overlay.model.menu) { cancelRecording() }
+    }
+
+    // Fn (globe) as the primary trigger — Wispr-Flow style.
+    private func fnPressed() {
+        guard Settings.shared.useFnAsPrimary else { return }
+        switch Settings.shared.recordStyle {
+        case .lock:   trigger(forced: nil)                       // tap to start, tap again to send
+        case .direct: if state == .idle { startRecording(forced: nil) }   // hold to talk
+        }
+    }
+    private func fnReleased() {
+        guard Settings.shared.useFnAsPrimary,
+              Settings.shared.recordStyle == .direct, state == .recording else { return }
+        stopAndProcess()                                          // release to send
     }
 
     private func showModeMenu() {

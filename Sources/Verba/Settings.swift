@@ -192,6 +192,7 @@ final class Settings: ObservableObject {
     @Published var autoDetectProfile: Bool { didSet { d.set(autoDetectProfile, forKey: "autoDetectProfile") } }
     @Published var repromptEnabled: Bool { didSet { d.set(repromptEnabled, forKey: "repromptEnabled") } }
     @Published var recordStyle: RecordStyle { didSet { d.set(recordStyle.rawValue, forKey: "recordStyle") } }
+    @Published var useFnAsPrimary: Bool { didSet { d.set(useFnAsPrimary, forKey: "useFnAsPrimary") } }
     @Published var onboarded: Bool { didSet { d.set(onboarded, forKey: "onboarded") } }
     @Published var showInDock: Bool { didSet { d.set(showInDock, forKey: "showInDock") } }
 
@@ -234,6 +235,7 @@ final class Settings: ObservableObject {
         autoDetectProfile = d.object(forKey: "autoDetectProfile") as? Bool ?? true
         repromptEnabled = d.object(forKey: "repromptEnabled") as? Bool ?? true
         recordStyle = RecordStyle(rawValue: d.string(forKey: "recordStyle") ?? "") ?? .lock
+        useFnAsPrimary = d.object(forKey: "useFnAsPrimary") as? Bool ?? false
         onboarded = d.object(forKey: "onboarded") as? Bool ?? false
         showInDock = d.object(forKey: "showInDock") as? Bool ?? true
         styleEnabled = d.object(forKey: "styleEnabled") as? Bool ?? false

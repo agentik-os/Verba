@@ -60,13 +60,20 @@ struct SettingsView: View {
                     ForEach(RecordStyle.allCases) { Text($0.label).tag($0) }
                 }
                 Text(settings.recordStyle.help).font(.caption).foregroundStyle(.secondary)
-                HStack {
-                    Text("Primary shortcut")
-                    Spacer()
-                    ShortcutRecorder(
-                        label: shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods),
-                        onCapture: { code, mods in settings.primaryKeyCode = code; settings.primaryMods = mods }
-                    )
+
+                Toggle("Use the Fn (🌐 globe) key", isOn: $settings.useFnAsPrimary)
+                if settings.useFnAsPrimary {
+                    Text("Fn is now your trigger (like Wispr Flow). In System Settings ▸ Keyboard, set “Press 🌐 to: Do Nothing” so macOS doesn’t steal it.")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else {
+                    HStack {
+                        Text("Primary shortcut")
+                        Spacer()
+                        ShortcutRecorder(
+                            label: shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods),
+                            onCapture: { code, mods in settings.primaryKeyCode = code; settings.primaryMods = mods }
+                        )
+                    }
                 }
                 Text("Hold ⌃⌥ to pop the mode picker; press 1–6 to dictate straight into a mode. Esc cancels a recording.")
                     .font(.caption).foregroundStyle(.secondary)

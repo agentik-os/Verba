@@ -11,12 +11,16 @@ final class ChordMonitor {
     var onChordDown: (() -> Void)?   // ⌃⌥ became held
     var onChordUp: (() -> Void)?     // ⌃⌥ released
     var onEscape: (() -> Void)?      // Esc pressed
+    var onFnDown: (() -> Void)?      // Fn (globe) pressed
+    var onFnUp: (() -> Void)?        // Fn (globe) released
 
     private var globalFlags: Any?
     private var localFlags: Any?
     private var globalKeys: Any?
     private var localKeys: Any?
     private var chordHeld = false
+    private var fnHeld = false
+    private static let fnKeyCode: UInt16 = 63   // the globe / Fn key
 
     func start() {
         stop()
@@ -47,6 +51,18 @@ final class ChordMonitor {
         } else if !both && chordHeld {
             chordHeld = false
             DispatchQueue.main.async { self.onChordUp?() }
+        }
+
+        // Fn / globe key — isolate by its own keyCode so other keys held with Fn don't fire it.
+        if e.keyCode == Self.fnKeyCode {
+            let down = f.contains(.function)
+            if down && !fnHeld {
+                fnHeld = true
+                DispatchQueue.main.async { self.onFnDown?() }
+            } else if !down && fnHeld {
+                fnHeld = false
+                DispatchQueue.main.async { self.onFnUp?() }
+            }
         }
     }
 
