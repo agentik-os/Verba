@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { competitors, VERBA, onDeviceLabel } from "@/lib/competitors";
 
 export const metadata: Metadata = {
-  title: "Verba vs the rest — dictation app comparison",
+  title: "Verba vs the rest, dictation app comparison",
   description:
     "How Verba compares to Wispr Flow, Superwhisper, MacWhisper, Aqua Voice, Willow, VoiceInk, Apple Dictation and Otter. Local-first, private, $9.99/mo.",
 };
@@ -28,7 +28,7 @@ export default function Compare() {
           How Verba compares
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-lg muted text-balance">
-          Most dictation apps send your voice to the cloud and bake the AI cost into a $12–17/mo
+          Most dictation apps send your voice to the cloud and bake the AI cost into a $12-17/mo
           bill. Verba runs on-device, lets you bring your own AI account, and costs $9.99.
         </p>
       </section>
@@ -51,7 +51,7 @@ export default function Compare() {
               <td className="p-4">{VERBA.price}</td>
               <td className="p-4 tick">Yes</td>
               <td className="p-4">{VERBA.transcription}</td>
-              <td className="p-4">Local — audio never leaves your Mac</td>
+              <td className="p-4">Local, audio never leaves your Mac</td>
             </tr>
             {competitors.map((c) => (
               <tr key={c.slug} className="grid-row">

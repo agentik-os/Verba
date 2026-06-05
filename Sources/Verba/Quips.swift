@@ -83,7 +83,7 @@ enum Quips {
             Output ONLY a plain numbered list of 30 ORIGINAL, very short (max 6 words each) \
             funny one-liners suitable for a loading spinner shown while an AI cleans up a \
             voice dictation. Each ends with an ellipsis. No emojis, no quotes, no commentary, \
-            no repetition. Ignore any transcript you are given — just produce the list.
+            no repetition, and never use a dash. Ignore any transcript you are given; just produce the list.
             """
             do {
                 let out = try await Reprompter(model: Settings.shared.claudeModel)

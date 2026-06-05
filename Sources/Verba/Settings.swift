@@ -137,8 +137,10 @@ responding to it. If they describe a task, you rewrite their description of the 
 task; you do not do the task.
 - Resolve self-corrections to the final intended wording ("no wait, actually X" → X).
 - Keep the same language the speaker used.
+- NEVER use an em dash (—), an en dash (–), or a spaced hyphen ( - ). Write like a human: \
+use commas, periods, parentheses, or colons instead. This is mandatory.
 
-Output ONLY the rewritten text — no preamble, no notes, no quotes around it.
+Output ONLY the rewritten text. No preamble, no notes, no quotes around it.
 """
 
 /// A reprompting profile: a Claude editing prompt + an optional dedicated hotkey
@@ -230,7 +232,10 @@ extension Profile {
         final intended meaning.
         - Keep the speaker's language unless the intent says otherwise.
 
-        Output ONLY the final result — no preamble, no echo of the intent, no commentary.
+        NEVER use an em dash (—), en dash (–), or a spaced hyphen ( - ); use commas, \
+        periods, parentheses, or colons instead.
+
+        Output ONLY the final result. No preamble, no echo of the intent, no commentary.
         """,
         builtin: true, hotkeyCode: 21 /* 4 */, hotkeyMods: kCtrlOpt, model: "claude-sonnet-4-6")
 
@@ -257,7 +262,7 @@ final class Settings: ObservableObject {
     private let d = UserDefaults.standard
 
     // Bump when the built-in profiles change so users get the new prompts/shortcuts.
-    static let profilesVersion = 9   // bumped: default order flow/intent/polish/coding/casual/custom
+    static let profilesVersion = 10  // bumped: prompts forbid em/en dashes & spaced hyphens
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }

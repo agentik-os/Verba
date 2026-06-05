@@ -41,7 +41,7 @@ export const competitors: Competitor[] = [
   {
     slug: "wispr-flow",
     name: "Wispr Flow",
-    tagline: "The cloud incumbent everyone compares to — polished, but it uploads everything.",
+    tagline: "The cloud incumbent everyone compares to, polished, but it uploads everything.",
     platforms: "Mac, Windows, iOS, Android",
     price: "$15/mo",
     priceNote: "$12/mo annual · free 2,000 words/week",
@@ -55,16 +55,16 @@ export const competitors: Competitor[] = [
       "SOC 2 / ISO 27001 / HIPAA available for teams",
     ],
     weaknesses: [
-      "Cloud-only — your voice always leaves your device",
+      "Cloud-only, your voice always leaves your device",
       "$15/mo, the most expensive in the category",
       "Free tier capped at 2,000 words/week",
       "No offline mode at all",
     ],
     verbaWins: [
-      "Verba transcribes on-device by default — your audio never leaves your Mac, even offline.",
+      "Verba transcribes on-device by default, your audio never leaves your Mac, even offline.",
       "$9.99/mo vs $15/mo, and a far roomier 10,000 words/month free tier.",
-      "Bring your own AI account (Claude Code / your keys) — heavy users don't subsidize a vendor's GPU bill.",
-      "Per-mode models: Opus for coding prompts, Haiku for quick polish — you control cost and quality.",
+      "Bring your own AI account (Claude Code / your keys), heavy users don't subsidize a vendor's GPU bill.",
+      "Per-mode models: Opus for coding prompts, Haiku for quick polish, you control cost and quality.",
     ],
     theirEdge: [
       "True cross-platform: Windows, iOS and Android apps today (Verba is macOS-only).",
@@ -74,7 +74,7 @@ export const competitors: Competitor[] = [
   {
     slug: "superwhisper",
     name: "Superwhisper",
-    tagline: "Local-capable and loved — but it writes your audio to disk by default.",
+    tagline: "Local-capable and loved, but it writes your audio to disk by default.",
     platforms: "macOS, Windows, iOS",
     price: "$8.49/mo",
     priceNote: "$84.99/yr · $249.99 lifetime",
@@ -106,7 +106,7 @@ export const competitors: Competitor[] = [
   {
     slug: "macwhisper",
     name: "MacWhisper",
-    tagline: "A great local transcription utility — but it's file-first, not type-anywhere.",
+    tagline: "A great local transcription utility, but it's file-first, not type-anywhere.",
     platforms: "macOS (+ iOS sibling app)",
     price: "~$69 lifetime",
     priceNote: "Gumroad Pro · App Store from $6.99/mo",
@@ -137,7 +137,7 @@ export const competitors: Competitor[] = [
   {
     slug: "aqua-voice",
     name: "Aqua Voice",
-    tagline: "Sharp natural-language editing — at the cost of being cloud-only.",
+    tagline: "Sharp natural-language editing, at the cost of being cloud-only.",
     platforms: "Mac, Windows, iOS",
     price: "~$8/mo",
     priceNote: "free 1,000-word lifetime cap",
@@ -168,9 +168,9 @@ export const competitors: Competitor[] = [
   {
     slug: "willow-voice",
     name: "Willow Voice",
-    tagline: "Style-matching done well — but offline is locked behind Pro and it's cloud by default.",
+    tagline: "Style-matching done well, but offline is locked behind Pro and it's cloud by default.",
     platforms: "Mac, Windows, iOS, Android",
-    price: "$12–15/mo",
+    price: "$12-15/mo",
     transcription: "Cloud (default)",
     onDevice: "partial",
     aiEditing: "AI Mode style-matching (tone per app/recipient), custom vocab",
@@ -182,7 +182,7 @@ export const competitors: Competitor[] = [
     ],
     weaknesses: [
       "Cloud by default; offline only on Pro",
-      "$12–15/mo",
+      "$12-15/mo",
       "Custom vocab but no per-mode model control",
     ],
     verbaWins: [
@@ -198,9 +198,9 @@ export const competitors: Competitor[] = [
   {
     slug: "voiceink",
     name: "VoiceInk",
-    tagline: "Open-source and private — but you're on your own for the AI-writing polish.",
+    tagline: "Open-source and private, but you're on your own for the AI-writing polish.",
     platforms: "macOS",
-    price: "$25–49 one-time",
+    price: "$25-49 one-time",
     priceNote: "free if built from source (GPLv3)",
     transcription: "Local Whisper + Parakeet",
     onDevice: "yes",
@@ -219,7 +219,7 @@ export const competitors: Competitor[] = [
     verbaWins: [
       "Verba's Claude restructuring, intent mode and per-mode models are first-class and tuned.",
       "Polished native UX with auto-paste, voice commands and three indicator styles.",
-      "Managed account, sync and a 7-day Pro trial — no build-from-source needed.",
+      "Managed account, sync and a 7-day Pro trial, no build-from-source needed.",
     ],
     theirEdge: [
       "Truly free and open source if you build it yourself.",
@@ -229,7 +229,7 @@ export const competitors: Competitor[] = [
   {
     slug: "apple-dictation",
     name: "Apple Dictation",
-    tagline: "Free and built in — but there's no AI cleanup at all.",
+    tagline: "Free and built in, but there's no AI cleanup at all.",
     platforms: "macOS, iOS (built-in)",
     price: "Free",
     transcription: "On-device (Apple Silicon) for many languages",
@@ -242,12 +242,12 @@ export const competitors: Competitor[] = [
       "Zero setup",
     ],
     weaknesses: [
-      "No AI restructuring — raw transcript only",
+      "No AI restructuring, raw transcript only",
       "No modes, no formatting commands, no intent",
       "Punctuation and ordering are left to you",
     ],
     verbaWins: [
-      "Verba turns rambling speech into clean, structured, ready-to-send text — Apple Dictation just transcribes.",
+      "Verba turns rambling speech into clean, structured, ready-to-send text, Apple Dictation just transcribes.",
       "Modes, intent, voice-command formatting and per-app routing.",
       "Still on-device and private, with the AI layer Apple doesn't offer.",
     ],
@@ -278,7 +278,7 @@ export const competitors: Competitor[] = [
       "Overkill for quick dictation into apps",
     ],
     verbaWins: [
-      "Verba dictates into whatever app your cursor is in — Otter is for recording meetings.",
+      "Verba dictates into whatever app your cursor is in, Otter is for recording meetings.",
       "On-device and private; no upload of your speech.",
       "Far cheaper for individual dictation.",
     ],

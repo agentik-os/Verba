@@ -18,7 +18,7 @@ const MODES: Mode[] = [
     said:
       "ok so uh the login button it doesn't work on mobile i think the onclick is wrong um and also make the spinner show while it loads",
     wrote:
-      "Fix the mobile login button.\n\n- The onClick handler isn't firing on mobile — investigate and correct it.\n- Show the loading spinner while the request is in flight.",
+      "Fix the mobile login button.\n\n- The onClick handler isn't firing on mobile, investigate and correct it.\n- Show the loading spinner while the request is in flight.",
   },
   {
     name: "Polish",
@@ -27,7 +27,7 @@ const MODES: Mode[] = [
     said:
       "hey so um can we move the standup to 10 comma and uh we ship friday new line i need final copy by thursday",
     wrote:
-      "Hey — can we move standup to 10:00? We ship Friday, so I'll need the final copy by Thursday.",
+      "Hey, can we move standup to 10:00? We ship Friday, so I'll need the final copy by Thursday.",
   },
   {
     name: "Casual",
@@ -36,7 +36,7 @@ const MODES: Mode[] = [
     said:
       "yo tell mom i'll be uh like 20 min late traffic is insane and uh i'll grab dinner on the way",
     wrote:
-      "Yo, tell mom I'll be ~20 min late — traffic is insane. I'll grab dinner on the way.",
+      "Yo, tell mom I'll be ~20 min late, traffic is insane. I'll grab dinner on the way.",
   },
   {
     name: "Intent",
@@ -151,7 +151,7 @@ export default function LiveDemo() {
         </div>
       </div>
       <p className="mt-3 text-center text-xs muted">
-        Each mode routes to the right model — Haiku for quick polish, Sonnet for intent, Opus for code.
+        Each mode routes to the right model, Haiku for quick polish, Sonnet for intent, Opus for code.
       </p>
     </div>
   );

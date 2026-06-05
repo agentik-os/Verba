@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Acknowledgements — Verba",
+  title: "Acknowledgements, Verba",
   description: "Open-source software and on-device models that power Verba.",
 };
 

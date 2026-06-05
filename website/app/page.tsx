@@ -85,7 +85,7 @@ function Hero() {
         Speak it.<br />Send it clean.
       </h1>
       <p className="mx-auto mt-6 max-w-xl text-lg muted text-balance">
-        Verba turns your voice into clear, well-structured text — anywhere on your Mac.
+        Verba turns your voice into clear, well-structured text, anywhere on your Mac.
         Press a key, talk, and it lands polished in whatever app you’re in.
       </p>
       <div className="mt-10 flex items-center justify-center gap-3">
@@ -125,8 +125,7 @@ function TryNow() {
       <Reveal>
         <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">Try it right now</h2>
         <p className="mx-auto mt-4 max-w-xl text-center muted text-balance">
-          No download, no sign-up. Record a rambling message and watch Verba turn it into clean text —
-          the exact same pipeline the app uses.
+          No download, no sign-up. Record a rambling message and watch Verba turn it into clean text, the exact same pipeline the app uses.
         </p>
       </Reveal>
       <div className="mt-10"><TryIt /></div>
@@ -137,16 +136,16 @@ function TryNow() {
 function ModesModels() {
   const rows = [
     ["Coding", "Opus 4.8", "Turns rambling feedback into a precise prompt for Cursor or Claude Code."],
-    ["Polish", "Haiku 4.5", "Fast, clean work messages and emails — your voice, tightened."],
+    ["Polish", "Haiku 4.5", "Fast, clean work messages and emails, your voice, tightened."],
     ["Casual", "Haiku 4.5", "Warm, natural texts to friends and family."],
-    ["Intent", "Sonnet 4.6", "Say how you want it handled — “make this bullet points” — and it obeys."],
+    ["Intent", "Sonnet 4.6", "Say how you want it handled, “make this bullet points”, and it obeys."],
   ];
   return (
     <section className="py-24">
       <Reveal>
         <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">The right model for the job</h2>
         <p className="mx-auto mt-4 max-w-xl text-center muted text-balance">
-          Every mode routes to the model that fits — cheap and instant for quick polish, more
+          Every mode routes to the model that fits, cheap and instant for quick polish, more
           powerful where it matters. You stay in control of cost and quality.
         </p>
       </Reveal>
@@ -174,7 +173,7 @@ function CompareTeaser() {
         <div className="glass-strong overflow-hidden rounded-3xl p-10 text-center">
           <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Cloud tools upload your voice. Verba doesn't.</h2>
           <p className="mx-auto mt-4 max-w-xl muted text-balance">
-            Wispr Flow, Aqua and Willow send every word to their servers and charge $12–17/mo.
+            Wispr Flow, Aqua and Willow send every word to their servers and charge $12-17/mo.
             Verba runs on your Mac, lets you bring your own AI account, and costs $9.99.
           </p>
           <Link href="/compare" className="mt-8 inline-block rounded-full bg-[var(--fg)] px-7 py-3 font-medium text-[var(--bg)] hover:opacity-90">
@@ -188,9 +187,9 @@ function CompareTeaser() {
 
 function Features() {
   const items = [
-    ["Dictate in any app", "Press your shortcut anywhere — the polished text lands right where your cursor is. No copy-paste, no app switching."],
-    ["Your messy speech, cleaned up", "Verba reorders your thoughts, fixes punctuation and removes the filler — so a rambling voice note becomes a clean, ready-to-send message."],
-    ["Keeps your voice", "Switch between modes for coding, work, and personal writing — Verba matches the right tone instead of flattening everything."],
+    ["Dictate in any app", "Press your shortcut anywhere, the polished text lands right where your cursor is. No copy-paste, no app switching."],
+    ["Your messy speech, cleaned up", "Verba reorders your thoughts, fixes punctuation and removes the filler, so a rambling voice note becomes a clean, ready-to-send message."],
+    ["Keeps your voice", "Switch between modes for coding, work, and personal writing, Verba matches the right tone instead of flattening everything."],
     ["Hands-free formatting", "Say “new line”, “bullet point” or “scratch that” and watch real formatting appear. Bold, headings and lists paste through, ready to go."],
     ["Private and fast", "An on-device option runs entirely on your Mac and works offline. Your words stay yours."],
     ["Synced to your account", "Your history follows you. Sign in on another Mac and everything’s there."],
@@ -212,7 +211,7 @@ function Features() {
 
 function How() {
   const steps = [
-    ["Press", "Tap your shortcut — or the Fn key — from any app."],
+    ["Press", "Tap your shortcut, or the Fn key, from any app."],
     ["Talk", "Say what you mean, for ten seconds or twenty minutes."],
     ["Done", "Clean, formatted text appears right where you were typing."],
   ];
@@ -320,12 +319,12 @@ function Pricing() {
 
 function FAQ() {
   const qa = [
-    ["Does it work in every app?", "Yes — Verba pastes into whatever you’re typing in: editors, browsers, chat apps, mail, notes. If your cursor is there, Verba can write there."],
-    ["Can it work offline?", "Yes. On-device transcription (Whisper or Parakeet) runs entirely on your Mac — no internet needed, and your audio never leaves the device."],
+    ["Does it work in every app?", "Yes, Verba pastes into whatever you’re typing in: editors, browsers, chat apps, mail, notes. If your cursor is there, Verba can write there."],
+    ["Can it work offline?", "Yes. On-device transcription (Whisper or Parakeet) runs entirely on your Mac, no internet needed, and your audio never leaves the device."],
     ["What languages does it understand?", "On-device Whisper covers ~99 languages worldwide. Parakeet is a faster option for 25 European languages. It writes back in the language you spoke."],
-    ["How do the AI modes work?", "Each mode is a system prompt that tells the model how to rewrite your speech, routed to the right model — Haiku for quick polish, Sonnet for intent, Opus for code. You can edit any prompt or create your own."],
-    ["Do I need an API key?", "No. Verba uses your Claude Code plan if it's installed. Otherwise bring an OpenRouter or Anthropic key — you’re never paying a markup on someone’s cloud."],
-    ["Can it handle long recordings?", "Yes — talk for twenty minutes and Verba turns the whole thing into clean, well-ordered text."],
+    ["How do the AI modes work?", "Each mode is a system prompt that tells the model how to rewrite your speech, routed to the right model, Haiku for quick polish, Sonnet for intent, Opus for code. You can edit any prompt or create your own."],
+    ["Do I need an API key?", "No. Verba uses your Claude Code plan if it's installed. Otherwise bring an OpenRouter or Anthropic key, you’re never paying a markup on someone’s cloud."],
+    ["Can it handle long recordings?", "Yes, talk for twenty minutes and Verba turns the whole thing into clean, well-ordered text."],
     ["Is my data private?", "On-device mode keeps everything local and writes nothing to disk. API keys live in your macOS Keychain. Your history is yours."],
   ];
   return (

@@ -1,7 +1,6 @@
 import Stripe from "stripe";
 
-// Env-driven so the site builds and runs even before Stripe keys are set —
-// handlers return a clean "not configured" instead of crashing.
+// Env-driven so the site builds and runs even before Stripe keys are set, // handlers return a clean "not configured" instead of crashing.
 export type PlanId = "monthly" | "annual";
 
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://verba.run";
@@ -20,8 +19,7 @@ export function priceFor(plan: PlanId): string | undefined {
 }
 
 // IMPORTANT: this Stripe account is SHARED with other products (LiquidPad,
-// øRits/Dafnck). Only Verba's own price IDs count toward a Verba subscription —
-// `planForPrice` returns undefined for anything else, so a customer's unrelated
+// øRits/Dafnck). Only Verba's own price IDs count toward a Verba subscription, // `planForPrice` returns undefined for anything else, so a customer's unrelated
 // LiquidPad/øRits subscription never grants Verba Pro.
 export function planForPrice(priceId?: string): PlanId | undefined {
   if (!priceId) return undefined;
@@ -49,7 +47,7 @@ export async function entitlementByEmail(email: string): Promise<Entitlement> {
     const subs = await stripe.subscriptions.list({ customer: c.id, status: "all", limit: 20 });
     for (const s of subs.data) {
       const plan = planForPrice(s.items.data[0]?.price.id);
-      if (!plan) continue; // not a Verba price — ignore other products on this account
+      if (!plan) continue; // not a Verba price, ignore other products on this account
       if (s.status === "active" || s.status === "trialing") {
         result = {
           plan,

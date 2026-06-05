@@ -52,7 +52,7 @@ export default function TryIt() {
       setRemaining(data.remaining ?? null);
       setState("done");
     } catch {
-      setError("Network error — try again."); setState("error");
+      setError("Network error, try again."); setState("error");
     }
   }
 
@@ -76,7 +76,7 @@ export default function TryIt() {
           {state === "recording" && <span className="absolute inset-0 animate-ping rounded-full bg-red-500/40" />}
         </button>
         <p className="mt-4 text-sm muted">
-          {state === "idle" && "Tap to record — ramble a message, then tap to stop."}
+          {state === "idle" && "Tap to record, ramble a message, then tap to stop."}
           {state === "recording" && "Listening… tap to stop (max 45s)."}
           {state === "working" && "Transcribing and cleaning it up…"}
           {state === "done" && (remaining !== null ? `${remaining} free demo${remaining === 1 ? "" : "s"} left.` : "Done.")}

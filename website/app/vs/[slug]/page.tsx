@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const c = getCompetitor(slug);
   if (!c) return {};
   return {
-    title: `Verba vs ${c.name} — which dictation app should you use?`,
+    title: `Verba vs ${c.name}, which dictation app should you use?`,
     description: `${c.name}: ${c.tagline} See how Verba (local-first, $9.99/mo, bring your own AI) compares.`,
   };
 }
@@ -68,7 +68,7 @@ export default async function Vs({ params }: { params: Promise<{ slug: string }>
           <tbody>
             <Row label="Price" verba={VERBA.price} them={c.price} verbaGood />
             <Row label="Platforms" verba={VERBA.platforms} them={c.platforms} />
-            <Row label="On-device" verba="Yes — default" them={onDeviceLabel(c.onDevice)} verbaGood={c.onDevice !== "yes"} />
+            <Row label="On-device" verba="Yes, default" them={onDeviceLabel(c.onDevice)} verbaGood={c.onDevice !== "yes"} />
             <Row label="Transcription" verba={VERBA.transcription} them={c.transcription} />
             <Row label="AI editing" verba={VERBA.aiEditing} them={c.aiEditing} />
             <Row label="Privacy" verba={VERBA.privacy} them={c.privacy} verbaGood />
@@ -93,7 +93,7 @@ export default async function Vs({ params }: { params: Promise<{ slug: string }>
               <li key={e} className="flex gap-2.5"><span className="cross">•</span><span>{e}</span></li>
             ))}
           </ul>
-          <p className="mt-5 text-xs muted">We'd rather tell you the truth than oversell. If you need mobile or Windows today, those tools win — Verba is the best native macOS, privacy-first option.</p>
+          <p className="mt-5 text-xs muted">We'd rather tell you the truth than oversell. If you need mobile or Windows today, those tools win, Verba is the best native macOS, privacy-first option.</p>
         </div>
       </div>
 

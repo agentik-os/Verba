@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   const ipUsed = ipHits.get(ip) ?? 0;
   if (used >= FREE_TRIES || ipUsed >= FREE_TRIES) {
     return NextResponse.json(
-      { error: "You've used your free demos. Download Verba to keep going — it's free up to 10,000 words/month." },
+      { error: "You've used your free demos. Download Verba to keep going, it's free up to 10,000 words/month." },
       { status: 429 }
     );
   }
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     });
     if (!tr.ok) return NextResponse.json({ error: "transcription failed" }, { status: 502 });
     const original = ((await tr.json()).text ?? "").trim();
-    if (!original) return NextResponse.json({ error: "We couldn't hear anything — try again." }, { status: 422 });
+    if (!original) return NextResponse.json({ error: "We couldn't hear anything, try again." }, { status: 422 });
 
     // 2. Restructure with Claude Haiku.
     const cr = await fetch("https://api.anthropic.com/v1/messages", {
