@@ -42,7 +42,8 @@ struct MainWindow: View {
             .safeAreaInset(edge: .bottom) { sidebarFooter }
         } detail: {
             detail(selection ?? .home)
-                .frame(minWidth: 560)
+                .frame(minWidth: 560, maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(nsColor: .windowBackgroundColor))
         }
         .frame(minWidth: 940, minHeight: 620)
     }

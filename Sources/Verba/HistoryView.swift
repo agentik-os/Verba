@@ -6,27 +6,39 @@ struct HistoryView: View {
     @State private var selection: HistoryEntry.ID?
 
     var body: some View {
-        NavigationSplitView {
-            List(history.entries, selection: $selection) { e in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(e.reprompted.isEmpty ? e.original : e.reprompted)
-                        .lineLimit(2).font(.callout)
-                    Text("\(e.date.formatted(date: .abbreviated, time: .shortened)) · \(e.profileName)")
-                        .font(.caption2).foregroundStyle(.secondary)
-                }.tag(e.id)
+        HSplitView {
+            VStack(spacing: 0) {
+                HStack {
+                    Text("History").font(.title2.bold())
+                    Spacer()
+                    Button(role: .destructive) { history.clear() } label: { Image(systemName: "trash") }
+                        .buttonStyle(.borderless).help("Clear all")
+                }
+                .padding(.horizontal, 14).padding(.vertical, 10)
+                Divider()
+                List(history.entries, selection: $selection) { e in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(e.reprompted.isEmpty ? e.original : e.reprompted)
+                            .lineLimit(2).font(.callout)
+                        Text("\(e.date.formatted(date: .abbreviated, time: .shortened)) · \(e.profileName)")
+                            .font(.caption2).foregroundStyle(.secondary)
+                    }.tag(e.id)
+                }
+                .listStyle(.inset)
             }
-            .frame(minWidth: 240)
-            .toolbar {
-                Button(role: .destructive) { history.clear() } label: { Label("Clear", systemImage: "trash") }
+            .frame(minWidth: 260, idealWidth: 300)
+
+            Group {
+                if let e = history.entries.first(where: { $0.id == selection }) {
+                    detail(e)
+                } else {
+                    ContentUnavailableView("Select a dictation", systemImage: "clock.arrow.circlepath")
+                }
             }
-        } detail: {
-            if let e = history.entries.first(where: { $0.id == selection }) {
-                detail(e)
-            } else {
-                Text("Select a dictation").foregroundStyle(.secondary)
-            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(minWidth: 720, minHeight: 460)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 
     private func detail(_ e: HistoryEntry) -> some View {
@@ -41,7 +53,7 @@ struct HistoryView: View {
                     Spacer()
                     Button(role: .destructive) { history.delete(e); selection = nil } label: { Label("Delete", systemImage: "trash") }
                 }
-            }.padding(16)
+            }.padding(20)
         }
     }
 
@@ -56,7 +68,7 @@ struct HistoryView: View {
             Text(body.isEmpty ? "—" : body)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(10)
+                .padding(12)
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
         }
     }
