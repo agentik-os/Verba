@@ -48,11 +48,17 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         }
     }
 
+    private(set) var isPaused = false
+
+    func pause() { recorder?.pause(); isPaused = true }
+    func resume() { if recorder?.record() == true { isPaused = false } }
+
     /// Stop and return the finished file URL (nil if nothing recorded).
     func stop() -> URL? {
         guard let rec = recorder else { return nil }
         rec.stop()
         recorder = nil
+        isPaused = false
         return currentURL
     }
 

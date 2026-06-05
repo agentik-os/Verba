@@ -43,6 +43,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         FnTap.shared.onArrow = { [weak self] d in self?.fnArrow(d) ?? false }
         FnTap.shared.onEnter = { [weak self] in self?.fnEnter() ?? false }
         overlay.model.onCancel = { [weak self] in self?.cancelEverything() }
+        overlay.model.onPauseToggle = { [weak self] in self?.togglePause() }
+        overlay.prepare()   // warm the floating panel so it appears instantly
         ChordMonitor.shared.start()
         applyTriggers()
         _ = Updater.shared   // start Sparkle (scheduled background update checks)
@@ -256,6 +258,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         trigger(forced: Settings.shared.activeProfile)
         return true
     }
+    private func togglePause() {
+        guard state == .recording else { return }
+        if recorder.isPaused {
+            recorder.resume(); overlay.model.paused = false
+        } else {
+            recorder.pause(); overlay.model.paused = true
+        }
+    }
+
     private func dismissMenu() {
         fnHoldTimer?.invalidate(); fnHoldTimer = nil
         lastFnDown = nil
@@ -267,6 +278,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let s = Settings.shared
         overlay.model.menu = true
         overlay.model.recording = false
+        overlay.model.paused = false
         overlay.model.profiles = s.profiles
         overlay.model.activeID = s.activeProfileID
         overlay.model.onStart = { [weak self] p in self?.dismissMenu(); self?.trigger(forced: p) }
@@ -280,6 +292,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         forcedProfile = nil
         overlay.model.menu = false
         overlay.model.recording = false
+        overlay.model.paused = false
         overlay.hide()
         SoundFX.stop()
         state = .idle
@@ -309,6 +322,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.overlay.model.title = "Listening · \(p.name)"
             }
             self.overlay.model.menu = false   // hide the numbers once recording starts
+            self.overlay.model.paused = false
             self.overlay.model.recording = true
             self.overlay.model.title = "Listening · \(initial.name)"
             self.overlay.model.level = 0
@@ -326,6 +340,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         state = .processing
         statusLine = "Transcribing…"
         overlay.model.recording = false
+        overlay.model.paused = false
         overlay.model.title = "Transcribing…"
         refreshUI()
 
@@ -388,6 +403,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// A brief, soft "✓ Done" flash in the overlay instead of an abrupt disappearance.
     private func flashDone() {
         overlay.model.recording = false
+        overlay.model.paused = false
         overlay.model.menu = false
         overlay.model.done = true
         overlay.model.title = "Done"

@@ -24,7 +24,15 @@ final class FnTap {
         FnSystemPref.suppress()   // also set "Press 🌐 to: Do Nothing" so macOS shows no HUD
         let mask = (1 << CGEventType.flagsChanged.rawValue) | (1 << CGEventType.keyDown.rawValue)
         let me = Unmanaged.passUnretained(self).toOpaque()
-        guard let t = CGEvent.tapCreate(
+        // HID-level tap: sees the globe key before HIToolbox, so consuming it kills
+        // the input-source / emoji HUD. Falls back to session level if unavailable.
+        let tapped = CGEvent.tapCreate(
+            tap: .cghidEventTap, place: .headInsertEventTap, options: .defaultTap,
+            eventsOfInterest: CGEventMask(mask),
+            callback: { _, type, event, refcon in
+                Unmanaged<FnTap>.fromOpaque(refcon!).takeUnretainedValue().handle(type, event)
+            }, userInfo: me)
+        guard let t = tapped ?? CGEvent.tapCreate(
             tap: .cgSessionEventTap, place: .headInsertEventTap, options: .defaultTap,
             eventsOfInterest: CGEventMask(mask),
             callback: { _, type, event, refcon in

@@ -5,7 +5,9 @@ final class OverlayModel: ObservableObject {
     @Published var level: Float = 0      // 0...1 mic level
     @Published var title: String = ""    // "Listening…" / "Transcribing…" / etc.
     @Published var recording = false
+    @Published var paused = false        // dictation paused
     @Published var done = false          // brief success flash
+    var onPauseToggle: (() -> Void)?
     @Published var menu = false          // pre-record: show numbered modes to pick
     @Published var profiles: [Profile] = []
     @Published var selectedID: UUID?
@@ -31,15 +33,19 @@ struct OverlayView: View {
                     Text("Choose a mode").font(.system(size: 13, weight: .medium))
                 } else {
                     Circle()
-                        .fill(model.recording ? Color.red : Color.primary)
+                        .fill(model.recording ? (model.paused ? Color.orange : Color.red) : Color.primary)
                         .frame(width: 10, height: 10)
-                        .opacity(model.recording ? 0.6 + Double(model.level) * 0.4 : 1)
+                        .opacity(model.recording && !model.paused ? 0.6 + Double(model.level) * 0.4 : 1)
                     if model.recording {
-                        Waveform(level: model.level).frame(width: 72, height: 22)
+                        Button { model.onPauseToggle?() } label: {
+                            Image(systemName: model.paused ? "play.fill" : "pause.fill").font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }.buttonStyle(.plain).help(model.paused ? "Resume" : "Pause")
+                        Waveform(level: model.paused ? 0 : model.level).frame(width: 64, height: 22)
                     } else {
                         ProgressView().controlSize(.small).scaleEffect(0.8)
                     }
-                    Text(model.title).font(.system(size: 13, weight: .medium)).lineLimit(1)
+                    Text(model.paused ? "Paused" : model.title).font(.system(size: 13, weight: .medium)).lineLimit(1)
                 }
                 // Cancel (×) — discard recording or abort processing.
                 if !model.menu && !model.done {
@@ -112,21 +118,27 @@ final class OverlayController {
     let model = OverlayModel()
     private var panel: NSPanel?
 
+    /// Build the panel ahead of time so the first show() is instant.
+    func prepare() {
+        guard panel == nil else { return }
+        let p = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 260, height: 80),
+                        styleMask: [.borderless, .nonactivatingPanel],
+                        backing: .buffered, defer: false)
+        p.isFloatingPanel = true
+        p.level = .statusBar
+        p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        p.backgroundColor = .clear
+        p.isOpaque = false
+        p.hasShadow = true
+        p.ignoresMouseEvents = false   // chips must be clickable
+        p.contentViewController = NSHostingController(rootView: OverlayView(model: model))
+        p.alphaValue = 1
+        panel = p
+        p.layoutIfNeeded()             // warm the SwiftUI render
+    }
+
     func show() {
-        if panel == nil {
-            let p = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 260, height: 80),
-                            styleMask: [.borderless, .nonactivatingPanel],
-                            backing: .buffered, defer: false)
-            p.isFloatingPanel = true
-            p.level = .statusBar
-            p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-            p.backgroundColor = .clear
-            p.isOpaque = false
-            p.hasShadow = true
-            p.ignoresMouseEvents = false   // chips must be clickable
-            p.contentViewController = NSHostingController(rootView: OverlayView(model: model))
-            panel = p
-        }
+        prepare()
         reposition()
         panel?.orderFrontRegardless()
     }
