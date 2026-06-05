@@ -1,7 +1,7 @@
 import Foundation
 
 /// Turns spoken formatting/editing commands into real punctuation, line breaks
-/// and edits — Wispr "Command Mode" style. Bilingual (EN + FR). Runs on the raw
+/// and edits, Wispr "Command Mode" style. Bilingual (EN + FR). Runs on the raw
 /// transcript so it works even in Flow (raw) mode, before any Claude reprompt.
 enum VoiceCommands {
     static func apply(_ text: String) -> String {
@@ -23,7 +23,7 @@ enum VoiceCommands {
         t = re(t, #"\s*\b(close paren|close parenthesis|fermez la parenthèse)\b"#, ")")
         t = re(t, #"\s*\b(dash|hyphen|tiret du six)\b"#, " - ")
 
-        // 3. "scratch that" — delete back to the start of the current sentence.
+        // 3. "scratch that", delete back to the start of the current sentence.
         t = re(t, #"[^.!?\n]*\b(scratch that|delete that|oublie ça|supprime ça)\b[\s,]*"#, "")
 
         // 4. Tidy spacing + sentence capitalization.

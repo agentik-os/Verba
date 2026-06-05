@@ -33,7 +33,7 @@ enum Output {
         pb.clearContents()
         if rich {
             // HTML→NSAttributedString leaves a trailing newline that would submit in
-            // single-line fields — strip any trailing whitespace from the rich text too.
+            // single-line fields, strip any trailing whitespace from the rich text too.
             let m = NSMutableAttributedString(attributedString: Markdown.attributed(text))
             while let last = m.string.last, last == "\n" || last == "\r" || last == " " || last == "\t" {
                 m.deleteCharacters(in: NSRange(location: m.length - 1, length: 1))
@@ -44,8 +44,7 @@ enum Output {
         }
     }
 
-    /// Strip trailing newlines/whitespace so auto-paste never lands a stray Return —
-    /// a trailing newline submits the message in Slack/iMessage/search fields. We never
+    /// Strip trailing newlines/whitespace so auto-paste never lands a stray Return, /// a trailing newline submits the message in Slack/iMessage/search fields. We never
     /// synthesize Enter; this also kills any newline the transcript/Markdown left behind.
     static func trimTrailingNewlines(_ text: String) -> String {
         var t = Substring(text)

@@ -3,7 +3,7 @@ import Carbon.HIToolbox
 
 /// Global watcher for the ⌃⌥ chord (to show the mode widget), its release
 /// (push-to-talk in Direct style), and the Escape key (to cancel a recording).
-/// Uses NSEvent monitors — needs Accessibility/Input-Monitoring trust (same grant
+/// Uses NSEvent monitors, needs Accessibility/Input-Monitoring trust (same grant
 /// as auto-paste).
 final class ChordMonitor {
     static let shared = ChordMonitor()
@@ -67,7 +67,7 @@ final class ChordMonitor {
             }
         }
 
-        // Fn / globe key — isolate by its own keyCode so other keys held with Fn don't fire it.
+        // Fn / globe key, isolate by its own keyCode so other keys held with Fn don't fire it.
         if e.keyCode == Self.fnKeyCode {
             let down = f.contains(.function)
             if down && !fnHeld {

@@ -101,7 +101,7 @@ export default async function Vs({ params }: { params: Promise<{ slug: string }>
         <a href={DOWNLOAD} className="rounded-full bg-[var(--fg)] px-7 py-3 font-medium text-[var(--bg)] hover:opacity-90">
           Try Verba free
         </a>
-        <p className="mt-3 text-xs muted">10,000 words/month free · Pro $9.99/mo · 7-day trial</p>
+        <p className="mt-6 text-xs muted">10,000 words/month free · Pro $9.99/mo · 7-day trial</p>
       </div>
     </main>
   );

@@ -44,7 +44,7 @@ struct HomeView: View {
             Card {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Start dictating").font(.headline)
-                    Text("Press \(triggerLabel) and talk. Switch mode on the fly from the floating bar, or use ⌃⌥1–6.")
+                    Text("Press \(triggerLabel) and talk. Switch mode on the fly from the floating bar, or use ⌃⌥1-6.")
                         .foregroundStyle(.secondary)
                     HStack(spacing: 8) {
                         ForEach(settings.profiles.prefix(6)) { p in
@@ -188,7 +188,7 @@ struct StyleView: View {
                         .frame(minHeight: 130).padding(10)
                         .background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                         .disabled(!settings.styleEnabled).opacity(settings.styleEnabled ? 1 : 0.5)
-                    Text("e.g. “British English, no exclamation marks, sign off with ‘— G’.” Applies to all modes except Flow.")
+                    Text("e.g. “British English, no exclamation marks, sign off with ‘, G’.” Applies to all modes except Flow.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }

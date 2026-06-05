@@ -51,7 +51,7 @@ struct SettingsView: View {
                 }
                 Text(settings.quipTone == .off
                      ? "While Claude restructures, Verba shows a neutral “\(Quips.neutral)”."
-                     : "While Claude restructures, Verba shows a short AI-generated joke in this style — never the same twice in a day.")
+                     : "While Claude restructures, Verba shows a short AI-generated joke in this style, never the same twice in a day.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("Reprompting (Claude)") {
@@ -60,14 +60,14 @@ struct SettingsView: View {
                     ForEach(RepromptBackend.allCases) { Text($0.label).tag($0) }
                 }
                 if settings.repromptBackend == .claudeCode {
-                    Label(ClaudeCode.isAvailable ? "Claude Code detected — uses your Claude Max/Pro (or free) plan, no API key."
+                    Label(ClaudeCode.isAvailable ? "Claude Code detected, uses your Claude Max/Pro (or free) plan, no API key."
                                                   : "Claude Code not found. Install it and run `claude` once to sign in.",
                           systemImage: ClaudeCode.isAvailable ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
                         .font(.caption).foregroundStyle(ClaudeCode.isAvailable ? .green : .orange)
                 }
                 if settings.repromptBackend == .openRouter {
                     TextField("OpenRouter model (e.g. anthropic/claude-3.7-sonnet)", text: $settings.openRouterModel)
-                    Text("Any model on openrouter.ai — e.g. openai/gpt-4o, google/gemini-2.0-flash, meta-llama/llama-3.3-70b. Add your key in the API Keys tab.")
+                    Text("Any model on openrouter.ai, e.g. openai/gpt-4o, google/gemini-2.0-flash, meta-llama/llama-3.3-70b. Add your key in the API Keys tab.")
                         .font(.caption).foregroundStyle(.secondary)
                 } else {
                     Picker("Claude model", selection: $settings.claudeModel) {
@@ -77,7 +77,7 @@ struct SettingsView: View {
                 Toggle("Auto-pick profile from the active app", isOn: $settings.autoDetectProfile)
                 Toggle("Use selected text as context", isOn: $settings.useSelectionContext)
                 if settings.useSelectionContext {
-                    Text("If you have text selected when you dictate, your words are treated as an instruction on that selection — the result replaces it.")
+                    Text("If you have text selected when you dictate, your words are treated as an instruction on that selection, the result replaces it.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
@@ -95,7 +95,7 @@ struct SettingsView: View {
 
                 Toggle("Use the Fn (🌐 globe) key", isOn: $settings.useFnAsPrimary)
                 if settings.useFnAsPrimary {
-                    Text("Fn is your trigger (like Wispr Flow): quick tap = record the active mode (tap again to send) · hold = push-to-talk (release sends) · double-tap = mode picker (← → / 1–9 / click sets your default). Verba swallows the globe key so macOS won’t show the keyboard/emoji HUD.")
+                    Text("Fn is your trigger (like Wispr Flow): quick tap = record the active mode (tap again to send) · hold = push-to-talk (release sends) · double-tap = mode picker (← → / 1-9 / click sets your default). Verba swallows the globe key so macOS won’t show the keyboard/emoji HUD.")
                         .font(.caption).foregroundStyle(.secondary)
                 } else {
                     HStack {
@@ -108,7 +108,7 @@ struct SettingsView: View {
                         )
                     }
                 }
-                Text("Hold ⌃⌥ to pop the mode picker; press 1–6 to dictate straight into a mode. Esc cancels a recording.")
+                Text("Hold ⌃⌥ to pop the mode picker; press 1-6 to dictate straight into a mode. Esc cancels a recording.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("App") {
@@ -141,7 +141,7 @@ struct SettingsView: View {
         let _ = engineRefresh
         let active = settings.engine == engineTab
         if engineTab == .openAI {
-            Text("Remote — no download. Uses your OpenAI key.")
+            Text("Remote, no download. Uses your OpenAI key.")
                 .font(.caption).foregroundStyle(.secondary)
             if active { activeLabel } else { Button("Use OpenAI") { settings.engine = .openAI } }
         } else {
@@ -172,7 +172,7 @@ struct SettingsView: View {
                     Button("Download & install") { installEngine(engineTab) }.buttonStyle(.borderedProminent)
                 }
             }
-            Text("Runs fully offline & free once installed — no API key needed.")
+            Text("Runs fully offline & free once installed, no API key needed.")
                 .font(.caption).foregroundStyle(.secondary)
         }
     }
@@ -239,7 +239,7 @@ struct SettingsView: View {
                         .foregroundStyle(settings.isPro ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
                     Spacer()
                     if !settings.isPro, let u = URL(string: Entitlement.pricingURL) {
-                        Link("Upgrade — 14-day trial", destination: u)
+                        Link("Upgrade, 14-day trial", destination: u)
                     }
                 }
             } header: { Text("Your plan") } footer: {
@@ -263,7 +263,7 @@ struct SettingsView: View {
                     }
                 }
             }
-            Section("Refer friends — give a month, get a month") {
+            Section("Refer friends, give a month, get a month") {
                 HStack {
                     Text(settings.referralLink).font(.system(.callout, design: .monospaced)).lineLimit(1).truncationMode(.middle)
                     Spacer()
@@ -271,7 +271,7 @@ struct SettingsView: View {
                         let pb = NSPasteboard.general; pb.clearContents(); pb.setString(settings.referralLink, forType: .string)
                     }
                 }
-                Text("Every friend who subscribes through your link and dictates 15,000+ words earns you a free month — unlimited, no cap.")
+                Text("Every friend who subscribes through your link and dictates 15,000+ words earns you a free month, unlimited, no cap.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("Restore your subscription") {

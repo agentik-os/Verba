@@ -123,7 +123,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// A minimal main menu so standard text-editing shortcuts (⌘C/⌘V/⌘X/⌘A/⌘Z)
-    /// work in our windows — accessory apps don't get one for free.
+    /// work in our windows, accessory apps don't get one for free.
     private func installMainMenu() {
         let main = NSMenu()
 
@@ -160,7 +160,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.trigger(forced: nil)
             }
         }
-        // Per-profile dedicated shortcuts (⌃⌥1–6).
+        // Per-profile dedicated shortcuts (⌃⌥1-6).
         for (i, p) in s.profiles.enumerated() {
             guard let code = p.hotkeyCode, let mods = p.hotkeyMods else { continue }
             let pid = p.id
@@ -213,7 +213,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    // Fn (globe) as the primary trigger — Wispr-Flow style:
+    // Fn (globe) as the primary trigger, Wispr-Flow style:
     //   • quick tap (idle) → start recording the ACTIVE mode, latched (tap again to send)
     //   • press & HOLD, then release → push-to-talk: the release sends automatically
     //   • double-tap (a 2nd quick tap right after) → open the mode picker instead
@@ -369,7 +369,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let lvl = self.recorder.level()
                 self.overlay.model.level = lvl
                 // Animation speed follows how energetically you're speaking: quiet → slow,
-                // loud/fast speech → a bit faster — but kept gentle so it stays readable.
+                // loud/fast speech → a bit faster, but kept gentle so it stays readable.
                 self.overlay.model.phase += 0.025 + 0.18 * Double(lvl)
             }
             RunLoop.main.add(t, forMode: .common)
@@ -401,7 +401,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if Task.isCancelled { return }
                 await MainActor.run { self.processingTask = nil; self.finish(result: result, audioURL: url) }
             } catch is CancellationError {
-                // user cancelled — handled by cancelEverything()
+                // user cancelled, handled by cancelEverything()
             } catch {
                 if Task.isCancelled { return }
                 await MainActor.run {
@@ -612,7 +612,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
         let a = NSAlert()
         a.messageText = "You've reached your free monthly limit"
-        a.informativeText = "Free includes \(Entitlement.freeMonthlyWords.formatted()) dictated words per month. Upgrade to Verba Pro for unlimited dictation — $9.99/month."
+        a.informativeText = "Free includes \(Entitlement.freeMonthlyWords.formatted()) dictated words per month. Upgrade to Verba Pro for unlimited dictation, $9.99/month."
         a.addButton(withTitle: "Upgrade to Pro")
         a.addButton(withTitle: "I already subscribed")
         a.addButton(withTitle: "Later")

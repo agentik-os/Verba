@@ -14,7 +14,7 @@ enum Quips {
     /// Neutral status when jokes are off (kept short and a touch nicer than "Transforming").
     static let neutral = "Transmuting…"
 
-    /// Instant fallback pool — used only until the AI has generated tone-matched lines.
+    /// Instant fallback pool, used only until the AI has generated tone-matched lines.
     static let builtin: [String] = [
         "Compiling your thoughts…", "Reticulating splines…", "Untangling your sentences…",
         "Consulting the oracle…", "Polishing every word…", "Tidying up the rambles…",

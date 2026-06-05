@@ -80,7 +80,7 @@ final class DictionaryStore: ObservableObject {
     @Published var terms: [DictTerm] { didSet { saveJSON("dictionary.terms", terms) } }
     private init() { terms = loadJSON("dictionary.terms", [DictTerm].self) ?? [] }
 
-    /// Comma-separated written forms — fed to the transcription model as a vocab hint.
+    /// Comma-separated written forms, fed to the transcription model as a vocab hint.
     func hint() -> String { terms.map(\.written).filter { !$0.isEmpty }.joined(separator: ", ") }
 
     /// Replace spoken forms with the intended written form (case-insensitive).
@@ -113,7 +113,7 @@ final class SnippetsStore: ObservableObject {
     }
 
     /// Snippet list to hand to Claude so it inserts a block ONLY when the user asks for
-    /// it by intent ("put my signature here") — not just because they mention the topic.
+    /// it by intent ("put my signature here"), not just because they mention the topic.
     func promptContext() -> String {
         let valid = items.filter { !$0.trigger.isEmpty && !$0.expansion.isEmpty }
         guard !valid.isEmpty else { return "" }
@@ -124,7 +124,7 @@ final class SnippetsStore: ObservableObject {
         AVAILABLE SNIPPETS (saved blocks the user may ask you to insert):
         \(list)
 
-        Insert a snippet's content ONLY when the user explicitly asks to, by intent — \
+        Insert a snippet's content ONLY when the user explicitly asks to, by intent, \
         e.g. "put my signature here", "insert my address", "add my booking link". If the \
         user merely mentions or describes the topic without asking to insert it, do NOT \
         add the snippet. When inserting, output the snippet content verbatim at the right place.

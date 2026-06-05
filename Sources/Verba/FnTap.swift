@@ -3,7 +3,7 @@ import Carbon.HIToolbox
 import IOKit.hid
 
 /// CGEventTap for the Fn (globe) key when it's the primary trigger. Unlike an
-/// NSEvent monitor, a tap can *consume* events — so we swallow the bare globe key
+/// NSEvent monitor, a tap can *consume* events, so we swallow the bare globe key
 /// (no emoji/keyboard popup) and capture digit/arrow/enter keys for the mode
 /// picker without them reaching the focused app. Requires Accessibility trust.
 final class FnTap {
@@ -11,7 +11,7 @@ final class FnTap {
 
     var onFnDown: (() -> Void)?
     var onFnUp: (() -> Void)?
-    var onDigit: ((Int) -> Bool)?     // 1–9 while menuActive; return true to consume
+    var onDigit: ((Int) -> Bool)?     // 1-9 while menuActive; return true to consume
     var onArrow: ((Int) -> Bool)?     // -1 left / +1 right while menuActive
     var onEnter: (() -> Bool)?        // return / enter while menuActive
     var menuActive = false

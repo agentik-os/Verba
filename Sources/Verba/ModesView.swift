@@ -2,7 +2,7 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 
-/// The modes (profiles) editor — used both in the main window and Settings.
+/// The modes (profiles) editor, used both in the main window and Settings.
 struct ModesView: View {
     @ObservedObject var settings = Settings.shared
     @State private var selectedID: UUID?
@@ -96,7 +96,7 @@ struct ModesView: View {
                     .buttonStyle(.borderless).foregroundStyle(.red).help("Delete this mode")
                 }
 
-                // Shortcut — moved up, right under the name.
+                // Shortcut, moved up, right under the name.
                 field("Dedicated shortcut") {
                     ShortcutRecorder(label: shortcut,
                         onCapture: { c, m in settings.assignShortcut(keyCode: c, modifiers: m, to: .profile(id)) },
@@ -105,7 +105,7 @@ struct ModesView: View {
 
                 if isRaw {
                     field("Behaviour") {
-                        Text("Free-flow dictation — your words are transcribed exactly, with no AI reprompting.")
+                        Text("Free-flow dictation, your words are transcribed exactly, with no AI reprompting.")
                             .foregroundStyle(.secondary)
                     }
                 } else {
@@ -115,9 +115,9 @@ struct ModesView: View {
                     field("Model", hint: "which Claude model rewrites this mode (Anthropic / Claude Code)") {
                         Picker("", selection: modelB) {
                             Text("Default (\(settings.claudeModel))").tag("")
-                            Text("Haiku 4.5 — fastest, cheapest").tag("claude-haiku-4-5")
-                            Text("Sonnet 4.6 — balanced").tag("claude-sonnet-4-6")
-                            Text("Opus 4.8 — most capable").tag("claude-opus-4-8")
+                            Text("Haiku 4.5, fastest, cheapest").tag("claude-haiku-4-5")
+                            Text("Sonnet 4.6, balanced").tag("claude-sonnet-4-6")
+                            Text("Opus 4.8, most capable").tag("claude-opus-4-8")
                         }
                         .labelsHidden().pickerStyle(.menu).frame(maxWidth: 320, alignment: .leading)
                     }

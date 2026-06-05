@@ -21,7 +21,7 @@ struct Reprompter {
         let userText = "Here is the raw voice transcript to restructure:\n\n<transcript>\n\(transcript)\n</transcript>"
         switch Settings.shared.repromptBackend {
         case .claudeCode:
-            // No API key — uses the user's Claude subscription via the CLI.
+            // No API key, uses the user's Claude subscription via the CLI.
             return try await ClaudeCode.reprompt(systemPrompt: systemPrompt, userText: userText, model: model)
         case .openRouter:
             return try await openRouter(systemPrompt: systemPrompt, userText: userText)
@@ -65,7 +65,7 @@ struct Reprompter {
         let content: [Block]
     }
 
-    // MARK: OpenRouter (OpenAI-compatible) — BYO key, any model the user picks.
+    // MARK: OpenRouter (OpenAI-compatible), BYO key, any model the user picks.
     private func openRouter(systemPrompt: String, userText: String) async throws -> String {
         guard let key = Keychain.openRouterKey, !key.isEmpty else { throw RepromptError.missingKey }
         let chosen = Settings.shared.openRouterModel.trimmingCharacters(in: .whitespacesAndNewlines)

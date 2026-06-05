@@ -20,9 +20,9 @@ final class OverlayModel: ObservableObject {
 }
 
 /// The recording indicator. Three looks (set in Settings ▸ Recording):
-///   • floating — glass pill at the bottom (default)
-///   • island   — dark pill at the top of the screen (Dynamic-Island style)
-///   • minimal  — tiny top bar, just the moving waveform (for power users)
+///   • floating, glass pill at the bottom (default)
+///   • island, dark pill at the top of the screen (Dynamic-Island style)
+///   • minimal, tiny top bar, just the moving waveform (for power users)
 struct OverlayView: View {
     @ObservedObject var model: OverlayModel
 
@@ -144,7 +144,7 @@ struct OverlayView: View {
                 }
             }
             if model.menu {
-                Text("← → · 1–9 · click — sets your default mode & dictates")
+                Text("← → · 1-9 · click, sets your default mode & dictates")
                     .font(.system(size: max(9, font - 1))).foregroundStyle(.secondary)
             }
         }
@@ -152,7 +152,7 @@ struct OverlayView: View {
 }
 
 /// Lively meter. Motion is driven by `phase` (advanced by our own recording timer),
-/// so it never stalls — unlike TimelineView, which pauses while another app is active.
+/// so it never stalls, unlike TimelineView, which pauses while another app is active.
 private struct Waveform: View {
     let level: Float
     let phase: Double

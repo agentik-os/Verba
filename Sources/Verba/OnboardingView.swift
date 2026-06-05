@@ -10,6 +10,8 @@ struct OnboardingView: View {
     let onDone: () -> Void
 
     @State private var step = 0
+    @StateObject private var dictation = OnboardingDictation()
+    @State private var tryMode = "Polish"
     @State private var anthropicKey = Keychain.anthropicKey ?? ""
     @State private var copied = false
     @State private var signingIn = false
@@ -110,7 +112,7 @@ struct OnboardingView: View {
                     .disabled(!(micGranted && axGranted))
             }
         }
-        .padding(.horizontal, 30).padding(.top, 14).padding(.bottom, 46)   // roomy — not glued to the edge
+        .padding(.horizontal, 30).padding(.top, 14).padding(.bottom, 46)   // roomy, not glued to the edge
     }
 
     /// Gating: account needs sign-in; permissions are on the last step (handled there).
@@ -137,12 +139,12 @@ struct OnboardingView: View {
 
     private var welcome: some View {
         VStack(alignment: .leading, spacing: 16) {
-            title("Welcome to Verba", "Talk, and it lands as clean, structured text — right where your cursor is.")
+            title("Welcome to Verba", "Talk, and it lands as clean, structured text, right where your cursor is.")
             grid([
                 ("lock.shield", "Private by default", "Transcription runs on your Mac. Your audio never has to leave the device."),
                 ("bolt.fill", "Instant, anywhere", "One key from any app. No window to open, no copy-paste."),
-                ("brain", "Your AI, your way", "Use your Claude plan or your own key — no markup on someone's cloud."),
-                ("slider.horizontal.3", "Modes that fit", "Coding, writing, casual, intent — each routed to the right model."),
+                ("brain", "Your AI, your way", "Use your Claude plan or your own key, no markup on someone's cloud."),
+                ("slider.horizontal.3", "Modes that fit", "Coding, writing, casual, intent, each routed to the right model."),
             ])
         }
     }
@@ -168,7 +170,7 @@ struct OnboardingView: View {
                     Button("Use a different account") { settings.proEmail = "" }
                         .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
                 } else {
-                    Text("Opens a secure window on verba.run. Sign up with Google or email — your account is created instantly.")
+                    Text("Opens a secure window on verba.run. Sign up with Google or email, your account is created instantly.")
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -200,18 +202,19 @@ struct OnboardingView: View {
             grid([
                 ("hand.tap", "Single tap", "Start recording your default mode. Tap again to send."),
                 ("hand.tap.fill", "Press & hold", "Push-to-talk: hold while you speak, release to send."),
-                ("rectangle.2.swap", "Double-tap", "Open the mode picker — choose a mode on the fly."),
+                ("rectangle.2.swap", "Double-tap", "Open the mode picker, choose a mode on the fly."),
             ])
         }
     }
 
     private var modes: some View {
         VStack(alignment: .leading, spacing: 14) {
-            title("Five modes, one per moment", "Verba cleans your speech differently per mode. Try dictating these:")
-            modeCard("Flow", "Haiku", "Raw dictation — your exact words, no AI.", nil)
-            modeCard("Intent", "Sonnet", "The power mode. Say what you want, then the content — Verba does exactly that.",
+            title("Five modes, one per moment", "Verba cleans your speech differently per mode. Try it live below:")
+            tryBlock
+            modeCard("Flow", "Haiku", "Raw dictation, your exact words, no AI.", nil)
+            modeCard("Intent", "Sonnet", "The power mode. Say what you want, then the content, Verba does exactly that.",
                      "“Turn the following into three bullet points: we ship dark mode, postpone billing, hire a designer in Q3.”")
-            modeCard("Polish", "Haiku", "Clear, courteous work messages — in your own voice.",
+            modeCard("Polish", "Haiku", "Clear, courteous work messages, in your own voice.",
                      "“hey um can we move standup to ten, we ship friday, I need final copy by thursday”")
             modeCard("Coding", "Opus", "Rambling feedback → a precise prompt for Cursor / Claude Code.",
                      "“the login button doesn't work on mobile, the onclick is wrong, show the spinner while it loads”")
@@ -236,7 +239,7 @@ struct OnboardingView: View {
             title("Format with your voice", "")
             grid([
                 ("text.append", "Say the punctuation", "“new line”, “new paragraph”, “comma”, “bullet point”."),
-                ("arrow.uturn.backward", "Fix on the fly", "“scratch that” deletes your last phrase — keep talking."),
+                ("arrow.uturn.backward", "Fix on the fly", "“scratch that” deletes your last phrase, keep talking."),
             ])
         }
     }
@@ -255,7 +258,7 @@ struct OnboardingView: View {
 
     private var referral: some View {
         VStack(alignment: .leading, spacing: 16) {
-            title("Give a month, get a month", "Share Verba — it pays you back.")
+            title("Give a month, get a month", "Share Verba, it pays you back.")
             VStack(alignment: .leading, spacing: 10) {
                 Text("Your referral link").font(.caption).foregroundStyle(.secondary)
                 HStack {
@@ -269,7 +272,7 @@ struct OnboardingView: View {
             }
             .padding(16).glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             grid([
-                ("gift.fill", "1 free month per friend", "Every person who subscribes through your link earns you a free month — unlimited."),
+                ("gift.fill", "1 free month per friend", "Every person who subscribes through your link earns you a free month, unlimited."),
                 ("checkmark.seal", "How it validates", "They count once they're a paying subscriber and have dictated 15,000+ words."),
             ])
         }
@@ -292,10 +295,51 @@ struct OnboardingView: View {
                 Label("Grant both to start using Verba.", systemImage: "lock.fill").font(.caption).foregroundStyle(.orange)
             }
             VStack(alignment: .leading, spacing: 8) {
-                Text("Optional — your own Claude key").font(.callout.weight(.medium))
+                Text("Optional, your own Claude key").font(.callout.weight(.medium))
                 SecureField("sk-ant-… (skip if you use Claude Code or OpenRouter)", text: $anthropicKey).textFieldStyle(.roundedBorder)
             }
         }
+    }
+
+    // Live, in-onboarding dictation. The result lands in this field only, never on the
+    // clipboard, so it can't be used before finishing onboarding. 6 tries per mode.
+    private var tryBlock: some View {
+        let key = tryMode
+        let left = dictation.remaining(key)
+        return VStack(alignment: .leading, spacing: 10) {
+            Picker("", selection: $tryMode) {
+                ForEach(["Polish", "Casual", "Intent", "Coding"], id: \.self) { Text($0).tag($0) }
+            }.pickerStyle(.segmented).labelsHidden()
+
+            HStack {
+                Button {
+                    if let p = settings.profiles.first(where: { $0.name == key }) { dictation.toggle(modeKey: key, profile: p) }
+                } label: {
+                    Label(dictation.state == .recording ? "Stop & transcribe"
+                          : dictation.state == .working ? "Working…" : "Record & try",
+                          systemImage: dictation.state == .recording ? "stop.circle.fill" : "mic.fill")
+                }
+                .buttonStyle(DarkButton())
+                .opacity(left == 0 || dictation.state == .working ? 0.4 : 1)
+                .disabled(left == 0 || dictation.state == .working)
+                Spacer()
+                Text("\(left)/6 left").font(.caption).foregroundStyle(.secondary)
+            }
+
+            ScrollView {
+                Text(dictation.error.isEmpty ? (dictation.result.isEmpty ? "Your cleaned-up text will appear here." : dictation.result) : dictation.error)
+                    .font(.callout)
+                    .foregroundStyle(dictation.error.isEmpty ? (dictation.result.isEmpty ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary)) : AnyShapeStyle(.red))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(height: 96).padding(10)
+            .background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .textSelection(.enabled)
+
+            Text("Stays here during setup. Not copied to your clipboard yet.").font(.caption2).foregroundStyle(.tertiary)
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+        .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     // MARK: actions
@@ -372,6 +416,52 @@ struct OnboardingView: View {
             Spacer()
             if granted { Label("Granted", systemImage: "checkmark.seal.fill").labelStyle(.iconOnly).foregroundStyle(.green) }
             else { Button("Enable", action: action).glassButton() }
+        }
+    }
+}
+
+/// Runs a real dictation during onboarding, delivering the result into the onboarding
+/// field only (never the clipboard or another app). Capped at 6 tries per mode.
+@MainActor final class OnboardingDictation: ObservableObject {
+    enum S { case idle, recording, working }
+    @Published var state: S = .idle
+    @Published var result = ""
+    @Published var error = ""
+    @Published private var counts: [String: Int] = [:]
+    private let recorder = AudioRecorder()
+    let maxPerStep = 6
+
+    func remaining(_ key: String) -> Int { max(0, maxPerStep - (counts[key] ?? 0)) }
+
+    func toggle(modeKey: String, profile: Profile) {
+        switch state {
+        case .working: return
+        case .recording: stopAndRun(modeKey: modeKey, profile: profile)
+        case .idle:
+            guard remaining(modeKey) > 0 else { return }
+            recorder.requestPermission { [weak self] ok in
+                guard let self else { return }
+                guard ok, self.recorder.start() else { self.error = "Microphone access is needed."; return }
+                self.state = .recording
+            }
+        }
+    }
+
+    private func stopAndRun(modeKey: String, profile: Profile) {
+        guard let url = recorder.stop() else { state = .idle; return }
+        state = .working; error = ""; result = ""
+        Task { [weak self] in
+            do {
+                let r = try await Pipeline.run(audioURL: url, frontmostBundleID: nil, forcedProfile: profile, selection: nil) { _ in }
+                await MainActor.run {
+                    guard let self else { return }
+                    self.result = Output.trimTrailingNewlines(r.reprompted)
+                    self.counts[modeKey, default: 0] += 1
+                    self.state = .idle
+                }
+            } catch {
+                await MainActor.run { self?.error = error.localizedDescription; self?.state = .idle }
+            }
         }
     }
 }

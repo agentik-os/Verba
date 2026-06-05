@@ -43,7 +43,7 @@ struct HistoryView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            // List column — block cards, no separator lines.
+            // List column, block cards, no separator lines.
             VStack(spacing: 0) {
                 HStack {
                     Text("History").font(.system(size: 26, weight: .bold))
@@ -148,7 +148,7 @@ struct HistoryView: View {
                 Button { Output.copyToClipboard(body) } label: { Image(systemName: "doc.on.doc") }
                     .buttonStyle(.borderless)
             }
-            Text(body.isEmpty ? "—" : body)
+            Text(body.isEmpty ? ", " : body)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(14)

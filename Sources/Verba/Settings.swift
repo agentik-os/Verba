@@ -37,7 +37,7 @@ enum QuipTone: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .off: return "Off — just “Transmuting…”"
+        case .off: return "Off, just “Transmuting…”"
         case .geek: return "Geek / programmer"
         case .dad: return "Dad jokes"
         case .dry: return "Dry & deadpan"
@@ -86,7 +86,7 @@ enum QuipTone: String, Codable, CaseIterable, Identifiable {
 enum OverlayStyle: String, Codable, CaseIterable, Identifiable {
     case floating   // glass pill, bottom-center (default)
     case island     // dark pill at the top of the screen, Dynamic-Island style
-    case minimal    // tiny top bar — just the moving waveform, for power users
+    case minimal    // tiny top bar, just the moving waveform, for power users
     var id: String { rawValue }
     var label: String {
         switch self {
@@ -123,22 +123,22 @@ private let faithfulCore = """
 You are a meticulous editor cleaning up a voice transcript. The speaker dictated \
 this out loud, so it has filler words, false starts, repetitions, and self-corrections.
 
-Your ONLY job is to improve how it is written — grammar, punctuation, word choice, \
-phrasing, and the order of sentences — so it reads as if the speaker had written it \
+Your ONLY job is to improve how it is written, grammar, punctuation, word choice, \
+phrasing, and the order of sentences, so it reads as if the speaker had written it \
 carefully themselves.
 
-ABSOLUTE RULES — follow them exactly:
+ABSOLUTE RULES, follow them exactly:
 - Preserve EVERYTHING the speaker said: every idea, instruction, detail, name, \
 number, and nuance. Keep their voice and their level of detail.
 - DO NOT summarize, shorten, condense, generalize, or omit anything.
 - DO NOT add information, examples, or interpretation that the speaker did not say.
-- DO NOT answer, execute, or react to the content — you are editing text, not \
+- DO NOT answer, execute, or react to the content, you are editing text, not \
 responding to it. If they describe a task, you rewrite their description of the \
 task; you do not do the task.
 - Resolve self-corrections to the final intended wording ("no wait, actually X" → X).
 - Keep the same language the speaker used.
-- NEVER use an em dash (—), an en dash (–), or a spaced hyphen ( - ). Write like a human: \
-use commas, periods, parentheses, or colons instead. This is mandatory.
+- NEVER use an em dash, an en dash, or a spaced hyphen. Write like a human: use commas, \
+periods, parentheses, or colons instead. This is mandatory.
 
 Output ONLY the rewritten text. No preamble, no notes, no quotes around it.
 """
@@ -170,7 +170,7 @@ extension Profile {
         - Open with a one-line statement of the goal / desired outcome.
         - Then give the needed context (what exists today, the problem, where it happens).
         - Then the concrete work: an ordered list of changes/steps, in a logical sequence.
-        - Then constraints, acceptance criteria, edge cases, and any open questions — \
+        - Then constraints, acceptance criteria, edge cases, and any open questions, \
         each only if the speaker mentioned them.
         - Keep EVERY technical detail verbatim: file paths, function/variable names, \
         commands, error messages, library/version names, numbers. Never paraphrase these.
@@ -189,7 +189,7 @@ extension Profile {
 
 
         CONTEXT: professional writing (work email, Slack to a colleague or client, a \
-        document). Make it clear, well-structured, and courteous — confident and concise, \
+        document). Make it clear, well-structured, and courteous, confident and concise, \
         in the speaker's own voice, never stiff or corporate. Tighten loose sentences and \
         order the points logically, but keep every point the speaker made.
         """,
@@ -203,7 +203,7 @@ extension Profile {
 
 
         CONTEXT: a casual personal message or note (text to a friend, a reminder, a quick \
-        message). Keep it warm, natural, and relaxed — the speaker's everyday voice and \
+        message). Keep it warm, natural, and relaxed, the speaker's everyday voice and \
         slang. Just clean it up and order it lightly; keep all the content and the casual tone.
         """,
         matchBundleIDs: ["net.whatsapp.WhatsApp", "ru.keepcoder.Telegram", "com.hnc.Discord",
@@ -214,16 +214,16 @@ extension Profile {
         name: "Intent",
         systemPrompt: """
         You receive a raw voice transcript with a SPECIAL TWO-PART STRUCTURE:
-        1. INTENT — at the very start, the speaker states how they want the rest handled \
+        1. INTENT, at the very start, the speaker states how they want the rest handled \
         (e.g. "turn what follows into a bug report", "rewrite the next part as an email to \
         my client", "give me the key decisions as bullet points", "just clean this up and \
         keep everything"). This is an instruction to YOU.
-        2. CONTENT — everything after the intent: the material to transform.
+        2. CONTENT, everything after the intent: the material to transform.
 
         Your job:
         - Detect where the intent ends and the content begins.
         - Apply the intent FAITHFULLY to the content, and output only the result.
-        - DO NOT include or restate the intent itself — it is a directive, not content.
+        - DO NOT include or restate the intent itself, it is a directive, not content.
         - The intent OVERRIDES defaults: if it asks you to summarize, extract, reformat, \
         change tone, translate, or filter, do exactly that. If the intent is vague or \
         absent, fall back to: improve wording and reorder systematically WITHOUT losing \
@@ -232,7 +232,7 @@ extension Profile {
         final intended meaning.
         - Keep the speaker's language unless the intent says otherwise.
 
-        NEVER use an em dash (—), en dash (–), or a spaced hyphen ( - ); use commas, \
+        NEVER use an em dash, en dash, or a spaced hyphen; use commas, \
         periods, parentheses, or colons instead.
 
         Output ONLY the final result. No preamble, no echo of the intent, no commentary.
@@ -241,7 +241,7 @@ extension Profile {
 
     static let flow = Profile(
         name: "Flow",
-        systemPrompt: "(Free-flow dictation — your words are transcribed exactly, with no AI reprompting or reordering.)",
+        systemPrompt: "(Free-flow dictation, your words are transcribed exactly, with no AI reprompting or reordering.)",
         builtin: true, hotkeyCode: 22 /* 6 */, hotkeyMods: kCtrlOpt, raw: true)
 
     static let custom = Profile(
@@ -249,7 +249,7 @@ extension Profile {
         systemPrompt: faithfulCore + """
 
 
-        CONTEXT: (your own — edit this prompt in Settings to define exactly how Verba \
+        CONTEXT: (your own, edit this prompt in Settings to define exactly how Verba \
         should reorder and improve your dictation.)
         """,
         builtin: true, hotkeyCode: 23 /* 5 */, hotkeyMods: kCtrlOpt)
@@ -262,7 +262,7 @@ final class Settings: ObservableObject {
     private let d = UserDefaults.standard
 
     // Bump when the built-in profiles change so users get the new prompts/shortcuts.
-    static let profilesVersion = 10  // bumped: prompts forbid em/en dashes & spaced hyphens
+    static let profilesVersion = 11  // bumped: corrected no-dash wording in prompts
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }
@@ -286,7 +286,7 @@ final class Settings: ObservableObject {
     @Published var onboarded: Bool { didSet { d.set(onboarded, forKey: "onboarded") } }
     @Published var showInDock: Bool { didSet { d.set(showInDock, forKey: "showInDock") } }
 
-    // Global Style — extra instructions appended to every (non-raw) reprompt.
+    // Global Style, extra instructions appended to every (non-raw) reprompt.
     @Published var styleEnabled: Bool { didSet { d.set(styleEnabled, forKey: "styleEnabled") } }
     @Published var styleText: String { didSet { d.set(styleText, forKey: "styleText") } }
 

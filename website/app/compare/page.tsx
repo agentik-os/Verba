@@ -84,8 +84,25 @@ export default function Compare() {
         <a href={DOWNLOAD} className="rounded-full bg-[var(--fg)] px-7 py-3 font-medium text-[var(--bg)] hover:opacity-90">
           Download Verba for macOS
         </a>
-        <p className="mt-3 text-xs muted">Free 10,000 words/month · Pro $9.99/mo · cancel anytime</p>
+        <p className="mt-6 text-xs muted">Free 10,000 words/month · Pro $9.99/mo · cancel anytime</p>
       </div>
+
+      <footer className="mt-24 flex flex-col items-center gap-3 border-t hairline pt-12 text-sm muted">
+        <Link href="/" className="flex items-center gap-2.5">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] bg-black ring-1 ring-[var(--border)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z" /><path d="M5 11a1 1 0 1 1 2 0 5 5 0 0 0 10 0 1 1 0 1 1 2 0 7 7 0 0 1-6 6.93V21a1 1 0 1 1-2 0v-3.07A7 7 0 0 1 5 11Z" /></svg>
+          </span>
+          <span className="text-[15px] font-semibold tracking-tight text-[var(--fg)]">Verba</span>
+        </Link>
+        <p>Speak it. Send it clean.</p>
+        <div className="flex flex-wrap justify-center gap-5">
+          <Link href="/" className="hover:text-[var(--fg)]">Home</Link>
+          <Link href="/#pricing" className="hover:text-[var(--fg)]">Pricing</Link>
+          <Link href="/acknowledgements" className="hover:text-[var(--fg)]">Acknowledgements</Link>
+          <a href={DOWNLOAD} className="hover:text-[var(--fg)]">Download</a>
+        </div>
+        <p className="text-xs">© 2026 Verba · Runs on-device with open models</p>
+      </footer>
     </main>
   );
 }

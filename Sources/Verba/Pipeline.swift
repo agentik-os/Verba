@@ -52,11 +52,11 @@ enum Pipeline {
                 sys += """
 
 
-                SELECTION MODE — OVERRIDE: The user has TEXT SELECTED in their editor and \
+                SELECTION MODE, OVERRIDE: The user has TEXT SELECTED in their editor and \
                 is giving you a spoken instruction about it. Treat the transcript as an \
                 instruction to apply to the selected text (rewrite/translate/transform it, \
                 or answer their question about it). Output ONLY the resulting text that \
-                should REPLACE the selection — no preamble, no quotes, no commentary. \
+                should REPLACE the selection, no preamble, no quotes, no commentary. \
                 Keep the user's language unless they ask otherwise.
                 """
                 let userText = "SELECTED TEXT:\n<<<\n\(sel)\n>>>\n\nSPOKEN INSTRUCTION:\n\(original)"

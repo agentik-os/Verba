@@ -3,7 +3,7 @@ import AVFoundation
 
 /// Records microphone input to a compact .m4a (AAC) file.
 /// AAC keeps long dictations small enough for OpenAI's 25 MB upload limit, and
-/// WhisperKit reads m4a fine too — one format serves both engines.
+/// WhisperKit reads m4a fine too, one format serves both engines.
 final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
     private var recorder: AVAudioRecorder?
     private(set) var currentURL: URL?
@@ -62,7 +62,7 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         return currentURL
     }
 
-    /// Current input level 0...1 for the meter — boosted so quiet speech still moves.
+    /// Current input level 0...1 for the meter, boosted so quiet speech still moves.
     func level() -> Float {
         guard let rec = recorder, rec.isRecording else { return 0 }
         rec.updateMeters()

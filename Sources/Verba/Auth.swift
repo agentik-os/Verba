@@ -3,7 +3,7 @@ import AuthenticationServices
 
 /// Real sign-in via the web: opens the Clerk-hosted sign-in/sign-up page on verba.run
 /// (Google, email, etc.), and captures the authenticated email through a `verba://`
-/// callback. No mock — the account is created in Clerk, and the affiliate ref is linked
+/// callback. No mock, the account is created in Clerk, and the affiliate ref is linked
 /// server-side during the flow.
 final class AuthSession: NSObject, ASWebAuthenticationPresentationContextProviding {
     static let shared = AuthSession()
@@ -12,7 +12,7 @@ final class AuthSession: NSObject, ASWebAuthenticationPresentationContextProvidi
     /// Starts the hosted flow. Completion gets the verified email (or nil if cancelled).
     func signIn(completion: @escaping (String?) -> Void) {
         // The referrer (if any) is attributed from the web cookie set when the user
-        // clicked an affiliate link — not from this device's own code.
+        // clicked an affiliate link, not from this device's own code.
         var c = URLComponents(string: "https://verba.run/app-auth")!
         c.queryItems = [URLQueryItem(name: "scheme", value: "verba")]
         guard let url = c.url else { completion(nil); return }
