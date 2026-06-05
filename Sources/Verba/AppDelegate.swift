@@ -172,7 +172,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func escapePressed() {
-        if state == .recording || (state == .idle && overlay.model.menu) { cancelRecording() }
+        if state == .recording {
+            stopAndProcess()                 // Esc = treat as end of recording → transcribe & send
+        } else if state == .idle, overlay.model.menu {
+            overlay.hide(); overlay.model.menu = false   // just dismiss the mode picker
+        }
     }
 
     // Fn (globe) as the primary trigger — Wispr-Flow style.

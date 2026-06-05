@@ -14,10 +14,9 @@ struct SettingsView: View {
         TabView {
             general.tabItem { Label("General", systemImage: "gearshape") }
             keys.tabItem { Label("API Keys", systemImage: "key") }
-            profilesTab.tabItem { Label("Modes", systemImage: "wand.and.stars") }
             planTab.tabItem { Label("Plan", systemImage: "sparkles") }
         }
-        .frame(width: 560, height: 480)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: General
@@ -162,6 +161,4 @@ struct SettingsView: View {
         .formStyle(.grouped)
     }
 
-    // MARK: Modes
-    private var profilesTab: some View { ModesView() }
 }

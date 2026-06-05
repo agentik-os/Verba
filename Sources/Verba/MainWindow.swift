@@ -46,40 +46,43 @@ struct MainWindow: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
+            Color(nsColor: .windowBackgroundColor).ignoresSafeArea()
+
             HStack(spacing: 0) {
                 if sidebarOpen {
                     sidebar
                         .frame(width: sidebarWidth)
-                        .transition(.move(edge: .leading))
+                        .padding(.top, 40)        // float below the traffic lights
+                        .padding(.leading, 12)
+                        .padding(.bottom, 12)
+                        .padding(.trailing, 8)    // gap → clean separation, no line
+                        .transition(.move(edge: .leading).combined(with: .opacity))
                 }
                 detail(selection ?? .home)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(nsColor: .windowBackgroundColor))
             }
             // When collapsed, a single reopen control floats just right of the traffic lights.
             if !sidebarOpen {
                 toggle(open: true)
                     .padding(.leading, 78)
-                    .padding(.top, 9)
+                    .padding(.top, 11)
             }
         }
         .frame(minWidth: 880, minHeight: 600)
         .ignoresSafeArea()
-        .animation(.easeInOut(duration: 0.2), value: sidebarOpen)
+        .animation(.easeInOut(duration: 0.22), value: sidebarOpen)
     }
 
-    // MARK: Sidebar
+    // MARK: Sidebar (floating rounded card)
 
     private var sidebar: some View {
         VStack(spacing: 0) {
-            // Top region: leave room for the traffic lights, collapse control on the right.
-            HStack(spacing: 0) {
-                Spacer(minLength: 70)   // traffic-light clearance
+            HStack {
                 Spacer()
                 toggle(open: false)
             }
-            .frame(height: 40)
-            .padding(.horizontal, 12)
+            .frame(height: 34)
+            .padding(.horizontal, 10)
 
             List(selection: $selection) {
                 Section { row(.home); row(.insights); row(.history) }
@@ -92,7 +95,8 @@ struct MainWindow: View {
 
             sidebarFooter
         }
-        .background(.ultraThinMaterial)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: .black.opacity(0.16), radius: 14, x: 0, y: 5)
     }
 
     private func toggle(open: Bool) -> some View {
