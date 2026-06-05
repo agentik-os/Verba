@@ -6,15 +6,15 @@ struct ModesView: View {
     @State private var selectedID: UUID?
 
     var body: some View {
-        HSplitView {
+        HStack(spacing: 0) {
             VStack(spacing: 0) {
                 List(selection: $selectedID) {
                     ForEach(settings.profiles) { p in
                         HStack(spacing: 8) {
                             Image(systemName: p.raw ? "waveform" : "wand.and.stars")
-                                .foregroundStyle(.secondary).frame(width: 18)
-                            Text(p.name)
-                            Spacer()
+                                .foregroundStyle(.secondary).frame(width: 16)
+                            Text(p.name).lineLimit(1)
+                            Spacer(minLength: 6)
                             if let c = p.hotkeyCode, let m = p.hotkeyMods {
                                 Text(shortcutLabel(keyCode: c, modifiers: m))
                                     .font(.caption2).foregroundStyle(.tertiary)
@@ -28,7 +28,7 @@ struct ModesView: View {
                     }
                 }
                 .listStyle(.inset)
-                HStack(spacing: 10) {
+                HStack(spacing: 12) {
                     Button { addProfile() } label: { Image(systemName: "plus") }
                         .disabled(!settings.isPro)
                         .help(settings.isPro ? "New mode" : "Custom modes are a Pro feature")
@@ -38,9 +38,11 @@ struct ModesView: View {
                     Spacer()
                 }
                 .buttonStyle(.borderless)
-                .padding(.horizontal, 14).padding(.vertical, 10)
+                .padding(.horizontal, 14).padding(.vertical, 8)
             }
-            .frame(minWidth: 210, idealWidth: 240)
+            .frame(width: 232)
+
+            Divider()
 
             Group {
                 if let id = selectedID, settings.profiles.contains(where: { $0.id == id }) {
