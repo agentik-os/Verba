@@ -93,24 +93,26 @@ final class FnTap {
     }
 }
 
-/// Sets the system "Press 🌐 to:" action to "Do Nothing" while Verba owns the Fn
-/// key, then restores it. This is how dictation apps stop macOS from popping the
-/// input-source / emoji HUD on Fn.
+/// Owns the system "Press 🌐 to:" action while Verba uses the Fn key. The globe HUD is a
+/// HIToolbox/WindowServer behaviour a CGEventTap cannot veto, so the ONLY reliable
+/// suppression is AppleFnUsageType = 3 ("Do Nothing") applied live via activateSettings.
+/// (Crucial: on macOS 14/15, 0 = "Change Input Source" — that WAS the HUD. 3 = Do Nothing.)
+/// The symbolic-hotkey toggles additionally kill the emoji + Ctrl-Space chord switchers.
 enum FnSystemPref {
     private static let key = "AppleFnUsageType"
-    private static let domain = ".GlobalPreferences"
+    private static let domain = ".GlobalPreferences"   // NSGlobalDomain, AnyHost
     private static var saved: Int??
+    private static let kDoNothing = 3                  // 0=Change Input Source, 1=Emoji, 2=Dictation, 3=Do Nothing
 
-    // Input-source symbolic hotkeys (the "A / US" HUD): previous / next source.
-    private static let inputSourceHotKeys: [Int32] = [60, 61]
+    // Emoji palette (50) + select previous/next input source chords (60/61). NOT the globe key.
+    private static let inputSourceHotKeys: [Int32] = [50, 60, 61]
     private static var disabledSHK: [Int32] = []
 
-    // Private SkyLight API to toggle a symbolic hotkey at runtime (how Wispr Flow
-    // stops the globe HUD without a logout).
-    private typealias SetSHK = @convention(c) (Int32, Bool) -> Int32
-    private typealias GetSHK = @convention(c) (Int32, UnsafeMutablePointer<DarwinBoolean>) -> Int32
-    private static let setEnabled: SetSHK? = sym("CGSSetSymbolicHotKeyEnabled")
-    private static let getEnabled: GetSHK? = sym("CGSIsSymbolicHotKeyEnabled")
+    // Private SkyLight API (CoreGraphics re-exports the CGS aliases). Resolve SLS first.
+    private typealias SetSHK = @convention(c) (Int32, Bool) -> Int32   // CGError, 0 = ok
+    private typealias IsSHK  = @convention(c) (Int32) -> Bool          // direct return
+    private static let setEnabled: SetSHK? = sym("SLSSetSymbolicHotKeyEnabled") ?? sym("CGSSetSymbolicHotKeyEnabled")
+    private static let isEnabled: IsSHK?   = sym("SLSIsSymbolicHotKeyEnabled") ?? sym("CGSIsSymbolicHotKeyEnabled")
     private static func sym<T>(_ name: String) -> T? {
         guard let h = dlopen(nil, RTLD_NOW), let p = dlsym(h, name) else { return nil }
         return unsafeBitCast(p, to: T.self)
@@ -119,22 +121,36 @@ enum FnSystemPref {
     static func suppress() {
         let d = UserDefaults(suiteName: domain)
         if saved == nil { saved = .some(d?.object(forKey: key) as? Int) }
-        d?.set(0, forKey: key)   // 0 = Do Nothing
-
-        // Disable the input-source switch symbolic hotkeys at runtime.
-        for id in inputSourceHotKeys {
-            var on = DarwinBoolean(true)
-            if let get = getEnabled { _ = get(id, &on) }
-            if on.boolValue, let set = setEnabled, set(id, false) == 0 { disabledSHK.append(id) }
+        if (d?.object(forKey: key) as? Int) != kDoNothing {
+            d?.set(kDoNothing, forKey: key)
+            d?.synchronize()
+            applySettingsLive()                 // re-bind without a logout
+        }
+        for id in inputSourceHotKeys {          // per-session state, re-run each launch
+            if isEnabled?(id) == true, setEnabled?(id, false) == 0 { disabledSHK.append(id) }
         }
     }
+
     static func restore() {
         if let saved {
             let d = UserDefaults(suiteName: domain)
             if let v = saved { d?.set(v, forKey: key) } else { d?.removeObject(forKey: key) }
+            d?.synchronize()
+            applySettingsLive()
             Self.saved = nil
         }
-        for id in disabledSHK { _ = setEnabled?(id, true) }   // re-enable what we turned off
+        for id in disabledSHK { _ = setEnabled?(id, true) }
         disabledSHK = []
+    }
+
+    /// Apple's private tool that re-reads keyboard/hotkey pref domains and re-binds them
+    /// immediately, the no-logout path System Settings itself uses.
+    private static func applySettingsLive() {
+        let p = "/System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings"
+        guard FileManager.default.isExecutableFile(atPath: p) else { return }
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: p)
+        task.arguments = ["-u"]
+        try? task.run()
     }
 }
