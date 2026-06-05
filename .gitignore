@@ -13,3 +13,5 @@ website/node_modules
 website/.next
 website/.vercel
 website/next-env.d.ts
+
+website/tsconfig.tsbuildinfo
