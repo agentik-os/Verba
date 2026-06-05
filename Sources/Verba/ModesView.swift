@@ -109,6 +109,20 @@ struct ModesView: View {
                             .foregroundStyle(.secondary)
                     }
                 } else {
+                    let modelB = Binding(
+                        get: { settings.profiles.first { $0.id == id }?.model ?? "" },
+                        set: { v in if let i = index(of: id) { settings.profiles[i].model = v.isEmpty ? nil : v } })
+                    field("Model", hint: "which Claude model rewrites this mode (Anthropic / Claude Code)") {
+                        Picker("", selection: modelB) {
+                            Text("Default (\(settings.claudeModel))").tag("")
+                            Text("Haiku 4.5 — fastest, cheapest").tag("claude-haiku-4-5")
+                            Text("Sonnet 4.6 — balanced").tag("claude-sonnet-4-6")
+                            Text("Opus 4.8 — most capable").tag("claude-opus-4-8")
+                        }
+                        .labelsHidden().pickerStyle(.menu).frame(maxWidth: 320, alignment: .leading)
+                    }
+                }
+                if !isRaw {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 6) {
                             Text("System prompt").font(.subheadline.weight(.semibold))

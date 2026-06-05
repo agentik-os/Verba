@@ -98,6 +98,7 @@ struct Profile: Codable, Identifiable, Equatable {
     var hotkeyCode: UInt32? = nil       // dedicated shortcut (Carbon keycode)
     var hotkeyMods: UInt32? = nil       // Carbon modifier mask
     var raw: Bool = false               // true = pure dictation, no Claude reprompting
+    var model: String? = nil            // per-mode Claude model override (nil = global default)
 }
 
 extension Profile {
@@ -124,7 +125,7 @@ extension Profile {
         """,
         matchBundleIDs: ["com.todesktop.230313mzl4w4u92", "com.microsoft.VSCode", "com.apple.dt.Xcode",
                          "com.googlecode.iterm2", "com.apple.Terminal", "dev.warp.Warp-Stable"],
-        builtin: true, hotkeyCode: 18 /* 1 */, hotkeyMods: kCtrlOpt)
+        builtin: true, hotkeyCode: 18 /* 1 */, hotkeyMods: kCtrlOpt, model: "claude-opus-4-8")
 
     static let polish = Profile(
         name: "Polish",
@@ -138,7 +139,7 @@ extension Profile {
         """,
         matchBundleIDs: ["com.tinyspeck.slackmacgap", "com.apple.mail", "com.microsoft.Outlook",
                          "com.readdle.smartemail-Mac", "notion.id"],
-        builtin: true, hotkeyCode: 19 /* 2 */, hotkeyMods: kCtrlOpt)
+        builtin: true, hotkeyCode: 19 /* 2 */, hotkeyMods: kCtrlOpt, model: "claude-haiku-4-5")
 
     static let casual = Profile(
         name: "Casual",
@@ -151,7 +152,7 @@ extension Profile {
         """,
         matchBundleIDs: ["net.whatsapp.WhatsApp", "ru.keepcoder.Telegram", "com.hnc.Discord",
                          "com.apple.MobileSMS", "com.apple.Notes"],
-        builtin: true, hotkeyCode: 20 /* 3 */, hotkeyMods: kCtrlOpt)
+        builtin: true, hotkeyCode: 20 /* 3 */, hotkeyMods: kCtrlOpt, model: "claude-haiku-4-5")
 
     static let intent = Profile(
         name: "Intent",
@@ -177,7 +178,7 @@ extension Profile {
 
         Output ONLY the final result — no preamble, no echo of the intent, no commentary.
         """,
-        builtin: true, hotkeyCode: 21 /* 4 */, hotkeyMods: kCtrlOpt)
+        builtin: true, hotkeyCode: 21 /* 4 */, hotkeyMods: kCtrlOpt, model: "claude-sonnet-4-6")
 
     static let flow = Profile(
         name: "Flow",
@@ -202,7 +203,7 @@ final class Settings: ObservableObject {
     private let d = UserDefaults.standard
 
     // Bump when the built-in profiles change so users get the new prompts/shortcuts.
-    static let profilesVersion = 7
+    static let profilesVersion = 8   // bumped: per-mode model defaults
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }

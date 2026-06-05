@@ -43,7 +43,7 @@ enum Pipeline {
                 sys += "\n\nADDITIONAL STYLE PREFERENCES (apply while staying faithful): \(style)"
             }
             sys += SnippetsStore.shared.promptContext()   // intent-based snippet insertion
-            let r = Reprompter(model: s.claudeModel)
+            let r = Reprompter(model: profile.model ?? s.claudeModel)   // per-mode model override
 
             let sel = selection?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if !sel.isEmpty {
