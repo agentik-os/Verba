@@ -53,6 +53,11 @@ struct SettingsView: View {
                     ForEach(claudeModels, id: \.self) { Text($0).tag($0) }
                 }
                 Toggle("Auto-pick profile from the active app", isOn: $settings.autoDetectProfile)
+                Toggle("Use selected text as context", isOn: $settings.useSelectionContext)
+                if settings.useSelectionContext {
+                    Text("If you have text selected when you dictate, your words are treated as an instruction on that selection — the result replaces it.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             }
             Section("Recording") {
                 Picker("Style", selection: $settings.recordStyle) {

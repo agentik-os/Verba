@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var state: State = .idle { didSet { refreshUI() } }
     private var statusLine = ""
     private var capturedBundleID: String?
+    private var capturedSelection: String?  // text selected in the active app when recording started
     private var forcedProfile: Profile?     // set when a profile-specific shortcut started the dictation
 
     private var settingsWC: NSWindowController?
@@ -221,6 +222,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard ok else { self.notify("Microphone access denied", "Enable it in System Settings ▸ Privacy & Security ▸ Microphone."); return }
             self.forcedProfile = forced
             self.capturedBundleID = Output.frontmostBundleID()
+            self.capturedSelection = Settings.shared.useSelectionContext ? Output.selectedText() : nil
             guard self.recorder.start() else { self.notify("Couldn't start recording", ""); return }
             self.recordStartedAt = Date()
             self.state = .recording
@@ -258,10 +260,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let bundleID = capturedBundleID
         let forced = forcedProfile
+        let selection = capturedSelection
         forcedProfile = nil
+        capturedSelection = nil
         Task {
             do {
-                let result = try await Pipeline.run(audioURL: url, frontmostBundleID: bundleID, forcedProfile: forced) { [weak self] s in
+                let result = try await Pipeline.run(audioURL: url, frontmostBundleID: bundleID, forcedProfile: forced, selection: selection) { [weak self] s in
                     DispatchQueue.main.async { self?.statusLine = s; self?.overlay.model.title = s; self?.refreshUI() }
                 }
                 await MainActor.run { self.finish(result: result, audioURL: url) }

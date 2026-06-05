@@ -1,10 +1,27 @@
 import AppKit
 import Carbon.HIToolbox
+import ApplicationServices
 
 enum Output {
     /// Bundle id of the app that was frontmost (captured before we showed any UI).
     static func frontmostBundleID() -> String? {
         NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+    }
+
+    /// The text currently selected in the frontmost app's focused field, via the
+    /// Accessibility API. Returns nil if nothing is selected or AX isn't granted.
+    static func selectedText() -> String? {
+        guard accessibilityTrusted else { return nil }
+        let system = AXUIElementCreateSystemWide()
+        var focused: AnyObject?
+        guard AXUIElementCopyAttributeValue(system, kAXFocusedUIElementAttribute as CFString, &focused) == .success,
+              let focused else { return nil }
+        let element = focused as! AXUIElement
+        var value: AnyObject?
+        guard AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &value) == .success,
+              let text = value as? String,
+              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return text
     }
 
     static func copyToClipboard(_ text: String) {

@@ -12,6 +12,7 @@ enum Pipeline {
     static func run(audioURL: URL,
                     frontmostBundleID: String?,
                     forcedProfile: Profile?,
+                    selection: String? = nil,
                     status: @escaping (String) -> Void) async throws -> PipelineResult {
         let s = Settings.shared
 
@@ -34,14 +35,33 @@ enum Pipeline {
         var reprompted = original
         // Raw/Flow mode (or reprompting off) → return the transcript untouched, no Claude.
         if s.repromptEnabled && !profile.raw {
-            status("Restructuring with Claude…")
             var sys = profile.systemPrompt
             let style = s.styleText.trimmingCharacters(in: .whitespacesAndNewlines)
             if s.styleEnabled && !style.isEmpty {
                 sys += "\n\nADDITIONAL STYLE PREFERENCES (apply while staying faithful): \(style)"
             }
             let r = Reprompter(model: s.claudeModel)
-            reprompted = try await r.reprompt(transcript: original, systemPrompt: sys)
+
+            let sel = selection?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !sel.isEmpty {
+                // Selection mode: the dictation is an INSTRUCTION acting on the selected text.
+                status("Working on your selection…")
+                sys += """
+
+
+                SELECTION MODE — OVERRIDE: The user has TEXT SELECTED in their editor and \
+                is giving you a spoken instruction about it. Treat the transcript as an \
+                instruction to apply to the selected text (rewrite/translate/transform it, \
+                or answer their question about it). Output ONLY the resulting text that \
+                should REPLACE the selection — no preamble, no quotes, no commentary. \
+                Keep the user's language unless they ask otherwise.
+                """
+                let userText = "SELECTED TEXT:\n<<<\n\(sel)\n>>>\n\nSPOKEN INSTRUCTION:\n\(original)"
+                reprompted = try await r.reprompt(transcript: userText, systemPrompt: sys)
+            } else {
+                status("Restructuring with Claude…")
+                reprompted = try await r.reprompt(transcript: original, systemPrompt: sys)
+            }
         }
 
         // Expand snippets in the final text.
