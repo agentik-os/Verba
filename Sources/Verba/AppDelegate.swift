@@ -18,10 +18,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWC: NSWindowController?
     private var historyWC: NSWindowController?
     private var onboardingWC: NSWindowController?
+    private var mainWC: NSWindowController?
     private var reviewWindow: NSWindow?
+    private var recordStartedAt: Date?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
+        applyDockPolicy()
         installMainMenu()   // menu-bar apps have no main menu → no ⌘C/⌘V in text fields without this
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -47,9 +49,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.async { guard !s.isEmpty else { return }; self?.statusLine = s; self?.overlay.model.title = s; self?.refreshUI() }
         }
 
+        // React to the Dock toggle live.
+        Settings.shared.$showInDock
+            .dropFirst().receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.applyDockPolicy() }
+            .store(in: &cancellables)
+
         if !Settings.shared.onboarded {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in self?.openOnboarding() }
+        } else if Settings.shared.showInDock {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in self?.openMain() }
         }
+    }
+
+    private func applyDockPolicy() {
+        NSApp.setActivationPolicy(Settings.shared.showInDock ? .regular : .accessory)
+    }
+
+    // Reopen the main window when the user clicks the Dock icon.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag { openMain() }
+        return true
+    }
+
+    @objc private func openMain() {
+        if mainWC == nil {
+            let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1000, height: 660),
+                               styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
+            win.title = "Verba"
+            win.titlebarAppearsTransparent = true
+            win.contentViewController = NSHostingController(rootView: MainWindow())
+            win.center()
+            win.isReleasedWhenClosed = false
+            win.setFrameAutosaveName("VerbaMain")
+            mainWC = NSWindowController(window: win)
+        }
+        present(mainWC)
     }
 
     /// A minimal main menu so standard text-editing shortcuts (⌘C/⌘V/⌘X/⌘A/⌘Z)
@@ -132,6 +167,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.forcedProfile = forced
             self.capturedBundleID = Output.frontmostBundleID()
             guard self.recorder.start() else { self.notify("Couldn't start recording", ""); return }
+            self.recordStartedAt = Date()
             self.state = .recording
             SoundFX.start()
 
@@ -198,6 +234,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             History.shared.add(original: result.original, reprompted: result.reprompted,
                                profileName: result.profileName, engine: result.engine, audioURL: audioURL)
+            let dur = self.recordStartedAt.map { Date().timeIntervalSince($0) } ?? 0
+            Stats.shared.record(words: wordCount(text), seconds: dur)
             self.overlay.hide()
             self.state = .idle
         }
@@ -256,6 +294,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(engineItem)
 
         menu.addItem(.separator())
+        add(menu, "Open Verba", #selector(openMain), "o")
         add(menu, "Settings…", #selector(openSettings), ",")
         add(menu, "History…", #selector(openHistory), "y")
         if !Output.accessibilityTrusted {

@@ -93,26 +93,28 @@ extension Profile {
                          "com.googlecode.iterm2", "com.apple.Terminal", "dev.warp.Warp-Stable"],
         builtin: true, hotkeyCode: 18 /* 1 */, hotkeyMods: kCtrlOpt)
 
-    static let pro = Profile(
-        name: "Pro",
+    static let polish = Profile(
+        name: "Polish",
         systemPrompt: faithfulCore + """
 
 
-        CONTEXT: professional communication (work email, Slack, a message to a colleague \
-        or client). Make it clear, well-organized, and courteous, in the speaker's own \
-        voice — natural, not stiff or corporate. Keep every point they made.
+        CONTEXT: professional writing (work email, Slack to a colleague or client, a \
+        document). Make it clear, well-structured, and courteous — confident and concise, \
+        in the speaker's own voice, never stiff or corporate. Tighten loose sentences and \
+        order the points logically, but keep every point the speaker made.
         """,
-        matchBundleIDs: ["com.tinyspeck.slackmacgap", "com.apple.mail", "com.microsoft.Outlook"],
+        matchBundleIDs: ["com.tinyspeck.slackmacgap", "com.apple.mail", "com.microsoft.Outlook",
+                         "com.readdle.smartemail-Mac", "notion.id"],
         builtin: true, hotkeyCode: 19 /* 2 */, hotkeyMods: kCtrlOpt)
 
-    static let perso = Profile(
-        name: "Perso",
+    static let casual = Profile(
+        name: "Casual",
         systemPrompt: faithfulCore + """
 
 
-        CONTEXT: a personal message or note (text to a friend, a personal reminder, a \
-        casual message). Keep it warm, natural, and casual — the speaker's everyday \
-        voice. Just clean it up and order it; keep all the content.
+        CONTEXT: a casual personal message or note (text to a friend, a reminder, a quick \
+        message). Keep it warm, natural, and relaxed — the speaker's everyday voice and \
+        slang. Just clean it up and order it lightly; keep all the content and the casual tone.
         """,
         matchBundleIDs: ["net.whatsapp.WhatsApp", "ru.keepcoder.Telegram", "com.hnc.Discord",
                          "com.apple.MobileSMS", "com.apple.Notes"],
@@ -144,9 +146,9 @@ extension Profile {
         """,
         builtin: true, hotkeyCode: 21 /* 4 */, hotkeyMods: kCtrlOpt)
 
-    static let free = Profile(
-        name: "Free",
-        systemPrompt: "(Free dictation — your words are transcribed exactly, with no AI reprompting or reordering.)",
+    static let flow = Profile(
+        name: "Flow",
+        systemPrompt: "(Free-flow dictation — your words are transcribed exactly, with no AI reprompting or reordering.)",
         builtin: true, hotkeyCode: 22 /* 6 */, hotkeyMods: kCtrlOpt, raw: true)
 
     static let custom = Profile(
@@ -159,7 +161,7 @@ extension Profile {
         """,
         builtin: true, hotkeyCode: 23 /* 5 */, hotkeyMods: kCtrlOpt)
 
-    static let defaults: [Profile] = [.coding, .pro, .perso, .intent, .free, .custom]
+    static let defaults: [Profile] = [.coding, .polish, .casual, .intent, .flow, .custom]
 }
 
 final class Settings: ObservableObject {
@@ -167,7 +169,7 @@ final class Settings: ObservableObject {
     private let d = UserDefaults.standard
 
     // Bump when the built-in profiles change so users get the new prompts/shortcuts.
-    static let profilesVersion = 5
+    static let profilesVersion = 6
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }
@@ -181,6 +183,11 @@ final class Settings: ObservableObject {
     @Published var repromptEnabled: Bool { didSet { d.set(repromptEnabled, forKey: "repromptEnabled") } }
     @Published var triggerMode: TriggerMode { didSet { d.set(triggerMode.rawValue, forKey: "triggerMode") } }
     @Published var onboarded: Bool { didSet { d.set(onboarded, forKey: "onboarded") } }
+    @Published var showInDock: Bool { didSet { d.set(showInDock, forKey: "showInDock") } }
+
+    // Global Style — extra instructions appended to every (non-raw) reprompt.
+    @Published var styleEnabled: Bool { didSet { d.set(styleEnabled, forKey: "styleEnabled") } }
+    @Published var styleText: String { didSet { d.set(styleText, forKey: "styleText") } }
 
     // Primary trigger shortcut (used when triggerMode == .hotkey). Default ⌃⌥Space.
     @Published var primaryKeyCode: UInt32 { didSet { d.set(Int(primaryKeyCode), forKey: "primaryKeyCode") } }
@@ -217,6 +224,9 @@ final class Settings: ObservableObject {
         repromptEnabled = d.object(forKey: "repromptEnabled") as? Bool ?? true
         triggerMode = TriggerMode(rawValue: d.string(forKey: "triggerMode") ?? "") ?? .hotkey
         onboarded = d.object(forKey: "onboarded") as? Bool ?? false
+        showInDock = d.object(forKey: "showInDock") as? Bool ?? true
+        styleEnabled = d.object(forKey: "styleEnabled") as? Bool ?? false
+        styleText = d.string(forKey: "styleText") ?? "Write in a clear, natural voice. Keep it concise."
         primaryKeyCode = UInt32(d.object(forKey: "primaryKeyCode") as? Int ?? 49 /* Space */)
         primaryMods = UInt32(d.object(forKey: "primaryMods") as? Int ?? Int(kCtrlOpt))
         isPro = (ProcessInfo.processInfo.environment["VERBA_PRO"] != nil) || d.bool(forKey: "verba.pro")

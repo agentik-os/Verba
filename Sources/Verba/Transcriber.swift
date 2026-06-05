@@ -16,7 +16,8 @@ enum TranscribeError: LocalizedError {
 
 protocol Transcriber {
     /// `language` is an ISO-639-1 code, or nil/empty for auto-detect.
-    func transcribe(fileURL: URL, language: String?) async throws -> String
+    /// `hint` is optional vocabulary (custom dictionary terms) to bias transcription.
+    func transcribe(fileURL: URL, language: String?, hint: String?) async throws -> String
 }
 
 // MARK: - OpenAI (cloud, BYOK)
@@ -24,7 +25,7 @@ protocol Transcriber {
 struct OpenAITranscriber: Transcriber {
     var model = "gpt-4o-transcribe"
 
-    func transcribe(fileURL: URL, language: String?) async throws -> String {
+    func transcribe(fileURL: URL, language: String?, hint: String?) async throws -> String {
         guard let key = Keychain.openAIKey, !key.isEmpty else { throw TranscribeError.missingKey }
 
         let boundary = "verba-\(UUID().uuidString)"
@@ -43,6 +44,7 @@ struct OpenAITranscriber: Transcriber {
         field("model", model)
         field("response_format", "json")
         if let language, !language.isEmpty { field("language", language) }
+        if let hint, !hint.isEmpty { field("prompt", "Vocabulary: \(hint)") }
 
         let fileData = try Data(contentsOf: fileURL)
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
@@ -87,7 +89,7 @@ actor LocalTranscriber: Transcriber {
         return kit
     }
 
-    func transcribe(fileURL: URL, language: String?) async throws -> String {
+    func transcribe(fileURL: URL, language: String?, hint: String?) async throws -> String {
         let model = Settings.shared.localModel
         let kit = try await ensureLoaded(model: model)
         let lang = (language?.isEmpty ?? true) ? nil : language

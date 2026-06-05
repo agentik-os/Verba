@@ -21,17 +21,28 @@ enum Pipeline {
         let transcriber: Transcriber = (s.engine == .local)
             ? LocalTranscriber.shared
             : OpenAITranscriber()
-        let original = try await transcriber.transcribe(fileURL: audioURL, language: lang)
+        var original = try await transcriber.transcribe(fileURL: audioURL, language: lang,
+                                                         hint: DictionaryStore.shared.hint())
+        // Apply custom dictionary spellings to the raw transcript.
+        original = DictionaryStore.shared.apply(to: original)
 
         // 2. A dedicated-shortcut profile wins; else auto-detect / active profile.
         let profile = forcedProfile ?? s.profile(forBundleID: frontmostBundleID)
         var reprompted = original
-        // Raw/Free mode (or reprompting off) → return the transcript untouched, no Claude.
+        // Raw/Flow mode (or reprompting off) → return the transcript untouched, no Claude.
         if s.repromptEnabled && !profile.raw {
             status("Restructuring with Claude…")
+            var sys = profile.systemPrompt
+            let style = s.styleText.trimmingCharacters(in: .whitespacesAndNewlines)
+            if s.styleEnabled && !style.isEmpty {
+                sys += "\n\nADDITIONAL STYLE PREFERENCES (apply while staying faithful): \(style)"
+            }
             let r = Reprompter(model: s.claudeModel)
-            reprompted = try await r.reprompt(transcript: original, systemPrompt: profile.systemPrompt)
+            reprompted = try await r.reprompt(transcript: original, systemPrompt: sys)
         }
+
+        // Expand snippets in the final text.
+        reprompted = SnippetsStore.shared.apply(to: reprompted)
 
         return PipelineResult(original: original,
                               reprompted: reprompted,
