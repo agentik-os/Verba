@@ -65,9 +65,7 @@ struct OverlayView: View {
     }
 
     // MARK: Top island — Dynamic-Island that grows from the notch (flat top, rounded bottom)
-    private var islandShape: some Shape {
-        .rect(topLeadingRadius: 6, bottomLeadingRadius: 26, bottomTrailingRadius: 26, topTrailingRadius: 6, style: .continuous)
-    }
+    private var islandShape: some Shape { RoundedRectangle(cornerRadius: 24, style: .continuous) }
     private var island: some View {
         VStack(spacing: 10) {
             HStack(spacing: 11) {
@@ -84,8 +82,7 @@ struct OverlayView: View {
             picker(font: 11)
         }
         .padding(.horizontal, 20)
-        .padding(.top, 10)         // clear the very top edge / notch
-        .padding(.bottom, 13)
+        .padding(.vertical, 12)
         .background(
             ZStack {
                 islandShape.fill(.black)
@@ -239,11 +236,7 @@ final class OverlayController {
     func show() {
         prepare()
         model.style = Settings.shared.overlayStyle
-        // Island/minimal hug the very top (over the menu bar / notch) → raise the level.
-        if let panel {
-            let overMenuBar = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.maximumWindow)))
-            panel.level = (model.style == .floating) ? .statusBar : overMenuBar
-        }
+        panel?.level = .statusBar
         reposition()
         panel?.orderFrontRegardless()
     }
@@ -256,15 +249,13 @@ final class OverlayController {
         let size = panel.contentView?.fittingSize ?? NSSize(width: 260, height: 80)
         lastSize = size
         panel.setContentSize(size)
-        let x: CGFloat, y: CGFloat
+        let vf = screen.visibleFrame
+        let x = vf.midX - size.width / 2
+        let y: CGFloat
         switch model.style {
-        case .floating:
-            let vf = screen.visibleFrame
-            x = vf.midX - size.width / 2; y = vf.minY + 90        // bottom center
-        case .island, .minimal:
-            // Hug the top edge so it reads like it grows from the notch.
-            let f = screen.frame
-            x = f.midX - size.width / 2; y = f.maxY - size.height + 1
+        case .floating: y = vf.minY + 90              // bottom center
+        case .island:   y = vf.maxY - size.height - 8 // just below the menu bar (clear of the notch)
+        case .minimal:  y = vf.maxY - size.height - 6
         }
         panel.setFrameOrigin(NSPoint(x: x, y: y))
     }
