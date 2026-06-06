@@ -64,43 +64,41 @@ struct OverlayView: View {
         .fixedSize()
     }
 
-    // MARK: Top island — Dynamic-Island style pill
+    // MARK: Top island — Dynamic-Island that grows from the notch (flat top, rounded bottom)
+    private var islandShape: some Shape {
+        .rect(topLeadingRadius: 6, bottomLeadingRadius: 26, bottomTrailingRadius: 26, topTrailingRadius: 6, style: .continuous)
+    }
     private var island: some View {
-        VStack(spacing: 9) {
+        VStack(spacing: 10) {
             HStack(spacing: 11) {
-                leading(big: false)
                 if model.recording {
-                    Waveform(level: model.paused ? 0 : model.level, phase: model.phase).frame(width: 78, height: 18)
-                } else if !model.menu && !model.done {
-                    ProgressView().controlSize(.small).scaleEffect(0.7)
+                    Circle().fill(model.paused ? Color.orange : Color.red)
+                        .frame(width: 8, height: 8)
+                        .shadow(color: (model.paused ? Color.orange : Color.red).opacity(0.8), radius: 4)
+                    Waveform(level: model.paused ? 0 : model.level, phase: model.phase).frame(width: 92, height: 18)
+                } else {
+                    leading(big: false)
                 }
                 label(size: 12.5)
             }
             picker(font: 11)
         }
-        .padding(.horizontal, 18).padding(.vertical, 11)
+        .padding(.horizontal, 20)
+        .padding(.top, 10)         // clear the very top edge / notch
+        .padding(.bottom, 13)
         .background(
             ZStack {
-                Capsule(style: .continuous).fill(.black)
-                // soft inner highlight at the top for depth, like the real island
-                Capsule(style: .continuous)
-                    .fill(LinearGradient(colors: [.white.opacity(0.10), .clear],
-                                         startPoint: .top, endPoint: .center))
+                islandShape.fill(.black)
+                islandShape.fill(LinearGradient(colors: [.white.opacity(0.08), .clear],
+                                                startPoint: .top, endPoint: .center))
             }
         )
-        .overlay(Capsule(style: .continuous).strokeBorder(.white.opacity(0.10), lineWidth: 0.8))
-        .shadow(color: .black.opacity(0.55), radius: 22, y: 10)
-        // subtle live glow while recording
-        .overlay(
-            Capsule(style: .continuous)
-                .stroke(Color.red.opacity(model.recording && !model.paused ? 0.35 + Double(model.level) * 0.4 : 0), lineWidth: 1.5)
-                .blur(radius: 4)
-        )
+        .overlay(islandShape.stroke(Color.white.opacity(0.08), lineWidth: 0.8))
+        .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
         .environment(\.colorScheme, .dark)
         .fixedSize()
-        .animation(.spring(response: 0.32, dampingFraction: 0.72), value: model.menu)
-        .animation(.spring(response: 0.32, dampingFraction: 0.72), value: model.recording)
-        .transition(.scale(scale: 0.6, anchor: .top).combined(with: .opacity))
+        .animation(.spring(response: 0.34, dampingFraction: 0.74), value: model.menu)
+        .animation(.spring(response: 0.34, dampingFraction: 0.74), value: model.recording)
     }
 
     // MARK: Minimal top bar
@@ -241,6 +239,11 @@ final class OverlayController {
     func show() {
         prepare()
         model.style = Settings.shared.overlayStyle
+        // Island/minimal hug the very top (over the menu bar / notch) → raise the level.
+        if let panel {
+            let overMenuBar = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.maximumWindow)))
+            panel.level = (model.style == .floating) ? .statusBar : overMenuBar
+        }
         reposition()
         panel?.orderFrontRegardless()
     }
@@ -253,13 +256,15 @@ final class OverlayController {
         let size = panel.contentView?.fittingSize ?? NSSize(width: 260, height: 80)
         lastSize = size
         panel.setContentSize(size)
-        let vf = screen.visibleFrame
-        let x = vf.midX - size.width / 2
-        let y: CGFloat
+        let x: CGFloat, y: CGFloat
         switch model.style {
-        case .floating: y = vf.minY + 90                  // bottom center
-        case .island:   y = vf.maxY - size.height - 6     // just below the menu bar
-        case .minimal:  y = vf.maxY - size.height - 4
+        case .floating:
+            let vf = screen.visibleFrame
+            x = vf.midX - size.width / 2; y = vf.minY + 90        // bottom center
+        case .island, .minimal:
+            // Hug the top edge so it reads like it grows from the notch.
+            let f = screen.frame
+            x = f.midX - size.width / 2; y = f.maxY - size.height + 1
         }
         panel.setFrameOrigin(NSPoint(x: x, y: y))
     }
