@@ -34,7 +34,7 @@ struct LeaderboardView: View {
     @State private var metric: Metric = .words
     @State private var query = ""
 
-    private var myUID: String { settings.referralCode.isEmpty ? "anon-" + settings.proEmail : settings.referralCode }
+    private var myUID: String { settings.uid }
 
     private var ranked: [(rank: Int, entry: LeaderEntry)] {
         model.entries

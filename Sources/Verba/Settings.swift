@@ -303,6 +303,8 @@ final class Settings: ObservableObject {
     @Published var referralCode: String { didSet { d.set(referralCode, forKey: "verba.referral") } }
     var referralLink: String { "https://verba.run/?ref=\(referralCode)" }
     @Published var username: String { didSet { d.set(username, forKey: "verba.username") } }
+    /// The single account identity used everywhere (leaderboard, history, wishlist).
+    var uid: String { referralCode.isEmpty ? "anon-" + (proEmail.isEmpty ? "local" : proEmail) : referralCode }
 
     var activeProfile: Profile {
         profiles.first { $0.id == activeProfileID } ?? profiles.first ?? .coding

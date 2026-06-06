@@ -24,9 +24,20 @@ final class AuthSession: NSObject, ASWebAuthenticationPresentationContextProvidi
                   !email.isEmpty else {
                 completion(nil); return
             }
-            // The server returns this account's stable referral code → use it as our link.
+            // The server returns this account's stable referral code → adopt it as the identity.
+            // Re-key any data written under the device-minted uid so nothing forks on sign-in.
             if let code = comps.queryItems?.first(where: { $0.name == "code" })?.value, !code.isEmpty {
-                DispatchQueue.main.async { Settings.shared.referralCode = code }
+                DispatchQueue.main.async {
+                    let old = Settings.shared.uid
+                    Settings.shared.referralCode = code
+                    Settings.shared.proEmail = email.lowercased()   // so uid resolves to the account code
+                    if old != Settings.shared.uid {
+                        Leaderboard.remove(uid: old)        // drop the orphan device-uid score row
+                        Leaderboard.submit()                // re-submit under the account uid
+                        History.shared.pushAll()            // re-key local history to the account
+                        History.shared.syncFromCloud()      // pull anything from other Macs
+                    }
+                }
             }
             completion(email.lowercased())
         }

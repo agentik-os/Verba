@@ -78,6 +78,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { _ in Leaderboard.submit() }
             .store(in: &cancellables)
 
+        // Signing in after launch: verify Pro, push anything dictated while signed out, pull history.
+        Settings.shared.$proEmail
+            .dropFirst()
+            .debounce(for: .seconds(0.5), scheduler: RunLoop.main)
+            .sink { email in
+                guard !email.isEmpty else { return }
+                Task { _ = await Settings.shared.verifyPro() }
+                History.shared.pushAll()
+                History.shared.syncFromCloud()
+            }
+            .store(in: &cancellables)
+
         let statusRelay: (String) -> Void = { [weak self] s in
             DispatchQueue.main.async { guard !s.isEmpty else { return }; self?.statusLine = s; self?.overlay.model.title = s; self?.refreshUI() }
         }

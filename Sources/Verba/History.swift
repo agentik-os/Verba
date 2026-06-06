@@ -47,10 +47,7 @@ final class History: ObservableObject {
 
     // MARK: - Cloud sync (Convex). Syncs the text of each dictation across the user's Macs.
     private static let convex = "https://fortunate-aardvark-443.convex.cloud"
-    private var uid: String {
-        let s = Settings.shared
-        return s.referralCode.isEmpty ? "anon-" + (s.proEmail.isEmpty ? "local" : s.proEmail) : s.referralCode
-    }
+    private var uid: String { Settings.shared.uid }
 
     private func push(_ e: HistoryEntry) {
         guard !Settings.shared.proEmail.isEmpty else { return }   // only for signed-in users
@@ -59,6 +56,13 @@ final class History: ObservableObject {
             "original": e.original, "reprompted": e.reprompted,
             "profileName": e.profileName, "engine": e.engine,
         ]) { _ in }
+    }
+
+    /// Push every local entry to the cloud (used after sign-in so anything dictated while
+    /// signed out reaches the account). Server dedups by (uid, ts).
+    func pushAll() {
+        guard !Settings.shared.proEmail.isEmpty else { return }
+        for e in entries { push(e) }
     }
 
     /// Pull cloud history and merge anything not already here (dedup by timestamp).
@@ -70,11 +74,11 @@ final class History: ObservableObject {
                   obj["status"] as? String == "success",
                   let arr = obj["value"] as? [[String: Any]] else { return }
             DispatchQueue.main.async {
-                let known = Set(self.entries.map { Int($0.date.timeIntervalSince1970 * 1000) })
+                let known = Set(self.entries.map { ($0.date.timeIntervalSince1970 * 1000).rounded() })
                 var merged = self.entries
                 for r in arr {
                     let ts = (r["ts"] as? Double) ?? 0
-                    guard ts > 0, !known.contains(Int(ts)) else { continue }
+                    guard ts > 0, !known.contains(ts.rounded()) else { continue }
                     merged.append(HistoryEntry(
                         date: Date(timeIntervalSince1970: ts / 1000),
                         original: r["original"] as? String ?? "",
@@ -104,6 +108,10 @@ final class History: ObservableObject {
         }
         entries.removeAll { $0.id == entry.id }
         save()
+        // Tombstone it in the cloud so it doesn't resurrect on the next sync.
+        if !Settings.shared.proEmail.isEmpty {
+            post("mutation", "history:remove", ["uid": uid, "ts": entry.date.timeIntervalSince1970 * 1000]) { _ in }
+        }
     }
 
     func clear() {

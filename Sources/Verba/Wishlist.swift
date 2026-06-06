@@ -13,7 +13,7 @@ enum Wishlist {
     private static let base = "https://fortunate-aardvark-443.convex.cloud"
     static var myUID: String {
         let s = Settings.shared
-        return s.referralCode.isEmpty ? "anon-" + (s.proEmail.isEmpty ? "local" : s.proEmail) : s.referralCode
+        return s.uid
     }
 
     static func list(_ done: @escaping ([WishItem]) -> Void) {
