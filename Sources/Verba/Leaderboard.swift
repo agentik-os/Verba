@@ -7,6 +7,7 @@ struct LeaderEntry: Identifiable, Decodable {
     let words: Double
     let wpm: Double
     let streak: Double
+    let saved: Double?
     var id: String { uid }
 }
 
@@ -22,7 +23,8 @@ enum Leaderboard {
         guard !alias.isEmpty else { DispatchQueue.main.async { done() }; return }
         let args: [String: Any] = [
             "uid": uid, "alias": alias,
-            "words": Stats.shared.totalWords, "wpm": Stats.shared.avgWPM, "streak": Stats.shared.streak,
+            "words": Stats.shared.totalWords, "wpm": Stats.shared.avgWPM,
+            "streak": Stats.shared.streak, "saved": Stats.shared.timeSavedMinutes,
         ]
         post("mutation", path: "leaderboard:submit", args: args) { _ in DispatchQueue.main.async { done() } }
     }

@@ -1,13 +1,13 @@
 import SwiftUI
 
 enum NavItem: String, CaseIterable, Identifiable {
-    case home, insights, modes, dictionary, snippets, style, transforms, scratchpad, history, leaderboard, wishlist, freeMonth, settings
+    case home, insights, modes, dictionary, snippets, style, transforms, scratchpad, files, history, leaderboard, wishlist, freeMonth, settings
     var id: String { rawValue }
     var title: String {
         switch self {
         case .home: return "Home"; case .insights: return "Insights"; case .modes: return "Modes"
         case .dictionary: return "Dictionary"; case .snippets: return "Snippets"; case .style: return "Style"
-        case .transforms: return "Transforms"; case .scratchpad: return "Scratchpad"
+        case .transforms: return "Transforms"; case .scratchpad: return "Scratchpad"; case .files: return "Transcribe file"
         case .history: return "History"; case .leaderboard: return "Leaderboard"
         case .wishlist: return "Wishlist"; case .freeMonth: return "Free Month"; case .settings: return "Settings"
         }
@@ -17,7 +17,8 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .home: return "house"; case .insights: return "chart.bar"; case .modes: return "wand.and.stars"
         case .dictionary: return "character.book.closed"; case .snippets: return "text.badge.plus"
         case .style: return "paintbrush"; case .transforms: return "arrow.triangle.2.circlepath"
-        case .scratchpad: return "note.text"; case .history: return "clock.arrow.circlepath"
+        case .scratchpad: return "note.text"; case .files: return "waveform.badge.plus"
+        case .history: return "clock.arrow.circlepath"
         case .leaderboard: return "trophy"; case .wishlist: return "lightbulb"
         case .freeMonth: return "gift"; case .settings: return "gearshape"
         }
@@ -74,7 +75,7 @@ struct MainWindow: View {
                     Text("Library")
                         .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                         .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 4)
-                    row(.modes); row(.dictionary); row(.snippets); row(.style); row(.transforms); row(.scratchpad); row(.leaderboard); row(.wishlist); row(.freeMonth)
+                    row(.modes); row(.dictionary); row(.snippets); row(.style); row(.transforms); row(.scratchpad); row(.files); row(.leaderboard); row(.wishlist); row(.freeMonth)
                 }
                 .padding(.horizontal, 8).padding(.top, 4)
             }
@@ -149,6 +150,7 @@ struct MainWindow: View {
         case .style: StyleView()
         case .transforms: TransformsView()
         case .scratchpad: ScratchpadView()
+        case .files: FileTranscribeView()
         case .history: HistoryView()
         case .leaderboard: LeaderboardView()
         case .wishlist: WishlistView()

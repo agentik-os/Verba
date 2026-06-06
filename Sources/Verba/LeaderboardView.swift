@@ -1,16 +1,17 @@
 import SwiftUI
 
 private enum Metric: String, CaseIterable, Identifiable {
-    case words = "Total words", wpm = "Words / min", streak = "Day streak"
+    case words = "Total words", wpm = "Words / min", streak = "Day streak", saved = "Time saved"
     var id: String { rawValue }
     func value(_ e: LeaderEntry) -> Double {
-        switch self { case .words: e.words; case .wpm: e.wpm; case .streak: e.streak }
+        switch self { case .words: e.words; case .wpm: e.wpm; case .streak: e.streak; case .saved: e.saved ?? 0 }
     }
     func format(_ v: Double) -> String {
         switch self {
         case .words: Int(v).formatted()
         case .wpm: "\(Int(v)) wpm"
         case .streak: "\(Int(v)) day\(Int(v) == 1 ? "" : "s")"
+        case .saved: v >= 60 ? "\(Int(v) / 60)h \(Int(v) % 60)m" : "\(Int(v)) min"
         }
     }
 }

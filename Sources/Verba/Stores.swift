@@ -48,6 +48,8 @@ final class Stats: ObservableObject {
     var totalCount: Int { days.values.reduce(0) { $0 + $1.count } }
     var totalSeconds: Double { days.values.reduce(0) { $0 + $1.seconds } }
     var avgWPM: Int { totalSeconds > 0 ? Int(Double(totalWords) / (totalSeconds / 60)) : 0 }
+    /// Minutes saved vs typing (~40 wpm) the same words by hand.
+    var timeSavedMinutes: Int { max(0, Int(Double(totalWords) / 40.0 - totalSeconds / 60.0)) }
 
     /// Consecutive days (ending today or yesterday) with at least one dictation.
     var streak: Int {
@@ -90,6 +92,38 @@ final class DictionaryStore: ObservableObject {
             out = out.replacingOccurrences(of: t.spoken, with: t.written, options: [.caseInsensitive])
         }
         return out
+    }
+
+    /// Auto-learn: when the user fixes a word in the review screen, remember the correction
+    /// so Verba applies it automatically next time. Only handles in-place single-word swaps.
+    func learn(from before: String, edited after: String) {
+        let a = before.split(separator: " ").map(String.init)
+        let b = after.split(separator: " ").map(String.init)
+        guard a.count == b.count, a.count > 0 else { return }   // same length = simple swaps only
+        let strip: (String) -> String = { $0.trimmingCharacters(in: CharacterSet.alphanumerics.inverted) }
+        for (x0, y0) in zip(a, b) {
+            let x = strip(x0), y = strip(y0)
+            guard x.lowercased() != y.lowercased(),                       // actually changed
+                  x.count >= 3, y.count >= 2, x.count <= 30,             // sane word lengths
+                  x.allSatisfy({ $0.isLetter }), y.allSatisfy({ $0.isLetter }),
+                  editDistance(x.lowercased(), y.lowercased()) <= 3,     // a correction, not a rewrite
+                  !terms.contains(where: { $0.spoken.lowercased() == x.lowercased() }) else { continue }
+            terms.append(DictTerm(spoken: x, written: y))
+        }
+    }
+
+    private func editDistance(_ s: String, _ t: String) -> Int {
+        let s = Array(s), t = Array(t)
+        var d = Array(0...t.count)
+        for i in 1...max(1, s.count) where !s.isEmpty {
+            var prev = d[0]; d[0] = i
+            for j in 1...t.count {
+                let tmp = d[j]
+                d[j] = s[i-1] == t[j-1] ? prev : min(prev, d[j], d[j-1]) + 1
+                prev = tmp
+            }
+        }
+        return d[t.count]
     }
 }
 

@@ -36,6 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Re-check the real subscription on launch so Pro reflects Stripe, not just sign-in.
         if !Settings.shared.proEmail.isEmpty {
             Task { _ = await Settings.shared.verifyPro() }
+            History.shared.syncFromCloud()   // pull dictation history from the user's other Macs
         }
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -576,7 +577,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.reviewWindow?.close(); self?.reviewWindow = nil
         }
         let view = ReviewView(original: original, text: text,
-                              onConfirm: { t in onConfirm(t); close() },
+                              onConfirm: { t in DictionaryStore.shared.learn(from: text, edited: t); onConfirm(t); close() },
                               onCancel: { close() })
         let wc = makeWindow(title: "Review dictation", view: view, size: NSSize(width: 520, height: 420), glass: true, resizable: false)
         reviewWindow = wc.window

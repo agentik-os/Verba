@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as history from "../history.js";
 import type * as leaderboard from "../leaderboard.js";
 import type * as wishlist from "../wishlist.js";
 
@@ -18,6 +19,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  history: typeof history;
   leaderboard: typeof leaderboard;
   wishlist: typeof wishlist;
 }>;
