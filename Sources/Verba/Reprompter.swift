@@ -25,6 +25,8 @@ struct Reprompter {
             return try await ClaudeCode.reprompt(systemPrompt: systemPrompt, userText: userText, model: model)
         case .openRouter:
             return try await openRouter(systemPrompt: systemPrompt, userText: userText)
+        case .localLLM:
+            return try await LocalLLM.chat(system: systemPrompt, user: userText, model: Settings.shared.localLLMModel)
         case .apiKey:
             break   // falls through to the Anthropic path below
         }

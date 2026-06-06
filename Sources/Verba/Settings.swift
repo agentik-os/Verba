@@ -100,13 +100,14 @@ enum OverlayStyle: String, Codable, CaseIterable, Identifiable {
 /// Where the Claude reprompting runs: pay-per-token API key, or the user's
 /// Claude Code subscription (Max/Pro plan) via the local `claude` CLI.
 enum RepromptBackend: String, Codable, CaseIterable, Identifiable {
-    case claudeCode, apiKey, openRouter
+    case claudeCode, apiKey, openRouter, localLLM
     var id: String { rawValue }
     var label: String {
         switch self {
         case .claudeCode: return "Claude Code (Max/Pro plan)"
         case .apiKey:     return "Anthropic API key"
         case .openRouter: return "OpenRouter (any model)"
+        case .localLLM:   return "Local model (Ollama, offline)"
         }
     }
 }
@@ -269,6 +270,7 @@ final class Settings: ObservableObject {
     @Published var claudeModel: String { didSet { d.set(claudeModel, forKey: "claudeModel") } }
     @Published var repromptBackend: RepromptBackend { didSet { d.set(repromptBackend.rawValue, forKey: "repromptBackend") } }
     @Published var openRouterModel: String { didSet { d.set(openRouterModel, forKey: "openRouterModel") } }
+    @Published var localLLMModel: String { didSet { d.set(localLLMModel, forKey: "localLLMModel") } }
     @Published var overlayStyle: OverlayStyle { didSet { d.set(overlayStyle.rawValue, forKey: "overlayStyle") } }
     @Published var quipTone: QuipTone { didSet { d.set(quipTone.rawValue, forKey: "quipTone"); Quips.onToneChanged() } }
     @Published var language: String { didSet { d.set(language, forKey: "language") } }   // "" = auto-detect
@@ -324,6 +326,7 @@ final class Settings: ObservableObject {
         claudeModel = d.string(forKey: "claudeModel") ?? "claude-sonnet-4-6"
         repromptBackend = RepromptBackend(rawValue: d.string(forKey: "repromptBackend") ?? "") ?? .claudeCode
         openRouterModel = d.string(forKey: "openRouterModel") ?? "anthropic/claude-3.7-sonnet"
+        localLLMModel = d.string(forKey: "localLLMModel") ?? "qwen2.5:7b"
         overlayStyle = OverlayStyle(rawValue: d.string(forKey: "overlayStyle") ?? "") ?? .floating
         quipTone = QuipTone(rawValue: d.string(forKey: "quipTone") ?? "") ?? .geek
         language = d.string(forKey: "language") ?? ""

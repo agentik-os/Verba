@@ -12,6 +12,10 @@ struct SettingsView: View {
     @State private var installing = false
     @State private var installProgress: Double = 0
     @State private var installMsg = ""
+    @State private var ollamaUp = false
+    @State private var ollamaHasModel = false
+    @State private var pulling = false
+    @State private var pullProgress: Double = 0
     @State private var engineRefresh = 0
 
     private let claudeModels = ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-8"]
@@ -66,6 +70,8 @@ struct SettingsView: View {
                     TextField("OpenRouter model (e.g. anthropic/claude-3.7-sonnet)", text: $settings.openRouterModel)
                     Text("Any model on openrouter.ai (openai/gpt-4o, google/gemini-2.0-flash…). Add your key in API Keys below.")
                         .font(.caption).foregroundStyle(.secondary)
+                } else if settings.repromptBackend == .localLLM {
+                    localModelBlock
                 } else {
                     Picker("Claude model", selection: $settings.claudeModel) {
                         ForEach(claudeModels, id: \.self) { Text($0).tag($0) }
@@ -183,6 +189,45 @@ struct SettingsView: View {
     }
     private var activeLabel: some View {
         Label("Active", systemImage: "checkmark.seal.fill").foregroundStyle(.green).font(.caption)
+    }
+
+    // MARK: Local LLM (Ollama) — download + activate, fully offline
+    @ViewBuilder private var localModelBlock: some View {
+        TextField("Model (e.g. qwen2.5:7b)", text: $settings.localLLMModel)
+        if !ollamaUp {
+            Label("Ollama not detected. Install it from ollama.com, then click refresh.", systemImage: "exclamationmark.triangle.fill")
+                .font(.caption).foregroundStyle(.orange)
+            Button("Refresh") { checkOllama() }.font(.caption)
+        } else if pulling {
+            VStack(alignment: .leading, spacing: 6) {
+                ProgressView(value: pullProgress).progressViewStyle(.linear)
+                Text("Downloading \(settings.localLLMModel)… \(Int(pullProgress * 100))%").font(.caption).foregroundStyle(.secondary)
+            }
+        } else if ollamaHasModel {
+            Label("\(settings.localLLMModel) ready, runs 100% offline.", systemImage: "checkmark.seal.fill")
+                .font(.caption).foregroundStyle(.green)
+        } else {
+            HStack {
+                Text("Not downloaded yet.").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Button("Download model") { pullModel() }.buttonStyle(.borderedProminent)
+            }
+        }
+        Text("Reformulation runs entirely on your Mac via Ollama. Qwen 2.5 7B recommended (~4.7 GB).")
+            .font(.caption).foregroundStyle(.secondary)
+            .onAppear { checkOllama() }
+    }
+    private func checkOllama() {
+        LocalLLM.isRunning { up in
+            ollamaUp = up
+            if up { LocalLLM.hasModel(settings.localLLMModel) { ollamaHasModel = $0 } }
+        }
+    }
+    private func pullModel() {
+        pulling = true; pullProgress = 0
+        LocalLLM.pull(settings.localLLMModel, progress: { pullProgress = $0 }) { ok in
+            pulling = false; ollamaHasModel = ok; checkOllama()
+        }
     }
     private func installEngine(_ e: TranscriptionEngine) {
         installing = true; installProgress = 0
