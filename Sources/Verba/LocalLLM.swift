@@ -119,10 +119,11 @@ enum LocalLLM {
     }
 
     enum LLMError: LocalizedError {
-        case notRunning, http(String)
+        case notRunning, notDownloaded(String), http(String)
         var errorDescription: String? {
             switch self {
             case .notRunning: return "Local engine isn't running. Set it up in Settings ▸ AI rewriting."
+            case .notDownloaded(let m): return "The local model “\(m)” isn't downloaded yet. Open Settings ▸ AI rewriting and tap “Download model”."
             case .http(let b): return "Local model error: \(b)"
             }
         }
@@ -138,7 +139,11 @@ enum LocalLLM {
         ])
         let (data, resp): (Data, URLResponse)
         do { (data, resp) = try await URLSession.shared.data(for: req) } catch { throw LLMError.notRunning }
-        guard (resp as? HTTPURLResponse)?.statusCode == 200 else { throw LLMError.http(String(data: data, encoding: .utf8) ?? "") }
+        let body = String(data: data, encoding: .utf8) ?? ""
+        guard (resp as? HTTPURLResponse)?.statusCode == 200 else {
+            if body.contains("not found") { throw LLMError.notDownloaded(model) }
+            throw LLMError.http(body)
+        }
         let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         return ((obj?["message"] as? [String: Any])?["content"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
     }

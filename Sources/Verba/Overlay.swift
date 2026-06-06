@@ -64,23 +64,43 @@ struct OverlayView: View {
         .fixedSize()
     }
 
-    // MARK: Top island (dark pill)
+    // MARK: Top island — Dynamic-Island style pill
     private var island: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 10) {
+        VStack(spacing: 9) {
+            HStack(spacing: 11) {
                 leading(big: false)
                 if model.recording {
-                    Waveform(level: model.paused ? 0 : model.level, phase: model.phase).frame(width: 72, height: 18)
+                    Waveform(level: model.paused ? 0 : model.level, phase: model.phase).frame(width: 78, height: 18)
+                } else if !model.menu && !model.done {
+                    ProgressView().controlSize(.small).scaleEffect(0.7)
                 }
-                label(size: 12)
+                label(size: 12.5)
             }
             picker(font: 11)
         }
-        .padding(.horizontal, 16).padding(.vertical, 9)
-        .background(Color.black.opacity(0.92), in: Capsule(style: .continuous))
-        .overlay(Capsule(style: .continuous).strokeBorder(.white.opacity(0.08)))
+        .padding(.horizontal, 18).padding(.vertical, 11)
+        .background(
+            ZStack {
+                Capsule(style: .continuous).fill(.black)
+                // soft inner highlight at the top for depth, like the real island
+                Capsule(style: .continuous)
+                    .fill(LinearGradient(colors: [.white.opacity(0.10), .clear],
+                                         startPoint: .top, endPoint: .center))
+            }
+        )
+        .overlay(Capsule(style: .continuous).strokeBorder(.white.opacity(0.10), lineWidth: 0.8))
+        .shadow(color: .black.opacity(0.55), radius: 22, y: 10)
+        // subtle live glow while recording
+        .overlay(
+            Capsule(style: .continuous)
+                .stroke(Color.red.opacity(model.recording && !model.paused ? 0.35 + Double(model.level) * 0.4 : 0), lineWidth: 1.5)
+                .blur(radius: 4)
+        )
         .environment(\.colorScheme, .dark)
         .fixedSize()
+        .animation(.spring(response: 0.32, dampingFraction: 0.72), value: model.menu)
+        .animation(.spring(response: 0.32, dampingFraction: 0.72), value: model.recording)
+        .transition(.scale(scale: 0.6, anchor: .top).combined(with: .opacity))
     }
 
     // MARK: Minimal top bar
