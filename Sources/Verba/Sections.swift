@@ -106,25 +106,39 @@ struct InsightsView: View {
             Card {
                 Chart(stats.recentDays(14), id: \.label) { day in
                     BarMark(x: .value("Day", day.label), y: .value("Words", day.words))
-                        .foregroundStyle(Color.primary.opacity(0.7))
+                        .foregroundStyle(Color.primary.opacity(0.75))
                         .cornerRadius(5)
                 }
                 .frame(height: 220)
+                // Clean: no dashed background grid, just the labels.
+                .chartXAxis { AxisMarks { AxisValueLabel() } }
+                .chartYAxis { AxisMarks { AxisValueLabel() } }
             }
             HStack(spacing: 14) {
+                metric("\(stats.totalWords.formatted())", "total words")
                 metric("\(stats.totalCount)", "dictations")
+                metric("\(stats.avgWPM)", "words / min")
+            }
+            HStack(spacing: 14) {
+                metric("\(stats.streak)", "day streak")
+                metric("\(stats.wordsThisWeek.formatted())", "words this week")
+                metric("\(stats.avgWordsPerDictation)", "avg / dictation")
+            }
+            HStack(spacing: 14) {
                 metric("\(Int(stats.totalSeconds / 60)) min", "spoken")
-                metric(estimatedTimeSaved(), "≈ time saved typing")
+                metric(timeSaved, "≈ time saved typing")
+                metric("\(stats.bestDayWords.formatted())", "best day")
             }
         }
     }
-    private func estimatedTimeSaved() -> String {
-        let typeMin = Double(stats.totalWords) / 40.0
-        return "\(Int(max(0, typeMin - stats.totalSeconds / 60))) min"
+    private var timeSaved: String {
+        let m = stats.timeSavedMinutes
+        return m >= 60 ? "\(m / 60)h \(m % 60)m" : "\(m) min"
     }
     private func metric(_ v: String, _ l: String) -> some View {
         Card { VStack(alignment: .leading, spacing: 4) {
             Text(v).font(.title2.bold()); Text(l).font(.caption).foregroundStyle(.secondary) } }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

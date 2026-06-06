@@ -50,6 +50,13 @@ final class Stats: ObservableObject {
     var avgWPM: Int { totalSeconds > 0 ? Int(Double(totalWords) / (totalSeconds / 60)) : 0 }
     /// Minutes saved vs typing (~40 wpm) the same words by hand.
     var timeSavedMinutes: Int { max(0, Int(Double(totalWords) / 40.0 - totalSeconds / 60.0)) }
+    var avgWordsPerDictation: Int { totalCount > 0 ? totalWords / totalCount : 0 }
+    var bestDayWords: Int { days.values.map(\.words).max() ?? 0 }
+    var wordsThisWeek: Int {
+        (0..<7).reduce(0) { sum, off in
+            sum + (days[dayKey(Date().addingTimeInterval(Double(-off) * 86400))]?.words ?? 0)
+        }
+    }
 
     /// Consecutive days (ending today or yesterday) with at least one dictation.
     var streak: Int {
