@@ -14,17 +14,17 @@ struct LeaderEntry: Identifiable, Decodable {
 enum Leaderboard {
     private static let base = "https://fortunate-aardvark-443.convex.cloud"
 
-    /// Push this account's current stats (alias + totals). Fire-and-forget.
-    static func submit() {
+    /// Push this account's current stats (alias + totals). Optional completion on main.
+    static func submit(_ done: @escaping () -> Void = {}) {
         let s = Settings.shared
         let uid = s.referralCode.isEmpty ? "anon-" + (s.proEmail.isEmpty ? "local" : s.proEmail) : s.referralCode
         let alias = s.username.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !alias.isEmpty else { return }
+        guard !alias.isEmpty else { DispatchQueue.main.async { done() }; return }
         let args: [String: Any] = [
             "uid": uid, "alias": alias,
             "words": Stats.shared.totalWords, "wpm": Stats.shared.avgWPM, "streak": Stats.shared.streak,
         ]
-        post("mutation", path: "leaderboard:submit", args: args) { _ in }
+        post("mutation", path: "leaderboard:submit", args: args) { _ in DispatchQueue.main.async { done() } }
     }
 
     /// Fetch the whole board (alias + metrics only).

@@ -20,8 +20,10 @@ final class LeaderboardModel: ObservableObject {
     @Published var loading = true
     func load() {
         loading = true
-        Leaderboard.submit()                      // push our latest stats first
-        Leaderboard.fetch { [weak self] in self?.entries = $0; self?.loading = false }
+        // Push our latest alias/stats first, then fetch so the board reflects it immediately.
+        Leaderboard.submit { [weak self] in
+            Leaderboard.fetch { self?.entries = $0; self?.loading = false }
+        }
     }
 }
 

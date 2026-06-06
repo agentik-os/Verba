@@ -69,6 +69,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         .sink { [weak self] in self?.applyTriggers() }
         .store(in: &cancellables)
 
+        // Propagate an alias change to the shared leaderboard (debounced while typing) so the
+        // new username shows everywhere, for everyone.
+        Settings.shared.$username
+            .dropFirst()
+            .debounce(for: .seconds(0.9), scheduler: RunLoop.main)
+            .sink { _ in Leaderboard.submit() }
+            .store(in: &cancellables)
+
         let statusRelay: (String) -> Void = { [weak self] s in
             DispatchQueue.main.async { guard !s.isEmpty else { return }; self?.statusLine = s; self?.overlay.model.title = s; self?.refreshUI() }
         }
