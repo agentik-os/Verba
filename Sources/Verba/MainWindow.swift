@@ -111,7 +111,7 @@ struct MainWindow: View {
             HStack(spacing: 9) {
                 VerbaMark(size: 26)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(settings.proEmail.isEmpty ? "Not signed in" : settings.proEmail)
+                    Text(settings.username.isEmpty ? "Not signed in" : settings.username)
                         .font(.caption.weight(.medium)).lineLimit(1).truncationMode(.middle)
                     Text(settings.isPro ? "Pro plan" : "Free trial")
                         .font(.caption2)
