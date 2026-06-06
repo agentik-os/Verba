@@ -10,6 +10,7 @@ struct SettingsView: View {
     @State private var verifyMsg = ""
     @State private var engineTab: TranscriptionEngine = Settings.shared.engine
     @State private var installing = false
+    @State private var installProgress: Double = 0
     @State private var installMsg = ""
     @State private var engineRefresh = 0
 
@@ -156,9 +157,9 @@ struct SettingsView: View {
                 .onChange(of: settings.localModel) { _, _ in engineRefresh += 1 }
             }
             if installing {
-                HStack {
-                    ProgressView().controlSize(.small)
-                    Text(installMsg.isEmpty ? "Installing…" : installMsg).font(.caption).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 6) {
+                    ProgressView(value: installProgress).progressViewStyle(.linear)
+                    Text("\(installMsg) \(Int(installProgress * 100))%").font(.caption).foregroundStyle(.secondary)
                 }
             } else if EngineManager.isInstalled(engineTab) {
                 HStack {
@@ -184,14 +185,14 @@ struct SettingsView: View {
         Label("Active", systemImage: "checkmark.seal.fill").foregroundStyle(.green).font(.caption)
     }
     private func installEngine(_ e: TranscriptionEngine) {
-        installing = true
-        installMsg = "Downloading \(EngineManager.sizeGB(e))… (first run can take a few minutes)"
+        installing = true; installProgress = 0
+        installMsg = "Downloading \(EngineManager.sizeGB(e))…"
         Task {
-            let ok = await EngineManager.install(e)
+            let ok = await EngineManager.install(e) { p in installProgress = p }
             await MainActor.run {
                 installing = false
                 installMsg = ok ? "" : "Install failed: \(EngineManager.lastInstallError ?? "check your connection.")"
-                if ok { settings.engine = e }
+                if ok { settings.engine = e }   // auto-activate only once fully downloaded
                 engineRefresh += 1
             }
         }

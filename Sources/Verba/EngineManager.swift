@@ -1,5 +1,6 @@
 import Foundation
 import FluidAudio
+import WhisperKit
 
 /// Install / detect / uninstall lifecycle for the on-device engines (Whisper,
 /// Parakeet). OpenAI is remote and has no lifecycle.
@@ -42,14 +43,22 @@ enum EngineManager {
     /// Last install/load failure, surfaced in Settings so the user sees the real cause.
     static var lastInstallError: String?
 
-    /// Download + load the model. Returns true on success.
-    static func install(_ engine: TranscriptionEngine) async -> Bool {
+    /// Download + load the model, reporting 0...1 progress. Returns true on success.
+    static func install(_ engine: TranscriptionEngine, progress: @escaping (Double) -> Void = { _ in }) async -> Bool {
         do {
             switch engine {
-            case .whisper:  _ = try await LocalTranscriber.shared.ensureLoaded(model: Settings.shared.localModel)
-            case .parakeet: _ = try await ParakeetTranscriber.shared.ensureLoaded()
-            case .openAI:   break
+            case .whisper:
+                _ = try await WhisperKit.download(variant: Settings.shared.localModel,
+                    progressCallback: { p in DispatchQueue.main.async { progress(p.fractionCompleted) } })
+                _ = try await LocalTranscriber.shared.ensureLoaded(model: Settings.shared.localModel)
+            case .parakeet:
+                _ = try await AsrModels.download(version: .v3,
+                    progressHandler: { pr in DispatchQueue.main.async { progress(pr.fractionCompleted) } })
+                _ = try await ParakeetTranscriber.shared.ensureLoaded()
+            case .openAI:
+                break
             }
+            DispatchQueue.main.async { progress(1.0) }
             lastInstallError = nil
             return true
         } catch {
