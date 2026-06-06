@@ -32,12 +32,14 @@ enum TranscriptionEngine: String, Codable, CaseIterable, Identifiable {
 /// `.off` shows a neutral word instead of a joke.
 enum QuipTone: String, Codable, CaseIterable, Identifiable {
     case off
+    case random
     case geek, dad, dry, absurdist, sarcastic, wholesome, corporate, noir
     case pirate, shakespeare, zen, scifi, gamer, chef, motivational, conspiracy, surreal
     var id: String { rawValue }
     var label: String {
         switch self {
         case .off: return "Off, just “Transmuting…”"
+        case .random: return "Random (surprise mix)"
         case .geek: return "Geek / programmer"
         case .dad: return "Dad jokes"
         case .dry: return "Dry & deadpan"
@@ -61,6 +63,11 @@ enum QuipTone: String, Codable, CaseIterable, Identifiable {
     var styleInstruction: String {
         switch self {
         case .off: return ""
+        case .random:
+            // A different concrete style each batch → a true surprise mix over the day.
+            return QuipTone.allCases
+                .filter { $0 != .off && $0 != .random }
+                .randomElement()!.styleInstruction
         case .geek: return "programmer / sci-fi / internet geek humor"
         case .dad: return "groan-worthy dad jokes and puns"
         case .dry: return "dry, deadpan, understated British wit"

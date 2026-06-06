@@ -16,6 +16,7 @@ struct SettingsView: View {
     @State private var ollamaHasModel = false
     @State private var pulling = false
     @State private var pullProgress: Double = 0
+    @State private var engineInstalling = false
     @State private var engineRefresh = 0
 
     private let claudeModels = ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-8"]
@@ -191,13 +192,17 @@ struct SettingsView: View {
         Label("Active", systemImage: "checkmark.seal.fill").foregroundStyle(.green).font(.caption)
     }
 
-    // MARK: Local LLM (Ollama) — download + activate, fully offline
+    // MARK: Local LLM (Ollama) — auto start / install + model download, fully offline
     @ViewBuilder private var localModelBlock: some View {
         TextField("Model (e.g. qwen2.5:7b)", text: $settings.localLLMModel)
-        if !ollamaUp {
-            Label("Ollama not detected. Install it from ollama.com, then click refresh.", systemImage: "exclamationmark.triangle.fill")
-                .font(.caption).foregroundStyle(.orange)
-            Button("Refresh") { checkOllama() }.font(.caption)
+        if engineInstalling {
+            HStack { ProgressView().controlSize(.small); Text("Setting up the local engine…").font(.caption).foregroundStyle(.secondary) }
+        } else if !ollamaUp {
+            HStack {
+                Text("Local engine not running.").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Button("Set up & start") { setupEngine() }.buttonStyle(.borderedProminent)
+            }
         } else if pulling {
             VStack(alignment: .leading, spacing: 6) {
                 ProgressView(value: pullProgress).progressViewStyle(.linear)
@@ -208,25 +213,34 @@ struct SettingsView: View {
                 .font(.caption).foregroundStyle(.green)
         } else {
             HStack {
-                Text("Not downloaded yet.").font(.caption).foregroundStyle(.secondary)
+                Text("Engine ready. Model not downloaded yet.").font(.caption).foregroundStyle(.secondary)
                 Spacer()
                 Button("Download model") { pullModel() }.buttonStyle(.borderedProminent)
             }
         }
-        Text("Reformulation runs entirely on your Mac via Ollama. Qwen 2.5 7B recommended (~4.7 GB).")
+        Text("Reformulation runs entirely on your Mac. We start the local engine for you (and download it if needed). Qwen 2.5 7B recommended (~4.7 GB).")
             .font(.caption).foregroundStyle(.secondary)
-            .onAppear { checkOllama() }
+            .onAppear { setupEngine() }
     }
-    private func checkOllama() {
-        LocalLLM.isRunning { up in
-            ollamaUp = up
-            if up { LocalLLM.hasModel(settings.localLLMModel) { ollamaHasModel = $0 } }
+    private func setupEngine() {
+        engineInstalling = true
+        LocalLLM.ensureServer { up in
+            if up {
+                engineInstalling = false; ollamaUp = true
+                LocalLLM.hasModel(settings.localLLMModel) { ollamaHasModel = $0 }
+            } else {
+                // No engine binary found → download it, then it auto-starts.
+                LocalLLM.installBinary { ok in
+                    engineInstalling = false; ollamaUp = ok
+                    if ok { LocalLLM.hasModel(settings.localLLMModel) { ollamaHasModel = $0 } }
+                }
+            }
         }
     }
     private func pullModel() {
         pulling = true; pullProgress = 0
         LocalLLM.pull(settings.localLLMModel, progress: { pullProgress = $0 }) { ok in
-            pulling = false; ollamaHasModel = ok; checkOllama()
+            pulling = false; ollamaHasModel = ok
         }
     }
     private func installEngine(_ e: TranscriptionEngine) {
