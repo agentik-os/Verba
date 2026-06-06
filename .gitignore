@@ -17,3 +17,5 @@ website/next-env.d.ts
 website/tsconfig.tsbuildinfo
 
 dist/
+.vercel
+.env*
