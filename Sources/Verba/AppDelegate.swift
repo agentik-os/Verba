@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let recorder = AudioRecorder()
     private let overlay = OverlayController()
     private var levelTimer: Timer?
+    private var quipTimer: Timer?
     private var fnHoldTimer: Timer?
     private var fnActionTaken = false
     private var lastFnDown: Date?
@@ -92,7 +93,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .store(in: &cancellables)
 
         let statusRelay: (String) -> Void = { [weak self] s in
-            DispatchQueue.main.async { guard !s.isEmpty else { return }; self?.statusLine = s; self?.overlay.model.title = s; self?.refreshUI() }
+            DispatchQueue.main.async { guard !s.isEmpty else { return }; self?.statusLine = s; self?.refreshUI() }   // jokes own the overlay title during processing
         }
         LocalTranscriber.shared.onStatus = statusRelay
         ParakeetTranscriber.shared.onStatus = statusRelay
@@ -266,6 +267,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             cancelRecording()
         case .processing:
             processingTask?.cancel(); processingTask = nil
+            stopQuips()
             overlay.model.recording = false; overlay.model.menu = false
             overlay.hide(); SoundFX.stop(); state = .idle
         case .idle:
@@ -446,7 +448,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusLine = "Transcribing…"
         overlay.model.recording = false
         overlay.model.paused = false
-        overlay.model.title = "Transcribing…"
+        startQuips()   // rotate jokes during the whole process (transcription + reprompt), local too
         refreshUI()
 
         let bundleID = capturedBundleID
@@ -457,7 +459,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         processingTask = Task {
             do {
                 let result = try await Pipeline.run(audioURL: url, frontmostBundleID: bundleID, forcedProfile: forced, selection: selection) { [weak self] s in
-                    DispatchQueue.main.async { self?.statusLine = s; self?.overlay.model.title = s; self?.refreshUI() }
+                    DispatchQueue.main.async { self?.statusLine = s; self?.refreshUI() }   // jokes own the overlay title
                 }
                 if Task.isCancelled { return }
                 await MainActor.run { self.processingTask = nil; self.finish(result: result, audioURL: url) }
@@ -467,6 +469,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if Task.isCancelled { return }
                 await MainActor.run {
                     self.processingTask = nil
+                    self.stopQuips()
                     self.overlay.hide(); self.overlay.model.recording = false
                     self.state = .idle
                     self.notify("Verba failed", error.localizedDescription)
@@ -475,8 +478,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Rotate a fresh joke (or the neutral word when off) every few seconds while processing,
+    /// so the loading screen is lively during transcription AND reprompt, locally too.
+    private func startQuips() {
+        quipTimer?.invalidate()
+        overlay.model.title = Quips.current()
+        let t = Timer(timeInterval: 3.5, repeats: true) { [weak self] _ in
+            guard let self, self.state == .processing else { return }
+            self.overlay.model.title = Quips.current()
+        }
+        RunLoop.main.add(t, forMode: .common)
+        quipTimer = t
+    }
+    private func stopQuips() { quipTimer?.invalidate(); quipTimer = nil }
+
     @MainActor
     private func finish(result: PipelineResult, audioURL: URL) {
+        stopQuips()
         let deliver: (String) -> Void = { [weak self] text in
             guard let self else { return }
             let rich = Settings.shared.richTextPaste
