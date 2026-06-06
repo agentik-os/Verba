@@ -15,8 +15,11 @@ actor ParakeetTranscriber: Transcriber {
 
     func ensureLoaded() async throws -> AsrManager {
         if let manager { return manager }
-        onStatus?("Loading Parakeet model… (first run downloads it)")
-        let models = try await AsrModels.downloadAndLoad(version: .v3)
+        let cached = AsrModels.modelsExist(at: AsrModels.defaultCacheDirectory(for: .v3))
+        onStatus?(cached ? "Loading model…" : "Downloading model… (first run)")
+        // Load straight from cache when present (no re-download); otherwise fetch + load.
+        let models = cached ? try await AsrModels.loadFromCache(version: .v3)
+                            : try await AsrModels.downloadAndLoad(version: .v3)
         let m = AsrManager(config: .default)
         try await m.loadModels(models)
         manager = m

@@ -81,10 +81,24 @@ actor LocalTranscriber: Transcriber {
 
     func unload() { pipe = nil; loadedModel = nil }
 
+    /// Where WhisperKit stores models (matches EngineManager's install path).
+    private static func folder(_ model: String) -> String {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Documents/huggingface/models/argmaxinc/whisperkit-coreml/openai_whisper-\(model)")
+            .path
+    }
+
     func ensureLoaded(model: String) async throws -> WhisperKit {
         if let pipe, loadedModel == model { return pipe }
-        onStatus?("Loading local model \(model)… (first run downloads it)")
-        let kit = try await WhisperKit(model: model)
+        let path = Self.folder(model)
+        let installed = (try? FileManager.default.contentsOfDirectory(atPath: path))?.contains { !$0.hasPrefix(".") } ?? false
+        // If it's already on disk, load straight from the folder with NO hub round-trip
+        // (no re-download, faster). Otherwise allow WhisperKit to fetch it.
+        onStatus?(installed ? "Loading model…" : "Downloading model… (first run)")
+        let config = installed
+            ? WhisperKitConfig(model: model, modelFolder: path, download: false)
+            : WhisperKitConfig(model: model)
+        let kit = try await WhisperKit(config)
         pipe = kit
         loadedModel = model
         onStatus?("")
