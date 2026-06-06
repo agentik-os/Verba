@@ -33,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         applyDockPolicy()
         installMainMenu()   // menu-bar apps have no main menu → no ⌘C/⌘V in text fields without this
         Quips.refillIfLow(tone: Settings.shared.quipTone)  // pre-warm the AI-generated loading lines
+        preloadEngine()   // load the local transcription model now so the first dictation is instant
         // Re-check the real subscription on launch so Pro reflects Stripe, not just sign-in.
         if !Settings.shared.proEmail.isEmpty {
             Task { _ = await Settings.shared.verifyPro() }
@@ -102,6 +103,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { [weak self] _ in self?.applyDockPolicy() }
             .store(in: &cancellables)
 
+        // Preload the model when the user switches engine / model so it's warm next time.
+        Publishers.MergeMany(
+            Settings.shared.$engine.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$localModel.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$repromptBackend.map { _ in () }.eraseToAnyPublisher()
+        )
+        .dropFirst().debounce(for: .seconds(0.4), scheduler: RunLoop.main)
+        .sink { [weak self] in self?.preloadEngine() }
+        .store(in: &cancellables)
+
         if !Settings.shared.onboarded {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in self?.openOnboarding() }
         } else if Settings.shared.showInDock {
@@ -123,6 +134,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func applyDockPolicy() {
         NSApp.setActivationPolicy(Settings.shared.showInDock ? .regular : .accessory)
+    }
+
+    /// Load the active local model into memory ahead of time so the first dictation doesn't
+    /// pay the multi-second cold-load. Runs in the background; no-op for cloud engines.
+    private func preloadEngine() {
+        let s = Settings.shared
+        if s.engine.isLocal, EngineManager.isInstalled(s.engine) {
+            Task.detached(priority: .utility) {
+                switch s.engine {
+                case .whisper:  _ = try? await LocalTranscriber.shared.ensureLoaded(model: s.localModel)
+                case .parakeet: _ = try? await ParakeetTranscriber.shared.ensureLoaded()
+                case .openAI:   break
+                }
+            }
+        }
+        if s.repromptBackend == .localLLM { LocalLLM.ensureServer { _ in } }   // warm the local LLM server
     }
 
     // Reopen the main window when the user clicks the Dock icon.
