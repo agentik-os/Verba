@@ -63,7 +63,7 @@ function Logo() {
 
 function Nav() {
   return (
-    <nav className="flex items-center justify-between py-6">
+    <nav className="sticky top-3 z-50 mt-3 flex items-center justify-between rounded-full glass px-5 py-2.5">
       <Logo />
       <div className="hidden items-center gap-7 text-sm muted sm:flex">
         <a href="#why" className="hover:text-[var(--fg)]">Why Verba</a>
@@ -215,7 +215,7 @@ function Bento() {
         <Reveal delay={240}><BentoStat big="100%" label="works offline" sub="no internet required" /></Reveal>
 
         <Reveal delay={120} className="col-span-2">
-          <div className="glass flex h-full items-center gap-4 rounded-3xl p-7">
+          <div className="glass lift flex h-full items-center gap-4 rounded-3xl p-7">
             <Icon name="key" className="h-8 w-8 shrink-0" />
             <div>
               <p className="font-medium">Bring your own AI account</p>
@@ -224,7 +224,7 @@ function Bento() {
           </div>
         </Reveal>
         <Reveal delay={180} className="col-span-2">
-          <div className="glass flex h-full items-center gap-4 rounded-3xl p-7">
+          <div className="glass lift flex h-full items-center gap-4 rounded-3xl p-7">
             <Icon name="bolt" className="h-8 w-8 shrink-0" />
             <div>
               <p className="font-medium">Modes, the right model each time</p>
@@ -239,7 +239,7 @@ function Bento() {
 
 function BentoStat({ big, label, sub }: { big: string; label: string; sub: string }) {
   return (
-    <div className="glass flex h-full flex-col justify-center rounded-3xl p-6">
+    <div className="glass lift flex h-full flex-col justify-center rounded-3xl p-6">
       <div className="text-3xl font-semibold tracking-tight">{big}</div>
       <p className="mt-1 text-sm font-medium">{label}</p>
       <p className="text-xs muted">{sub}</p>
@@ -274,7 +274,7 @@ function ContextMode() {
       <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {examples.map(({ icon, label, prompt }, i) => (
           <Reveal key={label} delay={i * 60}>
-            <div className="glass flex h-full flex-col gap-3 rounded-2xl p-6">
+            <div className="glass lift flex h-full flex-col gap-3 rounded-2xl p-6">
               <Icon name={icon} className="h-7 w-7" />
               <p className="font-medium">{label}</p>
               <p className="text-sm muted italic">"{prompt}"</p>
@@ -382,7 +382,7 @@ function NotesTab() {
         </Reveal>
         {formats.map(({ icon, label }, i) => (
           <Reveal key={label} delay={i * 40}>
-            <div className="glass flex items-center gap-3 rounded-2xl px-5 py-4">
+            <div className="glass lift flex items-center gap-3 rounded-2xl px-5 py-4">
               <Icon name={icon} className="h-6 w-6 shrink-0" />
               <span className="text-sm font-medium">{label}</span>
             </div>
@@ -392,15 +392,15 @@ function NotesTab() {
 
       <Reveal delay={80}>
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
-          <div className="glass rounded-2xl p-6">
+          <div className="glass lift rounded-2xl p-6">
             <p className="font-medium">Up to 60 minutes</p>
             <p className="mt-1 text-sm muted">Record a full meeting, a long brainstorm, or a detailed voice memo. Verba handles the whole thing.</p>
           </div>
-          <div className="glass rounded-2xl p-6">
+          <div className="glass lift rounded-2xl p-6">
             <p className="font-medium">#Hashtag filing</p>
             <p className="mt-1 text-sm muted">Tag any note with #hashtags to organize and filter, exactly the way Bear works. Your notes find themselves.</p>
           </div>
-          <div className="glass rounded-2xl p-6">
+          <div className="glass lift rounded-2xl p-6">
             <p className="font-medium">Synced across Macs</p>
             <p className="mt-1 text-sm muted">Your notes follow your account. Sign in on another Mac and they are all there, instantly.</p>
           </div>
@@ -475,7 +475,7 @@ function TranslateMode() {
       <div className="mt-10 grid gap-3 sm:grid-cols-3">
         {pairs.map((p, i) => (
           <Reveal key={i} delay={i * 70}>
-            <div className="glass flex h-full flex-col rounded-2xl p-6">
+            <div className="glass lift flex h-full flex-col rounded-2xl p-6">
               <div className="flex items-center gap-2">
                 <span className="rounded-md bg-[var(--tint)] px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wider">{p.code}</span>
                 <p className="text-xs uppercase tracking-widest muted">{p.from}</p>
@@ -530,7 +530,7 @@ function WhyBest() {
       <div className="mt-12 grid gap-4 sm:grid-cols-2">
         {edges.map(([t, d], i) => (
           <Reveal key={t} delay={(i % 2) * 60}>
-            <div className="glass flex h-full gap-4 rounded-2xl p-6">
+            <div className="glass lift flex h-full gap-4 rounded-2xl p-6">
               <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--fg)] text-xs font-semibold text-[var(--bg)]">✓</span>
               <div>
                 <h3 className="font-medium">{t}</h3>
@@ -624,7 +624,7 @@ function ModesModels() {
       <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {rows.map(([mode, model, desc], i) => (
           <Reveal key={mode} delay={i * 60}>
-            <div className={`glass flex h-full flex-col rounded-2xl p-6 ${mode === "Context" ? "ring-1 ring-[var(--border)] col-span-full sm:col-span-2 lg:col-span-3" : ""}`}>
+            <div className={`glass lift flex h-full flex-col rounded-2xl p-6 ${mode === "Context" ? "ring-1 ring-[var(--border)] col-span-full sm:col-span-2 lg:col-span-3" : ""}`}>
               <div className="flex items-center justify-between">
                 <h3 className="font-medium">{mode}</h3>
                 <span className="rounded-full bg-[var(--tint)] px-2.5 py-1 text-xs">{model}</span>
@@ -681,7 +681,7 @@ function Features() {
       <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">Everything you say, written better</h2>
       <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map(([t, d]) => (
-          <div key={t} className="glass rounded-2xl p-6">
+          <div key={t} className="glass lift rounded-2xl p-6">
             <h3 className="font-medium">{t}</h3>
             <p className="mt-2 text-sm muted">{d}</p>
           </div>

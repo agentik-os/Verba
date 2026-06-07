@@ -111,7 +111,7 @@ export default function LiveDemo() {
         ))}
       </div>
 
-      <div className="glass-strong float rounded-3xl p-2">
+      <div className="glass-strong sheen float rounded-3xl p-2">
         <div className="rounded-[20px] bg-[#0c0c10] p-6 sm:p-8"
              style={{ color: "#f4f5f8", "--fg": "#f4f5f8", "--muted": "rgba(244,245,248,0.55)", "--tint": "rgba(255,255,255,0.08)" } as Record<string, string>}>
           <div className="flex items-center justify-between text-xs muted">
