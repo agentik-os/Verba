@@ -14,10 +14,13 @@ profiles.
 1. Press the hotkey (default **⌃⌥Space**) → speak → press again to stop.
 2. **Transcription** — your choice of:
    - **OpenAI** `gpt-4o-transcribe` (cloud, best accuracy), or
-   - **Local** WhisperKit (on-device, free, offline, no size limit — handles
-     20-minute monologues without the cloud's 25 MB cap).
-3. **Reprompting** — Claude (Sonnet 4.6 by default; Haiku / Opus selectable)
-   restructures the raw transcript using the active **profile**.
+   - **Local** on-device (free, offline, no size limit — handles 20-minute
+     monologues without the cloud's 25 MB cap) via **WhisperKit** or **NVIDIA
+     Parakeet** (FluidAudio).
+3. **Reprompting** — Claude (`claude-sonnet-4-6` by default; Haiku / Opus
+   selectable) restructures the raw transcript using the active **profile**.
+   You can also route through OpenRouter to use any model (defaults to
+   `anthropic/claude-3.7-sonnet` until you pick one).
 4. **Output** — auto-pastes into the active field, copies to clipboard, and
    saves the original transcript + the restructured version to **History**
    (with the audio), Wispr-Flow style. Optionally review/edit before it lands.
@@ -27,9 +30,11 @@ Keychain). Verba makes no API calls of its own.
 
 ## Profiles
 
-Built-in: **Vibe coding**, **Message / comms**, **Clean transcript**. Each is a
-Claude system prompt you can edit, plus a list of app bundle IDs it auto-matches
-(e.g. Xcode/VS Code/terminal → vibe coding; Slack/Mail → message). Add your own.
+Built-in: **Flow** (raw, no reprompting), **Intent**, **Polish** (the default
+on fresh installs), **Coding**, **Casual**, and **Custom**. Each is a Claude
+system prompt you can edit, plus a list of app bundle IDs it auto-matches
+(e.g. Xcode/VS Code/terminal → Coding; Slack/Mail → a messaging profile). Add
+your own.
 
 ## Build
 
