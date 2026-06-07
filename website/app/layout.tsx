@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import RefCapture from "@/components/RefCapture";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -62,6 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <RefCapture />
           <ThemeToggle />
           {children}
+          <Analytics />
         </body>
       </html>
     </ClerkProvider>

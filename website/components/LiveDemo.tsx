@@ -12,6 +12,15 @@ type Mode = {
 
 const MODES: Mode[] = [
   {
+    name: "Context",
+    model: "Sonnet 4.6",
+    app: "Mail",
+    said:
+      "reply to this email say we'll have the proposal ready by friday and ask if they need a call",
+    wrote:
+      "Hi Sarah,\n\nThanks for reaching out. We'll have the proposal ready by Friday. Would it be helpful to hop on a call before then?\n\nBest,\nAlex",
+  },
+  {
     name: "Coding",
     model: "Opus 4.8",
     app: "Cursor",
@@ -19,24 +28,6 @@ const MODES: Mode[] = [
       "ok so uh the login button it doesn't work on mobile i think the onclick is wrong um and also make the spinner show while it loads",
     wrote:
       "Fix the mobile login button.\n\n- The onClick handler isn't firing on mobile, investigate and correct it.\n- Show the loading spinner while the request is in flight.",
-  },
-  {
-    name: "Polish",
-    model: "Haiku 4.5",
-    app: "Slack",
-    said:
-      "hey so um can we move the standup to 10 comma and uh we ship friday new line i need final copy by thursday",
-    wrote:
-      "Hey, can we move standup to 10:00? We ship Friday, so I'll need the final copy by Thursday.",
-  },
-  {
-    name: "Casual",
-    model: "Haiku 4.5",
-    app: "Messages",
-    said:
-      "yo tell mom i'll be uh like 20 min late traffic is insane and uh i'll grab dinner on the way",
-    wrote:
-      "Yo, tell mom I'll be ~20 min late, traffic is insane. I'll grab dinner on the way.",
   },
   {
     name: "Intent",
@@ -140,7 +131,7 @@ export default function LiveDemo() {
           </div>
 
           <p className="text-xs uppercase tracking-widest muted">You say</p>
-          <p className="mt-1 min-h-[3.2em] text-[15px] leading-relaxed text-white/70">“{m.said}”</p>
+          <p className="mt-1 min-h-[3.2em] text-[15px] leading-relaxed text-white/70">"{m.said}"</p>
 
           <p className="mt-5 text-xs uppercase tracking-widest muted">Verba writes</p>
           <p className="mt-1 min-h-[6.5em] whitespace-pre-line text-[15px] leading-relaxed">
@@ -152,7 +143,7 @@ export default function LiveDemo() {
         </div>
       </div>
       <p className="mt-3 text-center text-xs muted">
-        Each mode routes to the right model, Haiku for quick polish, Sonnet for intent, Opus for code.
+        Context mode reads your screen. Every other mode routes to the right model: Haiku for quick polish, Sonnet for intent, Opus for code.
       </p>
     </div>
   );

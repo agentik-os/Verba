@@ -6,8 +6,6 @@ type State = "idle" | "recording" | "working" | "done" | "error";
 
 const MODES = [
   { key: "flow", label: "Flow", model: "No AI", tip: "Raw dictation. Your exact words, transcribed with no AI rewriting." },
-  { key: "polish", label: "Polish", model: "Haiku 4.5", tip: "Clear, courteous work messages and emails in your own voice." },
-  { key: "casual", label: "Casual", model: "Haiku 4.5", tip: "Warm, natural texts to friends. Keeps your relaxed tone." },
   { key: "intent", label: "Intent", model: "Sonnet 4.6", tip: "Say how you want it handled first (e.g. make this bullet points), then the content. Verba obeys." },
   { key: "coding", label: "Coding", model: "Sonnet 4.6", tip: "Turns rambling feedback into a precise prompt for a coding agent, keeping every detail." },
   { key: "custom", label: "Custom", model: "Sonnet 4.6", tip: "Write your own instruction and test it live." },
@@ -19,7 +17,7 @@ const darkCard = { color: "#f4f5f8", "--muted": "rgba(244,245,248,0.55)" } as Re
 /// + restructure with the same pipeline the app uses. 7 free runs (cookie + IP).
 export default function TryIt() {
   const [state, setState] = useState<State>("idle");
-  const [mode, setMode] = useState("polish");
+  const [mode, setMode] = useState("intent");
   const [custom, setCustom] = useState("Rewrite this as a friendly tweet, keep it under 200 characters.");
   const [result, setResult] = useState("");
   const [original, setOriginal] = useState("");

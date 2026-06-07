@@ -26,6 +26,9 @@ export default function AppAuth() {
       setMsg("Done! Returning to Verba…");
       const q = new URLSearchParams({ email });
       if (code) q.set("code", code);
+      // Hand the Clerk name back so the app uses it as the default alias.
+      if (user.firstName) q.set("firstName", user.firstName);
+      if (user.lastName) q.set("lastName", user.lastName);
       window.location.href = `verba://auth?${q.toString()}`;
     };
 
