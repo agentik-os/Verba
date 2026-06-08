@@ -71,6 +71,7 @@ function Nav() {
         <a href="#translate" className="hover:text-[var(--fg)]">Translate</a>
         <a href="#features" className="hover:text-[var(--fg)]">Features</a>
         <Link href="/compare" className="hover:text-[var(--fg)]">Compare</Link>
+        <Link href="/changelog" className="hover:text-[var(--fg)]">Changelog</Link>
         <a href="#pricing" className="hover:text-[var(--fg)]">Pricing</a>
       </div>
       <div className="flex items-center gap-3">
@@ -845,6 +846,7 @@ function Footer() {
       <div className="flex flex-wrap justify-center gap-5">
         <a href="/account" className="hover:text-[var(--fg)]">Account</a>
         <Link href="/compare" className="hover:text-[var(--fg)]">Compare</Link>
+        <Link href="/changelog" className="hover:text-[var(--fg)]">Changelog</Link>
         <a href="#pricing" className="hover:text-[var(--fg)]">Pricing</a>
         <Link href="/acknowledgements" className="hover:text-[var(--fg)]">Acknowledgements</Link>
         <a href={DOWNLOAD_URL} className="hover:text-[var(--fg)]">Download</a>
