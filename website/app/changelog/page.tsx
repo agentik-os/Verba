@@ -13,8 +13,33 @@ type Day = { date: string; tag?: string; window?: string; summary: string; entri
 
 const DAYS: Day[] = [
   {
-    date: "June 8, 2026",
+    date: "June 9, 2026",
     tag: "Today",
+    summary:
+      "Adapt anything you've already said, by voice, and a smoother Task Manager.",
+    entries: [
+      {
+        version: "0.1.82",
+        title: "Re-adapt any dictation, by voice",
+        items: [
+          "Every Recent card now expands to the full text (Show more / less) and opens an inline Adapt panel.",
+          "One-click re-adapt through any mode (professional email, code, and more), or type a custom instruction.",
+          "Or just press the mic and SAY how you want it changed, “make it a bug report”, and Verba transcribes and adapts it.",
+          "The same Adapt panel now powers the History tab too.",
+        ],
+      },
+      {
+        version: "0.1.81",
+        title: "Task Manager polish",
+        items: [
+          "Project tags sit cleanly inline on the title row (fixed a layout that clipped long task titles).",
+          "A Keyboard Shortcuts cheat-sheet sits at the top of the menu-bar menu.",
+        ],
+      },
+    ],
+  },
+  {
+    date: "June 8, 2026",
     summary:
       "A full day of deep work: a complete Task Manager workspace with a generative AI agent, the franglais bug killed, instant capture, and dozens of rough edges sanded down.",
     entries: [
