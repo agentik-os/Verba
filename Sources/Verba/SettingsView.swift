@@ -195,7 +195,12 @@ struct SettingsView: View {
                 Text(settings.recordStyle.help).font(.caption).foregroundStyle(.secondary)
                 Toggle("Use the Fn (🌐 globe) key", isOn: $settings.useFnAsPrimary)
                 if settings.useFnAsPrimary {
-                    Text("Tap = record the active mode (tap again to send) · hold = push-to-talk · Fn + 1-9 = dictate in a specific mode · Fn + Tab = next mode (even mid-dictation) · ⌃ pauses · Esc cancels.")
+                    Picker("Trigger", selection: $settings.triggerStyle) {
+                        ForEach(TriggerStyle.allCases) { Text($0.label).tag($0) }
+                    }
+                    Text(settings.triggerStyle == .hold
+                         ? "Hold Fn while you talk, release to send. Fn + 1-9 = dictate in a specific mode · Fn + Tab = next mode (even mid-hold) · ⌃ pauses · Esc cancels."
+                         : "Tap Fn to start, tap again to send. Fn + 1-9 = dictate in a specific mode · Fn + Tab = next mode (even mid-dictation) · ⌃ pauses · Esc cancels.")
                         .font(.caption).foregroundStyle(.secondary)
                 } else {
                     HStack {
@@ -325,9 +330,6 @@ struct SettingsView: View {
                     .font(.caption).foregroundStyle(.secondary)
                 Toggle("Edit last result by voice", isOn: $settings.voiceEditLast)
                 Text("Adds “Edit last by voice…” to the menu, speak a change (“make it shorter”, “more formal”, “translate to English”) and Verba rewrites your last result.")
-                    .font(.caption).foregroundStyle(.secondary)
-                Toggle("Agentic actions (Context mode)", isOn: $settings.agenticActionsEnabled)
-                Text("In Context mode, voice requests like “create an event tomorrow 3pm”, “remind me to…”, or “draft a reply to this” create a Calendar event / Reminder / email draft. Verba always asks you to confirm first.")
                     .font(.caption).foregroundStyle(.secondary)
             } header: { Text("Labs") }
 

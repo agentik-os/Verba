@@ -10,15 +10,22 @@ struct NotesView: View {
     @ObservedObject private var settings = Settings.shared
     @ObservedObject private var store = NotesStore.shared
     @ObservedObject private var notesCtl = NotesController.shared
+    @ObservedObject private var modes = NoteModesStore.shared
 
     @State private var recorder = AudioRecorder()
     @State private var isRecording = false
+    @State private var isPaused = false
     @State private var recordStart = Date()
+    @State private var pausedAccum = 0         // seconds accumulated before the current (possibly paused) leg
+    @State private var pauseStart: Date?
     @State private var elapsed = 0
     @State private var recordingURL: URL?
+    @State private var levelTimer: Timer?      // fast timer feeding the shared overlay's waveform
 
     @State private var selectedID: UUID?      // saved note being viewed/edited; nil = composing a new note
     @State private var format = NoteFormat.cleanNote
+    @State private var intentText = ""        // Intent mode: the one-off instruction to apply
+    @State private var showModeManager = false  // CRUD sheet for note modes
     @State private var transcript = ""        // raw source (for re-formatting)
     @State private var editorText = ""        // shown / edited / saved document
     @State private var noteTags: [String] = []
@@ -42,18 +49,37 @@ struct NotesView: View {
             Divider()
             detail.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .onReceive(tick) { _ in if isRecording { elapsed = Int(Date().timeIntervalSince(recordStart)) } }
+        .onReceive(tick) { _ in if isRecording && !isPaused { elapsed = pausedAccum + Int(Date().timeIntervalSince(recordStart)) } }
         .onChange(of: selectedID) { _, id in loadSelection(id) }
         .onChange(of: editorText) { _, _ in scheduleAutosave() }
         .onChange(of: noteTags) { _, _ in scheduleAutosave() }
         .onChange(of: notesCtl.pendingRecord) { _, v in if v { consumePending() } }
         // Mirror the recording state into the shared controller so a global bare-Fn tap knows a
-        // note is recording (and must stop it rather than start a stray dictation).
+        // note is recording (and must stop it rather than start a stray dictation), and so the
+        // shared overlay pill (labelled "Note") can show/hide.
         .onChange(of: isRecording) { _, v in notesCtl.isRecording = v }
+        .onChange(of: isPaused) { _, v in notesCtl.paused = v }
         // A global bare-Fn tap (AppDelegate) bumps stopRecord to finish the in-progress note.
         .onChange(of: notesCtl.stopRecord) { _, _ in if isRecording { toggleRecord() } }
-        .onAppear { consumePending() }
-        .onDisappear { notesCtl.isRecording = false; autosaveTask?.cancel(); autosaveCommit(); work?.cancel(); if isRecording { _ = recorder.stop(); recorder.releaseArmed() } }
+        // Control key / overlay pause button (AppDelegate) → pause/resume this note recording.
+        .onChange(of: notesCtl.pauseToggleSignal) { _, _ in if isRecording { togglePauseNote() } }
+        // Esc / overlay × (AppDelegate) → discard this note recording (no transcription).
+        .onChange(of: notesCtl.cancelRecord) { _, _ in if isRecording { discardRecording() } }
+        .onAppear { if !modes.modes.contains(where: { $0.id == format.id }) { format = modes.modes.first ?? .cleanNote }; consumePending() }
+        .sheet(isPresented: $showModeManager) {
+            VStack(spacing: 0) {
+                HStack {
+                    Text("Note modes").font(.title3.weight(.semibold))
+                    Spacer()
+                    Button("Done") { showModeManager = false }.keyboardShortcut(.defaultAction)
+                }
+                .padding(.horizontal, 16).padding(.vertical, 12)
+                Divider()
+                NoteModesView()
+            }
+            .frame(width: 760, height: 520)
+        }
+        .onDisappear { notesCtl.isRecording = false; levelTimer?.invalidate(); levelTimer = nil; autosaveTask?.cancel(); autosaveCommit(); work?.cancel(); if isRecording { _ = recorder.stop(); recorder.releaseArmed() } }
     }
 
     // MARK: - Left: scrollable list of all notes
@@ -179,6 +205,21 @@ struct NotesView: View {
         }
     }
 
+    /// In-app pause/resume + play-again control, visible while a note is recording (mirrors the
+    /// Control-key / overlay pause and lets the user resume from inside the app).
+    private var pauseControl: some View {
+        Button { togglePauseNote() } label: {
+            HStack(spacing: 7) {
+                Image(systemName: isPaused ? "play.fill" : "pause.fill").font(.system(size: 12, weight: .semibold))
+                Text(isPaused ? "Resume" : "Pause").font(.callout.weight(.medium))
+            }
+            .padding(.horizontal, 16).padding(.vertical, 8)
+            .background(Capsule().fill(Color.primary.opacity(0.08)))
+        }
+        .buttonStyle(.plain)
+        .help(isPaused ? "Resume recording (Control)" : "Pause recording (Control)")
+    }
+
     private var recorderCard: some View {
         VStack(spacing: 22) {
             noteContextBadge
@@ -186,12 +227,13 @@ struct NotesView: View {
             VStack(spacing: 4) {
                 if isRecording {
                     Text(timeString(elapsed)).font(.system(size: 22, weight: .semibold, design: .monospaced)).monospacedDigit()
-                    Text("Tap to stop").font(.caption).foregroundStyle(.secondary)
+                    Text(isPaused ? "Paused · tap the mic to stop" : "Tap to stop · Control pauses").font(.caption).foregroundStyle(.secondary)
                 } else {
                     Text("Tap to record").font(.callout.weight(.medium))
-                    Text("Pick a format below").font(.caption).foregroundStyle(.secondary)
+                    Text("Pick a mode below").font(.caption).foregroundStyle(.secondary)
                 }
             }
+            if isRecording { pauseControl }
             if !recordError.isEmpty { recordErrorBanner }
             formatChips
         }
@@ -225,13 +267,33 @@ struct NotesView: View {
     }
 
     private var formatChips: some View {
-        FlowLayout(spacing: 8, alignment: .center) {
-            ForEach(NoteFormat.allBuiltIn) { f in
-                chip(label: f.name, icon: f.icon, on: f == format) {
-                    format = f; if !transcript.isEmpty { applyFormat() }
+        VStack(spacing: 10) {
+            FlowLayout(spacing: 8, alignment: .center) {
+                ForEach(modes.modes) { f in
+                    chip(label: f.name, icon: f.icon, on: f.id == format.id) {
+                        format = f; if !transcript.isEmpty { applyFormat() }
+                    }
                 }
             }
+            if format.intent { intentField }
+            Button { showModeManager = true } label: {
+                Label("Manage modes", systemImage: "slider.horizontal.3").font(.caption)
+            }
+            .buttonStyle(.borderless).foregroundStyle(.secondary)
         }
+    }
+
+    /// Free-form instruction for the Intent note mode: a one-off directive shaping THIS note.
+    private var intentField: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "wand.and.rays").foregroundStyle(.secondary)
+            TextField("How should this note be shaped? (e.g. \u{201C}as a bug report\u{201D})", text: $intentText)
+                .textFieldStyle(.plain)
+                .onSubmit { if !transcript.isEmpty { applyFormat() } }
+        }
+        .padding(.horizontal, 12).padding(.vertical, 9)
+        .background(card(10))
+        .frame(maxWidth: 460)
     }
 
     private var processingRow: some View {
@@ -246,11 +308,13 @@ struct NotesView: View {
             // Header: format menu + actions
             HStack(spacing: 10) {
                 Menu {
-                    ForEach(NoteFormat.allBuiltIn) { f in
+                    ForEach(modes.modes) { f in
                         Button { format = f; if !transcript.isEmpty { applyFormat() } } label: {
                             Label(f.name, systemImage: f.icon)
                         }
                     }
+                    Divider()
+                    Button { showModeManager = true } label: { Label("Manage modes…", systemImage: "slider.horizontal.3") }
                 } label: {
                     Label(format.name, systemImage: format.icon).font(.headline)
                 }
@@ -270,13 +334,17 @@ struct NotesView: View {
                     .help(selectedID == nil ? "Discard" : "Delete note")
             }
             formatToolbar
+            if format.intent { intentField }
             if busy { processingRow }
             if !recordError.isEmpty { recordErrorBanner }
             if isRecording {
-                HStack(spacing: 8) {
-                    Circle().fill(.red).frame(width: 8, height: 8)
-                    Text("Recording more… \(timeString(elapsed)) · tap the mic to stop")
+                HStack(spacing: 10) {
+                    Circle().fill(isPaused ? .orange : .red).frame(width: 8, height: 8)
+                    Text(isPaused ? "Paused… \(timeString(elapsed))" : "Recording more… \(timeString(elapsed)) · tap the mic to stop")
                         .font(.caption).foregroundStyle(.secondary)
+                    Button { togglePauseNote() } label: {
+                        Image(systemName: isPaused ? "play.fill" : "pause.fill").font(.system(size: 11))
+                    }.buttonStyle(.borderless).help(isPaused ? "Resume (Control)" : "Pause (Control)")
                 }
             }
             // Single always-editable Markdown editor (Bear-style live styling), fills all space.
@@ -378,25 +446,32 @@ struct NotesView: View {
         .buttonStyle(.plain)
     }
 
-    private func iconFor(_ name: String) -> String { NoteFormat.allBuiltIn.first { $0.name == name }?.icon ?? "doc.text" }
+    private func iconFor(_ name: String) -> String { modes.modes.first { $0.name == name }?.icon ?? "doc.text" }
 
     // MARK: selection / lifecycle
     private func newNote() {
         work?.cancel(); busy = false; status = ""
-        if isRecording { _ = recorder.stop(); recorder.releaseArmed(); isRecording = false }
+        if isRecording { stopRecorderHard() }
         selectedID = nil
-        transcript = ""; editorText = ""; noteTags = []; tagInput = ""
+        transcript = ""; editorText = ""; noteTags = []; tagInput = ""; intentText = ""
         recordingURL = nil; appendMode = false
+    }
+
+    /// Stop the recorder and clear all recording-related UI state + the overlay-feeding timer.
+    private func stopRecorderHard() {
+        levelTimer?.invalidate(); levelTimer = nil
+        isRecording = false; isPaused = false; notesCtl.level = 0
+        _ = recorder.stop(); recorder.releaseArmed()
     }
 
     private func loadSelection(_ id: UUID?) {
         guard let id, let e = store.entries.first(where: { $0.id == id }) else { return }
         work?.cancel(); busy = false; status = ""
-        if isRecording { _ = recorder.stop(); recorder.releaseArmed(); isRecording = false }
+        if isRecording { stopRecorderHard() }
         transcript = e.original
         editorText = e.formatted
         noteTags = e.tags
-        format = NoteFormat.allBuiltIn.first { $0.name == e.formatName } ?? .cleanNote
+        format = modes.mode(named: e.formatName)
         recordingURL = store.audioURL(for: e)
         appendMode = false
     }
@@ -453,7 +528,9 @@ struct NotesView: View {
     // MARK: actions
     private func toggleRecord() {
         if isRecording {
-            isRecording = false
+            if isPaused { _ = recorder.resume() }   // a paused recorder won't flush a final file
+            levelTimer?.invalidate(); levelTimer = nil
+            isRecording = false; isPaused = false; notesCtl.level = 0
             recordingURL = recorder.stop()
             // stop() re-arms this Notes recorder (prewarm), which keeps the prepared input
             // holding the mic. Nothing else releases it, so a following Fn dictation / to-do
@@ -486,7 +563,43 @@ struct NotesView: View {
     /// Latch the UI into the recording state after the recorder successfully started.
     private func beginNoteRecording() {
         if !appendMode { transcript = ""; editorText = ""; noteTags = [] }   // append keeps the current note
-        status = ""; recordError = ""; recordStart = Date(); elapsed = 0; isRecording = true
+        status = ""; recordError = ""; recordStart = Date(); elapsed = 0
+        pausedAccum = 0; pauseStart = nil; isPaused = false; notesCtl.level = 0
+        isRecording = true
+        // Feed the shared overlay pill's waveform (AppDelegate reads notesCtl.level).
+        levelTimer?.invalidate()
+        let t = Timer(timeInterval: 0.04, repeats: true) { _ in
+            notesCtl.level = isPaused ? 0 : recorder.level()
+        }
+        RunLoop.main.add(t, forMode: .common)
+        levelTimer = t
+    }
+
+    /// Pause/resume the in-progress note recording (Control key, overlay pause, or the in-app
+    /// button all route here). Keeps the elapsed clock honest across pauses.
+    private func togglePauseNote() {
+        guard isRecording else { return }
+        if isPaused {
+            if recorder.resume() {
+                isPaused = false
+                recordStart = Date()   // start a fresh leg; pausedAccum holds the earlier time
+            }
+        } else {
+            recorder.pause()
+            isPaused = true
+            pausedAccum += Int(Date().timeIntervalSince(recordStart))
+            elapsed = pausedAccum
+        }
+    }
+
+    /// Discard the in-progress note recording (overlay × / Esc): stop and throw the audio away.
+    private func discardRecording() {
+        guard isRecording else { return }
+        levelTimer?.invalidate(); levelTimer = nil
+        isRecording = false; isPaused = false; notesCtl.level = 0
+        _ = recorder.stop()
+        recorder.releaseArmed()
+        recordingURL = nil; appendMode = false
     }
 
     private func transcribe(_ url: URL) {
@@ -532,7 +645,7 @@ struct NotesView: View {
         busy = true; status = "Organizing into \(format.name)…"
         work = Task {
             do {
-                var sys = format.systemPrompt
+                var sys = format.effectiveSystemPrompt(instruction: intentText)
                 let style = Settings.shared.styleText.trimmingCharacters(in: .whitespacesAndNewlines)
                 if Settings.shared.styleEnabled && !style.isEmpty { sys += "\n\nSTYLE: \(style)" }
                 let r = Reprompter(model: format.model ?? Settings.shared.claudeModel)

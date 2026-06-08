@@ -13,6 +13,21 @@ enum RecordStyle: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// How the primary Fn (globe) trigger behaves.
+///   • toggle: tap Fn to start, tap again to send (hands-free, latched).
+///   • hold:   hold Fn to talk, release to send (push-to-talk).
+enum TriggerStyle: String, Codable, CaseIterable, Identifiable {
+    case toggle    // tap to toggle: tap starts, tap again sends
+    case hold      // hold to talk: press starts, release sends
+    var id: String { rawValue }
+    var label: String { self == .toggle ? "Tap to toggle" : "Hold to talk" }
+    var help: String {
+        self == .toggle
+            ? "Tap Fn to start, tap again to send. Esc cancels."
+            : "Hold Fn while you talk, release to send. Esc cancels."
+    }
+}
+
 enum TranscriptionEngine: String, Codable, CaseIterable, Identifiable {
     case openAI                 // gpt-4o-transcribe (cloud, BYOK)
     case whisper = "local"      // WhisperKit (on-device); rawValue kept for migration
@@ -330,15 +345,6 @@ extension Profile {
         - Never invent facts that are neither on screen nor in the request.
         - NEVER use an em dash, an en dash, or a spaced hyphen. Use commas, periods, \
         parentheses, or colons instead.
-
-        ACTIONS: ONLY when the request's PRIMARY intent is to create a calendar event, create \
-        a reminder, or draft an email reply, respond with EXACTLY ONE JSON object and nothing \
-        else (no prose, no code fence), using these keys:
-        {"action":"createCalendarEvent|createReminder|draftEmailReply","title":"…",\
-        "description":"…","dueDate":"ISO8601 with offset","duration":minutes,\
-        "replyTo":"email","draftBody":"…"}
-        Include only the relevant keys. For anything else, respond with the plain insert text \
-        as described above (NOT JSON).
         """,
         builtin: true, hotkeyCode: 26 /* 7 */, hotkeyMods: kCtrlOpt,
         model: "claude-sonnet-4-6", vision: true)
@@ -373,7 +379,6 @@ final class Settings: ObservableObject {
     @Published var autoLearnDictionary: Bool { didSet { d.set(autoLearnDictionary, forKey: "autoLearnDictionary") } }
     @Published var toneMatch: Bool { didSet { d.set(toneMatch, forKey: "toneMatch") } }
     @Published var voiceEditLast: Bool { didSet { d.set(voiceEditLast, forKey: "voiceEditLast") } }
-    @Published var agenticActionsEnabled: Bool { didSet { d.set(agenticActionsEnabled, forKey: "agenticActionsEnabled") } }
     @Published var notesTabEnabled: Bool { didSet { d.set(notesTabEnabled, forKey: "notesTabEnabled") } }
     @Published var todosTabEnabled: Bool { didSet { d.set(todosTabEnabled, forKey: "todosTabEnabled") } }
     // Local reminder notifications 30 min before a to-do task's deadline.
@@ -399,6 +404,8 @@ final class Settings: ObservableObject {
     @Published var languageGuard: Bool { didSet { d.set(languageGuard, forKey: "languageGuard") } }
     @Published var repromptEnabled: Bool { didSet { d.set(repromptEnabled, forKey: "repromptEnabled") } }
     @Published var recordStyle: RecordStyle { didSet { d.set(recordStyle.rawValue, forKey: "recordStyle") } }
+    // How the Fn (globe) primary trigger behaves: tap-to-toggle (latched) or hold-to-talk (push-to-talk).
+    @Published var triggerStyle: TriggerStyle { didSet { d.set(triggerStyle.rawValue, forKey: "triggerStyle") } }
     @Published var useFnAsPrimary: Bool { didSet { d.set(useFnAsPrimary, forKey: "useFnAsPrimary") } }
     @Published var onboarded: Bool { didSet { d.set(onboarded, forKey: "onboarded") } }
     @Published var showInDock: Bool { didSet { d.set(showInDock, forKey: "showInDock") } }
@@ -493,6 +500,8 @@ final class Settings: ObservableObject {
         languageGuard = d.object(forKey: "languageGuard") as? Bool ?? true
         repromptEnabled = d.object(forKey: "repromptEnabled") as? Bool ?? true
         recordStyle = RecordStyle(rawValue: d.string(forKey: "recordStyle") ?? "") ?? .lock
+        // Default to tap-to-toggle (the long-standing hands-free behaviour).
+        triggerStyle = TriggerStyle(rawValue: d.string(forKey: "triggerStyle") ?? "") ?? .toggle
         useFnAsPrimary = d.object(forKey: "useFnAsPrimary") as? Bool ?? true
         onboarded = d.object(forKey: "onboarded") as? Bool ?? false
         showInDock = d.object(forKey: "showInDock") as? Bool ?? true
@@ -502,7 +511,6 @@ final class Settings: ObservableObject {
         autoLearnDictionary = d.object(forKey: "autoLearnDictionary") as? Bool ?? true
         toneMatch = d.object(forKey: "toneMatch") as? Bool ?? false
         voiceEditLast = d.object(forKey: "voiceEditLast") as? Bool ?? true
-        agenticActionsEnabled = d.object(forKey: "agenticActionsEnabled") as? Bool ?? false
         notesTabEnabled = d.object(forKey: "notesTabEnabled") as? Bool ?? true
         todosTabEnabled = d.object(forKey: "todosTabEnabled") as? Bool ?? true
         todoReminders = d.object(forKey: "todoReminders") as? Bool ?? true

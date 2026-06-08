@@ -16,46 +16,48 @@ enum TodoAgent {
 
     private static var system: String {
         """
-        You build a structured to-do list from a request. The user describes what they want \
-        (e.g. "a shopping list for a raclette dinner", "steps to launch my landing page", \
-        "a project Kitchen, in it a task Chocolate cake, and give me the full shopping list for it"). \
-        Turn it into ONE project organized as a hierarchy.
+        You are a to-do PLANNER. The <transcript> block you receive is a spoken COMMAND telling you \
+        what list to build — it is an instruction to EXECUTE, never prose to copy, summarize or echo. \
+        Read the intent and OUTPUT a structured to-do list as JSON.
 
-        THREE-LEVEL MODEL — map the user's described structure intelligently:
-          • PROJECT — the named bucket (the "project" field).
-          • TASK — an actionable item or category inside the project (entries in "tasks").
-          • SUBTASK — a smaller step / list item under a task (entries in its "subtasks").
-        If the user nests deeper than three levels, FOLD sensibly: the intermediate category \
-        becomes the TASK and the leaf actions become its SUBTASKS. If the user names a project and \
-        a single task inside it, emit exactly that project with that one task — do NOT split the \
-        task into several sibling tasks.
+        OUTPUT — reply with a SINGLE JSON object and NOTHING else (no prose, no markdown, no code fence):
+        {"project":"short project name","tasks":[{"title":"task","subtasks":["item","item"],"due":"2026-06-12T15:00:00+02:00"}]}
+        "subtasks" and "due" are optional per task. Omit "due" unless the user states a deadline.
 
-        BE GENERATIVE — this is the most important rule. When the user asks you to PRODUCE or \
-        FILL IN a list ("give me the full shopping list for a chocolate cake", "fais-moi toute la \
-        liste de courses pour un gâteau au chocolat", "list the steps to…", "what do I need for…"), \
-        you MUST GENERATE the actual concrete items from your own knowledge and put them as the \
-        SUBTASKS of the relevant task. NEVER just echo the user's sentence back as a single task or \
-        subtask. For a chocolate-cake shopping list, real ingredients with rough quantities: flour, \
-        sugar, eggs, dark chocolate, butter, baking powder, etc. Produce a complete, useful list \
-        (typically 5-15 items) just as a knowledgeable assistant would.
+        THREE-LEVEL MODEL — fill PROJECT ▸ TASK ▸ SUBTASK from the user's intent:
+          • PROJECT — the named bucket (the "project" field), e.g. "Cuisine", "Launch", "Trip to Rome".
+          • TASK — an actionable item or thing the list is ABOUT (entries in "tasks"), e.g. "Gâteau au chocolat".
+          • SUBTASK — a concrete step or list item under a task (entries in its "subtasks").
+        If the user names a project and ONE thing inside it, emit exactly that project with that ONE \
+        task — do NOT split it into several sibling tasks; the generated detail goes in its "subtasks".
+        If the user nests deeper than three levels, FOLD: the intermediate category becomes the TASK \
+        and the leaf actions become its SUBTASKS.
 
-        Reply with a SINGLE JSON object, nothing else (no prose, no code fence):
-        {"project":"short project name","tasks":[{"title":"task","due":"2026-06-12T15:00:00+02:00","subtasks":["generated item","generated item"]}]}
+        BE GENERATIVE — THE MOST IMPORTANT RULE. When the user asks you to PRODUCE, MAKE or FILL IN a \
+        list ("fais-moi la liste de courses pour un gâteau au chocolat", "give me the full shopping \
+        list for X", "liste les étapes pour…", "what do I need for…", "make me a packing list for…"), \
+        you MUST GENERATE the real concrete items from your OWN KNOWLEDGE and put them as the SUBTASKS \
+        of the relevant task. A real ingredient list, real steps — typically 5-15 items, with rough \
+        quantities where it helps. NEVER echo the user's sentence back as a single task/subtask, and \
+        NEVER leave the subtasks empty when the user asked you to generate a list.
 
-        WORKED EXAMPLE (input ≈ "a project Kitchen, in it a task Chocolate cake, and give me the \
-        full shopping list for the cake"):
+        WORKED EXAMPLE — input ≈ "fais-moi la liste de courses pour un gâteau au chocolat dans le projet Cuisine":
+        {"project":"Cuisine","tasks":[{"title":"Gâteau au chocolat","subtasks":["Farine (250 g)","Sucre (200 g)","Œufs (4)","Chocolat noir (200 g)","Beurre (150 g)","Levure chimique (1 c. à café)","Pincée de sel","Extrait de vanille (1 c. à café)","Sucre vanillé (1 sachet)"]}]}
+
+        WORKED EXAMPLE — input ≈ "a project Kitchen, in it a task Chocolate cake, give me the full shopping list":
         {"project":"Kitchen","tasks":[{"title":"Chocolate cake","subtasks":["Flour (250 g)","Sugar (200 g)","Eggs (4)","Dark chocolate (200 g)","Butter (150 g)","Baking powder (1 tsp)","Pinch of salt","Vanilla extract"]}]}
 
-        Each task MAY include a "due" field: an ISO8601 date-time WITH timezone offset, but ONLY when \
-        the user clearly states a deadline for that task (e.g. "friday at 3pm", "tomorrow 9am", \
-        "le 12 à midi"). Resolve relative dates against the context below. Omit "due" entirely when no \
-        deadline is mentioned — never invent one.
+        WORKED EXAMPLE — input ≈ "shopping list for a raclette dinner for 4":
+        {"project":"Raclette dinner","tasks":[{"title":"Groceries","subtasks":["Raclette cheese (800 g)","Charcuterie platter","Potatoes (1 kg)","Cornichons","Pearl onions","Mixed salad","White wine"]}]}
+
+        The "due" field, when present, is an ISO8601 date-time WITH timezone offset, ONLY when the \
+        user clearly states a deadline (e.g. "friday at 3pm", "tomorrow 9am", "le 12 à midi"). Resolve \
+        relative dates against the context below. Never invent a deadline.
 
         \(nowContext())
 
-        Keep titles short and imperative. Detect the user's language and write ALL output in that \
-        one language only — never mix languages (a French request → French project, tasks AND \
-        generated items).
+        Keep titles short and imperative. Detect the user's language and write ALL output in that one \
+        language only — never mix languages (a French request → French project, task AND generated items).
         """
     }
 
@@ -92,21 +94,39 @@ enum TodoAgent {
         }
         guard let data = s.data(using: .utf8),
               let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { throw Err.unparseable }
-        let name = (obj["project"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let rawTasks = obj["tasks"] as? [Any] ?? []
+        let name = ((obj["project"] as? String) ?? (obj["name"] as? String) ?? (obj["title"] as? String))?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let rawTasks = (obj["tasks"] as? [Any]) ?? (obj["items"] as? [Any]) ?? []
         let tasks = parseTasks(rawTasks)
         guard let name, !name.isEmpty, !tasks.isEmpty else { throw Err.unparseable }
         return Draft(name: name, tasks: tasks)
     }
 
     /// Shared task-list parser: `[{title, subtasks:[...], due}, …]` → `[(title, [subtask], deadline?)]`.
+    /// Tolerant: a task title may arrive under "title" or "name"; sub-tasks may be plain strings
+    /// OR objects ({"title":…} / {"name":…}), since the model sometimes nests them as objects.
     static func parseTasks(_ raw: [Any]) -> [(String, [String], Date?)] {
         raw.compactMap { item in
-            guard let t = item as? [String: Any], let title = (t["title"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty else { return nil }
-            let subs = (t["subtasks"] as? [Any])?.compactMap { ($0 as? String)?.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty } ?? []
+            guard let t = item as? [String: Any] else { return nil }
+            let titleRaw = (t["title"] as? String) ?? (t["name"] as? String) ?? (t["task"] as? String)
+            guard let title = titleRaw?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty else { return nil }
+            let subs = parseSubtasks(t["subtasks"] ?? t["items"] ?? t["steps"])
             let due = (t["due"] as? String).flatMap(parseDue)
             return (title, subs, due)
         }
+    }
+
+    /// Parse a sub-task array that may hold plain strings or `{title|name}` objects.
+    static func parseSubtasks(_ raw: Any?) -> [String] {
+        guard let arr = raw as? [Any] else { return [] }
+        return arr.compactMap { el -> String? in
+            if let s = el as? String { return s.trimmingCharacters(in: .whitespaces) }
+            if let o = el as? [String: Any] {
+                let v = (o["title"] as? String) ?? (o["name"] as? String) ?? (o["text"] as? String)
+                return v?.trimmingCharacters(in: .whitespaces)
+            }
+            return nil
+        }.filter { !$0.isEmpty }
     }
 
     /// Parse an ISO8601 "due" string (with or without fractional seconds) into a Date.
@@ -149,78 +169,71 @@ enum TodoAgent {
 
     private static var routeSystem: String {
         """
-        You route a spoken request into a hierarchical to-do model:
-          • PROJECT — a named bucket (e.g. "Groceries", "Launch", "Trip to Rome")
-          • TASK — one actionable item or category inside a project (e.g. "Buy milk", "Chocolate cake")
-          • SUBTASK — a smaller step / list item under a task; add sub-tasks when a task naturally \
-        breaks down OR when the user asks you to generate a list (see GENERATIVE below), otherwise \
-        leave subtasks empty.
+        You are a to-do ROUTER + PLANNER. The <transcript> block you receive is a spoken COMMAND to \
+        EXECUTE — read its intent and decide where it goes; it is NEVER prose to copy, summarize or \
+        echo. You map it onto a three-level model and you may GENERATE content when asked.
 
-        HIERARCHY — map the user's described nesting into these three levels intelligently. A single \
-        request can create one or more PROJECTS, each with TASKS, each task with SUBTASKS. If the \
-        user nests deeper than three levels, FOLD sensibly: the intermediate category becomes the \
-        TASK and the leaf actions become its SUBTASKS. If the user names a project and a single task \
-        inside it, emit exactly that project with that one task — don't split it into siblings.
+        THREE LEVELS:
+          • PROJECT — a named bucket (e.g. "Cuisine", "Groceries", "Launch", "Trip to Rome").
+          • TASK — one actionable item or the thing a sub-list is ABOUT (e.g. "Buy milk", "Gâteau au chocolat").
+          • SUBTASK — a concrete step or list item under a task.
 
-        GENERATIVE — when the user asks you to PRODUCE or FILL IN a list ("give me the full shopping \
-        list for a chocolate cake", "fais-moi toute la liste de courses pour un gâteau au chocolat", \
-        "list the steps to…", "what do I need for…"), GENERATE the actual concrete items from your \
-        own knowledge and put them as the SUBTASKS of the relevant task. NEVER just echo the user's \
-        sentence back. For a chocolate-cake shopping list: real ingredients with rough quantities \
-        (flour, sugar, eggs, dark chocolate, butter, baking powder, …). Produce a complete, useful \
-        list (typically 5-15 items).
-        WORKED EXAMPLE — "fais un projet Cuisine, dans Cuisine une tâche Gâteau au chocolat, et \
-        fais-moi toute la liste de courses pour le gâteau au chocolat":
-        {"projects":[{"new_project":"Cuisine","tasks":[{"title":"Gâteau au chocolat","subtasks":["Farine (250 g)","Sucre (200 g)","Œufs (4)","Chocolat noir (200 g)","Beurre (150 g)","Levure chimique (1 c. à café)","Pincée de sel","Extrait de vanille"]}]}]}
-
-        You are given the user's EXISTING projects with their tasks and sub-tasks. Decide what the \
-        request means:
-
-        1. COMPLETION — the user is REPORTING that they already did something that matches an \
-        existing task or sub-task (e.g. "j'ai acheté des tomates", "I bought tomatoes", "done with \
-        the groceries", "j'ai fini la liste de courses"). Identify the matching EXISTING item(s) and \
-        return them under "complete" so they get checked off. Match by intent against the titles in \
-        the EXISTING PROJECTS list below — DO NOT add new tasks for something already there.
-        2. ADD — the user wants to add NEW item(s), possibly across SEVERAL projects in one request. \
-        A single request MAY contain BOTH (e.g. "j'ai acheté le lait, ajoute du pain") — then return \
-        "complete" AND "projects" together.
-
-        For ADD: extract EVERY distinct project the user mentions and emit ONE entry per project under \
-        "projects". For each project decide whether it belongs to an existing project (match by name \
-        or intent — e.g. "to my groceries" → an existing "Groceries" project) or needs a NEW project. \
-        Prefer reusing an existing project when the intent clearly matches; only create a new project \
-        when none fits. If the user clearly asks for two (or more) projects, you MUST emit two (or \
-        more) "projects" entries — never collapse them into one.
-
-        Reply with a SINGLE JSON object, nothing else (no prose, no code fence). It may contain any of:
-          • "complete": items to mark done, each {"project":"<existing project name>","task":"<existing task title>","subtask":"<optional existing sub-task title>"}
-          • "projects": a LIST of project operations, each either
+        OUTPUT — reply with a SINGLE JSON object and NOTHING else (no prose, no markdown, no code fence). \
+        It may contain any of:
+          • "projects": a LIST of project operations, each ONE of:
+                {"new_project":"short project name","tasks":[…]}                   (create this project)
                 {"existing_project":"<exact existing project name>","tasks":[…]}   (add to an existing project)
-                {"new_project":"short project name","tasks":[…]}                     (add to a new project)
-        Each task in "tasks" is {"title":"task","due":"2026-06-12T15:00:00+02:00","subtasks":["optional"]}.
-        Examples:
-          report done:   {"complete":[{"project":"Groceries","task":"Buy tomatoes"}]}
-          add (one):     {"projects":[{"existing_project":"Groceries","tasks":[{"title":"Buy bread"}]}]}
-          add (two new): {"projects":[{"new_project":"Groceries","tasks":[{"title":"Buy tomatoes"},{"title":"Buy pasta"}]},{"new_project":"Work","tasks":[{"title":"Finish the report"}]}]}
-          fr (deux):     "deux projets: courses avec tomates et pâtes, et boulot avec finir le rapport" → {"projects":[{"new_project":"Courses","tasks":[{"title":"Acheter des tomates"},{"title":"Acheter des pâtes"}]},{"new_project":"Boulot","tasks":[{"title":"Finir le rapport"}]}]}
-          both:          {"complete":[{"project":"Groceries","task":"Buy milk"}],"projects":[{"existing_project":"Groceries","tasks":[{"title":"Buy bread"}]}]}
+          • "complete": items to check off, each {"project":"<existing project name>","task":"<existing task title>","subtask":"<optional existing sub-task title>"}
+        Each task in "tasks" is {"title":"task","subtasks":["item","item"],"due":"2026-06-12T15:00:00+02:00"}. \
+        "subtasks" and "due" are optional.
 
-        For "complete", use the EXACT task/sub-task titles as they appear in the EXISTING PROJECTS \
-        list. Set "subtask" only when reporting a single sub-task done; omit it to complete the whole \
-        task. If nothing matches, do not invent a completion.
+        DECIDE the intent:
+        1. ADD — the user wants NEW item(s). Extract EVERY distinct project mentioned and emit ONE \
+        "projects" entry per project. Reuse an existing project when the name/intent clearly matches \
+        ("dans mon projet X", "to my groceries"); otherwise create a new one. If the user clearly \
+        names two+ projects you MUST emit two+ entries — never collapse them.
+        2. COMPLETION — the user REPORTS having already done an EXISTING item ("j'ai acheté des \
+        tomates", "I bought tomatoes", "j'ai fini la liste de courses"). Match it against the titles \
+        in EXISTING PROJECTS and return it under "complete" — do NOT re-add it. A single request MAY \
+        contain BOTH add and complete ("j'ai acheté le lait, ajoute du pain") — return both.
 
-        Each task MAY include a "due" field: an ISO8601 date-time WITH timezone offset, but ONLY when \
-        the user clearly states a deadline for that task (e.g. "friday at 3pm", "tomorrow 9am", \
-        "le 12 à midi"). Resolve relative dates against the context below. Omit "due" entirely when no \
-        deadline is mentioned — never invent one.
+        SIMPLE ADD — "dans le projet X ajoute la tâche Y" → ONE project op for X (existing if it \
+        matches, else new) with ONE task Y, subtasks empty. Don't invent sub-tasks the user didn't ask for.
+
+        GENERATIVE — THE KEY CAPABILITY. When the user asks you to PRODUCE, MAKE or FILL IN a list \
+        ("fais-moi la liste de courses pour un gâteau au chocolat", "give me the full shopping list \
+        for X", "liste les étapes pour…", "what do I need for…"), GENERATE the real concrete items \
+        from your OWN KNOWLEDGE and put them as the SUBTASKS of the relevant task. Real ingredients \
+        with rough quantities, real steps — typically 5-15 items. NEVER echo the user's sentence as a \
+        single task/subtask, and NEVER leave subtasks empty when the user asked you to generate a list.
+
+        EXAMPLES (input → output):
+          simple add to existing: "dans le projet Courses ajoute acheter du pain"
+            → {"projects":[{"existing_project":"Courses","tasks":[{"title":"Acheter du pain"}]}]}
+          generative cake (THE CORE CASE): "fais-moi la liste de courses pour un gâteau au chocolat dans le projet Cuisine"
+            → {"projects":[{"new_project":"Cuisine","tasks":[{"title":"Gâteau au chocolat","subtasks":["Farine (250 g)","Sucre (200 g)","Œufs (4)","Chocolat noir (200 g)","Beurre (150 g)","Levure chimique (1 c. à café)","Pincée de sel","Extrait de vanille (1 c. à café)","Sucre vanillé (1 sachet)"]}]}]}
+          generative en: "make me the packing list for a weekend ski trip in my Trips project"
+            → {"projects":[{"existing_project":"Trips","tasks":[{"title":"Ski weekend packing","subtasks":["Ski jacket","Salopette","Thermal base layers","Gloves","Goggles","Beanie","Wool socks (×3)","Sunscreen","Lip balm","Helmet"]}]}]}
+          two new projects: "deux projets: courses avec tomates et pâtes, et boulot avec finir le rapport"
+            → {"projects":[{"new_project":"Courses","tasks":[{"title":"Acheter des tomates"},{"title":"Acheter des pâtes"}]},{"new_project":"Boulot","tasks":[{"title":"Finir le rapport"}]}]}
+          report done: "j'ai acheté les tomates"
+            → {"complete":[{"project":"Courses","task":"Acheter des tomates"}]}
+          both at once: "j'ai acheté le lait, ajoute du pain"
+            → {"complete":[{"project":"Groceries","task":"Buy milk"}],"projects":[{"existing_project":"Groceries","tasks":[{"title":"Buy bread"}]}]}
+
+        For "complete", use the EXACT task/sub-task titles from EXISTING PROJECTS. Set "subtask" only \
+        when reporting a single sub-task done; omit it to complete the whole task. If nothing matches, \
+        do not invent a completion. Use "existing_project" only with a name that appears VERBATIM in \
+        the provided list; otherwise use "new_project".
+
+        The "due" field, when present, is ISO8601 WITH timezone offset, ONLY when the user states a \
+        deadline ("friday at 3pm", "tomorrow 9am", "le 12 à midi"). Resolve relatives against the \
+        context below. Never invent a deadline.
 
         \(nowContext())
 
-        Use "existing_project" only with a name that appears verbatim in the provided list; \
-        otherwise use "new_project". Keep task titles short and imperative. Extract every distinct \
-        item the user mentioned (e.g. "milk and eggs" → two tasks) and every distinct project. \
-        Detect the user's language and write ALL output in that one language only — never mix \
-        languages.
+        Keep task titles short and imperative. Detect the user's language and write ALL output in that \
+        one language only — never mix languages.
         """
     }
 
@@ -274,16 +287,20 @@ enum TodoAgent {
 
         // Gather the per-project ADD entries. New schema: a "projects" list of objects, each
         // {existing_project|new_project, tasks:[…]}. Back-compat: a single top-level
-        // {existing_project|new_project, tasks:[…]} (old single-project shape) is also accepted.
-        var entries = obj["projects"] as? [Any] ?? []
-        if entries.isEmpty, obj["tasks"] != nil || obj["existing_project"] != nil || obj["new_project"] != nil {
+        // {existing_project|new_project|project, tasks:[…]} (old single-project shape) is also accepted.
+        var entries = (obj["projects"] as? [Any]) ?? []
+        // The model may emit "projects" as a single object instead of an array.
+        if entries.isEmpty, let single = obj["projects"] as? [String: Any] { entries = [single] }
+        if entries.isEmpty,
+           obj["tasks"] != nil || obj["items"] != nil ||
+           obj["existing_project"] != nil || obj["new_project"] != nil || obj["project"] != nil {
             entries = [obj]   // treat the whole object as one project entry
         }
 
         var ops: [ProjectOp] = []
         for entry in entries {
             guard let e = entry as? [String: Any] else { continue }
-            let tasks = parseTasks(e["tasks"] as? [Any] ?? [])
+            let tasks = parseTasks((e["tasks"] as? [Any]) ?? (e["items"] as? [Any]) ?? [])
             guard !tasks.isEmpty else { continue }
 
             // Resolve an "existing_project" name to a real project (case-insensitive match);
@@ -296,8 +313,15 @@ enum TodoAgent {
                 }
                 continue
             }
-            if let newName = (e["new_project"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines), !newName.isEmpty {
-                ops.append(ProjectOp(existingProjectID: nil, newProjectName: newName, tasks: tasks))
+            // Accept "new_project", or a bare "project"/"name" field as the new-project name.
+            // When that name actually matches an existing project, append to it instead of duplicating.
+            let newRaw = (e["new_project"] as? String) ?? (e["project"] as? String) ?? (e["name"] as? String)
+            if let newName = newRaw?.trimmingCharacters(in: .whitespacesAndNewlines), !newName.isEmpty {
+                if let match = projects.first(where: { $0.name.caseInsensitiveCompare(newName) == .orderedSame }) {
+                    ops.append(ProjectOp(existingProjectID: match.id, newProjectName: nil, tasks: tasks))
+                } else {
+                    ops.append(ProjectOp(existingProjectID: nil, newProjectName: newName, tasks: tasks))
+                }
             }
         }
 

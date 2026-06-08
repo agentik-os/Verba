@@ -30,7 +30,6 @@ struct PipelineResult {
     var profileName: String
     var profileID: UUID? = nil         // the mode actually used (for "remember last used mode")
     var engine: String
-    var action: ActionPayload? = nil   // #4: agentic action parsed from a Context-mode response
 }
 
 /// record → transcribe → (Claude reprompt) → result. Output/side-effects handled by the caller.
@@ -83,24 +82,19 @@ enum Pipeline {
 
             let sel = selection?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if profile.vision {
-                // Context mode: capture the screen and act on it.
+                // Context mode: screenshot of the current screen + the spoken request →
+                // a vision model → clean text to insert. Kept deliberately simple and robust.
                 guard ScreenCapture.hasPermission() else {
                     ScreenCapture.requestPermission()
                     ScreenCapture.openPrivacySettings()
                     throw RepromptError.http(0, "Context mode needs Screen Recording. Enable Verba in System Settings ▸ Privacy & Security ▸ Screen Recording, then try again.")
                 }
                 status("Looking at your screen…")
-                guard let png = ScreenCapture.capturePNG() else {
-                    throw RepromptError.http(0, "Couldn't capture the screen.")
+                guard let png = ScreenCapture.capturePNG(), !png.isEmpty else {
+                    throw RepromptError.http(0, "Couldn't capture the screen. If Screen Recording was just enabled, quit and reopen Verba, then try again.")
                 }
                 status(Quips.current())
                 reprompted = try await r.repromptVision(transcript: original, systemPrompt: sys, imagePNG: png)
-                // #4: if agentic actions are on and the model returned a JSON action, hand it up.
-                if s.agenticActionsEnabled, let act = await ActionExecutor.parse(reprompted) {
-                    return PipelineResult(original: original, reprompted: reprompted,
-                                          profileName: profile.name, profileID: profile.id,
-                                          engine: engineLabel(s), action: act)
-                }
             } else if !sel.isEmpty && profile.targetLanguage == nil {
                 // Selection mode: the dictation is an INSTRUCTION acting on the selected text.
                 // (Skipped for Translate modes — they always translate the spoken words.)
@@ -132,8 +126,7 @@ enum Pipeline {
         // Language-consistency guard: transcription engines code-switch (mix French + English
         // mid-sentence). Detect a mixed result and normalize it to its single dominant language.
         // Applies to EVERY mode, including Flow/raw (which otherwise ships the engine output as-is).
-        // Skipped for Translate mode (its prompt already forces one target language) and for
-        // agentic JSON actions (handled and returned earlier, never reaches here).
+        // Skipped for Translate mode (its prompt already forces one target language).
         if s.languageGuard, profile.targetLanguage == nil, isMixedLanguage(reprompted) {
             status("Cleaning up language…")
             if let fixed = try? await normalizeLanguage(reprompted, model: profile.model ?? s.claudeModel) {

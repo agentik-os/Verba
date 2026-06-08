@@ -258,6 +258,21 @@ struct DictionaryView: View {
         store.terms.contains { !$0.written.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
+    /// A row is a misspelling correction when it carries a spoken form; an empty spoken form
+    /// means it's a pure vocabulary hint ("Add a word"). New correction rows are seeded with a
+    /// single space so they render as a correction before the user types anything.
+    private func isCorrection(_ t: DictTerm) -> Bool { !t.spoken.isEmpty }
+
+    @ViewBuilder private func rowBadges(_ t: DictTerm) -> some View {
+        if t.auto {
+            Text("auto")
+                .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                .padding(.horizontal, 7).padding(.vertical, 3)
+                .background(.softFill, in: Capsule())
+                .help("Auto-learned from one of your edits")
+        }
+    }
+
     var body: some View {
         SectionScaffold(title: "Dictionary",
                         subtitle: "Teach Verba names and terms it should always spell right.") {
@@ -294,29 +309,38 @@ struct DictionaryView: View {
 
             if store.terms.isEmpty {
                 EmptyState(icon: "character.book.closed", title: "No terms yet",
-                           message: "Teach Verba names, jargon, and acronyms it should always spell right. Fill only “Written” to add a vocabulary hint (e.g. “Verba”), or pair it with “Said” to auto-correct a mis-hearing (say “verba” → write “Verba”). With Auto-add on, it also learns from the corrections you make after pasting.")
+                           message: "Teach Verba names, jargon, and acronyms it should always spell right. Use “Add a word” to give it a vocabulary hint (e.g. “Verba”), or “Correct a misspelling” to auto-fix a mis-hearing (say “verba” → write “Verba”). With Auto-add on, it also learns from the corrections you make after pasting.")
             }
             VStack(spacing: 10) {
                 ForEach($store.terms) { $t in
-                    HStack(spacing: 10) {
-                        TextField("Said — optional", text: $t.spoken).cleanField()
-                            .help("Leave empty to add a vocabulary hint. Fill it only to auto-correct a spoken word into the written form.")
-                        Image(systemName: "arrow.right").foregroundStyle(.tertiary)
-                        TextField("Written — required", text: $t.written).cleanField()
-                            .help("The correct spelling. A term with only “Written” is sent to the transcriber as a vocabulary hint.")
-                        if t.auto {
-                            Text("auto")
-                                .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
-                                .padding(.horizontal, 7).padding(.vertical, 3)
-                                .background(.softFill, in: Capsule())
-                                .help("Auto-learned from one of your edits")
+                    // A row with an empty spoken form is a pure vocabulary hint ("Add a word");
+                    // one with a spoken form is a misspelling correction.
+                    if isCorrection(t) {
+                        HStack(spacing: 10) {
+                            TextField("Said", text: $t.spoken).cleanField()
+                                .help("The word as it gets mis-heard. Verba auto-replaces it with the written form.")
+                            Image(systemName: "arrow.right").foregroundStyle(.tertiary)
+                            TextField("Written", text: $t.written).cleanField()
+                                .help("The correct spelling Verba should write instead.")
+                            rowBadges(t)
+                            removeButton { store.terms.removeAll { $0.id == t.id } }
                         }
-                        removeButton { store.terms.removeAll { $0.id == t.id } }
+                    } else {
+                        HStack(spacing: 10) {
+                            Image(systemName: "text.book.closed").foregroundStyle(.tertiary)
+                            TextField("Word — the transcriber should spell right", text: $t.written).cleanField()
+                                .help("A vocabulary hint sent to the transcriber so it recognizes and spells this word.")
+                            rowBadges(t)
+                            removeButton { store.terms.removeAll { $0.id == t.id } }
+                        }
                     }
                 }
-                addButton("Add word") { store.terms.append(DictTerm(spoken: "", written: "")) }
+                HStack(spacing: 14) {
+                    addButton("Add a word") { store.terms.append(DictTerm(spoken: "", written: "")) }
+                    addButton("Correct a misspelling") { store.terms.append(DictTerm(spoken: " ", written: "")) }
+                }
             }
-            Text("Fill only “Written” to add a vocabulary hint the transcriber should spell right. “Said” is optional — add it only to auto-correct a spoken word into the written form. Auto-added terms work the same, edit or remove any of them.")
+            Text("“Add a word” teaches the transcriber a name or term so it spells it right — no correction needed. “Correct a misspelling” pairs a mis-heard spoken word with the written form so Verba swaps it automatically. Auto-added terms work the same, edit or remove any of them.")
                 .font(.caption).foregroundStyle(.secondary)
         }
     }
@@ -339,16 +363,22 @@ struct DictionaryView: View {
     }
 
     /// Merge AI-cleaned terms back in: update each written form's casing/spelling and fill an
-    /// empty spoken form, without dropping or duplicating any existing term. The AI returns the
-    /// cleaned terms in the same order as the terms that had a written value, so we map them back
-    /// positionally onto exactly those rows and leave every other term untouched.
+    /// empty spoken form on correction rows, without dropping or duplicating any existing term. The
+    /// AI returns the cleaned terms in the same order as the terms that had a written value, so we
+    /// map them back positionally onto exactly those rows and leave every other term untouched.
+    /// Pure vocabulary entries ("Add a word", empty spoken) keep their intent — only their spelling
+    /// is cleaned, never converted into a correction.
     private func merge(_ cleaned: [DictionaryAgent.Cleaned]) {
         let writtenIdx = store.terms.indices.filter {
             !store.terms[$0].written.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
         for (cleanedTerm, idx) in zip(cleaned, writtenIdx) {
             store.terms[idx].written = cleanedTerm.written
-            if store.terms[idx].spoken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !cleanedTerm.spoken.isEmpty {
+            // Only an existing correction row may gain a proposed spoken form; a vocab-only row
+            // (empty spoken) stays a vocab hint.
+            if isCorrection(store.terms[idx]),
+               store.terms[idx].spoken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+               !cleanedTerm.spoken.isEmpty {
                 store.terms[idx].spoken = cleanedTerm.spoken
             }
         }

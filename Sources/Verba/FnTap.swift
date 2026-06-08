@@ -18,12 +18,15 @@ final class FnTap {
     var onDigit: ((Int) -> Bool)?     // 1-9 while menuActive; return true to consume
     var onArrow: ((Int) -> Bool)?     // -1 left / +1 right while menuActive
     var onEnter: (() -> Bool)?        // return / enter while menuActive
+    var onControl: (() -> Void)?      // plain ⌃ tapped → pause/resume the current recording
     var menuActive = false
 
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?
     private var fnDown = false
     private var optDown = false   // Option held during the current Fn-hold (fires onFnControl → to-do glance)
+    private var ctrlPresent = false             // edge-tracking for the plain-Control pause/resume tap
+    private var lastControlFire: TimeInterval = 0   // debounce so one physical tap fires once
 
     /// True once the event tap is live. False means Accessibility/Input-Monitoring is not
     /// granted (the tap couldn't be created), so the Fn key does nothing until the user grants it.
@@ -63,6 +66,7 @@ final class FnTap {
         if let t = tap { CGEvent.tapEnable(tap: t, enable: false) }
         if let s = source { CFRunLoopRemoveSource(CFRunLoopGetCurrent(), s, .commonModes) }
         tap = nil; source = nil; fnDown = false; menuActive = false; active = false
+        ctrlPresent = false
         FnSystemPref.restore()
     }
 
@@ -76,6 +80,24 @@ final class FnTap {
             let fn = event.flags.contains(.maskSecondaryFn)
             let opt = event.flags.contains(.maskAlternate)
             let bareFn = event.flags.subtracting([.maskSecondaryFn, .maskNonCoalesced]).isEmpty
+
+            // Plain Control (no Option) → pause/resume the active recording. The HID tap sees
+            // EVERY flagsChanged at head-insert, so this is the reliable path (the NSEvent global
+            // monitor in ChordMonitor drops modifier events unpredictably across launches). Fire on
+            // the Control-down edge only; the matching up edge clears the latch so the next press
+            // works even if an intermediate event was missed. Fn may be co-held (hold+Fn dictation)
+            // — that's fine, we key off Control alone, ignoring Fn.
+            let ctrlDown = event.flags.contains(.maskControl) && !opt
+            if ctrlDown && !ctrlPresent {
+                ctrlPresent = true
+                let now = ProcessInfo.processInfo.systemUptime
+                if now - lastControlFire > 0.3 {
+                    lastControlFire = now
+                    if let cb = onControl { DispatchQueue.main.async(execute: cb) }
+                }
+            } else if !event.flags.contains(.maskControl) {
+                ctrlPresent = false
+            }
             // Plain Fn records. ⌥+Fn (Option held when Fn goes down) pops the today's-to-do glance
             // instead of recording; tapping ⌥ while Fn is already held also triggers the glance.
             if fn && !fnDown {

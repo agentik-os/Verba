@@ -14,6 +14,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var fnActionTaken = false
     private var lastFnDown: Date?
     private var fnPressAt: Date?        // when the current hold started (push-to-talk)
+    private var fnToggleStopArmed = false   // tap-toggle: a Fn tap landed mid-recording; release decides stop vs. switch-mode
+    private var fnToggleSwitched = false    // a long Fn hold already cycled the mode this press → release must not stop
+    private let fnSwitchThreshold = 0.4     // tap-toggle: hold Fn ≥ this (mid-recording) → switch mode & keep listening; shorter → stop & send
     private let fnHoldThreshold = 0.8   // hold longer than this → release auto-finishes; a
                                         // deliberate "tap" (≤0.8s) latches for hands-free listening
     private var processingTask: Task<Void, Never>?
@@ -35,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var todoCaptureRecording = false   // a voice "add to-do" capture is recording
     private var todoCaptureTask: Task<Void, Never>?
+    private var noteLevelTimer: Timer?         // drives the shared overlay's waveform while a note records (NotesView owns the recorder)
     // Set when stopTodoCapture() runs from the bare-Fn half of a Fn+§ stop chord; swallows the
     // §-keyDown's startTodoCapture() that follows on the same chord so it doesn't restart capture.
     private var todoCaptureJustStopped = false
@@ -44,7 +48,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var onboardingWC: NSWindowController?
     private var mainWC: NSWindowController?
     private var reviewWindow: NSWindow?
-    private var actionWindow: NSWindow?   // #4: agentic action confirmation
     private var recordStartedAt: Date?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -77,6 +80,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         FnTap.shared.onDigit = { [weak self] n in self?.fnDigit(n) ?? false }
         FnTap.shared.onArrow = { [weak self] d in self?.fnArrow(d) ?? false }
         FnTap.shared.onEnter = { [weak self] in self?.fnEnter() ?? false }
+        FnTap.shared.onControl = { [weak self] in InputCoach.shared.note(.control); self?.togglePause() }   // ⌃ pauses/resumes (reliable HID-tap path when Fn is primary)
         overlay.model.onCancel = { [weak self] in self?.cancelEverything() }
         overlay.model.onPauseToggle = { [weak self] in self?.togglePause() }
         overlay.prepare()   // warm the floating panel so it appears instantly
@@ -119,11 +123,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { [weak self] _ in self?.startTodoCapture() }
             .store(in: &cancellables)
 
+        // A note records in the Notes window via its own recorder, but it shows the SAME floating
+        // pill as dictation (labelled "Note"). Drive that overlay from the shared controller so the
+        // pill, Control-pause and the × all work for note recording too.
+        NotesController.shared.$isRecording
+            .removeDuplicates().receive(on: RunLoop.main)
+            .sink { [weak self] rec in rec ? self?.showNoteOverlay() : self?.hideNoteOverlay() }
+            .store(in: &cancellables)
+        // Mirror NotesView's paused state onto the pill.
+        NotesController.shared.$paused
+            .removeDuplicates().receive(on: RunLoop.main)
+            .sink { [weak self] p in guard let self, NotesController.shared.isRecording else { return }
+                self.overlay.model.paused = p
+                self.overlay.model.title = p ? "Paused" : CaptureContext.note.label }
+            .store(in: &cancellables)
+
         // Keep the menu-bar dropdown's "Default mode" list in sync when modes are added,
         // removed, or the default changes anywhere (the menu is rebuilt in refreshUI).
-        Publishers.Merge(
+        Publishers.MergeMany(
             Settings.shared.$profiles.map { _ in () }.eraseToAnyPublisher(),
-            Settings.shared.$activeProfileID.map { _ in () }.eraseToAnyPublisher()
+            Settings.shared.$activeProfileID.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$triggerStyle.map { _ in () }.eraseToAnyPublisher()
         )
         .dropFirst().receive(on: RunLoop.main)
         .sink { [weak self] in self?.refreshUI() }
@@ -242,6 +262,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Fn + Z (or a custom shortcut): open the Notes tab and immediately start a new note recording.
     @objc func startNoteRecording() {
         guard Settings.shared.onboarded else { openOnboarding(); return }
+        cancelToggleHold()   // Fn+Z is a chord → don't let the Fn release stop/switch a tap-toggle recording
         // Fn+Z chord: the bare Fn already auto-started a dictation — discard it and record a note.
         abortPhantomFnDictation()
         // Any OTHER in-flight dictation (a deliberate one, no Fn hold) must not collide with a note.
@@ -260,12 +281,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.async { NotesController.shared.navSignal &+= 1 }
     }
 
+    /// Show the shared floating pill for an in-progress NOTE recording (labelled "Note"), with a
+    /// working pause/resume and ×. The note's audio lives in NotesView's own recorder, so the
+    /// waveform is fed from the level NotesView publishes on the shared controller.
+    private func showNoteOverlay() {
+        // Don't fight a real dictation/to-do capture for the pill.
+        guard state == .idle, !todoCaptureRecording else { return }
+        overlay.model.menu = false
+        overlay.model.done = false
+        overlay.model.error = false
+        overlay.model.info = false
+        overlay.model.modeHint = false
+        overlay.model.profiles = []          // a note isn't a dictation mode → no live switcher
+        overlay.model.paused = NotesController.shared.paused
+        overlay.model.context = .note
+        overlay.model.modeName = ""
+        overlay.model.recording = true
+        overlay.model.title = NotesController.shared.paused ? "Paused" : CaptureContext.note.label
+        overlay.model.level = 0
+        overlay.show()
+        noteLevelTimer?.invalidate()
+        let t = Timer(timeInterval: 0.04, repeats: true) { [weak self] _ in
+            guard let self, NotesController.shared.isRecording else { return }
+            let lvl = NotesController.shared.paused ? 0 : NotesController.shared.level
+            self.overlay.model.level = lvl
+            self.overlay.model.phase += 0.025 + 0.18 * Double(lvl)
+        }
+        RunLoop.main.add(t, forMode: .common)
+        noteLevelTimer = t
+    }
+
+    /// Tear the note pill down when the note recording stops (NotesView handles transcription UI).
+    private func hideNoteOverlay() {
+        noteLevelTimer?.invalidate(); noteLevelTimer = nil
+        // Only clear the pill if it's still showing the note (don't stomp a dictation that started).
+        guard overlay.model.context == .note else { return }
+        overlay.model.recording = false
+        overlay.model.paused = false
+        overlay.model.context = .dictation
+        overlay.model.title = ""
+        if state == .idle { overlay.hide() }
+    }
+
     /// Voice "add to-do" capture: record a short request, transcribe it with the current
     /// engine, then hand it to the routing agent which understands the project▸task▸subtask
     /// model and places the tasks into TodoStore (existing project match or a new one).
     /// First call starts recording; a second call (or pressing the button again) stops & processes.
     @objc func startTodoCapture() {
         guard Settings.shared.onboarded else { openOnboarding(); return }
+        cancelToggleHold()   // Fn+§ is a chord → don't let the Fn release stop/switch a tap-toggle recording
         // A bare-Fn tap already stopped this capture (Fn+§ stop chord): swallow the trailing
         // §-keyDown so it doesn't immediately restart a new capture.
         if todoCaptureJustStopped { todoCaptureJustStopped = false; return }
@@ -584,12 +648,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // The glance is a .nonactivatingPanel that may not own key focus, so its own local Esc
         // monitor can't be relied on — dismiss it here via the GLOBAL Esc path too.
         TodoGlanceController.shared.hide()
+        // A note recording lives in NotesView's own recorder; ask it to discard (the pill is then
+        // torn down by the isRecording→false observer).
+        if NotesController.shared.isRecording {
+            NotesController.shared.cancelRecord &+= 1
+            noteLevelTimer?.invalidate(); noteLevelTimer = nil
+        }
         processingTask?.cancel(); processingTask = nil
         todoCaptureTask?.cancel(); todoCaptureTask = nil
         if todoCaptureRecording { todoCaptureRecording = false }
         TodoCaptureController.shared.capturing = false
         levelTimer?.invalidate(); levelTimer = nil
         fnHoldTimer?.invalidate(); fnHoldTimer = nil
+        fnToggleStopArmed = false; fnToggleSwitched = false; lastFnDown = nil; fnPressAt = nil
         stopQuips()
         _ = recorder.stop()
         forcedProfile = nil
@@ -626,9 +697,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // it via the shared controller — and must NOT also start a stray dictation here.
         if NotesController.shared.isRecording { NotesController.shared.stopRecord &+= 1; return }
 
-        if state == .recording {            // a tap while recording → stop & send
-            lastFnDown = nil; fnPressAt = nil
-            stopAndProcess()
+        if state == .recording {
+            fnPressAt = nil
+            // Hold-to-talk: a tap while recording sends immediately (legacy behaviour).
+            // Tap-to-toggle: DON'T decide yet — a quick tap (< fnSwitchThreshold) stops & sends,
+            // but a longer hold cycles to the next mode and KEEPS recording (hands-free). The
+            // release (fnUp) makes the call from the down→up duration; an in-flight timer fires the
+            // mode switch the moment the threshold passes so the user gets immediate feedback.
+            if Settings.shared.triggerStyle == .toggle {
+                lastFnDown = Date()
+                fnToggleStopArmed = true
+                fnToggleSwitched = false
+                fnHoldTimer?.invalidate()
+                let t = Timer(timeInterval: fnSwitchThreshold, repeats: false) { [weak self] _ in
+                    guard let self, self.state == .recording, self.fnToggleStopArmed else { return }
+                    self.fnToggleSwitched = true   // held long enough → switch mode, keep listening
+                    self.cycleMode(1)
+                }
+                RunLoop.main.add(t, forMode: .common)
+                fnHoldTimer = t
+            } else {
+                lastFnDown = nil
+                stopAndProcess()
+            }
             return
         }
         if overlay.model.menu { dismissMenu(); lastFnDown = nil; return }
@@ -657,8 +748,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         TodoGlanceController.shared.toggle()
     }
 
+    /// A Fn+<key> chord fired during this Fn hold → this press is a chord, not a bare tap. Cancel
+    /// any armed tap-toggle stop/switch so releasing Fn doesn't ALSO stop the recording or cycle
+    /// the mode a second time. Safe to call from every Fn-chord handler.
+    private func cancelToggleHold() {
+        guard fnToggleStopArmed else { return }
+        fnHoldTimer?.invalidate(); fnHoldTimer = nil
+        fnToggleStopArmed = false
+        fnToggleSwitched = false
+        lastFnDown = nil
+    }
+
     /// Fn + Tab (next) / Fn + ⇧ + Tab (previous) → cycle the active mode, live while recording.
     private func modeCycleGesture(_ dir: Int) {
+        cancelToggleHold()
         if state == .processing { return }
         InputCoach.shared.note(.doubleFn)   // mark the mode-switch gesture as learned
         cycleMode(dir)
@@ -727,11 +830,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func fnUp() {
-        guard Settings.shared.useFnAsPrimary, state == .recording, let pressed = fnPressAt else { return }
+        guard Settings.shared.useFnAsPrimary else { return }
+        // Tap-to-toggle, mid-recording Fn press released: a quick tap stops & sends, a longer hold
+        // already switched the mode (via the fnHoldTimer) and keeps listening. Decide from the
+        // down→up duration; cancel the pending switch timer either way.
+        if fnToggleStopArmed {
+            fnHoldTimer?.invalidate(); fnHoldTimer = nil
+            fnToggleStopArmed = false
+            let held = lastFnDown.map { Date().timeIntervalSince($0) } ?? 0
+            lastFnDown = nil
+            // The timer already cycled the mode → keep recording, do nothing on release.
+            if fnToggleSwitched { fnToggleSwitched = false; return }
+            // Quick tap (released before the threshold) → stop & send.
+            if held < fnSwitchThreshold, state == .recording {
+                InputCoach.shared.note(.holdFn)
+                stopAndProcess()
+            }
+            return
+        }
+        guard state == .recording, let pressed = fnPressAt else { return }
         fnPressAt = nil
-        // Held long enough to be a deliberate push-to-talk → release sends.
-        // A quick tap leaves it latched (stop on the next tap).
-        if Date().timeIntervalSince(pressed) >= fnHoldThreshold {
+        // Hold-to-talk: ANY release sends immediately (push-to-talk).
+        // Tap-to-toggle: release never sends; the next Fn tap sends (handled in fnDown). For an
+        // accidental long hold in toggle mode we still send on a clearly deliberate hold so the
+        // recording isn't orphaned, matching the prior auto-detect behaviour.
+        let send = Settings.shared.triggerStyle == .hold
+            || Date().timeIntervalSince(pressed) >= fnHoldThreshold
+        if send {
             InputCoach.shared.note(.holdFn)
             lastFnDown = nil
             stopAndProcess()
@@ -740,6 +865,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func fnDigit(_ n: Int) -> Bool {
         guard Settings.shared.useFnAsPrimary else { return false }
+        cancelToggleHold()   // Fn+number is a chord, not a bare tap → don't let the release stop/switch
         let profiles = Settings.shared.profiles
         guard n >= 1, n <= profiles.count else { return false }
         let p = profiles[n - 1]
@@ -780,6 +906,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
     private func togglePause() {
+        // A note recording owns its own recorder in NotesView; route the toggle there.
+        if state == .idle, NotesController.shared.isRecording {
+            NotesController.shared.pauseToggleSignal &+= 1
+            return
+        }
         guard state == .recording else { return }
         if recorder.isPaused {
             if recorder.resume() { overlay.model.paused = false; SoundFX.resume() }   // only un-pause the UI if audio actually resumed
@@ -825,6 +956,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func cancelRecording() {
         levelTimer?.invalidate(); levelTimer = nil
+        fnHoldTimer?.invalidate(); fnHoldTimer = nil
+        fnToggleStopArmed = false; fnToggleSwitched = false; lastFnDown = nil
         _ = recorder.stop()
         todoCaptureRecording = false   // tearing down the shared recorder voids any to-do capture too
         forcedProfile = nil
@@ -1018,13 +1151,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.flashDone()
         }
 
-        // #4: an agentic action always asks for explicit confirmation before doing anything.
-        if let action = result.action {
-            overlay.hide()
-            state = .idle
-            showActionConfirm(action)
-            return
-        }
         if Settings.shared.reviewBeforeSend {
             overlay.hide()
             state = .idle
@@ -1032,28 +1158,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             deliver(result.reprompted)
         }
-    }
-
-    /// #4: confirmation window for an agentic action; executes natively only on confirm.
-    private func showActionConfirm(_ action: ActionPayload) {
-        let close: () -> Void = { [weak self] in self?.actionWindow?.close(); self?.actionWindow = nil }
-        let view = ActionConfirmView(action: action,
-            onConfirm: { [weak self] in
-                Task {
-                    let r = await ActionExecutor.execute(action)
-                    await MainActor.run {
-                        close()
-                        switch r {
-                        case .success(let msg): SoundFX.done(); self?.notify("Done", msg)
-                        case .failure(let err): SoundFX.error(); self?.notify("Couldn't complete", err.errorDescription ?? "Action failed.")
-                        }
-                    }
-                }
-            },
-            onCancel: { close() })
-        let wc = makeWindow(title: "Confirm action", view: view, size: NSSize(width: 460, height: 360), glass: true, resizable: false)
-        actionWindow = wc.window
-        present(wc)
     }
 
     /// A brief, soft "✓ Done" flash in the overlay instead of an abrupt disappearance.
@@ -1303,7 +1407,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             : (s.primaryHasShortcut ? shortcutLabel(keyCode: s.primaryKeyCode, modifiers: s.primaryMods) : "⌃⌥ + number")
 
         header("Dictation")
-        ref(primary, "Start / stop dictation")
+        if s.useFnAsPrimary {
+            ref(primary, s.triggerStyle == .hold
+                ? "Hold to talk, release to send"
+                : "Tap to start, tap again to send")
+        } else {
+            ref(primary, "Start / stop dictation")
+        }
         ref("Esc", "Cancel recording or processing")
         ref("Control", "Pause / resume while recording")
 

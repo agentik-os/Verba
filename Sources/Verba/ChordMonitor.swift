@@ -55,14 +55,16 @@ final class ChordMonitor {
             DispatchQueue.main.async { self.onChordUp?() }
         }
 
-        // Plain Control (no Option) → pause/resume. We DON'T track a held/released latch:
-        // global NSEvent monitors are best-effort and can drop the Control RELEASE event,
-        // which used to leave the latch stuck "held" so the next press never fired resume.
-        // Instead, fire on every Control-present edge with a short time debounce — a single
-        // physical tap is one down event (the matching up event has Control absent, ignored),
-        // and a missed release can no longer block the next press.
+        // Plain Control (no Option) → pause/resume. When the Fn event tap is live it owns this
+        // gesture (it sees every flagsChanged at HID head-insert, where the NSEvent global monitor
+        // here drops modifier events unpredictably across launches) — so skip to avoid a double
+        // trigger. This path remains the fallback when Fn is NOT the primary trigger (tap off).
+        // We DON'T track a held/released latch: global NSEvent monitors can drop the Control
+        // RELEASE, which used to leave a latch stuck "held". Fire on every Control-present edge
+        // with a short time debounce — one physical tap is one down event (the up event has
+        // Control absent, ignored), and a missed release can no longer block the next press.
         let ctrlDown = f.contains(.control) && !f.contains(.option)
-        if ctrlDown {
+        if ctrlDown, !FnTap.shared.active {
             let now = ProcessInfo.processInfo.systemUptime
             if now - lastControlFire > 0.3 {
                 lastControlFire = now

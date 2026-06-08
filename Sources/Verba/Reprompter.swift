@@ -114,14 +114,6 @@ struct Reprompter {
         let userText = "Here is what I said. Use the screenshot to do it:\n\n<request>\n\(transcript)\n</request>"
         let b64 = imagePNG.base64EncodedString()
 
-        // #4: when agentic actions are on, give the model today's date + timezone so it can
-        // resolve "3pm", "tomorrow" into correct ISO8601 with offset inside the action JSON.
-        var systemPrompt = systemPrompt
-        if Settings.shared.agenticActionsEnabled {
-            let now = ISO8601DateFormatter().string(from: Date())
-            systemPrompt = "Today is \(now) and the user's timezone is \(TimeZone.current.identifier). Resolve relative times against this and output ISO8601 with the correct UTC offset.\n\n" + systemPrompt
-        }
-
         // Prefer the configured backend if it can do vision; else fall back to any key we have.
         let backend = Settings.shared.repromptBackend.resolved
         // The Verba hosted backend handles vision (no key). Claude Code's CLI can't take

@@ -186,10 +186,13 @@ final class DictionaryStore: ObservableObject {
     func hint() -> String { terms.map(\.written).filter { !$0.isEmpty }.joined(separator: ", ") }
 
     /// Replace spoken forms with the intended written form (case-insensitive).
+    /// Whitespace-only spoken forms (a freshly seeded correction row) never replace anything.
     func apply(to text: String) -> String {
         var out = text
-        for t in terms where !t.spoken.isEmpty && !t.written.isEmpty {
-            out = out.replacingOccurrences(of: t.spoken, with: t.written, options: [.caseInsensitive])
+        for t in terms {
+            let spoken = t.spoken.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !spoken.isEmpty, !t.written.isEmpty else { continue }
+            out = out.replacingOccurrences(of: spoken, with: t.written, options: [.caseInsensitive])
         }
         return out
     }

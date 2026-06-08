@@ -162,14 +162,54 @@ struct OverlayView: View {
                     .font(.system(size: size, weight: .medium))
                     .fixedSize(horizontal: true, vertical: false)
                 if parts.count > 1, !parts[1].isEmpty {
-                    Text(parts[1])
-                        .font(.system(size: size - 1, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 8).padding(.vertical, 2)
-                        .background(Capsule().fill(Color.black))
-                        .fixedSize(horizontal: true, vertical: false)
+                    modeTag(parts[1], size: size)
                 }
             }
+        }
+    }
+
+    /// The black mode pill on the right of "Listening". While recording with reprompt modes
+    /// available it's a CLICKABLE menu: picking a mode switches THIS dictation's mode live
+    /// (via onSelect, which retargets the forced profile) and keeps listening — no stop. A small
+    /// chevron hints it's interactive. Falls back to a plain tag when there's nothing to switch.
+    @ViewBuilder private func modeTag(_ name: String, size: CGFloat) -> some View {
+        let switchable = model.recording && !model.paused && model.profiles.count > 1
+        if switchable {
+            Menu {
+                ForEach(model.profiles) { p in
+                    Button {
+                        model.selectedID = p.id
+                        model.onSelect?(p)
+                    } label: {
+                        if p.id == model.selectedID {
+                            Label(p.name, systemImage: "checkmark")
+                        } else {
+                            Text(p.name)
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(name).font(.system(size: size - 1, weight: .semibold))
+                    Image(systemName: "chevron.down").font(.system(size: size - 4, weight: .bold))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 8).padding(.vertical, 2)
+                .background(Capsule().fill(Color.black))
+                .fixedSize(horizontal: true, vertical: false)
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("Switch mode — keeps recording")
+        } else {
+            Text(name)
+                .font(.system(size: size - 1, weight: .semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 8).padding(.vertical, 2)
+                .background(Capsule().fill(Color.black))
+                .fixedSize(horizontal: true, vertical: false)
         }
     }
 
