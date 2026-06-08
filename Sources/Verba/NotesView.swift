@@ -25,6 +25,7 @@ struct NotesView: View {
     @State private var tagInput = ""
     @State private var busy = false
     @State private var status = ""
+    @State private var recordError = ""     // legible, persistent "couldn't record" banner (cleared on success / dismiss)
     @State private var work: Task<Void, Never>?
     @State private var filterTag: String?
     @State private var appendMode = false   // next recording is appended to the current note
@@ -46,8 +47,13 @@ struct NotesView: View {
         .onChange(of: editorText) { _, _ in scheduleAutosave() }
         .onChange(of: noteTags) { _, _ in scheduleAutosave() }
         .onChange(of: notesCtl.pendingRecord) { _, v in if v { consumePending() } }
+        // Mirror the recording state into the shared controller so a global bare-Fn tap knows a
+        // note is recording (and must stop it rather than start a stray dictation).
+        .onChange(of: isRecording) { _, v in notesCtl.isRecording = v }
+        // A global bare-Fn tap (AppDelegate) bumps stopRecord to finish the in-progress note.
+        .onChange(of: notesCtl.stopRecord) { _, _ in if isRecording { toggleRecord() } }
         .onAppear { consumePending() }
-        .onDisappear { autosaveTask?.cancel(); autosaveCommit(); work?.cancel(); if isRecording { _ = recorder.stop() } }
+        .onDisappear { notesCtl.isRecording = false; autosaveTask?.cancel(); autosaveCommit(); work?.cancel(); if isRecording { _ = recorder.stop(); recorder.releaseArmed() } }
     }
 
     // MARK: - Left: scrollable list of all notes
@@ -158,8 +164,24 @@ struct NotesView: View {
         }
     }
 
+    /// Small "Note" context badge, shown while a note is recording so the user always knows this
+    /// capture is a Note (mirrors the overlay pill's context badge used for dictation / to-do).
+    @ViewBuilder private var noteContextBadge: some View {
+        if isRecording {
+            HStack(spacing: 5) {
+                Image(systemName: CaptureContext.note.symbol).font(.system(size: 9, weight: .semibold))
+                Text(CaptureContext.note.label).font(.system(size: 10, weight: .semibold))
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 9).padding(.vertical, 4)
+            .background(Capsule().fill(Color.primary.opacity(0.08)))
+            .transition(.opacity)
+        }
+    }
+
     private var recorderCard: some View {
         VStack(spacing: 22) {
+            noteContextBadge
             RecordButton(isRecording: isRecording, disabled: busy, action: toggleRecord)
             VStack(spacing: 4) {
                 if isRecording {
@@ -170,10 +192,36 @@ struct NotesView: View {
                     Text("Pick a format below").font(.caption).foregroundStyle(.secondary)
                 }
             }
+            if !recordError.isEmpty { recordErrorBanner }
             formatChips
         }
         .frame(maxWidth: .infinity).padding(.vertical, 32).padding(.horizontal, 24)
         .background(card(22))
+    }
+
+    /// A legible, persistent error when a note recording can't start (the old gray sub-flash was
+    /// unreadable). Red, large enough to read, with a Retry and a Dismiss; it does NOT auto-loop.
+    private var recordErrorBanner: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 14, weight: .semibold))
+                Text(recordError).font(.callout.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
+            }
+            .foregroundStyle(Color.red)
+            HStack(spacing: 10) {
+                Button("Retry") { recordError = ""; toggleRecord() }.buttonStyle(.borderedProminent).tint(.red)
+                Button("Dismiss") { recordError = "" }.buttonStyle(.bordered)
+            }
+            .controlSize(.small)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14).padding(.horizontal, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.red.opacity(0.10))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.red.opacity(0.35), lineWidth: 1))
+        )
+        .transition(.opacity)
     }
 
     private var formatChips: some View {
@@ -223,6 +271,7 @@ struct NotesView: View {
             }
             formatToolbar
             if busy { processingRow }
+            if !recordError.isEmpty { recordErrorBanner }
             if isRecording {
                 HStack(spacing: 8) {
                     Circle().fill(.red).frame(width: 8, height: 8)
@@ -334,7 +383,7 @@ struct NotesView: View {
     // MARK: selection / lifecycle
     private func newNote() {
         work?.cancel(); busy = false; status = ""
-        if isRecording { _ = recorder.stop(); isRecording = false }
+        if isRecording { _ = recorder.stop(); recorder.releaseArmed(); isRecording = false }
         selectedID = nil
         transcript = ""; editorText = ""; noteTags = []; tagInput = ""
         recordingURL = nil; appendMode = false
@@ -343,7 +392,7 @@ struct NotesView: View {
     private func loadSelection(_ id: UUID?) {
         guard let id, let e = store.entries.first(where: { $0.id == id }) else { return }
         work?.cancel(); busy = false; status = ""
-        if isRecording { _ = recorder.stop(); isRecording = false }
+        if isRecording { _ = recorder.stop(); recorder.releaseArmed(); isRecording = false }
         transcript = e.original
         editorText = e.formatted
         noteTags = e.tags
@@ -362,7 +411,10 @@ struct NotesView: View {
         guard notesCtl.pendingRecord else { return }
         notesCtl.pendingRecord = false
         newNote()
-        if !isRecording { toggleRecord() }   // start a fresh note recording right away
+        // Start on the next runloop turn: Fn+Z's AppDelegate path released the shared (pre-armed)
+        // recorder's mic synchronously a beat earlier; deferring lets the audio input actually free
+        // before this window's recorder grabs it, so the first start() succeeds cleanly.
+        DispatchQueue.main.async { if !isRecording { toggleRecord() } }
     }
 
     // MARK: auto-save
@@ -403,15 +455,38 @@ struct NotesView: View {
         if isRecording {
             isRecording = false
             recordingURL = recorder.stop()
+            // stop() re-arms this Notes recorder (prewarm), which keeps the prepared input
+            // holding the mic. Nothing else releases it, so a following Fn dictation / to-do
+            // capture would cold-start against a still-held mic and fail ("Couldn't start
+            // recording") with no retry. Free it now — symmetric to AppDelegate's releaseArmed().
+            recorder.releaseArmed()
             if let url = recordingURL { transcribe(url) }
+            else { recordError = "Couldn't capture audio — try recording again."; appendMode = false }
         } else {
             recorder.requestPermission { ok in
-                guard ok else { status = "Microphone access denied"; return }
-                guard recorder.start() else { status = "Couldn't start recording"; return }
-                if !appendMode { transcript = ""; editorText = ""; noteTags = [] }   // append keeps the current note
-                status = ""; recordStart = Date(); elapsed = 0; isRecording = true
+                guard ok else { recordError = "Microphone access denied. Allow Verba under System Settings ▸ Privacy & Security ▸ Microphone."; return }
+                // Single deferred retry (NOT a loop): if the shared dictation recorder only just
+                // released the mic, the input can take a beat to free. Try once now; if it fails,
+                // retry once after a short delay before surfacing a readable error.
+                if recorder.start() {
+                    beginNoteRecording()
+                } else {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        if recorder.start() {
+                            beginNoteRecording()
+                        } else {
+                            recordError = "Couldn't start recording. The microphone may be in use — wait a moment, then tap Retry."
+                        }
+                    }
+                }
             }
         }
+    }
+
+    /// Latch the UI into the recording state after the recorder successfully started.
+    private func beginNoteRecording() {
+        if !appendMode { transcript = ""; editorText = ""; noteTags = [] }   // append keeps the current note
+        status = ""; recordError = ""; recordStart = Date(); elapsed = 0; isRecording = true
     }
 
     private func transcribe(_ url: URL) {
@@ -430,6 +505,15 @@ struct NotesView: View {
                 text = DictionaryStore.shared.apply(to: text)
                 if s.voiceCommands { text = VoiceCommands.apply(text) }
                 if Task.isCancelled { return }
+                // Empty/garbled audio → a readable banner, not a stuck "Transcribing…" spinner
+                // (applyFormat() bails on empty transcript without ever clearing busy).
+                guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    await MainActor.run {
+                        busy = false; status = ""; appendMode = false
+                        recordError = "Didn't catch anything — try recording again."
+                    }
+                    return
+                }
                 await MainActor.run {
                     if appendMode { transcript = (transcript + "\n\n" + text).trimmingCharacters(in: .whitespacesAndNewlines); appendMode = false }
                     else { transcript = text }

@@ -37,8 +37,8 @@ struct WishlistView: View {
             if model.loading {
                 ProgressView().frame(maxWidth: .infinity).padding(.top, 30)
             } else if model.items.isEmpty {
-                Text("No suggestions yet. Be the first.").font(.callout).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity).padding(.top, 30)
+                EmptyState(icon: "lightbulb", title: "No suggestions yet",
+                           message: "Tell us what Verba should do next. Post a feature idea, others can upvote it, and the most-wanted ones get built. Be the first to suggest one above.")
             }
 
             ScrollView {

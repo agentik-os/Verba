@@ -15,6 +15,27 @@ cp ".build/release/Verba" "$APP/Contents/MacOS/Verba"
 [ -f AppIcon.icns ] && cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 [ -f ACKNOWLEDGEMENTS.txt ] && cp ACKNOWLEDGEMENTS.txt "$APP/Contents/Resources/ACKNOWLEDGEMENTS.txt"
 
+# Bundle custom UI sounds (Sounds/<cue>.mp3 → Resources/Sounds). Optional; falls back to
+# macOS system sounds for any cue without a file. Cues: start stop done pause resume cancel mode error.
+if [ -d Sounds ] && ls Sounds/*.mp3 >/dev/null 2>&1; then
+  mkdir -p "$APP/Contents/Resources/Sounds"
+  cp Sounds/*.mp3 "$APP/Contents/Resources/Sounds/"
+  echo "▸ Bundled custom sounds ($(ls Sounds/*.mp3 | wc -l | tr -d ' ') file(s))"
+fi
+
+# Bundle the default on-device model (Parakeet TDT v3) so the app transcribes offline
+# instantly on first launch, with no download and no API key. Seeded into the FluidAudio
+# cache at first run (see EngineManager.seedBundledModels). Requires the model present in
+# the local cache at build time (run the app once to fetch it, or it's skipped).
+PARAKEET_SRC="${PARAKEET_SRC:-$HOME/Library/Application Support/FluidAudio/Models/parakeet-tdt-0.6b-v3}"
+if [ -d "$PARAKEET_SRC" ]; then
+  mkdir -p "$APP/Contents/Resources/Models"
+  ditto "$PARAKEET_SRC" "$APP/Contents/Resources/Models/parakeet-tdt-0.6b-v3"
+  echo "▸ Bundled Parakeet model ($(du -sh "$PARAKEET_SRC" | cut -f1))"
+else
+  echo "⚠︎ Parakeet model not found locally ($PARAKEET_SRC); DMG will fall back to first-run download."
+fi
+
 # Embed Sparkle (silent auto-update). The binary loads @rpath/Sparkle.framework.
 ditto ".build/release/Sparkle.framework" "$APP/Contents/Frameworks/Sparkle.framework"
 install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP/Contents/MacOS/Verba" 2>/dev/null || true
@@ -35,6 +56,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>LSMinimumSystemVersion</key>  <string>14.0</string>
     <key>LSUIElement</key>             <true/>
     <key>NSMicrophoneUsageDescription</key><string>Verba records your voice to transcribe it into text.</string>
+    <key>NSCalendarsFullAccessUsageDescription</key><string>Verba creates calendar events from your spoken requests in Context mode.</string>
+    <key>NSRemindersFullAccessUsageDescription</key><string>Verba creates reminders from your spoken requests in Context mode.</string>
     <key>NSHighResolutionCapable</key> <true/>
     <key>SUFeedURL</key>               <string>https://github.com/agentik-os/Verba-releases/releases/latest/download/appcast.xml</string>
     <key>SUPublicEDKey</key>           <string>tUNn6q4RYRTmz5eB73hBC7Gh/RQfeCk8LHbGoczQGhs=</string>

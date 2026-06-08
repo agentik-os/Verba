@@ -21,9 +21,8 @@ final class ChordMonitor {
     private var localKeys: Any?
     private var chordHeld = false
     private var fnHeld = false
-    private var controlHeld = false
+    private var lastControlFire: TimeInterval = 0   // debounce for the Control pause/resume tap
     private static let fnKeyCode: UInt16 = 63   // the globe / Fn key
-    private static let controlKeyCodes: Set<UInt16> = [59, 62]   // left / right Control
 
     func start() {
         stop()
@@ -56,14 +55,18 @@ final class ChordMonitor {
             DispatchQueue.main.async { self.onChordUp?() }
         }
 
-        // Plain Control tap (not the ⌃⌥ chord) → pause/resume the recording.
-        if Self.controlKeyCodes.contains(e.keyCode) {
-            let down = f.contains(.control) && !f.contains(.option)
-            if down && !controlHeld {
-                controlHeld = true
+        // Plain Control (no Option) → pause/resume. We DON'T track a held/released latch:
+        // global NSEvent monitors are best-effort and can drop the Control RELEASE event,
+        // which used to leave the latch stuck "held" so the next press never fired resume.
+        // Instead, fire on every Control-present edge with a short time debounce — a single
+        // physical tap is one down event (the matching up event has Control absent, ignored),
+        // and a missed release can no longer block the next press.
+        let ctrlDown = f.contains(.control) && !f.contains(.option)
+        if ctrlDown {
+            let now = ProcessInfo.processInfo.systemUptime
+            if now - lastControlFire > 0.3 {
+                lastControlFire = now
                 DispatchQueue.main.async { self.onControl?() }
-            } else if !f.contains(.control) && controlHeld {
-                controlHeld = false
             }
         }
 

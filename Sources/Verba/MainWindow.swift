@@ -1,11 +1,11 @@
 import SwiftUI
 
 enum NavItem: String, CaseIterable, Identifiable {
-    case home, insights, modes, dictionary, snippets, style, transforms, scratchpad, files, history, leaderboard, wishlist, freeMonth, settings
+    case home, notes, todos, insights, modes, dictionary, snippets, style, transforms, scratchpad, files, history, leaderboard, wishlist, freeMonth, settings
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .home: return "Home"; case .insights: return "Insights"; case .modes: return "Modes"
+        case .home: return "Home"; case .notes: return "Notes"; case .todos: return "To-dos"; case .insights: return "Insights"; case .modes: return "Modes"
         case .dictionary: return "Dictionary"; case .snippets: return "Snippets"; case .style: return "Style"
         case .transforms: return "Transforms"; case .scratchpad: return "Scratchpad"; case .files: return "Transcribe file"
         case .history: return "History"; case .leaderboard: return "Leaderboard"
@@ -14,7 +14,7 @@ enum NavItem: String, CaseIterable, Identifiable {
     }
     var icon: String {
         switch self {
-        case .home: return "house"; case .insights: return "chart.bar"; case .modes: return "wand.and.stars"
+        case .home: return "house"; case .notes: return "doc.badge.ellipsis"; case .todos: return "checklist"; case .insights: return "chart.bar"; case .modes: return "wand.and.stars"
         case .dictionary: return "character.book.closed"; case .snippets: return "text.badge.plus"
         case .style: return "paintbrush"; case .transforms: return "arrow.triangle.2.circlepath"
         case .scratchpad: return "note.text"; case .files: return "waveform.badge.plus"
@@ -42,9 +42,16 @@ struct VerbaMark: View {
 /// top. No collapse control. Solid white backgrounds.
 struct MainWindow: View {
     @ObservedObject var settings = Settings.shared
+    @ObservedObject private var notesCtl = NotesController.shared
     @State private var selection: NavItem? = .home
+    @State private var qwenInstalling = false
+    @State private var qwenProgress: Double = 0
+    @State private var qwenStatus = ""
 
     private let sidebarWidth: CGFloat = 240
+    @AppStorage("libraryCollapsed") private var libraryCollapsed = false
+    @AppStorage("communityCollapsed") private var communityCollapsed = false
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         HStack(spacing: 0) {
@@ -61,6 +68,21 @@ struct MainWindow: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
         .tint(.primary)   // full B&W: selection / accents are black, not blue
+        .onChange(of: notesCtl.navSignal) { _, _ in selection = .notes }   // Fn+Z → jump to Notes
+        .onChange(of: settings.hiddenNav) { _, _ in
+            // If the section you're on just got hidden, fall back to Home.
+            if let sel = selection, sel != .home, sel != .modes, sel != .settings, !settings.navVisible(sel) {
+                selection = .home
+            }
+        }
+        // Notes / To-dos are gated by their own flags (not hiddenNav); fall back to
+        // Home if the user disables the tab they're currently viewing.
+        .onChange(of: settings.notesTabEnabled) { _, on in
+            if !on, selection == .notes { selection = .home }
+        }
+        .onChange(of: settings.todosTabEnabled) { _, on in
+            if !on, selection == .todos { selection = .home }
+        }
     }
 
     // MARK: Sidebar (flush, full height; traffic lights overlap its top)
@@ -71,21 +93,140 @@ struct MainWindow: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 2) {
-                    row(.home); row(.insights); row(.history)
-                    Text("Library")
-                        .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 4)
-                    row(.modes); row(.dictionary); row(.snippets); row(.style); row(.transforms); row(.scratchpad); row(.files); row(.leaderboard); row(.wishlist); row(.freeMonth)
+                    row(.home)
+                    if settings.notesTabEnabled { row(.notes) }
+                    if settings.todosTabEnabled { row(.todos) }
+                    if settings.navVisible(.insights) { row(.insights) }
+                    if settings.navVisible(.history) { row(.history) }
+                    groupHeader("Library", collapsed: libraryCollapsed) {
+                        withAnimation(.easeInOut(duration: 0.18)) { libraryCollapsed.toggle() }
+                    }
+                    if !libraryCollapsed {
+                        row(.modes)
+                        if settings.navVisible(.dictionary) { row(.dictionary) }
+                        if settings.navVisible(.snippets) { row(.snippets) }
+                        if settings.navVisible(.style) { row(.style) }
+                        if settings.navVisible(.transforms) { row(.transforms) }
+                        if settings.navVisible(.scratchpad) { row(.scratchpad) }
+                        if settings.navVisible(.files) { row(.files) }
+                    }
+
+                    // Collapsible "Community" group (leaderboard / wishlist / free month + Telegram).
+                    groupHeader("Community", collapsed: communityCollapsed) {
+                        withAnimation(.easeInOut(duration: 0.18)) { communityCollapsed.toggle() }
+                    }
+                    if !communityCollapsed {
+                        if settings.navVisible(.leaderboard) { row(.leaderboard) }
+                        if settings.navVisible(.wishlist) { row(.wishlist) }
+                        if settings.navVisible(.freeMonth) { row(.freeMonth) }
+                        telegramRow
+                    }
                 }
                 .padding(.horizontal, 8).padding(.top, 4)
             }
             .scrollContentBackground(.hidden)
 
+            qwenDownloadRow
             sidebarFooter
         }
     }
 
+    /// Shown only when no AI rewriting backend works (no Claude Code, not signed in for the
+    /// Verba proxy, no API key): offer a one-tap download of a free local model (Qwen via Ollama).
+    private var needsLocalFallback: Bool {
+        guard settings.repromptEnabled else { return false }
+        if settings.repromptBackend == .localLLM { return false }
+        if ClaudeCode.isAvailable { return false }                  // Claude Code works
+        if !settings.proEmail.isEmpty { return false }              // Verba hosted works (signed in)
+        if !(Keychain.anthropicKey ?? "").isEmpty { return false }  // API key works
+        if !(Keychain.openRouterKey ?? "").isEmpty { return false } // OpenRouter works
+        return true
+    }
+
+    @ViewBuilder private var qwenDownloadRow: some View {
+        if needsLocalFallback {
+            VStack(alignment: .leading, spacing: 6) {
+                if qwenInstalling {
+                    Text(qwenStatus.isEmpty ? "Downloading…" : qwenStatus)
+                        .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                    ProgressView(value: qwenProgress).controlSize(.small)
+                } else {
+                    Button(action: startQwenDownload) {
+                        HStack(spacing: 9) {
+                            Image(systemName: "arrow.down.circle.fill").font(.system(size: 18))
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("Set up AI rewriting").font(.caption.weight(.semibold))
+                                Text("Download a free local model").font(.caption2).foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(10)
+            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.accentColor.opacity(0.12)))
+            .padding(.horizontal, 8).padding(.bottom, 6)
+        }
+    }
+
+    private func startQwenDownload() {
+        qwenInstalling = true; qwenProgress = 0; qwenStatus = "Starting local engine…"
+        LocalLLM.ensureServer { up in
+            if up { pullQwen() }
+            else {
+                qwenStatus = "Installing engine…"
+                LocalLLM.installBinary { ok in
+                    if ok { pullQwen() } else { qwenInstalling = false; qwenStatus = "Install failed" }
+                }
+            }
+        }
+    }
+
+    private func pullQwen() {
+        qwenStatus = "Downloading \(settings.localLLMModel)…"
+        LocalLLM.pull(settings.localLLMModel, progress: { qwenProgress = $0 }) { ok in
+            qwenInstalling = false
+            if ok { settings.repromptBackend = .localLLM; qwenStatus = "" }
+            else { qwenStatus = "Download failed, try Settings" }
+        }
+    }
+
     /// A nav row. Selected = solid black pill with white text so it clearly stands out.
+    /// A collapsible group header ("Library", "Community") with a rotating chevron.
+    private func groupHeader(_ title: String, collapsed: Bool, toggle: @escaping () -> Void) -> some View {
+        Button(action: toggle) {
+            HStack(spacing: 4) {
+                Text(title).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 8, weight: .bold)).foregroundStyle(.tertiary)
+                    .rotationEffect(.degrees(collapsed ? 0 : 90))
+                Spacer(minLength: 0)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 4)
+    }
+
+    /// Telegram community link, styled like a sidebar row.
+    private var telegramRow: some View {
+        Button { if let u = URL(string: "https://t.me/verba_run") { openURL(u) } } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "paperplane.fill").frame(width: 18)
+                Text("Telegram")
+                Spacer(minLength: 0)
+                Image(systemName: "arrow.up.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
+            }
+            .font(.system(size: 13))
+            .foregroundStyle(Color.primary)
+            .padding(.horizontal, 11).padding(.vertical, 9)
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .help("Join the Verba community on Telegram (@verba_run)")
+    }
+
     private func row(_ item: NavItem) -> some View {
         let isSel = selection == item
         return Button { selection = item } label: {
@@ -108,25 +249,33 @@ struct MainWindow: View {
     }
 
     private var sidebarFooter: some View {
-        Button { selection = .settings } label: {
-            HStack(spacing: 9) {
-                VerbaMark(size: 26)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(settings.username.isEmpty ? "Not signed in" : settings.username)
-                        .font(.caption.weight(.medium)).lineLimit(1).truncationMode(.middle)
-                    Text(settings.isPro ? "Pro plan" : "Free trial")
-                        .font(.caption2)
-                        .foregroundStyle(settings.isPro ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
+        HStack(spacing: 8) {
+            Button { selection = .settings } label: {
+                HStack(spacing: 9) {
+                    VerbaMark(size: 26)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(settings.username.isEmpty ? "Not signed in" : settings.username)
+                            .font(.caption.weight(.medium)).lineLimit(1).truncationMode(.middle)
+                        Text(settings.isPro ? "Pro plan" : "Free trial")
+                            .font(.caption2)
+                            .foregroundStyle(settings.isPro ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
+                    }
+                    Spacer(minLength: 4)
                 }
-                Spacer(minLength: 4)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            // Mic-source picker, just left of the settings gear.
+            FooterMicButton()
+            Button { selection = .settings } label: {
                 Image(systemName: "gearshape").foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 10).padding(.vertical, 8)
-            .frame(maxWidth: .infinity)
-            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(.quaternary.opacity(0.4)))
-            .contentShape(RoundedRectangle(cornerRadius: 10))
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(.quaternary.opacity(0.4)))
         .padding(.horizontal, 10).padding(.vertical, 10)
         .onAppear { if !settings.proEmail.isEmpty { Task { _ = await settings.verifyPro() } } }
     }
@@ -135,6 +284,8 @@ struct MainWindow: View {
     private func detail(_ item: NavItem) -> some View {
         switch item {
         case .home: HomeView()
+        case .notes: NotesView()
+        case .todos: TodosView()
         case .insights: InsightsView()
         case .modes:
             VStack(alignment: .leading, spacing: 0) {

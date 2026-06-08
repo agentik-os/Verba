@@ -76,6 +76,35 @@ extension View {
     }
 }
 
+/// A copy-to-clipboard button with clear tactile feedback: the icon flips to a green
+/// checkmark and pops briefly so you SEE the click registered.
+struct CopyButton: View {
+    let text: String
+    var title: String? = nil    // nil = icon-only; set for a labeled button
+    @State private var copied = false
+
+    var body: some View {
+        Button {
+            Output.copyToClipboard(text)
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.55)) { copied = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
+                withAnimation(.easeOut(duration: 0.2)) { copied = false }
+            }
+        } label: {
+            if let title {
+                Label(copied ? "Copied" : title, systemImage: copied ? "checkmark" : "doc.on.doc")
+                    .foregroundStyle(.primary)   // stay black, no color
+            } else {
+                Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                    .foregroundStyle(copied ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+                    .scaleEffect(copied ? 1.25 : 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .help("Copy")
+    }
+}
+
 /// Solid black button with white text, matches Verba's minimalist B&W design.
 struct DarkButton: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {

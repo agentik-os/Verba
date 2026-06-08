@@ -43,6 +43,61 @@ enum EngineManager {
     /// Last install/load failure, surfaced in Settings so the user sees the real cause.
     static var lastInstallError: String?
 
+    /// What's currently loaded into memory (warm + ready to transcribe). Set after a
+    /// successful load; used to show a truthful "Active & ready" state in Settings.
+    static var loaded: (engine: TranscriptionEngine, model: String)?
+
+    /// True if `engine` (with `model` for Whisper) is actually loaded and ready right now.
+    static func isReady(_ engine: TranscriptionEngine, model: String) -> Bool {
+        if engine == .openAI { return !(Keychain.openAIKey ?? "").isEmpty }
+        guard let l = loaded, l.engine == engine else { return false }
+        return engine == .whisper ? l.model == model : true
+    }
+
+    /// Load (downloading first if needed) and mark it ready. Returns true on success.
+    /// This is what the Settings "Activate" button calls so activation is verified, not assumed.
+    @discardableResult
+    static func load(_ engine: TranscriptionEngine) async -> Bool {
+        do {
+            switch engine {
+            case .openAI:
+                loaded = (.openAI, "")
+            case .whisper:
+                let m = Settings.shared.localModel
+                _ = try await LocalTranscriber.shared.ensureLoaded(model: m)
+                loaded = (.whisper, m)
+            case .parakeet:
+                _ = try await ParakeetTranscriber.shared.ensureLoaded()
+                loaded = (.parakeet, "v3")
+            }
+            lastInstallError = nil
+            return true
+        } catch {
+            lastInstallError = (error as NSError).localizedDescription
+            NSLog("Verba: load \(engine.rawValue) failed: \(error)")
+            return false
+        }
+    }
+
+    /// Copy the model that ships inside the app bundle into the FluidAudio cache on first
+    /// launch, so a fresh install transcribes offline instantly with no download or API key.
+    /// No-op if the model is already cached or wasn't bundled.
+    static func seedBundledModels() {
+        let cache = AsrModels.defaultCacheDirectory(for: .v3)
+        if AsrModels.modelsExist(at: cache) { return }
+        guard let bundled = Bundle.main.resourceURL?
+                .appendingPathComponent("Models/parakeet-tdt-0.6b-v3", isDirectory: true),
+              FileManager.default.fileExists(atPath: bundled.path) else { return }
+        do {
+            try FileManager.default.createDirectory(at: cache.deletingLastPathComponent(),
+                                                    withIntermediateDirectories: true)
+            try? FileManager.default.removeItem(at: cache)
+            try FileManager.default.copyItem(at: bundled, to: cache)
+        } catch {
+            lastInstallError = "Couldn't seed the bundled model: \(error.localizedDescription)"
+        }
+    }
+
     /// Download + load the model, reporting 0...1 progress. Returns true on success.
     static func install(_ engine: TranscriptionEngine, progress: @escaping (Double) -> Void = { _ in }) async -> Bool {
         do {
@@ -60,6 +115,7 @@ enum EngineManager {
             }
             DispatchQueue.main.async { progress(1.0) }
             lastInstallError = nil
+            loaded = engine == .whisper ? (.whisper, Settings.shared.localModel) : (engine, "v3")
             return true
         } catch {
             let msg = (error as NSError).localizedDescription

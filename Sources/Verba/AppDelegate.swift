@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Combine
+import IOKit.hid
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
@@ -8,13 +9,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let overlay = OverlayController()
     private var levelTimer: Timer?
     private var quipTimer: Timer?
+    private var statusPulseTimer: Timer?
     private var fnHoldTimer: Timer?
     private var fnActionTaken = false
     private var lastFnDown: Date?
     private var fnPressAt: Date?        // when the current hold started (push-to-talk)
-    private let fnHoldThreshold = 0.5   // hold longer than this → release auto-finishes
+    private let fnHoldThreshold = 0.8   // hold longer than this → release auto-finishes; a
+                                        // deliberate "tap" (≤0.8s) latches for hands-free listening
     private var processingTask: Task<Void, Never>?
+    private let processingTimeout: Double = 180   // hard ceiling on transcribe+reprompt so a hung backend can't spin forever
     private var cancellables = Set<AnyCancellable>()
+    private var tapPermissionNagged = false   // show the "grant Fn permission" alert at most once
+    private var lastAudioURL: URL?            // #8: last recording, to redo in another mode
+    private var lastResultText: String?       // #2: last delivered text, to edit by voice
+    private var editLastInstruction = false   // #2: next dictation edits lastResultText
+    private var lastDelivered: String?        // auto-learn: text just pasted, to diff vs manual edits
+    private var lastDeliveredBundle: String?  // app it was pasted into
 
     private enum State { case idle, recording, processing }
     private var state: State = .idle { didSet { refreshUI() } }
@@ -23,22 +33,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var capturedSelection: String?  // text selected in the active app when recording started
     private var forcedProfile: Profile?     // set when a profile-specific shortcut started the dictation
 
+    private var todoCaptureRecording = false   // a voice "add to-do" capture is recording
+    private var todoCaptureTask: Task<Void, Never>?
+    // Set when stopTodoCapture() runs from the bare-Fn half of a Fn+§ stop chord; swallows the
+    // §-keyDown's startTodoCapture() that follows on the same chord so it doesn't restart capture.
+    private var todoCaptureJustStopped = false
+
     private var settingsWC: NSWindowController?
     private var historyWC: NSWindowController?
     private var onboardingWC: NSWindowController?
     private var mainWC: NSWindowController?
     private var reviewWindow: NSWindow?
+    private var actionWindow: NSWindow?   // #4: agentic action confirmation
     private var recordStartedAt: Date?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         applyDockPolicy()
         installMainMenu()   // menu-bar apps have no main menu → no ⌘C/⌘V in text fields without this
         Quips.refillIfLow(tone: Settings.shared.quipTone)  // pre-warm the AI-generated loading lines
+        EngineManager.seedBundledModels()   // copy the app-bundled Parakeet model into cache (first run, offline-instant)
         preloadEngine()   // load the local transcription model now so the first dictation is instant
         // Re-check the real subscription on launch so Pro reflects Stripe, not just sign-in.
         if !Settings.shared.proEmail.isEmpty {
             Task { _ = await Settings.shared.verifyPro() }
             History.shared.syncFromCloud()   // pull dictation history from the user's other Macs
+            Stats.shared.syncFromCloud()     // restore Insights / Total Words for the account
+            NotesStore.shared.syncFromCloud()// pull long-form notes for the account
         }
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -50,6 +70,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ChordMonitor.shared.onControl = { [weak self] in InputCoach.shared.note(.control); self?.togglePause() }   // ⌃ pauses/resumes
         FnTap.shared.onFnDown = { [weak self] in self?.fnDown() }
         FnTap.shared.onFnUp = { [weak self] in self?.fnUp() }
+        FnTap.shared.onFnControl = { [weak self] in self?.fnControlPressed() }   // ⌥+Fn → today's to-do glance
+        FnTap.shared.onModeCycle = { [weak self] dir in self?.modeCycleGesture(dir) }   // Fn+Tab → next/prev mode
+        FnTap.shared.onNoteRecord = { [weak self] in self?.startNoteRecording() }   // Fn+Z → record a note
+        FnTap.shared.onTodoCapture = { [weak self] in self?.startTodoCapture() }    // Fn+§ → add a to-do
         FnTap.shared.onDigit = { [weak self] n in self?.fnDigit(n) ?? false }
         FnTap.shared.onArrow = { [weak self] d in self?.fnArrow(d) ?? false }
         FnTap.shared.onEnter = { [weak self] in self?.fnEnter() ?? false }
@@ -57,19 +81,52 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         overlay.model.onPauseToggle = { [weak self] in self?.togglePause() }
         overlay.prepare()   // warm the floating panel so it appears instantly
         ChordMonitor.shared.start()
-        applyTriggers()
+        // Don't request any permission before the user reaches the onboarding permissions
+        // slide. Until onboarded we only suppress the globe/emoji HUD (no prompt); the Fn
+        // event tap (which would request Input Monitoring) starts once onboarding is done.
+        if Settings.shared.onboarded {
+            applyTriggers()
+            recorder.prewarm()   // pre-arm the mic so the first Fn-press captures from the first word
+        } else {
+            FnSystemPref.suppress()
+        }
         _ = Updater.shared   // start Sparkle (scheduled background update checks)
+        TodoReminders.shared.start()   // schedule "30 min before deadline" to-do reminders, keep them in sync
 
         // Re-apply hotkeys when the primary shortcut, profiles, or Fn option change.
         Publishers.MergeMany(
             Settings.shared.$primaryKeyCode.map { _ in () }.eraseToAnyPublisher(),
             Settings.shared.$primaryMods.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$modePickerKeyCode.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$modePickerMods.map { _ in () }.eraseToAnyPublisher(),
             Settings.shared.$profiles.map { _ in () }.eraseToAnyPublisher(),
             Settings.shared.$useFnAsPrimary.map { _ in () }.eraseToAnyPublisher()
         )
         .dropFirst()
         .receive(on: RunLoop.main)
         .sink { [weak self] in self?.applyTriggers() }
+        .store(in: &cancellables)
+
+        // Show/hide the menu-bar icon live when toggled in Settings.
+        Settings.shared.$showMenuBarIcon
+            .dropFirst().receive(on: RunLoop.main)
+            .sink { [weak self] show in self?.statusItem.isVisible = show }
+            .store(in: &cancellables)
+
+        // "Capture by voice" button (or a future shortcut) → start/stop a voice to-do capture.
+        TodoCaptureController.shared.$captureSignal
+            .dropFirst().receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.startTodoCapture() }
+            .store(in: &cancellables)
+
+        // Keep the menu-bar dropdown's "Default mode" list in sync when modes are added,
+        // removed, or the default changes anywhere (the menu is rebuilt in refreshUI).
+        Publishers.Merge(
+            Settings.shared.$profiles.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$activeProfileID.map { _ in () }.eraseToAnyPublisher()
+        )
+        .dropFirst().receive(on: RunLoop.main)
+        .sink { [weak self] in self?.refreshUI() }
         .store(in: &cancellables)
 
         // Propagate an alias change to the shared leaderboard (debounced while typing) so the
@@ -89,6 +146,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Task { _ = await Settings.shared.verifyPro() }
                 History.shared.pushAll()
                 History.shared.syncFromCloud()
+                Stats.shared.pushAll()        // push stats accrued while signed out
+                Stats.shared.syncFromCloud()  // merge in stats from the account's other Macs
+                NotesStore.shared.pushAll()
+                NotesStore.shared.syncFromCloud()
             }
             .store(in: &cancellables)
 
@@ -131,6 +192,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !Settings.shared.proEmail.isEmpty {
             Task { _ = await Settings.shared.verifyPro() }
         }
+        // Self-heal the Fn suppression: if something (e.g. System Settings) reset "Press 🌐 to"
+        // back to Change Input Source / Emoji, re-force it whenever Verba regains focus.
+        if Settings.shared.useFnAsPrimary { FnSystemPref.reapplyIfDrifted() }
     }
 
     private func applyDockPolicy() {
@@ -141,16 +205,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// pay the multi-second cold-load. Runs in the background; no-op for cloud engines.
     private func preloadEngine() {
         let s = Settings.shared
-        if s.engine.isLocal, EngineManager.isInstalled(s.engine) {
+        if s.engine.isLocal {
+            // Auto-download the on-device model if it isn't there yet, then warm + mark it ready.
+            // Routed through EngineManager.load so the "Active & ready" state stays truthful.
             Task.detached(priority: .utility) {
-                switch s.engine {
-                case .whisper:  _ = try? await LocalTranscriber.shared.ensureLoaded(model: s.localModel)
-                case .parakeet: _ = try? await ParakeetTranscriber.shared.ensureLoaded()
-                case .openAI:   break
+                if !EngineManager.isInstalled(s.engine) {
+                    _ = await EngineManager.install(s.engine)
                 }
+                _ = await EngineManager.load(s.engine)
             }
         }
         if s.repromptBackend == .localLLM { LocalLLM.ensureServer { _ in } }   // warm the local LLM server
+        // Warm the Claude Code path lookup off the reprompt path (its login-shell probe is slow).
+        Task.detached(priority: .utility) { _ = ClaudeCode.isAvailable }
     }
 
     // Reopen the main window when the user clicks the Dock icon.
@@ -159,11 +226,216 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 
+    /// When Fn is the primary trigger, pressing Fn instantly starts a dictation (push-to-talk).
+    /// So a Fn+Z / Fn+§ chord arrives a beat AFTER that dictation already latched to `.recording`.
+    /// This discards that just-auto-started dictation (no send) so the chord can run the note/to-do
+    /// flow instead. Returns true when it tore one down. `fnPressAt != nil` proves the in-flight
+    /// recording belongs to the current bare-Fn hold (and isn't an unrelated, deliberate dictation).
+    @discardableResult
+    private func abortPhantomFnDictation() -> Bool {
+        guard state == .recording, fnPressAt != nil else { return false }
+        fnPressAt = nil; lastFnDown = nil
+        cancelRecording()   // stop + discard the nascent dictation, back to idle (no transcription)
+        return true
+    }
+
+    /// Fn + Z (or a custom shortcut): open the Notes tab and immediately start a new note recording.
+    @objc func startNoteRecording() {
+        guard Settings.shared.onboarded else { openOnboarding(); return }
+        // Fn+Z chord: the bare Fn already auto-started a dictation — discard it and record a note.
+        abortPhantomFnDictation()
+        // Any OTHER in-flight dictation (a deliberate one, no Fn hold) must not collide with a note.
+        if state == .recording { return }
+        // A voice to-do capture holds the shared mic while it records (state stays .idle): a note
+        // recorder couldn't grab the input and the user would loop on "Couldn't start". Drop the Fn+Z.
+        if todoCaptureRecording { return }
+        // Free the pre-armed mic: the main recorder stays prepared (holding the audio input) while
+        // idle, which made the Notes window's separate recorder fail to start ("Couldn't start
+        // recording") and the user retry in a loop. Release it so the note can grab the mic.
+        recorder.releaseArmed()
+        // A note records in the Notes window (its recorder card shows a "Note" context badge),
+        // not on the floating pill — so no overlay.show()/context here.
+        NotesController.shared.pendingRecord = true
+        openMain()
+        DispatchQueue.main.async { NotesController.shared.navSignal &+= 1 }
+    }
+
+    /// Voice "add to-do" capture: record a short request, transcribe it with the current
+    /// engine, then hand it to the routing agent which understands the project▸task▸subtask
+    /// model and places the tasks into TodoStore (existing project match or a new one).
+    /// First call starts recording; a second call (or pressing the button again) stops & processes.
+    @objc func startTodoCapture() {
+        guard Settings.shared.onboarded else { openOnboarding(); return }
+        // A bare-Fn tap already stopped this capture (Fn+§ stop chord): swallow the trailing
+        // §-keyDown so it doesn't immediately restart a new capture.
+        if todoCaptureJustStopped { todoCaptureJustStopped = false; return }
+        // Fn+§ chord: the bare Fn already auto-started a dictation — discard it and capture a to-do.
+        // (No-op for the toggle's second press, where nothing is recording on the pill.)
+        abortPhantomFnDictation()
+        // Don't collide with any OTHER in-flight dictation.
+        guard state == .idle else { return }
+
+        if todoCaptureRecording {                       // second press → stop & process
+            stopTodoCapture()
+            return
+        }
+
+        recorder.requestPermission { [weak self] ok in
+            guard let self else { return }
+            guard ok else { self.finishTodoCapture(error: "Microphone access denied."); return }
+            // Fresh cold start: the shared recorder was re-armed by the phantom-Fn abort; reusing
+            // that hastily-prepared recorder captured silence, so build a clean one.
+            self.recorder.releaseArmed()
+            guard self.recorder.start() else { self.finishTodoCapture(error: "Couldn't start recording."); return }
+            self.todoCaptureRecording = true
+            TodoCaptureController.shared.lastError = nil
+            TodoCaptureController.shared.capturing = true
+            self.overlay.model.menu = false
+            self.overlay.model.done = false
+            self.overlay.model.error = false
+            self.overlay.model.info = false
+            self.overlay.model.modeHint = false
+            self.overlay.model.paused = false
+            self.overlay.model.context = .todo
+            self.overlay.model.modeName = ""   // a to-do capture isn't reprompted through a mode
+            self.overlay.model.recording = true
+            self.overlay.model.title = "Listening · To-do"
+            self.overlay.model.level = 0
+            self.overlay.show()
+            // Drive the live meter ourselves (the focused app owns the run loop) so the user sees
+            // it actually listening — the same timer the dictation flow uses.
+            let t = Timer(timeInterval: 0.04, repeats: true) { [weak self] _ in
+                guard let self else { return }
+                let lvl = self.recorder.level()
+                self.overlay.model.level = lvl
+                self.overlay.model.phase += 0.025 + 0.18 * Double(lvl)
+            }
+            RunLoop.main.add(t, forMode: .common)
+            self.levelTimer = t
+        }
+    }
+
+    /// Stop an in-progress voice to-do capture and hand it off for transcription/routing.
+    /// Used by the Fn+§ toggle's second press AND by a bare-Fn tap (so the user needn't
+    /// re-press the chord to finish).
+    private func stopTodoCapture() {
+        guard todoCaptureRecording else { return }
+        todoCaptureRecording = false
+        // The §-keyDown of a Fn+§ stop chord fires right after this bare-Fn half; latch a one-shot
+        // guard so its startTodoCapture() swallows itself instead of starting a fresh capture.
+        todoCaptureJustStopped = true
+        DispatchQueue.main.async { [weak self] in self?.todoCaptureJustStopped = false }
+        levelTimer?.invalidate(); levelTimer = nil
+        let url = recorder.stop()
+        overlay.model.recording = false
+        if let url { processTodoCapture(url) }
+        else { finishTodoCapture(error: "Couldn't capture audio.") }
+    }
+
+    /// Transcribe the captured audio, then route it through TodoAgent into TodoStore.
+    private func processTodoCapture(_ url: URL) {
+        overlay.model.recording = false
+        overlay.model.title = "Adding to your to-dos…"
+        overlay.show()
+        todoCaptureTask?.cancel()
+        todoCaptureTask = Task { [weak self] in
+            do {
+                let s = Settings.shared
+                let transcriber: Transcriber
+                switch s.engine {
+                case .openAI:   transcriber = OpenAITranscriber()
+                case .whisper:  transcriber = LocalTranscriber.shared
+                case .parakeet: transcriber = ParakeetTranscriber.shared
+                }
+                let readable = try await AudioInput.readable(url)
+                defer { AudioInput.cleanup(readable, original: url) }
+                var text = try await transcriber.transcribe(fileURL: readable,
+                    language: s.language.isEmpty ? nil : s.language, hint: DictionaryStore.shared.hint())
+                text = DictionaryStore.shared.apply(to: text)
+                if Task.isCancelled { return }
+                guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    await MainActor.run { self?.finishTodoCapture(error: "Didn't catch that — try again.") }
+                    return
+                }
+
+                let plan = try await TodoAgent.route(transcript: text, projects: TodoStore.shared.projects)
+                if Task.isCancelled { return }
+                await MainActor.run {
+                    let store = TodoStore.shared
+                    // Check off any existing items the user reported as done.
+                    let completed = plan.completions.count
+                    for c in plan.completions {
+                        if let sid = c.subtaskID { store.markSubtaskDone(subtaskID: sid) }
+                        else { store.markDone(taskID: c.taskID) }
+                    }
+                    // Apply EVERY project operation: append to an existing project or create a
+                    // new one. A single spoken request can touch several projects at once.
+                    var touchedProjects = 0
+                    for op in plan.projectOps where !op.tasks.isEmpty {
+                        if let pid = op.existingProjectID {
+                            store.appendTasks(pid, op.tasks)
+                        } else {
+                            store.addGenerated(name: op.newProjectName ?? "New project", tasks: op.tasks)
+                        }
+                        touchedProjects += 1
+                    }
+                    // Overlay feedback reflects what actually happened: pure-complete vs
+                    // pure-add vs both, and how many projects were touched. (A no-match completion
+                    // falls back to an Inbox add in route(), so nothing is ever silently dropped.)
+                    let message: String
+                    if touchedProjects > 0 && completed > 0 {
+                        message = "Updated your to-dos"
+                    } else if completed > 0 {
+                        message = completed == 1 ? "Marked done" : "Marked \(completed) done"
+                    } else if touchedProjects > 1 {
+                        message = "Added to \(touchedProjects) projects"
+                    } else {
+                        message = "Added to your to-dos"
+                    }
+                    self?.finishTodoCapture(error: nil, success: message)
+                }
+            } catch {
+                if Task.isCancelled { return }
+                await MainActor.run { self?.finishTodoCapture(error: error.localizedDescription) }
+            }
+        }
+    }
+
+    /// Tear down a capture: flash done/error on the overlay and reset state.
+    /// `success` is the done-flash message when there's no error (e.g. "Marked done").
+    private func finishTodoCapture(error: String?, success: String = "Added to your to-dos") {
+        todoCaptureRecording = false
+        levelTimer?.invalidate(); levelTimer = nil
+        todoCaptureTask = nil
+        TodoCaptureController.shared.capturing = false
+        TodoCaptureController.shared.lastError = error
+        overlay.model.recording = false
+        overlay.model.paused = false
+        if let error {
+            overlay.model.error = true
+            overlay.model.title = error
+        } else {
+            overlay.model.done = true
+            overlay.model.title = success
+        }
+        overlay.show()
+        DispatchQueue.main.asyncAfter(deadline: .now() + (error == nil ? 1.3 : 2.0)) { [weak self] in
+            guard let self, !self.todoCaptureRecording else { return }
+            self.overlay.model.done = false
+            self.overlay.model.error = false
+            self.overlay.model.title = ""
+            self.overlay.model.context = .dictation   // back to the default context
+            if self.state == .idle { self.overlay.hide() }
+        }
+    }
+
     @objc private func openMain() {
+        // The app stays locked behind onboarding: never open the main window until it's done.
+        guard Settings.shared.onboarded else { openOnboarding(); return }
         if mainWC == nil {
             // Clear any stale saved frame so the window always opens centered.
             UserDefaults.standard.removeObject(forKey: "NSWindow Frame VerbaMain")
-            let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1040, height: 680),
+            let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1040, height: 860),
                                styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                                backing: .buffered, defer: false)
             win.title = "Verba"
@@ -175,8 +447,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             host.sizingOptions = []   // don't let SwiftUI content shrink the window
             win.contentViewController = host
             win.isReleasedWhenClosed = false
-            win.contentMinSize = NSSize(width: 900, height: 560)
-            win.setContentSize(NSSize(width: 1040, height: 680))
+            win.contentMinSize = NSSize(width: 900, height: 600)
+            win.setContentSize(NSSize(width: 1040, height: 860))
             win.center()
             mainWC = NSWindowController(window: win)
         }
@@ -221,6 +493,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.trigger(forced: nil)
             }
         }
+        // Global "open mode picker" shortcut. (Mode switching also lives on Fn+Tab and Fn+1-9;
+        // ⌥+Fn now pops the to-do glance, not the picker.)
+        if s.modePickerHasShortcut {
+            HotKeys.shared.register(id: 2, keyCode: s.modePickerKeyCode, modifiers: s.modePickerMods) { [weak self] in
+                self?.changeMode()
+            }
+        }
+        // Global "record a new note" shortcut (in addition to Fn + Z).
+        if s.noteRecordHasShortcut {
+            HotKeys.shared.register(id: 3, keyCode: s.noteRecordKeyCode, modifiers: s.noteRecordMods) { [weak self] in
+                self?.startNoteRecording()
+            }
+        }
         // Per-profile dedicated shortcuts (⌃⌥1-6).
         for (i, p) in s.profiles.enumerated() {
             guard let code = p.hotkeyCode, let mods = p.hotkeyMods else { continue }
@@ -230,7 +515,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         // Fn-as-primary needs an event tap (to consume the globe key + digit picks).
-        if s.useFnAsPrimary { FnTap.shared.start() } else { FnTap.shared.stop() }
+        if s.useFnAsPrimary {
+            // If the tap can't be created, Accessibility/Input-Monitoring was revoked
+            // (common after a rebuild/re-sign). Surface it instead of silently doing nothing.
+            if !FnTap.shared.start() { promptTapPermissions() }
+        } else {
+            FnTap.shared.stop()
+        }
+    }
+
+    /// The Fn event tap failed to start → permissions are missing. Tell the user and open
+    /// the relevant System Settings panes (this is why "nothing happens when I press Fn").
+    private func promptTapPermissions() {
+        // Never nag during onboarding (the permissions slide handles it), and only once per session.
+        if tapPermissionNagged || !Settings.shared.onboarded || onboardingWC?.window?.isVisible == true { return }
+        tapPermissionNagged = true
+        let alert = NSAlert()
+        alert.messageText = "Verba needs permission to use the Fn key"
+        alert.informativeText = "Grant Verba under Accessibility and Input Monitoring in System Settings ▸ Privacy & Security, then the Fn key and the recording overlay will work again."
+        alert.addButton(withTitle: "Open Accessibility")
+        alert.addButton(withTitle: "Open Input Monitoring")
+        alert.addButton(withTitle: "Later")
+        switch alert.runModal() {
+        case .alertFirstButtonReturn:
+            Output.promptAccessibility()
+        case .alertSecondButtonReturn:
+            IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent") {
+                NSWorkspace.shared.open(url)
+            }
+        default: break
+        }
     }
 
     // MARK: - Trigger handlers
@@ -246,6 +561,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// ⌃⌥ held with nothing recording → show the numbered mode picker.
     private func chordDown() {
         guard state == .idle else { return }
+        // Menu bar only mode has no overlay; the picker is the menu-bar dropdown instead.
+        if Settings.shared.overlayStyle == .minimal { return }
         showModeMenu()
     }
 
@@ -262,49 +579,151 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Esc / the × in the overlay: discard a recording, abort processing, or dismiss the picker.
     private func cancelEverything() {
-        switch state {
-        case .recording:
-            cancelRecording()
-        case .processing:
-            processingTask?.cancel(); processingTask = nil
-            stopQuips()
-            overlay.model.recording = false; overlay.model.menu = false
-            overlay.hide(); SoundFX.stop(); state = .idle
-        case .idle:
-            if overlay.model.menu { overlay.model.menu = false; overlay.hide(); FnTap.shared.menuActive = false }
-        }
+        // Forceful, state-independent teardown so the × (and Esc) ALWAYS dismisses the overlay,
+        // whatever is happening (recording, transcribing, model-downloading, picker open).
+        // The glance is a .nonactivatingPanel that may not own key focus, so its own local Esc
+        // monitor can't be relied on — dismiss it here via the GLOBAL Esc path too.
+        TodoGlanceController.shared.hide()
+        processingTask?.cancel(); processingTask = nil
+        todoCaptureTask?.cancel(); todoCaptureTask = nil
+        if todoCaptureRecording { todoCaptureRecording = false }
+        TodoCaptureController.shared.capturing = false
+        levelTimer?.invalidate(); levelTimer = nil
+        fnHoldTimer?.invalidate(); fnHoldTimer = nil
+        stopQuips()
+        _ = recorder.stop()
+        forcedProfile = nil
+        editLastInstruction = false
+        FnTap.shared.menuActive = false
+        overlay.model.recording = false
+        overlay.model.paused = false
+        overlay.model.menu = false
+        overlay.model.done = false
+        overlay.model.info = false
+        overlay.model.error = false
+        overlay.model.modeHint = false
+        overlay.model.title = ""
+        overlay.model.context = .dictation   // reset to the default capture context
+        overlay.model.modeName = ""
+        overlay.hide()
+        SoundFX.cancel()
+        state = .idle
     }
 
     // Fn (globe) as the primary trigger, Wispr-Flow style:
-    //   • quick tap (idle) → start recording the ACTIVE mode, latched (tap again to send)
+    //   • tap (idle) → start recording the ACTIVE mode, latched (tap again to send)
     //   • press & HOLD, then release → push-to-talk: the release sends automatically
-    //   • double-tap (a 2nd quick tap right after) → open the mode picker instead
+    //   • ⌥ + Fn (hold Option, tap Fn) → today's to-do glance popup (see fnControlPressed)
     private func fnDown() {
         guard Settings.shared.useFnAsPrimary else { return }
         if state == .processing { return }
-        let now = Date()
-        let quick = lastFnDown.map { now.timeIntervalSince($0) < 0.35 } ?? false
+        // A voice to-do capture is in flight (state stays .idle while it records): a bare Fn tap
+        // now STOPS & finishes it — the user needn't re-press the Fn+§ chord. This also covers the
+        // Fn+§ toggle-stop chord's bare-Fn half (don't spin up a phantom dictation on the shared
+        // `recorder`); the §-keyDown's startTodoCapture() stop path then becomes a no-op.
+        if todoCaptureRecording { stopTodoCapture(); return }
+        // A note is recording in the Notes window (its own recorder). A bare Fn tap stops & finishes
+        // it via the shared controller — and must NOT also start a stray dictation here.
+        if NotesController.shared.isRecording { NotesController.shared.stopRecord &+= 1; return }
 
-        if state == .recording {
-            if quick {                       // 2nd tap right after starting → it was a double-tap
-                lastFnDown = nil; fnPressAt = nil
-                InputCoach.shared.note(.doubleFn)
-                cancelRecording()
-                showModeMenu()
-            } else {                         // normal tap after speaking → stop & send
-                lastFnDown = nil; fnPressAt = nil
-                stopAndProcess()
-            }
+        if state == .recording {            // a tap while recording → stop & send
+            lastFnDown = nil; fnPressAt = nil
+            stopAndProcess()
             return
         }
         if overlay.model.menu { dismissMenu(); lastFnDown = nil; return }
 
         // Idle → record instantly with the active mode. Remember the press so a
         // sustained hold-then-release can auto-finish (push-to-talk).
-        lastFnDown = now
-        fnPressAt = now
+        lastFnDown = Date()
+        fnPressAt = Date()
         InputCoach.shared.note(.singleFn)
         startRecording(forced: Settings.shared.activeProfile)
+    }
+
+    /// Option + Fn → pop up a quick glance of today's to-dos (toggles off on ⌥+Fn again / Esc).
+    /// Mode switching now lives on Fn + Tab and Fn + 1-9 only; this no longer changes mode.
+    private func fnControlPressed() {
+        guard Settings.shared.useFnAsPrimary else { return }
+        // Don't pop the glance over a live capture: if ⌥ is tapped mid-Fn-hold while a dictation,
+        // note, or to-do voice capture is recording, leave the recording untouched.
+        if state == .recording || todoCaptureRecording || NotesController.shared.isRecording { return }
+        showTodoGlance()
+    }
+
+    /// ⌥ + Fn → toggle the floating "Today" to-do glance (gated by its Settings toggle).
+    private func showTodoGlance() {
+        guard Settings.shared.todoGlanceEnabled else { return }
+        TodoGlanceController.shared.toggle()
+    }
+
+    /// Fn + Tab (next) / Fn + ⇧ + Tab (previous) → cycle the active mode, live while recording.
+    private func modeCycleGesture(_ dir: Int) {
+        if state == .processing { return }
+        InputCoach.shared.note(.doubleFn)   // mark the mode-switch gesture as learned
+        cycleMode(dir)
+    }
+
+    /// The change-mode action shared by the Fn gesture and the configurable global shortcut.
+    /// Cycles straight to the next mode (no list) when `modeGestureCycles` is on — works live
+    /// while recording — otherwise opens the numbered picker.
+    private func changeMode() {
+        if state == .processing { return }
+        if Settings.shared.modeGestureCycles {
+            cycleMode(1)
+        } else {
+            if Settings.shared.overlayStyle == .minimal { return }
+            if state == .recording { cancelRecording() }
+            showModeMenu()
+        }
+    }
+
+    /// Advance the active mode by `delta` (default = next). While recording it switches THIS
+    /// dictation's mode live (no interruption); from idle it sets the default and shows a brief hint.
+    private func cycleMode(_ delta: Int = 1) {
+        let profiles = Settings.shared.profiles
+        guard !profiles.isEmpty else { return }
+        func step(from id: UUID?) -> Profile {
+            let cur = profiles.firstIndex { $0.id == id } ?? 0
+            return profiles[((cur + delta) % profiles.count + profiles.count) % profiles.count]
+        }
+        switch state {
+        case .processing:
+            return
+        case .recording:
+            let p = step(from: forcedProfile?.id ?? overlay.model.selectedID ?? Settings.shared.activeProfileID)
+            forcedProfile = p
+            overlay.model.selectedID = p.id
+            overlay.model.title = "Listening · \(p.name)"
+            overlay.model.modeName = p.name
+            SoundFX.mode()
+        case .idle:
+            let p = step(from: Settings.shared.activeProfileID)
+            Settings.shared.activeProfileID = p.id
+            SoundFX.mode()
+            flashMode("Mode · \(p.name)")
+        }
+    }
+
+    /// Brief, discreet mode-change flash (slider icon + "Mode · X"), auto-dismissing. Used when
+    /// cycling modes from idle so you can see which mode is now active without opening a list.
+    private func flashMode(_ message: String) {
+        overlay.model.recording = false
+        overlay.model.paused = false
+        overlay.model.menu = false
+        overlay.model.done = false
+        overlay.model.error = false
+        overlay.model.info = false
+        overlay.model.modeHint = true
+        overlay.model.title = message
+        state = .idle
+        overlay.show()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) { [weak self] in
+            guard let self, self.state == .idle, self.overlay.model.modeHint else { return }
+            self.overlay.model.modeHint = false
+            self.overlay.model.title = ""
+            self.overlay.hide()
+        }
     }
 
     private func fnUp() {
@@ -320,35 +739,52 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func fnDigit(_ n: Int) -> Bool {
-        guard Settings.shared.useFnAsPrimary, overlay.model.menu else { return false }
+        guard Settings.shared.useFnAsPrimary else { return false }
         let profiles = Settings.shared.profiles
         guard n >= 1, n <= profiles.count else { return false }
-        Settings.shared.activeProfileID = profiles[n - 1].id   // picking sets the default too
-        dismissMenu()
-        trigger(forced: profiles[n - 1])
+        let p = profiles[n - 1]
+        InputCoach.shared.note(.doubleFn)   // onboarding: "mode picker learned"
+        switch state {
+        case .processing:
+            return false
+        case .recording:
+            // Fn + number while recording → switch THIS dictation's mode live.
+            forcedProfile = p
+            overlay.model.selectedID = p.id
+            overlay.model.title = "Listening · \(p.name)"
+            overlay.model.modeName = p.name
+        case .idle:
+            // Fn + number from idle (or with the picker open) → record in that mode.
+            if overlay.model.menu { Settings.shared.activeProfileID = p.id; dismissMenu() }
+            startRecording(forced: p)
+        }
         return true
     }
+    /// Arrows move the highlight in the OPEN mode picker (consumed only while it's up, so no
+    /// global conflict). Enter confirms the highlighted mode.
     private func fnArrow(_ delta: Int) -> Bool {
-        guard overlay.model.menu else { return false }
-        let s = Settings.shared
-        guard let i = s.profiles.firstIndex(where: { $0.id == s.activeProfileID }), !s.profiles.isEmpty else { return false }
-        let next = ((i + delta) % s.profiles.count + s.profiles.count) % s.profiles.count
-        s.activeProfileID = s.profiles[next].id            // live-change the default
-        overlay.model.activeID = s.activeProfileID
+        guard overlay.model.menu, !overlay.model.profiles.isEmpty else { return false }
+        let profiles = overlay.model.profiles
+        let cur = profiles.firstIndex(where: { $0.id == overlay.model.activeID }) ?? 0
+        let next = ((cur + delta) % profiles.count + profiles.count) % profiles.count
+        overlay.model.activeID = profiles[next].id
+        Settings.shared.activeProfileID = profiles[next].id   // commit, so recording uses the arrow-picked mode
         return true
     }
     private func fnEnter() -> Bool {
         guard overlay.model.menu else { return false }
+        let picked = overlay.model.profiles.first { $0.id == overlay.model.activeID } ?? Settings.shared.activeProfile
+        Settings.shared.activeProfileID = picked.id
         dismissMenu()
-        trigger(forced: Settings.shared.activeProfile)
+        trigger(forced: picked)
         return true
     }
     private func togglePause() {
         guard state == .recording else { return }
         if recorder.isPaused {
-            recorder.resume(); overlay.model.paused = false
+            if recorder.resume() { overlay.model.paused = false; SoundFX.resume() }   // only un-pause the UI if audio actually resumed
         } else {
-            recorder.pause(); overlay.model.paused = true
+            recorder.pause(); overlay.model.paused = true; SoundFX.pause()
         }
     }
 
@@ -357,6 +793,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         lastFnDown = nil
         overlay.model.menu = false
         FnTap.shared.menuActive = false
+    }
+
+    /// Auto-learn from manual edits: if the user hand-corrected the text we last pasted (same app,
+    /// field still readable), diff the field's current value against what we pasted and learn the
+    /// word swaps. Runs once per delivered paste, right before the next recording.
+    private func learnFromManualEdits() {
+        guard Settings.shared.autoLearnDictionary,
+              let pasted = lastDelivered, let bundle = lastDeliveredBundle,
+              bundle == capturedBundleID,                       // same app we pasted into
+              let current = Output.focusedValue() else { lastDelivered = nil; return }
+        DictionaryStore.shared.learnFromEdit(pasted: pasted, current: current)
+        lastDelivered = nil; lastDeliveredBundle = nil          // consume; learn at most once per paste
     }
 
     private func showModeMenu() {
@@ -371,12 +819,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.dismissMenu(); self?.trigger(forced: p)
         }
         FnTap.shared.menuActive = true
+        SoundFX.mode()
         overlay.show()
     }
 
     private func cancelRecording() {
         levelTimer?.invalidate(); levelTimer = nil
         _ = recorder.stop()
+        todoCaptureRecording = false   // tearing down the shared recorder voids any to-do capture too
         forcedProfile = nil
         overlay.model.menu = false
         overlay.model.recording = false
@@ -389,18 +839,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Dictation flow
 
     private func startRecording(forced: Profile?) {
+        // A voice to-do capture owns the shared `recorder` while it records (state stays .idle,
+        // so every state==.idle caller — global shortcut, edit-last, etc. — would otherwise hijack
+        // its mic and orphan the capture). Refuse to start a dictation over an in-flight capture.
+        if todoCaptureRecording { return }
         // Free Pro-trial: block new dictations once the trial allowance is spent.
         if Entitlement.freeLimitReached() { showPaywall(); return }
         recorder.requestPermission { [weak self] ok in
             guard let self else { return }
-            guard ok else { self.notify("Microphone access denied", "Enable it in System Settings ▸ Privacy & Security ▸ Microphone."); return }
-            self.forcedProfile = forced
-            self.capturedBundleID = Output.frontmostBundleID()
-            self.capturedSelection = Settings.shared.useSelectionContext ? Output.selectedText() : nil
-            guard self.recorder.start() else { self.notify("Couldn't start recording", ""); return }
+            guard ok else { self.flashError("Microphone access denied"); return }
+            // Start capturing FIRST (the recorder is pre-armed, so record() is instant) so the
+            // first spoken word is never clipped, THEN do the slower frontmost-app / selection
+            // captures and overlay work while audio is already flowing.
+            guard self.recorder.start() else { self.flashError("Couldn't start recording"); return }
             self.recordStartedAt = Date()
             self.state = .recording
             SoundFX.start()
+            self.forcedProfile = forced
+            self.capturedBundleID = Output.frontmostBundleID()
+            self.learnFromManualEdits()   // before recording: did the user fix our last paste by hand?
+            self.capturedSelection = Settings.shared.useSelectionContext ? Output.selectedText() : nil
 
             // Populate the live mode switcher in the overlay.
             let s = Settings.shared
@@ -410,9 +868,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.overlay.model.onSelect = { [weak self] p in
                 self?.forcedProfile = p
                 self?.overlay.model.title = "Listening · \(p.name)"
+                self?.overlay.model.modeName = p.name
             }
             self.overlay.model.menu = false   // hide the numbers once recording starts
             self.overlay.model.paused = false
+            self.overlay.model.modeHint = false
+            self.overlay.model.info = false
+            self.overlay.model.context = .dictation
+            self.overlay.model.modeName = s.repromptEnabled ? initial.name : ""
             self.overlay.model.recording = true
             self.overlay.model.title = "Listening · \(initial.name)"
             self.overlay.model.level = 0
@@ -453,13 +916,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let bundleID = capturedBundleID
         let forced = forcedProfile
-        let selection = capturedSelection
+        // #2 Edit-last: treat this dictation as an instruction applied to the last result
+        // (reuses selection mode: transcript = instruction, lastResultText = the text to edit).
+        let selection = editLastInstruction ? lastResultText : capturedSelection
+        editLastInstruction = false
         forcedProfile = nil
         capturedSelection = nil
         processingTask = Task {
             do {
-                let result = try await Pipeline.run(audioURL: url, frontmostBundleID: bundleID, forcedProfile: forced, selection: selection) { [weak self] s in
-                    DispatchQueue.main.async { self?.statusLine = s; self?.refreshUI() }   // jokes own the overlay title
+                // Hard ceiling so a hung transcription/reprompt backend can't spin the
+                // overlay forever — on timeout this throws and resets to idle below.
+                let result = try await withTimeout(seconds: self.processingTimeout) {
+                    try await Pipeline.run(audioURL: url, frontmostBundleID: bundleID, forcedProfile: forced, selection: selection) { [weak self] s in
+                        DispatchQueue.main.async { self?.statusLine = s; self?.refreshUI() }   // jokes own the overlay title
+                    }
                 }
                 if Task.isCancelled { return }
                 await MainActor.run { self.processingTask = nil; self.finish(result: result, audioURL: url) }
@@ -470,9 +940,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 await MainActor.run {
                     self.processingTask = nil
                     self.stopQuips()
-                    self.overlay.hide(); self.overlay.model.recording = false
-                    self.state = .idle
-                    self.notify("Verba failed", error.localizedDescription)
+                    self.overlay.model.recording = false
+                    if error is TimeoutError {
+                        self.flashError("Timed out — try again")   // hung backend, reset to idle
+                        return
+                    }
+                    // Silent / unreadable audio is a benign non-event: show a quiet, auto
+                    // dismissing hint instead of a red error modal.
+                    let msg = error.localizedDescription.lowercased()
+                    let tooShort = msg.contains("at least 300ms") || msg.contains("invalid audio") || msg.contains("too short")
+                    if case TranscribeError.empty = error {
+                        self.flashInfo("Didn't catch that")
+                    } else if tooShort {
+                        self.flashInfo("Didn't catch that")   // benign: silence / too short
+                    } else {
+                        // Non-blocking red flash in the widget (no modal, no OK button).
+                        self.flashError("Transcription failed, try again")
+                    }
                 }
             }
         }
@@ -493,13 +977,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func stopQuips() { quipTimer?.invalidate(); quipTimer = nil }
 
     @MainActor
-    private func finish(result: PipelineResult, audioURL: URL) {
+    private func finish(result: PipelineResult, audioURL: URL, countStats: Bool = true) {
         stopQuips()
+        lastAudioURL = audioURL   // #8: keep the last recording so it can be redone in another mode
+        // Remember last used mode: the mode actually applied to this dictation (a mid-dictation
+        // override or auto-detected match included) becomes the default for the next one.
+        if Settings.shared.rememberLastMode, let usedID = result.profileID,
+           Settings.shared.profiles.contains(where: { $0.id == usedID }),
+           Settings.shared.activeProfileID != usedID {
+            Settings.shared.activeProfileID = usedID
+        }
         let deliver: (String) -> Void = { [weak self] text in
             guard let self else { return }
-            let rich = Settings.shared.richTextPaste
+            // #7 smart formatting: pick rich/plain based on the target app (toggle in Labs).
+            let rich = Settings.shared.smartFormatting ? Output.prefersRichText(self.capturedBundleID)
+                                                       : Settings.shared.richTextPaste
             if Settings.shared.autoPaste {
-                if !Output.paste(text, rich: rich) {
+                if Output.paste(text, rich: rich) {
+                    // Auto-learn: remember what we pasted so the NEXT dictation can diff it against
+                    // any manual fix the user made in this field and learn the correction.
+                    self.lastDelivered = text
+                    self.lastDeliveredBundle = self.capturedBundleID
+                } else {
                     Output.copyToClipboard(text, rich: rich)
                     Output.promptAccessibility()
                     self.notify("Copied to clipboard", "Grant Accessibility to enable auto-paste.")
@@ -509,12 +1008,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             History.shared.add(original: result.original, reprompted: result.reprompted,
                                profileName: result.profileName, engine: result.engine, audioURL: audioURL)
-            let dur = self.recordStartedAt.map { Date().timeIntervalSince($0) } ?? 0
-            Stats.shared.record(words: wordCount(text), seconds: dur)
-            Leaderboard.submit()   // keep the public leaderboard up to date
+            self.lastResultText = text   // #2: remember for "edit last by voice"
+            if Settings.shared.toneMatch { ToneStore.record(bundleID: self.capturedBundleID, text: text) }
+            if countStats {
+                let dur = self.recordStartedAt.map { Date().timeIntervalSince($0) } ?? 0
+                Stats.shared.record(words: wordCount(text), seconds: dur)
+                Leaderboard.submit()   // keep the public leaderboard up to date
+            }
             self.flashDone()
         }
 
+        // #4: an agentic action always asks for explicit confirmation before doing anything.
+        if let action = result.action {
+            overlay.hide()
+            state = .idle
+            showActionConfirm(action)
+            return
+        }
         if Settings.shared.reviewBeforeSend {
             overlay.hide()
             state = .idle
@@ -522,6 +1032,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             deliver(result.reprompted)
         }
+    }
+
+    /// #4: confirmation window for an agentic action; executes natively only on confirm.
+    private func showActionConfirm(_ action: ActionPayload) {
+        let close: () -> Void = { [weak self] in self?.actionWindow?.close(); self?.actionWindow = nil }
+        let view = ActionConfirmView(action: action,
+            onConfirm: { [weak self] in
+                Task {
+                    let r = await ActionExecutor.execute(action)
+                    await MainActor.run {
+                        close()
+                        switch r {
+                        case .success(let msg): SoundFX.done(); self?.notify("Done", msg)
+                        case .failure(let err): SoundFX.error(); self?.notify("Couldn't complete", err.errorDescription ?? "Action failed.")
+                        }
+                    }
+                }
+            },
+            onCancel: { close() })
+        let wc = makeWindow(title: "Confirm action", view: view, size: NSSize(width: 460, height: 360), glass: true, resizable: false)
+        actionWindow = wc.window
+        present(wc)
     }
 
     /// A brief, soft "✓ Done" flash in the overlay instead of an abrupt disappearance.
@@ -541,20 +1073,99 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// A quiet, auto-dismissing overlay hint (no sound, no red modal) for benign outcomes
+    /// like silent audio. Subtle on purpose: it should feel like nothing happened.
+    private func flashInfo(_ message: String) {
+        overlay.model.recording = false
+        overlay.model.paused = false
+        overlay.model.menu = false
+        overlay.model.done = false
+        overlay.model.error = false
+        overlay.model.modeHint = false
+        overlay.model.info = true
+        overlay.model.title = message
+        state = .idle
+        overlay.show()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) { [weak self] in
+            guard let self, self.state == .idle else { return }
+            self.overlay.model.info = false
+            self.overlay.model.title = ""
+            self.overlay.hide()
+        }
+    }
+
+    /// A non-blocking RED error flash in the overlay (same place as the jokes) + error sound.
+    /// Replaces the annoying "click OK" modal alerts for transcription/rewrite failures.
+    private func flashError(_ message: String) {
+        overlay.model.recording = false
+        overlay.model.paused = false
+        overlay.model.menu = false
+        overlay.model.done = false
+        overlay.model.info = false
+        overlay.model.modeHint = false
+        overlay.model.error = true
+        overlay.model.title = message
+        state = .idle
+        SoundFX.error()
+        overlay.show()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            guard let self, self.state == .idle else { return }
+            self.overlay.model.error = false
+            self.overlay.model.title = ""
+            self.overlay.hide()
+        }
+    }
+
     // MARK: - Status item / menu
 
     private func refreshUI() {
         guard let button = statusItem.button else { return }
+        // Distinct glyph per state so "Menu bar only" mode reads at a glance:
+        //   idle = mic, recording = filled REC dot (red + pulsing), processing = waveform.
         let symbol: String
         switch state {
-        case .idle: symbol = "mic"
-        case .recording: symbol = "mic.fill"
+        case .idle:       symbol = "mic"
+        case .recording:  symbol = "record.circle.fill"
         case .processing: symbol = "waveform"
         }
-        button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Verba")
-        button.image?.isTemplate = true
-        button.contentTintColor = (state == .recording) ? .systemRed : nil
+        statusItem.isVisible = Settings.shared.showMenuBarIcon
+        // A template status image is auto-tinted by the system (black on a light menu bar)
+        // and ignores contentTintColor. To force the color we BAKE it in: draw the symbol,
+        // then fill it with our color using .sourceAtop. ALWAYS white; recording is shown by
+        // the glyph change + the blinking pulse (no red).
+        let color: NSColor = .white
+        let cfg = NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)
+        if let base = NSImage(systemSymbolName: symbol, accessibilityDescription: "Verba")?.withSymbolConfiguration(cfg) {
+            let tinted = NSImage(size: base.size, flipped: false) { rect in
+                base.draw(in: rect)
+                color.set()
+                rect.fill(using: .sourceAtop)
+                return true
+            }
+            tinted.isTemplate = false
+            button.image = tinted
+        }
+        button.contentTintColor = nil
+        updateStatusPulse()
         statusItem.menu = buildMenu()
+    }
+
+    /// Pulse the menu-bar icon while recording/processing so it's a clear indicator (this is the
+    /// whole UI in "Minimal" overlay mode).
+    private func updateStatusPulse() {
+        statusPulseTimer?.invalidate(); statusPulseTimer = nil
+        guard let button = statusItem.button else { return }
+        guard state != .idle else { button.alphaValue = 1; return }
+        var dim = false
+        let t = Timer(timeInterval: 0.6, repeats: true) { _ in
+            dim.toggle()
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.55
+                button.animator().alphaValue = dim ? 0.35 : 1
+            }
+        }
+        RunLoop.main.add(t, forMode: .common)
+        statusPulseTimer = t
     }
 
     private func buildMenu() -> NSMenu {
@@ -579,10 +1190,68 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(p)
         }
 
+        // Default mode picker, right at the top: pick the mode dictation uses by default.
+        // This is the way to choose your mode in "Menu bar only" (no overlay) mode.
+        menu.addItem(.separator())
+        let modeHeader = NSMenuItem(title: "Default mode", action: nil, keyEquivalent: "")
+        modeHeader.isEnabled = false
+        menu.addItem(modeHeader)
+        for p in s.profiles {
+            let mi = NSMenuItem(title: p.name, action: #selector(pickDefaultMode(_:)), keyEquivalent: "")
+            mi.target = self
+            mi.state = (p.id == s.activeProfileID) ? .on : .off
+            mi.representedObject = p.id.uuidString
+            menu.addItem(mi)
+        }
+
+        // #2: edit the last result by voice ("make it shorter", "more formal", "translate"…).
+        if s.voiceEditLast, lastResultText != nil, state == .idle {
+            menu.addItem(.separator())
+            add(menu, "Edit last by voice…", #selector(editLastByVoice), "")
+        }
+
+        // #8: redo the last recording in another mode (if there is one + the feature is on).
+        if s.redoEnabled, lastAudioURL != nil, state == .idle {
+            menu.addItem(.separator())
+            let redoParent = NSMenuItem(title: "Redo last in…", action: nil, keyEquivalent: "")
+            let redoSub = NSMenu()
+            for p in s.profiles {
+                let mi = NSMenuItem(title: p.name, action: #selector(redoLastMode(_:)), keyEquivalent: "")
+                mi.target = self; mi.representedObject = p.id.uuidString
+                redoSub.addItem(mi)
+            }
+            redoParent.submenu = redoSub
+            menu.addItem(redoParent)
+        }
+
         menu.addItem(.separator())
         let engineItem = NSMenuItem(title: "Engine: \(Settings.shared.engine.label)", action: nil, keyEquivalent: "")
         engineItem.isEnabled = false
         menu.addItem(engineItem)
+
+        // Microphone source picker, right in the menu: System default + every input device.
+        let devices = MicDevices.inputs()
+        let micName: String = s.micUID.isEmpty
+            ? "System default"
+            : (MicDevices.name(forUID: s.micUID) ?? "Unavailable")
+        let micParent = NSMenuItem(title: "Microphone: \(micName)", action: nil, keyEquivalent: "")
+        micParent.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Microphone")
+        let micSub = NSMenu()
+        let defItem = NSMenuItem(title: "System default", action: #selector(pickMic(_:)), keyEquivalent: "")
+        defItem.target = self
+        defItem.state = s.micUID.isEmpty ? .on : .off
+        defItem.representedObject = ""
+        micSub.addItem(defItem)
+        if !devices.isEmpty { micSub.addItem(.separator()) }
+        for dev in devices {
+            let mi = NSMenuItem(title: dev.name, action: #selector(pickMic(_:)), keyEquivalent: "")
+            mi.target = self
+            mi.state = (dev.uid == s.micUID) ? .on : .off
+            mi.representedObject = dev.uid
+            micSub.addItem(mi)
+        }
+        micParent.submenu = micSub
+        menu.addItem(micParent)
 
         menu.addItem(.separator())
         add(menu, "Open Verba", #selector(openMain), "o")
@@ -605,6 +1274,58 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func menuToggle() { trigger(forced: nil) }
     @objc private func enableAccessibility() { Output.promptAccessibility() }
+
+    @objc private func pickDefaultMode(_ sender: NSMenuItem) {
+        guard let idStr = sender.representedObject as? String, let id = UUID(uuidString: idStr) else { return }
+        Settings.shared.activeProfileID = id
+        refreshUI()   // rebuild the menu so the checkmark moves to the new default
+    }
+
+    /// Choose the microphone Verba records from ("" = follow the system default).
+    @objc private func pickMic(_ sender: NSMenuItem) {
+        Settings.shared.micUID = (sender.representedObject as? String) ?? ""
+        refreshUI()   // rebuild the menu so the checkmark + label update
+    }
+
+    // #2: record a spoken instruction that edits the last result ("shorter", "more formal"…).
+    @objc private func editLastByVoice() {
+        guard state == .idle, lastResultText != nil else { return }
+        editLastInstruction = true
+        startRecording(forced: Settings.shared.activeProfile)
+        overlay.model.title = "Editing last · say your change"
+    }
+
+    // #8: re-run the LAST recording through a different mode, no need to speak again.
+    @objc private func redoLastMode(_ sender: NSMenuItem) {
+        guard state == .idle, let url = lastAudioURL,
+              let idStr = sender.representedObject as? String, let id = UUID(uuidString: idStr),
+              let profile = Settings.shared.profiles.first(where: { $0.id == id }) else { return }
+        state = .processing
+        statusLine = "Redoing in \(profile.name)…"
+        overlay.model.recording = false; overlay.model.menu = false
+        startQuips(); refreshUI()
+        let captured = capturedBundleID
+        processingTask = Task {
+            do {
+                let result = try await withTimeout(seconds: self.processingTimeout) {
+                    try await Pipeline.run(audioURL: url, frontmostBundleID: captured,
+                                           forcedProfile: profile, selection: nil) { [weak self] s in
+                        DispatchQueue.main.async { self?.statusLine = s; self?.refreshUI() }
+                    }
+                }
+                if Task.isCancelled { return }
+                await MainActor.run { self.processingTask = nil; self.finish(result: result, audioURL: url, countStats: false) }
+            } catch is CancellationError {
+                // user cancelled, handled by cancelEverything()
+            } catch {
+                if Task.isCancelled { return }
+                await MainActor.run {
+                    self.processingTask = nil; self.stopQuips(); self.overlay.hide(); self.state = .idle
+                    self.flashError(error is TimeoutError ? "Timed out — try again" : "Redo failed, try again")
+                }
+            }
+        }
+    }
     @objc private func checkUpdates() { Updater.shared.checkForUpdates() }
     @objc private func quit() { NSApp.terminate(nil) }
 
@@ -624,6 +1345,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let wc = onboardingWC { present(wc); return }   // already open → just focus it
         let view = OnboardingView { [weak self] in
             self?.onboardingWC?.close(); self?.onboardingWC = nil
+            self?.applyTriggers()   // now onboarded + permissions granted → start the Fn tap
+            self?.recorder.prewarm()   // pre-arm so the first dictation captures from the first word
         }
         onboardingWC = makeWindow(title: "Welcome to Verba", view: view, size: NSSize(width: 620, height: 720), glass: true)
         present(onboardingWC)
@@ -634,7 +1357,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.reviewWindow?.close(); self?.reviewWindow = nil
         }
         let view = ReviewView(original: original, text: text,
-                              onConfirm: { t in DictionaryStore.shared.learn(from: text, edited: t); onConfirm(t); close() },
+                              onConfirm: { t in
+                                  if Settings.shared.autoLearnDictionary { DictionaryStore.shared.learn(from: text, edited: t) }
+                                  onConfirm(t); close()
+                              },
                               onCancel: { close() })
         let wc = makeWindow(title: "Review dictation", view: view, size: NSSize(width: 520, height: 420), glass: true, resizable: false)
         reviewWindow = wc.window

@@ -24,6 +24,9 @@ final class AuthSession: NSObject, ASWebAuthenticationPresentationContextProvidi
                   !email.isEmpty else {
                 completion(nil); return
             }
+            // Keep the anonymous generated alias, never the real name: the alias is PUBLIC on the
+            // leaderboard, so we deliberately do NOT adopt the Clerk first/last name here.
+
             // The server returns this account's stable referral code → adopt it as the identity.
             // Re-key any data written under the device-minted uid so nothing forks on sign-in.
             if let code = comps.queryItems?.first(where: { $0.name == "code" })?.value, !code.isEmpty {

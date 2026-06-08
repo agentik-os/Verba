@@ -92,14 +92,12 @@ enum QuipTone: String, Codable, CaseIterable, Identifiable {
 /// Look & position of the recording indicator.
 enum OverlayStyle: String, Codable, CaseIterable, Identifiable {
     case floating   // glass pill, bottom-center (default)
-    case island     // dark pill at the top of the screen, Dynamic-Island style
-    case minimal    // tiny top bar, just the moving waveform, for power users
+    case minimal    // no floating UI: the menu-bar icon changes while recording
     var id: String { rawValue }
     var label: String {
         switch self {
         case .floating: return "Floating glass (bottom)"
-        case .island:   return "Top island"
-        case .minimal:  return "Minimal bar (top)"
+        case .minimal:  return "Menu bar only (no overlay)"
         }
     }
 }
@@ -107,15 +105,25 @@ enum OverlayStyle: String, Codable, CaseIterable, Identifiable {
 /// Where the Claude reprompting runs: pay-per-token API key, or the user's
 /// Claude Code subscription (Max/Pro plan) via the local `claude` CLI.
 enum RepromptBackend: String, Codable, CaseIterable, Identifiable {
-    case claudeCode, apiKey, openRouter, localLLM
+    case auto, verba, claudeCode, apiKey, openRouter, localLLM
     var id: String { rawValue }
     var label: String {
         switch self {
+        case .auto:       return "Automatic (Claude Code, else Verba)"
+        case .verba:      return "Verba (included, no key needed)"
         case .claudeCode: return "Claude Code (Max/Pro plan)"
         case .apiKey:     return "Anthropic API key"
         case .openRouter: return "OpenRouter (any model)"
         case .localLLM:   return "Local model (Ollama, offline)"
         }
+    }
+
+    /// Resolve `.auto` to a concrete backend: prefer the user's Claude Code (free for us,
+    /// runs on their Claude plan) when the CLI is available, otherwise the Verba hosted proxy
+    /// (works for everyone, no key). Other choices are explicit and pass through unchanged.
+    var resolved: RepromptBackend {
+        guard self == .auto else { return self }
+        return ClaudeCode.isAvailable ? .claudeCode : .verba
     }
 }
 
@@ -123,7 +131,7 @@ enum RepromptBackend: String, Codable, CaseIterable, Identifiable {
 private let kCtrlOpt: UInt32 = 4096 | 2048
 
 /// What a shortcut is being assigned to (for conflict resolution).
-enum ShortcutTarget: Equatable { case primary; case profile(UUID) }
+enum ShortcutTarget: Equatable { case primary; case modePicker; case noteRecord; case profile(UUID) }
 
 /// The shared editing contract for every profile: improve HOW it's written,
 /// never change WHAT was said. This is the fix for "Claude interprets too much".
@@ -144,7 +152,14 @@ number, and nuance. Keep their voice and their level of detail.
 responding to it. If they describe a task, you rewrite their description of the \
 task; you do not do the task.
 - Resolve self-corrections to the final intended wording ("no wait, actually X" → X).
-- Keep the same language the speaker used.
+- LANGUAGE: detect the ONE dominant language the speaker actually used and write the ENTIRE \
+output in that SINGLE language, unless the speaker explicitly asks for another one inside their \
+words (e.g. "in English", "traduis en anglais", "en français"). In that case, intelligently \
+honor their request. This is mandatory.
+- NEVER code-switch or mix languages. Voice transcription engines sometimes drop English \
+fragments into French speech (or vice versa); these are transcription errors. If you see any \
+fragment in a different language than the dominant one, TRANSLATE it into the dominant language \
+so the whole output is in one and only one language. The final text must be 100% monolingual.
 - NEVER use an em dash, an en dash, or a spaced hyphen. Write like a human: use commas, \
 periods, parentheses, or colons instead. This is mandatory.
 
@@ -163,7 +178,30 @@ struct Profile: Codable, Identifiable, Equatable {
     var hotkeyMods: UInt32? = nil       // Carbon modifier mask
     var raw: Bool = false               // true = pure dictation, no Claude reprompting
     var model: String? = nil            // per-mode Claude model override (nil = global default)
+    var vision: Bool = false            // Context mode: capture the screen and act on it
+    var targetLanguage: String? = nil   // Translate mode: render the dictation in THIS language
+
+    /// The prompt actually sent to Claude. A mode with a target language becomes a translator:
+    /// whatever language you speak, the output is written in that language.
+    var effectiveSystemPrompt: String {
+        guard let lang = targetLanguage?.trimmingCharacters(in: .whitespaces), !lang.isEmpty else { return systemPrompt }
+        return """
+        You are a translator. Translate the user's dictated speech into \(lang), no matter what \
+        language they speak in. Output ONLY the translation, written naturally and fluently in \
+        \(lang), preserving the meaning, tone, register and intent. Keep proper nouns, code, \
+        numbers and formatting intact. If the speech is already in \(lang), just clean it up in \
+        \(lang). Resolve self-corrections to the final intended meaning. The output must be \
+        100% in \(lang) with NO code-switching: translate every fragment, including any stray \
+        words the transcription left in another language, into \(lang).
+        Do not add any preamble, quotes, notes or commentary, output only the \(lang) text.
+        NEVER use an em dash, en dash, or a spaced hyphen; use commas, periods, parentheses, or colons.
+        """
+    }
 }
+
+/// Common targets for the Translate mode (the value stored is the language name, used in the prompt).
+let translateLanguages = ["English", "French", "Spanish", "German", "Italian", "Portuguese", "Dutch",
+                          "Russian", "Chinese", "Japanese", "Korean", "Arabic", "Hindi", "Turkish", "Polish"]
 
 extension Profile {
     static let coding = Profile(
@@ -238,7 +276,10 @@ extension Profile {
         any information.
         - Never add facts the speaker didn't provide. Resolve self-corrections to the \
         final intended meaning.
-        - Keep the speaker's language unless the intent says otherwise.
+        - Keep the speaker's ONE dominant language unless the intent says otherwise. NEVER \
+        code-switch or mix languages: if the transcript drops fragments of another language \
+        (a transcription error), translate them into the dominant language so the output is \
+        100% in a single language.
 
         NEVER use an em dash, en dash, or a spaced hyphen; use commas, \
         periods, parentheses, or colons instead.
@@ -252,6 +293,12 @@ extension Profile {
         systemPrompt: "(Free-flow dictation, your words are transcribed exactly, with no AI reprompting or reordering.)",
         builtin: true, hotkeyCode: 22 /* 6 */, hotkeyMods: kCtrlOpt, raw: true)
 
+    static let translate = Profile(
+        name: "Translate",
+        systemPrompt: "Translate the dictation into the chosen target language.",
+        builtin: true, hotkeyCode: 28 /* 8 */, hotkeyMods: kCtrlOpt,
+        model: nil /* use the user's default model */, targetLanguage: "English")
+
     static let custom = Profile(
         name: "Custom",
         systemPrompt: faithfulCore + """
@@ -262,7 +309,41 @@ extension Profile {
         """,
         builtin: true, hotkeyCode: 23 /* 5 */, hotkeyMods: kCtrlOpt)
 
-    static let defaults: [Profile] = [.flow, .intent, .polish, .coding, .casual, .custom]
+    static let context = Profile(
+        name: "Context",
+        systemPrompt: """
+        You are Verba's Context mode. You receive a SCREENSHOT of the user's screen plus \
+        a spoken request. LOOK carefully at what is on screen, then do exactly what the \
+        request asks, grounded in the on-screen content. Examples: draft a reply to the \
+        email or message that is visible, write the message they describe, comment on the \
+        photo, answer the question shown, summarize or rewrite the selected text.
+
+        Rules:
+        - Use the screen as the source of truth. If the request refers to "this", "it", \
+        "the email", "the message", "the photo", resolve it from what is on screen.
+        - Output ONLY the text to insert where the cursor is. No preamble, no explanation, \
+        no quotes around it, no "Here is".
+        - LANGUAGE: write in the ONE language the speaker used, unless they explicitly ask for \
+        another one (e.g. "reply in English"). For a reply, match the language of the \
+        message on screen when that is clearly what they want. NEVER mix or code-switch \
+        languages; the whole output must be in a single language.
+        - Never invent facts that are neither on screen nor in the request.
+        - NEVER use an em dash, an en dash, or a spaced hyphen. Use commas, periods, \
+        parentheses, or colons instead.
+
+        ACTIONS: ONLY when the request's PRIMARY intent is to create a calendar event, create \
+        a reminder, or draft an email reply, respond with EXACTLY ONE JSON object and nothing \
+        else (no prose, no code fence), using these keys:
+        {"action":"createCalendarEvent|createReminder|draftEmailReply","title":"…",\
+        "description":"…","dueDate":"ISO8601 with offset","duration":minutes,\
+        "replyTo":"email","draftBody":"…"}
+        Include only the relevant keys. For anything else, respond with the plain insert text \
+        as described above (NOT JSON).
+        """,
+        builtin: true, hotkeyCode: 26 /* 7 */, hotkeyMods: kCtrlOpt,
+        model: "claude-sonnet-4-6", vision: true)
+
+    static let defaults: [Profile] = [.flow, .intent, .context, .coding, .translate, .custom]
 }
 
 final class Settings: ObservableObject {
@@ -270,11 +351,15 @@ final class Settings: ObservableObject {
     private let d = UserDefaults.standard
 
     // Bump when the built-in profiles change so users get the new prompts/shortcuts.
-    static let profilesVersion = 11  // bumped: corrected no-dash wording in prompts
+    static let profilesVersion = 15  // bumped: added Translate mode
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }
     @Published var claudeModel: String { didSet { d.set(claudeModel, forKey: "claudeModel") } }
+    // Chosen microphone (CoreAudio device UID). "" = follow the system default input.
+    @Published var micUID: String { didSet { d.set(micUID, forKey: "micUID") } }
+    // Sidebar items the user hid (NavItem raw values). Home / Modes / Settings are always shown.
+    @Published var hiddenNav: Set<String> { didSet { d.set(Array(hiddenNav), forKey: "hiddenNav") } }
     @Published var repromptBackend: RepromptBackend { didSet { d.set(repromptBackend.rawValue, forKey: "repromptBackend") } }
     @Published var openRouterModel: String { didSet { d.set(openRouterModel, forKey: "openRouterModel") } }
     @Published var localLLMModel: String { didSet { d.set(localLLMModel, forKey: "localLLMModel") } }
@@ -282,6 +367,25 @@ final class Settings: ObservableObject {
     @Published var quipTone: QuipTone { didSet { d.set(quipTone.rawValue, forKey: "quipTone"); Quips.onToneChanged() } }
     @Published var language: String { didSet { d.set(language, forKey: "language") } }   // "" = auto-detect
 
+    // Labs / advanced features (each individually toggleable).
+    @Published var smartFormatting: Bool { didSet { d.set(smartFormatting, forKey: "smartFormatting") } }
+    @Published var redoEnabled: Bool { didSet { d.set(redoEnabled, forKey: "redoEnabled") } }
+    @Published var autoLearnDictionary: Bool { didSet { d.set(autoLearnDictionary, forKey: "autoLearnDictionary") } }
+    @Published var toneMatch: Bool { didSet { d.set(toneMatch, forKey: "toneMatch") } }
+    @Published var voiceEditLast: Bool { didSet { d.set(voiceEditLast, forKey: "voiceEditLast") } }
+    @Published var agenticActionsEnabled: Bool { didSet { d.set(agenticActionsEnabled, forKey: "agenticActionsEnabled") } }
+    @Published var notesTabEnabled: Bool { didSet { d.set(notesTabEnabled, forKey: "notesTabEnabled") } }
+    @Published var todosTabEnabled: Bool { didSet { d.set(todosTabEnabled, forKey: "todosTabEnabled") } }
+    // Local reminder notifications 30 min before a to-do task's deadline.
+    @Published var todoReminders: Bool {
+        didSet { d.set(todoReminders, forKey: "todoReminders"); TodoReminders.shared.onSettingChanged(enabled: todoReminders) }
+    }
+    @Published var soundsEnabled: Bool { didSet { d.set(soundsEnabled, forKey: "soundsEnabled") } }
+    @Published var soundVolume: Double { didSet { d.set(soundVolume, forKey: "soundVolume") } }   // 0...1
+    // Fn-key behaviour: by default Verba takes over the globe key so macOS doesn't pop the
+    // emoji/Fn HUD or the input-source switcher. Users can turn these back on.
+    @Published var suppressFnPopup: Bool { didSet { d.set(suppressFnPopup, forKey: "suppressFnPopup"); FnSystemPref.reapply() } }
+    @Published var disableInputSwitcher: Bool { didSet { d.set(disableInputSwitcher, forKey: "disableInputSwitcher"); FnSystemPref.reapply() } }
     @Published var autoPaste: Bool { didSet { d.set(autoPaste, forKey: "autoPaste") } }
     @Published var copyToClipboard: Bool { didSet { d.set(copyToClipboard, forKey: "copyToClipboard") } }
     @Published var richTextPaste: Bool { didSet { d.set(richTextPaste, forKey: "richTextPaste") } }
@@ -289,11 +393,16 @@ final class Settings: ObservableObject {
     @Published var autoDetectProfile: Bool { didSet { d.set(autoDetectProfile, forKey: "autoDetectProfile") } }
     @Published var useSelectionContext: Bool { didSet { d.set(useSelectionContext, forKey: "useSelectionContext") } }
     @Published var voiceCommands: Bool { didSet { d.set(voiceCommands, forKey: "voiceCommands") } }
+    // Language-consistency guard: if the transcription engine code-switches (mixes French and
+    // English mid-sentence), normalize the output to its single dominant language. Applies to
+    // EVERY result, including Flow/raw mode. Default ON.
+    @Published var languageGuard: Bool { didSet { d.set(languageGuard, forKey: "languageGuard") } }
     @Published var repromptEnabled: Bool { didSet { d.set(repromptEnabled, forKey: "repromptEnabled") } }
     @Published var recordStyle: RecordStyle { didSet { d.set(recordStyle.rawValue, forKey: "recordStyle") } }
     @Published var useFnAsPrimary: Bool { didSet { d.set(useFnAsPrimary, forKey: "useFnAsPrimary") } }
     @Published var onboarded: Bool { didSet { d.set(onboarded, forKey: "onboarded") } }
     @Published var showInDock: Bool { didSet { d.set(showInDock, forKey: "showInDock") } }
+    @Published var showMenuBarIcon: Bool { didSet { d.set(showMenuBarIcon, forKey: "showMenuBarIcon") } }
 
     // Global Style, extra instructions appended to every (non-raw) reprompt.
     @Published var styleEnabled: Bool { didSet { d.set(styleEnabled, forKey: "styleEnabled") } }
@@ -302,6 +411,19 @@ final class Settings: ObservableObject {
     // Primary trigger shortcut (active/auto-detected mode). Default ⌃⌥Space.
     @Published var primaryKeyCode: UInt32 { didSet { d.set(Int(primaryKeyCode), forKey: "primaryKeyCode") } }
     @Published var primaryMods: UInt32 { didSet { d.set(Int(primaryMods), forKey: "primaryMods") } }
+    // Global shortcut to open the mode picker. Default ⌃⌥M. (⌥+Fn now pops the to-do glance.)
+    @Published var modePickerKeyCode: UInt32 { didSet { d.set(Int(modePickerKeyCode), forKey: "modePickerKeyCode") } }
+    @Published var modePickerMods: UInt32 { didSet { d.set(Int(modePickerMods), forKey: "modePickerMods") } }
+    // When true the change-mode gesture jumps straight to the NEXT mode (no list); works live
+    // while recording too. When false it opens the numbered picker. Default: cycle.
+    @Published var modeGestureCycles: Bool { didSet { d.set(modeGestureCycles, forKey: "modeGestureCycles") } }
+    // ⌥ + Fn pops up a compact glance of today's to-dos (due today + overdue, checkable). Default ON.
+    @Published var todoGlanceEnabled: Bool { didSet { d.set(todoGlanceEnabled, forKey: "todoGlanceEnabled") } }
+    // After each dictation, make the mode that was actually used the new default for next time. Default ON.
+    @Published var rememberLastMode: Bool { didSet { d.set(rememberLastMode, forKey: "rememberLastMode") } }
+    // Custom global shortcut to record a new note (in addition to the built-in Fn + Z). Default none.
+    @Published var noteRecordKeyCode: UInt32 { didSet { d.set(Int(noteRecordKeyCode), forKey: "noteRecordKeyCode") } }
+    @Published var noteRecordMods: UInt32 { didSet { d.set(Int(noteRecordMods), forKey: "noteRecordMods") } }
 
     @Published var profiles: [Profile] { didSet { persistProfiles() } }
     @Published var activeProfileID: UUID { didSet { d.set(activeProfileID.uuidString, forKey: "activeProfileID") } }
@@ -312,11 +434,31 @@ final class Settings: ObservableObject {
     @Published var referralCode: String { didSet { d.set(referralCode, forKey: "verba.referral") } }
     var referralLink: String { "https://verba.run/?ref=\(referralCode)" }
     @Published var username: String { didSet { d.set(username, forKey: "verba.username") } }
+    // Opt out of the public leaderboard: hide the profile and stop submitting scores.
+    @Published var showOnLeaderboard: Bool {
+        didSet {
+            d.set(showOnLeaderboard, forKey: "verba.showOnLeaderboard")
+            if showOnLeaderboard { Leaderboard.submit() } else { Leaderboard.remove(uid: uid) }
+        }
+    }
+
+    /// A fun, anonymous public alias (Adjective+Animal+Number), never the real name.
+    static func randomAlias() -> String {
+        let adjectives = ["Swift", "Clever", "Bold", "Lucid", "Rapid", "Sharp", "Calm", "Witty", "Zen", "Turbo"]
+        let nouns = ["Falcon", "Otter", "Comet", "Vox", "Scribe", "Quill", "Echo", "Nova", "Pilot", "Sage"]
+        return "\(adjectives.randomElement()!)\(nouns.randomElement()!)\(Int.random(in: 10...99))"
+    }
     /// The single account identity used everywhere (leaderboard, history, wishlist).
     var uid: String { referralCode.isEmpty ? "anon-" + (proEmail.isEmpty ? "local" : proEmail) : referralCode }
 
     var activeProfile: Profile {
         profiles.first { $0.id == activeProfileID } ?? profiles.first ?? .coding
+    }
+
+    /// Sidebar visibility (Home / Modes / Settings are pinned and ignore this).
+    func navVisible(_ item: NavItem) -> Bool { !hiddenNav.contains(item.rawValue) }
+    func setNavVisible(_ item: NavItem, _ on: Bool) {
+        if on { hiddenNav.remove(item.rawValue) } else { hiddenNav.insert(item.rawValue) }
     }
 
     /// Verify the subscription by email against verba.run and update `isPro`.
@@ -328,10 +470,14 @@ final class Settings: ObservableObject {
     }
 
     private init() {
-        engine = TranscriptionEngine(rawValue: d.string(forKey: "engine") ?? "") ?? .openAI
+        // Default to a LOCAL engine so a fresh user can dictate with no API key at all
+        // (Parakeet: on-device, multilingual, auto-downloads on first run).
+        engine = TranscriptionEngine(rawValue: d.string(forKey: "engine") ?? "") ?? .parakeet
         localModel = d.string(forKey: "localModel") ?? "large-v3-v20240930_turbo"
         claudeModel = d.string(forKey: "claudeModel") ?? "claude-sonnet-4-6"
-        repromptBackend = RepromptBackend(rawValue: d.string(forKey: "repromptBackend") ?? "") ?? .claudeCode
+        micUID = d.string(forKey: "micUID") ?? ""
+        hiddenNav = Set(d.stringArray(forKey: "hiddenNav") ?? [])
+        repromptBackend = RepromptBackend(rawValue: d.string(forKey: "repromptBackend") ?? "") ?? .auto
         openRouterModel = d.string(forKey: "openRouterModel") ?? "anthropic/claude-3.7-sonnet"
         localLLMModel = d.string(forKey: "localLLMModel") ?? "qwen2.5:7b"
         overlayStyle = OverlayStyle(rawValue: d.string(forKey: "overlayStyle") ?? "") ?? .floating
@@ -344,24 +490,46 @@ final class Settings: ObservableObject {
         autoDetectProfile = d.object(forKey: "autoDetectProfile") as? Bool ?? true
         useSelectionContext = d.object(forKey: "useSelectionContext") as? Bool ?? true
         voiceCommands = d.object(forKey: "voiceCommands") as? Bool ?? true
+        languageGuard = d.object(forKey: "languageGuard") as? Bool ?? true
         repromptEnabled = d.object(forKey: "repromptEnabled") as? Bool ?? true
         recordStyle = RecordStyle(rawValue: d.string(forKey: "recordStyle") ?? "") ?? .lock
-        useFnAsPrimary = d.object(forKey: "useFnAsPrimary") as? Bool ?? false
+        useFnAsPrimary = d.object(forKey: "useFnAsPrimary") as? Bool ?? true
         onboarded = d.object(forKey: "onboarded") as? Bool ?? false
         showInDock = d.object(forKey: "showInDock") as? Bool ?? true
+        showMenuBarIcon = d.object(forKey: "showMenuBarIcon") as? Bool ?? true
+        smartFormatting = d.object(forKey: "smartFormatting") as? Bool ?? true
+        redoEnabled = d.object(forKey: "redoEnabled") as? Bool ?? true
+        autoLearnDictionary = d.object(forKey: "autoLearnDictionary") as? Bool ?? true
+        toneMatch = d.object(forKey: "toneMatch") as? Bool ?? false
+        voiceEditLast = d.object(forKey: "voiceEditLast") as? Bool ?? true
+        agenticActionsEnabled = d.object(forKey: "agenticActionsEnabled") as? Bool ?? false
+        notesTabEnabled = d.object(forKey: "notesTabEnabled") as? Bool ?? true
+        todosTabEnabled = d.object(forKey: "todosTabEnabled") as? Bool ?? true
+        todoReminders = d.object(forKey: "todoReminders") as? Bool ?? true
+        soundsEnabled = d.object(forKey: "soundsEnabled") as? Bool ?? true
+        soundVolume = d.object(forKey: "soundVolume") as? Double ?? 0.8
+        suppressFnPopup = d.object(forKey: "suppressFnPopup") as? Bool ?? true
+        disableInputSwitcher = d.object(forKey: "disableInputSwitcher") as? Bool ?? true
         styleEnabled = d.object(forKey: "styleEnabled") as? Bool ?? false
         styleText = d.string(forKey: "styleText") ?? "Write in a clear, natural voice. Keep it concise."
         primaryKeyCode = UInt32(d.object(forKey: "primaryKeyCode") as? Int ?? 49 /* Space */)
         primaryMods = UInt32(d.object(forKey: "primaryMods") as? Int ?? Int(kCtrlOpt))
+        // No extra global change-mode shortcut by default: the built-in gesture is Fn + Tab.
+        modePickerKeyCode = UInt32(d.object(forKey: "modePickerKeyCode") as? Int ?? 0)
+        modePickerMods = UInt32(d.object(forKey: "modePickerMods") as? Int ?? 0)
+        modeGestureCycles = d.object(forKey: "modeGestureCycles") as? Bool ?? true
+        todoGlanceEnabled = d.object(forKey: "todoGlanceEnabled") as? Bool ?? true
+        rememberLastMode = d.object(forKey: "rememberLastMode") as? Bool ?? true
+        noteRecordKeyCode = UInt32(d.object(forKey: "noteRecordKeyCode") as? Int ?? 0)
+        noteRecordMods = UInt32(d.object(forKey: "noteRecordMods") as? Int ?? 0)
         isPro = (ProcessInfo.processInfo.environment["VERBA_PRO"] != nil) || d.bool(forKey: "verba.pro")
         proEmail = d.string(forKey: "verba.email") ?? ""
-        // Public alias for the leaderboard (never the email). Fun default if unset.
+        showOnLeaderboard = d.object(forKey: "verba.showOnLeaderboard") as? Bool ?? true
+        // Public alias for the leaderboard (never the email or real name). Fun default if unset.
         if let u = d.string(forKey: "verba.username"), !u.isEmpty {
             username = u
         } else {
-            let adjectives = ["Swift", "Clever", "Bold", "Lucid", "Rapid", "Sharp", "Calm", "Witty", "Zen", "Turbo"]
-            let nouns = ["Falcon", "Otter", "Comet", "Vox", "Scribe", "Quill", "Echo", "Nova", "Pilot", "Sage"]
-            let name = "\(adjectives.randomElement()!)\(nouns.randomElement()!)\(Int.random(in: 10...99))"
+            let name = Settings.randomAlias()
             username = name
             d.set(name, forKey: "verba.username")
         }
@@ -384,7 +552,7 @@ final class Settings: ObservableObject {
         }
         let savedActive = (upToDate ? d.string(forKey: "activeProfileID").flatMap(UUID.init) : nil)
         // Fresh installs default to Polish (a good general writing mode), not Flow (raw).
-        activeProfileID = savedActive ?? loaded.first(where: { $0.name == "Polish" })?.id ?? loaded.first!.id
+        activeProfileID = savedActive ?? loaded.first(where: { $0.name == "Flow" })?.id ?? loaded.first!.id
         profiles = loaded
         if !upToDate {
             d.set(Self.profilesVersion, forKey: "profilesVersion")
@@ -410,9 +578,15 @@ final class Settings: ObservableObject {
 
     var primaryHasShortcut: Bool { primaryMods != 0 }
 
+    var modePickerHasShortcut: Bool { modePickerMods != 0 }
+
+    var noteRecordHasShortcut: Bool { noteRecordMods != 0 }
+
     private func combo(of t: ShortcutTarget) -> (UInt32, UInt32)? {
         switch t {
         case .primary: return primaryMods == 0 ? nil : (primaryKeyCode, primaryMods)
+        case .modePicker: return modePickerMods == 0 ? nil : (modePickerKeyCode, modePickerMods)
+        case .noteRecord: return noteRecordMods == 0 ? nil : (noteRecordKeyCode, noteRecordMods)
         case .profile(let id):
             guard let p = profiles.first(where: { $0.id == id }), let c = p.hotkeyCode, let m = p.hotkeyMods else { return nil }
             return (c, m)
@@ -423,6 +597,12 @@ final class Settings: ObservableObject {
         case .primary:
             primaryKeyCode = combo?.0 ?? 0
             primaryMods = combo?.1 ?? 0
+        case .modePicker:
+            modePickerKeyCode = combo?.0 ?? 0
+            modePickerMods = combo?.1 ?? 0
+        case .noteRecord:
+            noteRecordKeyCode = combo?.0 ?? 0
+            noteRecordMods = combo?.1 ?? 0
         case .profile(let id):
             if let i = profiles.firstIndex(where: { $0.id == id }) {
                 profiles[i].hotkeyCode = combo?.0
@@ -433,6 +613,8 @@ final class Settings: ObservableObject {
     private func holder(ofKey k: UInt32, mods m: UInt32) -> ShortcutTarget? {
         if let p = profiles.first(where: { $0.hotkeyCode == k && $0.hotkeyMods == m }) { return .profile(p.id) }
         if primaryMods != 0, primaryKeyCode == k, primaryMods == m { return .primary }
+        if modePickerMods != 0, modePickerKeyCode == k, modePickerMods == m { return .modePicker }
+        if noteRecordMods != 0, noteRecordKeyCode == k, noteRecordMods == m { return .noteRecord }
         return nil
     }
 

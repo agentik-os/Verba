@@ -29,6 +29,8 @@ cat > "$ENTITLEMENTS" <<'PLIST'
   <key>com.apple.security.network.client</key><true/>
   <key>com.apple.security.device.audio-input</key><true/>
   <key>com.apple.security.device.microphone</key><true/>
+  <key>com.apple.security.personal-information.calendars</key><true/>
+  <key>com.apple.security.personal-information.reminders</key><true/>
 </dict></plist>
 PLIST
 

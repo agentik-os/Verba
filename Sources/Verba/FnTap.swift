@@ -11,6 +11,10 @@ final class FnTap {
 
     var onFnDown: (() -> Void)?
     var onFnUp: (() -> Void)?
+    var onFnControl: (() -> Void)?    // ⌥+Fn → today's to-do glance (Option held at Fn-down, or Option tapped mid-Fn-hold)
+    var onModeCycle: ((Int) -> Void)? // Fn + Tab → next mode (+1) / Fn + ⇧ + Tab → previous (-1)
+    var onNoteRecord: (() -> Void)?   // Fn + Z → record a new note
+    var onTodoCapture: (() -> Void)?  // Fn + § → voice "add to-do" capture
     var onDigit: ((Int) -> Bool)?     // 1-9 while menuActive; return true to consume
     var onArrow: ((Int) -> Bool)?     // -1 left / +1 right while menuActive
     var onEnter: (() -> Bool)?        // return / enter while menuActive
@@ -19,9 +23,15 @@ final class FnTap {
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?
     private var fnDown = false
+    private var optDown = false   // Option held during the current Fn-hold (fires onFnControl → to-do glance)
 
-    func start() {
-        guard tap == nil else { return }
+    /// True once the event tap is live. False means Accessibility/Input-Monitoring is not
+    /// granted (the tap couldn't be created), so the Fn key does nothing until the user grants it.
+    private(set) var active = false
+
+    @discardableResult
+    func start() -> Bool {
+        guard tap == nil else { return active }
         // Ask for Input Monitoring so the HID-level tap can actually consume events.
         IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
         FnSystemPref.suppress()   // "Press 🌐 to: Do Nothing" + disable input-source symbolic hotkeys
@@ -40,17 +50,19 @@ final class FnTap {
             eventsOfInterest: CGEventMask(mask),
             callback: { _, type, event, refcon in
                 Unmanaged<FnTap>.fromOpaque(refcon!).takeUnretainedValue().handle(type, event)
-            }, userInfo: me) else { return }
+            }, userInfo: me) else { active = false; return false }
         tap = t
         source = CFMachPortCreateRunLoopSource(nil, t, 0)
         CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
         CGEvent.tapEnable(tap: t, enable: true)
+        active = true
+        return true
     }
 
     func stop() {
         if let t = tap { CGEvent.tapEnable(tap: t, enable: false) }
         if let s = source { CFRunLoopRemoveSource(CFRunLoopGetCurrent(), s, .commonModes) }
-        tap = nil; source = nil; fnDown = false; menuActive = false
+        tap = nil; source = nil; fnDown = false; menuActive = false; active = false
         FnSystemPref.restore()
     }
 
@@ -62,18 +74,41 @@ final class FnTap {
 
         case .flagsChanged:
             let fn = event.flags.contains(.maskSecondaryFn)
+            let opt = event.flags.contains(.maskAlternate)
             let bareFn = event.flags.subtracting([.maskSecondaryFn, .maskNonCoalesced]).isEmpty
-            if fn && !fnDown { fnDown = true; onFnDown?() }
-            else if !fn && fnDown { fnDown = false; onFnUp?() }
+            // Plain Fn records. ⌥+Fn (Option held when Fn goes down) pops the today's-to-do glance
+            // instead of recording; tapping ⌥ while Fn is already held also triggers the glance.
+            if fn && !fnDown {
+                fnDown = true; optDown = opt
+                if opt { onFnControl?() } else { onFnDown?() }
+            } else if !fn && fnDown {
+                fnDown = false; optDown = false; onFnUp?()
+            } else if fn && fnDown {
+                // Fn stayed down; an Option key transition arrived. A fresh Option-press mid-hold
+                // fires the ⌥+Fn gesture (today's to-do glance).
+                if opt && !optDown { optDown = true; onFnControl?() }
+                else if !opt { optDown = false }
+            }
             return bareFn ? nil : Unmanaged.passUnretained(event)
 
         case .keyDown:
             let code = Int(event.getIntegerValueField(.keyboardEventKeycode))
             if code == 63 { return nil }                          // bare globe key
-            if menuActive {
+            // Fn + § (ISO section key) → voice "add to-do" capture; Fn + Z → record a new note (anywhere).
+            if fnDown, code == kVK_ISO_Section, onTodoCapture != nil { onTodoCapture?(); return nil }
+            if fnDown, code == kVK_ANSI_Z, onNoteRecord != nil { onNoteRecord?(); return nil }
+            // Fn + Tab → next mode, Fn + ⇧ + Tab → previous. Works even mid-dictation.
+            if fnDown, code == kVK_Tab {
+                onModeCycle?(event.flags.contains(.maskShift) ? -1 : 1); return nil
+            }
+            // Fn + number selects a mode whenever Fn is held (or the picker menu is open).
+            if menuActive || fnDown {
                 if let n = Self.digit(code), onDigit?(n) == true { return nil }
-                if code == kVK_LeftArrow,  onArrow?(-1) == true { return nil }
-                if code == kVK_RightArrow, onArrow?(1) == true { return nil }
+            }
+            // Arrow navigation + Enter ONLY while the picker is open (no global conflict).
+            if menuActive {
+                if (code == kVK_LeftArrow || code == kVK_UpArrow), onArrow?(-1) == true { return nil }
+                if (code == kVK_RightArrow || code == kVK_DownArrow), onArrow?(1) == true { return nil }
                 if (code == kVK_Return || code == kVK_ANSI_KeypadEnter), onEnter?() == true { return nil }
             }
             return Unmanaged.passUnretained(event)
@@ -99,10 +134,26 @@ final class FnTap {
 /// (Crucial: on macOS 14/15, 0 = "Change Input Source" — that WAS the HUD. 3 = Do Nothing.)
 /// The symbolic-hotkey toggles additionally kill the emoji + Ctrl-Space chord switchers.
 enum FnSystemPref {
-    private static let key = "AppleFnUsageType"
-    private static let domain = ".GlobalPreferences"   // NSGlobalDomain, AnyHost
+    // The authoritative "Press 🌐 to:" pref lives in com.apple.HIToolbox (NOT .GlobalPreferences,
+    // which macOS ignores for this key). It must be set on BOTH the AnyHost and CurrentHost
+    // scopes for the WindowServer to honour it. This is what actually kills the globe input
+    // switcher / emoji HUD, even with multiple keyboard layouts.
+    private static let key = "AppleFnUsageType" as CFString
+    private static let appID = "com.apple.HIToolbox" as CFString
     private static var saved: Int??
     private static let kDoNothing = 3                  // 0=Change Input Source, 1=Emoji, 2=Dictation, 3=Do Nothing
+
+    private static func readFn() -> Int? {
+        CFPreferencesCopyValue(key, appID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost) as? Int
+            ?? CFPreferencesCopyValue(key, appID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost) as? Int
+    }
+    private static func writeFn(_ v: Int?) {
+        let val = v.map { $0 as CFNumber }
+        for host in [kCFPreferencesAnyHost, kCFPreferencesCurrentHost] {
+            CFPreferencesSetValue(key, val, appID, kCFPreferencesCurrentUser, host)
+            CFPreferencesSynchronize(appID, kCFPreferencesCurrentUser, host)
+        }
+    }
 
     // Emoji palette (50) + select previous/next input source chords (60/61). NOT the globe key.
     private static let inputSourceHotKeys: [Int32] = [50, 60, 61]
@@ -118,24 +169,48 @@ enum FnSystemPref {
         return unsafeBitCast(p, to: T.self)
     }
 
-    static func suppress() {
-        let d = UserDefaults(suiteName: domain)
-        if saved == nil { saved = .some(d?.object(forKey: key) as? Int) }
-        if (d?.object(forKey: key) as? Int) != kDoNothing {
-            d?.set(kDoNothing, forKey: key)
-            d?.synchronize()
-            applySettingsLive()                 // re-bind without a logout
+    static func suppress() { apply() }
+
+    /// Re-apply when the related settings change (Settings ▸ Fn key).
+    static func reapply() { apply() }
+
+    /// Cheap check (CFPreferences read, no subprocess): is "Press 🌐 to" already Do Nothing?
+    static var isSuppressedLive: Bool { readFn() == kDoNothing }
+
+    /// Light self-heal for app-focus: only spend the activateSettings subprocess if the value
+    /// actually drifted away from Do Nothing.
+    static func reapplyIfDrifted() {
+        guard Settings.shared.suppressFnPopup, readFn() != kDoNothing else { return }
+        apply()
+    }
+
+    /// Apply the user's Fn-key preferences:
+    ///  • suppressFnPopup → set "Press 🌐 to: Do Nothing" (no emoji/Fn HUD); else restore macOS default.
+    ///  • disableInputSwitcher → disable the emoji palette + input-source switch chords; else re-enable.
+    private static func apply() {
+        if saved == nil { saved = .some(readFn()) }
+
+        if Settings.shared.suppressFnPopup {
+            if readFn() != kDoNothing { writeFn(kDoNothing) }
+            applySettingsLive()   // ALWAYS refresh the live WindowServer state, even if already 3.
+        } else if let saved, readFn() == kDoNothing {
+            writeFn(saved)        // restore the user's original Fn behaviour (saved may be nil → remove)
+            applySettingsLive()
         }
-        for id in inputSourceHotKeys {          // per-session state, re-run each launch
-            if isEnabled?(id) == true, setEnabled?(id, false) == 0 { disabledSHK.append(id) }
+
+        if Settings.shared.disableInputSwitcher {
+            for id in inputSourceHotKeys where isEnabled?(id) == true {
+                if setEnabled?(id, false) == 0, !disabledSHK.contains(id) { disabledSHK.append(id) }
+            }
+        } else {
+            for id in disabledSHK { _ = setEnabled?(id, true) }
+            disabledSHK = []
         }
     }
 
     static func restore() {
         if let saved {
-            let d = UserDefaults(suiteName: domain)
-            if let v = saved { d?.set(v, forKey: key) } else { d?.removeObject(forKey: key) }
-            d?.synchronize()
+            writeFn(saved)        // saved is the original Int? (nil → remove the override)
             applySettingsLive()
             Self.saved = nil
         }

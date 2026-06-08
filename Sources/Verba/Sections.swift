@@ -44,7 +44,7 @@ struct HomeView: View {
             Card {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Start dictating").font(.headline)
-                    Text("Press \(triggerLabel) and talk. Switch mode on the fly from the floating bar, or use ⌃⌥1-6.")
+                    Text("Press \(triggerLabel) and talk. Fn + Tab jumps to the next mode (even mid-sentence), ⌃ pauses & resumes, or use ⌃⌥1-6 for a specific mode.")
                         .foregroundStyle(.secondary)
                     HStack(spacing: 8) {
                         ForEach(settings.profiles.prefix(6)) { p in
@@ -68,8 +68,7 @@ struct HomeView: View {
                                     Text("\(e.date.formatted(date: .abbreviated, time: .shortened)) · \(e.profileName)")
                                         .font(.caption2).foregroundStyle(.secondary)
                                     Spacer()
-                                    Button { Output.copyToClipboard(e.reprompted) } label: { Image(systemName: "doc.on.doc") }
-                                        .buttonStyle(.borderless).foregroundStyle(.secondary)
+                                    CopyButton(text: e.reprompted)
                                 }
                             }
                         }
@@ -142,26 +141,174 @@ struct InsightsView: View {
     }
 }
 
+// MARK: - Dictionary agent: clean up the user's terms with the AI, returning strict JSON.
+
+enum DictionaryAgent {
+    /// A cleaned term: corrected written form + optional proposed spoken variant.
+    struct Cleaned { var written: String; var spoken: String }
+    enum Err: LocalizedError {
+        case empty, unparseable
+        var errorDescription: String? {
+            switch self {
+            case .empty: return "Add a term first."
+            case .unparseable: return "The AI didn't return a usable result."
+            }
+        }
+    }
+
+    private static let system = """
+    You clean up a dictation dictionary. Each term has a "written" form (the correct spelling the app \
+    should produce) and an optional "said" form (how the user would speak it, to auto-correct a mis-hearing).
+
+    For every input term:
+    - Fix the capitalization and spelling of the "written" form (proper nouns, brand names, acronyms).
+    - Where helpful, propose the likely "said" spoken variant (lowercase, how someone would pronounce it). \
+    If the term is a plain word that wouldn't be mis-heard, leave "said" empty.
+    - Keep the SAME number of terms, in the SAME order — only correct them.
+
+    Detect the user's language and keep EVERY value in that single language. NEVER mix two languages \
+    in a value (no franglais).
+
+    Reply with a SINGLE JSON object, nothing else (no prose, no code fence):
+    {"terms":[{"written":"Corrected Form","said":"spoken variant or empty"}]}
+    """
+
+    static func clean(_ terms: [DictTerm]) async throws -> [Cleaned] {
+        let usable = terms.filter { !$0.written.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        guard !usable.isEmpty else { throw Err.empty }
+        let payload = usable.map { ["written": $0.written, "said": $0.spoken] }
+        let json = (try? JSONSerialization.data(withJSONObject: ["terms": payload]))
+            .flatMap { String(data: $0, encoding: .utf8) } ?? ""
+        let model = Settings.shared.claudeModel.hasPrefix("claude-") ? Settings.shared.claudeModel : "claude-sonnet-4-6"
+        let raw = try await Reprompter(model: model).reprompt(transcript: json, systemPrompt: system)
+        return try parse(raw)
+    }
+
+    static func parse(_ text: String) throws -> [Cleaned] {
+        var s = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let open = s.range(of: "{"), let close = s.range(of: "}", options: .backwards), open.lowerBound <= close.lowerBound {
+            s = String(s[open.lowerBound...close.lowerBound])
+        }
+        guard let data = s.data(using: .utf8),
+              let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { throw Err.unparseable }
+        let rawTerms = obj["terms"] as? [Any] ?? []
+        let cleaned: [Cleaned] = rawTerms.compactMap { item in
+            guard let t = item as? [String: Any],
+                  let w = (t["written"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines), !w.isEmpty else { return nil }
+            let said = (t["said"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return Cleaned(written: w, spoken: said)
+        }
+        guard !cleaned.isEmpty else { throw Err.unparseable }
+        return cleaned
+    }
+}
+
 // MARK: - Dictionary
 
 struct DictionaryView: View {
     @ObservedObject var store = DictionaryStore.shared
+    @ObservedObject var settings = Settings.shared
+    @State private var aiBusy = false
+    @State private var aiError: String?
+
+    private var autoCount: Int { store.terms.filter(\.auto).count }
+    private var hasWritten: Bool {
+        store.terms.contains { !$0.written.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
+
     var body: some View {
         SectionScaffold(title: "Dictionary",
                         subtitle: "Teach Verba names and terms it should always spell right.") {
+            // Auto-add control, right where the terms live.
+            HStack(spacing: 12) {
+                Image(systemName: "wand.and.sparkles").font(.system(size: 18)).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Auto-add from your edits").font(.headline)
+                    Text(autoCount > 0
+                         ? "Verba learned \(autoCount) term\(autoCount == 1 ? "" : "s") from your corrections."
+                         : "When you fix a word after pasting, Verba adds it here automatically.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Toggle("", isOn: $settings.autoLearnDictionary).labelsHidden()
+            }
+            .cleanCard(padding: 16)
+
+            // Clean up the existing terms with the AI.
+            HStack(spacing: 12) {
+                Image(systemName: "sparkles").font(.system(size: 18)).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Improve with AI").font(.headline)
+                    Text(aiError ?? "Fix the spelling and capitalization of your terms, and propose the spoken form where it helps.")
+                        .font(.caption).foregroundStyle(aiError == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
+                }
+                Spacer()
+                if aiBusy { ProgressView().controlSize(.small) }
+                Button(action: improveWithAI) { Text("Improve with AI") }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(aiBusy || !hasWritten)
+            }
+            .cleanCard(padding: 16)
+
+            if store.terms.isEmpty {
+                EmptyState(icon: "character.book.closed", title: "No terms yet",
+                           message: "Teach Verba names, jargon, and acronyms it should always spell right. Fill only “Written” to add a vocabulary hint (e.g. “Verba”), or pair it with “Said” to auto-correct a mis-hearing (say “verba” → write “Verba”). With Auto-add on, it also learns from the corrections you make after pasting.")
+            }
             VStack(spacing: 10) {
                 ForEach($store.terms) { $t in
                     HStack(spacing: 10) {
-                        TextField("Said (optional)", text: $t.spoken).cleanField()
+                        TextField("Said — optional", text: $t.spoken).cleanField()
+                            .help("Leave empty to add a vocabulary hint. Fill it only to auto-correct a spoken word into the written form.")
                         Image(systemName: "arrow.right").foregroundStyle(.tertiary)
-                        TextField("Written", text: $t.written).cleanField()
+                        TextField("Written — required", text: $t.written).cleanField()
+                            .help("The correct spelling. A term with only “Written” is sent to the transcriber as a vocabulary hint.")
+                        if t.auto {
+                            Text("auto")
+                                .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                                .padding(.horizontal, 7).padding(.vertical, 3)
+                                .background(.softFill, in: Capsule())
+                                .help("Auto-learned from one of your edits")
+                        }
                         removeButton { store.terms.removeAll { $0.id == t.id } }
                     }
                 }
-                addButton("Add term") { store.terms.append(DictTerm(spoken: "", written: "")) }
+                addButton("Add word") { store.terms.append(DictTerm(spoken: "", written: "")) }
             }
-            Text("“Written” terms are sent to the transcriber as hints; any “Said → Written” pair is auto-corrected in the result.")
+            Text("Fill only “Written” to add a vocabulary hint the transcriber should spell right. “Said” is optional — add it only to auto-correct a spoken word into the written form. Auto-added terms work the same, edit or remove any of them.")
                 .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private func improveWithAI() {
+        guard !aiBusy, hasWritten else { return }
+        aiError = nil; aiBusy = true
+        let snapshot = store.terms
+        Task {
+            do {
+                let cleaned = try await DictionaryAgent.clean(snapshot)
+                await MainActor.run {
+                    merge(cleaned)
+                    aiBusy = false
+                }
+            } catch {
+                await MainActor.run { aiError = error.localizedDescription; aiBusy = false }
+            }
+        }
+    }
+
+    /// Merge AI-cleaned terms back in: update each written form's casing/spelling and fill an
+    /// empty spoken form, without dropping or duplicating any existing term. The AI returns the
+    /// cleaned terms in the same order as the terms that had a written value, so we map them back
+    /// positionally onto exactly those rows and leave every other term untouched.
+    private func merge(_ cleaned: [DictionaryAgent.Cleaned]) {
+        let writtenIdx = store.terms.indices.filter {
+            !store.terms[$0].written.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+        for (cleanedTerm, idx) in zip(cleaned, writtenIdx) {
+            store.terms[idx].written = cleanedTerm.written
+            if store.terms[idx].spoken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !cleanedTerm.spoken.isEmpty {
+                store.terms[idx].spoken = cleanedTerm.spoken
+            }
         }
     }
 }
@@ -173,6 +320,10 @@ struct SnippetsView: View {
     var body: some View {
         SectionScaffold(title: "Snippets",
                         subtitle: "Say a trigger; Verba expands it into longer text.") {
+            if store.items.isEmpty {
+                EmptyState(icon: "text.badge.plus", title: "No snippets yet",
+                           message: "Create shortcuts: say a short trigger and Verba expands it into longer text, like your address, an email signature, or a boilerplate reply. Add your first one below.")
+            }
             VStack(spacing: 10) {
                 ForEach($store.items) { $s in
                     HStack(alignment: .top, spacing: 10) {
@@ -216,10 +367,15 @@ struct TransformsView: View {
     @ObservedObject var store = TransformsStore.shared
     @ObservedObject var pad = Scratchpad.shared
     @State private var running: UUID?
+    @State private var errorMessage: String?
 
     var body: some View {
         SectionScaffold(title: "Transforms",
                         subtitle: "One-tap rewrites you can run on the Scratchpad text.") {
+            if store.items.isEmpty {
+                EmptyState(icon: "arrow.triangle.2.circlepath", title: "No transforms yet",
+                           message: "Build one-tap rewrites for your Scratchpad text, like “Make it formal”, “Translate to English”, or “Turn into bullet points”. Give each a name and a prompt, then run it on whatever is in the Scratchpad.")
+            }
             VStack(spacing: 12) {
                 ForEach($store.items) { $t in
                     Card {
@@ -237,17 +393,40 @@ struct TransformsView: View {
                     }
                 }
                 addButton("Add transform") { store.items.append(Transform(name: "New transform", prompt: "Rewrite the text…")) }
+                if let errorMessage {
+                    Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                        .font(.callout)
+                        .foregroundStyle(.red)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 2)
+                }
             }
         }
     }
 
     private func run(_ t: Transform) {
         running = t.id
+        errorMessage = nil
         let input = pad.text
         Task {
-            let out = try? await Reprompter(model: Settings.shared.claudeModel)
-                .reprompt(transcript: input, systemPrompt: t.prompt + "\nOutput ONLY the transformed text.")
-            await MainActor.run { if let out { pad.text = out }; running = nil }
+            do {
+                let out = try await Reprompter(model: Settings.shared.claudeModel)
+                    .reprompt(transcript: input, systemPrompt: t.prompt + "\nOutput ONLY the transformed text.")
+                await MainActor.run {
+                    let trimmed = out.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if trimmed.isEmpty {
+                        errorMessage = "Transform returned an empty result."
+                    } else {
+                        pad.text = out
+                    }
+                    running = nil
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Transform failed: \(error.localizedDescription)"
+                    running = nil
+                }
+            }
         }
     }
 }
@@ -261,8 +440,7 @@ struct ScratchpadView: View {
             HStack {
                 Text("Scratchpad").font(.system(size: 28, weight: .bold))
                 Spacer()
-                Button { Output.copyToClipboard(pad.text) } label: { Label("Copy", systemImage: "doc.on.doc") }
-                    .buttonStyle(.borderless)
+                CopyButton(text: pad.text, title: "Copy")
                 Button(role: .destructive) { pad.text = "" } label: { Label("Clear", systemImage: "trash") }
                     .buttonStyle(.borderless)
             }
@@ -271,8 +449,35 @@ struct ScratchpadView: View {
                 .font(.system(size: 15)).scrollContentBackground(.hidden)
                 .padding(.horizontal, 24).padding(.vertical, 20)
                 .background(.softFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay {
+                    if pad.text.isEmpty {
+                        EmptyState(icon: "note.text", title: "Empty scratchpad",
+                                   message: "A free-form space for text. Dictate into it, paste notes, then run a Transform on it (make it formal, translate, summarize…) and copy the result.")
+                            .allowsHitTesting(false)
+                    }
+                }
                 .padding(.horizontal, 32).padding(.bottom, 32)
         }
+    }
+}
+
+// MARK: - Empty state (icon + title + explanation), shown when a section has no content yet.
+
+struct EmptyState: View {
+    let icon: String
+    let title: String
+    let message: String
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: icon).font(.system(size: 40, weight: .light)).foregroundStyle(.tertiary)
+            Text(title).font(.headline)
+            Text(message)
+                .font(.callout).foregroundStyle(.secondary)
+                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: 440)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 44)
     }
 }
 

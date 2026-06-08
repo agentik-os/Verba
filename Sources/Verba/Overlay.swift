@@ -2,13 +2,40 @@ import SwiftUI
 import AppKit
 import Combine
 
+/// What the current recording/processing is for — surfaced as a small badge on the pill so the
+/// user can always tell a normal dictation apart from a Note (Fn+Z) or a To-do capture (Fn+§).
+enum CaptureContext {
+    case dictation, note, todo
+
+    var label: String {
+        switch self {
+        case .dictation: return "Dictation"
+        case .note:      return "Note"
+        case .todo:      return "To-do"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .dictation: return "waveform"
+        case .note:      return "doc.text"
+        case .todo:      return "checklist"
+        }
+    }
+}
+
 final class OverlayModel: ObservableObject {
+    @Published var context: CaptureContext = .dictation   // what this capture is for (badge)
+    @Published var modeName: String = ""  // active reprompt mode for the badge ("" = none, e.g. Note/To-do)
     @Published var level: Float = 0      // 0...1 mic level
     @Published var phase: Double = 0     // advanced by our own timer → animation never stalls
     @Published var title: String = ""    // "Listening…" / "Transcribing…" / etc.
     @Published var recording = false
     @Published var paused = false        // dictation paused
     @Published var done = false          // brief success flash
+    @Published var info = false          // brief discreet hint (e.g. "Didn't catch that")
+    @Published var modeHint = false      // brief mode-change flash (e.g. "Mode · Coding")
+    @Published var error = false         // brief red error flash (e.g. "Transcription failed")
     var onPauseToggle: (() -> Void)?
     @Published var menu = false          // pre-record: show numbered modes to pick
     @Published var profiles: [Profile] = []
@@ -20,10 +47,9 @@ final class OverlayModel: ObservableObject {
     @Published var style: OverlayStyle = .floating
 }
 
-/// The recording indicator. Three looks (set in Settings ▸ Recording):
+/// The recording indicator. Two looks (set in Settings ▸ Recording):
 ///   • floating, glass pill at the bottom (default)
-///   • island, dark pill at the top of the screen (Dynamic-Island style)
-///   • minimal, tiny top bar, just the moving waveform (for power users)
+///   • minimal, no overlay at all, the menu-bar icon is the indicator
 struct OverlayView: View {
     @ObservedObject var model: OverlayModel
 
@@ -31,7 +57,6 @@ struct OverlayView: View {
         Group {
             switch model.style {
             case .floating: floating
-            case .island:   island
             case .minimal:  minimal
             }
         }
@@ -51,51 +76,32 @@ struct OverlayView: View {
                     Waveform(level: model.paused ? 0 : model.level, phase: model.phase).frame(width: 64, height: 24)
                 }
                 label(size: 13)
+                // The cancel/X is shown whenever something is in flight (recording OR
+                // processing) and must ALWAYS be clickable so a hung process can be aborted
+                // without quitting. Hidden only on the brief done flash and the mode picker.
                 if !model.menu && !model.done {
                     Button { model.onCancel?() } label: {
-                        Image(systemName: "xmark.circle.fill").font(.system(size: 15)).foregroundStyle(.secondary)
-                    }.buttonStyle(.plain).help("Cancel (Esc)")
+                        Image(systemName: "xmark.circle.fill").font(.system(size: 16)).foregroundStyle(.secondary)
+                            .padding(8).contentShape(Rectangle())   // big, always-hittable target
+                    }
+                    .buttonStyle(.plain)
+                    .help("Cancel (Esc)")
+                    .allowsHitTesting(true)   // never let an overlaid ProgressView swallow the click
                 }
             }
             picker(font: 11)
         }
         .padding(.horizontal, 16).padding(.vertical, 10)
-        .glass(in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .frame(minHeight: 44)   // one stable pill height across idle/recording/processing
+        .glass(in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .fixedSize()
-    }
-
-    // MARK: Top island — Dynamic-Island that grows from the notch (flat top, rounded bottom)
-    private var islandShape: some Shape { RoundedRectangle(cornerRadius: 24, style: .continuous) }
-    private var island: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 11) {
-                if model.recording {
-                    Circle().fill(model.paused ? Color.orange : Color.red)
-                        .frame(width: 8, height: 8)
-                        .shadow(color: (model.paused ? Color.orange : Color.red).opacity(0.8), radius: 4)
-                    Waveform(level: model.paused ? 0 : model.level, phase: model.phase).frame(width: 92, height: 18)
-                } else {
-                    leading(big: false)
-                }
-                label(size: 12.5)
-            }
-            picker(font: 11)
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .background(
-            ZStack {
-                islandShape.fill(.black)
-                islandShape.fill(LinearGradient(colors: [.white.opacity(0.08), .clear],
-                                                startPoint: .top, endPoint: .center))
-            }
-        )
-        .overlay(islandShape.stroke(Color.white.opacity(0.08), lineWidth: 0.8))
-        .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
-        .environment(\.colorScheme, .dark)
-        .fixedSize()
-        .animation(.spring(response: 0.34, dampingFraction: 0.74), value: model.menu)
-        .animation(.spring(response: 0.34, dampingFraction: 0.74), value: model.recording)
+        // Content swaps (waveform/pause/picker appearing) and the resulting width change
+        // animate smoothly instead of snapping → no erratic morph between states.
+        .animation(.easeInOut(duration: 0.22), value: model.recording)
+        .animation(.easeInOut(duration: 0.22), value: model.menu)
+        .animation(.easeInOut(duration: 0.22), value: model.done)
+        .animation(.easeInOut(duration: 0.22), value: model.title)
+        .animation(.easeInOut(duration: 0.22), value: model.modeName)
     }
 
     // MARK: Minimal top bar
@@ -116,8 +122,14 @@ struct OverlayView: View {
 
     // MARK: Shared pieces
     @ViewBuilder private func leading(big: Bool) -> some View {
-        if model.done {
+        if model.error {
+            Image(systemName: "exclamationmark.triangle.fill").font(.system(size: big ? 14 : 12)).foregroundStyle(.red)
+        } else if model.done {
             Image(systemName: "checkmark.circle.fill").font(.system(size: big ? 14 : 12)).foregroundStyle(.green)
+        } else if model.modeHint {
+            Image(systemName: "slider.horizontal.3").font(.system(size: big ? 13 : 12)).foregroundStyle(.secondary)
+        } else if model.info {
+            Image(systemName: "mic.slash").font(.system(size: big ? 13 : 12)).foregroundStyle(.secondary)
         } else if model.menu {
             Image(systemName: "mic").font(.system(size: big ? 13 : 12)).foregroundStyle(.secondary)
         } else if model.recording {
@@ -131,37 +143,56 @@ struct OverlayView: View {
     }
 
     @ViewBuilder private func label(size: CGFloat) -> some View {
-        if model.done {
+        if model.error {
+            Text(model.title.isEmpty ? "Error" : model.title)
+                .font(.system(size: size, weight: .medium)).foregroundStyle(.red).lineLimit(2)
+        } else if model.done {
             Text(model.title.isEmpty ? "Done" : model.title).font(.system(size: size, weight: .medium)).lineLimit(1)
         } else if model.menu {
             Text("Choose a mode").font(.system(size: size, weight: .medium)).lineLimit(1)
+        } else if model.paused {
+            Text("Paused").font(.system(size: size, weight: .medium)).lineLimit(1)
         } else {
-            Text(model.paused ? "Paused" : model.title).font(.system(size: size, weight: .medium)).lineLimit(1)
+            // "Listening · Custom" → "Listening" + a black tag with the full mode name in white.
+            // Both use fixedSize so the mode tag never gets compressed/truncated — it always
+            // shows the whole word at its natural width (the panel grows to fit).
+            let parts = model.title.components(separatedBy: " · ")
+            HStack(spacing: 6) {
+                Text(parts.first ?? model.title)
+                    .font(.system(size: size, weight: .medium))
+                    .fixedSize(horizontal: true, vertical: false)
+                if parts.count > 1, !parts[1].isEmpty {
+                    Text(parts[1])
+                        .font(.system(size: size - 1, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8).padding(.vertical, 2)
+                        .background(Capsule().fill(Color.black))
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+            }
         }
     }
 
     @ViewBuilder private func picker(font: CGFloat) -> some View {
-        if (model.menu || (model.recording && model.style == .floating)) && !model.profiles.isEmpty {
+        // Only in the picker menu, never during recording (a single Fn = a clean recording).
+        if model.menu && !model.profiles.isEmpty {
             HStack(spacing: 6) {
-                ForEach(model.profiles) { p in
+                ForEach(Array(model.profiles.enumerated()), id: \.element.id) { idx, p in
                     let isActive = model.menu && p.id == model.activeID
                     let isSwitch = !model.menu && p.id == model.selectedID
                     let hot = isActive || isSwitch
+                    let num = idx < 9 ? "\(idx + 1) " : ""   // 1-9: type the number to pick
                     Button {
                         if model.menu { model.onStart?(p) }
                         else { model.selectedID = p.id; model.onSelect?(p) }
                     } label: {
-                        Text(p.name).font(.system(size: font, weight: hot ? .semibold : .regular))
+                        Text("\(num)\(p.name)").font(.system(size: font, weight: hot ? .semibold : .regular))
                             .padding(.horizontal, 10).padding(.vertical, 4)
                             .background(Capsule().fill(hot ? Color.primary.opacity(0.95) : Color.primary.opacity(0.1)))
                             .foregroundStyle(hot ? (model.style == .floating ? Color.white : Color.black) : Color.primary.opacity(0.85))
                     }
                     .buttonStyle(.plain)
                 }
-            }
-            if model.menu {
-                Text("← → · 1-9 · click, sets your default mode & dictates")
-                    .font(.system(size: max(9, font - 1))).foregroundStyle(.secondary)
             }
         }
     }
@@ -214,7 +245,9 @@ final class OverlayController {
         p.isOpaque = false
         p.hasShadow = true
         p.ignoresMouseEvents = false   // chips must be clickable
-        p.contentViewController = NSHostingController(rootView: OverlayView(model: model))
+        let host = NSHostingController(rootView: OverlayView(model: model))
+        host.sizingOptions = [.preferredContentSize]   // window tracks SwiftUI's intrinsic size → no truncation
+        p.contentViewController = host
         p.alphaValue = 1
         panel = p
         p.layoutIfNeeded()             // warm the SwiftUI render
@@ -230,12 +263,15 @@ final class OverlayController {
         panel.layoutIfNeeded()
         guard let size = panel.contentView?.fittingSize, size != lastSize else { return }
         lastSize = size
-        reposition()
+        reposition(animated: true)
     }
 
     func show() {
         prepare()
         model.style = Settings.shared.overlayStyle
+        // Minimal = no floating UI at all. The menu-bar icon is the only indicator, and the
+        // mode is chosen from the menu-bar dropdown (the picker gestures are disabled here).
+        if model.style == .minimal { panel?.orderOut(nil); return }
         panel?.level = .statusBar
         reposition()
         panel?.orderFrontRegardless()
@@ -243,20 +279,31 @@ final class OverlayController {
 
     func hide() { panel?.orderOut(nil) }
 
-    func reposition() {
+    func reposition(animated: Bool = false) {
         guard let panel, let screen = NSScreen.main else { return }
         panel.layoutIfNeeded()
         let size = panel.contentView?.fittingSize ?? NSSize(width: 260, height: 80)
         lastSize = size
-        panel.setContentSize(size)
         let vf = screen.visibleFrame
         let x = vf.midX - size.width / 2
         let y: CGFloat
         switch model.style {
         case .floating: y = vf.minY + 90              // bottom center
-        case .island:   y = vf.maxY - size.height - 8 // just below the menu bar (clear of the notch)
         case .minimal:  y = vf.maxY - size.height - 6
         }
-        panel.setFrameOrigin(NSPoint(x: x, y: y))
+        // Account for the panel's title-bar inset so the *content* lands at the target size.
+        let frame = NSRect(origin: NSPoint(x: x, y: y),
+                           size: panel.frameRect(forContentRect: NSRect(origin: .zero, size: size)).size)
+        if animated && panel.isVisible {
+            // Smoothly grow/shrink the pill as states change — kills the snap/morph glitch.
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.22
+                ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                ctx.allowsImplicitAnimation = true
+                panel.animator().setFrame(frame, display: true)
+            }
+        } else {
+            panel.setFrame(frame, display: true)
+        }
     }
 }

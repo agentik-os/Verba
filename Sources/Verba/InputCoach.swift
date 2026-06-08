@@ -2,7 +2,7 @@ import Foundation
 import Combine
 
 /// Tracks which keyboard actions the user has performed, so the onboarding can detect
-/// "you did it" live and guide them through single tap / hold / double-tap / Control.
+/// "you did it" live and guide them through single tap / hold / Fn+Control / Control.
 final class InputCoach: ObservableObject {
     static let shared = InputCoach()
     enum Action { case singleFn, holdFn, doubleFn, control }

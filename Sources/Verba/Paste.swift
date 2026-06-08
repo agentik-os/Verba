@@ -8,6 +8,26 @@ enum Output {
         NSWorkspace.shared.frontmostApplication?.bundleIdentifier
     }
 
+    // Smart formatting (#7): rich text/markdown for apps that render it, plain for code/terminals.
+    private static let plainTextApps: Set<String> = [
+        "com.apple.Terminal", "com.googlecode.iterm2", "dev.warp.Warp-Stable",
+        "com.microsoft.VSCode", "com.todesktop.230313mzl4w4u92" /* Cursor */, "com.apple.dt.Xcode",
+        "com.sublimetext.4", "com.jetbrains.intellij", "com.github.atom", "org.alacritty",
+    ]
+    private static let richTextApps: Set<String> = [
+        "com.apple.mail", "com.microsoft.Outlook", "com.readdle.smartemail-Mac", "notion.id",
+        "com.apple.TextEdit", "com.apple.iWork.Pages", "net.shinyfrog.bear", "md.obsidian",
+        "com.apple.Notes", "com.microsoft.Word",
+    ]
+    /// Decide rich vs plain for the target app. Known plain apps → plain; known rich apps →
+    /// rich; otherwise fall back to the user's default.
+    static func prefersRichText(_ bundleID: String?) -> Bool {
+        guard let b = bundleID else { return Settings.shared.richTextPaste }
+        if plainTextApps.contains(b) { return false }
+        if richTextApps.contains(b) { return true }
+        return Settings.shared.richTextPaste
+    }
+
     /// The text currently selected in the frontmost app's focused field, via the
     /// Accessibility API. Returns nil if nothing is selected or AX isn't granted.
     static func selectedText() -> String? {
@@ -21,6 +41,21 @@ enum Output {
         guard AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &value) == .success,
               let text = value as? String,
               !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return text
+    }
+
+    /// Full text of the currently focused field (the whole value, not just the selection).
+    /// Used by auto-learn to see how the user manually edited what we pasted.
+    static func focusedValue() -> String? {
+        guard accessibilityTrusted else { return nil }
+        let system = AXUIElementCreateSystemWide()
+        var focused: AnyObject?
+        guard AXUIElementCopyAttributeValue(system, kAXFocusedUIElementAttribute as CFString, &focused) == .success,
+              let focused else { return nil }
+        let element = focused as! AXUIElement
+        var value: AnyObject?
+        guard AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &value) == .success,
+              let text = value as? String, !text.isEmpty else { return nil }
         return text
     }
 

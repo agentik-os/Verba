@@ -11,6 +11,28 @@ private func saveJSON<T: Encodable>(_ key: String, _ value: T) {
     if let data = try? JSONEncoder().encode(value) { UserDefaults.standard.set(data, forKey: key) }
 }
 
+// MARK: - Tone store (#5): a few of the user's recent messages per app, used as few-shot
+// style examples so reprompts match how they actually write in that app.
+enum ToneStore {
+    private static let maxPerApp = 3
+    private static func key(_ bundleID: String) -> String { "tone.\(bundleID)" }
+
+    static func record(bundleID: String?, text: String) {
+        guard let bundleID, !bundleID.isEmpty else { return }
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard t.count >= 12, t.count <= 600 else { return }   // skip tiny/huge samples
+        var arr = (loadJSON(key(bundleID), [String].self) ?? []).filter { $0 != t }
+        arr.insert(t, at: 0)
+        if arr.count > maxPerApp { arr = Array(arr.prefix(maxPerApp)) }
+        saveJSON(key(bundleID), arr)
+    }
+
+    static func examples(bundleID: String?) -> [String] {
+        guard let bundleID, !bundleID.isEmpty else { return [] }
+        return loadJSON(key(bundleID), [String].self) ?? []
+    }
+}
+
 func wordCount(_ s: String) -> Int {
     s.split { $0.isWhitespace || $0.isNewline }.count
 }
@@ -22,7 +44,7 @@ private func dayKey(_ date: Date = Date()) -> String {
 
 // MARK: - Stats (words / wpm / streak)
 
-struct DayStat: Codable { var words: Int = 0; var seconds: Double = 0; var count: Int = 0 }
+struct DayStat: Codable, Equatable { var words: Int = 0; var seconds: Double = 0; var count: Int = 0 }
 
 final class Stats: ObservableObject {
     static let shared = Stats()
@@ -36,6 +58,7 @@ final class Stats: ObservableObject {
         d.words += words; d.seconds += seconds; d.count += 1
         days[k] = d
         saveJSON("stats.days", days)
+        push(day: k)   // keep the cloud copy (Insights) in sync
     }
 
     /// Words dictated in the current calendar month (drives the free-tier limit).
@@ -78,11 +101,81 @@ final class Stats: ObservableObject {
             return (f.string(from: date), days[dayKey(date)]?.words ?? 0)
         }
     }
+
+    // MARK: - Cloud sync (Convex). Insights / Total Words follow the account across Macs.
+    private static let convex = "https://fortunate-aardvark-443.convex.cloud"
+    private var uid: String { Settings.shared.uid }
+
+    /// Push one day's totals to the cloud (called after each dictation).
+    func push(day: String) {
+        guard !Settings.shared.proEmail.isEmpty, let d = days[day] else { return }
+        post("mutation", "stats:push",
+             ["uid": uid, "day": day, "words": d.words, "seconds": d.seconds, "count": d.count])
+    }
+
+    /// Push every day (after sign-in, so anything dictated while signed out reaches the account).
+    func pushAll() {
+        guard !Settings.shared.proEmail.isEmpty else { return }
+        for k in days.keys { push(day: k) }
+    }
+
+    /// Pull cloud stats and merge them in (max per day), so a new Mac / reinstall restores Insights.
+    func syncFromCloud() {
+        guard !Settings.shared.proEmail.isEmpty else { return }
+        post("query", "stats:pull", ["uid": uid]) { [weak self] data in
+            guard let self, let data,
+                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  obj["status"] as? String == "success",
+                  let arr = obj["value"] as? [[String: Any]] else { return }
+            DispatchQueue.main.async {
+                var merged = self.days
+                for r in arr {
+                    guard let day = r["day"] as? String else { continue }
+                    let cw = (r["words"] as? Int) ?? 0
+                    let cs = (r["seconds"] as? Double) ?? 0
+                    let cc = (r["count"] as? Int) ?? 0
+                    let cur = merged[day] ?? DayStat()
+                    merged[day] = DayStat(words: max(cur.words, cw),
+                                          seconds: max(cur.seconds, cs),
+                                          count: max(cur.count, cc))
+                }
+                if merged != self.days {
+                    self.days = merged
+                    saveJSON("stats.days", merged)
+                }
+            }
+        }
+    }
+
+    private func post(_ kind: String, _ path: String, _ args: [String: Any], _ cb: @escaping (Data?) -> Void = { _ in }) {
+        guard let url = URL(string: "\(Self.convex)/api/\(kind)") else { cb(nil); return }
+        var req = URLRequest(url: url); req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "content-type")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: ["path": path, "args": args, "format": "json"])
+        URLSession.shared.dataTask(with: req) { d, _, _ in cb(d) }.resume()
+    }
 }
 
 // MARK: - Dictionary (custom spellings / vocabulary)
 
-struct DictTerm: Codable, Identifiable { var id = UUID(); var spoken: String; var written: String }
+struct DictTerm: Codable, Identifiable {
+    var id = UUID()
+    var spoken: String
+    var written: String
+    var auto: Bool = false          // true = Verba auto-learned it from an edit
+
+    init(id: UUID = UUID(), spoken: String, written: String, auto: Bool = false) {
+        self.id = id; self.spoken = spoken; self.written = written; self.auto = auto
+    }
+    // Decode old saved dictionaries (no `auto` key) without losing them.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        spoken = try c.decode(String.self, forKey: .spoken)
+        written = try c.decode(String.self, forKey: .written)
+        auto = try c.decodeIfPresent(Bool.self, forKey: .auto) ?? false
+    }
+}
 
 final class DictionaryStore: ObservableObject {
     static let shared = DictionaryStore()
@@ -95,10 +188,34 @@ final class DictionaryStore: ObservableObject {
     /// Replace spoken forms with the intended written form (case-insensitive).
     func apply(to text: String) -> String {
         var out = text
-        for t in terms where !t.spoken.isEmpty {
+        for t in terms where !t.spoken.isEmpty && !t.written.isEmpty {
             out = out.replacingOccurrences(of: t.spoken, with: t.written, options: [.caseInsensitive])
         }
         return out
+    }
+
+    /// Auto-learn from a MANUAL post-paste edit: `pasted` is what Verba inserted, `current` is
+    /// the field's text now (read back via Accessibility). We locate the pasted segment inside
+    /// the current text (it may have moved or been lightly edited) and learn the word swaps.
+    /// Conservative on purpose: the matched window must stay ≥60% identical (a correction, not a
+    /// rewrite), then `learn` applies its own per-word guards.
+    func learnFromEdit(pasted: String, current: String) {
+        let tokens: (String) -> [String] = { $0.split { $0 == " " || $0 == "\n" || $0 == "\t" }.map(String.init) }
+        let pasted = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard pasted.count >= 3, !current.isEmpty else { return }
+        if current.contains(pasted) { return }                       // unedited → nothing to learn
+        let pw = tokens(pasted), cw = tokens(current)
+        let n = pw.count
+        guard n >= 1, cw.count >= n, cw.count <= 4000 else { return }
+        var best: (score: Int, window: [String])? = nil
+        for start in 0...(cw.count - n) {
+            let window = Array(cw[start..<start + n])
+            var identical = 0
+            for (a, b) in zip(pw, window) where a.lowercased() == b.lowercased() { identical += 1 }
+            if best == nil || identical > best!.score { best = (identical, window) }
+        }
+        guard let best, best.score < n, Double(best.score) / Double(n) >= 0.6 else { return }
+        learn(from: pw.joined(separator: " "), edited: best.window.joined(separator: " "))
     }
 
     /// Auto-learn: when the user fixes a word in the review screen, remember the correction
@@ -115,7 +232,7 @@ final class DictionaryStore: ObservableObject {
                   x.allSatisfy({ $0.isLetter }), y.allSatisfy({ $0.isLetter }),
                   editDistance(x.lowercased(), y.lowercased()) <= 3,     // a correction, not a rewrite
                   !terms.contains(where: { $0.spoken.lowercased() == x.lowercased() }) else { continue }
-            terms.append(DictTerm(spoken: x, written: y))
+            terms.append(DictTerm(spoken: x, written: y, auto: true))
         }
     }
 
@@ -198,5 +315,138 @@ final class Scratchpad: ObservableObject {
     private init() { text = UserDefaults.standard.string(forKey: "scratchpad.text") ?? "" }
     func append(_ s: String) {
         if text.isEmpty { text = s } else { text += "\n\n" + s }
+    }
+}
+
+// MARK: - To-dos (Projects ▸ Tasks ▸ Sub-tasks)
+
+struct TodoSubtask: Codable, Identifiable { var id = UUID(); var title: String; var done: Bool = false }
+struct TodoTask: Codable, Identifiable { var id = UUID(); var title: String; var done: Bool = false; var subtasks: [TodoSubtask] = []; var deadline: Date? = nil }
+struct TodoProject: Codable, Identifiable {
+    var id = UUID()
+    var name: String
+    var tasks: [TodoTask] = []
+    var tags: [String] = []
+
+    init(id: UUID = UUID(), name: String, tasks: [TodoTask] = [], tags: [String] = []) {
+        self.id = id; self.name = name; self.tasks = tasks; self.tags = tags
+    }
+    // Decode old saved projects (no `tags` key) without losing them.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        name = try c.decode(String.self, forKey: .name)
+        tasks = try c.decodeIfPresent([TodoTask].self, forKey: .tasks) ?? []
+        tags = try c.decodeIfPresent([String].self, forKey: .tags) ?? []
+    }
+}
+
+/// Voice-first to-dos, organized by project. Each project holds tasks, each task
+/// holds sub-tasks. Persisted like the other small stores.
+final class TodoStore: ObservableObject {
+    static let shared = TodoStore()
+    @Published var projects: [TodoProject] { didSet { saveJSON("todos.projects", projects) } }
+    private init() { projects = loadJSON("todos.projects", [TodoProject].self) ?? [] }
+
+    // MARK: project ops
+    @discardableResult
+    func addProject(_ name: String = "New project") -> UUID {
+        let p = TodoProject(name: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "New project" : name)
+        projects.append(p)
+        return p.id
+    }
+    func removeProject(_ id: UUID) { projects.removeAll { $0.id == id } }
+
+    // MARK: tag ops
+    func addTag(_ projectID: UUID, _ tag: String) {
+        let t = tag.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !t.isEmpty, let pi = projects.firstIndex(where: { $0.id == projectID }),
+              !projects[pi].tags.contains(where: { $0.caseInsensitiveCompare(t) == .orderedSame }) else { return }
+        projects[pi].tags.append(t)
+    }
+    func removeTag(_ projectID: UUID, _ tag: String) {
+        guard let pi = projects.firstIndex(where: { $0.id == projectID }) else { return }
+        projects[pi].tags.removeAll { $0 == tag }
+    }
+    /// All distinct tags across projects, sorted (case-insensitive), for the filter bar.
+    var allTags: [String] {
+        var seen = Set<String>(); var out: [String] = []
+        for p in projects { for t in p.tags where seen.insert(t.lowercased()).inserted { out.append(t) } }
+        return out.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+    }
+
+    // MARK: task ops
+    func addTask(_ projectID: UUID, _ title: String = "") {
+        guard let pi = projects.firstIndex(where: { $0.id == projectID }) else { return }
+        projects[pi].tasks.append(TodoTask(title: title))
+    }
+    func removeTask(_ projectID: UUID, _ taskID: UUID) {
+        guard let pi = projects.firstIndex(where: { $0.id == projectID }) else { return }
+        projects[pi].tasks.removeAll { $0.id == taskID }
+    }
+
+    /// Set (or clear, with nil) a task's deadline.
+    func setDeadline(_ projectID: UUID, _ taskID: UUID, _ deadline: Date?) {
+        guard let pi = projects.firstIndex(where: { $0.id == projectID }),
+              let ti = projects[pi].tasks.firstIndex(where: { $0.id == taskID }) else { return }
+        projects[pi].tasks[ti].deadline = deadline
+    }
+
+    // MARK: sub-task ops
+    func addSubtask(_ projectID: UUID, _ taskID: UUID, _ title: String = "") {
+        guard let pi = projects.firstIndex(where: { $0.id == projectID }),
+              let ti = projects[pi].tasks.firstIndex(where: { $0.id == taskID }) else { return }
+        projects[pi].tasks[ti].subtasks.append(TodoSubtask(title: title))
+    }
+
+    /// Insert a project produced by the agent (name + tasks, each with optional sub-tasks
+    /// and an optional deadline).
+    func addGenerated(name: String, tasks: [(String, [String], Date?)]) {
+        var p = TodoProject(name: name)
+        p.tasks = tasks.map { t in TodoTask(title: t.0, subtasks: t.1.map { TodoSubtask(title: $0) }, deadline: t.2) }
+        projects.append(p)
+    }
+
+    /// Append agent-built tasks (each with optional sub-tasks and deadline) to an existing project.
+    func appendTasks(_ projectID: UUID, _ tasks: [(String, [String], Date?)]) {
+        guard let pi = projects.firstIndex(where: { $0.id == projectID }) else { return }
+        projects[pi].tasks.append(contentsOf: tasks.map { t in
+            TodoTask(title: t.0, subtasks: t.1.map { TodoSubtask(title: $0) }, deadline: t.2)
+        })
+    }
+
+    // MARK: completion ops
+    /// Mark a task done by id (also checks every sub-task so progress reflects completion).
+    func markDone(taskID: UUID, done: Bool = true) {
+        for pi in projects.indices {
+            if let ti = projects[pi].tasks.firstIndex(where: { $0.id == taskID }) {
+                projects[pi].tasks[ti].done = done
+                for si in projects[pi].tasks[ti].subtasks.indices { projects[pi].tasks[ti].subtasks[si].done = done }
+                return
+            }
+        }
+    }
+
+    /// Mark a single sub-task done by id; if all its siblings end up done, the parent task is marked done too.
+    func markSubtaskDone(subtaskID: UUID, done: Bool = true) {
+        for pi in projects.indices {
+            for ti in projects[pi].tasks.indices {
+                if let si = projects[pi].tasks[ti].subtasks.firstIndex(where: { $0.id == subtaskID }) {
+                    projects[pi].tasks[ti].subtasks[si].done = done
+                    if done, projects[pi].tasks[ti].subtasks.allSatisfy(\.done) { projects[pi].tasks[ti].done = true }
+                    return
+                }
+            }
+        }
+    }
+
+    /// Done-progress for a project (completed leaf items / total), for the header chip.
+    func progress(_ p: TodoProject) -> (done: Int, total: Int) {
+        var done = 0, total = 0
+        for t in p.tasks {
+            if t.subtasks.isEmpty { total += 1; if t.done { done += 1 } }
+            else { for s in t.subtasks { total += 1; if s.done { done += 1 } } }
+        }
+        return (done, total)
     }
 }

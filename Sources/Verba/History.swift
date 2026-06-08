@@ -124,6 +124,52 @@ final class History: ObservableObject {
         entry.audioFile.map { dir.appendingPathComponent($0) }
     }
 
+    /// Replace the restructured text of an entry (used by "Re-run" in History).
+    func updateReprompted(_ entry: HistoryEntry, text: String) {
+        guard let i = entries.firstIndex(where: { $0.id == entry.id }) else { return }
+        entries[i].reprompted = text
+        save()
+        if !Settings.shared.proEmail.isEmpty {
+            post("mutation", "history:push", [
+                "uid": uid, "ts": entries[i].date.timeIntervalSince1970 * 1000,
+                "original": entries[i].original, "reprompted": text,
+                "profileName": entries[i].profileName, "engine": entries[i].engine,
+            ]) { _ in }
+        }
+    }
+
+    // MARK: - Storage / cache (audio files + temp recording buffers)
+
+    /// Total bytes used by stored dictation audio plus the temporary recording buffers.
+    func audioCacheBytes() -> Int64 {
+        var total: Int64 = 0
+        for d in [dir, Self.tempDir] {
+            guard let items = try? FileManager.default.contentsOfDirectory(at: d, includingPropertiesForKeys: [.fileSizeKey]) else { continue }
+            for u in items where u.pathExtension.lowercased() == "wav" || u.pathExtension.lowercased() == "caf" || u.pathExtension.lowercased() == "m4a" {
+                total += Int64((try? u.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+            }
+        }
+        return total
+    }
+
+    /// Delete every stored audio file and temp buffer, but KEEP the history text entries
+    /// (they just lose their playable audio). This is the "free up disk" action.
+    func clearAudioCache() {
+        for e in entries where e.audioFile != nil {
+            try? FileManager.default.removeItem(at: dir.appendingPathComponent(e.audioFile!))
+        }
+        entries = entries.map { var c = $0; c.audioFile = nil; return c }
+        save()
+        // Wipe the temporary recording buffers too.
+        if let items = try? FileManager.default.contentsOfDirectory(at: Self.tempDir, includingPropertiesForKeys: nil) {
+            for u in items { try? FileManager.default.removeItem(at: u) }
+        }
+    }
+
+    private static var tempDir: URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("Verba", isDirectory: true)
+    }
+
     private func load() {
         guard let data = try? Data(contentsOf: indexURL),
               let decoded = try? JSONDecoder().decode([HistoryEntry].self, from: data) else { return }

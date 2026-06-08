@@ -1,8 +1,15 @@
 import SwiftUI
 import AppKit
+import AVFoundation
+import IOKit.hid
 
 struct SettingsView: View {
     @ObservedObject var settings = Settings.shared
+    @State private var micGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
+    @State private var axGranted = Output.accessibilityTrusted
+    @State private var imGranted = IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted
+    @State private var screenGranted = ScreenCapture.hasPermission()
+    private let permPoll = Timer.publish(every: 1.5, on: .main, in: .common).autoconnect()
     @State private var openAIKey = Keychain.openAIKey ?? ""
     @State private var anthropicKey = Keychain.anthropicKey ?? ""
     @State private var openRouterKey = Keychain.openRouterKey ?? ""
@@ -18,28 +25,98 @@ struct SettingsView: View {
     @State private var pullProgress: Double = 0
     @State private var engineInstalling = false
     @State private var engineRefresh = 0
+    @State private var activating = false
+    @State private var cacheBytes: Int64 = 0
 
     private let claudeModels = ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-8"]
     private let localModels = ["base", "small", "large-v3-v20240930_turbo", "large-v3"]
 
     var body: some View {
         Form {
+            referralSection
             generalSections
+            permissionsSection
+            storageSection
             keySections
             planSections
         }
         .formStyle(.grouped)
         .frame(minWidth: 540, maxWidth: .infinity, minHeight: 460, maxHeight: .infinity)
         .tint(.primary)   // B&W accents
+        .onReceive(permPoll) { _ in
+            micGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
+            axGranted = Output.accessibilityTrusted
+            imGranted = IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted
+            screenGranted = ScreenCapture.hasPermission()
+        }
+    }
+
+    // MARK: Permissions (live status; re-launch the grant if a permission is off)
+    @ViewBuilder private var permissionsSection: some View {
+        Section {
+            permissionRow("mic.fill", "Microphone", "Record your voice.", granted: micGranted) {
+                AVCaptureDevice.requestAccess(for: .audio) { _ in }
+                openPane("Privacy_Microphone")
+            }
+            permissionRow("hand.point.up.left.fill", "Accessibility", "Paste into the active app.", granted: axGranted) {
+                Output.promptAccessibility()
+                openPane("Privacy_Accessibility")
+            }
+            permissionRow("keyboard", "Input Monitoring", "Use the Fn key as your trigger.", granted: imGranted) {
+                _ = IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
+                openPane("Privacy_ListenEvent")
+            }
+            permissionRow("camera.viewfinder", "Screen Recording", "Context mode only (optional).", granted: screenGranted) {
+                ScreenCapture.requestPermission()
+                ScreenCapture.openPrivacySettings()
+            }
+        } header: { Text("Permissions") } footer: {
+            if micGranted && axGranted && imGranted {
+                Label("All set. Verba has everything it needs to work.", systemImage: "checkmark.seal.fill")
+                    .font(.caption).foregroundStyle(.green)
+            } else {
+                Label("Some permissions are off. Verba can't fully work until the three core ones are on. Screen Recording is optional (Context mode).", systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func permissionRow(_ icon: String, _ title: String, _ desc: String, granted: Bool, action: @escaping () -> Void) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: granted ? "checkmark.circle.fill" : icon)
+                .foregroundStyle(granted ? AnyShapeStyle(.green) : AnyShapeStyle(.primary))
+                .frame(width: 22)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                Text(desc).font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            if granted {
+                Label("Authorized", systemImage: "checkmark.seal.fill").foregroundStyle(.green)
+            } else {
+                Button("Enable", action: action)
+            }
+        }
+    }
+
+    private func openPane(_ id: String) {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?\(id)") {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     // MARK: General (ordered: Account → Transcription → AI → Recording → Output → Loading → App)
     @ViewBuilder private var generalSections: some View {
         Group {
             Section {
-                TextField("Username / alias", text: $settings.username).frame(width: 260)
-            } header: { Text("Account") } footer: {
-                Text("Your public name on the leaderboard, never your real name or email. Change it anytime.")
+                HStack {
+                    TextField("Alias", text: $settings.username).frame(width: 220)
+                    Button { settings.username = Settings.randomAlias() } label: { Image(systemName: "shuffle") }
+                        .buttonStyle(.borderless).help("Shuffle a new alias")
+                }
+                Toggle("Show me on the public leaderboard", isOn: $settings.showOnLeaderboard)
+            } header: { Text("Alias & leaderboard") } footer: {
+                Text("Your alias is PUBLIC on the leaderboard, so pick a nickname, never your real name or email. Turn the toggle off to keep your profile off the leaderboard entirely.")
                     .font(.caption).foregroundStyle(.secondary)
             }
 
@@ -54,12 +131,30 @@ struct SettingsView: View {
                     Text("Say “new line / new paragraph”, “comma / period / question mark”, “bullet point”, or “scratch that” and Verba turns them into real formatting (any mode, incl. Flow). EN + FR.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
+                Toggle("Single-language output", isOn: $settings.languageGuard)
+                if settings.languageGuard {
+                    Text("If the engine mixes two languages mid-sentence (e.g. English words in French speech), Verba rewrites the result fully in its dominant language. Applies to every mode, including Flow.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             } header: { Text("Transcription") }
 
             Section {
                 Toggle("Restructure transcript with Claude", isOn: $settings.repromptEnabled)
                 Picker("Run via", selection: $settings.repromptBackend) {
                     ForEach(RepromptBackend.allCases) { Text($0.label).tag($0) }
+                }
+                if settings.repromptBackend == .auto {
+                    Label(ClaudeCode.isAvailable
+                          ? "Using Claude Code (runs on your Claude plan, no key)."
+                          : "Using Verba's included rewriting (no key, no setup).",
+                          systemImage: "wand.and.stars")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                if settings.repromptBackend == .verba {
+                    Label(settings.proEmail.isEmpty ? "Sign in (account section) to use the included rewriting, no API key needed."
+                                                     : "Included with Verba, no API key needed. Runs on Verba's servers.",
+                          systemImage: settings.proEmail.isEmpty ? "exclamationmark.triangle.fill" : "checkmark.seal.fill")
+                        .font(.caption).foregroundStyle(settings.proEmail.isEmpty ? .orange : .green)
                 }
                 if settings.repromptBackend == .claudeCode {
                     Label(ClaudeCode.isAvailable ? "Claude Code detected, uses your Claude plan, no API key."
@@ -90,13 +185,17 @@ struct SettingsView: View {
                 Picker("Indicator", selection: $settings.overlayStyle) {
                     ForEach(OverlayStyle.allCases) { Text($0.label).tag($0) }
                 }
+                if settings.overlayStyle == .minimal {
+                    Text("No floating window. The menu-bar icon turns red and pulses while recording.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
                 Picker("Style", selection: $settings.recordStyle) {
                     ForEach(RecordStyle.allCases) { Text($0.label).tag($0) }
                 }
                 Text(settings.recordStyle.help).font(.caption).foregroundStyle(.secondary)
                 Toggle("Use the Fn (🌐 globe) key", isOn: $settings.useFnAsPrimary)
                 if settings.useFnAsPrimary {
-                    Text("Quick tap = record the active mode (tap again to send) · hold = push-to-talk · double-tap = mode picker. ⌃ pauses. Esc cancels.")
+                    Text("Tap = record the active mode (tap again to send) · hold = push-to-talk · Fn + 1-9 = dictate in a specific mode · Fn + Tab = next mode (even mid-dictation) · ⌃ pauses · Esc cancels.")
                         .font(.caption).foregroundStyle(.secondary)
                 } else {
                     HStack {
@@ -109,6 +208,61 @@ struct SettingsView: View {
                         )
                     }
                 }
+                Toggle("Change-mode jumps to the next mode (no list)", isOn: $settings.modeGestureCycles)
+                VStack(alignment: .leading, spacing: 4) {
+                    Toggle("Remember last used mode", isOn: $settings.rememberLastMode)
+                    Text("After each dictation, the mode you used becomes the default for the next one.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                HStack {
+                    Text("Change-mode shortcut")
+                    Spacer()
+                    Text("Fn + Tab").foregroundStyle(.secondary)   // the built-in gesture
+                }
+                HStack {
+                    Text("Custom change-mode shortcut")
+                    Spacer()
+                    ShortcutRecorder(
+                        label: settings.modePickerHasShortcut ? shortcutLabel(keyCode: settings.modePickerKeyCode, modifiers: settings.modePickerMods) : "",
+                        onCapture: { code, mods in settings.assignShortcut(keyCode: code, modifiers: mods, to: .modePicker) },
+                        onClear: { settings.clearShortcut(.modePicker) }
+                    )
+                }
+                Text(settings.modeGestureCycles
+                     ? "Fn + Tab jumps straight to the next mode — even mid-dictation; Fn + 1-9 picks a specific mode. Set your own key above. Turn this off to open a numbered picker instead. Per-mode shortcuts are in Modes."
+                     : "Fn + Tab opens the mode picker; Fn + 1-9 picks a specific mode. Set your own key above. Turn the toggle on to cycle straight to the next mode instead. Per-mode shortcuts are in Modes.")
+                    .font(.caption).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Today's to-do glance")
+                        Spacer()
+                        Text("⌥ + Fn").foregroundStyle(.secondary)   // quick glance popup
+                    }
+                    Toggle("Enable the ⌥ + Fn to-do glance", isOn: $settings.todoGlanceEnabled)
+                    Text("Press ⌥ (Option) + Fn to pop up a compact glance of today's to-dos — what's due today plus anything overdue, each checkable. Press it again or Esc to dismiss.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                HStack {
+                    Text("Record a note")
+                    Spacer()
+                    Text("Fn + Z").foregroundStyle(.secondary)   // built-in note gesture
+                }
+                HStack {
+                    Text("Add a to-do")
+                    Spacer()
+                    Text("Fn + §").foregroundStyle(.secondary)   // built-in voice to-do capture
+                }
+                HStack {
+                    Text("Custom record-note shortcut")
+                    Spacer()
+                    ShortcutRecorder(
+                        label: settings.noteRecordHasShortcut ? shortcutLabel(keyCode: settings.noteRecordKeyCode, modifiers: settings.noteRecordMods) : "",
+                        onCapture: { code, mods in settings.assignShortcut(keyCode: code, modifiers: mods, to: .noteRecord) },
+                        onClear: { settings.clearShortcut(.noteRecord) }
+                    )
+                }
+                Text("Fn + Z opens the Notes tab and starts recording a new note instantly (notes auto-save as you go — no Save button). Fn + § instead captures a spoken to-do and files it into your projects. Set your own note key above.")
+                    .font(.caption).foregroundStyle(.secondary)
             } header: { Text("Recording & trigger") }
 
             Section {
@@ -141,11 +295,83 @@ struct SettingsView: View {
 
             Section {
                 Toggle("Show in Dock (full window app)", isOn: $settings.showInDock)
+                Toggle("Show the menu-bar icon", isOn: $settings.showMenuBarIcon)
             } header: { Text("App") } footer: {
-                Text("Off = menu-bar only. The dictation hotkeys work either way.")
+                Text("Dock off = menu-bar only. The dictation hotkeys work either way. If you hide BOTH the Dock and the menu-bar icon, reopen Verba from Applications to get back here.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
+            Section {
+                Toggle("Notes tab (long-form voice notes)", isOn: $settings.notesTabEnabled)
+                Text("A Notes tab to record long voice memos (up to an hour) and reorganize them into a clean document with a chosen format.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Toggle("To-dos tab (tasks by project)", isOn: $settings.todosTabEnabled)
+                Text("A To-dos tab to capture tasks and sub-tasks by voice, sorted into projects (accordion panels). Ask the agent to build a whole list from a spoken request.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Toggle("To-do reminders (30 min before a deadline)", isOn: $settings.todoReminders)
+                Text("Posts a local notification 30 minutes before a to-do task's deadline. Needs notification permission (macOS asks once). Clearing the deadline, completing, or deleting the task cancels its reminder.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Toggle("Smart formatting per app", isOn: $settings.smartFormatting)
+                Text("Rich text/markdown in apps that render it (Mail, Notion, Notes…), plain text in code editors and terminals.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Toggle("Redo last dictation in another mode", isOn: $settings.redoEnabled)
+                Text("Adds “Redo last in…” to the menu-bar menu, re-runs your last recording through any mode without speaking again.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Toggle("Auto-learn dictionary from your edits", isOn: $settings.autoLearnDictionary)
+                Text("When you fix a word — in the review screen, or by hand in the app right after pasting — Verba spots the correction on your next dictation and applies it automatically from then on. Learned terms appear in Dictionary.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Toggle("Match my tone per app", isOn: $settings.toneMatch)
+                Text("Verba learns how you write in each app (from your recent messages there) and matches that tone automatically.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Toggle("Edit last result by voice", isOn: $settings.voiceEditLast)
+                Text("Adds “Edit last by voice…” to the menu, speak a change (“make it shorter”, “more formal”, “translate to English”) and Verba rewrites your last result.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Toggle("Agentic actions (Context mode)", isOn: $settings.agenticActionsEnabled)
+                Text("In Context mode, voice requests like “create an event tomorrow 3pm”, “remind me to…”, or “draft a reply to this” create a Calendar event / Reminder / email draft. Verba always asks you to confirm first.")
+                    .font(.caption).foregroundStyle(.secondary)
+            } header: { Text("Labs") }
+
+            Section {
+                Toggle("Sound effects", isOn: $settings.soundsEnabled)
+                if settings.soundsEnabled {
+                    HStack {
+                        Text("Volume")
+                        Slider(value: $settings.soundVolume, in: 0...1)
+                        Text("\(Int(settings.soundVolume * 100))%").foregroundStyle(.secondary).frame(width: 40, alignment: .trailing)
+                    }
+                }
+            } header: { Text("Sounds") } footer: {
+                Text("Cues for recording start, paste, and errors. Only your custom mp3s play (no macOS system beeps). Drop more in the Sounds folder to add stop / pause / resume / cancel / mode cues.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
+            Section {
+                Toggle("Stop the macOS Fn / emoji popup", isOn: $settings.suppressFnPopup)
+                Toggle("Disable the keyboard / input-source switcher", isOn: $settings.disableInputSwitcher)
+            } header: { Text("Fn key behaviour") } footer: {
+                Text("By default Verba takes over the globe (Fn) key so macOS doesn't pop the emoji/Fn HUD or switch your keyboard layout. Turn these off to get the standard macOS behaviour back (the Fn trigger may then show the system popup).")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
+            Section {
+                ForEach(Self.sidebarItems) { item in
+                    Toggle(item.title, isOn: sidebarBinding(item))
+                }
+            } header: { Text("Sidebar menu") } footer: {
+                Text("Choose which sections show in the main window's sidebar. Home, Modes and Settings always stay.")
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
+    }
+
+    /// Sidebar sections the user can hide (Home / Modes / Settings are pinned).
+    private static let sidebarItems: [NavItem] =
+        [.notes, .todos, .insights, .history, .dictionary, .snippets, .style, .transforms, .scratchpad, .files, .leaderboard, .wishlist, .freeMonth]
+
+    private func sidebarBinding(_ item: NavItem) -> Binding<Bool> {
+        if item == .notes { return $settings.notesTabEnabled }   // Notes has its own feature flag
+        if item == .todos { return $settings.todosTabEnabled }   // To-dos has its own feature flag
+        return Binding(get: { settings.navVisible(item) }, set: { settings.setNavVisible(item, $0) })
     }
 
     // MARK: Engine lifecycle (local engines: install / use / uninstall)
@@ -169,13 +395,24 @@ struct SettingsView: View {
                     Text("\(installMsg) \(Int(installProgress * 100))%").font(.caption).foregroundStyle(.secondary)
                 }
             } else if EngineManager.isInstalled(engineTab) {
+                let _ = engineRefresh
+                let ready = EngineManager.isReady(engineTab, model: settings.localModel)
                 HStack {
-                    Label("Installed", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                    Label("Downloaded", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
                     Spacer()
-                    if active { activeLabel } else {
-                        Button("Use") { settings.engine = engineTab }.buttonStyle(.borderedProminent)
+                    if activating && active {
+                        ProgressView().controlSize(.small); Text("Activating…").font(.caption).foregroundStyle(.secondary)
+                    } else if active && ready {
+                        activeLabel
+                        Button("Reload") { activate(engineTab) }.buttonStyle(.bordered).controlSize(.small)
+                    } else {
+                        Button(active ? "Activate" : "Use this model") { activate(engineTab) }.buttonStyle(.borderedProminent)
                     }
                     Button("Uninstall", role: .destructive) { uninstallEngine(engineTab) }
+                }
+                if active && !ready && !activating, let err = EngineManager.lastInstallError {
+                    Label("Couldn't load this model: \(err). Tap Activate to retry, or Uninstall + redownload.", systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
                 }
             } else {
                 HStack {
@@ -189,7 +426,7 @@ struct SettingsView: View {
         }
     }
     private var activeLabel: some View {
-        Label("Active", systemImage: "checkmark.seal.fill").foregroundStyle(.green).font(.caption)
+        Label("Active & ready", systemImage: "checkmark.seal.fill").foregroundStyle(.green).font(.caption)
     }
 
     // MARK: Local LLM (Ollama) — auto start / install + model download, fully offline
@@ -243,6 +480,22 @@ struct SettingsView: View {
             pulling = false; ollamaHasModel = ok
         }
     }
+    /// Select an engine AND actually load its model, with verified feedback. This is the fix
+    /// for "downloaded but doesn't work": activation now confirms the model is loaded & ready.
+    private func activate(_ e: TranscriptionEngine) {
+        settings.engine = e
+        activating = true
+        EngineManager.lastInstallError = nil
+        Task {
+            let ok = await EngineManager.load(e)
+            await MainActor.run {
+                activating = false
+                engineRefresh += 1
+                if !ok { verifyMsg = "" }   // error surfaces via EngineManager.lastInstallError in the row
+            }
+        }
+    }
+
     private func installEngine(_ e: TranscriptionEngine) {
         installing = true; installProgress = 0
         installMsg = "Downloading \(EngineManager.sizeGB(e))…"
@@ -306,10 +559,29 @@ struct SettingsView: View {
                         Link("Upgrade, 14-day trial", destination: u)
                     }
                 }
+                // Restore / re-check, merged in. When already Pro we don't push "Verify",
+                // it's just there to re-check if needed.
+                TextField("Email used at checkout", text: $settings.proEmail)
+                HStack {
+                    Button {
+                        verifying = true; verifyMsg = ""
+                        Task {
+                            let ok = await settings.verifyPro()
+                            verifying = false
+                            verifyMsg = ok ? "Pro unlocked ✓" : "No active subscription for this email."
+                        }
+                    } label: { Text(verifying ? "Checking…" : (settings.isPro ? "Re-check" : "Verify / restore")) }
+                        .disabled(verifying || settings.proEmail.isEmpty)
+                    if !verifyMsg.isEmpty { Text(verifyMsg).font(.caption).foregroundStyle(.secondary) }
+                    Spacer()
+                    if let u = URL(string: Entitlement.accountURL) {
+                        Link("Manage", destination: u).font(.caption)
+                    }
+                }
             } header: { Text("Your plan") } footer: {
                 Text(settings.isPro
-                     ? "Thanks! Unlimited dictation, editable mode prompts and custom modes."
-                     : "Free is a full-Pro trial of \(Entitlement.freeTrialDictations) dictations. Pro ($9.99/mo) unlocks unlimited dictation, editable system prompts and custom modes.")
+                     ? "Thanks! Unlimited dictation, editable mode prompts and custom modes. Your subscription is active for this email."
+                     : "Free is a full-Pro trial of \(Entitlement.freeTrialDictations) dictations. Pro ($9.99/mo) unlocks unlimited dictation, editable system prompts and custom modes. Already subscribed? Enter your checkout email and Verify to restore.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             if !settings.isPro {
@@ -327,36 +599,52 @@ struct SettingsView: View {
                     }
                 }
             }
-            Section("Refer friends, give a month, get a month") {
-                HStack {
-                    Text(settings.referralLink).font(.system(.callout, design: .monospaced)).lineLimit(1).truncationMode(.middle)
-                    Spacer()
-                    Button("Copy") {
-                        let pb = NSPasteboard.general; pb.clearContents(); pb.setString(settings.referralLink, forType: .string)
-                    }
-                }
-                Text("Every friend who subscribes through your link and dictates 15,000+ words earns you a free month, unlimited, no cap.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            Section("Restore your subscription") {
-                TextField("Email used at checkout", text: $settings.proEmail)
-                HStack {
-                    Button {
-                        verifying = true; verifyMsg = ""
-                        Task {
-                            let ok = await settings.verifyPro()
-                            verifying = false
-                            verifyMsg = ok ? "Pro unlocked ✓" : "No active subscription for this email."
-                        }
-                    } label: { Text(verifying ? "Checking…" : "Verify") }
-                        .disabled(verifying || settings.proEmail.isEmpty)
-                    if !verifyMsg.isEmpty { Text(verifyMsg).font(.caption).foregroundStyle(.secondary) }
-                }
-                if let u = URL(string: Entitlement.accountURL) {
-                    Link("Manage subscription", destination: u).font(.caption)
-                }
-            }
+            // Plan + restore are merged into one "Your plan" section below.
         }
+    }
+
+    // MARK: Referral — pinned to the very top, it's important to us.
+    @ViewBuilder private var referralSection: some View {
+        Section {
+            HStack {
+                Text(settings.referralLink).font(.system(.callout, design: .monospaced)).lineLimit(1).truncationMode(.middle)
+                Spacer()
+                Button("Copy") {
+                    let pb = NSPasteboard.general; pb.clearContents(); pb.setString(settings.referralLink, forType: .string)
+                }
+            }
+        } header: { Text("Refer friends, give a month, get a month") } footer: {
+            Text("Every friend who subscribes through your link and dictates 15,000+ words earns you a free month, unlimited, no cap.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    // MARK: Memory & space — let users reclaim disk without losing their text history.
+    @ViewBuilder private var storageSection: some View {
+        Section {
+            HStack {
+                Label("Saved audio & buffers", systemImage: "internaldrive")
+                Spacer()
+                Text(byteString(cacheBytes)).foregroundStyle(.secondary)
+            }
+            Button(role: .destructive) {
+                History.shared.clearAudioCache()
+                cacheBytes = History.shared.audioCacheBytes()
+            } label: { Label("Clear audio cache (keep history text)", systemImage: "trash") }
+            Button(role: .destructive) {
+                History.shared.clear()
+                cacheBytes = History.shared.audioCacheBytes()
+            } label: { Label("Delete all history (text + audio)", systemImage: "trash.fill") }
+        } header: { Text("Memory & space") } footer: {
+            Text("Audio recordings pile up over time. Clear audio cache frees the disk by deleting saved recordings and temporary buffers while keeping your dictation history (the text). Delete all history removes everything.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+        .onAppear { cacheBytes = History.shared.audioCacheBytes() }
+    }
+
+    private func byteString(_ b: Int64) -> String {
+        let f = ByteCountFormatter(); f.allowedUnits = [.useMB, .useKB, .useGB]; f.countStyle = .file
+        return f.string(fromByteCount: b)
     }
 
 }

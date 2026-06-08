@@ -18,6 +18,7 @@ enum Leaderboard {
     /// Push this account's current stats (alias + totals). Optional completion on main.
     static func submit(_ done: @escaping () -> Void = {}) {
         let s = Settings.shared
+        guard s.showOnLeaderboard else { DispatchQueue.main.async { done() }; return }   // opted out → never publish
         let uid = s.uid
         let alias = s.username.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !alias.isEmpty else { DispatchQueue.main.async { done() }; return }

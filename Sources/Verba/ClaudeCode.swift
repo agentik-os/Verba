@@ -51,29 +51,38 @@ enum ClaudeCode {
     // MARK: - Process plumbing
 
     private static func run(_ path: String, _ args: [String], cwd: URL? = nil) async throws -> String {
-        try await withCheckedThrowingContinuation { cont in
-            DispatchQueue.global(qos: .userInitiated).async {
-                let task = Process()
-                task.executableURL = URL(fileURLWithPath: path)
-                task.arguments = args
-                if let cwd { task.currentDirectoryURL = cwd }
-                let outPipe = Pipe(), errPipe = Pipe()
-                task.standardOutput = outPipe
-                task.standardError = errPipe
-                do {
-                    try task.run()
-                    let outData = outPipe.fileHandleForReading.readDataToEndOfFile()
-                    let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
-                    task.waitUntilExit()
-                    if task.terminationStatus == 0 {
-                        cont.resume(returning: String(data: outData, encoding: .utf8) ?? "")
-                    } else {
-                        cont.resume(throwing: CCError.failed(String(data: errData, encoding: .utf8) ?? "exit \(task.terminationStatus)"))
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: path)
+        task.arguments = args
+        if let cwd { task.currentDirectoryURL = cwd }
+        let outPipe = Pipe(), errPipe = Pipe()
+        task.standardOutput = outPipe
+        task.standardError = errPipe
+
+        // withTaskCancellationHandler so cancel/timeout kills the CLI instead of leaking it
+        // (waitUntilExit on a detached queue would otherwise keep a hung `claude` alive forever).
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<String, Error>) in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    do {
+                        try task.run()
+                        let outData = outPipe.fileHandleForReading.readDataToEndOfFile()
+                        let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
+                        task.waitUntilExit()
+                        if Task.isCancelled {
+                            cont.resume(throwing: CancellationError())
+                        } else if task.terminationStatus == 0 {
+                            cont.resume(returning: String(data: outData, encoding: .utf8) ?? "")
+                        } else {
+                            cont.resume(throwing: CCError.failed(String(data: errData, encoding: .utf8) ?? "exit \(task.terminationStatus)"))
+                        }
+                    } catch {
+                        cont.resume(throwing: error)
                     }
-                } catch {
-                    cont.resume(throwing: error)
                 }
             }
+        } onCancel: {
+            if task.isRunning { task.terminate() }   // unblocks waitUntilExit → continuation resumes
         }
     }
 

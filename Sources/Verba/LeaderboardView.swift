@@ -78,8 +78,13 @@ struct LeaderboardView: View {
             if model.loading {
                 ProgressView().frame(maxWidth: .infinity).padding(.top, 30)
             } else if filtered.isEmpty {
-                Text(query.isEmpty ? "No one on the board yet. Dictate to claim a spot." : "No alias matches “\(query)”.")
-                    .font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, 30)
+                if query.isEmpty {
+                    EmptyState(icon: "trophy", title: "Nobody on the board yet",
+                               message: "The leaderboard ranks Verba users by words dictated. Dictate anything to claim your spot, your public alias appears here (never your real name or email).")
+                } else {
+                    Text("No alias matches “\(query)”.")
+                        .font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, 30)
+                }
             }
 
             ScrollView {
