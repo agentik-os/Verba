@@ -16,8 +16,20 @@ const DAYS: Day[] = [
     date: "June 9, 2026",
     tag: "Today",
     summary:
-      "Adapt anything you've already said, by voice, and a smoother Task Manager.",
+      "A big control update: hold-to-talk, reliable pause, switch modes mid-sentence, editable Note modes, a sharper Task Manager agent, and voice re-adapt.",
     entries: [
+      {
+        version: "0.1.83",
+        title: "Hold-to-talk, pause, and mid-sentence mode switching",
+        items: [
+          "New Hold-to-talk style: hold the key to speak, release to send (alongside the press-to-lock style).",
+          "Control reliably pauses and resumes a recording, every launch.",
+          "Change mode while recording hands-free, long-press the key or click the mode on the overlay, without stopping.",
+          "Notes record with the same on-screen widget (labelled “Note”, with pause / resume), and the note formats are now fully editable modes you can add, tweak and delete, plus an Intent mode.",
+          "The Task Manager agent now builds real project ▸ task ▸ sub-task lists and generates them for you, “the shopping list for a chocolate cake in Cuisine” fills in the ingredients.",
+          "Context (screen) mode simplified so it reliably sees your screen, and Dictionary gains a plain “add a word”.",
+        ],
+      },
       {
         version: "0.1.82",
         title: "Re-adapt any dictation, by voice",
