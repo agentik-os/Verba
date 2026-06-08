@@ -454,7 +454,7 @@ function LanguageDetection() {
 
 function VoiceTodos() {
   const cards = [
-    { icon: "pen", label: "Capture", text: "“Add buy milk and eggs to my groceries” → two tasks, filed in the right project. New project? It creates it." },
+    { icon: "pen", label: "Build whole lists", text: "“Make a Cooking project, a Chocolate cake task, and the full shopping list” → it creates the project, the task, and a real ingredient list as sub-tasks." },
     { icon: "calendar", label: "Deadlines by voice", text: "“Pay the invoice Friday at 3pm” → a task with a real date and time, shown red when it’s overdue." },
     { icon: "bell", label: "Reminders", text: "Get a notification 30 minutes before anything is due. Toggle it on or off in Settings." },
     { icon: "check", label: "Check off by voice", text: "“I bought the tomatoes” → Verba finds “Buy tomatoes” and ticks it. No tapping, no app-switching." },
@@ -464,12 +464,12 @@ function VoiceTodos() {
       <Reveal>
         <div className="mx-auto mb-4 w-fit rounded-full glass px-4 py-1.5 text-xs muted">New · Voice task manager</div>
         <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
-          Your to-dos, just by saying them
+          A Task Manager you just talk to
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-center muted text-balance">
-          Press a key, talk, and Verba files what you said into projects, tasks and sub-tasks, sets
-          deadlines, reminds you, and checks things off, all by voice. No other dictation app has a
-          built-in task manager, let alone one that understands you this well.
+          Press a key, talk, and Verba builds projects, tasks and sub-tasks, sets date-and-time
+          deadlines, reminds you, and checks things off, all by voice, and it can even generate a
+          whole list for you. No other dictation app has a built-in task manager, let alone one this smart.
         </p>
       </Reveal>
 
@@ -620,7 +620,7 @@ function CompareTable() {
     ["Use Claude Code sub, no key", [true, false, false, false]],
     ["Reads your screen (vision)", [true, false, false, false]],
     ["Hour-long structured notes", [true, false, false, false]],
-    ["Voice to-do manager (projects, deadlines, check-off)", [true, false, false, false]],
+    ["Voice Task Manager (projects, sub-tasks, generated lists)", [true, false, false, false]],
     ["Live translation mode", [true, "limited", false, "limited"]],
     ["Agentic actions (calendar, reminders)", [true, false, false, false]],
     ["Auto-learn your vocabulary & tone", [true, "partial", false, false]],

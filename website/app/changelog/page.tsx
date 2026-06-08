@@ -16,16 +16,28 @@ const DAYS: Day[] = [
     date: "June 8, 2026",
     tag: "Today",
     summary:
-      "A full day of deep work: an entire To-do workspace, the franglais bug killed, instant capture, and a dozen rough edges sanded down.",
+      "A full day of deep work: a complete Task Manager workspace with a generative AI agent, the franglais bug killed, instant capture, and dozens of rough edges sanded down.",
     entries: [
       {
-        version: "0.1.67",
-        title: "To-dos, reimagined",
+        version: "0.1.68 – 0.1.80",
+        title: "Task Manager grows up",
         items: [
-          "A dedicated To-dos workspace: projects ▸ tasks ▸ sub-tasks in clean accordion panels.",
+          "To-dos is now the Task Manager, tucked under a new Tools section in the sidebar (Home · Insights · History, then Tools).",
+          "A smarter AI agent that builds whole hierarchies from one request: “make a Cooking project, a Chocolate cake task, and the full shopping list” creates the project, the task, and a real ingredient list as sub-tasks.",
+          "A clean, professional date & time picker with quick presets (Today 6pm, Tomorrow 9am, This weekend, Next week); sub-tasks can carry their own deadline now.",
+          "Project tags moved inline onto the title row.",
+          "⌥ + Fn pops a quick glance of today's tasks; a single Fn tap now stops a note or task voice capture.",
+          "A Keyboard Shortcuts cheat-sheet right at the top of the menu-bar menu.",
+        ],
+      },
+      {
+        version: "0.1.67",
+        title: "Task Manager, reimagined",
+        items: [
+          "A dedicated Task Manager workspace: projects ▸ tasks ▸ sub-tasks in clean accordion panels.",
           "Tags on projects with a filter bar, organize by Pro, Perso, Pense-bête, anything.",
           "A voice agent that turns a spoken request into a structured project, routed to the right list.",
-          "Fn + § captures a to-do by voice from anywhere; a Capture by voice button in the app.",
+          "Fn + § captures a task by voice from anywhere; a Capture by voice button in the app.",
         ],
       },
       {
