@@ -1170,6 +1170,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func buildMenu() -> NSMenu {
         let menu = NSMenu()
+        // A cheat-sheet of every shortcut, first in the menu, so the reminder is always right there.
+        let scParent = NSMenuItem(title: "Keyboard Shortcuts", action: nil, keyEquivalent: "")
+        scParent.image = NSImage(systemSymbolName: "keyboard", accessibilityDescription: "Keyboard Shortcuts")
+        scParent.submenu = buildShortcutsMenu()
+        menu.addItem(scParent)
+        menu.addItem(.separator())
+
         let title: String
         switch state {
         case .idle: title = "Start dictation"
@@ -1257,11 +1264,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         add(menu, "Open Verba", #selector(openMain), "o")
         add(menu, "Settings…", #selector(openSettings), ",")
         add(menu, "History…", #selector(openHistory), "y")
-        // A cheat-sheet of every shortcut, so the user always has a reminder one click away.
-        let scParent = NSMenuItem(title: "Keyboard Shortcuts", action: nil, keyEquivalent: "")
-        scParent.image = NSImage(systemSymbolName: "keyboard", accessibilityDescription: "Keyboard Shortcuts")
-        scParent.submenu = buildShortcutsMenu()
-        menu.addItem(scParent)
         if !Output.accessibilityTrusted {
             add(menu, "Enable auto-paste…", #selector(enableAccessibility), "")
         }
