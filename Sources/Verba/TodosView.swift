@@ -16,12 +16,35 @@ enum TodoAgent {
 
     private static var system: String {
         """
-        You build a to-do list from a short request. The user says what they want a list for (e.g. \
-        "a shopping list for a raclette dinner", "steps to launch my landing page"). Turn it into ONE \
-        project with concrete, actionable tasks. Add sub-tasks only when a task naturally breaks down.
+        You build a structured to-do list from a request. The user describes what they want \
+        (e.g. "a shopping list for a raclette dinner", "steps to launch my landing page", \
+        "a project Kitchen, in it a task Chocolate cake, and give me the full shopping list for it"). \
+        Turn it into ONE project organized as a hierarchy.
+
+        THREE-LEVEL MODEL — map the user's described structure intelligently:
+          • PROJECT — the named bucket (the "project" field).
+          • TASK — an actionable item or category inside the project (entries in "tasks").
+          • SUBTASK — a smaller step / list item under a task (entries in its "subtasks").
+        If the user nests deeper than three levels, FOLD sensibly: the intermediate category \
+        becomes the TASK and the leaf actions become its SUBTASKS. If the user names a project and \
+        a single task inside it, emit exactly that project with that one task — do NOT split the \
+        task into several sibling tasks.
+
+        BE GENERATIVE — this is the most important rule. When the user asks you to PRODUCE or \
+        FILL IN a list ("give me the full shopping list for a chocolate cake", "fais-moi toute la \
+        liste de courses pour un gâteau au chocolat", "list the steps to…", "what do I need for…"), \
+        you MUST GENERATE the actual concrete items from your own knowledge and put them as the \
+        SUBTASKS of the relevant task. NEVER just echo the user's sentence back as a single task or \
+        subtask. For a chocolate-cake shopping list, real ingredients with rough quantities: flour, \
+        sugar, eggs, dark chocolate, butter, baking powder, etc. Produce a complete, useful list \
+        (typically 5-15 items) just as a knowledgeable assistant would.
 
         Reply with a SINGLE JSON object, nothing else (no prose, no code fence):
-        {"project":"short project name","tasks":[{"title":"task","due":"2026-06-12T15:00:00+02:00","subtasks":["optional","sub-tasks"]}]}
+        {"project":"short project name","tasks":[{"title":"task","due":"2026-06-12T15:00:00+02:00","subtasks":["generated item","generated item"]}]}
+
+        WORKED EXAMPLE (input ≈ "a project Kitchen, in it a task Chocolate cake, and give me the \
+        full shopping list for the cake"):
+        {"project":"Kitchen","tasks":[{"title":"Chocolate cake","subtasks":["Flour (250 g)","Sugar (200 g)","Eggs (4)","Dark chocolate (200 g)","Butter (150 g)","Baking powder (1 tsp)","Pinch of salt","Vanilla extract"]}]}
 
         Each task MAY include a "due" field: an ISO8601 date-time WITH timezone offset, but ONLY when \
         the user clearly states a deadline for that task (e.g. "friday at 3pm", "tomorrow 9am", \
@@ -30,8 +53,9 @@ enum TodoAgent {
 
         \(nowContext())
 
-        Keep titles short and imperative. 4-12 tasks. Detect the user's language and write ALL \
-        output in that one language only — never mix languages.
+        Keep titles short and imperative. Detect the user's language and write ALL output in that \
+        one language only — never mix languages (a French request → French project, tasks AND \
+        generated items).
         """
     }
 
@@ -125,11 +149,29 @@ enum TodoAgent {
 
     private static var routeSystem: String {
         """
-        You route a short spoken request into a hierarchical to-do model:
+        You route a spoken request into a hierarchical to-do model:
           • PROJECT — a named bucket (e.g. "Groceries", "Launch", "Trip to Rome")
-          • TASK — one actionable item inside a project (e.g. "Buy milk")
-          • SUBTASK — an optional smaller step under a task; add sub-tasks ONLY when a task \
-        naturally breaks down, otherwise leave subtasks empty.
+          • TASK — one actionable item or category inside a project (e.g. "Buy milk", "Chocolate cake")
+          • SUBTASK — a smaller step / list item under a task; add sub-tasks when a task naturally \
+        breaks down OR when the user asks you to generate a list (see GENERATIVE below), otherwise \
+        leave subtasks empty.
+
+        HIERARCHY — map the user's described nesting into these three levels intelligently. A single \
+        request can create one or more PROJECTS, each with TASKS, each task with SUBTASKS. If the \
+        user nests deeper than three levels, FOLD sensibly: the intermediate category becomes the \
+        TASK and the leaf actions become its SUBTASKS. If the user names a project and a single task \
+        inside it, emit exactly that project with that one task — don't split it into siblings.
+
+        GENERATIVE — when the user asks you to PRODUCE or FILL IN a list ("give me the full shopping \
+        list for a chocolate cake", "fais-moi toute la liste de courses pour un gâteau au chocolat", \
+        "list the steps to…", "what do I need for…"), GENERATE the actual concrete items from your \
+        own knowledge and put them as the SUBTASKS of the relevant task. NEVER just echo the user's \
+        sentence back. For a chocolate-cake shopping list: real ingredients with rough quantities \
+        (flour, sugar, eggs, dark chocolate, butter, baking powder, …). Produce a complete, useful \
+        list (typically 5-15 items).
+        WORKED EXAMPLE — "fais un projet Cuisine, dans Cuisine une tâche Gâteau au chocolat, et \
+        fais-moi toute la liste de courses pour le gâteau au chocolat":
+        {"projects":[{"new_project":"Cuisine","tasks":[{"title":"Gâteau au chocolat","subtasks":["Farine (250 g)","Sucre (200 g)","Œufs (4)","Chocolat noir (200 g)","Beurre (150 g)","Levure chimique (1 c. à café)","Pincée de sel","Extrait de vanille"]}]}]}
 
         You are given the user's EXISTING projects with their tasks and sub-tasks. Decide what the \
         request means:
@@ -328,7 +370,7 @@ struct TodosView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("To-dos").font(.system(size: 28, weight: .bold))
+                    Text("Task Manager").font(.system(size: 28, weight: .bold))
                     Text("Capture tasks by voice, sorted by project. Dictate into any field, or ask the agent to build a list.")
                         .foregroundStyle(.secondary)
                 }
@@ -474,37 +516,41 @@ private struct ProjectPanel: View {
 
     private var prog: (done: Int, total: Int) { TodoStore.shared.progress(project) }
 
-    /// Removable tag chips plus an "Add tag" affordance, under the project header.
+    /// Removable tag chips plus an "Add tag" affordance, shown inline on the project title line.
+    /// Horizontally scrollable so many tags never push the title off-screen.
     private var tagsRow: some View {
-        FlowLayout(spacing: 6) {
-            ForEach(project.tags, id: \.self) { tag in
-                HStack(spacing: 5) {
-                    Text(tag).font(.caption)
-                    Button { onRemoveTag(tag) } label: { Image(systemName: "xmark.circle.fill") }
-                        .buttonStyle(.plain).foregroundStyle(.tertiary)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(project.tags, id: \.self) { tag in
+                    HStack(spacing: 5) {
+                        Text(tag).font(.caption)
+                        Button { onRemoveTag(tag) } label: { Image(systemName: "xmark.circle.fill") }
+                            .buttonStyle(.plain).foregroundStyle(.tertiary)
+                    }
+                    .padding(.horizontal, 9).padding(.vertical, 5)
+                    .background(.softFill, in: Capsule())
                 }
-                .padding(.horizontal, 9).padding(.vertical, 5)
-                .background(.softFill, in: Capsule())
+                if addingTag {
+                    HStack(spacing: 4) {
+                        Image(systemName: "tag").font(.caption2).foregroundStyle(.secondary)
+                        TextField("Tag", text: $tagDraft)
+                            .textFieldStyle(.plain).font(.caption).frame(width: 80)
+                            .onSubmit(commitTag)
+                        Button { commitTag() } label: { Image(systemName: "checkmark.circle.fill") }
+                            .buttonStyle(.plain).foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 9).padding(.vertical, 5)
+                    .background(.softFill, in: Capsule())
+                } else {
+                    Button { addingTag = true } label: {
+                        Label("Add tag", systemImage: "plus").font(.caption)
+                    }
+                    .buttonStyle(.plain).foregroundStyle(.secondary)
+                    .padding(.horizontal, 9).padding(.vertical, 5)
+                    .background(.softFill, in: Capsule())
+                }
             }
-            if addingTag {
-                HStack(spacing: 4) {
-                    Image(systemName: "tag").font(.caption2).foregroundStyle(.secondary)
-                    TextField("Tag", text: $tagDraft)
-                        .textFieldStyle(.plain).font(.caption).frame(width: 80)
-                        .onSubmit(commitTag)
-                    Button { commitTag() } label: { Image(systemName: "checkmark.circle.fill") }
-                        .buttonStyle(.plain).foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 9).padding(.vertical, 5)
-                .background(.softFill, in: Capsule())
-            } else {
-                Button { addingTag = true } label: {
-                    Label("Add tag", systemImage: "plus").font(.caption)
-                }
-                .buttonStyle(.plain).foregroundStyle(.secondary)
-                .padding(.horizontal, 9).padding(.vertical, 5)
-                .background(.softFill, in: Capsule())
-            }
+            .padding(.vertical, 1)
         }
     }
 
@@ -524,6 +570,9 @@ private struct ProjectPanel: View {
                 }.buttonStyle(.plain)
                 Image(systemName: "folder").foregroundStyle(.secondary)
                 TextField("Project", text: $project.name).textFieldStyle(.plain).font(.headline)
+                    .frame(minWidth: 80, idealWidth: 160)
+                    .layoutPriority(1)
+                tagsRow
                 Spacer(minLength: 8)
                 if prog.total > 0 {
                     Text("\(prog.done)/\(prog.total)")
@@ -535,9 +584,6 @@ private struct ProjectPanel: View {
                     .buttonStyle(.borderless).foregroundStyle(.tertiary)
             }
             .padding(.vertical, 4)
-
-            tagsRow
-                .padding(.leading, 26).padding(.top, 2)
 
             if expanded {
                 VStack(spacing: 8) {
@@ -578,28 +624,31 @@ private struct FilterPill: View {
     }
 }
 
-// MARK: - Task panel (accordion, holds sub-tasks)
+// MARK: - Deadline picker (reusable, used by tasks and sub-tasks)
 
-private struct TaskPanel: View {
-    @Binding var task: TodoTask
-    @Binding var expanded: Bool
-    let onDelete: () -> Void
-    let onAddSubtask: () -> Void
+/// A clean, modern date+time deadline control bound to a `Date?`.
+/// Renders a capsule trigger (showing the deadline or a "＋ Deadline" hint)
+/// and a popover with quick-preset chips plus a framed calendar + time editor.
+private struct DeadlinePicker: View {
+    @Binding var deadline: Date?
+    /// Whether the owning item is done — suppresses the overdue (red) styling.
+    var isDone: Bool = false
+    /// Compact trigger for sub-task rows (smaller text, "Due" instead of "Deadline").
+    var compact: Bool = false
 
-    @State private var showDeadlinePicker = false
+    @State private var show = false
 
-    /// True when the task has a deadline in the past and isn't done yet.
+    /// True when there is a deadline in the past and the item isn't done.
     private var overdue: Bool {
-        guard let d = task.deadline, !task.done else { return false }
+        guard let d = deadline, !isDone else { return false }
         return d < Date()
     }
 
-    /// Compact label for the deadline, e.g. "Fri 15:00" (or "Jun 12" when far off).
-    private func deadlineLabel(_ d: Date) -> String {
+    /// Compact label, e.g. "Fri 15:00" (or "Jun 12, 15:00" when far off).
+    private func label(_ d: Date) -> String {
         let cal = Calendar.current
         let f = DateFormatter()
         f.locale = Locale.current
-        // Within the next ~6 days: weekday + time; otherwise short date + time.
         if let days = cal.dateComponents([.day], from: cal.startOfDay(for: Date()), to: cal.startOfDay(for: d)).day,
            days >= 0, days <= 6 {
             f.dateFormat = "EEE HH:mm"
@@ -609,56 +658,138 @@ private struct TaskPanel: View {
         return f.string(from: d)
     }
 
-    /// Button showing the deadline (or "＋ Deadline"); opens a popover with a date+time picker.
-    private var deadlineControl: some View {
-        Button { showDeadlinePicker = true } label: {
-            if let d = task.deadline {
+    var body: some View {
+        Button { show = true } label: {
+            if let d = deadline {
                 HStack(spacing: 3) {
-                    Image(systemName: "clock").font(.system(size: 10))
-                    Text(deadlineLabel(d)).font(.caption2.weight(.medium))
+                    Image(systemName: "clock").font(.system(size: compact ? 9 : 10))
+                    Text(label(d)).font((compact ? Font.caption2 : Font.caption2).weight(.medium))
                 }
                 .foregroundStyle(overdue ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
                 .padding(.horizontal, 7).padding(.vertical, 3)
                 .background(.softFill, in: Capsule())
             } else {
-                Label("Deadline", systemImage: "plus")
+                Label(compact ? "Due" : "Deadline", systemImage: "plus")
                     .font(.caption2).foregroundStyle(.tertiary)
                     .padding(.horizontal, 7).padding(.vertical, 3)
                     .background(.softFill, in: Capsule())
             }
         }
         .buttonStyle(.plain)
-        .help(task.deadline == nil ? "Set a deadline" : "Edit deadline")
-        .popover(isPresented: $showDeadlinePicker, arrowEdge: .bottom) {
-            deadlinePopover
-        }
+        .help(deadline == nil ? "Set a deadline" : "Edit deadline")
+        .popover(isPresented: $show, arrowEdge: .bottom) { popover }
     }
 
-    private var deadlinePopover: some View {
-        VStack(alignment: .leading, spacing: 12) {
+    // MARK: presets
+
+    /// Quick-pick chips that map to sensible future dates.
+    private func presets() -> [(String, Date?)] {
+        let cal = Calendar.current
+        let now = Date()
+        func at(_ base: Date, hour: Int, minute: Int = 0) -> Date {
+            cal.date(bySettingHour: hour, minute: minute, second: 0, of: base) ?? base
+        }
+        // Today 6pm — if already past, roll to tomorrow 6pm so it stays in the future.
+        var today6 = at(now, hour: 18)
+        if today6 <= now { today6 = at(cal.date(byAdding: .day, value: 1, to: now) ?? now, hour: 18) }
+        let tomorrow9 = at(cal.date(byAdding: .day, value: 1, to: now) ?? now, hour: 9)
+        // This weekend → upcoming Saturday 10am.
+        let weekday = cal.component(.weekday, from: now) // 1 = Sunday … 7 = Saturday
+        let daysToSat = (7 - weekday + 7) % 7   // 0 if today is Saturday
+        let satBase = cal.date(byAdding: .day, value: daysToSat == 0 ? 7 : daysToSat, to: now) ?? now
+        let weekend = at(satBase, hour: 10)
+        let nextWeek = at(cal.date(byAdding: .day, value: 7, to: now) ?? now, hour: 9)
+        return [
+            ("Today 6pm", today6),
+            ("Tomorrow 9am", tomorrow9),
+            ("This weekend", weekend),
+            ("Next week", nextWeek),
+            ("Clear", nil)
+        ]
+    }
+
+    private var popover: some View {
+        VStack(alignment: .leading, spacing: 14) {
             Text("Deadline").font(.headline)
+
+            // Quick presets
+            PresetChipRows(items: presets()) { title, date in
+                ChipButton(title: title, isClear: date == nil) {
+                    deadline = date
+                    if date == nil { show = false }
+                }
+            }
+
+            // Framed date + time editor (both day and hour/minute).
             DatePicker(
                 "",
-                selection: Binding(
-                    get: { task.deadline ?? Date() },
-                    set: { task.deadline = $0 }
-                ),
+                selection: Binding(get: { deadline ?? defaultPickerDate() }, set: { deadline = $0 }),
                 displayedComponents: [.date, .hourAndMinute]
             )
             .datePickerStyle(.graphical)
             .labelsHidden()
             .frame(width: 280)
+            .cleanCard(padding: 10)
 
             HStack {
-                Button("Clear") { task.deadline = nil; showDeadlinePicker = false }
-                    .disabled(task.deadline == nil)
+                Button("Clear") { deadline = nil; show = false }
+                    .disabled(deadline == nil)
                 Spacer()
-                Button("Done") { showDeadlinePicker = false }
+                Button("Done") { show = false }
                     .buttonStyle(.borderedProminent)
             }
         }
         .padding(16)
+        .frame(width: 320)
     }
+
+    /// A reasonable default when no deadline is set yet (today, 9am or next hour).
+    private func defaultPickerDate() -> Date {
+        let cal = Calendar.current
+        let nine = cal.date(bySettingHour: 9, minute: 0, second: 0, of: Date()) ?? Date()
+        return nine > Date() ? nine : (cal.date(byAdding: .hour, value: 1, to: Date()) ?? Date())
+    }
+}
+
+/// On-brand preset chip.
+private struct ChipButton: View {
+    let title: String
+    var isClear: Bool = false
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(isClear ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+                .padding(.horizontal, 11).padding(.vertical, 5)
+                .background(.softFill, in: Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Simple two-row layout for the deadline preset chips.
+private struct PresetChipRows<Content: View>: View {
+    let items: [(String, Date?)]
+    @ViewBuilder let content: (String, Date?) -> Content
+
+    var body: some View {
+        // Two rows of chips keeps the popover compact and tidy.
+        let half = (items.count + 1) / 2
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) { ForEach(0..<half, id: \.self) { content(items[$0].0, items[$0].1) } }
+            HStack(spacing: 8) { ForEach(half..<items.count, id: \.self) { content(items[$0].0, items[$0].1) } }
+        }
+    }
+}
+
+// MARK: - Task panel (accordion, holds sub-tasks)
+
+private struct TaskPanel: View {
+    @Binding var task: TodoTask
+    @Binding var expanded: Bool
+    let onDelete: () -> Void
+    let onAddSubtask: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -671,7 +802,7 @@ private struct TaskPanel: View {
                     .strikethrough(task.done, color: .secondary)
                     .foregroundStyle(task.done ? .secondary : .primary)
                 Spacer(minLength: 6)
-                deadlineControl
+                DeadlinePicker(deadline: $task.deadline, isDone: task.done)
                 Button { withAnimation(.easeInOut(duration: 0.18)) { expanded.toggle() } } label: {
                     HStack(spacing: 3) {
                         if !task.subtasks.isEmpty {
@@ -699,6 +830,7 @@ private struct TaskPanel: View {
                                 .strikethrough(sub.done, color: .secondary)
                                 .foregroundStyle(sub.done ? .secondary : .primary)
                             Spacer(minLength: 6)
+                            DeadlinePicker(deadline: $sub.deadline, isDone: sub.done, compact: true)
                             Button { task.subtasks.removeAll { $0.id == sub.id } } label: { Image(systemName: "minus") }
                                 .buttonStyle(.borderless).foregroundStyle(.tertiary).font(.caption)
                         }

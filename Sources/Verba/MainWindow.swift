@@ -5,7 +5,7 @@ enum NavItem: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .home: return "Home"; case .notes: return "Notes"; case .todos: return "To-dos"; case .insights: return "Insights"; case .modes: return "Modes"
+        case .home: return "Home"; case .notes: return "Notes"; case .todos: return "Task Manager"; case .insights: return "Insights"; case .modes: return "Modes"
         case .dictionary: return "Dictionary"; case .snippets: return "Snippets"; case .style: return "Style"
         case .transforms: return "Transforms"; case .scratchpad: return "Scratchpad"; case .files: return "Transcribe file"
         case .history: return "History"; case .leaderboard: return "Leaderboard"
@@ -49,6 +49,7 @@ struct MainWindow: View {
     @State private var qwenStatus = ""
 
     private let sidebarWidth: CGFloat = 240
+    @AppStorage("toolsCollapsed") private var toolsCollapsed = false
     @AppStorage("libraryCollapsed") private var libraryCollapsed = false
     @AppStorage("communityCollapsed") private var communityCollapsed = false
     @Environment(\.openURL) private var openURL
@@ -94,10 +95,18 @@ struct MainWindow: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 2) {
                     row(.home)
-                    if settings.notesTabEnabled { row(.notes) }
-                    if settings.todosTabEnabled { row(.todos) }
                     if settings.navVisible(.insights) { row(.insights) }
                     if settings.navVisible(.history) { row(.history) }
+
+                    // Collapsible "Tools" group (Task Manager + Notes).
+                    groupHeader("Tools", collapsed: toolsCollapsed) {
+                        withAnimation(.easeInOut(duration: 0.18)) { toolsCollapsed.toggle() }
+                    }
+                    if !toolsCollapsed {
+                        if settings.todosTabEnabled { row(.todos) }
+                        if settings.notesTabEnabled { row(.notes) }
+                    }
+
                     groupHeader("Library", collapsed: libraryCollapsed) {
                         withAnimation(.easeInOut(duration: 0.18)) { libraryCollapsed.toggle() }
                     }

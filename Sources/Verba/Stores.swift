@@ -320,7 +320,24 @@ final class Scratchpad: ObservableObject {
 
 // MARK: - To-dos (Projects ▸ Tasks ▸ Sub-tasks)
 
-struct TodoSubtask: Codable, Identifiable { var id = UUID(); var title: String; var done: Bool = false }
+struct TodoSubtask: Codable, Identifiable {
+    var id = UUID()
+    var title: String
+    var done: Bool = false
+    var deadline: Date? = nil
+
+    init(id: UUID = UUID(), title: String, done: Bool = false, deadline: Date? = nil) {
+        self.id = id; self.title = title; self.done = done; self.deadline = deadline
+    }
+    // Decode old saved sub-tasks (no `deadline` key) without failing.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        title = try c.decode(String.self, forKey: .title)
+        done = try c.decodeIfPresent(Bool.self, forKey: .done) ?? false
+        deadline = try c.decodeIfPresent(Date.self, forKey: .deadline)
+    }
+}
 struct TodoTask: Codable, Identifiable { var id = UUID(); var title: String; var done: Bool = false; var subtasks: [TodoSubtask] = []; var deadline: Date? = nil }
 struct TodoProject: Codable, Identifiable {
     var id = UUID()

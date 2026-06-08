@@ -335,7 +335,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Transcribe the captured audio, then route it through TodoAgent into TodoStore.
     private func processTodoCapture(_ url: URL) {
         overlay.model.recording = false
-        overlay.model.title = "Adding to your to-dos…"
+        overlay.model.title = "Adding to your tasks…"
         overlay.show()
         todoCaptureTask?.cancel()
         todoCaptureTask = Task { [weak self] in
@@ -384,13 +384,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     // falls back to an Inbox add in route(), so nothing is ever silently dropped.)
                     let message: String
                     if touchedProjects > 0 && completed > 0 {
-                        message = "Updated your to-dos"
+                        message = "Updated your tasks"
                     } else if completed > 0 {
                         message = completed == 1 ? "Marked done" : "Marked \(completed) done"
                     } else if touchedProjects > 1 {
                         message = "Added to \(touchedProjects) projects"
                     } else {
-                        message = "Added to your to-dos"
+                        message = "Added to your tasks"
                     }
                     self?.finishTodoCapture(error: nil, success: message)
                 }
@@ -403,7 +403,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Tear down a capture: flash done/error on the overlay and reset state.
     /// `success` is the done-flash message when there's no error (e.g. "Marked done").
-    private func finishTodoCapture(error: String?, success: String = "Added to your to-dos") {
+    private func finishTodoCapture(error: String?, success: String = "Added to your tasks") {
         todoCaptureRecording = false
         levelTimer?.invalidate(); levelTimer = nil
         todoCaptureTask = nil

@@ -238,8 +238,8 @@ struct SettingsView: View {
                         Spacer()
                         Text("⌥ + Fn").foregroundStyle(.secondary)   // quick glance popup
                     }
-                    Toggle("Enable the ⌥ + Fn to-do glance", isOn: $settings.todoGlanceEnabled)
-                    Text("Press ⌥ (Option) + Fn to pop up a compact glance of today's to-dos — what's due today plus anything overdue, each checkable. Press it again or Esc to dismiss.")
+                    Toggle("Enable the ⌥ + Fn task glance", isOn: $settings.todoGlanceEnabled)
+                    Text("Press ⌥ (Option) + Fn to pop up a compact glance of today's tasks — what's due today plus anything overdue, each checkable. Press it again or Esc to dismiss.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 HStack {
@@ -305,8 +305,8 @@ struct SettingsView: View {
                 Toggle("Notes tab (long-form voice notes)", isOn: $settings.notesTabEnabled)
                 Text("A Notes tab to record long voice memos (up to an hour) and reorganize them into a clean document with a chosen format.")
                     .font(.caption).foregroundStyle(.secondary)
-                Toggle("To-dos tab (tasks by project)", isOn: $settings.todosTabEnabled)
-                Text("A To-dos tab to capture tasks and sub-tasks by voice, sorted into projects (accordion panels). Ask the agent to build a whole list from a spoken request.")
+                Toggle("Task Manager tab (tasks by project)", isOn: $settings.todosTabEnabled)
+                Text("A Task Manager tab to capture tasks and sub-tasks by voice, sorted into projects (accordion panels). Ask the agent to build a whole list from a spoken request.")
                     .font(.caption).foregroundStyle(.secondary)
                 Toggle("To-do reminders (30 min before a deadline)", isOn: $settings.todoReminders)
                 Text("Posts a local notification 30 minutes before a to-do task's deadline. Needs notification permission (macOS asks once). Clearing the deadline, completing, or deleting the task cancels its reminder.")
