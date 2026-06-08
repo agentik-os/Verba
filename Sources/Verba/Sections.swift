@@ -34,6 +34,10 @@ struct HomeView: View {
     @ObservedObject var history = History.shared
     @ObservedObject var settings = Settings.shared
 
+    // Per-card UI state for the "Recent" list.
+    @State private var expandedText: HistoryEntry.ID?     // card showing full text
+    @State private var expandedAdapt: HistoryEntry.ID?    // card with its Adapt panel open
+
     var body: some View {
         SectionScaffold(title: "Home", subtitle: "Talk, and Claude cleans it up.") {
             HStack(spacing: 14) {
@@ -61,18 +65,56 @@ struct HomeView: View {
             } else {
                 VStack(spacing: 10) {
                     ForEach(history.entries.prefix(6)) { e in
-                        Card(padding: 14) {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(e.reprompted.isEmpty ? e.original : e.reprompted).lineLimit(3)
-                                HStack {
-                                    Text("\(e.date.formatted(date: .abbreviated, time: .shortened)) · \(e.profileName)")
-                                        .font(.caption2).foregroundStyle(.secondary)
-                                    Spacer()
-                                    CopyButton(text: e.reprompted)
-                                }
-                            }
-                        }
+                        recentCard(e)
                     }
+                }
+            }
+        }
+    }
+
+    /// A "Recent" card: full-text expand toggle, copy, and an inline Adapt panel (one open at a time).
+    @ViewBuilder
+    private func recentCard(_ e: HistoryEntry) -> some View {
+        let full = e.reprompted.isEmpty ? e.original : e.reprompted
+        let textExpanded = expandedText == e.id
+        let adaptOpen = expandedAdapt == e.id
+        let long = full.count > 160 || full.contains("\n")
+        Card(padding: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(full)
+                    .lineLimit(textExpanded ? nil : 3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+                if long {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            expandedText = textExpanded ? nil : e.id
+                        }
+                    } label: {
+                        Text(textExpanded ? "Show less" : "Show more")
+                            .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+                HStack {
+                    Text("\(e.date.formatted(date: .abbreviated, time: .shortened)) · \(e.profileName)")
+                        .font(.caption2).foregroundStyle(.secondary)
+                    Spacer()
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            expandedAdapt = adaptOpen ? nil : e.id
+                        }
+                    } label: {
+                        Label("Adapt", systemImage: "wand.and.stars")
+                            .font(.caption2.weight(.semibold))
+                            .labelStyle(.titleAndIcon)
+                    }
+                    .buttonStyle(.plain).foregroundStyle(.secondary)
+                    CopyButton(text: full)
+                }
+                if adaptOpen {
+                    Divider().padding(.vertical, 2)
+                    AdaptPanel(source: full).id(e.id)
                 }
             }
         }
