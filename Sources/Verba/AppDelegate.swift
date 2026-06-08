@@ -1257,6 +1257,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         add(menu, "Open Verba", #selector(openMain), "o")
         add(menu, "Settings…", #selector(openSettings), ",")
         add(menu, "History…", #selector(openHistory), "y")
+        // A cheat-sheet of every shortcut, so the user always has a reminder one click away.
+        let scParent = NSMenuItem(title: "Keyboard Shortcuts", action: nil, keyEquivalent: "")
+        scParent.image = NSImage(systemSymbolName: "keyboard", accessibilityDescription: "Keyboard Shortcuts")
+        scParent.submenu = buildShortcutsMenu()
+        menu.addItem(scParent)
         if !Output.accessibilityTrusted {
             add(menu, "Enable auto-paste…", #selector(enableAccessibility), "")
         }
@@ -1270,6 +1275,52 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let i = NSMenuItem(title: title, action: sel, keyEquivalent: key)
         i.target = self
         menu.addItem(i)
+    }
+
+    /// A read-only cheat-sheet of every keyboard shortcut, shown as a submenu off the menu-bar
+    /// icon so the user always has a reminder of what's available. Items are non-actionable
+    /// (autoenablesItems = false keeps them full-colour and readable, not greyed); section
+    /// headers stay disabled/greyed to separate groups. Reflects the current trigger mode.
+    private func buildShortcutsMenu() -> NSMenu {
+        let m = NSMenu()
+        m.autoenablesItems = false
+        let s = Settings.shared
+
+        func ref(_ keys: String, _ desc: String) {
+            let i = NSMenuItem(title: "\(keys)  —  \(desc)", action: nil, keyEquivalent: "")
+            i.isEnabled = true
+            m.addItem(i)
+        }
+        func header(_ t: String) {
+            let i = NSMenuItem(title: t, action: nil, keyEquivalent: "")
+            i.isEnabled = false
+            m.addItem(i)
+        }
+
+        let primary = s.useFnAsPrimary ? "Fn"
+            : (s.primaryHasShortcut ? shortcutLabel(keyCode: s.primaryKeyCode, modifiers: s.primaryMods) : "⌃⌥ + number")
+
+        header("Dictation")
+        ref(primary, "Start / stop dictation")
+        ref("Esc", "Cancel recording or processing")
+        ref("Control", "Pause / resume while recording")
+
+        // The Fn-combinations only exist when Fn is the primary trigger (the Fn event tap is live).
+        if s.useFnAsPrimary {
+            let maxN = min(max(s.profiles.count, 1), 9)
+            m.addItem(.separator())
+            header("Modes  (while holding Fn)")
+            ref("Fn + Tab", "Next mode  (add ⇧ for previous)")
+            ref(maxN == 1 ? "Fn + 1" : "Fn + 1…\(maxN)", "Pick a mode by number")
+
+            m.addItem(.separator())
+            header("Capture  (while holding Fn)")
+            ref("Fn + §", "Add a to-do by voice")
+            ref("Fn + Z", "Capture a note by voice")
+            ref("Fn", "Stop an in-progress note / to-do capture")
+            ref("⌥ + Fn", "Today's to-dos  (quick glance)")
+        }
+        return m
     }
 
     @objc private func menuToggle() { trigger(forced: nil) }
