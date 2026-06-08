@@ -30,6 +30,7 @@ export default function Home() {
       <TryNow />
       <ContextMode />
       <NotesTab />
+      <VoiceTodos />
       <TranslateMode />
       <ModesModels />
       <Bento />
@@ -451,6 +452,70 @@ function LanguageDetection() {
   );
 }
 
+function VoiceTodos() {
+  const cards = [
+    { icon: "pen", label: "Capture", text: "“Add buy milk and eggs to my groceries” → two tasks, filed in the right project. New project? It creates it." },
+    { icon: "calendar", label: "Deadlines by voice", text: "“Pay the invoice Friday at 3pm” → a task with a real date and time, shown red when it’s overdue." },
+    { icon: "bell", label: "Reminders", text: "Get a notification 30 minutes before anything is due. Toggle it on or off in Settings." },
+    { icon: "check", label: "Check off by voice", text: "“I bought the tomatoes” → Verba finds “Buy tomatoes” and ticks it. No tapping, no app-switching." },
+  ];
+  return (
+    <section id="todos" className="py-24">
+      <Reveal>
+        <div className="mx-auto mb-4 w-fit rounded-full glass px-4 py-1.5 text-xs muted">New · Voice task manager</div>
+        <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
+          Your to-dos, just by saying them
+        </h2>
+        <p className="mx-auto mt-4 max-w-2xl text-center muted text-balance">
+          Press a key, talk, and Verba files what you said into projects, tasks and sub-tasks, sets
+          deadlines, reminds you, and checks things off, all by voice. No other dictation app has a
+          built-in task manager, let alone one that understands you this well.
+        </p>
+      </Reveal>
+
+      <Reveal delay={60}>
+        <div className="mt-10 glass-strong rounded-3xl p-8">
+          <div className="flex flex-col gap-6 sm:flex-row sm:gap-10">
+            <div className="flex-1">
+              <p className="text-xs uppercase tracking-widest muted">You say</p>
+              <p className="mt-3 font-medium leading-snug">
+                "Add to my groceries: tomatoes, pasta and parmesan. Oh and I already bought the bread.
+                Pay the electricity bill Friday at 6pm."
+              </p>
+              <p className="mt-2 text-sm muted">One press, one sentence.</p>
+            </div>
+            <div className="flex-1">
+              <p className="text-xs uppercase tracking-widest muted">Verba does</p>
+              <div className="mt-3 space-y-2 rounded-xl bg-[var(--tint)] p-4 text-sm">
+                <p className="font-semibold">Groceries</p>
+                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-current opacity-40" /> Tomatoes</p>
+                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-current opacity-40" /> Pasta</p>
+                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-current opacity-40" /> Parmesan</p>
+                <p className="flex items-center gap-2 muted line-through"><Icon name="check" className="h-4 w-4 text-green-500" /> Bread</p>
+                <p className="mt-2 font-semibold">Bills</p>
+                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-current opacity-40" /> Pay electricity <span className="rounded bg-[var(--tint-strong)] px-1.5 py-0.5 text-xs">Fri 18:00</span></p>
+              </div>
+              <p className="mt-2 text-xs muted">Filed, dated, and one already checked, automatically.</p>
+            </div>
+          </div>
+        </div>
+      </Reveal>
+
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {cards.map(({ icon, label, text }, i) => (
+          <Reveal key={label} delay={i * 60}>
+            <div className="glass lift flex h-full flex-col gap-3 rounded-2xl p-6">
+              <Icon name={icon} className="h-7 w-7" />
+              <p className="font-medium">{label}</p>
+              <p className="text-sm muted">{text}</p>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function TranslateMode() {
   const langs = ["English", "Français", "Español", "Deutsch", "Italiano", "Português", "Nederlands",
                  "Русский", "中文", "日本語", "한국어", "العربية", "हिन्दी", "Türkçe", "Polski"];
@@ -555,6 +620,7 @@ function CompareTable() {
     ["Use Claude Code sub, no key", [true, false, false, false]],
     ["Reads your screen (vision)", [true, false, false, false]],
     ["Hour-long structured notes", [true, false, false, false]],
+    ["Voice to-do manager (projects, deadlines, check-off)", [true, false, false, false]],
     ["Live translation mode", [true, "limited", false, "limited"]],
     ["Agentic actions (calendar, reminders)", [true, false, false, false]],
     ["Auto-learn your vocabulary & tone", [true, "partial", false, false]],
