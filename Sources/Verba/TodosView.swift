@@ -517,41 +517,40 @@ private struct ProjectPanel: View {
     private var prog: (done: Int, total: Int) { TodoStore.shared.progress(project) }
 
     /// Removable tag chips plus an "Add tag" affordance, shown inline on the project title line.
-    /// Horizontally scrollable so many tags never push the title off-screen.
+    /// A plain HStack with .fixedSize() so it takes only the width it needs (no greedy ScrollView
+    /// that would blow up the row width and clip the title). The title keeps layout priority.
     private var tagsRow: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(project.tags, id: \.self) { tag in
-                    HStack(spacing: 5) {
-                        Text(tag).font(.caption)
-                        Button { onRemoveTag(tag) } label: { Image(systemName: "xmark.circle.fill") }
-                            .buttonStyle(.plain).foregroundStyle(.tertiary)
-                    }
-                    .padding(.horizontal, 9).padding(.vertical, 5)
-                    .background(.softFill, in: Capsule())
+        HStack(spacing: 6) {
+            ForEach(project.tags, id: \.self) { tag in
+                HStack(spacing: 5) {
+                    Text(tag).font(.caption).lineLimit(1)
+                    Button { onRemoveTag(tag) } label: { Image(systemName: "xmark.circle.fill") }
+                        .buttonStyle(.plain).foregroundStyle(.tertiary)
                 }
-                if addingTag {
-                    HStack(spacing: 4) {
-                        Image(systemName: "tag").font(.caption2).foregroundStyle(.secondary)
-                        TextField("Tag", text: $tagDraft)
-                            .textFieldStyle(.plain).font(.caption).frame(width: 80)
-                            .onSubmit(commitTag)
-                        Button { commitTag() } label: { Image(systemName: "checkmark.circle.fill") }
-                            .buttonStyle(.plain).foregroundStyle(.secondary)
-                    }
-                    .padding(.horizontal, 9).padding(.vertical, 5)
-                    .background(.softFill, in: Capsule())
-                } else {
-                    Button { addingTag = true } label: {
-                        Label("Add tag", systemImage: "plus").font(.caption)
-                    }
-                    .buttonStyle(.plain).foregroundStyle(.secondary)
-                    .padding(.horizontal, 9).padding(.vertical, 5)
-                    .background(.softFill, in: Capsule())
-                }
+                .padding(.horizontal, 9).padding(.vertical, 5)
+                .background(.softFill, in: Capsule())
             }
-            .padding(.vertical, 1)
+            if addingTag {
+                HStack(spacing: 4) {
+                    Image(systemName: "tag").font(.caption2).foregroundStyle(.secondary)
+                    TextField("Tag", text: $tagDraft)
+                        .textFieldStyle(.plain).font(.caption).frame(width: 80)
+                        .onSubmit(commitTag)
+                    Button { commitTag() } label: { Image(systemName: "checkmark.circle.fill") }
+                        .buttonStyle(.plain).foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 9).padding(.vertical, 5)
+                .background(.softFill, in: Capsule())
+            } else {
+                Button { addingTag = true } label: {
+                    Label("Add tag", systemImage: "plus").font(.caption)
+                }
+                .buttonStyle(.plain).foregroundStyle(.secondary)
+                .padding(.horizontal, 9).padding(.vertical, 5)
+                .background(.softFill, in: Capsule())
+            }
         }
+        .fixedSize()
     }
 
     private func commitTag() {
