@@ -915,6 +915,7 @@ function Footer() {
         <Link href="/changelog" className="hover:text-[var(--fg)]">Changelog</Link>
         <a href="#pricing" className="hover:text-[var(--fg)]">Pricing</a>
         <Link href="/acknowledgements" className="hover:text-[var(--fg)]">Acknowledgements</Link>
+        <a href="https://t.me/verba_run" target="_blank" rel="noopener" className="hover:text-[var(--fg)]">Community</a>
         <a href={DOWNLOAD_URL} className="hover:text-[var(--fg)]">Download</a>
       </div>
       <p className="text-xs">© 2026 Verba · Runs on-device with open models</p>
