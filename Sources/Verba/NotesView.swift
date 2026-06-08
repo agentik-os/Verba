@@ -1,0 +1,498 @@
+import SwiftUI
+import AVFoundation
+
+/// Notes tab (#A): record a long voice memo, transcribe it, reorganize into a clean document
+/// with a chosen format, render markdown, tag it (Bear-style #hashtags), edit/copy/save.
+///
+/// Master-detail layout (like Modes / History): the left sidebar scrolls through every saved
+/// note; the right pane records a new note or views/edits the selected one.
+struct NotesView: View {
+    @ObservedObject private var settings = Settings.shared
+    @ObservedObject private var store = NotesStore.shared
+    @ObservedObject private var notesCtl = NotesController.shared
+
+    @State private var recorder = AudioRecorder()
+    @State private var isRecording = false
+    @State private var recordStart = Date()
+    @State private var elapsed = 0
+    @State private var recordingURL: URL?
+
+    @State private var selectedID: UUID?      // saved note being viewed/edited; nil = composing a new note
+    @State private var format = NoteFormat.cleanNote
+    @State private var transcript = ""        // raw source (for re-formatting)
+    @State private var editorText = ""        // shown / edited / saved document
+    @State private var noteTags: [String] = []
+    @State private var tagInput = ""
+    @State private var busy = false
+    @State private var status = ""
+    @State private var work: Task<Void, Never>?
+    @State private var filterTag: String?
+    @State private var appendMode = false   // next recording is appended to the current note
+    @State private var autosaveTask: Task<Void, Never>?
+    @State private var savedFlash = false   // brief "Saved ✓" after an autosave commit
+    @StateObject private var md = MarkdownEditorController()   // drives the formatting toolbar
+
+    private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    // MARK: - Layout
+    var body: some View {
+        HStack(spacing: 0) {
+            sidebar.frame(width: 270)
+            Divider()
+            detail.frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .onReceive(tick) { _ in if isRecording { elapsed = Int(Date().timeIntervalSince(recordStart)) } }
+        .onChange(of: selectedID) { _, id in loadSelection(id) }
+        .onChange(of: editorText) { _, _ in scheduleAutosave() }
+        .onChange(of: noteTags) { _, _ in scheduleAutosave() }
+        .onChange(of: notesCtl.pendingRecord) { _, v in if v { consumePending() } }
+        .onAppear { consumePending() }
+        .onDisappear { autosaveTask?.cancel(); autosaveCommit(); work?.cancel(); if isRecording { _ = recorder.stop() } }
+    }
+
+    // MARK: - Left: scrollable list of all notes
+    private var sidebar: some View {
+        let entries = filterTag == nil ? store.entries : store.entries.filter { $0.tags.contains(filterTag!) }
+        return VStack(spacing: 0) {
+            HStack {
+                Text("Notes").font(.system(size: 17, weight: .bold))
+                Spacer()
+                Button { newNote() } label: { Image(systemName: "square.and.pencil") }
+                    .buttonStyle(.borderless).help("New note")
+            }
+            .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
+
+            if !store.allTags.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        chip(label: "All", icon: nil, on: filterTag == nil) { filterTag = nil }
+                        ForEach(store.allTags, id: \.self) { t in
+                            chip(label: "#\(t)", icon: nil, on: filterTag == t) { filterTag = (filterTag == t ? nil : t) }
+                        }
+                    }
+                    .padding(.horizontal, 14).padding(.bottom, 8)
+                }
+            }
+
+            if entries.isEmpty {
+                Spacer()
+                VStack(spacing: 6) {
+                    Image(systemName: "note.text").font(.system(size: 24)).foregroundStyle(.tertiary)
+                    Text(filterTag == nil ? "No notes yet" : "No notes with #\(filterTag!)")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+            } else {
+                List(selection: $selectedID) {
+                    ForEach(entries) { e in
+                        noteRow(e).tag(e.id)
+                    }
+                }
+                .listStyle(.inset)
+                .scrollContentBackground(.hidden)
+            }
+        }
+    }
+
+    private func noteRow(_ e: NotesEntry) -> some View {
+        HStack(alignment: .top, spacing: 9) {
+            Image(systemName: iconFor(e.formatName)).font(.system(size: 13))
+                .foregroundStyle(.secondary).frame(width: 16).padding(.top, 2)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(snippet(e)).font(.system(size: 13, weight: .medium)).lineLimit(1)
+                HStack(spacing: 5) {
+                    Text(e.formatName).font(.caption2).foregroundStyle(.secondary)
+                    Text("·").font(.caption2).foregroundStyle(.tertiary)
+                    Text(e.date.formatted(date: .abbreviated, time: .omitted)).font(.caption2).foregroundStyle(.tertiary)
+                }
+                if !e.tags.isEmpty {
+                    Text(e.tags.prefix(3).map { "#\($0)" }.joined(separator: " "))
+                        .font(.caption2).foregroundStyle(.tint).lineLimit(1)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 3)
+        .contextMenu {
+            Button(role: .destructive) { remove(e) } label: { Label("Delete", systemImage: "trash") }
+        }
+    }
+
+    /// First meaningful line of the note (heading text or first sentence) for the list title.
+    private func snippet(_ e: NotesEntry) -> String {
+        for raw in e.formatted.split(separator: "\n") {
+            let line = raw.trimmingCharacters(in: CharacterSet(charactersIn: " #*->`"))
+            if !line.isEmpty { return String(line.prefix(80)) }
+        }
+        return e.formatName
+    }
+
+    // MARK: - Right: record a new note, or view/edit the selected one
+    @ViewBuilder private var detail: some View {
+        if selectedID == nil && editorText.isEmpty && !busy {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    intro
+                    recorderCard
+                }
+                .frame(maxWidth: 640, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.horizontal, 36).padding(.vertical, 32)
+            }
+        } else {
+            // Full-bleed editor: header + toolbar pinned, the note fills all remaining space.
+            VStack(alignment: .leading, spacing: 10) {
+                noteEditor
+                tagEditor
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 14)
+        }
+    }
+
+    private var intro: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("New note").font(.system(size: 26, weight: .bold))
+            Text("Speak freely, even for an hour. Verba transcribes it and turns it into a clean, formatted document.")
+                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var recorderCard: some View {
+        VStack(spacing: 22) {
+            RecordButton(isRecording: isRecording, disabled: busy, action: toggleRecord)
+            VStack(spacing: 4) {
+                if isRecording {
+                    Text(timeString(elapsed)).font(.system(size: 22, weight: .semibold, design: .monospaced)).monospacedDigit()
+                    Text("Tap to stop").font(.caption).foregroundStyle(.secondary)
+                } else {
+                    Text("Tap to record").font(.callout.weight(.medium))
+                    Text("Pick a format below").font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            formatChips
+        }
+        .frame(maxWidth: .infinity).padding(.vertical, 32).padding(.horizontal, 24)
+        .background(card(22))
+    }
+
+    private var formatChips: some View {
+        FlowLayout(spacing: 8, alignment: .center) {
+            ForEach(NoteFormat.allBuiltIn) { f in
+                chip(label: f.name, icon: f.icon, on: f == format) {
+                    format = f; if !transcript.isEmpty { applyFormat() }
+                }
+            }
+        }
+    }
+
+    private var processingRow: some View {
+        HStack(spacing: 10) {
+            ProgressView().controlSize(.small)
+            Text(status.isEmpty ? "Working…" : status).font(.callout).foregroundStyle(.secondary)
+        }
+    }
+
+    private var noteEditor: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header: format menu + actions
+            HStack(spacing: 10) {
+                Menu {
+                    ForEach(NoteFormat.allBuiltIn) { f in
+                        Button { format = f; if !transcript.isEmpty { applyFormat() } } label: {
+                            Label(f.name, systemImage: f.icon)
+                        }
+                    }
+                } label: {
+                    Label(format.name, systemImage: format.icon).font(.headline)
+                }
+                .menuStyle(.borderlessButton).fixedSize()
+                .help("Change format (re-organizes from your words)")
+
+                Spacer(minLength: 8)
+
+                autosaveBadge
+                Button { applyFormat() } label: { Image(systemName: "wand.and.stars") }
+                    .buttonStyle(.borderless).help("Re-apply format").disabled(busy || transcript.isEmpty)
+                Button { appendMode = true; toggleRecord() } label: { Image(systemName: isRecording ? "stop.circle.fill" : "mic.badge.plus") }
+                    .buttonStyle(.borderless).help("Record more and add it to this note").disabled(busy && !isRecording)
+                CopyButton(text: editorText)
+                Button(role: .destructive) { if let id = selectedID, let e = store.entries.first(where: { $0.id == id }) { remove(e) } else { newNote() } } label: { Image(systemName: "trash") }
+                    .buttonStyle(.borderless).foregroundStyle(.secondary)
+                    .help(selectedID == nil ? "Discard" : "Delete note")
+            }
+            formatToolbar
+            if busy { processingRow }
+            if isRecording {
+                HStack(spacing: 8) {
+                    Circle().fill(.red).frame(width: 8, height: 8)
+                    Text("Recording more… \(timeString(elapsed)) · tap the mic to stop")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            // Single always-editable Markdown editor (Bear-style live styling), fills all space.
+            MarkdownEditor(text: $editorText, controller: md)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(card(14))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Bear-style formatting toolbar — wraps the selection or toggles a line prefix.
+    private var formatToolbar: some View {
+        HStack(spacing: 1) {
+            fmtBtn("bold", "Bold (**)") { md.wrap("**") }
+            fmtBtn("italic", "Italic (*)") { md.wrap("*") }
+            fmtBtn("strikethrough", "Strikethrough (~~)") { md.wrap("~~") }
+            fmtBtn("chevron.left.forwardslash.chevron.right", "Inline code (`)") { md.wrap("`") }
+            Divider().frame(height: 16).padding(.horizontal, 4)
+            Menu {
+                Button("Heading 1") { md.toggleLinePrefix("# ") }
+                Button("Heading 2") { md.toggleLinePrefix("## ") }
+                Button("Heading 3") { md.toggleLinePrefix("### ") }
+            } label: { Image(systemName: "textformat.size") }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().frame(width: 30).help("Heading")
+            fmtBtn("list.bullet", "Bullet list") { md.toggleLinePrefix("- ") }
+            fmtBtn("list.number", "Numbered list") { md.toggleLinePrefix("1. ") }
+            fmtBtn("checklist", "Checklist") { md.toggleLinePrefix("- [ ] ") }
+            Spacer()
+        }
+        .disabled(busy)
+    }
+
+    private func fmtBtn(_ icon: String, _ help: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon).font(.system(size: 12.5)).frame(width: 28, height: 24).contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless).help(help)
+    }
+
+    /// Auto-save status. Reflects ONLY the actual save (disk + cloud), which is instant — it is
+    /// NOT tied to `busy` (transcription/formatting), so the LLM wait is never mislabeled "Saving".
+    @ViewBuilder private var autosaveBadge: some View {
+        if autosaveTask != nil {
+            HStack(spacing: 5) { ProgressView().controlSize(.small); Text("Saving…").font(.caption) }
+                .foregroundStyle(.secondary)
+        } else if savedFlash {
+            Label("Saved", systemImage: "checkmark.circle.fill").font(.caption).foregroundStyle(.green)
+        } else {
+            Label("Auto-saved", systemImage: "checkmark.circle").font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private var tagEditor: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if !noteTags.isEmpty {
+                FlowLayout(spacing: 6) {
+                    ForEach(noteTags, id: \.self) { t in
+                        HStack(spacing: 4) {
+                            Text("#\(t)").font(.caption)
+                            Button { noteTags.removeAll { $0 == t } } label: { Image(systemName: "xmark.circle.fill") }
+                                .buttonStyle(.plain).foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 9).padding(.vertical, 4)
+                        .background(Capsule().fill(Color.primary.opacity(0.08)))
+                    }
+                }
+            }
+            HStack(spacing: 8) {
+                Image(systemName: "number").foregroundStyle(.secondary)
+                TextField("Add tags (press Enter)", text: $tagInput)
+                    .textFieldStyle(.plain)
+                    .onSubmit {
+                        let new = NotesStore.mergeTags(tagInput.split(whereSeparator: { $0 == " " || $0 == "," }).map(String.init))
+                        noteTags = NotesStore.mergeTags(noteTags + new); tagInput = ""
+                    }
+            }
+            .padding(.horizontal, 12).padding(.vertical, 8)
+            .background(card(10))
+        }
+    }
+
+    // MARK: shared bits
+    private func card(_ r: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: r, style: .continuous).fill(Color.primary.opacity(0.035))
+            .overlay(RoundedRectangle(cornerRadius: r, style: .continuous).stroke(Color.primary.opacity(0.07), lineWidth: 1))
+    }
+
+    @ViewBuilder private func chip(label: String, icon: String?, on: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                if let icon { Image(systemName: icon) }
+                Text(label)
+            }
+            .font(.system(size: 12.5, weight: on ? .semibold : .regular))
+            .padding(.horizontal, 12).padding(.vertical, 7)
+            .background(Capsule().fill(on ? Color.primary : Color.primary.opacity(0.07)))
+            .foregroundStyle(on ? AnyShapeStyle(Color(nsColor: .windowBackgroundColor)) : AnyShapeStyle(.primary))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func iconFor(_ name: String) -> String { NoteFormat.allBuiltIn.first { $0.name == name }?.icon ?? "doc.text" }
+
+    // MARK: selection / lifecycle
+    private func newNote() {
+        work?.cancel(); busy = false; status = ""
+        if isRecording { _ = recorder.stop(); isRecording = false }
+        selectedID = nil
+        transcript = ""; editorText = ""; noteTags = []; tagInput = ""
+        recordingURL = nil; appendMode = false
+    }
+
+    private func loadSelection(_ id: UUID?) {
+        guard let id, let e = store.entries.first(where: { $0.id == id }) else { return }
+        work?.cancel(); busy = false; status = ""
+        if isRecording { _ = recorder.stop(); isRecording = false }
+        transcript = e.original
+        editorText = e.formatted
+        noteTags = e.tags
+        format = NoteFormat.allBuiltIn.first { $0.name == e.formatName } ?? .cleanNote
+        recordingURL = store.audioURL(for: e)
+        appendMode = false
+    }
+
+    private func remove(_ e: NotesEntry) {
+        let wasSelected = (selectedID == e.id)
+        store.delete(e)
+        if wasSelected { newNote() }
+    }
+
+    private func consumePending() {
+        guard notesCtl.pendingRecord else { return }
+        notesCtl.pendingRecord = false
+        newNote()
+        if !isRecording { toggleRecord() }   // start a fresh note recording right away
+    }
+
+    // MARK: auto-save
+    /// Debounced auto-save: every edit (text or tags) schedules a commit ~0.7s later.
+    private func scheduleAutosave() {
+        autosaveTask?.cancel()
+        let snapshot = editorText
+        autosaveTask = Task {
+            try? await Task.sleep(nanoseconds: 700_000_000)
+            if Task.isCancelled { return }
+            await MainActor.run {
+                autosaveTask = nil
+                if editorText == snapshot { autosaveCommit() }   // settled → commit
+            }
+        }
+    }
+
+    /// Create the note (first commit) or update it. Idempotent; safe to call on disappear.
+    private func autosaveCommit() {
+        let doc = editorText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !doc.isEmpty, !busy else { return }
+        if let id = selectedID, let e = store.entries.first(where: { $0.id == id }) {
+            let mergedTags = NotesStore.mergeTags(noteTags + NotesStore.hashtags(in: doc))
+            if e.formatted == doc, e.formatName == format.name, e.tags == mergedTags { return }   // unchanged → skip
+            store.update(e, formatted: doc, formatName: format.name, tags: noteTags)
+        } else {
+            let e = store.add(original: transcript, formatted: doc, formatName: format.name, audioURL: recordingURL, tags: noteTags)
+            Stats.shared.record(words: wordCount(doc), seconds: Double(elapsed))
+            selectedID = e.id          // keep editing the just-saved note
+            noteTags = e.tags          // reflect auto-extracted #hashtags
+        }
+        savedFlash = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { savedFlash = false }
+    }
+
+    // MARK: actions
+    private func toggleRecord() {
+        if isRecording {
+            isRecording = false
+            recordingURL = recorder.stop()
+            if let url = recordingURL { transcribe(url) }
+        } else {
+            recorder.requestPermission { ok in
+                guard ok else { status = "Microphone access denied"; return }
+                guard recorder.start() else { status = "Couldn't start recording"; return }
+                if !appendMode { transcript = ""; editorText = ""; noteTags = [] }   // append keeps the current note
+                status = ""; recordStart = Date(); elapsed = 0; isRecording = true
+            }
+        }
+    }
+
+    private func transcribe(_ url: URL) {
+        busy = true; status = "Transcribing…"
+        work = Task {
+            do {
+                let s = Settings.shared
+                let transcriber: Transcriber
+                switch s.engine {
+                case .openAI:   transcriber = OpenAITranscriber()
+                case .whisper:  transcriber = LocalTranscriber.shared
+                case .parakeet: transcriber = ParakeetTranscriber.shared
+                }
+                var text = try await transcriber.transcribe(fileURL: url,
+                    language: s.language.isEmpty ? nil : s.language, hint: DictionaryStore.shared.hint())
+                text = DictionaryStore.shared.apply(to: text)
+                if s.voiceCommands { text = VoiceCommands.apply(text) }
+                if Task.isCancelled { return }
+                await MainActor.run {
+                    if appendMode { transcript = (transcript + "\n\n" + text).trimmingCharacters(in: .whitespacesAndNewlines); appendMode = false }
+                    else { transcript = text }
+                    editorText = transcript
+                }
+                applyFormat()
+            } catch {
+                if Task.isCancelled { return }
+                await MainActor.run { busy = false; status = "Transcription failed: \(error.localizedDescription)" }
+            }
+        }
+    }
+
+    private func applyFormat() {
+        guard !transcript.isEmpty else { return }
+        busy = true; status = "Organizing into \(format.name)…"
+        work = Task {
+            do {
+                var sys = format.systemPrompt
+                let style = Settings.shared.styleText.trimmingCharacters(in: .whitespacesAndNewlines)
+                if Settings.shared.styleEnabled && !style.isEmpty { sys += "\n\nSTYLE: \(style)" }
+                let r = Reprompter(model: format.model ?? Settings.shared.claudeModel)
+                let out = try await r.reprompt(transcript: transcript, systemPrompt: sys, fast: true)
+                if Task.isCancelled { return }
+                await MainActor.run {
+                    editorText = out; busy = false; status = ""
+                    autosaveTask?.cancel(); autosaveTask = nil
+                    autosaveCommit()   // persist the finished note immediately (no debounce wait)
+                }
+            } catch {
+                if Task.isCancelled { return }
+                await MainActor.run { busy = false; status = "Couldn't organize: \(error.localizedDescription)" }
+            }
+        }
+    }
+
+    private func timeString(_ s: Int) -> String { String(format: "%d:%02d", s / 60, s % 60) }
+}
+
+/// Big circular record control with a soft pulsing ring while recording.
+private struct RecordButton: View {
+    let isRecording: Bool
+    let disabled: Bool
+    let action: () -> Void
+    @State private var pulse = false
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Circle()
+                    .fill(isRecording ? Color.red.opacity(0.12) : Color.primary.opacity(0.06))
+                    .frame(width: 96, height: 96)
+                    .overlay(Circle().stroke(isRecording ? Color.red.opacity(0.5) : Color.primary.opacity(0.12), lineWidth: 2))
+                    .scaleEffect(isRecording && pulse ? 1.08 : 1)
+                    .animation(isRecording ? .easeInOut(duration: 1).repeatForever(autoreverses: true) : .default, value: pulse)
+                if isRecording {
+                    RoundedRectangle(cornerRadius: 6).fill(Color.red).frame(width: 30, height: 30)
+                } else {
+                    Image(systemName: "mic.fill").font(.system(size: 34, weight: .medium)).foregroundStyle(.primary)
+                }
+            }
+        }
+        .buttonStyle(.plain).disabled(disabled).opacity(disabled ? 0.5 : 1)
+        .onAppear { pulse = true }
+    }
+}

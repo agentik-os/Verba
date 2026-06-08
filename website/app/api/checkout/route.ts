@@ -46,7 +46,9 @@ export async function POST(req: NextRequest) {
       line_items: [{ price, quantity: 1 }],
       allow_promotion_codes: true,
       customer_email: email || undefined,
-      subscription_data: { trial_period_days: 7, metadata: meta },
+      // Explicit per-project label so this subscription reads as "Verba Pro" on the
+      // shared Stripe account (dashboard + invoices), never the account name (LiquidApp).
+      subscription_data: { description: "Verba Pro", trial_period_days: 7, metadata: meta },
       metadata: meta,
       success_url: `${SITE_URL}/account?status=success`,
       cancel_url: `${SITE_URL}/#pricing`,
