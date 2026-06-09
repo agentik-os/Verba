@@ -19,6 +19,14 @@ const DAYS: Day[] = [
       "A huge day: a redesigned site, hold-to-talk and reliable pause, mid-sentence mode switching, editable Note modes, layered writing Styles, smarter Transforms, a Transcripts library, concurrent sessions, and a sharper Task Manager agent.",
     entries: [
       {
+        version: "0.1.89",
+        title: "A real username, never your real name",
+        items: [
+          "Pick a public username during onboarding (and change it anytime in Settings): it's the only thing shown on the leaderboard, never your real name or email.",
+          "Your username is stored on your account and syncs across your Macs and the web.",
+        ],
+      },
+      {
         version: "0.1.88",
         title: "Updates, right from the menu bar",
         items: [
