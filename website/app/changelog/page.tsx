@@ -22,6 +22,7 @@ const DAYS: Day[] = [
         version: "0.1.90 – 0.1.91",
         title: "Action mode, and a polished Task Manager",
         items: [
+          "Feedback now lets you attach a screenshot, so a report comes with everything we need to fix it fast.",
           "New Action mode (Fn+X): speak a command and Verba does it — create an event or reminder, draft an email, open an app, play music, send a message, or run any of your macOS Shortcuts — always asking you to confirm first.",
           "Add to dictionary by voice: select text, say “add to dictionary”, and Verba keeps that exact spelling (great for brand names) — and now preserves it through the AI rewrite too.",
           "A modern calendar + time picker for deadlines (tasks and sub-tasks), replacing the old one.",
