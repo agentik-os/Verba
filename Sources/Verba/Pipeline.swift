@@ -158,7 +158,7 @@ enum Pipeline {
                 if wantsScreen {
                     if ScreenCapture.hasPermission() {
                         status("Looking at your screen…")
-                        guard let shot = ScreenCapture.capturePNG(), !shot.isEmpty else {
+                        guard let shot = await ScreenCapture.capturePNG(), !shot.isEmpty else {
                             throw RepromptError.http(0, "Couldn't capture the screen. If Screen Recording was just enabled, quit and reopen Verba, then try again.")
                         }
                         png = shot

@@ -1283,7 +1283,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             session.status = .cancelled   // a silent/too-short capture is a non-event: don't list it
         } else {
             session.status = .failed
-            session.error = (error is TimeoutError) ? "Timed out" : "Transcription failed"
+            // Surface the REAL cause (e.g. "Context mode needs Screen Recording", a vision error)
+            // instead of a blanket "Transcription failed" that masks what actually went wrong.
+            session.error = (error is TimeoutError) ? "Timed out"
+                : ((error as? RepromptError)?.errorDescription ?? "Transcription failed")
         }
         SessionStore.shared.complete(session)
 
@@ -1294,6 +1297,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             flashInfo("Didn't catch that")
         } else if error is TimeoutError {
             flashError("Timed out — try again")
+        } else if let re = error as? RepromptError, let m = re.errorDescription {
+            flashError(m)   // the actual reason (screen-recording off, capture failed, vision error)
         } else {
             flashError("Transcription failed, try again")
         }

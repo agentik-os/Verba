@@ -1,5 +1,6 @@
 import AppKit
 import CoreGraphics
+import ScreenCaptureKit
 
 /// Screenshot helper for Context mode. Grabs the screen the pointer is on, downscaled
 /// to a vision-friendly size, as PNG. Needs Screen Recording permission.
@@ -20,12 +21,25 @@ enum ScreenCapture {
 
     /// Capture the display the mouse is currently on, downscaled so its longest side is at
     /// most `maxDim` (Claude vision sweet spot ≈ 1568px), returned as PNG. nil on failure.
-    static func capturePNG(maxDim: CGFloat = 1568) -> Data? {
-        let displayID = displayUnderCursor()
-        guard let cg = CGDisplayCreateImage(displayID) else { return nil }
-        let scaled = downscale(cg, maxDim: maxDim)
-        let rep = NSBitmapImageRep(cgImage: scaled)
-        return rep.representation(using: .png, properties: [:])
+    /// Uses ScreenCaptureKit: CGDisplayCreateImage was OBSOLETED in macOS 15 and returns nil
+    /// there, which silently broke Context mode (the screen was never actually captured).
+    static func capturePNG(maxDim: CGFloat = 1568) async -> Data? {
+        let wantID = displayUnderCursor()
+        do {
+            let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+            guard let display = content.displays.first(where: { $0.displayID == wantID }) ?? content.displays.first else { return nil }
+            let filter = SCContentFilter(display: display, excludingWindows: [])
+            let cfg = SCStreamConfiguration()
+            cfg.width = display.width
+            cfg.height = display.height
+            cfg.showsCursor = false
+            let cg = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: cfg)
+            let scaled = downscale(cg, maxDim: maxDim)
+            let rep = NSBitmapImageRep(cgImage: scaled)
+            return rep.representation(using: .png, properties: [:])
+        } catch {
+            return nil
+        }
     }
 
     // MARK: - internals

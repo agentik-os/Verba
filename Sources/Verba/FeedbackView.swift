@@ -390,11 +390,13 @@ struct FeedbackView: View {
             error = "Attaching a screenshot needs Screen Recording. Enable Verba in System Settings ▸ Privacy & Security ▸ Screen Recording, then try again."
             return
         }
-        guard let png = ScreenCapture.capturePNG(), !png.isEmpty else {
-            error = "Couldn't capture the screen. If Screen Recording was just enabled, quit and reopen Verba, then try again."
-            return
+        Task { @MainActor in
+            guard let png = await ScreenCapture.capturePNG(), !png.isEmpty else {
+                error = "Couldn't capture the screen. If Screen Recording was just enabled, quit and reopen Verba, then try again."
+                return
+            }
+            screenshot = png
+            screenshotThumb = NSImage(data: png)
         }
-        screenshot = png
-        screenshotThumb = NSImage(data: png)
     }
 }
