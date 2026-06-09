@@ -80,7 +80,7 @@ private struct SessionRow: View {
             if session.status != .failed {
                 HStack(spacing: 8) {
                     Button {
-                        Output.copyToClipboard(session.resultText, rich: false)
+                        Output.copyToClipboard(session.resultText, rich: session.rich)
                         copied = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { copied = false }
                     } label: {

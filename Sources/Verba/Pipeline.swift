@@ -38,6 +38,7 @@ enum Pipeline {
                     frontmostBundleID: String?,
                     forcedProfile: Profile?,
                     selection: String? = nil,
+                    editLast: Bool = false,
                     status: @escaping (String) -> Void) async throws -> PipelineResult {
         let s = Settings.shared
 
@@ -91,7 +92,37 @@ enum Pipeline {
             let r = Reprompter(model: profile.model ?? s.claudeModel)   // per-mode model override
 
             let sel = selection?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            if profile.vision {
+            // BRANCH PRECEDENCE (first match wins — ordered most-specific → general):
+            //   1. edit-last        — explicit "Edit last by voice" action; the transcript is an
+            //                          instruction acting on the PREVIOUS result. Must work in EVERY
+            //                          mode (incl. Translate / Context-Vision), so it is checked FIRST
+            //                          and uses its own channel — it is NOT gated by targetLanguage /
+            //                          vision the way the selection branches below are.
+            //   2. vision           — Context mode: screenshot + spoken request → vision model.
+            //   3. verbal shortcut  — text selected + a short phrase matching a saved Transform.
+            //   4. selection inst.  — text selected + a spoken instruction about it.
+            //   5. normal reprompt  — plain dictation → mode's system prompt.
+            // Vision is below edit-last (editing prior text shouldn't trigger a screenshot); the two
+            // selection branches stay gated to non-Translate modes (Translate always translates the
+            // spoken words), but edit-last is deliberately exempt from that gate.
+            if editLast && !sel.isEmpty {
+                // Edit-last: the dictation is an INSTRUCTION applied to the last delivered result
+                // (the text to edit arrives via `selection`). Works in ALL modes — Translate and
+                // Context/Vision included — by routing through its own dedicated prompt rather than
+                // the mode-gated selection-instruction channel.
+                status("Editing your last result…")
+                sys += """
+
+
+                EDIT-LAST MODE, OVERRIDE: The user wants to EDIT the previous result shown below. \
+                Treat the transcript as a spoken instruction to apply to that text \
+                (rewrite/shorten/translate/transform it, or answer their request about it). \
+                Output ONLY the resulting text that should REPLACE the previous result, no preamble, \
+                no quotes, no commentary. Keep the user's language unless they ask otherwise.
+                """
+                let userText = "PREVIOUS RESULT:\n<<<\n\(sel)\n>>>\n\nSPOKEN INSTRUCTION:\n\(original)"
+                reprompted = try await r.reprompt(transcript: userText, systemPrompt: sys)
+            } else if profile.vision {
                 // Context mode: screenshot of the current screen + the spoken request →
                 // a vision model → clean text to insert. Kept deliberately simple and robust.
                 guard ScreenCapture.hasPermission() else {

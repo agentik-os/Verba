@@ -16,7 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var fnPressAt: Date?        // when the current hold started (push-to-talk)
     private var fnToggleStopArmed = false   // tap-toggle: a Fn tap landed mid-recording; release decides stop vs. switch-mode
     private var fnToggleSwitched = false    // a long Fn hold already cycled the mode this press → release must not stop
-    private let fnSwitchThreshold = 0.4     // tap-toggle: hold Fn ≥ this (mid-recording) → switch mode & keep listening; shorter → stop & send
+    private let fnSwitchThreshold = 0.6     // tap-toggle: hold Fn ≥ this (mid-recording) → switch mode & keep listening; a quick stop tap (well under this) → stop & send. Widened from 0.4 so stop-vs-switch has a humanly-distinguishable dead-band.
     private let fnHoldThreshold = 0.8   // hold longer than this → release auto-finishes; a
                                         // deliberate "tap" (≤0.8s) latches for hands-free listening
     // Each in-flight Session runs its own concurrent processing Task, keyed by Session id, so
@@ -706,6 +706,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         overlay.model.title = ""
         overlay.model.context = .dictation   // reset to the default capture context
         overlay.model.modeName = ""
+        // A review-before-send window awaiting confirmation is a pending delivery: global Esc must
+        // discard it too, otherwise it would still paste after everything else was torn down.
+        reviewWindow?.close(); reviewWindow = nil
         overlay.hide()
         SoundFX.cancel()
         state = .idle
@@ -744,7 +747,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let t = Timer(timeInterval: fnSwitchThreshold, repeats: false) { [weak self] _ in
                     guard let self, self.state == .recording, self.fnToggleStopArmed else { return }
                     self.fnToggleSwitched = true   // held long enough → switch mode, keep listening
-                    self.cycleMode(1)
+                    self.cycleMode(1)              // cycleMode plays SoundFX.mode() + sets "Listening · X"
+                    self.flashModeSwitch()         // unambiguous switch feedback: distinct title flash so the user knows this was a SWITCH, not a stop
                 }
                 RunLoop.main.add(t, forMode: .common)
                 fnHoldTimer = t
@@ -768,6 +772,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Mode switching now lives on Fn + Tab and Fn + 1-9 only; this no longer changes mode.
     private func fnControlPressed() {
         guard Settings.shared.useFnAsPrimary else { return }
+        cancelToggleHold()   // ⌥+Fn is a chord → don't let the pending toggle-switch timer cycle the mode on release
         // Don't pop the glance over a live capture: if ⌥ is tapped mid-Fn-hold while a dictation,
         // note, or to-do voice capture is recording, leave the recording untouched.
         if state == .recording || todoCaptureRecording || NotesController.shared.isRecording { return }
@@ -789,6 +794,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         fnToggleStopArmed = false
         fnToggleSwitched = false
         lastFnDown = nil
+    }
+
+    /// Toggle-style mode SWITCH feedback: when the in-flight toggle timer cycles the mode mid-
+    /// recording, flash a distinct "Switched · X" title for ~1s so the user unambiguously knows a
+    /// switch (not a stop) happened, then settle back to the steady "Listening · X". Recording
+    /// keeps running throughout. SoundFX.mode() is already played by cycleMode().
+    private func flashModeSwitch() {
+        guard state == .recording else { return }
+        let name = (forcedProfile ?? Settings.shared.activeProfile).name
+        overlay.model.title = "Switched · \(name)"
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            guard let self, self.state == .recording else { return }
+            // Only revert if nothing else changed the title since (still our switch flash).
+            if self.overlay.model.title == "Switched · \(name)" {
+                self.overlay.model.title = "Listening · \(name)"
+            }
+        }
     }
 
     /// Fn + Tab (next) / Fn + ⇧ + Tab (previous) → cycle the active mode, live while recording.
@@ -1093,7 +1115,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let forced = forcedProfile
         // #2 Edit-last: treat this dictation as an instruction applied to the last result
         // (reuses selection mode: transcript = instruction, lastResultText = the text to edit).
-        let selection = editLastInstruction ? lastResultText : capturedSelection
+        let editingLast = editLastInstruction
+        let selection = editingLast ? lastResultText : capturedSelection
         let modeName = (forced ?? Settings.shared.profile(forBundleID: bundleID)).name
         let ctx = SessionContext(session: Session(modeName: modeName),
                                  audioURL: url,
@@ -1113,14 +1136,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         overlay.model.paused = false
         showProcessingOverlay()
 
-        runSession(ctx, forcedProfile: forced, selection: selection)
+        runSession(ctx, forcedProfile: forced, selection: selection, editLast: editingLast)
     }
 
     /// Spawn the concurrent processing Task for a Session. Several of these can run at once; each is
     /// tracked by Session id so Esc can cancel them all. On success it delivers (or, if the user has
     /// since moved to an unrelated app, lands in the Sessions list with Copy); on failure it records
     /// the error on the Session and surfaces it without blocking the recorder.
-    private func runSession(_ ctx: SessionContext, forcedProfile forced: Profile?, selection: String?) {
+    private func runSession(_ ctx: SessionContext, forcedProfile forced: Profile?, selection: String?, editLast: Bool = false) {
         let session = ctx.session
         SessionStore.shared.start(session)
         let url = ctx.audioURL
@@ -1129,7 +1152,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             do {
                 // Hard ceiling so a hung transcription/reprompt backend can't spin forever.
                 let result = try await withTimeout(seconds: self.processingTimeout) {
-                    try await Pipeline.run(audioURL: url, frontmostBundleID: bundleID, forcedProfile: forced, selection: selection) { [weak self] s in
+                    try await Pipeline.run(audioURL: url, frontmostBundleID: bundleID, forcedProfile: forced, selection: selection, editLast: editLast) { [weak self] s in
                         DispatchQueue.main.async {
                             guard let self else { return }
                             session.status = s.lowercased().contains("transcrib") ? .transcribing : .processing
@@ -1140,6 +1163,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
                 if Task.isCancelled { return }
                 await MainActor.run {
+                    // Close the TOCTOU window: cancelEverything() clears sessionTasks (and marks the
+                    // session .cancelled) on the main thread. If an Esc landed between the check above
+                    // and this hop, the session is no longer tracked → drop it (no paste, no listing).
+                    guard self.sessionTasks[session.id] != nil else { return }
                     self.sessionTasks[session.id] = nil
                     self.finish(ctx: ctx, result: result)
                 }
@@ -1148,6 +1175,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             } catch {
                 if Task.isCancelled { return }
                 await MainActor.run {
+                    guard self.sessionTasks[session.id] != nil else { return }
                     self.sessionTasks[session.id] = nil
                     self.failSession(session, error: error, latestShowsOverlay: true)
                 }
@@ -1160,7 +1188,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Sessions list as failed without hijacking the overlay the user is now using.
     @MainActor
     private func failSession(_ session: Session, error: Error, latestShowsOverlay: Bool) {
-        let wasLatest = latestShowsOverlay && isLatestInflight(session)
+        // Don't let a background session's failure reset overlay state while the user is recording a
+        // NEW dictation: the new recording isn't tracked in SessionStore.inflight yet, so the failed
+        // old session can still look "latest". Gating on state != .recording keeps a background
+        // failure quiet (list refresh only) and never orphans the live recording.
+        let wasLatest = latestShowsOverlay && isLatestInflight(session) && state != .recording
         let msg = error.localizedDescription.lowercased()
         let tooShort = msg.contains("at least 300ms") || msg.contains("invalid audio") || msg.contains("too short")
         let benign: Bool
@@ -1228,6 +1260,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @MainActor
     private func finish(ctx: SessionContext, result: PipelineResult) {
         let session = ctx.session
+        // A session Esc-cancelled in the TOCTOU window is already marked .cancelled (and dropped from
+        // the store) by cancelEverything(); never auto-paste or list it.
+        guard session.status != .cancelled else { return }
         session.original = result.original
         let wasLatest = isLatestInflight(session)
         lastAudioURL = ctx.audioURL   // #8: keep the last recording so it can be redone in another mode
@@ -1255,6 +1290,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             session.status = .done
             // #7 smart formatting: pick rich/plain based on the target app (toggle in Labs).
             let rich = Output.willPasteRich(ctx.capturedBundleID)
+            session.rich = rich   // persist so the Sessions list Copy preserves the same formatting
             if Settings.shared.autoPaste && safeToAutoPaste {
                 if Output.paste(text, rich: rich, target: ctx.capturedTarget) {
                     session.autoPasted = true

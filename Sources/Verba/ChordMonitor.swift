@@ -21,6 +21,8 @@ final class ChordMonitor {
     private var localKeys: Any?
     private var chordHeld = false
     private var fnHeld = false
+    private var ctrlPresent = false                 // edge-tracking for the plain-Control pause/resume tap
+    private var optSeenDuringCtrl = false            // Option co-present during the Control press → ⌃⌥ chord, not a pause tap
     private var lastControlFire: TimeInterval = 0   // debounce for the Control pause/resume tap
     private static let fnKeyCode: UInt16 = 63   // the globe / Fn key
 
@@ -41,7 +43,7 @@ final class ChordMonitor {
     func stop() {
         [globalFlags, localFlags, globalKeys, localKeys].forEach { if let m = $0 { NSEvent.removeMonitor(m) } }
         globalFlags = nil; localFlags = nil; globalKeys = nil; localKeys = nil
-        chordHeld = false
+        chordHeld = false; ctrlPresent = false; optSeenDuringCtrl = false
     }
 
     private func handleFlags(_ e: NSEvent) {
@@ -59,16 +61,29 @@ final class ChordMonitor {
         // gesture (it sees every flagsChanged at HID head-insert, where the NSEvent global monitor
         // here drops modifier events unpredictably across launches) — so skip to avoid a double
         // trigger. This path remains the fallback when Fn is NOT the primary trigger (tap off).
-        // We DON'T track a held/released latch: global NSEvent monitors can drop the Control
-        // RELEASE, which used to leave a latch stuck "held". Fire on every Control-present edge
-        // with a short time debounce — one physical tap is one down event (the up event has
-        // Control absent, ignored), and a missed release can no longer block the next press.
-        let ctrlDown = f.contains(.control) && !f.contains(.option)
-        if ctrlDown, !FnTap.shared.active {
-            let now = ProcessInfo.processInfo.systemUptime
-            if now - lastControlFire > 0.3 {
-                lastControlFire = now
-                DispatchQueue.main.async { self.onControl?() }
+        //
+        // Fire on the Control-UP edge, not the down edge: a ⌃⌥ chord begins with a lone
+        // Control-down, so firing on down emitted a phantom pause/resume. Latch whether Option was
+        // ever co-present during the press; a lone ⌃ tap pauses, a ⌃⌥ chord does not. Global
+        // NSEvent monitors can drop the Control RELEASE, so we also clear the latch whenever
+        // Control is fully absent — a missed release can't block the next press.
+        if !FnTap.shared.active {
+            let ctrlHeld = f.contains(.control)
+            let optHeld = f.contains(.option)
+            if ctrlHeld {
+                if !ctrlPresent { ctrlPresent = true; optSeenDuringCtrl = optHeld }
+                if optHeld { optSeenDuringCtrl = true }
+            } else if ctrlPresent {
+                let wasChord = optSeenDuringCtrl
+                ctrlPresent = false
+                optSeenDuringCtrl = false
+                if !wasChord {
+                    let now = ProcessInfo.processInfo.systemUptime
+                    if now - lastControlFire > 0.12 {
+                        lastControlFire = now
+                        DispatchQueue.main.async { self.onControl?() }
+                    }
+                }
             }
         }
 

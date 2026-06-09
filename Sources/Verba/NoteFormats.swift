@@ -19,24 +19,27 @@ struct NoteFormat: Codable, Identifiable, Equatable, Hashable {
     // in ~1s instead of waiting on a heavy model. "Code task / ticket" keeps Opus for precision.
     private static let fast = "claude-haiku-4-5"
 
+    // Built-in note formats carry hard-coded ids so their identity is stable across launches and
+    // re-seeds (the default `id = UUID()` would mint a fresh id every launch, breaking any reference
+    // — e.g. the user's selected format — that keys off the id).
     static let allBuiltIn: [NoteFormat] = [
-        .init(name: "Clean note", icon: "doc.text",
+        .init(id: UUID(uuidString: "00000000-0000-0000-0000-0000000000B1")!, name: "Clean note", icon: "doc.text",
               systemPrompt: "Restructure this spoken transcript into a clean, faithful written note. Fix grammar and remove filler (um, uh, repetitions, false starts), order the points logically, add light headings if useful, but keep ALL the information and the speaker's voice. \(nodash)", model: fast, builtin: true),
-        .init(name: "Brain dump → outline", icon: "list.bullet.indent",
+        .init(id: UUID(uuidString: "00000000-0000-0000-0000-0000000000B2")!, name: "Brain dump → outline", icon: "list.bullet.indent",
               systemPrompt: "This is a messy brain dump. Extract the ideas into a clear nested outline with short headings and bullet points, grouping related thoughts. Add a one-line summary at the top. \(nodash)", model: fast, builtin: true),
-        .init(name: "Summary (TL;DR)", icon: "text.append",
+        .init(id: UUID(uuidString: "00000000-0000-0000-0000-0000000000B3")!, name: "Summary (TL;DR)", icon: "text.append",
               systemPrompt: "Write a tight TL;DR (1 to 3 sentences) followed by 3 to 6 bullet takeaways capturing the essentials. \(nodash)", model: fast, builtin: true),
-        .init(name: "Meeting notes", icon: "person.2",
+        .init(id: UUID(uuidString: "00000000-0000-0000-0000-0000000000B4")!, name: "Meeting notes", icon: "person.2",
               systemPrompt: "Turn this into structured meeting notes with these sections: Summary, Key points, Decisions, Action items (each as owner: task). Omit a section if there is nothing for it. \(nodash)", model: fast, builtin: true),
-        .init(name: "Journal", icon: "book.closed",
+        .init(id: UUID(uuidString: "00000000-0000-0000-0000-0000000000B5")!, name: "Journal", icon: "book.closed",
               systemPrompt: "Rewrite this as a coherent, well organized first person journal entry, grouped by theme, in the speaker's natural voice. \(nodash)", model: fast, builtin: true),
-        .init(name: "Email", icon: "envelope",
+        .init(id: UUID(uuidString: "00000000-0000-0000-0000-0000000000B6")!, name: "Email", icon: "envelope",
               systemPrompt: "Rewrite this monologue as a clear, courteous, well structured email (greeting, body in logical paragraphs, sign off). Keep every point the speaker made. \(nodash)", model: fast, builtin: true),
-        .init(name: "Code task / ticket", icon: "hammer",
+        .init(id: UUID(uuidString: "00000000-0000-0000-0000-0000000000B7")!, name: "Code task / ticket", icon: "hammer",
               systemPrompt: "Turn this into a precise engineering task. Sections: Title, Context, Goal, Acceptance criteria (checklist), Technical steps (ordered). Keep every technical detail verbatim (paths, names, commands). \(nodash)", model: "claude-opus-4-8", builtin: true),
-        .init(name: "To-do list", icon: "checklist",
+        .init(id: UUID(uuidString: "00000000-0000-0000-0000-0000000000B8")!, name: "To-do list", icon: "checklist",
               systemPrompt: "Extract every actionable task from this transcript as a checklist (- [ ] task), most important first, grouped if there are clear themes. Ignore non-actionable chatter. \(nodash)", model: fast, builtin: true),
-        .init(name: "Article outline", icon: "doc.richtext",
+        .init(id: UUID(uuidString: "00000000-0000-0000-0000-0000000000B9")!, name: "Article outline", icon: "doc.richtext",
               systemPrompt: "Turn this into a blog/article outline: a working title, a hook, then sections with their key points as bullets. \(nodash)", model: fast, builtin: true),
         .intent,
     ]
@@ -45,6 +48,7 @@ struct NoteFormat: Codable, Identifiable, Equatable, Hashable {
     /// recording (e.g. "turn this into a bug report"). The free-form instruction is prepended to
     /// the base prompt at format time (see `NotesView.applyFormat`).
     static let intent = NoteFormat(
+        id: UUID(uuidString: "00000000-0000-0000-0000-0000000000BA")!,
         name: "Intent", icon: "wand.and.rays",
         systemPrompt: """
         You receive a one-off INSTRUCTION from the user describing how to shape the following \

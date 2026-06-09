@@ -27,6 +27,7 @@ final class FnTap {
     private var fnDown = false
     private var optDown = false   // Option held during the current Fn-hold (fires onFnControl → to-do glance)
     private var ctrlPresent = false             // edge-tracking for the plain-Control pause/resume tap
+    private var optSeenDuringCtrl = false        // Option co-present during the current Control press → it's a ⌃⌥ chord, NOT a pause tap
     private var lastControlFire: TimeInterval = 0   // debounce so one physical tap fires once
 
     /// True once the event tap is live. False means Accessibility/Input-Monitoring is not
@@ -67,7 +68,7 @@ final class FnTap {
         if let t = tap { CGEvent.tapEnable(tap: t, enable: false) }
         if let s = source { CFRunLoopRemoveSource(CFRunLoopGetCurrent(), s, .commonModes) }
         tap = nil; source = nil; fnDown = false; menuActive = false; active = false
-        ctrlPresent = false
+        ctrlPresent = false; optSeenDuringCtrl = false
         FnSystemPref.restore()
     }
 
@@ -84,20 +85,30 @@ final class FnTap {
 
             // Plain Control (no Option) → pause/resume the active recording. The HID tap sees
             // EVERY flagsChanged at head-insert, so this is the reliable path (the NSEvent global
-            // monitor in ChordMonitor drops modifier events unpredictably across launches). Fire on
-            // the Control-down edge only; the matching up edge clears the latch so the next press
-            // works even if an intermediate event was missed. Fn may be co-held (hold+Fn dictation)
-            // — that's fine, we key off Control alone, ignoring Fn.
-            let ctrlDown = event.flags.contains(.maskControl) && !opt
-            if ctrlDown && !ctrlPresent {
-                ctrlPresent = true
-                let now = ProcessInfo.processInfo.systemUptime
-                if now - lastControlFire > 0.3 {
-                    lastControlFire = now
-                    if let cb = onControl { DispatchQueue.main.async(execute: cb) }
-                }
-            } else if !event.flags.contains(.maskControl) {
+            // monitor in ChordMonitor drops modifier events unpredictably across launches). We fire
+            // on the Control-UP edge, NOT the down edge: a ⌃⌥ chord (mode picker) and Direct
+            // push-to-talk (⌃⌥) both BEGIN with a lone Control-down, so firing on down emitted a
+            // phantom pause/resume. By deciding on release and latching whether Option was ever
+            // co-present during the press, a lone ⌃ tap pauses while a ⌃⌥ chord does not. Fn may be
+            // co-held (hold+Fn dictation) — that's fine, we key off Control alone, ignoring Fn.
+            let ctrlHeld = event.flags.contains(.maskControl)
+            if ctrlHeld {
+                if !ctrlPresent { ctrlPresent = true; optSeenDuringCtrl = opt }
+                if opt { optSeenDuringCtrl = true }   // Option arrived during the press → it's a chord
+            } else if ctrlPresent {
+                // Control released. Fire pause/resume only if this was a lone-Control press.
+                let wasChord = optSeenDuringCtrl
                 ctrlPresent = false
+                optSeenDuringCtrl = false
+                if !wasChord {
+                    let now = ProcessInfo.processInfo.systemUptime
+                    // Short debounce on a per-release edge: a deliberate fast second tap (after a
+                    // real release) always registers; this only swallows a duplicate up event.
+                    if now - lastControlFire > 0.12 {
+                        lastControlFire = now
+                        if let cb = onControl { DispatchQueue.main.async(execute: cb) }
+                    }
+                }
             }
             // Plain Fn records. ⌥+Fn (Option held when Fn goes down) pops the today's-to-do glance
             // instead of recording; tapping ⌥ while Fn is already held also triggers the glance.
@@ -128,8 +139,14 @@ final class FnTap {
             if fnDown, code == kVK_ANSI_RightBracket, onStyleCycle != nil { onStyleCycle?(1); return nil }
             if fnDown, code == kVK_ANSI_LeftBracket, onStyleCycle != nil { onStyleCycle?(-1); return nil }
             // Fn + number selects a mode whenever Fn is held (or the picker menu is open).
+            // While Fn is held, ALWAYS consume a mapped digit 1-9 (never leak the literal digit to
+            // the focused app) — the handler simply no-ops when the index is out of profile range.
             if menuActive || fnDown {
-                if let n = Self.digit(code), onDigit?(n) == true { return nil }
+                if let n = Self.digit(code) {
+                    let handled = onDigit?(n) == true
+                    if fnDown { return nil }                 // Fn held → consume regardless of range
+                    if menuActive, handled { return nil }    // picker open → consume only if it took the digit
+                }
             }
             // Arrow navigation + Enter ONLY while the picker is open (no global conflict).
             if menuActive {

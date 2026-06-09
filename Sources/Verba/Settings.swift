@@ -244,8 +244,11 @@ struct Style: Codable, Identifiable, Equatable {
     var prompt: String        // the style instructions appended to the mode's system prompt ("" = no change)
     var builtin: Bool = false
 
-    /// The neutral default: an empty prompt means the dictation is unchanged.
-    static let normal = Style(name: "Normal", prompt: "", builtin: true)
+    /// The neutral default: an empty prompt means the dictation is unchanged. The id is hard-coded so
+    /// the built-in's identity is stable across launches/re-seeds (a fresh UUID() each launch would
+    /// break references that key off the Style id).
+    static let normal = Style(id: UUID(uuidString: "00000000-0000-0000-0000-0000000000A1")!,
+                              name: "Normal", prompt: "", builtin: true)
 
     static let defaults: [Style] = [.normal]
 }

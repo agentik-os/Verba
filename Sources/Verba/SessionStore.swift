@@ -26,6 +26,9 @@ final class Session: Identifiable, ObservableObject, @unchecked Sendable {
     var original: String = ""
     /// Whether the result was auto-pasted into the original target (vs. only copyable from the list).
     var autoPasted = false
+    /// Whether the result should be copied as rich text (chosen from the captured target app at
+    /// deliver time) — used by the Sessions list Copy button so it preserves formatting.
+    var rich = false
     /// A short error message when the Session failed (nil otherwise).
     @Published var error: String?
 
