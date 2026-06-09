@@ -13,6 +13,7 @@ struct SettingsView: View {
     @State private var openAIKey = Keychain.openAIKey ?? ""
     @State private var anthropicKey = Keychain.anthropicKey ?? ""
     @State private var openRouterKey = Keychain.openRouterKey ?? ""
+    @State private var keysSaved = false
     @State private var verifying = false
     @State private var verifyMsg = ""
     @State private var signingIn = false
@@ -537,25 +538,48 @@ struct SettingsView: View {
         Group {
             Section("OpenAI (cloud transcription)") {
                 SecureField("sk-…", text: $openAIKey)
+                    .onChange(of: openAIKey) { _, v in
+                        Keychain.openAIKey = v.trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
                 Text("Used for gpt-4o-transcribe. Stored in your macOS Keychain.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("Anthropic (Claude reprompting)") {
                 SecureField("sk-ant-…", text: $anthropicKey)
+                    .onChange(of: anthropicKey) { _, v in
+                        Keychain.anthropicKey = v.trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
                 Text("Used for restructuring with the Anthropic API key backend. Stored in your macOS Keychain.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("OpenRouter (any writing model)") {
                 SecureField("sk-or-…", text: $openRouterKey)
+                    .onChange(of: openRouterKey) { _, v in
+                        Keychain.openRouterKey = v.trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
                 Text("Bring your own OpenRouter key to use any model for restructuring. Pick the model in General ▸ Reprompting. Stored in your macOS Keychain.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section {
-                Button("Save keys") {
-                    Keychain.openAIKey = openAIKey.trimmingCharacters(in: .whitespacesAndNewlines)
-                    Keychain.anthropicKey = anthropicKey.trimmingCharacters(in: .whitespacesAndNewlines)
-                    Keychain.openRouterKey = openRouterKey.trimmingCharacters(in: .whitespacesAndNewlines)
+                HStack {
+                    Button("Save keys") {
+                        Keychain.openAIKey = openAIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+                        Keychain.anthropicKey = anthropicKey.trimmingCharacters(in: .whitespacesAndNewlines)
+                        Keychain.openRouterKey = openRouterKey.trimmingCharacters(in: .whitespacesAndNewlines)
+                        withAnimation { keysSaved = true }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            withAnimation { keysSaved = false }
+                        }
+                    }
+                    if keysSaved {
+                        Label("Saved", systemImage: "checkmark.circle.fill")
+                            .font(.caption).foregroundStyle(.secondary)
+                            .transition(.opacity)
+                    }
                 }
+            } footer: {
+                Text("Keys are saved automatically as you type.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
         }
     }

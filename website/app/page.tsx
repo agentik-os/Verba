@@ -821,7 +821,7 @@ function Pricing() {
     <section id="pricing" className="py-28">
       <HeadCenter title={<>Start free. Go Pro when you&rsquo;re hooked.</>} />
       <div className="mx-auto mt-8 flex w-fit items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--tint)] p-1 text-sm">
-        {[["Monthly", false], ["Annual · save 22%", true]].map(([label, a]) => (
+        {[["Monthly", false], ["Annual · save 30%", true]].map(([label, a]) => (
           <button
             key={String(label)}
             onClick={() => setAnnual(a as boolean)}

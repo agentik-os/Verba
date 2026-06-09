@@ -126,6 +126,24 @@ async function fetchWishlistIssues(key: string): Promise<LinearIssue[]> {
   return out;
 }
 
+// Module-scoped cache for the Linear issue walk: the wishlist tolerates ~45s of
+// staleness, and re-walking up to 20 sequential GraphQL pages on every GET/upvote
+// burns seconds of latency plus the Linear rate limit.
+const ISSUE_CACHE_TTL_MS = 45_000;
+let issueCache: { at: number; data: LinearIssue[] } | null = null;
+
+/** fetchWishlistIssues behind the TTL cache. Mutating paths call invalidateIssueCache(). */
+async function fetchWishlistIssuesCached(key: string): Promise<LinearIssue[]> {
+  if (issueCache && Date.now() - issueCache.at < ISSUE_CACHE_TTL_MS) return issueCache.data;
+  const data = await fetchWishlistIssues(key);
+  issueCache = { at: Date.now(), data };
+  return data;
+}
+
+function invalidateIssueCache() {
+  issueCache = null;
+}
+
 /** Extract the convexId marker from a Linear issue description, if present. */
 function convexIdOf(issue: LinearIssue): string | null {
   const desc = issue.description ?? "";
@@ -171,7 +189,7 @@ export async function GET() {
   const key = process.env.LINEAR_API_KEY;
   if (key) {
     try {
-      const issues = await fetchWishlistIssues(key);
+      const issues = await fetchWishlistIssuesCached(key);
       for (const issue of issues) {
         const cid = convexIdOf(issue);
         if (!cid) continue;
@@ -277,6 +295,7 @@ async function handleAdd(body: Body) {
           },
         }
       );
+      invalidateIssueCache();
     } catch {
       // tolerate Linear failure; the wish is live in Convex.
     }
@@ -324,6 +343,7 @@ async function createIssueForWish(
         },
       },
     );
+    invalidateIssueCache();
     return data.issueCreate?.issue?.id ?? null;
   } catch {
     return null;
@@ -354,7 +374,7 @@ async function handleComment(body: Body) {
   // Locate the wish's Linear issue by its convexId marker; create one on the fly if missing.
   let issueId: string | null = null;
   try {
-    const issues = await fetchWishlistIssues(key);
+    const issues = await fetchWishlistIssuesCached(key);
     issueId = issues.find((iss) => convexIdOf(iss) === id)?.id ?? null;
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Couldn't reach Linear.";
@@ -392,6 +412,7 @@ async function handleComment(body: Body) {
       `mutation($i:CommentCreateInput!){ commentCreate(input:$i){ success } }`,
       { i: { issueId, body: commentBody } },
     );
+    invalidateIssueCache();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Couldn't post the comment.";
     return NextResponse.json({ ok: false, error: msg }, { status: 502, headers: cors });
@@ -421,7 +442,7 @@ async function handleUpvote(body: Body) {
     try {
       const items = await convex<WishItem[]>("query", "wishlist:list", {});
       const wish = items.find((w) => w.id === id);
-      const issues = await fetchWishlistIssues(key);
+      const issues = await fetchWishlistIssuesCached(key);
       const match = issues.find((iss) => convexIdOf(iss) === id);
       if (wish && match) {
         const baseTitle = (wish.text || match.title).replace(/\s+/g, " ").trim().slice(0, 230) || "Feature wish";
@@ -442,6 +463,7 @@ async function handleUpvote(body: Body) {
           `mutation($id:String!,$i:IssueUpdateInput!){ issueUpdate(id:$id, input:$i){ success } }`,
           { id: match.id, i: { title, description } }
         );
+        invalidateIssueCache();
       }
     } catch {
       // tolerate Linear failure; the vote is already recorded in Convex.
