@@ -506,9 +506,14 @@ struct ActionExecutor {
     }
 
     /// Escape a string for safe embedding inside an AppleScript double-quoted literal.
+    /// Backslash and double-quote must be escaped; newlines / carriage returns can't appear
+    /// literally inside a "..." literal (they'd break the string), so they're emitted as the
+    /// AppleScript escapes \n / \r — letting multi-line values (e.g. a message body) survive intact.
     private static func escapeAS(_ s: String) -> String {
         s.replacingOccurrences(of: "\\", with: "\\\\")
          .replacingOccurrences(of: "\"", with: "\\\"")
+         .replacingOccurrences(of: "\r", with: "\\r")
+         .replacingOccurrences(of: "\n", with: "\\n")
     }
 
     /// Run a process and capture (exit status, stdout, stderr-trimmed).

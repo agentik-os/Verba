@@ -1584,6 +1584,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let color: NSColor = .white
         let cfg = NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)
         let updateReady = Updater.shared.updateAvailable
+        // Subtle "background work happening" indicator: a small dot (or count when >1) when Sessions
+        // are still processing — so the user knows dictations are landing in Recent results.
+        let inflightCount = SessionStore.shared.inflight.count
         if let base = NSImage(systemSymbolName: symbol, accessibilityDescription: "Verba")?.withSymbolConfiguration(cfg) {
             let tinted = NSImage(size: base.size, flipped: false) { rect in
                 base.draw(in: rect)
@@ -1595,6 +1598,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     let dot = NSRect(x: rect.maxX - d, y: rect.maxY - d, width: d, height: d)
                     NSColor.systemBlue.setFill()
                     NSBezierPath(ovalIn: dot).fill()
+                } else if inflightCount > 0 {
+                    // Processing badge in the top-right: a count when several Sessions run, else a dot.
+                    if inflightCount > 1 {
+                        let n = NSAttributedString(string: "\(inflightCount)", attributes: [
+                            .font: NSFont.systemFont(ofSize: 7, weight: .bold),
+                            .foregroundColor: NSColor.white,
+                        ])
+                        let sz = n.size()
+                        let pad: CGFloat = 1.5
+                        let w = max(sz.width + pad * 2, sz.height + pad)
+                        let badge = NSRect(x: rect.maxX - w, y: rect.maxY - (sz.height + pad),
+                                           width: w, height: sz.height + pad)
+                        NSColor.systemBlue.setFill()
+                        NSBezierPath(roundedRect: badge, xRadius: badge.height / 2, yRadius: badge.height / 2).fill()
+                        n.draw(at: NSPoint(x: badge.midX - sz.width / 2, y: badge.minY))
+                    } else {
+                        let d: CGFloat = 5
+                        let dot = NSRect(x: rect.maxX - d, y: rect.maxY - d, width: d, height: d)
+                        NSColor.systemBlue.setFill()
+                        NSBezierPath(ovalIn: dot).fill()
+                    }
                 }
                 return true
             }
@@ -1603,7 +1627,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         button.toolTip = updateReady
             ? "Verba update ready" + (Updater.shared.latestVersion.map { " (v\($0))" } ?? "")
-            : nil
+            : (inflightCount > 0 ? "Verba — \(inflightCount) dictation\(inflightCount == 1 ? "" : "s") processing" : nil)
         button.contentTintColor = nil
         updateStatusPulse()
         statusItem.menu = buildMenu()
@@ -1716,15 +1740,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(redoParent)
         }
 
-        // Recent results: completed Sessions (newest first), each with its mode + a Copy action, so
-        // a background result the user ran while busy elsewhere is never lost — they can paste it
-        // later. Surfaced here AND in the floating Sessions panel (Recent results… below).
+        // Sessions: in-flight (still processing in the background) Sessions plus completed ones
+        // (newest first), each with its mode + a Copy action, so a background result the user ran
+        // while busy elsewhere is never lost — they can paste it later. The "Recent results…" item
+        // opens the live floating Sessions panel. Surfaced whenever there's anything to show.
         let recent = SessionStore.shared.completed
-        if !recent.isEmpty {
+        let inflight = SessionStore.shared.inflight
+        if !recent.isEmpty || !inflight.isEmpty {
             menu.addItem(.separator())
-            let header = NSMenuItem(title: "Recent results", action: nil, keyEquivalent: "")
-            header.isEnabled = false
-            menu.addItem(header)
+            // Live "N processing…" header while background Sessions run, so the user knows work is
+            // happening and where to find it; otherwise the plain "Recent results" header.
+            if !inflight.isEmpty {
+                let n = inflight.count
+                let proc = NSMenuItem(title: "\(n) dictation\(n == 1 ? "" : "s") processing…",
+                                      action: #selector(openSessions), keyEquivalent: "")
+                proc.target = self
+                proc.image = NSImage(systemSymbolName: "waveform", accessibilityDescription: "Processing")
+                menu.addItem(proc)
+            } else {
+                let header = NSMenuItem(title: "Recent results", action: nil, keyEquivalent: "")
+                header.isEnabled = false
+                menu.addItem(header)
+            }
             for sess in recent.prefix(6) {
                 let title = sess.status == .failed
                     ? "\(sess.modeName) · \(sess.error ?? "Failed")"
@@ -1738,7 +1775,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 menu.addItem(mi)
             }
             add(menu, "Recent results…", #selector(openSessions), "")
-            add(menu, "Clear recent results", #selector(clearSessions), "")
+            if !recent.isEmpty {
+                add(menu, "Clear recent results", #selector(clearSessions), "")
+            }
         }
 
         menu.addItem(.separator())

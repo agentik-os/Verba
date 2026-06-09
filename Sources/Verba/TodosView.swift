@@ -830,6 +830,16 @@ private struct CalendarMonth: View {
         }
         .cleanCard(padding: 12)
         .onAppear { visibleMonth = cal.startOfDay(for: selection) }
+        // When the bound selection jumps to another month (a preset chip, or any
+        // new deadline), page the grid to show it. Manual chevron paging only
+        // moves `visibleMonth`, never `selection`, so it stays unaffected.
+        .onChange(of: selection) { _, newValue in
+            if !cal.isDate(newValue, equalTo: visibleMonth, toGranularity: .month) {
+                withAnimation(.easeInOut(duration: 0.16)) {
+                    visibleMonth = cal.startOfDay(for: newValue)
+                }
+            }
+        }
     }
 
     // Month/year + paging chevrons.

@@ -10,8 +10,18 @@ struct SessionsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
+            HStack(spacing: 8) {
                 Text("Recent Results").font(.headline)
+                if !store.inflight.isEmpty {
+                    HStack(spacing: 4) {
+                        ProgressView().controlSize(.small).scaleEffect(0.7)
+                        Text("\(store.inflight.count) processing")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 7).padding(.vertical, 2)
+                    .background(Capsule().fill(Color.primary.opacity(0.06)))
+                }
                 Spacer()
                 if !store.completed.isEmpty {
                     Button("Clear") { store.clearCompleted() }
@@ -20,7 +30,7 @@ struct SessionsView: View {
             }
             .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 10)
 
-            if store.completed.isEmpty {
+            if store.completed.isEmpty && store.inflight.isEmpty {
                 Spacer()
                 VStack(spacing: 6) {
                     Image(systemName: "tray").font(.system(size: 26)).foregroundStyle(.secondary)
@@ -33,6 +43,11 @@ struct SessionsView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 8) {
+                        // In-flight Sessions first (still processing), then completed (newest first),
+                        // so the user can watch a background dictation land and copy it the moment it's done.
+                        ForEach(store.inflight) { sess in
+                            InflightRow(session: sess)
+                        }
                         ForEach(store.completed) { sess in
                             SessionRow(session: sess) { store.remove(sess) }
                         }
@@ -107,5 +122,33 @@ private struct SessionRow: View {
         let f = RelativeDateTimeFormatter()
         f.unitsStyle = .abbreviated
         return f.localizedString(for: date, relativeTo: Date())
+    }
+}
+
+/// A live row for an in-flight Session — its mode plus a spinner and the current stage, so the user
+/// can see background work happening. Observes the Session so its status flips to "Processing…" live;
+/// once it completes the store moves it into `completed` and this row is replaced by a SessionRow.
+private struct InflightRow: View {
+    @ObservedObject var session: Session
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ProgressView().controlSize(.small).scaleEffect(0.8)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(session.modeName).font(.system(size: 12, weight: .semibold))
+                Text(stageLabel).font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(10)
+        .background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    private var stageLabel: String {
+        switch session.status {
+        case .transcribing: return "Transcribing…"
+        case .processing:   return "Processing…"
+        default:            return "Working…"
+        }
     }
 }

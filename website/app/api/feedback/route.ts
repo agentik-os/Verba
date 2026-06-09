@@ -15,6 +15,8 @@ const cors = {
 const LINEAR_URL = "https://api.linear.app/graphql";
 const TEAM_ID = "e2568123-2c86-4283-a88f-88e0b508f5ae";
 const PROJECT_ID = "ac986938-6355-452d-9c6e-6e08ecb1c49e";
+// File every feedback issue directly into Backlog for consistent triage, rather than the team default state.
+const BACKLOG_STATE_ID = "e7d24547-43c5-464d-8881-413f6e80dd2e";
 
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: cors });
@@ -155,7 +157,7 @@ export async function POST(req: NextRequest) {
     const data = await linear<CreateResp>(
       key,
       `mutation($i:IssueCreateInput!){ issueCreate(input:$i){ success issue { identifier url } } }`,
-      { i: { teamId: TEAM_ID, projectId: PROJECT_ID, title, description } }
+      { i: { teamId: TEAM_ID, projectId: PROJECT_ID, stateId: BACKLOG_STATE_ID, title, description } }
     );
     if (!data.issueCreate?.success || !data.issueCreate.issue) {
       return NextResponse.json({ ok: false, error: "Couldn't file the feedback issue." }, { status: 502, headers: cors });

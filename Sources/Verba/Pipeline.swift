@@ -139,39 +139,72 @@ enum Pipeline {
                 let userText = "PREVIOUS RESULT:\n<<<\n\(sel)\n>>>\n\nSPOKEN INSTRUCTION:\n\(original)"
                 reprompted = try await r.reprompt(transcript: userText, systemPrompt: sys)
             } else if profile.vision || actionMode {
-                // Context mode (or the dedicated Action mode, Fn+X): screenshot of the current screen
-                // + the spoken request → a vision model → clean text to insert, OR a structured action.
-                // Kept deliberately simple and robust.
-                guard ScreenCapture.hasPermission() else {
-                    ScreenCapture.requestPermission()
-                    ScreenCapture.openPrivacySettings()
-                    throw RepromptError.http(0, "Context mode needs Screen Recording. Enable Verba in System Settings ▸ Privacy & Security ▸ Screen Recording, then try again.")
-                }
-                status("Looking at your screen…")
-                guard let png = ScreenCapture.capturePNG(), !png.isEmpty else {
-                    throw RepromptError.http(0, "Couldn't capture the screen. If Screen Recording was just enabled, quit and reopen Verba, then try again.")
+                // Context mode (or the dedicated Action mode, Fn+X): the spoken request → an intent
+                // model → clean text to insert, OR a structured action.
+                //
+                // The screenshot is CONDITIONAL. Context mode (the vision profile) is explicitly a
+                // screen-grounded mode, so it always captures. The dedicated Action mode (Fn+X) is a
+                // voice-command mode: most commands ("open Spotify", "create an event tomorrow 3pm",
+                // "run my Morning Routine shortcut", "remind me to…") are self-contained and need NO
+                // screen, so we only capture when the transcript is plausibly screen-grounded (mentions
+                // "this"/"screen"/"selected"/"reply to this"/"what's on", etc — see commandNeedsScreen).
+                // This means Action mode works WITHOUT Screen Recording for self-contained commands.
+                let wantsScreen = profile.vision || commandNeedsScreen(original)
+                // Only capture if we want the screen AND we can. In Action mode with the permission
+                // off, we DON'T hard-fail every command: we fall back to a screenless intent pass so
+                // self-contained commands keep working, and surface a prompt only if the command truly
+                // needed the screen (handled below). Context mode keeps the hard requirement.
+                var png: Data? = nil
+                if wantsScreen {
+                    if ScreenCapture.hasPermission() {
+                        status("Looking at your screen…")
+                        guard let shot = ScreenCapture.capturePNG(), !shot.isEmpty else {
+                            throw RepromptError.http(0, "Couldn't capture the screen. If Screen Recording was just enabled, quit and reopen Verba, then try again.")
+                        }
+                        png = shot
+                    } else if profile.vision {
+                        // Context mode is inherently screen-grounded — without the permission it can't run.
+                        ScreenCapture.requestPermission()
+                        ScreenCapture.openPrivacySettings()
+                        throw RepromptError.http(0, "Context mode needs Screen Recording. Enable Verba in System Settings ▸ Privacy & Security ▸ Screen Recording, then try again.")
+                    } else {
+                        // Action mode + a screen-grounded command, but no Screen Recording: prompt the
+                        // user to enable it rather than silently running blind on a request that needs
+                        // the screen ("reply to this", "what's on screen").
+                        ScreenCapture.requestPermission()
+                        ScreenCapture.openPrivacySettings()
+                        throw RepromptError.http(0, "That command needs to see your screen. Enable Verba in System Settings ▸ Privacy & Security ▸ Screen Recording, then try again — or phrase a self-contained command (e.g. “open Spotify”, “create an event tomorrow at 3pm”).")
+                    }
                 }
                 status(Quips.current())
                 // Labs "Agentic actions": ask the model to return EITHER a structured action OR
-                // plain text. The screenshot still goes to the vision model (so "draft a reply to
-                // this email" can read the on-screen email). Parse robustly; ANY parse failure falls
-                // back to treating the whole reply as text, so a result is never lost.
-                // The agentic-action path runs when Labs "Agentic actions" is on OR in the dedicated
-                // Action mode (Fn+X), which forces it regardless of the Labs toggle. The model is given
-                // the user's actual Shortcuts so it can match a spoken request to a real shortcut name.
+                // plain text. When a screenshot is attached (screen-grounded request) it goes to the
+                // vision model (so "draft a reply to this email" can read the on-screen email); for a
+                // self-contained command we run a screenless text intent pass instead. Parse robustly;
+                // ANY parse failure falls back to treating the whole reply as text, so a result is
+                // never lost. The agentic-action path runs when Labs "Agentic actions" is on OR in the
+                // dedicated Action mode (Fn+X), which forces it regardless of the Labs toggle. The
+                // model is given the user's actual Shortcuts so it can match a request to a real name.
                 if s.agenticActions || actionMode {
                     let shortcuts = ActionExecutor().availableShortcuts()
-                    let raw = try await r.repromptVision(
-                        transcript: original,
-                        systemPrompt: sys + agenticActionsAddendum(shortcuts: shortcuts, actionFirst: actionMode),
-                        imagePNG: png)
+                    let agenticSys = sys + agenticActionsAddendum(shortcuts: shortcuts, actionFirst: actionMode)
+                    let raw: String
+                    if let png {
+                        raw = try await r.repromptVision(transcript: original, systemPrompt: agenticSys, imagePNG: png)
+                    } else {
+                        raw = try await r.reprompt(transcript: original, systemPrompt: agenticSys)
+                    }
                     if let action = parseAgenticAction(raw) {
                         detectedAction = action
                     } else {
                         reprompted = extractAgenticText(raw)
                     }
-                } else {
+                } else if let png {
                     reprompted = try await r.repromptVision(transcript: original, systemPrompt: sys, imagePNG: png)
+                } else {
+                    // Non-agentic Context mode always captures (wantsScreen is true), so png is
+                    // non-nil above. This arm is unreachable, but keeps the result defined.
+                    reprompted = try await r.reprompt(transcript: original, systemPrompt: sys)
                 }
             } else if !sel.isEmpty && profile.targetLanguage == nil,
                       let transform = TransformsStore.shared.match(transcript: original) {
@@ -325,6 +358,51 @@ enum Pipeline {
 
         \(nowContext())
         """
+    }
+
+    /// Decide whether a dictated Action-mode command is plausibly SCREEN-GROUNDED — i.e. it can only
+    /// be carried out by looking at what's currently on screen ("reply to this", "what's on my
+    /// screen", "summarize the selected text"). Clearly self-contained commands ("open Spotify",
+    /// "play my Focus playlist", "create an event tomorrow at 3pm", "run my Morning Routine shortcut",
+    /// "remind me to call the bank") return false, so Action mode runs WITHOUT a screenshot and does
+    /// not require Screen Recording. Conservative: only deictic / screen-referential phrasing flips it.
+    static func commandNeedsScreen(_ transcript: String) -> Bool {
+        let t = " " + transcript.lowercased()
+            .folding(options: .diacriticInsensitive, locale: .current)
+            .trimmingCharacters(in: .whitespacesAndNewlines) + " "
+        guard t.count > 2 else { return false }
+
+        // Phrases that clearly refer to on-screen content / a current selection. Word-ish boundaries
+        // via surrounding spaces avoid matching inside unrelated words ("display" must not hit "this").
+        let screenPhrases = [
+            "this email", "this message", "this thread", "this conversation", "this text",
+            "this page", "this article", "this code", "this error", "this tweet", "this post",
+            "this document", "this paragraph", "this selection", "this window", "this tab",
+            "reply to this", "respond to this", "answer this", "summarize this", "summarise this",
+            "explain this", "translate this", "rewrite this", "fix this", "what does this",
+            "what is this", "whats this", "what's this",
+            "on screen", "on my screen", "on the screen", "what's on", "whats on", "what is on",
+            "on this screen", "the screen", "my screen",
+            "selected", "the selection", "highlighted", "what i selected", "what im looking at",
+            "what i'm looking at", "currently showing", "showing now", "in front of me",
+            "above this", "below this", "this here", "right here",
+        ]
+        for p in screenPhrases where t.contains(" \(p) ") || t.contains(" \(p)") { return true }
+
+        // Bare deictic "this"/"that"/"it"/"here" as a standalone word, with no concrete object given,
+        // is ambiguous enough to be screen-grounded ("reply to this", "what's that", "do it here").
+        // Only treat a lone "this"/"that" referent as screen-grounded — "this morning"/"this week"
+        // are time words and are NOT screen references, so guard against those.
+        let ambiguousDeictic = [" this ", " that ", " these ", " those ", " it here ", " right here "]
+        let timeWordsAfterDeictic = ["this morning", "this afternoon", "this evening", "this week",
+                                     "this weekend", "this month", "this year", "this tuesday",
+                                     "this monday", "this wednesday", "this thursday", "this friday",
+                                     "this saturday", "this sunday", "this time"]
+        if ambiguousDeictic.contains(where: { t.contains($0) }),
+           !timeWordsAfterDeictic.contains(where: { t.contains($0) }) {
+            return true
+        }
+        return false
     }
 
     /// Parse the model's reply into a VerbaAction when it returned `{"action":{…}}`. Robust: extracts
