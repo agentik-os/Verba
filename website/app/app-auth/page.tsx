@@ -26,9 +26,9 @@ export default function AppAuth() {
       setMsg("Done! Returning to Verba…");
       const q = new URLSearchParams({ email });
       if (code) q.set("code", code);
-      // Hand the Clerk name back so the app uses it as the default alias.
-      if (user.firstName) q.set("firstName", user.firstName);
-      if (user.lastName) q.set("lastName", user.lastName);
+      // Deliberately do NOT hand the Clerk first/last name back: the public
+      // leaderboard handle is a chosen username (synced via /api/username), never
+      // the real name. Passing the name here would re-introduce a name-leak path.
       window.location.href = `verba://auth?${q.toString()}`;
     };
 

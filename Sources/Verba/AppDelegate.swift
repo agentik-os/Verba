@@ -81,6 +81,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Re-check the real subscription on launch so Pro reflects Stripe, not just sign-in.
         if !Settings.shared.proEmail.isEmpty {
             Task { _ = await Settings.shared.verifyPro() }
+            Task { await Username.reconcileOnSignIn() }  // adopt the Clerk username so the handle syncs across Macs
             History.shared.syncFromCloud()   // pull dictation history from the user's other Macs
             Stats.shared.syncFromCloud()     // restore Insights / Total Words for the account
             NotesStore.shared.syncFromCloud()// pull long-form notes for the account
@@ -185,7 +186,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Settings.shared.$username
             .dropFirst()
             .debounce(for: .seconds(0.9), scheduler: RunLoop.main)
-            .sink { _ in Leaderboard.submit() }
+            .sink { name in
+                Leaderboard.submit()
+                // Push the new public handle to Clerk so it syncs to the web + other Macs.
+                let email = Settings.shared.proEmail
+                if !email.isEmpty { Task { await Username.push(name, email: email) } }
+            }
             .store(in: &cancellables)
 
         // Signing in after launch: verify Pro, push anything dictated while signed out, pull history.
@@ -195,6 +201,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { email in
                 guard !email.isEmpty else { return }
                 Task { _ = await Settings.shared.verifyPro() }
+                Task { await Username.reconcileOnSignIn() }  // pull the account's Clerk username (or seed it)
                 History.shared.pushAll()
                 History.shared.syncFromCloud()
                 Stats.shared.pushAll()        // push stats accrued while signed out

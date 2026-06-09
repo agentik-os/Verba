@@ -132,7 +132,7 @@ struct OnboardingView: View {
     private var canAdvance: Bool {
         switch step {
         case 1: return !settings.proEmail.isEmpty
-        case 2: return !settings.username.trimmingCharacters(in: .whitespaces).isEmpty   // alias set
+        case 2: return !settings.username.trimmingCharacters(in: .whitespaces).isEmpty   // username set
         case 3: return micGranted && axGranted && imGranted   // the 3 core permissions (Screen Recording is optional)
         default: return true
         }
@@ -194,11 +194,12 @@ struct OnboardingView: View {
         }
     }
 
-    // Alias step: comes AFTER sign-in (it defaults to the Clerk name, which we only know
-    // once connected). Its own slide with a focused, friendly design.
+    // Username step: the PUBLIC leaderboard handle. It is deliberately a random alias by
+    // default (NEVER the Clerk first/last name or email), and the user makes it their own.
+    // Synced to the account (Clerk) so the same handle follows them across Macs and the web.
     private var aliasStep: some View {
         VStack(alignment: .leading, spacing: 18) {
-            title("Pick your alias", "This is the name shown on the Verba leaderboard. We set it from your account, make it yours.")
+            title("Pick your username", "This is your PUBLIC name on the Verba leaderboard. It is never your real name or email, so pick something you're happy for anyone to see.")
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 14) {
                     ZStack {
@@ -206,16 +207,18 @@ struct OnboardingView: View {
                         Text(aliasInitials).font(.title3.weight(.semibold)).foregroundStyle(.primary)
                     }
                     VStack(alignment: .leading, spacing: 4) {
-                        TextField("Your alias", text: $settings.username)
+                        TextField("Your username", text: $settings.username)
                             .textFieldStyle(.plain).font(.title2.weight(.semibold))
-                        if !settings.proEmail.isEmpty {
-                            Text(settings.proEmail).font(.caption).foregroundStyle(.secondary)
-                        }
+                        Text("Public leaderboard name — not your real name").font(.caption).foregroundStyle(.secondary)
                     }
+                    Button { settings.username = Settings.randomAlias() } label: {
+                        Image(systemName: "shuffle")
+                    }
+                    .buttonStyle(.plain).foregroundStyle(.secondary).help("Shuffle a new username")
                 }
                 .padding(16).frame(maxWidth: .infinity, alignment: .leading)
                 .glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                Label("Public on the leaderboard. You can change it anytime in Settings.", systemImage: "info.circle")
+                Label("Public on the leaderboard, synced to your account. You can change it anytime in Settings.", systemImage: "info.circle")
                     .font(.caption).foregroundStyle(.secondary)
             }
         }

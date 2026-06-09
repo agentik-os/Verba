@@ -114,13 +114,13 @@ struct SettingsView: View {
         Group {
             Section {
                 HStack {
-                    TextField("Alias", text: $settings.username).frame(width: 220)
+                    TextField("Username", text: $settings.username).frame(width: 220)
                     Button { settings.username = Settings.randomAlias() } label: { Image(systemName: "shuffle") }
-                        .buttonStyle(.borderless).help("Shuffle a new alias")
+                        .buttonStyle(.borderless).help("Shuffle a new username")
                 }
                 Toggle("Show me on the public leaderboard", isOn: $settings.showOnLeaderboard)
-            } header: { Text("Alias & leaderboard") } footer: {
-                Text("Your alias is PUBLIC on the leaderboard, so pick a nickname, never your real name or email. Turn the toggle off to keep your profile off the leaderboard entirely.")
+            } header: { Text("Username & leaderboard") } footer: {
+                Text("Your username is PUBLIC on the leaderboard and synced to your account, so pick a nickname, never your real name or email. Turn the toggle off to keep your profile off the leaderboard entirely.")
                     .font(.caption).foregroundStyle(.secondary)
             }
 

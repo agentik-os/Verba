@@ -22,8 +22,11 @@ export async function GET() {
     if (!user) return NextResponse.json({ signedIn: false, plan: "free" }, { headers: cors });
     const email = user.primaryEmailAddress?.emailAddress ?? user.emailAddresses?.[0]?.emailAddress ?? "";
     const ent = email ? await entitlementByEmail(email) : { plan: "free", active: false };
+    // `username` is the canonical PUBLIC identity (leaderboard handle). `firstName`
+    // stays only to privately greet the signed-in user — it is never a public handle.
+    const username = (user.publicMetadata?.username as string | undefined) ?? null;
     return NextResponse.json(
-      { signedIn: true, email, firstName: user.firstName ?? "", plan: ent.active ? "pro" : "free" },
+      { signedIn: true, email, firstName: user.firstName ?? "", username, plan: ent.active ? "pro" : "free" },
       { headers: cors }
     );
   } catch {
