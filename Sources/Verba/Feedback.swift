@@ -1,95 +1,61 @@
 import Foundation
 
-/// General user feedback (distinct from Wishlist feature-requests),
-/// submitted through the same Convex deployment Wishlist uses.
+/// General user feedback (distinct from Wishlist feature-requests).
+/// Submits to the verba.run website endpoint, which files a rich Linear issue in the
+/// Verba team's Feedback project. The Linear API key lives server-side only — the app
+/// never holds it; it just POSTs the feedback + full context to /api/feedback.
 enum Feedback {
-    private static let base = "https://fortunate-aardvark-443.convex.cloud"
+    private static let endpoint = "https://verba.run/api/feedback"
     static var myUID: String { Settings.shared.uid }
 
     /// Submit a free-form feedback message, optionally with a screenshot PNG.
-    /// When a screenshot is supplied we first ask Convex for an upload URL, PUT the
-    /// PNG bytes to it to obtain a storageId, then call `feedback:submit` with it.
+    /// The screenshot (if any) is base64-encoded and sent inline; the website uploads it
+    /// to Linear and embeds it in the issue. We attach MAXIMUM context (version, OS, engine,
+    /// active mode, signed-in user) so the issue can pinpoint the source of the problem.
     /// Calls back with `nil` on success or a human-readable error string on failure.
     static func submit(_ text: String, screenshot: Data? = nil, _ done: @escaping (String?) -> Void) {
-        guard let png = screenshot else {
-            doSubmit(text: text, screenshotId: nil, done)
-            return
-        }
-        // 1. Get an upload URL.
-        post("mutation", "feedback:generateUploadUrl", [:]) { data in
-            guard let url = unwrapString(data) else {
-                finish(done, "Couldn't prepare the screenshot upload. Please try again.")
-                return
-            }
-            // 2. PUT the PNG bytes to it → { storageId }.
-            uploadPNG(png, to: url) { storageId in
-                guard let storageId else {
-                    finish(done, "Couldn't upload the screenshot. Please try again.")
-                    return
-                }
-                // 3. Submit with the screenshot's storageId.
-                doSubmit(text: text, screenshotId: storageId, done)
-            }
-        }
-    }
-
-    private static func doSubmit(text: String, screenshotId: String?, _ done: @escaping (String?) -> Void) {
-        var args: [String: Any] = [
-            "uid": myUID,
-            "alias": Settings.shared.username,
+        let s = Settings.shared
+        var body: [String: Any] = [
             "text": text,
             "version": Updater.currentVersion,
+            "os": ProcessInfo.processInfo.operatingSystemVersionString,
+            "engine": s.engine.label,
+            "mode": s.activeProfile.name,
+            "uid": s.uid,
+            "alias": s.username,
+            "email": s.proEmail,
         ]
-        if let screenshotId { args["screenshotId"] = screenshotId }
-        post("mutation", "feedback:submit", args) { data in
+        if let png = screenshot {
+            body["screenshotBase64"] = png.base64EncodedString()
+        }
+
+        guard let url = URL(string: endpoint),
+              let httpBody = try? JSONSerialization.data(withJSONObject: body) else {
+            finish(done, "Couldn't prepare the feedback. Please try again.")
+            return
+        }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = httpBody
+        req.timeoutInterval = 30
+
+        URLSession.shared.dataTask(with: req) { data, _, _ in
             guard let data,
                   let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
                 finish(done, "No response from server. Check your connection and try again.")
                 return
             }
-            if obj["status"] as? String == "success" {
+            if obj["ok"] as? Bool == true {
                 finish(done, nil)
             } else {
-                let msg = (obj["errorMessage"] as? String) ?? "Feedback couldn't be delivered right now. Please try again later."
+                let msg = (obj["error"] as? String) ?? "Feedback couldn't be delivered right now. Please try again later."
                 finish(done, msg)
             }
-        }
-    }
-
-    /// PUT raw PNG bytes to a Convex storage upload URL; returns the `storageId` or nil.
-    private static func uploadPNG(_ png: Data, to urlString: String, _ cb: @escaping (String?) -> Void) {
-        guard let url = URL(string: urlString) else { cb(nil); return }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("image/png", forHTTPHeaderField: "Content-Type")
-        req.httpBody = png
-        URLSession.shared.dataTask(with: req) { d, _, _ in
-            guard let d,
-                  let obj = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
-                  let sid = obj["storageId"] as? String else { cb(nil); return }
-            cb(sid)
         }.resume()
-    }
-
-    /// Pull the `value` string out of a Convex {status, value} envelope.
-    private static func unwrapString(_ data: Data?) -> String? {
-        guard let data,
-              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              obj["status"] as? String == "success",
-              let val = obj["value"] as? String else { return nil }
-        return val
     }
 
     private static func finish(_ done: @escaping (String?) -> Void, _ msg: String?) {
         DispatchQueue.main.async { done(msg) }
-    }
-
-    private static func post(_ kind: String, _ path: String, _ args: [String: Any], _ cb: @escaping (Data?) -> Void) {
-        guard let url = URL(string: "\(base)/api/\(kind)") else { cb(nil); return }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "content-type")
-        req.httpBody = try? JSONSerialization.data(withJSONObject: ["path": path, "args": args, "format": "json"])
-        URLSession.shared.dataTask(with: req) { d, _, _ in cb(d) }.resume()
     }
 }
