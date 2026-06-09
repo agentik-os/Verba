@@ -16,8 +16,19 @@ const DAYS: Day[] = [
     date: "June 9, 2026",
     tag: "Today",
     summary:
-      "A huge day: a redesigned site, hold-to-talk and reliable pause, mid-sentence mode switching, editable Note modes, layered writing Styles, smarter Transforms, a Transcripts library, concurrent sessions, and a sharper Task Manager agent.",
+      "A huge day, much of it straight from your feedback and wishlist: French that stays French, comments on every wishlist idea, a Context mode that really sees your screen, a redesigned site, hold-to-talk and reliable pause, mid-sentence mode switching, editable Note modes, layered writing Styles, smarter Transforms, a Transcripts library, and concurrent sessions.",
     entries: [
+      {
+        version: "0.1.96 – 0.2.0",
+        title: "Straight from your feedback and wishlist",
+        items: [
+          "From the wishlist: dictate in French and drop in an English word, and Verba now keeps the whole thing French instead of flipping the output to English — brand and loan words are kept exactly as you said them.",
+          "From the wishlist: you can now discuss a wishlist item. Each card shows a discreet comment count; tap it to expand a thread, read what others think, and add your own — every shipped idea keeps its “Developed” badge.",
+          "From your feedback: Context mode now genuinely sees your screen again and acts on what's there, and when something does go wrong you get the real reason instead of a generic “transcription failed”.",
+          "From your feedback: Action mode is clearer to trigger — a prompt tells you exactly how to run the command, with a focused confirmation before anything happens.",
+          "Two more built-in modes are available out of the box — Polish (a clean, faithful tidy-up) is the new default — and the menu-bar shortcut cheat-sheet updates the instant you change a shortcut in Settings.",
+        ],
+      },
       {
         version: "0.1.94 – 0.1.95",
         title: "A Task Manager widget, and a smarter Wishlist",
