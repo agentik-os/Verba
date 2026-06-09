@@ -1,5 +1,21 @@
 import Foundation
 
+struct WishComment: Identifiable, Decodable {
+    let id: String
+    let author: String
+    let text: String
+    let createdAt: String
+
+    /// `createdAt` as an ISO-8601 date, when parseable (Linear sends fractional seconds).
+    var created: Date? { WishComment.iso.date(from: createdAt) }
+
+    private static let iso: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+}
+
 struct WishItem: Identifiable, Decodable {
     let id: String
     let text: String
@@ -7,9 +23,11 @@ struct WishItem: Identifiable, Decodable {
     let votes: Double
     let voters: [String]
     let shipped: Bool
+    let commentCount: Int
+    let comments: [WishComment]
 
     private enum CodingKeys: String, CodingKey {
-        case id, text, author, votes, voters, shipped
+        case id, text, author, votes, voters, shipped, commentCount, comments
     }
 
     init(from decoder: Decoder) throws {
@@ -21,6 +39,8 @@ struct WishItem: Identifiable, Decodable {
         voters = try c.decode([String].self, forKey: .voters)
         // The bridge always sends shipped; tolerate its absence to stay forward/backward compatible.
         shipped = (try? c.decodeIfPresent(Bool.self, forKey: .shipped)) ?? false
+        comments = (try? c.decodeIfPresent([WishComment].self, forKey: .comments)) ?? []
+        commentCount = (try? c.decodeIfPresent(Int.self, forKey: .commentCount)) ?? comments.count
     }
 }
 
@@ -55,6 +75,12 @@ enum Wishlist {
 
     static func upvote(_ id: String, _ done: @escaping () -> Void) {
         post(["action": "upvote", "id": id, "uid": myUID]) { _ in
+            DispatchQueue.main.async { done() }
+        }
+    }
+
+    static func comment(_ id: String, _ text: String, _ done: @escaping () -> Void) {
+        post(["action": "comment", "id": id, "uid": myUID, "alias": Settings.shared.username, "text": text]) { _ in
             DispatchQueue.main.async { done() }
         }
     }

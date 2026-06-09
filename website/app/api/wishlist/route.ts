@@ -37,8 +37,15 @@ type WishItem = {
   voters: string[];
 };
 
+type WishComment = {
+  id: string;
+  author: string;
+  text: string;
+  createdAt: string;
+};
+
 type Body = {
-  action?: "add" | "upvote";
+  action?: "add" | "upvote" | "comment";
   text?: string;
   id?: string;
   uid?: string;
@@ -75,12 +82,20 @@ async function linear<T>(key: string, query: string, variables: Record<string, u
   return json.data as T;
 }
 
+type LinearCommentNode = {
+  id: string;
+  body: string;
+  createdAt: string;
+  user: { name: string | null } | null;
+};
+
 type LinearIssue = {
   id: string;
   title: string;
   description: string | null;
   updatedAt: string;
   state: { type: string } | null;
+  comments?: { nodes: LinearCommentNode[] } | null;
 };
 
 /** Fetch all wishlist-project issues (paginated) so convexId markers can be parsed. */
@@ -99,7 +114,7 @@ async function fetchWishlistIssues(key: string): Promise<LinearIssue[]> {
     };
     const data: Resp = await linear<Resp>(
       key,
-      `query($id:String!,$after:String){ project(id:$id){ issues(first:100, after:$after){ nodes { id title description updatedAt state { type } } pageInfo { hasNextPage endCursor } } } }`,
+      `query($id:String!,$after:String){ project(id:$id){ issues(first:100, after:$after){ nodes { id title description updatedAt state { type } comments(first:100){ nodes { id body createdAt user { name } } } } pageInfo { hasNextPage endCursor } } } }`,
       { id: PROJECT_ID, after }
     );
     const conn = data.project?.issues;
@@ -118,6 +133,28 @@ function convexIdOf(issue: LinearIssue): string | null {
   return m ? m[1] : null;
 }
 
+// Comments are stored on the Linear issue with the author alias prefixed as "alias: text".
+const COMMENT_PREFIX = /^([^\n:]{1,40}):\s([\s\S]*)$/;
+
+/** Turn a Linear comment node into a wish comment, recovering the alias from the "alias: text" body. */
+function toWishComment(node: LinearCommentNode): WishComment {
+  const body = (node.body ?? "").trim();
+  const m = body.match(COMMENT_PREFIX);
+  // Prefer the embedded alias; fall back to the Linear user name, then "anonymous".
+  const author = (m ? m[1] : node.user?.name ?? "")?.trim() || "anonymous";
+  const text = m ? m[2].trim() : body;
+  return { id: node.id, author, text, createdAt: node.createdAt };
+}
+
+/** All non-system comments on an issue, oldest-first, mapped to WishComment. */
+function commentsOf(issue: LinearIssue): WishComment[] {
+  const nodes = issue.comments?.nodes ?? [];
+  return nodes
+    .map(toWishComment)
+    .filter((c) => c.text.length > 0)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
 // GET — list wishes merged with a `shipped` flag derived from the linked Linear issue.
 export async function GET() {
   let items: WishItem[];
@@ -130,15 +167,18 @@ export async function GET() {
 
   // Map convexId -> the matching Linear issue (best-effort; tolerate Linear being down/unconfigured).
   const shippedAt = new Map<string, string>();
+  const commentsByWish = new Map<string, WishComment[]>();
   const key = process.env.LINEAR_API_KEY;
   if (key) {
     try {
       const issues = await fetchWishlistIssues(key);
       for (const issue of issues) {
         const cid = convexIdOf(issue);
-        if (cid && issue.state?.type === "completed") {
+        if (!cid) continue;
+        if (issue.state?.type === "completed") {
           shippedAt.set(cid, issue.updatedAt);
         }
+        commentsByWish.set(cid, commentsOf(issue));
       }
     } catch {
       // Linear unavailable — fall back to unshipped wishes rather than failing the list.
@@ -148,7 +188,9 @@ export async function GET() {
   const merged = items
     .map((w) => {
       const at = shippedAt.get(w.id);
-      return at ? { ...w, shipped: true, shippedAt: at } : { ...w, shipped: false };
+      const comments = commentsByWish.get(w.id) ?? [];
+      const base = { ...w, commentCount: comments.length, comments };
+      return at ? { ...base, shipped: true, shippedAt: at } : { ...base, shipped: false };
     })
     .sort((a, b) => b.votes - a.votes);
 
@@ -166,6 +208,7 @@ export async function POST(req: NextRequest) {
 
   if (body.action === "add") return handleAdd(body);
   if (body.action === "upvote") return handleUpvote(body);
+  if (body.action === "comment") return handleComment(body);
   return NextResponse.json({ ok: false, error: "Unknown action" }, { status: 400, headers: cors });
 }
 
@@ -240,6 +283,121 @@ async function handleAdd(body: Body) {
   }
 
   return NextResponse.json({ ok: true, id: createdId }, { headers: cors });
+}
+
+/**
+ * Create the Linear issue that mirrors a wish (used when commenting on a wish whose
+ * issue doesn't exist yet). Returns the new issue id, or null on failure. Mirrors the
+ * add path's issue shape so the convexId marker keeps the two linked.
+ */
+async function createIssueForWish(
+  key: string,
+  convexId: string,
+  text: string,
+  author: string,
+  voters: string[],
+): Promise<string | null> {
+  const title = (text || "Feature wish").replace(/\s+/g, " ").trim().slice(0, 250) || "Feature wish";
+  const description = [
+    text,
+    "",
+    "---",
+    "",
+    `${CONVEX_MARKER} ${convexId}`,
+    `Submitted by: ${author || "anonymous"}`,
+    `Wanted by (voters): ${voters.join(", ")}`,
+    `Filed: ${new Date().toISOString()}`,
+  ].join("\n");
+  try {
+    type Resp = { issueCreate: { success: boolean; issue: { id: string } | null } };
+    const data = await linear<Resp>(
+      key,
+      `mutation($i:IssueCreateInput!){ issueCreate(input:$i){ success issue { id } } }`,
+      {
+        i: {
+          teamId: TEAM_ID,
+          projectId: PROJECT_ID,
+          stateId: BACKLOG_STATE_ID,
+          labelIds: [WISHLIST_LABEL_ID],
+          title,
+          description,
+        },
+      },
+    );
+    return data.issueCreate?.issue?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// POST { action: "comment", id, uid, alias, text } — append a comment to the wish's Linear issue.
+async function handleComment(body: Body) {
+  const id = (body.id ?? "").trim();
+  const uid = (body.uid ?? "").trim();
+  const alias = (body.alias ?? "").trim();
+  const text = (body.text ?? "").trim();
+  if (!id || !uid) {
+    return NextResponse.json({ ok: false, error: "id and uid are required." }, { status: 400, headers: cors });
+  }
+  if (!text) {
+    return NextResponse.json({ ok: false, error: "Comment text is required." }, { status: 400, headers: cors });
+  }
+
+  const key = process.env.LINEAR_API_KEY;
+  if (!key) {
+    return NextResponse.json(
+      { ok: false, error: "Comments are temporarily unavailable." },
+      { status: 503, headers: cors },
+    );
+  }
+
+  // Locate the wish's Linear issue by its convexId marker; create one on the fly if missing.
+  let issueId: string | null = null;
+  try {
+    const issues = await fetchWishlistIssues(key);
+    issueId = issues.find((iss) => convexIdOf(iss) === id)?.id ?? null;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Couldn't reach Linear.";
+    return NextResponse.json({ ok: false, error: msg }, { status: 502, headers: cors });
+  }
+
+  if (!issueId) {
+    // No linked issue yet — mirror the add path so the comment has somewhere to live.
+    let wish: WishItem | undefined;
+    try {
+      const items = await convex<WishItem[]>("query", "wishlist:list", {});
+      wish = items.find((w) => w.id === id);
+    } catch {
+      wish = undefined;
+    }
+    issueId = await createIssueForWish(
+      key,
+      id,
+      wish?.text ?? "",
+      wish?.author ?? alias,
+      wish?.voters ?? [uid],
+    );
+  }
+
+  if (!issueId) {
+    return NextResponse.json({ ok: false, error: "Couldn't attach the comment." }, { status: 502, headers: cors });
+  }
+
+  // Store the comment with the alias prefixed so the author survives the round-trip.
+  const speaker = alias || uid || "anonymous";
+  const commentBody = `${speaker}: ${text}`.slice(0, 4000);
+  try {
+    await linear<unknown>(
+      key,
+      `mutation($i:CommentCreateInput!){ commentCreate(input:$i){ success } }`,
+      { i: { issueId, body: commentBody } },
+    );
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Couldn't post the comment.";
+    return NextResponse.json({ ok: false, error: msg }, { status: 502, headers: cors });
+  }
+
+  return NextResponse.json({ ok: true }, { headers: cors });
 }
 
 async function handleUpvote(body: Body) {

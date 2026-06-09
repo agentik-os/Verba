@@ -541,23 +541,60 @@ enum Pipeline {
 
         guard languages.count >= 2 else { return false }
         let other = languages.filter { $0 != dominant }.count
-        // Mixed if at least one full sentence is a confidently different language AND it isn't
-        // a lone outlier in a long monologue (≥ ~20% off-language sentences, or any in short text).
-        return other >= 1 && (languages.count <= 4 || Double(other) / Double(languages.count) >= 0.2)
+        // Only treat as MIXED when off-language sentences are a real share of the text, not a
+        // lone outlier — a French-dominant utterance with one English brand/loan word must NOT
+        // trip the rewrite. Require ≥2 off-language sentences, OR a single one only when it's
+        // at least ~33% of a very short (2-3 sentence) text where it's genuinely half the content.
+        if other >= 2 { return Double(other) / Double(languages.count) >= 0.2 }
+        return languages.count <= 3 && Double(other) / Double(languages.count) >= 0.33
     }
 
-    /// Cheap LLM cleanup pass: rewrite the text entirely in its single dominant language,
-    /// translating any code-switched fragments, changing nothing else. Uses the configured
-    /// backend via Reprompter (fast path) so it routes to the user's chosen model.
+    /// Human-readable name for an NL language code, used to PIN the rewrite target so the LLM
+    /// can never promote a minority language to the whole output. Falls back to the raw code.
+    static func languageDisplayName(_ lang: NLLanguage) -> String {
+        Locale(identifier: "en_US").localizedString(forLanguageCode: lang.rawValue) ?? lang.rawValue
+    }
+
+    /// Cheap LLM cleanup pass for code-switched dictation. We FIRST detect the document's
+    /// dominant language offline with Apple's NaturalLanguage recognizer, then instruct the
+    /// model to keep THAT language as the output language — it may never flip the whole text
+    /// to a minority language just because a few foreign tokens appear. Embedded foreign
+    /// brand / product / technical / loan words are preserved verbatim, never translated.
+    /// Uses the configured backend via Reprompter (fast path).
     static func normalizeLanguage(_ text: String, model: String) async throws -> String {
+        // Pin the target language offline so the LLM can't mis-pick a minority one.
+        let recognizer = NLLanguageRecognizer()
+        recognizer.processString(text)
+        let targetClause: String
+        if let dominant = recognizer.dominantLanguage {
+            targetClause = """
+            The DOMINANT language of this text is \(languageDisplayName(dominant)). Keep the \
+            ENTIRE output in \(languageDisplayName(dominant)). Do NOT switch the output to any \
+            other language, even if some words or a short phrase appear in another language.
+            """
+        } else {
+            targetClause = """
+            Keep the ENTIRE output in the single dominant language of the text. Do NOT switch \
+            the output to a minority language that only appears in a few words.
+            """
+        }
+
         let sys = """
         You are a language-consistency fixer for voice-dictation output. The transcription \
-        engine sometimes code-switches, dropping fragments of one language into text that is \
-        mostly another language (e.g. English words inside French speech, or the reverse).
+        engine sometimes code-switches, dropping a few fragments of one language into text that \
+        is mostly another language (e.g. a stray English fragment inside French speech).
 
-        Detect the ONE dominant language of the text and rewrite it ENTIRELY in that single \
-        language, translating every code-switched fragment into it so the result is 100% \
-        monolingual.
+        \(targetClause)
+
+        Rewrite ONLY the fragments that are accidentally in the WRONG language back into the \
+        dominant output language, so the prose reads naturally and monolingually.
+
+        CRITICAL — PRESERVE these verbatim, never translate them: brand names, product names, \
+        company names, proper nouns, technical terms, acronyms, and established loanwords that a \
+        native speaker would normally keep in the foreign form (e.g. words like "weekend", \
+        "email", "software", "deadline", "feedback", "meeting", "le wifi", "un bug"). A French \
+        sentence that mentions an English brand or borrowed word must STAY French with that word \
+        left exactly as spoken.
 
         Change NOTHING else: keep all content, meaning, tone, numbers, names, code, punctuation \
         and formatting exactly as they are. Do not summarize, add, remove, reorder, or explain.
