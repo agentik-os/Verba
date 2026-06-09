@@ -73,13 +73,19 @@ struct OpenAITranscriber: Transcriber {
 actor LocalTranscriber: Transcriber {
     static let shared = LocalTranscriber()
 
-    private var pipe: WhisperKit?
-    private var loadedModel: String?
+    /// Reentrancy gate: the (in-flight or completed) load for `loadTaskModel`. Concurrent
+    /// callers all await this SAME task, so actor reentrancy can never double-load the model.
+    private var loadTask: Task<WhisperKit, Error>?
+    private var loadTaskModel: String?
+
+    /// Tail of the serialized transcription queue: each new transcribe chains on the previous
+    /// one, so two dictations can never run concurrently on the one WhisperKit pipeline.
+    private var queueTail: Task<String, Error>?
 
     /// Called with human-readable load status (e.g. while downloading the model the first time).
     nonisolated(unsafe) var onStatus: ((String) -> Void)?
 
-    func unload() { pipe = nil; loadedModel = nil }
+    func unload() { loadTask?.cancel(); loadTask = nil; loadTaskModel = nil }
 
     /// Where WhisperKit stores models (matches EngineManager's install path).
     private static func folder(_ model: String) -> String {
@@ -89,35 +95,53 @@ actor LocalTranscriber: Transcriber {
     }
 
     func ensureLoaded(model: String) async throws -> WhisperKit {
-        if let pipe, loadedModel == model { return pipe }
+        if let loadTask, loadTaskModel == model { return try await loadTask.value }
+        loadTask?.cancel()                  // model switched mid-flight: drop the stale load
         let path = Self.folder(model)
         let installed = (try? FileManager.default.contentsOfDirectory(atPath: path))?.contains { !$0.hasPrefix(".") } ?? false
         // If it's already on disk, load straight from the folder with NO hub round-trip
         // (no re-download, faster). Otherwise allow WhisperKit to fetch it.
         onStatus?(installed ? "Loading model…" : "Downloading model… (first run)")
-        let config = installed
-            ? WhisperKitConfig(model: model, modelFolder: path, download: false)
-            : WhisperKitConfig(model: model)
-        let kit = try await WhisperKit(config)
-        pipe = kit
-        loadedModel = model
-        onStatus?("")
-        return kit
+        let task = Task<WhisperKit, Error> {
+            let config = installed
+                ? WhisperKitConfig(model: model, modelFolder: path, download: false)
+                : WhisperKitConfig(model: model)
+            return try await WhisperKit(config)
+        }
+        loadTask = task
+        loadTaskModel = model
+        do {
+            let kit = try await task.value
+            onStatus?("")
+            return kit
+        } catch {
+            // A failed load must not poison future loads (only clear if it's still ours).
+            if loadTaskModel == model { loadTask = nil; loadTaskModel = nil }
+            onStatus?("")
+            throw error
+        }
     }
 
     func transcribe(fileURL: URL, language: String?, hint: String?) async throws -> String {
-        let model = Settings.shared.localModel
-        let kit = try await ensureLoaded(model: model)
-        let lang = (language?.isEmpty ?? true) ? nil : language
-        let options = DecodingOptions(
-            task: .transcribe,
-            language: lang,
-            detectLanguage: lang == nil,
-            chunkingStrategy: .vad          // handles long (20-min) audio by voice-activity windows
-        )
-        let results: [TranscriptionResult] = try await kit.transcribe(audioPath: fileURL.path, decodeOptions: options)
-        let text = results.map(\.text).joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { throw TranscribeError.empty }
-        return text
+        // Serialize on the previous job (success OR failure) — one transcription at a time.
+        let previous = queueTail
+        let job = Task<String, Error> {
+            _ = try? await previous?.value
+            let model = Settings.shared.localModel
+            let kit = try await self.ensureLoaded(model: model)
+            let lang = (language?.isEmpty ?? true) ? nil : language
+            let options = DecodingOptions(
+                task: .transcribe,
+                language: lang,
+                detectLanguage: lang == nil,
+                chunkingStrategy: .vad      // handles long (20-min) audio by voice-activity windows
+            )
+            let results: [TranscriptionResult] = try await kit.transcribe(audioPath: fileURL.path, decodeOptions: options)
+            let text = results.map(\.text).joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty else { throw TranscribeError.empty }
+            return text
+        }
+        queueTail = job
+        return try await job.value
     }
 }

@@ -26,9 +26,31 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
     ]
 
     private func newRecordingURL() -> URL {
-        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("Verba", isDirectory: true)
+        let dir = Self.recordingsDir
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("rec-\(Int(Date().timeIntervalSince1970 * 1000)).m4a")
+    }
+
+    /// The temp folder every recording buffer lives in.
+    static var recordingsDir: URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("Verba", isDirectory: true)
+    }
+
+    /// R12: temp recording buffers used to accumulate forever (72 MB+ observed). Sweep the temp
+    /// folder, deleting anything older than `maxAge` (48 h — generously past any redo/processing
+    /// lifetime). Called once at launch, off the main thread.
+    static func sweepStaleRecordings(olderThan maxAge: TimeInterval = 48 * 3600) {
+        let fm = FileManager.default
+        guard let files = try? fm.contentsOfDirectory(at: recordingsDir,
+                                                      includingPropertiesForKeys: [.contentModificationDateKey],
+                                                      options: [.skipsHiddenFiles]) else { return }
+        let cutoff = Date().addingTimeInterval(-maxAge)
+        for f in files {
+            let mod = (try? f.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast
+            guard mod < cutoff else { continue }
+            do { try fm.removeItem(at: f) }
+            catch { VerbaLog.audio.error("stale recording sweep failed for \(f.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)") }
+        }
     }
 
     /// Create and `prepareToRecord()` a recorder in advance. Call this on launch
@@ -46,7 +68,7 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
             armed = rec
             armedURL = url
         } catch {
-            NSLog("Verba: recorder prewarm failed: \(error)")
+            VerbaLog.audio.error("recorder prewarm failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -104,6 +126,13 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
 
     @discardableResult
     func start() -> Bool {
+        // R1: never overwrite a live recorder — replacing `recorder` while it's still recording
+        // would orphan a running AVAudioRecorder (hot mic, lost dictation) with no owner left to
+        // stop it. One recording at a time; the caller must stop() the current one first.
+        guard recorder == nil else {
+            VerbaLog.audio.error("AudioRecorder.start() refused: a recording is already live")
+            return false
+        }
         let chosen = chosenMicToApply()
 
         // Fast path: a recorder is already armed (prepared) AND either no specific
@@ -138,7 +167,7 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
             currentURL = url
             return true
         } catch {
-            NSLog("Verba: recorder start failed: \(error)")
+            VerbaLog.audio.error("recorder start failed: \(error.localizedDescription, privacy: .public)")
             restoreMic()
             return false
         }

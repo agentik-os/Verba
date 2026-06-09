@@ -27,6 +27,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var cancellables = Set<AnyCancellable>()
     private var tapPermissionNagged = false   // show the "grant Fn permission" alert at most once
     private var lastAudioURL: URL?            // #8: last recording, to redo in another mode
+    private var lastAudioBundleID: String?    // R4: frontmost app captured WITH that recording (redo reuses it for the rich/plain paste decision)
+    private var lastAudioTarget: PasteTarget? // R4: focused field captured with that recording (redo's auto-paste target)
     private var lastResultText: String?       // #2: last delivered text, to edit by voice
     private var editLastInstruction = false   // #2: next dictation edits lastResultText
     private var lastDelivered: String?        // auto-learn: text just pasted, to diff vs manual edits
@@ -61,9 +63,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var todoCaptureRecording = false   // a voice "add to-do" capture is recording
     private var todoCaptureTask: Task<Void, Never>?
     private var noteLevelTimer: Timer?         // drives the shared overlay's waveform while a note records (NotesView owns the recorder)
-    // Set when stopTodoCapture() runs from the bare-Fn half of a Fn+§ stop chord; swallows the
-    // §-keyDown's startTodoCapture() that follows on the same chord so it doesn't restart capture.
+    // Set when stopTodoCapture() runs from the bare-Fn half of a Fn+T/§ stop chord; swallows the
+    // T/§-keyDown's startTodoCapture() that follows on the same chord so it doesn't restart capture.
     private var todoCaptureJustStopped = false
+
+    private var statusFlashRestore: DispatchWorkItem?   // R10: pending revert of a menu-bar text flash
 
     private var settingsWC: NSWindowController?
     private var historyWC: NSWindowController?
@@ -102,7 +106,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         FnTap.shared.onModeCycle = { [weak self] dir in self?.modeCycleGesture(dir) }   // Fn+Tab → next/prev mode
         FnTap.shared.onStyleCycle = { [weak self] dir in self?.styleCycleGesture(dir) } // Fn+[ / Fn+] → prev/next style
         FnTap.shared.onNoteRecord = { [weak self] in self?.startNoteRecording() }   // Fn+Z → record a note
-        FnTap.shared.onTodoCapture = { [weak self] in self?.startTodoCapture() }    // Fn+§ → add a to-do
+        FnTap.shared.onTodoCapture = { [weak self] in self?.startTodoCapture() }    // Fn+T (Fn+§ on ISO) → add a to-do
         FnTap.shared.onActionMode = { [weak self] in self?.startActionMode() }      // Fn+X → Action mode (speech controls the Mac)
         FnTap.shared.onDigit = { [weak self] n in self?.fnDigit(n) ?? false }
         FnTap.shared.onArrow = { [weak self] d in self?.fnArrow(d) ?? false }
@@ -122,7 +126,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             FnSystemPref.suppress()
         }
+        // R12: purge temp recording buffers older than 48 h (they used to accumulate forever).
+        Task.detached(priority: .utility) { AudioRecorder.sweepStaleRecordings() }
+        // R14: surface repeated cloud-sync failures once per session through the visible channel
+        // (overlay error flash, or the menu-bar text flash when a recording is live / overlay off).
+        VerbaLog.onRepeatedSyncFailure = { [weak self] msg in
+            guard let self else { return }
+            if self.state == .idle { self.flashError(msg) }
+            else { self.flashStatusItemMessage(msg, isError: true) }
+        }
         _ = Updater.shared   // start Sparkle (scheduled background update checks)
+        // R8: never let a Sparkle install/relaunch silently kill a live recording or in-flight
+        // dictations — the updater postpones + asks first while this reports busy.
+        Updater.shared.isBusy = { [weak self] in
+            guard let self else { return false }
+            return self.state != .idle || SessionStore.shared.hasInflight
+                || self.todoCaptureRecording || NotesController.shared.isRecording
+        }
         // Silent check shortly after launch so the menu/icon reflect availability without a popup.
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) { Updater.shared.checkInBackground() }
         // When Sparkle's delegate flips update availability, rebuild the menu + re-badge the icon.
@@ -265,18 +285,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(Settings.shared.showInDock ? .regular : .accessory)
     }
 
-    /// Load the active local model into memory ahead of time so the first dictation doesn't
-    /// pay the multi-second cold-load. Runs in the background; no-op for cloud engines.
+    /// Make sure the active local model is INSTALLED (downloaded) ahead of time, WITHOUT
+    /// loading it into RAM: loading is lazy via EngineManager.prewarmForRecording() when a
+    /// recording starts (hidden behind speaking time), and the engine idle-unloads after
+    /// 10 minutes. Keeps launch memory flat — the Parakeet model alone is ~461MB.
     private func preloadEngine() {
         let s = Settings.shared
         if s.engine.isLocal {
-            // Auto-download the on-device model if it isn't there yet, then warm + mark it ready.
-            // Routed through EngineManager.load so the "Active & ready" state stays truthful.
             Task.detached(priority: .utility) {
                 if !EngineManager.isInstalled(s.engine) {
                     _ = await EngineManager.install(s.engine)
                 }
-                _ = await EngineManager.load(s.engine)
             }
         }
         if s.repromptBackend == .localLLM { LocalLLM.ensureServer { _ in } }   // warm the local LLM server
@@ -291,7 +310,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// When Fn is the primary trigger, pressing Fn instantly starts a dictation (push-to-talk).
-    /// So a Fn+Z / Fn+§ chord arrives a beat AFTER that dictation already latched to `.recording`.
+    /// So a Fn+Z / Fn+T/§ chord arrives a beat AFTER that dictation already latched to `.recording`.
     /// This discards that just-auto-started dictation (no send) so the chord can run the note/to-do
     /// flow instead. Returns true when it tore one down. `fnPressAt != nil` proves the in-flight
     /// recording belongs to the current bare-Fn hold (and isn't an unrelated, deliberate dictation).
@@ -404,11 +423,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// First call starts recording; a second call (or pressing the button again) stops & processes.
     @objc func startTodoCapture() {
         guard Settings.shared.onboarded else { openOnboarding(); return }
-        cancelToggleHold()   // Fn+§ is a chord → don't let the Fn release stop/switch a tap-toggle recording
-        // A bare-Fn tap already stopped this capture (Fn+§ stop chord): swallow the trailing
-        // §-keyDown so it doesn't immediately restart a new capture.
+        cancelToggleHold()   // Fn+T/§ is a chord → don't let the Fn release stop/switch a tap-toggle recording
+        // A bare-Fn tap already stopped this capture (Fn+T/§ stop chord): swallow the trailing
+        // T/§-keyDown so it doesn't immediately restart a new capture.
         if todoCaptureJustStopped { todoCaptureJustStopped = false; return }
-        // Fn+§ chord: the bare Fn already auto-started a dictation — discard it and capture a to-do.
+        // Fn+T/§ chord: the bare Fn already auto-started a dictation — discard it and capture a to-do.
         // (No-op for the toggle's second press, where nothing is recording on the pill.)
         abortPhantomFnDictation()
         // Don't collide with any OTHER in-flight dictation.
@@ -426,6 +445,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // that hastily-prepared recorder captured silence, so build a clean one.
             self.recorder.releaseArmed()
             guard self.recorder.start() else { self.finishTodoCapture(error: "Couldn't start recording."); return }
+            EngineManager.prewarmForRecording()   // reload a lazily-unloaded local model behind the speaking time
             self.todoCaptureRecording = true
             TodoCaptureController.shared.lastError = nil
             TodoCaptureController.shared.capturing = true
@@ -455,12 +475,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Stop an in-progress voice to-do capture and hand it off for transcription/routing.
-    /// Used by the Fn+§ toggle's second press AND by a bare-Fn tap (so the user needn't
+    /// Used by the Fn+T/§ toggle's second press AND by a bare-Fn tap (so the user needn't
     /// re-press the chord to finish).
     private func stopTodoCapture() {
         guard todoCaptureRecording else { return }
         todoCaptureRecording = false
-        // The §-keyDown of a Fn+§ stop chord fires right after this bare-Fn half; latch a one-shot
+        // The T/§-keyDown of a Fn+T/§ stop chord fires right after this bare-Fn half; latch a one-shot
         // guard so its startTodoCapture() swallows itself instead of starting a fresh capture.
         todoCaptureJustStopped = true
         DispatchQueue.main.async { [weak self] in self?.todoCaptureJustStopped = false }
@@ -478,6 +498,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         overlay.show()
         todoCaptureTask?.cancel()
         todoCaptureTask = Task { [weak self] in
+            // R12: a to-do capture's buffer is never stored or redone — delete it when this
+            // Task ends, whatever the outcome (success, failure, cancellation).
+            defer { try? FileManager.default.removeItem(at: url) }
             do {
                 let s = Settings.shared
                 let transcriber: Transcriber
@@ -534,6 +557,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self?.finishTodoCapture(error: nil, success: message)
                 }
             } catch {
+                VerbaLog.app.error("to-do capture failed: \(error.localizedDescription, privacy: .public)")   // R14
                 if Task.isCancelled { return }
                 await MainActor.run { self?.finishTodoCapture(error: error.localizedDescription) }
             }
@@ -748,10 +772,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         fnHoldTimer?.invalidate(); fnHoldTimer = nil
         fnToggleStopArmed = false; fnToggleSwitched = false; lastFnDown = nil; fnPressAt = nil
         stopQuips()
-        _ = recorder.stop()
-        forcedProfile = nil
-        actionModeRecording = false
-        editLastInstruction = false
+        // R12: an Esc-discarded recording is never processed — delete its buffer too.
+        if let url = recorder.stop() { try? FileManager.default.removeItem(at: url) }
+        resetOneShotFlags()   // R3: clear ALL one-shot routing flags, not just some of them
         FnTap.shared.menuActive = false
         overlay.model.recording = false
         overlay.model.paused = false
@@ -781,9 +804,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // the background while this Fn tap starts a fresh recording (handled by the idle branch
         // below, since the recorder — busy only while .recording — is free).
         // A voice to-do capture is in flight (state stays .idle while it records): a bare Fn tap
-        // now STOPS & finishes it — the user needn't re-press the Fn+§ chord. This also covers the
-        // Fn+§ toggle-stop chord's bare-Fn half (don't spin up a phantom dictation on the shared
-        // `recorder`); the §-keyDown's startTodoCapture() stop path then becomes a no-op.
+        // now STOPS & finishes it — the user needn't re-press the Fn+T/§ chord. This also covers the
+        // Fn+T/§ toggle-stop chord's bare-Fn half (don't spin up a phantom dictation on the shared
+        // `recorder`); the T/§-keyDown's startTodoCapture() stop path then becomes a no-op.
         if todoCaptureRecording { stopTodoCapture(); return }
         // A note is recording in the Notes window (its own recorder). A bare Fn tap stops & finishes
         // it via the shared controller — and must NOT also start a stray dictation here.
@@ -1095,14 +1118,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         overlay.show()
     }
 
+    /// R3: one-shot routing flags for the CURRENT dictation. They must be cleared on EVERY exit
+    /// path (send, cancel, Esc, failed start, early return) — a stale flag misroutes the NEXT
+    /// dictation (e.g. an abandoned "edit last by voice" would rewrite the following unrelated
+    /// dictation, a stale Action flag would hijack it into the action path).
+    private func resetOneShotFlags() {
+        editLastInstruction = false
+        actionModeRecording = false
+        forcedProfile = nil
+        capturedSelection = nil
+        capturedTarget = nil
+    }
+
+    /// R12: delete a temp recording the pipeline is finished with — unless it's still the redo
+    /// source (`lastAudioURL`); that one is purged when a newer recording supersedes it.
+    /// (History keeps its own copy of delivered audio, so the temp buffer is never needed again.)
+    private func purgeAudio(_ url: URL) {
+        guard url != lastAudioURL else { return }
+        try? FileManager.default.removeItem(at: url)
+    }
+
     private func cancelRecording() {
         levelTimer?.invalidate(); levelTimer = nil
         fnHoldTimer?.invalidate(); fnHoldTimer = nil
         fnToggleStopArmed = false; fnToggleSwitched = false; lastFnDown = nil
-        _ = recorder.stop()
+        resetOneShotFlags()   // R3: a cancelled dictation must not leak its one-shot routing into the next one
+        // R12: a cancelled recording's buffer is never processed — delete it now.
+        if let url = recorder.stop() { try? FileManager.default.removeItem(at: url) }
         todoCaptureRecording = false   // tearing down the shared recorder voids any to-do capture too
-        actionModeRecording = false    // and any in-progress Fn+X Action recording
-        forcedProfile = nil
         overlay.model.menu = false
         overlay.model.recording = false
         overlay.model.paused = false
@@ -1117,16 +1160,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // A voice to-do capture owns the shared `recorder` while it records (state stays .idle,
         // so every state==.idle caller — global shortcut, edit-last, etc. — would otherwise hijack
         // its mic and orphan the capture). Refuse to start a dictation over an in-flight capture.
-        if todoCaptureRecording { return }
+        if todoCaptureRecording { resetOneShotFlags(); return }   // R3: don't leak editLast/action into the next run
         // Free Pro-trial: block new dictations once the trial allowance is spent.
-        if Entitlement.freeLimitReached() { showPaywall(); return }
+        if Entitlement.freeLimitReached() { resetOneShotFlags(); showPaywall(); return }
         recorder.requestPermission { [weak self] ok in
             guard let self else { return }
-            guard ok else { self.flashError("Microphone access denied"); return }
+            guard ok else { self.resetOneShotFlags(); self.flashError("Microphone access denied"); return }
             // Start capturing FIRST (the recorder is pre-armed, so record() is instant) so the
             // first spoken word is never clipped, THEN do the slower frontmost-app / selection
             // captures and overlay work while audio is already flowing.
-            guard self.recorder.start() else { self.flashError("Couldn't start recording"); return }
+            guard self.recorder.start() else { self.resetOneShotFlags(); self.flashError("Couldn't start recording"); return }
+            EngineManager.prewarmForRecording()   // reload a lazily-unloaded local model behind the speaking time
             self.recordStartedAt = Date()
             self.state = .recording
             SoundFX.start()
@@ -1181,7 +1225,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func stopAndProcess() {
         levelTimer?.invalidate(); levelTimer = nil
-        guard let url = recorder.stop() else { state = .idle; overlay.hide(); return }
+        guard let url = recorder.stop() else {
+            // R3: even this early-out must clear the one-shot flags (editLast/action/forced/…)
+            // or they'd silently misroute the NEXT dictation.
+            resetOneShotFlags()
+            state = .idle; overlay.hide(); return
+        }
         SoundFX.stop()
 
         // Snapshot this recording's whole context, then free the recorder immediately so the user
@@ -1204,11 +1253,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                  recordStartedAt: recordStartedAt,
                                  countStats: true,
                                  actionMode: isActionMode)
-        editLastInstruction = false
-        forcedProfile = nil
-        capturedSelection = nil
-        capturedTarget = nil
-        actionModeRecording = false
+        resetOneShotFlags()   // R3: everything this run needs now lives in the SessionContext
 
         // The recorder is now free. Show the processing pill for this latest Session.
         state = .processing
@@ -1247,18 +1292,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     // Close the TOCTOU window: cancelEverything() clears sessionTasks (and marks the
                     // session .cancelled) on the main thread. If an Esc landed between the check above
                     // and this hop, the session is no longer tracked → drop it (no paste, no listing).
-                    guard self.sessionTasks[session.id] != nil else { return }
+                    guard self.sessionTasks[session.id] != nil else { self.purgeAudio(ctx.audioURL); return }
                     self.sessionTasks[session.id] = nil
                     self.finish(ctx: ctx, result: result)
                 }
             } catch is CancellationError {
                 // user cancelled, handled by cancelEverything()
+                await MainActor.run { self.purgeAudio(ctx.audioURL) }   // R12: cancelled → buffer never needed again
             } catch {
+                VerbaLog.app.error("session \(session.id.uuidString, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")   // R14
                 if Task.isCancelled { return }
                 await MainActor.run {
-                    guard self.sessionTasks[session.id] != nil else { return }
+                    guard self.sessionTasks[session.id] != nil else { self.purgeAudio(ctx.audioURL); return }
                     self.sessionTasks[session.id] = nil
                     self.failSession(session, error: error, latestShowsOverlay: true)
+                    self.purgeAudio(ctx.audioURL)   // R12: a failed run's buffer is never reused (redo keeps lastAudioURL)
                 }
             }
         }
@@ -1350,8 +1398,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // the store) by cancelEverything(); never auto-paste or list it.
         guard session.status != .cancelled else { return }
         session.original = result.original
-        let wasLatest = isLatestInflight(session)
+        // R1: a NEW recording may be live while this (background) Session completes. The live
+        // recording isn't in SessionStore.inflight, so this Session can still look "latest" —
+        // ungated, its completion would reset state to .idle / clobber the overlay and orphan the
+        // still-running recorder (hot mic, lost dictation). Mirrors the same gate in failSession.
+        let recordingLive = (state == .recording)
+        let wasLatest = isLatestInflight(session) && !recordingLive
+        // R12: the previous redo source is superseded (History keeps its own copy of anything it
+        // delivered) — delete the old temp buffer instead of letting them accumulate.
+        if let old = lastAudioURL, old != ctx.audioURL { try? FileManager.default.removeItem(at: old) }
         lastAudioURL = ctx.audioURL   // #8: keep the last recording so it can be redone in another mode
+        lastAudioBundleID = ctx.capturedBundleID   // R4: redo reuses the ORIGINAL frontmost app…
+        lastAudioTarget = ctx.capturedTarget       // R4: …and paste target, as its comment promises
         // Remember last used mode: the mode actually applied to this dictation (a mid-dictation
         // override or auto-detected match included) becomes the default for the next one.
         if Settings.shared.rememberLastMode, let usedID = result.profileID,
@@ -1378,7 +1436,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             SessionStore.shared.endInflight(session)
             SessionStore.shared.complete(session)
             stopQuipsIfNoInflight()
-            if SessionStore.shared.hasInflight {
+            if recordingLive {
+                refreshUI()   // R1: never clobber the live recording's state/overlay
+            } else if SessionStore.shared.hasInflight {
                 state = .processing; statusLine = "Transcribing…"; overlay.model.recording = false; showProcessingOverlay()
             } else {
                 flashInfo(notice)
@@ -1395,7 +1455,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             SessionStore.shared.endInflight(session)
             SessionStore.shared.complete(session)
             stopQuipsIfNoInflight()
-            if SessionStore.shared.hasInflight {
+            if recordingLive {
+                refreshUI()   // R1: never clobber the live recording's state/overlay
+            } else if SessionStore.shared.hasInflight {
                 state = .processing; statusLine = "Transcribing…"; overlay.model.recording = false; showProcessingOverlay()
             } else {
                 overlay.hide(); state = .idle
@@ -1414,7 +1476,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             SessionStore.shared.complete(session)
             stopQuipsIfNoInflight()
             let note = result.reprompted.trimmingCharacters(in: .whitespacesAndNewlines)
-            if SessionStore.shared.hasInflight {
+            if recordingLive {
+                refreshUI()   // R1: never clobber the live recording's state/overlay
+            } else if SessionStore.shared.hasInflight {
                 state = .processing; statusLine = "Transcribing…"; overlay.model.recording = false; showProcessingOverlay()
             } else {
                 flashInfo(note.isEmpty ? "No action recognized" : "Not an action: \(note)")
@@ -1546,9 +1610,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// R10: "Menu bar only" (minimal) overlay mode hides the floating pill, which used to swallow
+    /// every error/info flash silently. Surface the message as a transient text flash next to the
+    /// menu-bar icon instead, so failures are never invisible in that mode.
+    private func flashStatusItemMessage(_ message: String, isError: Bool) {
+        guard let button = statusItem?.button else { return }
+        statusFlashRestore?.cancel()
+        button.imagePosition = .imageLeft
+        button.attributedTitle = NSAttributedString(string: " " + message, attributes: [
+            .font: NSFont.systemFont(ofSize: 11, weight: .medium),
+            .foregroundColor: isError ? NSColor.systemRed : NSColor.secondaryLabelColor,
+        ])
+        let work = DispatchWorkItem { [weak self] in
+            self?.statusItem?.button?.attributedTitle = NSAttributedString(string: "")
+            self?.statusFlashRestore = nil
+        }
+        statusFlashRestore = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + (isError ? 3.0 : 2.0), execute: work)
+    }
+
     /// A quiet, auto-dismissing overlay hint (no sound, no red modal) for benign outcomes
     /// like silent audio. Subtle on purpose: it should feel like nothing happened.
     private func flashInfo(_ message: String) {
+        // R10: the minimal style never shows the overlay — mirror the hint onto the menu bar.
+        if Settings.shared.overlayStyle == .minimal { flashStatusItemMessage(message, isError: false) }
         overlay.model.recording = false
         overlay.model.paused = false
         overlay.model.menu = false
@@ -1570,6 +1655,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// A non-blocking RED error flash in the overlay (same place as the jokes) + error sound.
     /// Replaces the annoying "click OK" modal alerts for transcription/rewrite failures.
     private func flashError(_ message: String) {
+        // R10: the minimal style never shows the overlay — mirror the error onto the menu bar.
+        if Settings.shared.overlayStyle == .minimal { flashStatusItemMessage(message, isError: true) }
         overlay.model.recording = false
         overlay.model.paused = false
         overlay.model.menu = false
@@ -1918,7 +2005,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
             m.addItem(.separator())
             header("Capture  (while holding Fn)")
-            ref("Fn + §", "Add a to-do by voice")
+            ref(FnTap.todoChordLabel, "Add a to-do by voice")
             ref("Fn + Z", "Capture a note by voice")
             ref("Fn + X", "Action mode — speak a command to control your Mac")
             ref("Fn", "Stop an in-progress note / to-do capture")
@@ -1964,10 +2051,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
               let profile = Settings.shared.profiles.first(where: { $0.id == id }) else { return }
         // Redo runs as its own concurrent Session, just like a fresh dictation — it reuses the last
         // recording's audio + captured target. countStats is false (it's a re-run, not new speech).
+        // R4: reuse the target/bundle captured WITH the original recording (stored next to
+        // lastAudioURL) — the live capturedTarget/capturedBundleID fields are reset after every
+        // dictation, so using them gave redo a nil target and a wrong rich/plain paste decision.
         let ctx = SessionContext(session: Session(modeName: profile.name),
                                  audioURL: url,
-                                 capturedTarget: capturedTarget,
-                                 capturedBundleID: capturedBundleID,
+                                 capturedTarget: lastAudioTarget,
+                                 capturedBundleID: lastAudioBundleID,
                                  recordStartedAt: recordStartedAt,
                                  countStats: false)
         state = .processing
@@ -2044,6 +2134,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         let message = try await ActionExecutor().perform(action)
                         self.flashInfo(message)
                     } catch {
+                        VerbaLog.app.error("action execution failed: \(error.localizedDescription, privacy: .public)")   // R14
                         self.flashError(error.localizedDescription)
                     }
                 }

@@ -44,8 +44,21 @@ enum EngineManager {
     static var lastInstallError: String?
 
     /// What's currently loaded into memory (warm + ready to transcribe). Set after a
-    /// successful load; used to show a truthful "Active & ready" state in Settings.
-    static var loaded: (engine: TranscriptionEngine, model: String)?
+    /// successful load, CLEARED by the engines' idle auto-unload; used to show a truthful
+    /// "Active & ready" state in Settings.
+    nonisolated(unsafe) static var loaded: (engine: TranscriptionEngine, model: String)?
+
+    /// Warm the selected LOCAL engine in the background when a recording STARTS, so a lazily
+    /// idle-unloaded model (see ParakeetTranscriber.idleUnloadAfter) is reloaded behind the
+    /// user's speaking time and the first dictation after an unload stays fast. No-op for the
+    /// cloud engine or when the model isn't installed yet (no surprise multi-GB download here —
+    /// install stays an explicit Settings action / first-use path).
+    static func prewarmForRecording() {
+        let s = Settings.shared
+        guard s.engine.isLocal, isInstalled(s.engine) else { return }
+        guard !isReady(s.engine, model: s.localModel) else { return }   // already warm
+        Task.detached(priority: .userInitiated) { _ = await load(s.engine) }
+    }
 
     /// True if `engine` (with `model` for Whisper) is actually loaded and ready right now.
     static func isReady(_ engine: TranscriptionEngine, model: String) -> Bool {

@@ -7,20 +7,76 @@ struct TimeoutError: LocalizedError {
     var errorDescription: String? { "Timed out — the backend took too long. Try again." }
 }
 
-/// Run `operation` but give up after `seconds`. Whichever finishes first wins; the
-/// loser is cancelled. Guarantees the caller's Task always completes (and can reset
-/// to idle) even when the underlying call ignores cooperative cancellation.
+/// Run `operation` but give up after `seconds`. The CALLER is guaranteed to resume at the
+/// deadline (or on its own cancellation) even when the operation ignores cooperative
+/// cancellation — a structured task group would AWAIT its children, so a hung
+/// non-cancellable backend (e.g. a wedged Core ML local transcription) would spin past the
+/// ceiling forever. Instead the operation races a deadline through a continuation:
+/// whichever fires first resumes the caller exactly once, and the laggard is cancel()led
+/// best-effort.
+///
+/// LEAK TRADEOFF (deliberate): a laggard that never honors cancellation is ABANDONED — it
+/// keeps running detached and holds its resources (CPU, model memory) until it finishes or
+/// the process exits. That bounded leak is the price of never wedging the overlay/session
+/// past the timeout; the alternative (awaiting the hung child) wedges the whole pipeline.
+/// One-shot, lock-guarded race state for `withTimeout`: exactly one of {operation, deadline,
+/// caller cancellation} resumes the continuation; late arrivals are dropped. Also tolerates
+/// the cancellation handler firing BEFORE the continuation is registered (the result is
+/// parked in `pending` and delivered at registration).
+private final class TimeoutRace<V: Sendable>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<V, Error>?
+    private var pending: Result<V, Error>?
+    private var worker: Task<Void, Never>?
+    private var timer: Task<Void, Never>?
+
+    func register(_ c: CheckedContinuation<V, Error>) {
+        lock.lock()
+        if let r = pending { lock.unlock(); c.resume(with: r); return }
+        continuation = c
+        lock.unlock()
+    }
+    func setTasks(worker w: Task<Void, Never>, timer t: Task<Void, Never>) {
+        lock.lock()
+        let alreadyOver = pending != nil
+        worker = w; timer = t
+        lock.unlock()
+        if alreadyOver { w.cancel(); t.cancel() }   // cancelled before the racers were stored
+    }
+    /// First result wins: resumes the caller (or parks the result) and cancels both racers.
+    func finish(_ r: Result<V, Error>) {
+        lock.lock()
+        guard pending == nil else { lock.unlock(); return }
+        pending = r
+        let c = continuation; continuation = nil
+        let w = worker; let t = timer
+        lock.unlock()
+        w?.cancel(); t?.cancel()
+        c?.resume(with: r)
+    }
+}
+
 func withTimeout<T: Sendable>(seconds: Double,
                               operation: @escaping @Sendable () async throws -> T) async throws -> T {
-    try await withThrowingTaskGroup(of: T.self) { group in
-        group.addTask { try await operation() }
-        group.addTask {
-            try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
-            throw TimeoutError()
+    let race = TimeoutRace<T>()
+    return try await withTaskCancellationHandler {
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<T, Error>) in
+            race.register(cont)
+            let worker = Task {
+                do { race.finish(.success(try await operation())) }
+                catch { race.finish(.failure(error)) }
+            }
+            let timer = Task {
+                try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                guard !Task.isCancelled else { return }
+                race.finish(.failure(TimeoutError()))   // worker is cancelled best-effort; see leak note
+            }
+            race.setTasks(worker: worker, timer: timer)
         }
-        defer { group.cancelAll() }
-        guard let result = try await group.next() else { throw TimeoutError() }
-        return result
+    } onCancel: {
+        // The caller's Task was cancelled (Esc): resume it NOW with CancellationError instead
+        // of making it wait out the deadline; both racers are torn down best-effort.
+        race.finish(.failure(CancellationError()))
     }
 }
 
@@ -73,8 +129,14 @@ enum Pipeline {
         // Context mode + Labs "Agentic actions": set when the vision model resolves the spoken
         // request into a structured, confirmable action instead of plain screen-grounded text.
         var detectedAction: VerbaAction? = nil
-        // Raw/Flow mode (or reprompting off) → return the transcript untouched, no Claude.
-        if s.repromptEnabled && !profile.raw {
+        let sel = selection?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        // Edit-last is an EXPLICIT spoken instruction acting on the previous result, so it must
+        // run the LLM in EVERY mode — including Flow/raw and when reprompting is globally off
+        // (those gates exist to keep ordinary dictation untouched, not to kill an explicit edit).
+        let editingLast = editLast && !sel.isEmpty
+        // Raw/Flow mode (or reprompting off) → return the transcript untouched, no Claude —
+        // EXCEPT for an explicit edit-last instruction, which always reprompts (see above).
+        if (s.repromptEnabled && !profile.raw) || editingLast {
             var sys = profile.effectiveSystemPrompt   // Translate mode injects its target language
             // Active STYLE layer: a tone/format nudge applied on top of the mode. The built-in
             // "Normal" style has an empty prompt, so it changes nothing (default behaviour).
@@ -107,7 +169,6 @@ enum Pipeline {
 
             let r = Reprompter(model: profile.model ?? s.claudeModel)   // per-mode model override
 
-            let sel = selection?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             // BRANCH PRECEDENCE (first match wins — ordered most-specific → general):
             //   1. edit-last        — explicit "Edit last by voice" action; the transcript is an
             //                          instruction acting on the PREVIOUS result. Must work in EVERY
@@ -121,11 +182,11 @@ enum Pipeline {
             // Vision is below edit-last (editing prior text shouldn't trigger a screenshot); the two
             // selection branches stay gated to non-Translate modes (Translate always translates the
             // spoken words), but edit-last is deliberately exempt from that gate.
-            if editLast && !sel.isEmpty {
+            if editingLast {
                 // Edit-last: the dictation is an INSTRUCTION applied to the last delivered result
-                // (the text to edit arrives via `selection`). Works in ALL modes — Translate and
-                // Context/Vision included — by routing through its own dedicated prompt rather than
-                // the mode-gated selection-instruction channel.
+                // (the text to edit arrives via `selection`). Works in ALL modes — Translate,
+                // Context/Vision, and Flow/raw (or reprompting off) included — by routing through
+                // its own dedicated prompt rather than the mode-gated selection-instruction channel.
                 status("Editing your last result…")
                 sys += """
 
@@ -254,8 +315,9 @@ enum Pipeline {
         }
 
         // Raw/Flow mode (no AI) → fall back to literal snippet expansion. In AI modes the
-        // model already handled snippets by intent via the system prompt above.
-        if !s.repromptEnabled || profile.raw {
+        // model already handled snippets by intent via the system prompt above. Skipped when
+        // edit-last just ran the LLM (its output must not be snippet-mangled afterwards).
+        if (!s.repromptEnabled || profile.raw) && !editingLast {
             reprompted = SnippetsStore.shared.apply(to: reprompted)
         }
 

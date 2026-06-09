@@ -15,7 +15,7 @@ final class FnTap {
     var onModeCycle: ((Int) -> Void)? // Fn + Tab → next mode (+1) / Fn + ⇧ + Tab → previous (-1)
     var onStyleCycle: ((Int) -> Void)? // Fn + ] → next style (+1) / Fn + [ → previous (-1)
     var onNoteRecord: (() -> Void)?   // Fn + Z → record a new note
-    var onTodoCapture: (() -> Void)?  // Fn + § → voice "add to-do" capture
+    var onTodoCapture: (() -> Void)?  // Fn + T (also Fn + § on ISO keyboards) → voice "add to-do" capture
     var onActionMode: (() -> Void)?   // Fn + X → Action mode: speech CONTROLS the Mac (confirm → execute)
     var onDigit: ((Int) -> Bool)?     // 1-9 while menuActive; return true to consume
     var onArrow: ((Int) -> Bool)?     // -1 left / +1 right while menuActive
@@ -153,8 +153,10 @@ final class FnTap {
         case .keyDown:
             let code = Int(event.getIntegerValueField(.keyboardEventKeycode))
             if code == 63 { return nil }                          // bare globe key
-            // Fn + § (ISO section key) → voice "add to-do" capture; Fn + Z → record a new note (anywhere).
-            if fnDown, code == kVK_ISO_Section, onTodoCapture != nil { onTodoCapture?(); return nil }
+            // Fn + T → voice "add to-do" capture (Fn + § still works on ISO keyboards — the §
+            // key, keycode 10, doesn't exist on ANSI/US layouts, so T is the universal default);
+            // Fn + Z → record a new note (anywhere).
+            if fnDown, code == kVK_ANSI_T || code == kVK_ISO_Section, onTodoCapture != nil { onTodoCapture?(); return nil }
             if fnDown, code == kVK_ANSI_Z, onNoteRecord != nil { onNoteRecord?(); return nil }
             // Fn + X → Action mode: the spoken request is a command that CONTROLS the Mac
             // (run a Shortcut / open an app / play music / send a message / …), confirmed before it runs.
@@ -187,6 +189,13 @@ final class FnTap {
         default:
             return Unmanaged.passUnretained(event)
         }
+    }
+
+    /// Human label for the voice to-do capture chord, layout-aware: ISO keyboards keep the
+    /// historical Fn + § next to the Fn key; ANSI/JIS keyboards have no § key, so Fn + T is
+    /// advertised there. Both chords are always active regardless of layout.
+    static var todoChordLabel: String {
+        KBGetLayoutType(Int16(LMGetKbdType())) == kKeyboardISO ? "Fn + §" : "Fn + T"
     }
 
     private static func digit(_ code: Int) -> Int? {

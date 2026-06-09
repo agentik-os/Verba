@@ -3,7 +3,7 @@ import AppKit
 import Combine
 
 /// What the current recording/processing is for — surfaced as a small badge on the pill so the
-/// user can always tell a normal dictation apart from a Note (Fn+Z) or a To-do capture (Fn+§).
+/// user can always tell a normal dictation apart from a Note (Fn+Z) or a To-do capture (Fn+T, or Fn+§ on ISO).
 enum CaptureContext {
     case dictation, note, todo, action
 

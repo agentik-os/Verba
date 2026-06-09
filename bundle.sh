@@ -3,7 +3,9 @@
 set -e
 cd "$(dirname "$0")"
 
-VERSION="${VERSION:-0.1.0}"
+# No silent default: an unstamped bundle ships a wrong CFBundleVersion and
+# breaks Sparkle's version comparison. Always pass it explicitly.
+VERSION="${VERSION:?Set VERSION explicitly, e.g. VERSION=0.2.0 ./bundle.sh}"
 APP="Verba.app"
 
 echo "▸ Building release (arm64)…"
@@ -32,8 +34,14 @@ if [ -d "$PARAKEET_SRC" ]; then
   mkdir -p "$APP/Contents/Resources/Models"
   ditto "$PARAKEET_SRC" "$APP/Contents/Resources/Models/parakeet-tdt-0.6b-v3"
   echo "▸ Bundled Parakeet model ($(du -sh "$PARAKEET_SRC" | cut -f1))"
+elif [ "${SKIP_PARAKEET:-0}" = "1" ]; then
+  echo "⚠︎ SKIP_PARAKEET=1 — building WITHOUT the bundled Parakeet model (first-run download fallback)."
 else
-  echo "⚠︎ Parakeet model not found locally ($PARAKEET_SRC); DMG will fall back to first-run download."
+  echo "❌ Parakeet model not found at: $PARAKEET_SRC" >&2
+  echo "   Refusing to silently ship a bundle without the on-device model." >&2
+  echo "   Fix: run the app once to fetch it, set PARAKEET_SRC to the model dir," >&2
+  echo "   or set SKIP_PARAKEET=1 to knowingly build without it (dev only)." >&2
+  exit 1
 fi
 
 # Embed Sparkle (silent auto-update). The binary loads @rpath/Sparkle.framework.

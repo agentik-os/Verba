@@ -10,11 +10,13 @@
 #         --password "xxxx-xxxx-xxxx-xxxx"
 #
 # THEN:
-#   DEVID="Developer ID Application: Your Name (TEAMID)" ./sign-and-notarize.sh
+#   VERSION=0.2.0 DEVID="Developer ID Application: Your Name (TEAMID)" ./sign-and-notarize.sh
 set -e
 cd "$(dirname "$0")"
 
 DEVID="${DEVID:?Set DEVID to your \"Developer ID Application: …\" identity}"
+# No silent version default — the bundle must be stamped explicitly (see bundle.sh).
+VERSION="${VERSION:?Set VERSION explicitly, e.g. VERSION=0.2.0 DEVID=… ./sign-and-notarize.sh}"
 PROFILE="${NOTARY_PROFILE:-verba-notary}"
 APP="Verba.app"
 DMG="Verba.dmg"
@@ -54,7 +56,7 @@ cat > "$WIDGET_ENTITLEMENTS" <<'PLIST'
 PLIST
 
 echo "▸ Building app…"
-./bundle.sh >/dev/null
+VERSION="$VERSION" ./bundle.sh >/dev/null
 
 echo "▸ Signing Sparkle (inside-out) + app (hardened runtime)…"
 # Sparkle must be signed inside-out (XPC services, Autoupdate, Updater.app, then

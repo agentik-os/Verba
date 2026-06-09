@@ -25,16 +25,49 @@ GENAPPCAST=".build/artifacts/sparkle/Sparkle/bin/generate_appcast"
 VERSION="$VERSION" DEVID="$DEVID" ./sign-and-notarize.sh
 
 # Collect this build into dist/ and (re)generate the signed appcast.
-# Keep the DMG asset name STABLE (Verba.dmg) so /releases/latest/download/Verba.dmg
-# always resolves; the version is read from the app bundle, not the filename.
-rm -rf dist && mkdir -p dist
-cp Verba.dmg "dist/Verba.dmg"
+# dist/ is KEPT across releases (versioned DMG names) so generate_appcast can
+# emit Sparkle delta updates between consecutive versions. The stable asset
+# name (Verba.dmg) is still uploaded alongside, so the website's
+# /releases/latest/download/Verba.dmg link keeps resolving.
+mkdir -p dist
+DMG_VERSIONED="dist/Verba-$VERSION.dmg"
+cp Verba.dmg "$DMG_VERSIONED"
 "$GENAPPCAST" dist \
   --download-url-prefix "https://github.com/$REPO/releases/download/v$VERSION/"
 
+# ── Gate: verify the appcast's EdDSA signature against the SUPublicEDKey that
+# actually SHIPS in the app bundle. A keychain/bundle key mismatch would make
+# every installed client reject the update — fail here, not in the field.
+SHIPPED_KEY="$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' Verba.app/Contents/Info.plist)"
+[ -n "$SHIPPED_KEY" ] || { echo "❌ No SUPublicEDKey in Verba.app/Contents/Info.plist" >&2; exit 1; }
+ED_SIG="$(grep -o "<enclosure[^>]*Verba-$VERSION\.dmg[^>]*" dist/appcast.xml \
+  | grep -o 'sparkle:edSignature="[^"]*"' | head -1 | cut -d'"' -f2)"
+[ -n "$ED_SIG" ] || { echo "❌ dist/appcast.xml has no sparkle:edSignature for Verba-$VERSION.dmg" >&2; exit 1; }
+echo "▸ Verifying appcast EdDSA signature against shipped SUPublicEDKey…"
+swift - "$SHIPPED_KEY" "$DMG_VERSIONED" "$ED_SIG" <<'SWIFT'
+import CryptoKit
+import Foundation
+let a = CommandLine.arguments
+guard a.count == 4,
+      let pub = Data(base64Encoded: a[1]),
+      let sig = Data(base64Encoded: a[3]),
+      let data = try? Data(contentsOf: URL(fileURLWithPath: a[2])),
+      let key = try? Curve25519.Signing.PublicKey(rawRepresentation: pub),
+      key.isValidSignature(sig, for: data)
+else {
+    FileHandle.standardError.write(Data("❌ Appcast EdDSA signature does NOT verify against the shipped SUPublicEDKey — the signing key and the bundled public key disagree. Aborting release.\n".utf8))
+    exit(1)
+}
+print("✓ Appcast EdDSA signature verifies against the shipped SUPublicEDKey")
+SWIFT
+
 echo "▸ Publishing GitHub release v$VERSION on $REPO…"
+# Upload: versioned DMG (referenced by the appcast), stable-named Verba.dmg
+# (website latest-link), the appcast, and any Sparkle deltas this run produced.
+DELTAS=(dist/*.delta)
+[ -e "${DELTAS[0]}" ] || DELTAS=()
 gh release create "v$VERSION" \
-  "dist/Verba.dmg" "dist/appcast.xml" \
+  "Verba.dmg" "$DMG_VERSIONED" "dist/appcast.xml" "${DELTAS[@]}" \
   --repo "$REPO" --title "Verba $VERSION" --generate-notes
 
 echo "✅ Released v$VERSION. Sparkle clients will pick it up from the appcast."

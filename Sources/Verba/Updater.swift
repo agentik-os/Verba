@@ -23,6 +23,11 @@ final class Updater: ObservableObject {
     /// When the last (background or user) check completed.
     @Published private(set) var lastChecked: Date?
 
+    /// R8: queried right before a Sparkle-driven install/relaunch. Set by AppDelegate; returns
+    /// true while a recording is live or dictations are still processing, so an update never
+    /// silently kills an active dictation. Always called on the main thread.
+    var isBusy: () -> Bool = { false }
+
     private init() {
         controller = SPUStandardUpdaterController(startingUpdater: true,
                                                   updaterDelegate: delegate,
@@ -81,5 +86,24 @@ private final class UpdaterDelegate: NSObject, SPUUpdaterDelegate {
 
     func updaterDidNotFindUpdate(_ updater: SPUUpdater) {
         owner?.didNotFind()
+    }
+
+    /// R8: Sparkle is about to relaunch to install. If a recording is live or Sessions are still
+    /// processing, postpone the relaunch and ask the user first — a silent relaunch would discard
+    /// them. "Not Now" leaves the handler uninvoked, so Sparkle falls back to installing the
+    /// update on the next quit instead of dropping it.
+    func updater(_ updater: SPUUpdater, shouldPostponeRelaunchForUpdate item: SUAppcastItem,
+                 untilInvokingBlock installHandler: @escaping () -> Void) -> Bool {
+        guard let owner, owner.isBusy() else { return false }   // idle → relaunch immediately
+        VerbaLog.updater.info("postponing update relaunch: a dictation is recording or processing")
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "Install update and relaunch now?"
+            alert.informativeText = "A dictation is recording or still processing. Relaunching now will discard it. Choose Not Now to keep working — the update installs on the next quit."
+            alert.addButton(withTitle: "Install & Relaunch")
+            alert.addButton(withTitle: "Not Now")
+            if alert.runModal() == .alertFirstButtonReturn { installHandler() }
+        }
+        return true
     }
 }
