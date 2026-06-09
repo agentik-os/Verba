@@ -19,6 +19,15 @@ const DAYS: Day[] = [
       "A huge day: a redesigned site, hold-to-talk and reliable pause, mid-sentence mode switching, editable Note modes, layered writing Styles, smarter Transforms, a Transcripts library, concurrent sessions, and a sharper Task Manager agent.",
     entries: [
       {
+        version: "0.1.93",
+        title: "See your parallel results, and a smarter feedback box",
+        items: [
+          "Multi-session is now visible: a Recent results panel (open from the menu bar) lists what processed in the background while you kept dictating, each with a Copy button.",
+          "Action mode only needs Screen Recording when a command is actually about your screen.",
+          "Feedback box: drag-drop a screenshot, an Improve-with-AI button, and a gentle sent confirmation.",
+        ],
+      },
+      {
         version: "0.1.90 – 0.1.91",
         title: "Action mode, and a polished Task Manager",
         items: [
