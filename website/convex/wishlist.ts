@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 export const list = query({
@@ -17,6 +17,15 @@ export const add = mutation({
     const text = a.text.trim().slice(0, 280);
     if (!text) return;
     await ctx.db.insert("wishlist", { text, author: a.alias, votes: 1, voters: [a.uid], created: Date.now() });
+  },
+});
+
+// Admin-only moderation (internal = NOT callable from the public client API; run via
+// `npx convex run wishlist:remove '{"id":"…"}' --prod`). Used to clean up test/spam wishes.
+export const remove = internalMutation({
+  args: { id: v.id("wishlist") },
+  handler: async (ctx, a) => {
+    await ctx.db.delete(a.id);
   },
 });
 
