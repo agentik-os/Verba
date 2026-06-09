@@ -16,8 +16,18 @@ const DAYS: Day[] = [
     date: "June 9, 2026",
     tag: "Today",
     summary:
-      "A huge day: hold-to-talk and reliable pause, mid-sentence mode switching, editable Note modes, layered writing Styles, smarter Transforms, a Transcripts library, concurrent sessions, and a sharper Task Manager agent.",
+      "A huge day: a redesigned site, hold-to-talk and reliable pause, mid-sentence mode switching, editable Note modes, layered writing Styles, smarter Transforms, a Transcripts library, concurrent sessions, and a sharper Task Manager agent.",
     entries: [
+      {
+        version: "0.1.85",
+        title: "A redesigned site, and the controls fixed",
+        items: [
+          "New homepage: a signature hero that runs the live talk-to-clean-text demo, a monochrome macOS-grade look tied to the mic mark, real type hierarchy and varied layouts.",
+          "Fixed Control pause so it never collides with other shortcuts, and made it reliable on every launch.",
+          "Mid-recording mode switching is no longer ambiguous, with clear audio and visual feedback.",
+          "Concurrent sessions hardened: a background session can no longer disturb the one you're recording, and an Esc-cancelled dictation never gets pasted.",
+        ],
+      },
       {
         version: "0.1.84",
         title: "Styles, Transforms, Transcripts library & concurrent sessions",
