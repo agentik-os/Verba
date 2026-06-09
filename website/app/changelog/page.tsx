@@ -19,6 +19,16 @@ const DAYS: Day[] = [
       "A huge day: a redesigned site, hold-to-talk and reliable pause, mid-sentence mode switching, editable Note modes, layered writing Styles, smarter Transforms, a Transcripts library, concurrent sessions, and a sharper Task Manager agent.",
     entries: [
       {
+        version: "0.1.90 – 0.1.91",
+        title: "Action mode, and a polished Task Manager",
+        items: [
+          "New Action mode (Fn+X): speak a command and Verba does it — create an event or reminder, draft an email, open an app, play music, send a message, or run any of your macOS Shortcuts — always asking you to confirm first.",
+          "Add to dictionary by voice: select text, say “add to dictionary”, and Verba keeps that exact spelling (great for brand names) — and now preserves it through the AI rewrite too.",
+          "A modern calendar + time picker for deadlines (tasks and sub-tasks), replacing the old one.",
+          "Feedback: dictate it with your voice, with the text field finally aligned.",
+        ],
+      },
+      {
         version: "0.1.89",
         title: "A real username, never your real name",
         items: [
