@@ -19,6 +19,14 @@ const DAYS: Day[] = [
       "A huge day: a redesigned site, hold-to-talk and reliable pause, mid-sentence mode switching, editable Note modes, layered writing Styles, smarter Transforms, a Transcripts library, concurrent sessions, and a sharper Task Manager agent.",
     entries: [
       {
+        version: "0.1.88",
+        title: "Updates, right from the menu bar",
+        items: [
+          "When a new version is out, the menu-bar menu shows an “Install update” item and a small badge on the icon, one click to update and relaunch.",
+          "A new Updates section in Settings: toggle automatic checking and automatic download & install, see your current version and last check, or check now.",
+        ],
+      },
+      {
         version: "0.1.86 – 0.1.87",
         title: "Agentic actions, and switch mode with a tap",
         items: [
