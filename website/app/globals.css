@@ -2,29 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+   VERBA — "Black-craft, Apple-grade precision"
+   A monochrome, near-black system that feels like the native macOS app it sells.
+   Material hierarchy (panel / card / glass), an editorial type scale, one
+   restrained signature accent, and quiet intentional light — not pastel blobs.
+   ========================================================================== */
+
 /* ---- Theme tokens (DARK is the default; light via [data-theme="light"]) ---- */
 :root {
-  --bg: #08080b;
-  --fg: #f3f4f7;
-  --muted: rgba(243, 244, 247, 0.6);
-  --tint: rgba(255, 255, 255, 0.055);
-  --tint-strong: rgba(255, 255, 255, 0.12);
-  --border: rgba(255, 255, 255, 0.1);
-  --dot: rgba(255, 255, 255, 0.05);
-  --glow: rgba(120, 140, 200, 0.18);
-  --glow2: rgba(180, 130, 220, 0.14);
+  --bg: #050507;
+  --bg-2: #0a0a0d;          /* faint chapter band */
+  --fg: #f4f4f6;
+  --fg-dim: rgba(244, 244, 246, 0.78);
+  --muted: rgba(244, 244, 246, 0.56);
+  --faint: rgba(244, 244, 246, 0.38);
+  --tint: rgba(255, 255, 255, 0.04);
+  --tint-strong: rgba(255, 255, 255, 0.085);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --hairline-top: rgba(255, 255, 255, 0.10);   /* specular top edge on panels */
+
+  /* Solid product-chrome panel (macOS window look, opaque, not frosted) */
+  --panel: #0c0c10;
+  --panel-2: #101015;
+  --panel-shadow: 0 40px 80px -32px rgba(0, 0, 0, 0.85), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+
+  /* Flat tinted supporting card — crisp 1px border, NO blur */
+  --card: rgba(255, 255, 255, 0.022);
+  --card-hover: rgba(255, 255, 255, 0.045);
+
+  /* ONE signature accent — a warm near-white, used sparingly */
+  --accent: #f4ede0;
+  --accent-line: rgba(244, 237, 224, 0.85);
+  --rec: #ff5a4d;           /* the record dot — the brand's one live color */
+
   color-scheme: dark;
 }
 [data-theme="light"] {
-  --bg: #f7f7f9;
-  --fg: #0b0b0f;
-  --muted: rgba(11, 11, 15, 0.58);
-  --tint: rgba(10, 10, 20, 0.045);
-  --tint-strong: rgba(10, 10, 20, 0.09);
-  --border: rgba(10, 10, 20, 0.11);
-  --dot: rgba(10, 10, 20, 0.055);
-  --glow: rgba(90, 110, 160, 0.14);
-  --glow2: rgba(150, 110, 190, 0.10);
+  --bg: #f6f6f7;
+  --bg-2: #efeff1;
+  --fg: #0a0a0c;
+  --fg-dim: rgba(10, 10, 12, 0.82);
+  --muted: rgba(10, 10, 12, 0.56);
+  --faint: rgba(10, 10, 12, 0.40);
+  --tint: rgba(10, 10, 20, 0.035);
+  --tint-strong: rgba(10, 10, 20, 0.07);
+  --border: rgba(10, 10, 20, 0.10);
+  --border-strong: rgba(10, 10, 20, 0.16);
+  --hairline-top: rgba(255, 255, 255, 0.9);
+
+  --panel: #0c0c10;          /* the hero chrome stays dark in both modes — it IS the app */
+  --panel-2: #101015;
+  --panel-shadow: 0 40px 90px -34px rgba(20, 22, 40, 0.45), 0 8px 24px -14px rgba(20, 22, 40, 0.30);
+
+  --card: rgba(255, 255, 255, 0.66);
+  --card-hover: rgba(255, 255, 255, 0.92);
+
+  --accent: #1a1410;
+  --accent-line: rgba(26, 20, 16, 0.85);
+  --rec: #e23b2e;
+
   color-scheme: light;
 }
 
@@ -39,125 +77,186 @@ body {
   transition: background-color .4s ease, color .4s ease;
 }
 
-/* ---- Ambient light: slow-drifting glows that the glass refracts ---- */
+/* ---- Quiet ambient light: ONE static, low-opacity vignette + a single soft
+   top glow. No drifting pastel blobs. The type carries the premium. ---- */
 body::before {
-  content: ""; position: fixed; inset: -20%; z-index: -2; pointer-events: none;
+  content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
   background:
-    radial-gradient(38% 44% at 18% 12%, var(--glow), transparent 60%),
-    radial-gradient(34% 40% at 82% 16%, var(--glow2), transparent 62%),
-    radial-gradient(46% 50% at 70% 78%, var(--glow), transparent 64%),
-    radial-gradient(30% 36% at 30% 70%, var(--glow2), transparent 64%);
-  filter: blur(40px);
-  animation: drift 26s ease-in-out infinite alternate;
+    radial-gradient(120% 60% at 50% -10%, rgba(255,255,255,0.05), transparent 60%),
+    radial-gradient(140% 120% at 50% 120%, rgba(0,0,0,0.55), transparent 55%);
 }
-/* Fine grain over everything: kills the flat "gradient blob" look, reads premium */
+[data-theme="light"] body::before {
+  background:
+    radial-gradient(120% 60% at 50% -10%, rgba(255,255,255,0.7), transparent 60%),
+    radial-gradient(140% 120% at 50% 120%, rgba(10,12,30,0.05), transparent 55%);
+}
+/* Whisper of grain — texture, not a layer (was opacity .5, now ~.12) */
 body::after {
-  content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none; opacity: .5;
+  content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none; opacity: .12;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
 }
-@keyframes drift {
-  0%   { transform: translate3d(-2%, -1%, 0) scale(1); }
-  100% { transform: translate3d(3%, 2%, 0) scale(1.1); }
-}
 
-/* Hero ambient accent (kept for the section that opts in) */
-.aurora {
-  position: absolute; inset: -25% -10% auto -10%; height: 70vh; z-index: -1;
-  background:
-    radial-gradient(40% 50% at 28% 22%, var(--glow), transparent 60%),
-    radial-gradient(38% 46% at 76% 18%, var(--glow2), transparent 60%);
-  filter: blur(56px); pointer-events: none;
+/* ============================================================================
+   TYPE SCALE — display / anchor / section / lead, with weight + tracking contrast
+   ========================================================================== */
+.t-display {
+  font-size: clamp(3.2rem, 7.5vw, 5.75rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  font-weight: 600;
+  font-feature-settings: "cv01", "ss01", "kern", "ss02";
 }
+.t-statement {                      /* one big breathing mid-page line */
+  font-size: clamp(2rem, 4.6vw, 3.4rem);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  font-weight: 500;
+}
+.t-anchor {                         /* pillar section heads (Context, Notes, Translate) */
+  font-size: clamp(1.95rem, 3.6vw, 2.95rem);
+  line-height: 1.05;
+  letter-spacing: -0.028em;
+  font-weight: 600;
+}
+.t-section {                        /* supporting section heads, stepped down */
+  font-size: clamp(1.55rem, 2.6vw, 1.95rem);
+  line-height: 1.1;
+  letter-spacing: -0.022em;
+  font-weight: 600;
+}
+.t-lead {                           /* the first sentence under a key section — fg, not muted */
+  font-size: clamp(1.075rem, 1.6vw, 1.3rem);
+  line-height: 1.5;
+  letter-spacing: -0.011em;
+  color: var(--fg-dim);
+  font-weight: 400;
+}
+.eyebrow {                          /* used SPARINGLY (a handful, not 16) */
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--faint);
+  font-weight: 500;
+}
+.tnum { font-variant-numeric: tabular-nums; }
 
-/* ---- Liquid Glass material ----
-   Layered translucency with a specular top-left edge (the light catching the
-   rim), an inner highlight, an inner bottom shade, and a real drop shadow for
-   depth. The ::before paints a gradient border via mask compositing. */
-.glass, .glass-strong {
+/* ============================================================================
+   MATERIAL HIERARCHY — three distinct surfaces, assigned by importance
+   ========================================================================== */
+
+/* (1) PANEL — solid near-black product chrome. Hairline specular top edge +
+   real cast shadow. The macOS-window look. Reserved for hero + showcase. */
+.panel {
   position: relative;
-  border: 0;
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px) saturate(180%) brightness(var(--glass-br));
-  -webkit-backdrop-filter: blur(20px) saturate(180%) brightness(var(--glass-br));
-  box-shadow:
-    inset 0 1px 0 0 var(--glass-hi),
-    inset 0 -1px 1px 0 var(--glass-lo),
-    var(--glass-drop);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--border);
+  border-top-color: var(--hairline-top);
+  box-shadow: var(--panel-shadow);
+  color: #f4f4f6;
 }
-.glass-strong {
-  background: var(--glass-bg-strong);
-  backdrop-filter: blur(34px) saturate(190%) brightness(var(--glass-br));
-  -webkit-backdrop-filter: blur(34px) saturate(190%) brightness(var(--glass-br));
-  box-shadow:
-    inset 0 1px 0 0 var(--glass-hi),
-    inset 0 -1px 1px 0 var(--glass-lo),
-    var(--glass-drop-strong);
-}
-.glass::before, .glass-strong::before {
-  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
-  background: linear-gradient(150deg, var(--glass-edge) 0%, transparent 38%, transparent 70%, var(--glass-edge-lo) 100%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor; mask-composite: exclude;
+.panel::before {                    /* crisp 1px specular highlight on the very top edge */
+  content: ""; position: absolute; left: 12%; right: 12%; top: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
   pointer-events: none;
 }
-/* keep content above the edge layer */
-.glass > *, .glass-strong > * { position: relative; }
 
+/* (2) CARD — flat tinted surface, crisp 1px border, NO blur. The workhorse. */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  transition: background-color .25s ease, border-color .25s ease, transform .28s cubic-bezier(.2,.7,.2,1);
+}
+.card.lift:hover {
+  background: var(--card-hover);
+  border-color: var(--border-strong);
+  transform: translateY(-3px);
+}
+
+/* (3) GLASS — translucency reserved for nav + the live-demo overlay only. */
+.glass {
+  position: relative;
+  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(18px) saturate(170%);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  box-shadow: inset 0 1px 0 0 var(--glass-hi), 0 8px 30px -16px rgba(0,0,0,.5);
+}
 :root {
-  --glass-bg: linear-gradient(155deg, rgba(255,255,255,.085), rgba(255,255,255,.03));
-  --glass-bg-strong: linear-gradient(155deg, rgba(255,255,255,.14), rgba(255,255,255,.05));
-  --glass-hi: rgba(255,255,255,.22);
-  --glass-lo: rgba(0,0,0,.22);
-  --glass-edge: rgba(255,255,255,.55);
-  --glass-edge-lo: rgba(255,255,255,.08);
-  --glass-drop: 0 12px 34px -14px rgba(0,0,0,.55);
-  --glass-drop-strong: 0 26px 60px -20px rgba(0,0,0,.62);
-  --glass-br: 1.04;
+  --glass-bg: rgba(14,14,18,0.55);
+  --glass-hi: rgba(255,255,255,.10);
 }
 [data-theme="light"] {
-  --glass-bg: linear-gradient(155deg, rgba(255,255,255,.85), rgba(255,255,255,.5));
-  --glass-bg-strong: linear-gradient(155deg, rgba(255,255,255,.95), rgba(255,255,255,.62));
+  --glass-bg: rgba(255,255,255,0.62);
   --glass-hi: rgba(255,255,255,.9);
-  --glass-lo: rgba(10,12,30,.06);
-  --glass-edge: rgba(255,255,255,1);
-  --glass-edge-lo: rgba(10,12,30,.08);
-  --glass-drop: 0 12px 30px -16px rgba(20,24,50,.22);
-  --glass-drop-strong: 0 24px 54px -22px rgba(20,24,50,.26);
-  --glass-br: 1.0;
 }
+
+/* ---- Two-step radius scale (12 / 16), not 16/24-everywhere ---- */
+.r-card { border-radius: 12px; }
+.r-panel { border-radius: 16px; }
 
 .hairline { border: 1px solid var(--border); }
 .muted { color: var(--muted); }
+.faint { color: var(--faint); }
 .text-balance { text-wrap: balance; }
+.lift { transition: transform .28s cubic-bezier(.2,.7,.2,1), background-color .25s ease, border-color .25s ease; }
 
-/* Interactive lift for glass cards/links */
-.lift { transition: transform .28s cubic-bezier(.2,.7,.2,1), box-shadow .28s ease; }
-.lift:hover { transform: translateY(-4px); }
-.glass.lift:hover, .glass-strong.lift:hover {
-  box-shadow: inset 0 1px 0 0 var(--glass-hi), inset 0 -1px 1px 0 var(--glass-lo), var(--glass-drop-strong);
+/* ============================================================================
+   SIGNATURE — the black rounded-square mic mark, recurring as the page motif
+   ========================================================================== */
+.mic-mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #050507; color: #fff;
+  border-radius: 7px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 1px 2px rgba(0,0,0,0.4);
+}
+[data-theme="light"] .mic-mark { background: #0a0a0c; }
+
+/* the record dot — pulses, the one warm-live color */
+.rec-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--rec); box-shadow: 0 0 0 0 var(--rec);
+}
+.rec-dot.pulse { animation: recpulse 2s ease-out infinite; }
+@keyframes recpulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255,90,77,0.5); }
+  70%  { box-shadow: 0 0 0 9px rgba(255,90,77,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,90,77,0); }
 }
 
-@keyframes floaty { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
-.float { animation: floaty 6s ease-in-out infinite; }
+/* a section divider built from the mic motif: a hairline that meets a small mark */
+.motif-rule {
+  display: flex; align-items: center; gap: 0.75rem;
+  color: var(--faint);
+}
+.motif-rule::before, .motif-rule::after {
+  content: ""; height: 1px; flex: 1; background: var(--border);
+}
 
-/* Moving specular sheen for showcase panels */
-@keyframes sheen { 0% { transform: translateX(-120%) } 60%,100% { transform: translateX(220%) } }
-.sheen { overflow: hidden; }
-.sheen::after {
-  content: ""; position: absolute; top: 0; bottom: 0; width: 40%; z-index: 2;
-  background: linear-gradient(105deg, transparent, rgba(255,255,255,.14), transparent);
-  transform: translateX(-120%); animation: sheen 7s ease-in-out infinite; pointer-events: none;
+/* ---- Inverted CTA (white on dark, black on light) ---- */
+.btn-primary {
+  background: var(--fg); color: var(--bg);
+  border-radius: 10px; font-weight: 500;
+  transition: transform .2s ease, opacity .2s ease, box-shadow .2s ease;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.12) inset, 0 10px 30px -12px rgba(0,0,0,0.6);
 }
-@media (prefers-reduced-motion: reduce) {
-  .float, .sheen::after, body::before { animation: none; }
+.btn-primary:hover { transform: translateY(-1px); opacity: .94; }
+.btn-ghost {
+  border: 1px solid var(--border-strong); border-radius: 10px; font-weight: 500;
+  background: var(--tint); transition: background-color .2s ease, border-color .2s ease;
 }
+.btn-ghost:hover { background: var(--tint-strong); border-color: var(--fg); }
+
+/* ============================================================================
+   MOTION — confined; tasteful
+   ========================================================================== */
+@keyframes floaty { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-5px) } }
+.float { animation: floaty 7s ease-in-out infinite; }
 
 /* Live waveform bars */
 @keyframes bar { 0%, 100% { height: 8px; } 50% { height: 34px; } }
 
 /* Logo marquee */
 @keyframes scrollx { from { transform: translateX(0) } to { transform: translateX(-50%) } }
-.marquee { display: flex; width: max-content; animation: scrollx 28s linear infinite; }
+.marquee { display: flex; width: max-content; animation: scrollx 34s linear infinite; }
 .marquee:hover { animation-play-state: paused; }
 
 @keyframes shimmer { 0% { background-position: -200% 0 } 100% { background-position: 200% 0 } }
@@ -168,20 +267,18 @@ body::after {
   animation: shimmer 6s linear infinite;
 }
 
-.grid-row td { border-top: 1px solid var(--border); }
-.tick { color: #16a34a; } [data-theme="dark"] .tick { color: #6ee7a8; }
-.cross { color: var(--muted); opacity: .7; }
+@media (prefers-reduced-motion: reduce) {
+  .float, .marquee, .shine, .rec-dot.pulse { animation: none; }
+}
 
-/* ---- Inverted CTA (black on light, white on dark) ---- */
-.btn-invert { background: var(--fg); color: var(--bg); }
-.btn-invert:hover { opacity: .9; }
+.tick { color: #6ee7a8; } [data-theme="light"] .tick { color: #16a34a; }
 
 /* ---- Clerk widget hardening (bulletproof input/footer styling) ---- */
 .cl-formFieldInput,
 input.cl-formFieldInput {
   background: #ffffff !important;
   color: #0b0b0f !important;
-  -webkit-text-fill-color: #0b0b0f !important;   /* override autofill/inherited white text */
+  -webkit-text-fill-color: #0b0b0f !important;
   min-height: 52px !important;
   border-radius: 1rem !important;
 }

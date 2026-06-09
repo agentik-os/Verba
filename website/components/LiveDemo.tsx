@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { MicGlyph } from "./Brand";
 
 type Mode = {
   name: string;
@@ -40,22 +41,28 @@ const MODES: Mode[] = [
   },
 ];
 
+/* Live waveform — the signature visual. Bars settle flat as the text resolves. */
 function Bars({ active }: { active: boolean }) {
-  const N = 28;
+  const N = 36;
   return (
-    <div className="flex h-10 items-center justify-center gap-[3px]">
-      {Array.from({ length: N }).map((_, i) => (
-        <span
-          key={i}
-          className="w-[3px] rounded-full bg-white/70"
-          style={{
-            animation: `bar 900ms ease-in-out ${i * 45}ms infinite`,
-            height: active ? undefined : "6px",
-            opacity: active ? 1 : 0.25,
-            transition: "opacity .4s",
-          }}
-        />
-      ))}
+    <div className="flex h-9 items-center gap-[3px]">
+      {Array.from({ length: N }).map((_, i) => {
+        // a centered "voice envelope" so the field looks like real speech
+        const center = 1 - Math.abs(i - (N - 1) / 2) / ((N - 1) / 2);
+        return (
+          <span
+            key={i}
+            className="w-[3px] rounded-full"
+            style={{
+              background: "rgba(255,255,255,0.55)",
+              animation: active ? `bar ${720 + (i % 5) * 90}ms ease-in-out ${i * 32}ms infinite` : "none",
+              height: active ? undefined : `${4 + center * 5}px`,
+              opacity: active ? 0.45 + center * 0.55 : 0.22,
+              transition: "opacity .5s, height .5s",
+            }}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -76,16 +83,14 @@ export default function LiveDemo() {
     const startWriting = setTimeout(() => setPhase("writing"), 1500);
     timers.current.push(startWriting);
 
-    // type out the result
     const typeStart = 1800;
     for (let i = 0; i <= m.wrote.length; i++) {
-      const t = setTimeout(() => setTyped(m.wrote.slice(0, i)), typeStart + i * 16);
+      const t = setTimeout(() => setTyped(m.wrote.slice(0, i)), typeStart + i * 15);
       timers.current.push(t);
     }
-    // auto-advance to the next mode
     const next = setTimeout(
       () => setMode((x) => (x + 1) % MODES.length),
-      typeStart + m.wrote.length * 16 + 2600
+      typeStart + m.wrote.length * 15 + 2800
     );
     timers.current.push(next);
 
@@ -93,17 +98,20 @@ export default function LiveDemo() {
   }, [mode]);
 
   const m = MODES[mode];
+  const listening = phase === "listening";
 
   return (
-    <div className="mx-auto max-w-2xl">
-      {/* mode tabs */}
-      <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
+    <div className="mx-auto w-full max-w-2xl">
+      {/* mode tabs — quiet, sit above the chrome */}
+      <div className="mb-4 flex flex-wrap items-center justify-center gap-1.5">
         {MODES.map((x, i) => (
           <button
             key={x.name}
             onClick={() => setMode(i)}
-            className={`rounded-full px-4 py-1.5 text-sm transition ${
-              i === mode ? "bg-[var(--fg)] text-[var(--bg)]" : "glass muted hover:text-[var(--fg)]"
+            className={`rounded-full px-3.5 py-1.5 text-[13px] transition ${
+              i === mode
+                ? "bg-[var(--fg)] text-[var(--bg)] font-medium"
+                : "border border-[var(--border)] text-[var(--muted)] hover:text-[var(--fg)]"
             }`}
           >
             {x.name}
@@ -111,39 +119,51 @@ export default function LiveDemo() {
         ))}
       </div>
 
-      <div className="glass-strong sheen float rounded-3xl p-2">
-        <div className="rounded-[20px] bg-[#0c0c10] p-6 sm:p-8"
-             style={{ color: "#f4f5f8", "--fg": "#f4f5f8", "--muted": "rgba(244,245,248,0.55)", "--tint": "rgba(255,255,255,0.08)" } as Record<string, string>}>
-          <div className="flex items-center justify-between text-xs muted">
-            <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
-              <span className="h-2.5 w-2.5 rounded-full bg-yellow-400/70" />
-              <span className="h-2.5 w-2.5 rounded-full bg-green-400/70" />
-              <span className="ml-2">{phase === "listening" ? "Listening…" : `Pasting into ${m.app}`}</span>
-            </div>
-            <span className="rounded-full bg-[var(--tint)] px-2.5 py-1 font-medium text-white/80">
-              {m.name} · {m.model}
+      {/* THE hero artifact — solid product chrome, not frosted glass */}
+      <div className="panel r-panel float overflow-hidden">
+        {/* macOS title bar */}
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3">
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
+            <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
+            <span className="h-3 w-3 rounded-full bg-[#28c840]" />
+          </div>
+          <div className="flex items-center gap-2 text-[12px] text-white/45">
+            <span className={`rec-dot ${listening ? "pulse" : ""}`} style={{ opacity: listening ? 1 : 0.3 }} />
+            {listening ? "Listening" : `Pasting into ${m.app}`}
+          </div>
+          <span className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px] font-medium text-white/70 tnum">
+            {m.name} · {m.model}
+          </span>
+        </div>
+
+        {/* body */}
+        <div className="px-6 py-7 sm:px-8" style={{ color: "#f4f4f6" }}>
+          {/* waveform sourced from the mic mark */}
+          <div className="mb-6 flex items-center gap-4">
+            <span className="mic-mark shrink-0" style={{ width: 38, height: 38, borderRadius: 10 }}>
+              <MicGlyph size={18} />
             </span>
+            <Bars active={listening} />
           </div>
 
-          <div className="my-5">
-            <Bars active={phase === "listening"} />
-          </div>
+          <p className="text-[11px] uppercase tracking-[0.16em] text-white/40">You say</p>
+          <p className="mt-1.5 min-h-[3em] text-[15px] leading-relaxed text-white/55">"{m.said}"</p>
 
-          <p className="text-xs uppercase tracking-widest muted">You say</p>
-          <p className="mt-1 min-h-[3.2em] text-[15px] leading-relaxed text-white/70">"{m.said}"</p>
+          <div className="my-5 h-px bg-white/[0.07]" />
 
-          <p className="mt-5 text-xs uppercase tracking-widest muted">Verba writes</p>
-          <p className="mt-1 min-h-[6.5em] whitespace-pre-line text-[15px] leading-relaxed">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-white/40">Verba writes</p>
+          <p className="mt-1.5 min-h-[6.5em] whitespace-pre-line text-[15px] leading-relaxed">
             {typed}
             {phase === "writing" && typed.length < m.wrote.length && (
-              <span className="ml-0.5 inline-block h-4 w-[2px] animate-pulse bg-[var(--fg)] align-middle" />
+              <span className="ml-0.5 inline-block h-[1.05em] w-[2px] animate-pulse bg-white align-text-bottom" />
             )}
           </p>
         </div>
       </div>
-      <p className="mt-3 text-center text-xs muted">
-        Context mode reads your screen. Every other mode routes to the right model: Haiku for quick polish, Sonnet for intent, Opus for code.
+
+      <p className="mt-4 text-center text-[13px] muted">
+        Context reads your screen. Every other mode routes to the right model: Haiku to polish, Sonnet for intent, Opus for code.
       </p>
     </div>
   );

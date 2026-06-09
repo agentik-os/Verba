@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import LiveDemo from "@/components/LiveDemo";
@@ -10,9 +9,7 @@ import TryIt from "@/components/TryIt";
 import JokeBubbles from "@/components/JokeBubbles";
 import Icon from "@/components/Icon";
 import { getRef } from "@/components/RefCapture";
-
-// WebGL sound-wave backdrop; client-only (no SSR for the canvas).
-const WaveField = dynamic(() => import("@/components/WaveField"), { ssr: false });
+import { Logo, MicMark, MicGlyph, HeadLeft, HeadCenter, MotifRule } from "@/components/Brand";
 
 const PRICE = {
   monthly: { amount: "$9.99", sub: "/month", note: "billed monthly · cancel anytime" },
@@ -23,7 +20,6 @@ const DOWNLOAD_URL = "https://github.com/agentik-os/Verba-releases/releases/late
 export default function Home() {
   return (
     <main className="relative mx-auto max-w-6xl px-6">
-      <div className="aurora" />
       <Nav />
       <Hero />
       <LogosStrip />
@@ -45,20 +41,6 @@ export default function Home() {
       <FAQ />
       <Footer />
     </main>
-  );
-}
-
-function Logo() {
-  return (
-    <div className="flex items-center gap-2.5">
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] bg-black ring-1 ring-[var(--border)]">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
-          <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z" />
-          <path d="M5 11a1 1 0 1 1 2 0 5 5 0 0 0 10 0 1 1 0 1 1 2 0 7 7 0 0 1-6 6.93V21a1 1 0 1 1-2 0v-3.07A7 7 0 0 1 5 11Z" />
-        </svg>
-      </span>
-      <span className="text-[17px] font-semibold tracking-tight">Verba</span>
-    </div>
   );
 }
 
@@ -84,7 +66,7 @@ function Nav() {
         <SignedIn>
           <UserButton afterSignOutUrl="/" />
         </SignedIn>
-        <a href={DOWNLOAD_URL} className="rounded-full bg-[var(--fg)] px-4 py-2 text-sm font-medium text-[var(--bg)] hover:opacity-90">
+        <a href={DOWNLOAD_URL} className="btn-primary px-4 py-2 text-sm">
           Download
         </a>
       </div>
@@ -94,33 +76,40 @@ function Nav() {
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden py-20 text-center sm:py-28">
-      <WaveField className="absolute left-1/2 top-[-40px] -z-10 h-[560px] w-[150%] -translate-x-1/2 opacity-55 [mask-image:radial-gradient(ellipse_55%_60%_at_50%_45%,#000_35%,transparent_78%)]" />
-      <div className="mx-auto mb-6 w-fit rounded-full glass px-4 py-1.5 text-xs muted">
-        For macOS · Apple Silicon
+    <section className="relative grid gap-12 pb-16 pt-16 sm:pt-24 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-center lg:gap-10">
+      {/* Left: opinionated, tight copy column */}
+      <div>
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--tint)] px-3 py-1.5 text-xs muted">
+          <MicGlyph size={12} />
+          For macOS · Apple Silicon
+        </div>
+        <h1 className="t-display text-balance">
+          Speak it.<br />
+          <span className="text-[var(--fg-dim)]">Send it clean.</span>
+        </h1>
+        <p className="t-lead mt-7 max-w-xl">
+          The most complete voice-to-text on the Mac. Press a key, talk, and Verba lands polished,
+          formatted, on-brand text wherever your cursor is — reading your screen, taking hour-long
+          notes, translating live, running offline, on the AI account you already pay for.
+        </p>
+        <div className="mt-9 flex flex-wrap items-center gap-3">
+          <a href={DOWNLOAD_URL} className="btn-primary px-7 py-3">
+            Download for macOS
+          </a>
+          <a href="#how" className="btn-ghost px-7 py-3">See how it works</a>
+        </div>
+        <p className="mt-4 text-xs muted">Free to start · 7-day Pro trial · cancel anytime · $9.99/mo</p>
+        <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[13px] muted">
+          {["Dictate anywhere", "Reads your screen", "Hour-long notes", "Translate live", "Runs offline", "Bring your own AI"].map((p) => (
+            <span key={p} className="flex items-center gap-2">
+              <span className="h-1 w-1 rounded-full bg-[var(--accent-line)]" />{p}
+            </span>
+          ))}
+        </div>
       </div>
-      <h1 className="mx-auto max-w-3xl text-balance text-5xl font-semibold leading-[1.05] tracking-tight sm:text-7xl">
-        Speak it.<br />Send it clean.
-      </h1>
-      <p className="mx-auto mt-6 max-w-2xl text-lg muted text-balance">
-        The most complete voice-to-text on the Mac. Press a key, talk, and Verba lands polished,
-        formatted, on-brand text wherever your cursor is. It reads your screen, takes hour-long
-        notes, translates on the fly, runs offline, and uses the AI account you already pay for.
-      </p>
-      <div className="mt-7 flex flex-wrap items-center justify-center gap-2">
-        {["Dictate anywhere", "Reads your screen", "Hour-long notes", "Translate live", "Runs offline", "Bring your own AI"].map((p) => (
-          <span key={p} className="rounded-full glass px-3.5 py-1.5 text-xs muted">{p}</span>
-        ))}
-      </div>
-      <div className="mt-10 flex items-center justify-center gap-3">
-        <a href={DOWNLOAD_URL} className="rounded-full bg-[var(--fg)] px-7 py-3 font-medium text-[var(--bg)] hover:opacity-90">
-          Download for macOS
-        </a>
-        <a href="#how" className="rounded-full glass px-7 py-3 font-medium hover:bg-[var(--tint-strong)]">See how it works</a>
-      </div>
-      <p className="mt-4 text-xs muted">Free to start · 7-day Pro trial · cancel anytime · $9.99/mo</p>
 
-      <div className="mt-16">
+      {/* Right: THE focal artifact — the live talk → clean text demonstration */}
+      <div className="lg:pl-2">
         <LiveDemo />
       </div>
     </section>
@@ -131,9 +120,9 @@ function LogosStrip() {
   const apps = ["Slack", "Mail", "Notes", "VS Code", "Messages", "Notion", "Safari", "Terminal", "Cursor", "Linear", "Figma", "Obsidian"];
   return (
     <section className="overflow-hidden border-y hairline py-8">
-      <p className="text-center text-xs uppercase tracking-widest muted">Works in the apps you already use</p>
-      <div className="relative mt-5">
-        <div className="marquee gap-x-10 text-sm muted">
+      <p className="eyebrow text-center">Works in the apps you already use</p>
+      <div className="relative mt-5 [mask-image:linear-gradient(90deg,transparent,#000_12%,#000_88%,transparent)]">
+        <div className="marquee gap-x-12 text-sm muted">
           {[...apps, ...apps].map((a, i) => (
             <span key={i} className="whitespace-nowrap">{a}</span>
           ))}
@@ -145,14 +134,15 @@ function LogosStrip() {
 
 function TryNow() {
   return (
-    <section id="try" className="py-24">
+    <section id="try" className="py-28">
       <Reveal>
-        <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">Try it right now</h2>
-        <p className="mx-auto mt-4 max-w-xl text-center muted text-balance">
-          No download, no sign-up. Record a rambling message and watch Verba turn it into clean text, the exact same pipeline the app uses.
-        </p>
+        <HeadCenter
+          eyebrow="Live, in your browser"
+          title="Try it right now"
+          lead="No download, no sign-up. Record a rambling message and watch Verba turn it into clean text — the exact same pipeline the app uses."
+        />
       </Reveal>
-      <div className="mt-10"><TryIt /></div>
+      <div className="mt-12"><TryIt /></div>
     </section>
   );
 }
@@ -164,23 +154,22 @@ function Jokes() {
     "Gamer", "Cooking show", "Motivational", "Conspiracy", "Surreal", "Off",
   ];
   return (
-    <section className="py-24">
+    <section className="py-28">
       <Reveal>
-        <p className="text-center text-xs uppercase tracking-widest muted">While Claude works</p>
-        <h2 className="mt-3 text-center text-3xl font-semibold tracking-tight sm:text-4xl">Loading screens that make you smile</h2>
-        <p className="mx-auto mt-4 max-w-xl text-center muted text-balance">
-          Every time Verba is restructuring your words, it shows a short, ever-changing one-liner.
-          Pick from 17 humor themes, or switch it off. It's never the same joke twice in a day.
-        </p>
+        <HeadCenter
+          eyebrow="While Claude works"
+          title="Loading screens that make you smile"
+          lead="Every time Verba is restructuring your words, it shows a short, ever-changing one-liner. Pick from 17 humor themes, or switch it off. It's never the same joke twice in a day."
+        />
       </Reveal>
 
-      <div className="relative mt-8 overflow-hidden rounded-3xl glass-strong">
+      <div className="panel r-panel relative mt-10 overflow-hidden">
         <JokeBubbles />
       </div>
 
       <div className="mt-8 flex flex-wrap justify-center gap-2">
         {themes.map((t) => (
-          <span key={t} className="glass rounded-full px-4 py-1.5 text-sm muted">{t}</span>
+          <span key={t} className="card r-card px-4 py-1.5 text-sm muted">{t}</span>
         ))}
       </div>
     </section>
@@ -189,24 +178,25 @@ function Jokes() {
 
 function Bento() {
   return (
-    <section className="py-24">
+    <section className="py-28">
       <Reveal>
-        <p className="text-center text-xs uppercase tracking-widest muted">Private by design</p>
-        <h2 className="mt-3 text-center text-3xl font-semibold tracking-tight sm:text-4xl">Your voice stays yours</h2>
-        <p className="mx-auto mt-4 max-w-xl text-center muted text-balance">
-          Verba runs open speech models (Whisper and Parakeet) right on your Mac. No servers, no
-          uploads, no markup. Here is what that gets you.
-        </p>
+        <HeadLeft
+          eyebrow="Private by design"
+          anchor
+          title="Your voice stays yours"
+          lead="Verba runs open speech models — Whisper and Parakeet — right on your Mac. No servers, no uploads, no markup. Here is what that gets you."
+        />
       </Reveal>
 
-      <div className="mt-12 grid auto-rows-[150px] grid-cols-2 gap-4 lg:grid-cols-4">
-        {/* big privacy tile */}
+      <div className="mt-12 grid auto-rows-[150px] grid-cols-2 gap-3 lg:grid-cols-4">
+        {/* hero bento tile — solid product chrome, carries the headline number */}
         <Reveal className="col-span-2 row-span-2">
-          <div className="glass-strong flex h-full flex-col justify-between rounded-3xl p-7">
-            <div className="text-5xl font-semibold tracking-tight">0 bytes</div>
+          <div className="panel r-panel flex h-full flex-col justify-between p-7">
+            <span className="rec-dot" />
             <div>
-              <p className="font-medium">of audio leave your Mac</p>
-              <p className="mt-1 text-sm muted">On-device mode transcribes locally and writes nothing to disk. Cloud tools upload every word; Verba doesn't have to.</p>
+              <div className="t-anchor tnum">0&nbsp;bytes</div>
+              <p className="mt-3 font-medium">of audio leave your Mac</p>
+              <p className="mt-1.5 max-w-sm text-sm text-white/55">On-device mode transcribes locally and writes nothing to disk. Cloud tools upload every word; Verba doesn't have to.</p>
             </div>
           </div>
         </Reveal>
@@ -217,8 +207,8 @@ function Bento() {
         <Reveal delay={240}><BentoStat big="100%" label="works offline" sub="no internet required" /></Reveal>
 
         <Reveal delay={120} className="col-span-2">
-          <div className="glass lift flex h-full items-center gap-4 rounded-3xl p-7">
-            <Icon name="key" className="h-8 w-8 shrink-0" />
+          <div className="card lift r-card flex h-full items-center gap-4 p-7">
+            <Icon name="key" className="h-7 w-7 shrink-0 text-[var(--fg-dim)]" />
             <div>
               <p className="font-medium">Bring your own AI account</p>
               <p className="mt-1 text-sm muted">Anthropic key, OpenRouter, your Claude Code subscription, or a fully local Ollama model. You never pay a vendor markup.</p>
@@ -226,8 +216,8 @@ function Bento() {
           </div>
         </Reveal>
         <Reveal delay={180} className="col-span-2">
-          <div className="glass lift flex h-full items-center gap-4 rounded-3xl p-7">
-            <Icon name="bolt" className="h-8 w-8 shrink-0" />
+          <div className="card lift r-card flex h-full items-center gap-4 p-7">
+            <Icon name="bolt" className="h-7 w-7 shrink-0 text-[var(--fg-dim)]" />
             <div>
               <p className="font-medium">Modes, the right model each time</p>
               <p className="mt-1 text-sm muted">Flow (verbatim), Intent, Coding, Translate, Custom, and Context (vision). Sonnet for intent, Opus for code. Edit any prompt or add your own.</p>
@@ -241,8 +231,8 @@ function Bento() {
 
 function BentoStat({ big, label, sub }: { big: string; label: string; sub: string }) {
   return (
-    <div className="glass lift flex h-full flex-col justify-center rounded-3xl p-6">
-      <div className="text-3xl font-semibold tracking-tight">{big}</div>
+    <div className="card lift r-card flex h-full flex-col justify-center p-6">
+      <div className="text-3xl font-semibold tracking-tight tnum">{big}</div>
       <p className="mt-1 text-sm font-medium">{label}</p>
       <p className="text-xs muted">{sub}</p>
     </div>
@@ -259,25 +249,36 @@ function ContextMode() {
     { icon: "bell", label: "Set a reminder", prompt: "Remind me to call the bank this afternoon." },
     { icon: "pen", label: "Draft a reply", prompt: "Draft a reply to this email saying I'll be there." },
   ];
+  const [hero, ...rest] = examples;
   return (
-    <section id="context-mode" className="py-24">
+    <section id="context-mode" className="py-28">
       <Reveal>
-        <div className="mx-auto mb-4 w-fit rounded-full glass px-4 py-1.5 text-xs muted">New feature</div>
-        <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
-          Context mode: your voice meets your screen
-        </h2>
-        <p className="mx-auto mt-4 max-w-xl text-center muted text-balance">
-          Press your shortcut, glance at the screen, and talk. Verba captures what is on your screen
-          and uses it to ground exactly what it writes. Reply to the email in front of you,
-          summarize a document, comment on a photo. No copy-paste required.
-        </p>
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center">
+          <HeadLeft
+            eyebrow="New · Context mode"
+            anchor
+            title={<>Your voice meets<br />your screen</>}
+            lead="Press your shortcut, glance at the screen, and talk. Verba captures what is on your screen and grounds exactly what it writes. Reply to the email in front of you, summarize a document, comment on a photo — no copy-paste."
+          />
+          {/* weighted hero tile — the focal example, in product chrome */}
+          <div className="panel r-panel p-7">
+            <div className="flex items-center gap-3 text-white/55">
+              <Icon name={hero.icon} className="h-5 w-5" />
+              <span className="text-[11px] uppercase tracking-[0.16em]">{hero.label}</span>
+            </div>
+            <p className="mt-5 text-lg leading-relaxed text-white/90">"{hero.prompt}"</p>
+            <div className="mt-6 flex items-center gap-2 text-[12px] text-white/40">
+              <span className="rec-dot pulse" /> Reads your screen, then writes the reply in place.
+            </div>
+          </div>
+        </div>
       </Reveal>
 
-      <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {examples.map(({ icon, label, prompt }, i) => (
-          <Reveal key={label} delay={i * 60}>
-            <div className="glass lift flex h-full flex-col gap-3 rounded-2xl p-6">
-              <Icon name={icon} className="h-7 w-7" />
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {rest.map(({ icon, label, prompt }, i) => (
+          <Reveal key={label} delay={i * 50}>
+            <div className="card lift r-card flex h-full flex-col gap-2.5 p-5">
+              <Icon name={icon} className="h-5 w-5 text-[var(--fg-dim)]" />
               <p className="font-medium">{label}</p>
               <p className="text-sm muted italic">"{prompt}"</p>
             </div>
@@ -286,31 +287,29 @@ function ContextMode() {
       </div>
 
       <Reveal delay={100}>
-        <div className="mt-8 glass-strong rounded-2xl p-7">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-8">
-            <div className="flex-1">
-              <p className="text-xs uppercase tracking-widest muted">How it works</p>
-              <p className="mt-2 text-sm muted leading-relaxed">
-                Context mode takes a screenshot the moment you stop talking, analyzes it with a vision-capable model,
-                and combines what it sees with what you said. The result is grounded in your actual screen content,
-                not a generic template.
-              </p>
-            </div>
-            <div className="flex-1">
-              <p className="text-xs uppercase tracking-widest muted">Requirements</p>
-              <ul className="mt-2 space-y-1 text-sm muted">
-                <li className="flex gap-2"><span>•</span>macOS Screen Recording permission</li>
-                <li className="flex gap-2"><span>•</span>A vision-capable model: Anthropic API key or OpenRouter key</li>
-              </ul>
-            </div>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="card r-card p-7">
+            <p className="eyebrow">How it works</p>
+            <p className="mt-3 text-sm muted leading-relaxed">
+              Context mode takes a screenshot the moment you stop talking, analyzes it with a vision-capable model,
+              and combines what it sees with what you said. The result is grounded in your actual screen content,
+              not a generic template.
+            </p>
+          </div>
+          <div className="card r-card p-7">
+            <p className="eyebrow">Requirements</p>
+            <ul className="mt-3 space-y-1.5 text-sm muted">
+              <li className="flex gap-2"><span className="text-[var(--accent-line)]">·</span>macOS Screen Recording permission</li>
+              <li className="flex gap-2"><span className="text-[var(--accent-line)]">·</span>A vision-capable model: Anthropic API key or OpenRouter key</li>
+            </ul>
           </div>
         </div>
       </Reveal>
 
       <Reveal delay={120}>
-        <div className="mt-4 glass rounded-2xl p-7">
+        <div className="card r-card mt-4 p-7">
           <div className="flex items-start gap-4">
-            <div className="mt-0.5 rounded-full bg-[var(--tint)] px-2.5 py-1 text-xs shrink-0">Labs</div>
+            <div className="mt-0.5 shrink-0 rounded-md border border-[var(--border-strong)] bg-[var(--tint)] px-2.5 py-1 text-xs font-medium">Labs</div>
             <div>
               <p className="font-medium">Agentic actions in Context mode</p>
               <p className="mt-1 text-sm muted leading-relaxed">
@@ -339,70 +338,67 @@ function NotesTab() {
     { icon: "article", label: "Article outline" },
   ];
   return (
-    <section id="notes" className="py-24">
+    <section id="notes" className="border-y hairline bg-[var(--bg-2)] py-28">
       <Reveal>
-        <div className="mx-auto mb-4 w-fit rounded-full glass px-4 py-1.5 text-xs muted">Flagship feature</div>
-        <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
-          Notes: talk for an hour, get a clean document
-        </h2>
-        <p className="mx-auto mt-4 max-w-xl text-center muted text-balance">
-          Open the Notes tab, pick a format, and record. Verba transcribes up to a full hour of speech and
-          shapes it into a structured document ready to read, edit, and copy. Tag it with #hashtags
-          (Bear style) to file and filter. Notes sync across your Macs via your account.
-        </p>
+        <HeadLeft
+          eyebrow="Flagship feature"
+          anchor
+          title={<>Talk for an hour,<br />get a clean document</>}
+          lead="Open the Notes tab, pick a format, and record. Verba transcribes up to a full hour of speech and shapes it into a structured document ready to read, edit, and copy. Tag it with #hashtags (Bear style) to file and filter. Notes sync across your Macs."
+        />
       </Reveal>
 
       <Reveal delay={60}>
-        <div className="mt-10 glass-strong rounded-3xl p-8">
-          <div className="flex flex-col gap-6 sm:flex-row sm:gap-10">
-            <div className="flex-1">
-              <p className="text-xs uppercase tracking-widest muted">Example</p>
-              <p className="mt-3 font-medium leading-snug">
+        <div className="panel r-panel mt-12 overflow-hidden">
+          <div className="grid sm:grid-cols-2">
+            <div className="p-8 sm:border-r sm:border-white/[0.06]">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-white/40">Example</p>
+              <p className="mt-3 text-[17px] font-medium leading-snug text-white/90">
                 "So the standup ran long today, we decided to push the API milestone to next Friday,
                 the auth bug is now Alex's, and I need to follow up with design about the onboarding
                 flow by Thursday..."
               </p>
-              <p className="mt-2 text-sm muted">40 seconds of voice, Meeting notes format selected.</p>
+              <p className="mt-3 flex items-center gap-2 text-sm text-white/45"><span className="rec-dot" /> 40 seconds of voice · Meeting notes format</p>
             </div>
-            <div className="flex-1">
-              <p className="text-xs uppercase tracking-widest muted">Verba produces</p>
-              <div className="mt-3 rounded-xl bg-[var(--tint)] p-4 text-sm font-mono leading-relaxed">
-                <p className="font-semibold not-italic">## Standup notes</p>
-                <p className="mt-1 muted">**API milestone** pushed to next Friday</p>
-                <p className="muted">**Auth bug** assigned to Alex</p>
-                <p className="muted">**Action:** follow up with design on onboarding flow by Thursday</p>
+            <div className="p-8">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-white/40">Verba produces</p>
+              <div className="mt-3 rounded-lg border border-white/[0.07] bg-black/40 p-4 font-mono text-sm leading-relaxed">
+                <p className="font-semibold text-white/90">## Standup notes</p>
+                <p className="mt-1 text-white/55">**API milestone** pushed to next Friday</p>
+                <p className="text-white/55">**Auth bug** assigned to Alex</p>
+                <p className="text-white/55">**Action:** follow up with design on onboarding flow by Thursday</p>
               </div>
-              <p className="mt-2 text-xs muted">Rendered markdown. Editable. Copyable. Tagged and synced.</p>
+              <p className="mt-3 text-xs text-white/40">Rendered markdown · editable · copyable · tagged and synced.</p>
             </div>
           </div>
         </div>
       </Reveal>
 
-      <div className="mt-8 grid gap-3 sm:grid-cols-3 lg:grid-cols-3">
-        <Reveal delay={40} className="sm:col-span-3">
-          <p className="text-center text-xs uppercase tracking-widest muted">Choose your format before you record</p>
-        </Reveal>
-        {formats.map(({ icon, label }, i) => (
-          <Reveal key={label} delay={i * 40}>
-            <div className="glass lift flex items-center gap-3 rounded-2xl px-5 py-4">
-              <Icon name={icon} className="h-6 w-6 shrink-0" />
-              <span className="text-sm font-medium">{label}</span>
-            </div>
-          </Reveal>
-        ))}
+      <div className="mt-10">
+        <Reveal delay={40}><p className="eyebrow">Choose your format before you record</p></Reveal>
+        <div className="mt-4 grid gap-2.5 sm:grid-cols-3">
+          {formats.map(({ icon, label }, i) => (
+            <Reveal key={label} delay={i * 40}>
+              <div className="card lift r-card flex items-center gap-3 px-5 py-4">
+                <Icon name={icon} className="h-5 w-5 shrink-0 text-[var(--fg-dim)]" />
+                <span className="text-sm font-medium">{label}</span>
+              </div>
+            </Reveal>
+          ))}
+        </div>
       </div>
 
       <Reveal delay={80}>
-        <div className="mt-8 grid gap-4 sm:grid-cols-3">
-          <div className="glass lift rounded-2xl p-6">
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="card lift r-card p-6">
             <p className="font-medium">Up to 60 minutes</p>
             <p className="mt-1 text-sm muted">Record a full meeting, a long brainstorm, or a detailed voice memo. Verba handles the whole thing.</p>
           </div>
-          <div className="glass lift rounded-2xl p-6">
+          <div className="card lift r-card p-6">
             <p className="font-medium">#Hashtag filing</p>
             <p className="mt-1 text-sm muted">Tag any note with #hashtags to organize and filter, exactly the way Bear works. Your notes find themselves.</p>
           </div>
-          <div className="glass lift rounded-2xl p-6">
+          <div className="card lift r-card p-6">
             <p className="font-medium">Synced across Macs</p>
             <p className="mt-1 text-sm muted">Your notes follow your account. Sign in on another Mac and they are all there, instantly.</p>
           </div>
@@ -420,24 +416,22 @@ function LanguageDetection() {
     { spoken: "Ich brauche die Rechnung bis Freitag.", written: "Ich brauche die Rechnung bis Freitag." },
   ];
   return (
-    <section className="py-24">
+    <section className="py-28">
       <Reveal>
-        <p className="text-center text-xs uppercase tracking-widest muted">Multilingual</p>
-        <h2 className="mt-3 text-center text-3xl font-semibold tracking-tight sm:text-4xl">Speak any language. It just works.</h2>
-        <p className="mx-auto mt-4 max-w-xl text-center muted text-balance">
-          Every transcription engine automatically detects the language you are speaking and writes the result
-          in that same language. French in, French out. Spanish in, Spanish out.
-          Switch mid-session, or say "in English" to override. No settings to change.
-        </p>
+        <HeadCenter
+          eyebrow="Multilingual"
+          title="Speak any language. It just works."
+          lead="Every transcription engine automatically detects the language you are speaking and writes the result in that same language. French in, French out. Switch mid-session, or say &quot;in English&quot; to override. No settings to change."
+        />
       </Reveal>
-      <div className="mt-10 grid gap-3 sm:grid-cols-2">
+      <div className="mt-12 grid gap-3 sm:grid-cols-2">
         {pairs.map(({ spoken, written }, i) => (
           <Reveal key={i} delay={i * 60}>
-            <div className="glass rounded-2xl p-5">
-              <p className="text-xs uppercase tracking-widest muted">You say</p>
-              <p className="mt-1 text-sm muted italic">"{spoken}"</p>
-              <p className="mt-3 text-xs uppercase tracking-widest muted">Verba writes</p>
-              <p className="mt-1 text-sm">{written}</p>
+            <div className="card lift r-card p-5">
+              <p className="eyebrow">You say</p>
+              <p className="mt-1.5 text-sm muted italic">"{spoken}"</p>
+              <p className="mt-3 eyebrow">Verba writes</p>
+              <p className="mt-1.5 text-sm">{written}</p>
             </div>
           </Reveal>
         ))}
@@ -460,52 +454,49 @@ function VoiceTodos() {
     { icon: "check", label: "Check off by voice", text: "“I bought the tomatoes” → Verba finds “Buy tomatoes” and ticks it. No tapping, no app-switching." },
   ];
   return (
-    <section id="todos" className="py-24">
+    <section id="todos" className="py-28">
       <Reveal>
-        <div className="mx-auto mb-4 w-fit rounded-full glass px-4 py-1.5 text-xs muted">New · Voice task manager</div>
-        <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
-          A Task Manager you just talk to
-        </h2>
-        <p className="mx-auto mt-4 max-w-2xl text-center muted text-balance">
-          Press a key, talk, and Verba builds projects, tasks and sub-tasks, sets date-and-time
-          deadlines, reminds you, and checks things off, all by voice, and it can even generate a
-          whole list for you. No other dictation app has a built-in task manager, let alone one this smart.
-        </p>
+        <HeadLeft
+          eyebrow="New · Voice task manager"
+          anchor
+          title="A Task Manager you just talk to"
+          lead="Press a key, talk, and Verba builds projects, tasks and sub-tasks, sets date-and-time deadlines, reminds you, and checks things off — all by voice. It can even generate a whole list for you. No other dictation app has a built-in task manager, let alone one this smart."
+        />
       </Reveal>
 
       <Reveal delay={60}>
-        <div className="mt-10 glass-strong rounded-3xl p-8">
-          <div className="flex flex-col gap-6 sm:flex-row sm:gap-10">
-            <div className="flex-1">
-              <p className="text-xs uppercase tracking-widest muted">You say</p>
-              <p className="mt-3 font-medium leading-snug">
+        <div className="panel r-panel mt-12 overflow-hidden">
+          <div className="grid sm:grid-cols-2">
+            <div className="p-8 sm:border-r sm:border-white/[0.06]">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-white/40">You say</p>
+              <p className="mt-3 text-[17px] font-medium leading-snug text-white/90">
                 "Add to my groceries: tomatoes, pasta and parmesan. Oh and I already bought the bread.
                 Pay the electricity bill Friday at 6pm."
               </p>
-              <p className="mt-2 text-sm muted">One press, one sentence.</p>
+              <p className="mt-3 flex items-center gap-2 text-sm text-white/45"><span className="rec-dot" /> One press, one sentence.</p>
             </div>
-            <div className="flex-1">
-              <p className="text-xs uppercase tracking-widest muted">Verba does</p>
-              <div className="mt-3 space-y-2 rounded-xl bg-[var(--tint)] p-4 text-sm">
-                <p className="font-semibold">Groceries</p>
-                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-current opacity-40" /> Tomatoes</p>
-                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-current opacity-40" /> Pasta</p>
-                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-current opacity-40" /> Parmesan</p>
-                <p className="flex items-center gap-2 muted line-through"><Icon name="check" className="h-4 w-4 text-green-500" /> Bread</p>
-                <p className="mt-2 font-semibold">Bills</p>
-                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-current opacity-40" /> Pay electricity <span className="rounded bg-[var(--tint-strong)] px-1.5 py-0.5 text-xs">Fri 18:00</span></p>
+            <div className="p-8">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-white/40">Verba does</p>
+              <div className="mt-3 space-y-2 rounded-lg border border-white/[0.07] bg-black/40 p-4 text-sm text-white/85">
+                <p className="font-semibold text-white">Groceries</p>
+                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/30" /> Tomatoes</p>
+                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/30" /> Pasta</p>
+                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/30" /> Parmesan</p>
+                <p className="flex items-center gap-2 text-white/40 line-through"><Icon name="check" className="h-4 w-4 text-[#6ee7a8]" /> Bread</p>
+                <p className="mt-2 font-semibold text-white">Bills</p>
+                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/30" /> Pay electricity <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs tnum">Fri 18:00</span></p>
               </div>
-              <p className="mt-2 text-xs muted">Filed, dated, and one already checked, automatically.</p>
+              <p className="mt-3 text-xs text-white/40">Filed, dated, and one already checked, automatically.</p>
             </div>
           </div>
         </div>
       </Reveal>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map(({ icon, label, text }, i) => (
           <Reveal key={label} delay={i * 60}>
-            <div className="glass lift flex h-full flex-col gap-3 rounded-2xl p-6">
-              <Icon name={icon} className="h-7 w-7" />
+            <div className="card lift r-card flex h-full flex-col gap-2.5 p-6">
+              <Icon name={icon} className="h-5 w-5 text-[var(--fg-dim)]" />
               <p className="font-medium">{label}</p>
               <p className="text-sm muted">{text}</p>
             </div>
@@ -525,45 +516,42 @@ function TranslateMode() {
     { code: "DE", from: "You speak German", said: "Ich melde mich morgen mit den Details.", out: "I'll get back to you tomorrow with the details." },
   ];
   return (
-    <section id="translate" className="py-24">
+    <section id="translate" className="border-y hairline bg-[var(--bg-2)] py-28">
       <Reveal>
-        <div className="mx-auto mb-4 w-fit rounded-full glass px-4 py-1.5 text-xs muted">New mode</div>
-        <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
-          Translate: think in your language, write in theirs
-        </h2>
-        <p className="mx-auto mt-4 max-w-xl text-center muted text-balance">
-          Pick a target language once. Then just talk, in whatever language is natural to you,
-          and Verba writes it out fluently in the one you chose. No "translate this" prefix,
-          no copy-paste into another tab. Speak French, send English. Every single time.
-        </p>
+        <HeadLeft
+          eyebrow="New mode · Translate"
+          anchor
+          title={<>Think in your language,<br />write in theirs</>}
+          lead="Pick a target language once. Then just talk, in whatever language is natural to you, and Verba writes it out fluently in the one you chose. No &quot;translate this&quot; prefix, no copy-paste into another tab. Speak French, send English. Every single time."
+        />
       </Reveal>
 
-      <div className="mt-10 grid gap-3 sm:grid-cols-3">
+      <div className="mt-12 grid gap-3 sm:grid-cols-3">
         {pairs.map((p, i) => (
           <Reveal key={i} delay={i * 70}>
-            <div className="glass lift flex h-full flex-col rounded-2xl p-6">
+            <div className="card lift r-card flex h-full flex-col p-6">
               <div className="flex items-center gap-2">
-                <span className="rounded-md bg-[var(--tint)] px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wider">{p.code}</span>
-                <p className="text-xs uppercase tracking-widest muted">{p.from}</p>
+                <span className="rounded border border-[var(--border-strong)] bg-[var(--tint)] px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wider">{p.code}</span>
+                <p className="eyebrow">{p.from}</p>
               </div>
-              <p className="mt-2 text-sm muted italic">"{p.said}"</p>
-              <div className="my-3 h-px bg-[var(--border)]" />
-              <p className="text-xs uppercase tracking-widest muted">Verba writes (English)</p>
-              <p className="mt-1 text-sm">{p.out}</p>
+              <p className="mt-3 text-sm muted italic">"{p.said}"</p>
+              <div className="my-4 h-px bg-[var(--border)]" />
+              <p className="eyebrow">Verba writes (English)</p>
+              <p className="mt-1.5 text-sm">{p.out}</p>
             </div>
           </Reveal>
         ))}
       </div>
 
       <Reveal delay={80}>
-        <div className="mt-8 glass-strong rounded-3xl p-8">
-          <p className="text-center text-xs uppercase tracking-widest muted">Choose any target language</p>
+        <div className="card r-card mt-4 p-8">
+          <p className="eyebrow text-center">Choose any target language</p>
           <div className="mt-5 flex flex-wrap justify-center gap-2">
             {langs.map((l) => (
-              <span key={l} className="rounded-full bg-[var(--tint)] px-3.5 py-1.5 text-sm">{l}</span>
+              <span key={l} className="rounded-full border border-[var(--border)] bg-[var(--tint)] px-3.5 py-1.5 text-sm">{l}</span>
             ))}
           </div>
-          <p className="mt-6 text-center text-sm muted text-balance">
+          <p className="mx-auto mt-6 max-w-2xl text-center text-sm muted text-balance">
             Set it per mode, or make a dedicated mode per language and auto-switch by app.
             Tone, intent, names, numbers and code are all preserved. Uses your default model.
           </p>
@@ -585,19 +573,20 @@ function WhyBest() {
     ["One press, then done", "Tap Fn, talk, and clean text lands where your cursor is. Hands-free formatting, redo in another mode, edit the last result by voice. No app switching, ever."],
   ];
   return (
-    <section id="why" className="py-24">
+    <section id="why" className="py-28">
       <Reveal>
-        <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">Why Verba wins</h2>
-        <p className="mx-auto mt-4 max-w-xl text-center muted text-balance">
-          Other apps transcribe. Verba is a full voice workspace: it reads, writes, organizes,
-          translates, and acts, on your terms, on your Mac, with your AI.
-        </p>
+        <HeadCenter
+          title="Why Verba wins"
+          lead="Other apps transcribe. Verba is a full voice workspace: it reads, writes, organizes, translates, and acts — on your terms, on your Mac, with your AI."
+        />
       </Reveal>
-      <div className="mt-12 grid gap-4 sm:grid-cols-2">
+      <div className="mt-12 grid gap-3 sm:grid-cols-2">
         {edges.map(([t, d], i) => (
           <Reveal key={t} delay={(i % 2) * 60}>
-            <div className="glass lift flex h-full gap-4 rounded-2xl p-6">
-              <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--fg)] text-xs font-semibold text-[var(--bg)]">✓</span>
+            <div className="card lift r-card flex h-full gap-4 p-6">
+              <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--fg)] text-[var(--bg)]">
+                <MicGlyph size={11} />
+              </span>
               <div>
                 <h3 className="font-medium">{t}</h3>
                 <p className="mt-1.5 text-sm muted">{d}</p>
@@ -628,39 +617,41 @@ function CompareTable() {
     ["Price / month", ["$9.99", "$12-15", "$8.49", "$10-17"]],
   ];
   const cell = (v: boolean | string) =>
-    v === true ? <span className="text-[var(--fg)]">✓</span>
-      : v === false ? <span className="muted opacity-40">—</span>
+    v === true ? <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] bg-[var(--fg)] text-[var(--bg)]"><MicGlyph size={9} /></span>
+      : v === false ? <span className="faint">—</span>
       : <span className="text-xs muted">{v}</span>;
   return (
-    <section className="py-24">
+    <section className="py-28">
       <Reveal>
-        <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">How Verba compares</h2>
-        <p className="mx-auto mt-4 max-w-xl text-center muted text-balance">
-          The honest, side-by-side. Verba does more, keeps your data on your Mac, and costs less.
-        </p>
+        <HeadCenter
+          title="How Verba compares"
+          lead="The honest, side-by-side. Verba does more, keeps your data on your Mac, and costs less."
+        />
       </Reveal>
       <Reveal delay={60}>
-        <div className="mt-10 overflow-x-auto">
+        <div className="card r-panel mt-12 overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead>
-              <tr className="border-b hairline">
-                <th className="py-3 pr-4 text-left font-normal muted">Feature</th>
+              <tr className="border-b border-[var(--border)]">
+                <th className="px-5 py-4 text-left font-normal muted">Feature</th>
                 {cols.map((c, i) => (
-                  <th key={c} className={`px-3 py-3 text-center font-semibold ${i === 0 ? "text-[var(--fg)]" : "muted"}`}>{c}</th>
+                  <th key={c} className={`px-3 py-4 text-center font-semibold ${i === 0 ? "text-[var(--fg)]" : "muted"}`}>{c}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {rows.map(([label, vals]) => (
-                <tr key={label} className="border-b hairline">
-                  <td className="py-3 pr-4 text-left">{label}</td>
+                <tr key={label} className="border-b border-[var(--border)] last:border-0">
+                  <td className="px-5 py-3.5 text-left">{label}</td>
                   {vals.map((v, i) => (
-                    <td key={i} className={`px-3 py-3 text-center ${i === 0 ? "bg-[var(--tint)]" : ""}`}>{cell(v)}</td>
+                    <td key={i} className={`px-3 py-3.5 text-center ${i === 0 ? "bg-[var(--tint)]" : ""}`}>{cell(v)}</td>
                   ))}
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </Reveal>
       <Reveal delay={100}>
@@ -680,26 +671,28 @@ function ModesModels() {
     ["Custom", "Your choice", "Define your own system prompt. Make Verba write exactly the way you need it to."],
   ];
   return (
-    <section className="py-24">
+    <section className="py-28">
       <Reveal>
-        <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">Six modes, the right model for each</h2>
-        <p className="mx-auto mt-4 max-w-xl text-center muted text-balance">
-          Every mode routes to the model that fits: cheap and instant for quick polish, more
-          powerful where it matters. You stay in control of cost and quality.
-        </p>
+        <HeadCenter
+          title="Six modes, the right model for each"
+          lead="Every mode routes to the model that fits: cheap and instant for quick polish, more powerful where it matters. You stay in control of cost and quality."
+        />
       </Reveal>
-      <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {rows.map(([mode, model, desc], i) => (
+      <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {rows.map(([mode, model, desc], i) => {
+          const isContext = mode === "Context";
+          return (
           <Reveal key={mode} delay={i * 60}>
-            <div className={`glass lift flex h-full flex-col rounded-2xl p-6 ${mode === "Context" ? "ring-1 ring-[var(--border)] col-span-full sm:col-span-2 lg:col-span-3" : ""}`}>
+            <div className={`${isContext ? "panel" : "card lift"} r-card flex h-full flex-col p-6 ${isContext ? "col-span-full sm:col-span-2 lg:col-span-3" : ""}`}>
               <div className="flex items-center justify-between">
-                <h3 className="font-medium">{mode}</h3>
-                <span className="rounded-full bg-[var(--tint)] px-2.5 py-1 text-xs">{model}</span>
+                <h3 className={`font-medium ${isContext ? "text-white" : ""}`}>{mode}</h3>
+                <span className={`rounded-full px-2.5 py-1 text-xs tnum ${isContext ? "border border-white/10 bg-white/[0.05] text-white/70" : "border border-[var(--border)] bg-[var(--tint)]"}`}>{model}</span>
               </div>
-              <p className="mt-2 text-sm muted">{desc}</p>
+              <p className={`mt-2 text-sm ${isContext ? "text-white/60" : "muted"}`}>{desc}</p>
             </div>
           </Reveal>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
@@ -707,15 +700,17 @@ function ModesModels() {
 
 function CompareTeaser() {
   return (
-    <section className="py-24">
+    <section className="py-28">
       <Reveal>
-        <div className="glass-strong overflow-hidden rounded-3xl p-10 text-center">
-          <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Cloud tools upload your voice. Verba doesn't.</h2>
-          <p className="mx-auto mt-4 max-w-xl muted text-balance">
+        {/* full-bleed dark statement moment — quiet, type-led */}
+        <div className="panel r-panel relative overflow-hidden px-8 py-16 text-center sm:px-12 sm:py-20">
+          <div className="mx-auto mb-7 w-fit"><MicMark size={40} glyph={20} /></div>
+          <h2 className="t-statement mx-auto max-w-3xl text-balance text-white">Cloud tools upload your voice. Verba doesn't.</h2>
+          <p className="mx-auto mt-5 max-w-xl text-balance text-white/55">
             Wispr Flow, Aqua and Willow send every word to their servers and charge $12-17/mo.
             Verba runs on your Mac, lets you bring your own AI account, and costs $9.99.
           </p>
-          <Link href="/compare" className="mt-8 inline-block rounded-full bg-[var(--fg)] px-7 py-3 font-medium text-[var(--bg)] hover:opacity-90">
+          <Link href="/compare" className="mt-9 inline-flex items-center gap-2 rounded-[10px] bg-white px-7 py-3 font-medium text-black transition hover:opacity-90">
             See the full comparison
           </Link>
         </div>
@@ -743,12 +738,29 @@ function Features() {
     ["Synced to your account", "Your history, notes, and stats follow you. Sign in on another Mac and everything is there."],
     ["Automatic language detection", "Every transcription engine detects the language you are speaking and writes the result in that same language. No settings to change."],
   ];
+  const [hero, ...rest] = items;
   return (
-    <section id="features" className="py-24">
-      <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">Everything you say, written better</h2>
-      <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map(([t, d]) => (
-          <div key={t} className="glass lift rounded-2xl p-6">
+    <section id="features" className="py-28">
+      <HeadLeft
+        eyebrow="The full kit"
+        anchor
+        title="Everything you say, written better"
+        lead="Sixteen things Verba does once your cursor is in the box. The first one is the whole promise; the rest are why people stay."
+      />
+      <div className="mt-12 grid gap-3 lg:grid-cols-3">
+        {/* hero feature — weighted, in product chrome, breaks the equal grid */}
+        <div className="panel r-card flex flex-col justify-between p-7 lg:row-span-2">
+          <div className="flex items-center gap-3">
+            <span className="mic-mark" style={{ width: 34, height: 34, borderRadius: 9 }}><MicGlyph size={16} /></span>
+            <span className="text-[11px] uppercase tracking-[0.16em] text-white/40">The core move</span>
+          </div>
+          <div className="mt-10">
+            <h3 className="text-xl font-semibold text-white">{hero[0]}</h3>
+            <p className="mt-2.5 text-[15px] leading-relaxed text-white/60">{hero[1]}</p>
+          </div>
+        </div>
+        {rest.map(([t, d]) => (
+          <div key={t} className="card lift r-card p-6">
             <h3 className="font-medium">{t}</h3>
             <p className="mt-2 text-sm muted">{d}</p>
           </div>
@@ -765,13 +777,16 @@ function How() {
     ["Done", "Clean, formatted text appears right where you were typing."],
   ];
   return (
-    <section id="how" className="py-24">
-      <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">From voice to done in one press</h2>
-      <div className="mt-12 grid gap-4 sm:grid-cols-3">
+    <section id="how" className="py-28">
+      <HeadCenter title="From voice to done in one press" />
+      <div className="mt-12 grid gap-3 sm:grid-cols-3">
         {steps.map(([t, d], i) => (
-          <div key={t} className="glass-strong rounded-2xl p-7">
-            <div className="text-2xl font-semibold tabular-nums">{i + 1}</div>
-            <h3 className="mt-2 font-medium">{t}</h3>
+          <div key={t} className="card r-card relative p-7">
+            <div className="flex items-center justify-between">
+              <span className="text-3xl font-semibold tabular-nums text-[var(--faint)]">{i + 1}</span>
+              {i === 0 && <span className="rec-dot pulse" />}
+            </div>
+            <h3 className="mt-4 font-medium">{t}</h3>
             <p className="mt-1.5 text-sm muted">{d}</p>
           </div>
         ))}
@@ -803,14 +818,14 @@ function Pricing() {
   }
 
   return (
-    <section id="pricing" className="py-24">
-      <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">Start free. Go Pro when you’re hooked.</h2>
-      <div className="mx-auto mt-7 flex w-fit items-center gap-1 rounded-full glass p-1 text-sm">
+    <section id="pricing" className="py-28">
+      <HeadCenter title={<>Start free. Go Pro when you&rsquo;re hooked.</>} />
+      <div className="mx-auto mt-8 flex w-fit items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--tint)] p-1 text-sm">
         {[["Monthly", false], ["Annual · save 22%", true]].map(([label, a]) => (
           <button
             key={String(label)}
             onClick={() => setAnnual(a as boolean)}
-            className={`rounded-full px-5 py-2 transition ${annual === a ? "bg-[var(--fg)] text-[var(--bg)]" : "muted"}`}
+            className={`rounded-full px-5 py-2 transition ${annual === a ? "bg-[var(--fg)] text-[var(--bg)] font-medium" : "muted"}`}
           >
             {label}
           </button>
@@ -818,44 +833,46 @@ function Pricing() {
       </div>
 
       <div className="mx-auto mt-10 grid max-w-3xl gap-4 sm:grid-cols-2">
-        {/* Free */}
-        <div className="glass rounded-3xl p-8">
+        {/* Free — flat supporting card */}
+        <div className="card r-panel p-8">
           <h3 className="text-lg font-medium">Free</h3>
-          <div className="mt-3 text-4xl font-semibold">$0</div>
+          <div className="mt-3 text-4xl font-semibold tnum">$0</div>
           <p className="mt-1 text-sm muted">Try everything, 33 dictations, no card.</p>
-          <ul className="mt-6 space-y-2 text-sm muted">
+          <ul className="mt-6 space-y-2.5 text-sm muted">
             {["33 dictations to try, full Pro features", "On-device or cloud transcription", "All modes + voice formatting", "No card required"].map((b) => (
-              <li key={b} className="flex gap-2"><span className="text-white/80">•</span>{b}</li>
+              <li key={b} className="flex gap-2.5"><span className="text-[var(--accent-line)]">·</span>{b}</li>
             ))}
           </ul>
-          <a href={DOWNLOAD_URL} className="mt-7 block w-full rounded-xl glass px-6 py-3 text-center font-medium hover:bg-[var(--tint-strong)]">
+          <a href={DOWNLOAD_URL} className="btn-ghost mt-7 block w-full px-6 py-3 text-center">
             Download free
           </a>
         </div>
 
-        {/* Pro */}
-        <div className="glass-strong rounded-3xl p-8 ring-1 ring-[var(--border)]">
+        {/* Pro — the ONE glass-budget moment among pricing: solid panel chrome */}
+        <div className="panel r-panel p-8">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium">Pro</h3>
-            <span className="rounded-full bg-[var(--tint)] px-2.5 py-1 text-xs">Most popular</span>
+            <h3 className="text-lg font-medium text-white">Pro</h3>
+            <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs text-white/70">
+              <span className="rec-dot" /> Most popular
+            </span>
           </div>
-          <div className="mt-3 flex items-end gap-1">
-            <span className="text-4xl font-semibold">{PRICE[plan].amount}</span>
-            <span className="mb-1 text-sm muted">{PRICE[plan].sub}</span>
+          <div className="mt-3 flex items-end gap-1 text-white">
+            <span className="text-4xl font-semibold tnum">{PRICE[plan].amount}</span>
+            <span className="mb-1 text-sm text-white/50">{PRICE[plan].sub}</span>
           </div>
-          <p className="mt-1 text-sm muted">{PRICE[plan].note} · 7-day trial</p>
-          <ul className="mt-6 space-y-2 text-sm">
+          <p className="mt-1 text-sm text-white/50 tnum">{PRICE[plan].note} · 7-day trial</p>
+          <ul className="mt-6 space-y-2.5 text-sm text-white/85">
             {["Unlimited dictation", "All modes + custom modes", "Voice-command formatting", "Sync across your Macs", "Priority support"].map((b) => (
-              <li key={b} className="flex gap-2"><span className="text-[var(--fg)]">✓</span>{b}</li>
+              <li key={b} className="flex items-center gap-2.5"><span className="inline-flex h-4 w-4 items-center justify-center rounded-[4px] bg-white text-black"><MicGlyph size={8} /></span>{b}</li>
             ))}
           </ul>
           {isSignedIn ? (
-            <button onClick={checkout} disabled={loading} className="mt-7 w-full rounded-xl bg-[var(--fg)] px-6 py-3 font-medium text-[var(--bg)] hover:opacity-90 disabled:opacity-60">
+            <button onClick={checkout} disabled={loading} className="mt-7 w-full rounded-[10px] bg-white px-6 py-3 font-medium text-black transition hover:opacity-90 disabled:opacity-60">
               {loading ? "Redirecting…" : "Start 7-day trial"}
             </button>
           ) : (
             <SignInButton mode="modal" forceRedirectUrl="/#pricing">
-              <button className="mt-7 w-full rounded-xl bg-[var(--fg)] px-6 py-3 font-medium text-[var(--bg)] hover:opacity-90">
+              <button className="mt-7 w-full rounded-[10px] bg-white px-6 py-3 font-medium text-black transition hover:opacity-90">
                 Sign in to start trial
               </button>
             </SignInButton>
@@ -882,18 +899,20 @@ function FAQ() {
     ["How does the Translate mode work?", "Pick a target language once in the Translate mode (English, French, Spanish, German, Italian, Portuguese, Dutch, Russian, Chinese, Japanese, Korean, Arabic, Hindi, Turkish, Polish). Then just speak in whatever language is natural to you and Verba writes the result in your chosen language, every time, preserving tone, names, numbers and code. You can also make a dedicated mode per language and auto-switch it by app."],
   ];
   return (
-    <section className="py-24">
+    <section className="py-28">
       <Reveal>
-        <h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">Questions, answered</h2>
-        <p className="mx-auto mt-4 max-w-lg text-center muted text-balance">Everything you’d want to know before you press the key.</p>
+        <HeadCenter
+          title="Questions, answered"
+          lead="Everything you'd want to know before you press the key."
+        />
       </Reveal>
-      <div className="mx-auto mt-12 grid max-w-3xl gap-3">
+      <div className="mx-auto mt-12 grid max-w-3xl gap-2.5">
         {qa.map(([q, a], i) => (
-          <Reveal key={q} delay={i * 50}>
-            <details className="group glass rounded-2xl px-6 py-5 transition hover:bg-[var(--tint-strong)]">
+          <Reveal key={q} delay={i * 40}>
+            <details className="group card r-card px-6 py-5 transition">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
                 {q}
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--tint)] text-lg leading-none transition-transform duration-300 group-open:rotate-45">+</span>
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--tint)] text-lg leading-none transition-transform duration-300 group-open:rotate-45">+</span>
               </summary>
               <p className="mt-4 text-sm leading-relaxed muted">{a}</p>
             </details>
@@ -906,10 +925,10 @@ function FAQ() {
 
 function Footer() {
   return (
-    <footer className="flex flex-col items-center gap-3 border-t hairline py-12 text-sm muted">
+    <footer className="flex flex-col items-center gap-3 border-t hairline py-14 text-sm muted">
       <Logo />
       <p>Speak it. Send it clean.</p>
-      <div className="flex flex-wrap justify-center gap-5">
+      <div className="mt-1 flex flex-wrap justify-center gap-5">
         <a href="/account" className="hover:text-[var(--fg)]">Account</a>
         <Link href="/compare" className="hover:text-[var(--fg)]">Compare</Link>
         <Link href="/changelog" className="hover:text-[var(--fg)]">Changelog</Link>
