@@ -19,6 +19,14 @@ const DAYS: Day[] = [
       "A huge day: a redesigned site, hold-to-talk and reliable pause, mid-sentence mode switching, editable Note modes, layered writing Styles, smarter Transforms, a Transcripts library, concurrent sessions, and a sharper Task Manager agent.",
     entries: [
       {
+        version: "0.1.94 – 0.1.95",
+        title: "A Task Manager widget, and a smarter Wishlist",
+        items: [
+          "New macOS widget: add Verba's Task Manager to Notification Center or your desktop and see today's tasks at a glance, in the native widget look.",
+          "The Wishlist now shows a \u201cDeveloped\u201d badge once a request ships, and you can no longer upvote something that's already built.",
+        ],
+      },
+      {
         version: "0.1.93",
         title: "See your parallel results, and a smarter feedback box",
         items: [
