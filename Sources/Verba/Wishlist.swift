@@ -6,22 +6,39 @@ struct WishItem: Identifiable, Decodable {
     let author: String
     let votes: Double
     let voters: [String]
+    let shipped: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case id, text, author, votes, voters, shipped
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        text = try c.decode(String.self, forKey: .text)
+        author = try c.decode(String.self, forKey: .author)
+        votes = try c.decode(Double.self, forKey: .votes)
+        voters = try c.decode([String].self, forKey: .voters)
+        // The bridge always sends shipped; tolerate its absence to stay forward/backward compatible.
+        shipped = (try? c.decodeIfPresent(Bool.self, forKey: .shipped)) ?? false
+    }
 }
 
-/// Shared feature wishlist with upvotes, backed by the same Convex deployment.
+/// Shared feature wishlist with upvotes, routed through the verba.run bridge so the
+/// app receives the `shipped` flag (derived from the linked Linear issue's state).
 enum Wishlist {
-    private static let base = "https://fortunate-aardvark-443.convex.cloud"
+    private static let endpoint = "https://verba.run/api/wishlist"
     static var myUID: String {
         let s = Settings.shared
         return s.uid
     }
 
     static func list(_ done: @escaping ([WishItem]) -> Void) {
-        post("query", "wishlist:list", [:]) { data in
+        get { data in
             guard let data,
                   let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  obj["status"] as? String == "success",
-                  let value = obj["value"],
+                  obj["ok"] as? Bool == true,
+                  let value = obj["items"],
                   let vd = try? JSONSerialization.data(withJSONObject: value),
                   let items = try? JSONDecoder().decode([WishItem].self, from: vd) else {
                 DispatchQueue.main.async { done([]) }; return
@@ -31,23 +48,30 @@ enum Wishlist {
     }
 
     static func add(_ text: String, _ done: @escaping () -> Void) {
-        post("mutation", "wishlist:add", ["uid": myUID, "alias": Settings.shared.username, "text": text]) { _ in
+        post(["action": "add", "uid": myUID, "alias": Settings.shared.username, "text": text]) { _ in
             DispatchQueue.main.async { done() }
         }
     }
 
     static func upvote(_ id: String, _ done: @escaping () -> Void) {
-        post("mutation", "wishlist:upvote", ["id": id, "uid": myUID]) { _ in
+        post(["action": "upvote", "id": id, "uid": myUID]) { _ in
             DispatchQueue.main.async { done() }
         }
     }
 
-    private static func post(_ kind: String, _ path: String, _ args: [String: Any], _ cb: @escaping (Data?) -> Void) {
-        guard let url = URL(string: "\(base)/api/\(kind)") else { cb(nil); return }
+    private static func get(_ cb: @escaping (Data?) -> Void) {
+        guard let url = URL(string: endpoint) else { cb(nil); return }
+        var req = URLRequest(url: url)
+        req.httpMethod = "GET"
+        URLSession.shared.dataTask(with: req) { d, _, _ in cb(d) }.resume()
+    }
+
+    private static func post(_ body: [String: Any], _ cb: @escaping (Data?) -> Void) {
+        guard let url = URL(string: endpoint) else { cb(nil); return }
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "content-type")
-        req.httpBody = try? JSONSerialization.data(withJSONObject: ["path": path, "args": args, "format": "json"])
+        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
         URLSession.shared.dataTask(with: req) { d, _, _ in cb(d) }.resume()
     }
 }

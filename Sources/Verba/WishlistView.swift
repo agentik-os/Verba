@@ -61,22 +61,36 @@ struct WishlistView: View {
 
     private func row(_ item: WishItem) -> some View {
         let voted = item.voters.contains(myUID)
+        let shipped = item.shipped
         return HStack(spacing: 14) {
-            Button { Wishlist.upvote(item.id) { model.load() } } label: {
+            Button { if !shipped { Wishlist.upvote(item.id) { model.load() } } } label: {
                 VStack(spacing: 1) {
-                    Image(systemName: voted ? "arrowtriangle.up.fill" : "arrowtriangle.up")
+                    Image(systemName: shipped ? "checkmark.circle.fill"
+                          : (voted ? "arrowtriangle.up.fill" : "arrowtriangle.up"))
                     Text("\(Int(item.votes))").font(.caption.weight(.semibold))
                 }
                 .frame(width: 46)
-                .foregroundStyle(voted ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+                .foregroundStyle(shipped ? AnyShapeStyle(.green)
+                                 : (voted ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary)))
             }
             .buttonStyle(.plain)
+            .disabled(shipped)
+            .help(shipped ? "Shipped — already built" : "Upvote")
             .padding(.vertical, 8)
-            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(voted ? Color.primary.opacity(0.1) : Color.primary.opacity(0.04)))
+            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(voted && !shipped ? Color.primary.opacity(0.1) : Color.primary.opacity(0.04)))
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.text).fixedSize(horizontal: false, vertical: true)
-                Text("by \(item.author)").font(.caption2).foregroundStyle(.tertiary)
+                HStack(spacing: 6) {
+                    Text("by \(item.author)").font(.caption2).foregroundStyle(.tertiary)
+                    if shipped {
+                        Text("SHIPPED")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.green)
+                            .padding(.horizontal, 6).padding(.vertical, 1)
+                            .background(Capsule().fill(Color.green.opacity(0.15)))
+                    }
+                }
             }
             Spacer(minLength: 0)
         }
