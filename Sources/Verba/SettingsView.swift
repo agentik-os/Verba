@@ -27,6 +27,9 @@ struct SettingsView: View {
     @State private var engineRefresh = 0
     @State private var activating = false
     @State private var cacheBytes: Int64 = 0
+    @ObservedObject private var updater = Updater.shared
+    @State private var autoCheck = Updater.shared.autoCheck
+    @State private var autoDownload = Updater.shared.autoDownload
 
     private let claudeModels = ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-8"]
     private let localModels = ["base", "small", "large-v3-v20240930_turbo", "large-v3"]
@@ -37,6 +40,7 @@ struct SettingsView: View {
             generalSections
             permissionsSection
             storageSection
+            updatesSection
             keySections
             planSections
         }
@@ -645,6 +649,42 @@ struct SettingsView: View {
                 .font(.caption).foregroundStyle(.secondary)
         }
         .onAppear { cacheBytes = History.shared.audioCacheBytes() }
+    }
+
+    // MARK: Updates — Sparkle auto-update controls + current version / last-checked.
+    @ViewBuilder private var updatesSection: some View {
+        Section {
+            Toggle("Automatically check for updates", isOn: Binding(
+                get: { autoCheck },
+                set: { autoCheck = $0; updater.autoCheck = $0 }))
+            Toggle("Automatically download & install updates", isOn: Binding(
+                get: { autoDownload },
+                set: { autoDownload = $0; updater.autoDownload = $0 }))
+            HStack {
+                Label("Current version", systemImage: "app.badge")
+                Spacer()
+                Text("v\(Updater.currentVersion)").foregroundStyle(.secondary)
+            }
+            if updater.updateAvailable, let v = updater.latestVersion {
+                Label("Update available: v\(v)", systemImage: "arrow.down.circle.fill")
+                    .font(.caption).foregroundStyle(.blue)
+            }
+            if let when = updater.lastChecked {
+                HStack {
+                    Text("Last checked").foregroundStyle(.secondary)
+                    Spacer()
+                    Text(when.formatted(date: .abbreviated, time: .shortened)).foregroundStyle(.secondary)
+                }
+                .font(.caption)
+            }
+            Button { Updater.shared.checkForUpdates() } label: {
+                Label("Check now", systemImage: "arrow.triangle.2.circlepath")
+            }
+        } header: { Text("Updates") } footer: {
+            Text("Verba updates itself in the background via signed releases. Turn off automatic checks to update only when you press “Check now”.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+        .onAppear { autoCheck = updater.autoCheck; autoDownload = updater.autoDownload }
     }
 
     private func byteString(_ b: Int64) -> String {

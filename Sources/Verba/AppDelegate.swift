@@ -119,6 +119,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             FnSystemPref.suppress()
         }
         _ = Updater.shared   // start Sparkle (scheduled background update checks)
+        // Silent check shortly after launch so the menu/icon reflect availability without a popup.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4) { Updater.shared.checkInBackground() }
+        // When Sparkle's delegate flips update availability, rebuild the menu + re-badge the icon.
+        Updater.shared.$updateAvailable
+            .removeDuplicates().receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.refreshUI() }
+            .store(in: &cancellables)
         TodoReminders.shared.start()   // schedule "30 min before deadline" to-do reminders, keep them in sync
 
         // Re-apply hotkeys when the primary shortcut, profiles, or Fn option change.
@@ -1499,16 +1506,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // the glyph change + the blinking pulse (no red).
         let color: NSColor = .white
         let cfg = NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)
+        let updateReady = Updater.shared.updateAvailable
         if let base = NSImage(systemSymbolName: symbol, accessibilityDescription: "Verba")?.withSymbolConfiguration(cfg) {
             let tinted = NSImage(size: base.size, flipped: false) { rect in
                 base.draw(in: rect)
                 color.set()
                 rect.fill(using: .sourceAtop)
+                // Availability badge: a small dot in the top-right corner when an update is ready.
+                if updateReady {
+                    let d: CGFloat = 5
+                    let dot = NSRect(x: rect.maxX - d, y: rect.maxY - d, width: d, height: d)
+                    NSColor.systemBlue.setFill()
+                    NSBezierPath(ovalIn: dot).fill()
+                }
                 return true
             }
             tinted.isTemplate = false
             button.image = tinted
         }
+        button.toolTip = updateReady
+            ? "Verba update ready" + (Updater.shared.latestVersion.map { " (v\($0))" } ?? "")
+            : nil
         button.contentTintColor = nil
         updateStatusPulse()
         statusItem.menu = buildMenu()
@@ -1540,6 +1558,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         scParent.submenu = buildShortcutsMenu()
         menu.addItem(scParent)
         menu.addItem(.separator())
+
+        // Prominent "an update is ready" item at the very top when Sparkle found a newer version.
+        if Updater.shared.updateAvailable {
+            let v = Updater.shared.latestVersion.map { " (v\($0))" } ?? ""
+            let upd = NSMenuItem(title: "Install update\(v) — relaunch", action: #selector(installUpdate), keyEquivalent: "")
+            upd.target = self
+            upd.image = NSImage(systemSymbolName: "arrow.down.circle.fill", accessibilityDescription: "Install update")
+            let font = NSFont.menuFont(ofSize: 0)
+            upd.attributedTitle = NSAttributedString(string: upd.title,
+                attributes: [.font: NSFont.boldSystemFont(ofSize: font.pointSize)])
+            menu.addItem(upd)
+            menu.addItem(.separator())
+        }
 
         let title: String
         switch state {
@@ -1804,6 +1835,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         runSession(ctx, forcedProfile: profile, selection: nil)
     }
     @objc private func checkUpdates() { Updater.shared.checkForUpdates() }
+    @objc private func installUpdate() { Updater.shared.installUpdate() }
     @objc private func quit() { NSApp.terminate(nil) }
 
     // MARK: - Windows
