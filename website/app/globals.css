@@ -194,7 +194,9 @@ body::after {
 .r-card { border-radius: 12px; }
 .r-panel { border-radius: 16px; }
 
-.hairline { border: 1px solid var(--border); }
+/* Color/style only — the side (border-y / border-t) decides which edges show, so
+   `border-y hairline` is a clean top+bottom divider, never a full enclosing box. */
+.hairline { border-color: var(--border); border-style: solid; }
 .muted { color: var(--muted); }
 .faint { color: var(--faint); }
 .text-balance { text-wrap: balance; }

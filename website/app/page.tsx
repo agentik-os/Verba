@@ -76,7 +76,7 @@ function Nav() {
 
 function Hero() {
   return (
-    <section className="relative grid gap-12 pb-16 pt-16 sm:pt-24 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-center lg:gap-10">
+    <section className="relative grid gap-12 pb-16 pt-16 sm:pt-24 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.82fr)] lg:items-center lg:gap-16">
       {/* Left: opinionated, tight copy column */}
       <div>
         <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--tint)] px-3 py-1.5 text-xs muted">
