@@ -19,6 +19,14 @@ const DAYS: Day[] = [
       "A huge day: a redesigned site, hold-to-talk and reliable pause, mid-sentence mode switching, editable Note modes, layered writing Styles, smarter Transforms, a Transcripts library, concurrent sessions, and a sharper Task Manager agent.",
     entries: [
       {
+        version: "0.1.86 – 0.1.87",
+        title: "Agentic actions, and switch mode with a tap",
+        items: [
+          "Agentic actions are real: turn on the Labs toggle, and in Context mode say “create an event tomorrow at 3pm”, “remind me to call the bank this afternoon”, or “draft a reply to this email” — Verba reads your screen, shows a confirmation, and on your OK creates the Calendar event, Reminder, or email draft.",
+          "Switch mode hands-free with a single Option tap while you're recording — no need to stop or reach for a chord.",
+        ],
+      },
+      {
         version: "0.1.85",
         title: "A redesigned site, and the controls fixed",
         items: [
