@@ -18,13 +18,27 @@ enum VerbaAction: Codable, Equatable {
     case reminder(title: String, due: Date?, notes: String?)
     /// Open a prefilled email draft in the default mail client.
     case emailDraft(to: String?, subject: String?, body: String)
+    /// Run a macOS Shortcut by name, optionally feeding it text input.
+    case runShortcut(name: String, input: String?)
+    /// Open / launch an application by name.
+    case openApp(name: String)
+    /// Play music in Music.app, optionally a specific playlist/track query.
+    case playMusic(query: String?)
+    /// Compose (and, after confirmation, send) a Messages.app message.
+    case sendMessage(to: String, body: String)
+    /// A generic AppleScript escape hatch the intent model can fill.
+    case appleScript(label: String, script: String)
 
     // MARK: Codable (tagged by "kind" so it round-trips cleanly)
 
     private enum CodingKeys: String, CodingKey {
         case kind, title, start, end, notes, due, to, subject, body
+        case name, input, query, script, label
     }
-    private enum Kind: String, Codable { case calendarEvent, reminder, emailDraft }
+    private enum Kind: String, Codable {
+        case calendarEvent, reminder, emailDraft
+        case runShortcut, openApp, playMusic, sendMessage, appleScript
+    }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -45,6 +59,22 @@ enum VerbaAction: Codable, Equatable {
                 to: try c.decodeIfPresent(String.self, forKey: .to),
                 subject: try c.decodeIfPresent(String.self, forKey: .subject),
                 body: try c.decode(String.self, forKey: .body))
+        case .runShortcut:
+            self = .runShortcut(
+                name: try c.decode(String.self, forKey: .name),
+                input: try c.decodeIfPresent(String.self, forKey: .input))
+        case .openApp:
+            self = .openApp(name: try c.decode(String.self, forKey: .name))
+        case .playMusic:
+            self = .playMusic(query: try c.decodeIfPresent(String.self, forKey: .query))
+        case .sendMessage:
+            self = .sendMessage(
+                to: try c.decode(String.self, forKey: .to),
+                body: try c.decode(String.self, forKey: .body))
+        case .appleScript:
+            self = .appleScript(
+                label: try c.decode(String.self, forKey: .label),
+                script: try c.decode(String.self, forKey: .script))
         }
     }
 
@@ -67,6 +97,24 @@ enum VerbaAction: Codable, Equatable {
             try c.encodeIfPresent(to, forKey: .to)
             try c.encodeIfPresent(subject, forKey: .subject)
             try c.encode(body, forKey: .body)
+        case let .runShortcut(name, input):
+            try c.encode(Kind.runShortcut, forKey: .kind)
+            try c.encode(name, forKey: .name)
+            try c.encodeIfPresent(input, forKey: .input)
+        case let .openApp(name):
+            try c.encode(Kind.openApp, forKey: .kind)
+            try c.encode(name, forKey: .name)
+        case let .playMusic(query):
+            try c.encode(Kind.playMusic, forKey: .kind)
+            try c.encodeIfPresent(query, forKey: .query)
+        case let .sendMessage(to, body):
+            try c.encode(Kind.sendMessage, forKey: .kind)
+            try c.encode(to, forKey: .to)
+            try c.encode(body, forKey: .body)
+        case let .appleScript(label, script):
+            try c.encode(Kind.appleScript, forKey: .kind)
+            try c.encode(label, forKey: .label)
+            try c.encode(script, forKey: .script)
         }
     }
 
@@ -78,6 +126,11 @@ enum VerbaAction: Codable, Equatable {
         case .calendarEvent: return "calendar.badge.plus"
         case .reminder:      return "checklist"
         case .emailDraft:    return "envelope"
+        case .runShortcut:   return "bolt.fill"
+        case .openApp:       return "app.badge"
+        case .playMusic:     return "music.note"
+        case .sendMessage:   return "message.fill"
+        case .appleScript:   return "applescript"
         }
     }
 
@@ -93,7 +146,25 @@ enum VerbaAction: Codable, Equatable {
             let who = (to?.isEmpty == false) ? to! : "new message"
             if let subject, !subject.isEmpty { return "Draft email · \(who) · \(subject)" }
             return "Draft email · \(who)"
+        case let .runShortcut(name, input):
+            if let input, !input.isEmpty { return "Run shortcut · \(name) · “\(Self.clip(input))”" }
+            return "Run shortcut · \(name)"
+        case let .openApp(name):
+            return "Open app · \(name)"
+        case let .playMusic(query):
+            if let query, !query.isEmpty { return "Play music · \(query)" }
+            return "Play music"
+        case let .sendMessage(to, body):
+            return "Send message · \(to) · “\(Self.clip(body))”"
+        case let .appleScript(label, _):
+            return "Run · \(label)"
         }
+    }
+
+    /// Trim a long string for one-line summaries.
+    private static func clip(_ s: String, _ max: Int = 40) -> String {
+        let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
+        return t.count > max ? String(t.prefix(max)) + "…" : t
     }
 
     /// Friendly relative-day + time formatting ("Today 15:00", "Tomorrow 09:00", "Jun 12, 15:00").
@@ -121,6 +192,9 @@ struct ActionExecutor {
         case noCalendar(String)
         case saveFailed(String)
         case mailtoFailed
+        case shortcutFailed(String)
+        case appNotFound(String)
+        case scriptFailed(String)
 
         var errorDescription: String? {
             switch self {
@@ -134,6 +208,12 @@ struct ActionExecutor {
                 return "Couldn't save: \(reason)"
             case .mailtoFailed:
                 return "Couldn't open an email draft (no mail client configured?)."
+            case let .shortcutFailed(reason):
+                return "Couldn't run the Shortcut: \(reason)"
+            case let .appNotFound(name):
+                return "Couldn't find an app named “\(name)”."
+            case let .scriptFailed(reason):
+                return "The action couldn't be completed: \(reason)"
             }
         }
     }
@@ -148,6 +228,16 @@ struct ActionExecutor {
             return try await createReminder(title: title, due: due, notes: notes)
         case let .emailDraft(to, subject, body):
             return try openEmailDraft(to: to, subject: subject, body: body)
+        case let .runShortcut(name, input):
+            return try runShortcut(name: name, input: input)
+        case let .openApp(name):
+            return try openApp(name: name)
+        case let .playMusic(query):
+            return try playMusic(query: query)
+        case let .sendMessage(to, body):
+            return try sendMessage(to: to, body: body)
+        case let .appleScript(label, script):
+            return try runAppleScript(label: label, script: script)
         }
     }
 
@@ -258,5 +348,183 @@ struct ActionExecutor {
         var allowed = CharacterSet.alphanumerics
         allowed.insert(charactersIn: "-._~")   // RFC 3986 unreserved
         return s.addingPercentEncoding(withAllowedCharacters: allowed) ?? s
+    }
+
+    // MARK: macOS Shortcuts
+
+    /// Run a macOS Shortcut by name via `/usr/bin/shortcuts run`. When `input` is given it's
+    /// written to a temp file and passed with `--input-path` so the Shortcut receives the text.
+    @discardableResult
+    func runShortcut(name: String, input: String?) throws -> String {
+        var args = ["run", name]
+        var tmpURL: URL?
+        if let input, !input.isEmpty {
+            let url = FileManager.default.temporaryDirectory
+                .appendingPathComponent("verba-shortcut-\(UUID().uuidString).txt")
+            do { try input.write(to: url, atomically: true, encoding: .utf8) }
+            catch { throw ActionError.shortcutFailed("couldn't stage input (\(error.localizedDescription))") }
+            tmpURL = url
+            args += ["--input-path", url.path]
+        }
+        defer { if let tmpURL { try? FileManager.default.removeItem(at: tmpURL) } }
+
+        let (status, _, err) = Self.runProcess("/usr/bin/shortcuts", args)
+        guard status == 0 else {
+            let reason = err.isEmpty ? "exit code \(status)" : err
+            throw ActionError.shortcutFailed(reason)
+        }
+        return "Ran the “\(name)” shortcut."
+    }
+
+    /// List the user's macOS Shortcuts by name (`/usr/bin/shortcuts list`) so the intent model can
+    /// match a spoken request against the shortcuts they actually have. Returns [] on any failure.
+    func availableShortcuts() -> [String] {
+        let (status, out, _) = Self.runProcess("/usr/bin/shortcuts", ["list"])
+        guard status == 0 else { return [] }
+        return out.split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+    }
+
+    // MARK: Launch app
+
+    @discardableResult
+    func openApp(name: String) throws -> String {
+        let ws = NSWorkspace.shared
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Resolve by app name (with/without .app), then by display name.
+        let candidates = [trimmed, trimmed.hasSuffix(".app") ? trimmed : "\(trimmed).app"]
+        for candidate in candidates {
+            if let url = ws.urlForApplication(withBundleIdentifier: candidate)
+                ?? Self.appURL(named: candidate) {
+                ws.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration()) { _, _ in }
+                return "Opened \(trimmed)."
+            }
+        }
+
+        // Fallback: `open -a <name>` resolves fuzzy/display names the API misses.
+        let (status, _, _) = Self.runProcess("/usr/bin/open", ["-a", trimmed])
+        guard status == 0 else { throw ActionError.appNotFound(trimmed) }
+        return "Opened \(trimmed)."
+    }
+
+    /// Look up an app bundle URL by file name across the standard Applications directories.
+    private static func appURL(named name: String) -> URL? {
+        let dirs = ["/Applications", "/System/Applications",
+                    "\(NSHomeDirectory())/Applications"]
+        for dir in dirs {
+            let url = URL(fileURLWithPath: dir).appendingPathComponent(name)
+            if FileManager.default.fileExists(atPath: url.path) { return url }
+        }
+        return nil
+    }
+
+    // MARK: Music
+
+    @discardableResult
+    func playMusic(query: String?) throws -> String {
+        let script: String
+        if let q = query?.trimmingCharacters(in: .whitespacesAndNewlines), !q.isEmpty {
+            let safe = Self.escapeAS(q)
+            // Try a named playlist first, then fall back to plain play (e.g. resume / shuffle).
+            script = """
+            tell application "Music"
+                activate
+                try
+                    play playlist "\(safe)"
+                on error
+                    try
+                        play (every track whose name contains "\(safe)")
+                    on error
+                        play
+                    end try
+                end try
+            end tell
+            """
+        } else {
+            script = "tell application \"Music\" to play"
+        }
+        try Self.runScript(script)
+        return query.map { "Playing “\($0)” in Music." } ?? "Playing music."
+    }
+
+    // MARK: Messages
+
+    /// Compose and send a Messages.app message. Confirmation happens upstream (ActionConfirmView),
+    /// so by the time this runs the user has already approved the send.
+    @discardableResult
+    func sendMessage(to: String, body: String) throws -> String {
+        let safeTo = Self.escapeAS(to)
+        let safeBody = Self.escapeAS(body)
+        // The legacy `participant ... of (account ...)` form is unreliable on modern macOS Messages.
+        // Try the more robust paths in order and only fail if every one errors:
+        //   1. buddy of the iMessage service (works for a known handle / existing thread),
+        //   2. participant of the iMessage service (older form, still works on some installs),
+        //   3. buddy of the SMS service (texting a phone number with no iMessage).
+        let script = """
+        tell application "Messages"
+            set theBody to "\(safeBody)"
+            set theHandle to "\(safeTo)"
+            try
+                set iMsg to 1st service whose service type = iMessage
+                send theBody to buddy theHandle of iMsg
+            on error
+                try
+                    set iMsg to 1st service whose service type = iMessage
+                    send theBody to participant theHandle of iMsg
+                on error
+                    set smsService to 1st service whose service type = SMS
+                    send theBody to buddy theHandle of smsService
+                end try
+            end try
+        end tell
+        """
+        try Self.runScript(script)
+        return "Sent your message to \(to)."
+    }
+
+    // MARK: Generic AppleScript
+
+    @discardableResult
+    func runAppleScript(label: String, script: String) throws -> String {
+        try Self.runScript(script)
+        return "Done: \(label)."
+    }
+
+    // MARK: AppleScript / Process helpers
+
+    /// Run an AppleScript via NSAppleScript, surfacing any error as a clean string.
+    private static func runScript(_ source: String) throws {
+        var errorInfo: NSDictionary?
+        let script = NSAppleScript(source: source)
+        script?.executeAndReturnError(&errorInfo)
+        if let errorInfo,
+           let message = errorInfo[NSAppleScript.errorMessage] as? String {
+            throw ActionError.scriptFailed(message)
+        }
+    }
+
+    /// Escape a string for safe embedding inside an AppleScript double-quoted literal.
+    private static func escapeAS(_ s: String) -> String {
+        s.replacingOccurrences(of: "\\", with: "\\\\")
+         .replacingOccurrences(of: "\"", with: "\\\"")
+    }
+
+    /// Run a process and capture (exit status, stdout, stderr-trimmed).
+    private static func runProcess(_ launchPath: String, _ args: [String]) -> (Int32, String, String) {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: launchPath)
+        p.arguments = args
+        let outPipe = Pipe(); let errPipe = Pipe()
+        p.standardOutput = outPipe; p.standardError = errPipe
+        do { try p.run() } catch { return (-1, "", error.localizedDescription) }
+        let outData = outPipe.fileHandleForReading.readDataToEndOfFile()
+        let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit()
+        let out = String(data: outData, encoding: .utf8) ?? ""
+        let err = (String(data: errData, encoding: .utf8) ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return (p.terminationStatus, out, err)
     }
 }

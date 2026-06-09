@@ -60,6 +60,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>NSRemindersUsageDescription</key><string>Verba creates the Reminders you dictate, after you confirm.</string>
     <key>NSCalendarsFullAccessUsageDescription</key><string>Verba creates the Calendar events you dictate, after you confirm.</string>
     <key>NSRemindersFullAccessUsageDescription</key><string>Verba creates the Reminders you dictate, after you confirm.</string>
+    <key>NSAppleEventsUsageDescription</key><string>Verba runs the actions you dictate, after you confirm.</string>
     <key>NSHighResolutionCapable</key> <true/>
     <key>SUFeedURL</key>               <string>https://github.com/agentik-os/Verba-releases/releases/latest/download/appcast.xml</string>
     <key>SUPublicEDKey</key>           <string>tUNn6q4RYRTmz5eB73hBC7Gh/RQfeCk8LHbGoczQGhs=</string>

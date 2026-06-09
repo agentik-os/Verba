@@ -59,6 +59,11 @@ struct ActionConfirmView: View {
         case .calendarEvent: return "Create a Calendar event?"
         case .reminder:      return "Create a Reminder?"
         case .emailDraft:    return "Open an email draft?"
+        case let .runShortcut(name, _): return "Run the “\(name)” shortcut?"
+        case let .openApp(name):        return "Open \(name)?"
+        case .playMusic:                return "Play music?"
+        case let .sendMessage(to, _):   return "Send a message to \(to)?"
+        case let .appleScript(label, _): return "\(label)?"
         }
     }
 
@@ -67,6 +72,11 @@ struct ActionConfirmView: View {
         case .calendarEvent: return "Create event"
         case .reminder:      return "Create reminder"
         case .emailDraft:    return "Open draft"
+        case .runShortcut:   return "Run shortcut"
+        case .openApp:       return "Open app"
+        case .playMusic:     return "Play"
+        case .sendMessage:   return "Send message"
+        case .appleScript:   return "Run"
         }
     }
 
@@ -90,6 +100,18 @@ struct ActionConfirmView: View {
             if !body.isEmpty { f.append(("Body", body)) }
             if f.isEmpty { f.append(("Email", "New message")) }
             return f
+        case let .runShortcut(name, input):
+            var f: [(String, String)] = [("Shortcut", name)]
+            if let input, !input.isEmpty { f.append(("Input", input)) }
+            return f
+        case let .openApp(name):
+            return [("App", name)]
+        case let .playMusic(query):
+            return [("Music", (query?.isEmpty == false) ? query! : "Resume playback")]
+        case let .sendMessage(to, body):
+            return [("To", to), ("Message", body)]
+        case let .appleScript(label, script):
+            return [("Action", label), ("Script", script)]
         }
     }
 

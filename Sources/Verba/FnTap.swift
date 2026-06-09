@@ -16,6 +16,7 @@ final class FnTap {
     var onStyleCycle: ((Int) -> Void)? // Fn + ] → next style (+1) / Fn + [ → previous (-1)
     var onNoteRecord: (() -> Void)?   // Fn + Z → record a new note
     var onTodoCapture: (() -> Void)?  // Fn + § → voice "add to-do" capture
+    var onActionMode: (() -> Void)?   // Fn + X → Action mode: speech CONTROLS the Mac (confirm → execute)
     var onDigit: ((Int) -> Bool)?     // 1-9 while menuActive; return true to consume
     var onArrow: ((Int) -> Bool)?     // -1 left / +1 right while menuActive
     var onEnter: (() -> Bool)?        // return / enter while menuActive
@@ -155,6 +156,9 @@ final class FnTap {
             // Fn + § (ISO section key) → voice "add to-do" capture; Fn + Z → record a new note (anywhere).
             if fnDown, code == kVK_ISO_Section, onTodoCapture != nil { onTodoCapture?(); return nil }
             if fnDown, code == kVK_ANSI_Z, onNoteRecord != nil { onNoteRecord?(); return nil }
+            // Fn + X → Action mode: the spoken request is a command that CONTROLS the Mac
+            // (run a Shortcut / open an app / play music / send a message / …), confirmed before it runs.
+            if fnDown, code == kVK_ANSI_X, onActionMode != nil { onActionMode?(); return nil }
             // Fn + Tab → next mode, Fn + ⇧ + Tab → previous. Works even mid-dictation.
             if fnDown, code == kVK_Tab {
                 onModeCycle?(event.flags.contains(.maskShift) ? -1 : 1); return nil

@@ -338,6 +338,8 @@ struct SettingsView: View {
                 Toggle("Agentic actions in Context mode", isOn: $settings.agenticActions)
                 Text("In Context mode, let Verba turn spoken commands into Calendar events, Reminders, or email drafts — it always asks you to confirm first.")
                     .font(.caption).foregroundStyle(.secondary)
+                Text("Tip: hold Fn + X anytime for Action mode — speak a command (run a Shortcut, open an app, play music, message someone) and Verba confirms before it acts. No toggle needed.")
+                    .font(.caption).foregroundStyle(.secondary)
             } header: { Text("Labs") }
 
             Section {

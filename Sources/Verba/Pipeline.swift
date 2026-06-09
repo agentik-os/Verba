@@ -43,6 +43,7 @@ enum Pipeline {
                     forcedProfile: Profile?,
                     selection: String? = nil,
                     editLast: Bool = false,
+                    actionMode: Bool = false,
                     status: @escaping (String) -> Void) async throws -> PipelineResult {
         let s = Settings.shared
 
@@ -129,9 +130,10 @@ enum Pipeline {
                 """
                 let userText = "PREVIOUS RESULT:\n<<<\n\(sel)\n>>>\n\nSPOKEN INSTRUCTION:\n\(original)"
                 reprompted = try await r.reprompt(transcript: userText, systemPrompt: sys)
-            } else if profile.vision {
-                // Context mode: screenshot of the current screen + the spoken request →
-                // a vision model → clean text to insert. Kept deliberately simple and robust.
+            } else if profile.vision || actionMode {
+                // Context mode (or the dedicated Action mode, Fn+X): screenshot of the current screen
+                // + the spoken request → a vision model → clean text to insert, OR a structured action.
+                // Kept deliberately simple and robust.
                 guard ScreenCapture.hasPermission() else {
                     ScreenCapture.requestPermission()
                     ScreenCapture.openPrivacySettings()
@@ -146,10 +148,14 @@ enum Pipeline {
                 // plain text. The screenshot still goes to the vision model (so "draft a reply to
                 // this email" can read the on-screen email). Parse robustly; ANY parse failure falls
                 // back to treating the whole reply as text, so a result is never lost.
-                if s.agenticActions {
+                // The agentic-action path runs when Labs "Agentic actions" is on OR in the dedicated
+                // Action mode (Fn+X), which forces it regardless of the Labs toggle. The model is given
+                // the user's actual Shortcuts so it can match a spoken request to a real shortcut name.
+                if s.agenticActions || actionMode {
+                    let shortcuts = ActionExecutor().availableShortcuts()
                     let raw = try await r.repromptVision(
                         transcript: original,
-                        systemPrompt: sys + agenticActionsAddendum,
+                        systemPrompt: sys + agenticActionsAddendum(shortcuts: shortcuts, actionFirst: actionMode),
                         imagePNG: png)
                     if let action = parseAgenticAction(raw) {
                         detectedAction = action
@@ -228,28 +234,54 @@ enum Pipeline {
                "\"this afternoon\", \"tonight\", \"next monday\", times like \"3pm\"/\"15h\" relative to this."
     }
 
-    /// Appended to the Context system prompt when Labs "Agentic actions" is ON. Asks the model to
-    /// return EITHER a structured action (when the request is an actionable command) OR plain text
-    /// (a normal screen-grounded answer), as a single JSON object.
-    static var agenticActionsAddendum: String {
-        """
+    /// Appended to the Context system prompt when Labs "Agentic actions" is ON (or in the dedicated
+    /// Action mode, Fn+X). Asks the model to return EITHER a structured action (when the request is an
+    /// actionable command) OR plain text (a normal screen-grounded answer), as a single JSON object.
+    ///
+    /// `shortcuts` is the user's actual macOS Shortcuts (from ActionExecutor.availableShortcuts()), so
+    /// the model can match a spoken request against the shortcuts they really have. `actionFirst` is set
+    /// in the dedicated Action mode: it tells the model the user EXPECTS a command, so it should strongly
+    /// prefer emitting an action (falling back to text only when the request truly isn't actionable).
+    static func agenticActionsAddendum(shortcuts: [String] = [], actionFirst: Bool = false) -> String {
+        let shortcutsBlock: String
+        if shortcuts.isEmpty {
+            shortcutsBlock = "(The user has no saved Shortcuts, so do not emit a run_shortcut action.)"
+        } else {
+            let list = shortcuts.prefix(120).map { "  • \($0)" }.joined(separator: "\n")
+            shortcutsBlock = "The user's macOS Shortcuts (match a spoken request to one of these EXACT names " +
+                "for a run_shortcut action — never invent a name that isn't listed):\n\(list)"
+        }
+        let intro = actionFirst
+            ? "ACTION MODE (OVERRIDE OF THE OUTPUT FORMAT ABOVE): The user is in a dedicated mode where " +
+              "their speech CONTROLS THE MAC. They EXPECT their words to be a command. Resolve the spoken " +
+              "request into the single best structured action below and emit it. Only fall back to text (B) " +
+              "when the request genuinely isn't an actionable command."
+            : "AGENTIC ACTIONS MODE (OVERRIDE OF THE OUTPUT FORMAT ABOVE): The user may dictate a COMMAND to " +
+              "do something on their Mac. Decide:"
+        return """
 
 
-        AGENTIC ACTIONS MODE (OVERRIDE OF THE OUTPUT FORMAT ABOVE):
-        The user may dictate a COMMAND to create something on their Mac. Decide:
+        \(intro)
 
-        A) If the request is an actionable command to create a CALENDAR EVENT, a REMINDER, or an \
-        EMAIL DRAFT (e.g. "create an event tomorrow at 3pm for the team sync", "remind me to call \
-        the bank this afternoon", "draft a reply to this email"), reply with a SINGLE JSON object:
-          {"action":{"type":"calendar_event|reminder|email_draft",
-                     "title":"...",          // event/reminder title (calendar_event, reminder)
-                     "start":"ISO8601",      // event start (calendar_event) — REQUIRED for events
-                     "end":"ISO8601",        // event end (calendar_event) — optional
-                     "due":"ISO8601",        // reminder due date/time (reminder) — optional
-                     "to":"...",             // email recipient (email_draft) — optional
-                     "subject":"...",        // email subject (email_draft) — optional
-                     "body":"...",           // email body (email_draft) — required for email_draft
-                     "notes":"..."}}         // extra notes (calendar_event, reminder) — optional
+        A) If the request is an actionable command, reply with a SINGLE JSON object \
+        {"action":{...}} using ONE of these action types:
+
+          calendar_event — create a Calendar event:
+            {"action":{"type":"calendar_event","title":"...","start":"ISO8601","end":"ISO8601"(optional),"notes":"..."(optional)}}
+          reminder — create a Reminder:
+            {"action":{"type":"reminder","title":"...","due":"ISO8601"(optional),"notes":"..."(optional)}}
+          email_draft — open a prefilled email draft:
+            {"action":{"type":"email_draft","to":"..."(optional),"subject":"..."(optional),"body":"..."}}
+          run_shortcut — run one of the user's macOS Shortcuts by EXACT name (see list below):
+            {"action":{"type":"run_shortcut","name":"<exact shortcut name>","input":"..."(optional text to feed it)}}
+          open_app — launch an application:
+            {"action":{"type":"open_app","name":"Safari"}}
+          play_music — play in Music.app (optional playlist/track/artist query):
+            {"action":{"type":"play_music","query":"..."(optional)}}
+          send_message — compose a Messages.app message (the user CONFIRMS before it sends):
+            {"action":{"type":"send_message","to":"<name, phone, or email>","body":"..."}}
+          apple_script — a last-resort escape hatch for an action none of the above cover:
+            {"action":{"type":"apple_script","label":"<short human description>","script":"<AppleScript source>"}}
 
         B) Otherwise (a normal screen-grounded answer, a reply to insert, a rewrite, anything that \
         is text to type where the cursor is), reply with a SINGLE JSON object:
@@ -259,9 +291,14 @@ enum Pipeline {
         - Reply with ONE JSON object and NOTHING else: no prose, no markdown, no code fence.
         - For "draft a reply to this email", READ the on-screen email and write the reply in "body" \
         (and "to"/"subject" if visible); type is "email_draft".
+        - For run_shortcut, the "name" MUST be one of the user's exact Shortcut names listed below.
+        - Prefer a built-in type (calendar/reminder/email/shortcut/open_app/play_music/send_message) \
+        over apple_script; use apple_script ONLY when nothing else fits.
         - Resolve all relative dates/times to concrete ISO8601 WITH timezone offset using the \
         context below. Never invent a date the user didn't imply.
         - Use the user's language for titles, bodies and notes.
+
+        \(shortcutsBlock)
 
         \(nowContext())
         """
@@ -306,6 +343,34 @@ enum Pipeline {
             return .emailDraft(to: (to?.isEmpty == false) ? to : nil,
                                subject: (subject?.isEmpty == false) ? subject : nil,
                                body: body)
+        case "run_shortcut", "runshortcut", "shortcut":
+            let name = ((a["name"] as? String) ?? (a["title"] as? String) ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !name.isEmpty else { return nil }
+            let input = (a["input"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            return .runShortcut(name: name, input: (input?.isEmpty == false) ? input : nil)
+        case "open_app", "openapp", "launch_app", "app":
+            let name = ((a["name"] as? String) ?? (a["app"] as? String) ?? (a["title"] as? String) ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !name.isEmpty else { return nil }
+            return .openApp(name: name)
+        case "play_music", "playmusic", "music":
+            let query = ((a["query"] as? String) ?? (a["title"] as? String))?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return .playMusic(query: (query?.isEmpty == false) ? query : nil)
+        case "send_message", "sendmessage", "message", "imessage", "text_message":
+            let to = ((a["to"] as? String) ?? (a["recipient"] as? String) ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let body = ((a["body"] as? String) ?? (a["message"] as? String) ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !to.isEmpty, !body.isEmpty else { return nil }
+            return .sendMessage(to: to, body: body)
+        case "apple_script", "applescript", "script":
+            let script = ((a["script"] as? String) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !script.isEmpty else { return nil }
+            let label = ((a["label"] as? String) ?? (a["title"] as? String) ?? "Action")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return .appleScript(label: label.isEmpty ? "Action" : label, script: script)
         default:
             return nil
         }

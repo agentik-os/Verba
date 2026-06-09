@@ -49,12 +49,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let capturedBundleID: String?
         let recordStartedAt: Date?
         let countStats: Bool
+        var actionMode: Bool = false   // Fn+X Action mode: route through the agentic-action (confirm→execute) path
     }
     private var statusLine = ""
     private var capturedBundleID: String?
     private var capturedTarget: PasteTarget?  // app + focused field captured at record start, so auto-paste can restore focus across Space/app switches
     private var capturedSelection: String?  // text selected in the active app when recording started
     private var forcedProfile: Profile?     // set when a profile-specific shortcut started the dictation
+    private var actionModeRecording = false  // Fn+X Action mode: this recording's request CONTROLS the Mac (confirm → execute)
 
     private var todoCaptureRecording = false   // a voice "add to-do" capture is recording
     private var todoCaptureTask: Task<Void, Never>?
@@ -101,6 +103,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         FnTap.shared.onStyleCycle = { [weak self] dir in self?.styleCycleGesture(dir) } // Fn+[ / Fn+] → prev/next style
         FnTap.shared.onNoteRecord = { [weak self] in self?.startNoteRecording() }   // Fn+Z → record a note
         FnTap.shared.onTodoCapture = { [weak self] in self?.startTodoCapture() }    // Fn+§ → add a to-do
+        FnTap.shared.onActionMode = { [weak self] in self?.startActionMode() }      // Fn+X → Action mode (speech controls the Mac)
         FnTap.shared.onDigit = { [weak self] n in self?.fnDigit(n) ?? false }
         FnTap.shared.onArrow = { [weak self] d in self?.fnArrow(d) ?? false }
         FnTap.shared.onEnter = { [weak self] in self?.fnEnter() ?? false }
@@ -317,6 +320,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NotesController.shared.pendingRecord = true
         openMain()
         DispatchQueue.main.async { NotesController.shared.navSignal &+= 1 }
+    }
+
+    /// Fn + X — Action mode: record a spoken COMMAND that controls the Mac (run a Shortcut, open an
+    /// app, play music, send a message, create an event/reminder/email…). It records exactly like a
+    /// dictation (same floating pill, here badged "Action"), but the result is routed through the
+    /// agentic-action vision path: screenshot → vision model → structured action → CONFIRM → execute.
+    /// Nothing happens to the Mac without the confirmation sheet (showActionConfirm). It works
+    /// regardless of the active mode or the Labs "Agentic actions" toggle.
+    @objc func startActionMode() {
+        guard Settings.shared.onboarded else { openOnboarding(); return }
+        cancelToggleHold()   // Fn+X is a chord → don't let the Fn release stop/switch a tap-toggle recording
+        // Fn+X chord: the bare Fn already auto-started a dictation — discard it and record an action.
+        abortPhantomFnDictation()
+        // Don't collide with any OTHER in-flight capture (deliberate dictation / note / to-do).
+        if state == .recording || todoCaptureRecording || NotesController.shared.isRecording { return }
+        actionModeRecording = true
+        startRecording(forced: nil)
+        // Badge the pill as "Action" once recording is actually live (startRecording sets it to
+        // .dictation on the async permission callback, so re-stamp it on the next runloop hop).
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.state == .recording, self.actionModeRecording else { return }
+            self.overlay.model.context = .action
+            self.overlay.model.modeName = ""
+            self.overlay.model.profiles = []   // Action mode isn't a reprompt mode → no live switcher
+            self.overlay.model.title = "Listening · Action"
+        }
     }
 
     /// Show the shared floating pill for an in-progress NOTE recording (labelled "Note"), with a
@@ -710,6 +739,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         stopQuips()
         _ = recorder.stop()
         forcedProfile = nil
+        actionModeRecording = false
         editLastInstruction = false
         FnTap.shared.menuActive = false
         overlay.model.recording = false
@@ -1051,6 +1081,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         fnToggleStopArmed = false; fnToggleSwitched = false; lastFnDown = nil
         _ = recorder.stop()
         todoCaptureRecording = false   // tearing down the shared recorder voids any to-do capture too
+        actionModeRecording = false    // and any in-progress Fn+X Action recording
         forcedProfile = nil
         overlay.model.menu = false
         overlay.model.recording = false
@@ -1142,21 +1173,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // (reuses selection mode: transcript = instruction, lastResultText = the text to edit).
         let editingLast = editLastInstruction
         let selection = editingLast ? lastResultText : capturedSelection
-        let modeName = (forced ?? Settings.shared.profile(forBundleID: bundleID)).name
+        // Fn+X Action mode: this recording's spoken request CONTROLS the Mac (confirm → execute).
+        let isActionMode = actionModeRecording
+        let modeName = isActionMode ? "Action"
+            : (forced ?? Settings.shared.profile(forBundleID: bundleID)).name
         let ctx = SessionContext(session: Session(modeName: modeName),
                                  audioURL: url,
                                  capturedTarget: capturedTarget,
                                  capturedBundleID: bundleID,
                                  recordStartedAt: recordStartedAt,
-                                 countStats: true)
+                                 countStats: true,
+                                 actionMode: isActionMode)
         editLastInstruction = false
         forcedProfile = nil
         capturedSelection = nil
         capturedTarget = nil
+        actionModeRecording = false
 
         // The recorder is now free. Show the processing pill for this latest Session.
         state = .processing
-        statusLine = "Transcribing…"
+        statusLine = isActionMode ? "On it…" : "Transcribing…"
         overlay.model.recording = false
         overlay.model.paused = false
         showProcessingOverlay()
@@ -1177,7 +1213,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             do {
                 // Hard ceiling so a hung transcription/reprompt backend can't spin forever.
                 let result = try await withTimeout(seconds: self.processingTimeout) {
-                    try await Pipeline.run(audioURL: url, frontmostBundleID: bundleID, forcedProfile: forced, selection: selection, editLast: editLast) { [weak self] s in
+                    try await Pipeline.run(audioURL: url, frontmostBundleID: bundleID, forcedProfile: forced, selection: selection, editLast: editLast, actionMode: ctx.actionMode) { [weak self] s in
                         DispatchQueue.main.async {
                             guard let self else { return }
                             session.status = s.lowercased().contains("transcrib") ? .transcribing : .processing
@@ -1324,6 +1360,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 overlay.hide(); state = .idle
             }
             showActionConfirm(action)
+            return
+        }
+
+        // Action mode (Fn+X) but the request wasn't an actionable command (the model returned text):
+        // never paste that text into the user's app — Action mode controls the Mac, it doesn't type.
+        // Finalize the session and flash what we understood, then stop. (Normal Context/dictation
+        // modes fall through and paste as usual.)
+        if ctx.actionMode {
+            session.status = .done
+            SessionStore.shared.endInflight(session)
+            SessionStore.shared.complete(session)
+            stopQuipsIfNoInflight()
+            let note = result.reprompted.trimmingCharacters(in: .whitespacesAndNewlines)
+            if SessionStore.shared.hasInflight {
+                state = .processing; statusLine = "Transcribing…"; overlay.model.recording = false; showProcessingOverlay()
+            } else {
+                flashInfo(note.isEmpty ? "No action recognized" : "Not an action: \(note)")
+            }
             return
         }
 
@@ -1786,6 +1840,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             header("Capture  (while holding Fn)")
             ref("Fn + §", "Add a to-do by voice")
             ref("Fn + Z", "Capture a note by voice")
+            ref("Fn + X", "Action mode — speak a command to control your Mac")
             ref("Fn", "Stop an in-progress note / to-do capture")
             ref("⌥ + Fn", "Today's to-dos  (quick glance)")
         }

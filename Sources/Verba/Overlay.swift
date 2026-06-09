@@ -5,13 +5,14 @@ import Combine
 /// What the current recording/processing is for — surfaced as a small badge on the pill so the
 /// user can always tell a normal dictation apart from a Note (Fn+Z) or a To-do capture (Fn+§).
 enum CaptureContext {
-    case dictation, note, todo
+    case dictation, note, todo, action
 
     var label: String {
         switch self {
         case .dictation: return "Dictation"
         case .note:      return "Note"
         case .todo:      return "To-do"
+        case .action:    return "Action"
         }
     }
 
@@ -20,6 +21,7 @@ enum CaptureContext {
         case .dictation: return "waveform"
         case .note:      return "doc.text"
         case .todo:      return "checklist"
+        case .action:    return "bolt.fill"
         }
     }
 }
