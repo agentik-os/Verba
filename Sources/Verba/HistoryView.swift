@@ -151,6 +151,10 @@ struct HistoryView: View {
                         Button { audio.toggle(url) } label: {
                             Label(playing ? "Stop" : "Play audio", systemImage: playing ? "stop.circle" : "play.circle")
                         }
+                        Button { exportAudio(url) } label: {
+                            Label("Download audio", systemImage: "square.and.arrow.down")
+                        }
+                        .help("Save this recording to your Mac so you can re-import it into Transcribe file")
                     }
                     if rerunning {
                         ProgressView().controlSize(.small); Text("Re-running…").font(.caption).foregroundStyle(.secondary)
@@ -184,6 +188,17 @@ struct HistoryView: View {
                 await MainActor.run { rerunning = false }
             }
         }
+    }
+
+    /// Export an entry's recorded audio to a user-chosen location (so it can be re-imported).
+    private func exportAudio(_ url: URL) {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = url.lastPathComponent
+        panel.canCreateDirectories = true
+        panel.message = "Save this dictation's audio"
+        guard panel.runModal() == .OK, let dest = panel.url else { return }
+        try? FileManager.default.removeItem(at: dest)   // overwrite if the user chose an existing name
+        try? FileManager.default.copyItem(at: url, to: dest)
     }
 
     private func section(_ title: String, _ body: String) -> some View {

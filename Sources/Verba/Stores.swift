@@ -308,6 +308,48 @@ final class TransformsStore: ObservableObject {
             Transform(name: "Fix grammar", prompt: "Fix grammar and spelling only. Keep wording and meaning."),
         ]
     }
+
+    /// Find a transform whose verbal shortcut the spoken `transcript` is invoking, for the
+    /// "select text + speak a shortcut → auto-run that transform" behavior (works in all modes).
+    /// Deliberately conservative so we never hijack a real, longer dictation:
+    ///  - only matches SHORT spoken prompts (a verbal shortcut, not a full instruction),
+    ///  - case- and punctuation-insensitive,
+    ///  - accepts an exact match, or a close contains-match for short prompts.
+    /// Returns nil for anything that looks like a genuine instruction, leaving normal handling.
+    func match(transcript: String) -> Transform? {
+        let spoken = Self.normalize(transcript)
+        guard !spoken.isEmpty else { return nil }
+        // A verbal shortcut is short. If the user said many words it's a real instruction.
+        let wordCount = spoken.split(separator: " ").count
+        guard wordCount <= 6 else { return nil }
+
+        // 1. Exact normalized match wins.
+        if let exact = items.first(where: { Self.normalize($0.name) == spoken }) { return exact }
+
+        // 2. Close contains-match (either way) for short prompts only, longest name first
+        //    so "translate to english" beats "translate" when both could apply.
+        let candidates = items
+            .map { ($0, Self.normalize($0.name)) }
+            .filter { !$0.1.isEmpty }
+            .sorted { $0.1.count > $1.1.count }
+        for (t, name) in candidates {
+            let nameWords = name.split(separator: " ").count
+            // Only treat short shortcut names as fuzzy-matchable, and require the spoken
+            // prompt to be in the same short ballpark (no big extra instruction tacked on).
+            guard nameWords <= 5, wordCount <= nameWords + 2 else { continue }
+            if spoken.contains(name) || name.contains(spoken) { return t }
+        }
+        return nil
+    }
+
+    /// Lowercased, punctuation-stripped, single-spaced form for tolerant matching.
+    private static func normalize(_ s: String) -> String {
+        let lowered = s.lowercased()
+        let kept = lowered.unicodeScalars.map { sc -> Character in
+            (CharacterSet.alphanumerics.contains(sc) || sc == " ") ? Character(sc) : " "
+        }
+        return String(kept).split(whereSeparator: { $0 == " " }).joined(separator: " ")
+    }
 }
 
 // MARK: - Scratchpad

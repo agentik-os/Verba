@@ -181,6 +181,26 @@ periods, parentheses, or colons instead. This is mandatory.
 Output ONLY the rewritten text. No preamble, no notes, no quotes around it.
 """
 
+/// Appended to the system prompt ONLY when the result will be pasted as rich text
+/// (Paste with formatting / render Markdown is on for the target app). It tells the
+/// model to express structure as clean Markdown so the rich-text paste path can render
+/// real headings, bold, and lists instead of a flat block. When formatting is OFF this
+/// is never added, so plain mode stays plain.
+let markdownFormattingAddendum = """
+
+
+OUTPUT FORMAT, MARKDOWN: The result will be rendered as rich formatted text, so write \
+it in clean, standard Markdown whenever the speaker's content or request implies \
+structure. Use it faithfully, NEVER to add content they did not say:
+- A title or document → start with a single `# Heading`; section names they mention → `## Subheadings`.
+- "bullet points" / "a list" / clearly enumerated items → `- ` bullets (or `1.` for an ordered/numbered list).
+- Emphasis they ask for ("in bold", "highlight", a key term) → `**bold**`; stress/quotes → `*italics*`.
+- Separate ideas into real paragraphs with a blank line between them, not one wall of text.
+Use the LIGHTEST structure the content needs: short plain dictation stays plain prose, do NOT \
+force headings or bullets onto it. Use real Markdown tokens (`#`, `**`, `- `), never literal \
+words like "bold" or fake bullets. Do not wrap the whole answer in a code fence.
+"""
+
 /// A reprompting profile: a Claude editing prompt + an optional dedicated hotkey
 /// + app bundle IDs it auto-matches.
 struct Profile: Codable, Identifiable, Equatable {
@@ -212,6 +232,22 @@ struct Profile: Codable, Identifiable, Equatable {
         NEVER use an em dash, en dash, or a spaced hyphen; use commas, periods, parentheses, or colons.
         """
     }
+}
+
+/// A reusable tone/format layer applied ON TOP of the active mode when reprompting.
+/// Unlike a Profile (which defines WHAT Claude does with the transcript), a Style only
+/// nudges HOW the result reads (tone, register, formatting). The built-in "Normal" style
+/// has an empty prompt, so it changes nothing and keeps the default behaviour intact.
+struct Style: Codable, Identifiable, Equatable {
+    var id: UUID = UUID()
+    var name: String
+    var prompt: String        // the style instructions appended to the mode's system prompt ("" = no change)
+    var builtin: Bool = false
+
+    /// The neutral default: an empty prompt means the dictation is unchanged.
+    static let normal = Style(name: "Normal", prompt: "", builtin: true)
+
+    static let defaults: [Style] = [.normal]
 }
 
 /// Common targets for the Translate mode (the value stored is the language name, used in the prompt).
@@ -411,9 +447,11 @@ final class Settings: ObservableObject {
     @Published var showInDock: Bool { didSet { d.set(showInDock, forKey: "showInDock") } }
     @Published var showMenuBarIcon: Bool { didSet { d.set(showMenuBarIcon, forKey: "showMenuBarIcon") } }
 
-    // Global Style, extra instructions appended to every (non-raw) reprompt.
-    @Published var styleEnabled: Bool { didSet { d.set(styleEnabled, forKey: "styleEnabled") } }
-    @Published var styleText: String { didSet { d.set(styleText, forKey: "styleText") } }
+    // Multi-style system: a tone/format layer applied on top of the active mode when
+    // reprompting. `styles` is the CRUD list (mirrors `profiles`); `activeStyleID` is the
+    // chosen one (default = Normal, an empty prompt that changes nothing).
+    @Published var styles: [Style] { didSet { persistStyles() } }
+    @Published var activeStyleID: UUID { didSet { d.set(activeStyleID.uuidString, forKey: "activeStyleID") } }
 
     // Primary trigger shortcut (active/auto-detected mode). Default ⌃⌥Space.
     @Published var primaryKeyCode: UInt32 { didSet { d.set(Int(primaryKeyCode), forKey: "primaryKeyCode") } }
@@ -460,6 +498,10 @@ final class Settings: ObservableObject {
 
     var activeProfile: Profile {
         profiles.first { $0.id == activeProfileID } ?? profiles.first ?? .coding
+    }
+
+    var activeStyle: Style {
+        styles.first { $0.id == activeStyleID } ?? styles.first ?? .normal
     }
 
     /// Sidebar visibility (Home / Modes / Settings are pinned and ignore this).
@@ -518,8 +560,6 @@ final class Settings: ObservableObject {
         soundVolume = d.object(forKey: "soundVolume") as? Double ?? 0.8
         suppressFnPopup = d.object(forKey: "suppressFnPopup") as? Bool ?? true
         disableInputSwitcher = d.object(forKey: "disableInputSwitcher") as? Bool ?? true
-        styleEnabled = d.object(forKey: "styleEnabled") as? Bool ?? false
-        styleText = d.string(forKey: "styleText") ?? "Write in a clear, natural voice. Keep it concise."
         primaryKeyCode = UInt32(d.object(forKey: "primaryKeyCode") as? Int ?? 49 /* Space */)
         primaryMods = UInt32(d.object(forKey: "primaryMods") as? Int ?? Int(kCtrlOpt))
         // No extra global change-mode shortcut by default: the built-in gesture is Fn + Tab.
@@ -566,10 +606,42 @@ final class Settings: ObservableObject {
             d.set(Self.profilesVersion, forKey: "profilesVersion")
             if let data = try? JSONEncoder().encode(loaded) { d.set(data, forKey: "profiles") }
         }
+
+        // Styles: load the saved list, else seed [Normal]. Migrate the legacy single global
+        // style (styleEnabled + styleText) into a named style on first run so nobody loses it.
+        var loadedStyles: [Style] = []
+        if let data = d.data(forKey: "styles"),
+           let saved = try? JSONDecoder().decode([Style].self, from: data), !saved.isEmpty {
+            loadedStyles = saved
+        }
+        if loadedStyles.isEmpty {
+            loadedStyles = Style.defaults
+            // One-time migration of the old global style into a "My style" entry.
+            let legacyText = (d.string(forKey: "styleText") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let legacyOn = d.object(forKey: "styleEnabled") as? Bool ?? false
+            if !legacyText.isEmpty {
+                let migrated = Style(name: "My style", prompt: legacyText)
+                loadedStyles.append(migrated)
+                if legacyOn { d.set(migrated.id.uuidString, forKey: "activeStyleID") }
+            }
+        }
+        // Always guarantee a built-in Normal at the head of the list.
+        if !loadedStyles.contains(where: { $0.builtin && $0.name == "Normal" }) {
+            loadedStyles.insert(.normal, at: 0)
+        }
+        styles = loadedStyles
+        let savedStyle = d.string(forKey: "activeStyleID").flatMap(UUID.init)
+        activeStyleID = (savedStyle.flatMap { id in loadedStyles.first { $0.id == id }?.id })
+            ?? loadedStyles.first(where: { $0.builtin && $0.name == "Normal" })?.id
+            ?? loadedStyles.first!.id
     }
 
     private func persistProfiles() {
         if let data = try? JSONEncoder().encode(profiles) { d.set(data, forKey: "profiles") }
+    }
+
+    private func persistStyles() {
+        if let data = try? JSONEncoder().encode(styles) { d.set(data, forKey: "styles") }
     }
 
     // MARK: Shortcut assignment with conflict swap
@@ -630,6 +702,22 @@ final class Settings: ObservableObject {
     func resetProfilesToDefaults() {
         profiles = Profile.defaults
         activeProfileID = profiles.first!.id
+    }
+
+    /// Restore the built-in styles (just "Normal"), dropping any custom ones.
+    func resetStylesToDefaults() {
+        styles = Style.defaults
+        activeStyleID = styles.first!.id
+    }
+
+    /// Advance the active style by `delta` (wraps). Returns the new active style.
+    @discardableResult
+    func cycleStyle(_ delta: Int) -> Style {
+        guard !styles.isEmpty else { return .normal }
+        let cur = styles.firstIndex { $0.id == activeStyleID } ?? 0
+        let next = ((cur + delta) % styles.count + styles.count) % styles.count
+        activeStyleID = styles[next].id
+        return styles[next]
     }
 
     /// Pick the profile that matches a frontmost app bundle id, if auto-detect is on.

@@ -63,8 +63,10 @@ enum Pipeline {
         // Raw/Flow mode (or reprompting off) → return the transcript untouched, no Claude.
         if s.repromptEnabled && !profile.raw {
             var sys = profile.effectiveSystemPrompt   // Translate mode injects its target language
-            let style = s.styleText.trimmingCharacters(in: .whitespacesAndNewlines)
-            if s.styleEnabled && !style.isEmpty {
+            // Active STYLE layer: a tone/format nudge applied on top of the mode. The built-in
+            // "Normal" style has an empty prompt, so it changes nothing (default behaviour).
+            let style = s.activeStyle.prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !style.isEmpty {
                 sys += "\n\nADDITIONAL STYLE PREFERENCES (apply while staying faithful): \(style)"
             }
             sys += SnippetsStore.shared.promptContext()   // intent-based snippet insertion
@@ -78,6 +80,14 @@ enum Pipeline {
                     sys += "\n\nTONE MATCH: here are recent messages the user wrote in this app. Match their tone, vocabulary, formality and rhythm (NOT their content):\n\n\(block)"
                 }
             }
+            // If the result will be pasted as RICH text (Paste with formatting / render
+            // Markdown is on for the target app), ask the model to PRODUCE Markdown structure
+            // so headings/bold/lists exist to render. Skipped for Translate modes (self-contained
+            // prompt) and when formatting is off, so plain mode stays a plain block.
+            if profile.targetLanguage == nil, Output.willPasteRich(frontmostBundleID) {
+                sys += markdownFormattingAddendum
+            }
+
             let r = Reprompter(model: profile.model ?? s.claudeModel)   // per-mode model override
 
             let sel = selection?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -95,6 +105,16 @@ enum Pipeline {
                 }
                 status(Quips.current())
                 reprompted = try await r.repromptVision(transcript: original, systemPrompt: sys, imagePNG: png)
+            } else if !sel.isEmpty && profile.targetLanguage == nil,
+                      let transform = TransformsStore.shared.match(transcript: original) {
+                // Verbal Shortcut: the user selected text and spoke a short phrase that matches
+                // a saved Transform (e.g. "fix grammar", "translate to English"). Auto-run that
+                // transform's own prompt on the selection. Works in ALL modes. Longer/clearly
+                // full instructions don't match (see TransformsStore.match) and fall through.
+                status("Working on your selection…")
+                reprompted = try await r.reprompt(
+                    transcript: sel,
+                    systemPrompt: transform.prompt + "\nOutput ONLY the transformed text.")
             } else if !sel.isEmpty && profile.targetLanguage == nil {
                 // Selection mode: the dictation is an INSTRUCTION acting on the selected text.
                 // (Skipped for Translate modes — they always translate the spoken words.)

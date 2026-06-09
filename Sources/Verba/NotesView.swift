@@ -646,8 +646,8 @@ struct NotesView: View {
         work = Task {
             do {
                 var sys = format.effectiveSystemPrompt(instruction: intentText)
-                let style = Settings.shared.styleText.trimmingCharacters(in: .whitespacesAndNewlines)
-                if Settings.shared.styleEnabled && !style.isEmpty { sys += "\n\nSTYLE: \(style)" }
+                let style = Settings.shared.activeStyle.prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !style.isEmpty { sys += "\n\nSTYLE: \(style)" }
                 let r = Reprompter(model: format.model ?? Settings.shared.claudeModel)
                 let out = try await r.reprompt(transcript: transcript, systemPrompt: sys, fast: true)
                 if Task.isCancelled { return }

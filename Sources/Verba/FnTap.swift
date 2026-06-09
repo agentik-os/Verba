@@ -13,6 +13,7 @@ final class FnTap {
     var onFnUp: (() -> Void)?
     var onFnControl: (() -> Void)?    // ⌥+Fn → today's to-do glance (Option held at Fn-down, or Option tapped mid-Fn-hold)
     var onModeCycle: ((Int) -> Void)? // Fn + Tab → next mode (+1) / Fn + ⇧ + Tab → previous (-1)
+    var onStyleCycle: ((Int) -> Void)? // Fn + ] → next style (+1) / Fn + [ → previous (-1)
     var onNoteRecord: (() -> Void)?   // Fn + Z → record a new note
     var onTodoCapture: (() -> Void)?  // Fn + § → voice "add to-do" capture
     var onDigit: ((Int) -> Bool)?     // 1-9 while menuActive; return true to consume
@@ -123,6 +124,9 @@ final class FnTap {
             if fnDown, code == kVK_Tab {
                 onModeCycle?(event.flags.contains(.maskShift) ? -1 : 1); return nil
             }
+            // Fn + ] → next style, Fn + [ → previous style. A second prompt layer on top of the mode.
+            if fnDown, code == kVK_ANSI_RightBracket, onStyleCycle != nil { onStyleCycle?(1); return nil }
+            if fnDown, code == kVK_ANSI_LeftBracket, onStyleCycle != nil { onStyleCycle?(-1); return nil }
             // Fn + number selects a mode whenever Fn is held (or the picker menu is open).
             if menuActive || fnDown {
                 if let n = Self.digit(code), onDigit?(n) == true { return nil }

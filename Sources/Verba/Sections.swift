@@ -414,22 +414,138 @@ struct SnippetsView: View {
 
 struct StyleView: View {
     @ObservedObject var settings = Settings.shared
+    @State private var selectedID: UUID?
+
     var body: some View {
-        SectionScaffold(title: "Style",
-                        subtitle: "Global tone & formatting added on top of every mode.") {
+        SectionScaffold(title: "Styles",
+                        subtitle: "A tone & format layer applied on top of the active mode.") {
+            // Info bubble explaining what styles do.
             Card {
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Apply my style to every dictation", isOn: $settings.styleEnabled)
-                    TextEditor(text: $settings.styleText)
-                        .font(.body).scrollContentBackground(.hidden)
-                        .frame(minHeight: 130).padding(10)
-                        .background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .disabled(!settings.styleEnabled).opacity(settings.styleEnabled ? 1 : 0.5)
-                    Text("e.g. “British English, no exclamation marks, sign off with ‘, G’.” Applies to all modes except Flow.")
-                        .font(.caption).foregroundStyle(.secondary)
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "info.circle.fill").foregroundStyle(.tint).font(.title3)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("What is a style?").font(.subheadline.weight(.semibold))
+                        Text("A style is a second prompt layer added on top of your dictation mode. The mode decides what Claude does with your words; the active style nudges how the result reads (tone, register, formatting). The built-in “Normal” style is neutral, so it changes nothing. Switch styles anytime with Fn + [ and Fn + ], or from the menu bar.")
+                            .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
+
+            Card(padding: 0) {
+                HStack(spacing: 0) {
+                    list
+                    Divider()
+                    Group {
+                        if let id = selectedID, settings.styles.contains(where: { $0.id == id }) {
+                            editor(id: id)
+                        } else {
+                            ContentUnavailableView("Select a style", systemImage: "paintbrush",
+                                                   description: Text("Each style is a reusable tone/format layer added on top of your mode."))
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .frame(minHeight: 420)
+            }
         }
+        .onAppear { if selectedID == nil { selectedID = settings.activeStyleID } }
+    }
+
+    private var list: some View {
+        VStack(spacing: 0) {
+            List(selection: $selectedID) {
+                ForEach(settings.styles) { st in
+                    HStack(spacing: 8) {
+                        Image(systemName: "paintbrush")
+                            .foregroundStyle(.secondary).frame(width: 16)
+                        Text(st.name).lineLimit(1)
+                        Spacer(minLength: 6)
+                        if st.id == settings.activeStyleID {
+                            Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint).font(.caption)
+                        }
+                    }
+                    .padding(.vertical, 3)
+                    .tag(st.id)
+                }
+                .onMove { from, to in settings.styles.move(fromOffsets: from, toOffset: to) }
+            }
+            .listStyle(.inset)
+            .scrollContentBackground(.hidden)
+            HStack(spacing: 14) {
+                Button { let id = addStyle(); selectedID = id } label: { Label("New", systemImage: "plus") }
+                    .help("Add a new style")
+                Spacer()
+                Button { settings.resetStylesToDefaults(); selectedID = settings.activeStyleID } label: {
+                    Label("Reset", systemImage: "arrow.counterclockwise")
+                }.help("Remove all custom styles, keep only Normal")
+            }
+            .buttonStyle(.borderless)
+            .font(.callout)
+            .padding(.horizontal, 14).padding(.vertical, 9)
+        }
+        .frame(width: 220)
+    }
+
+    private func index(of id: UUID) -> Int? { settings.styles.firstIndex { $0.id == id } }
+
+    private func editor(id: UUID) -> some View {
+        let st = settings.styles.first { $0.id == id }
+        let isNormal = (st?.builtin ?? false) && (st?.name == "Normal")
+        let nameB = Binding(get: { settings.styles.first { $0.id == id }?.name ?? "" },
+                            set: { v in if let i = index(of: id) { settings.styles[i].name = v } })
+        let promptB = Binding(get: { settings.styles.first { $0.id == id }?.prompt ?? "" },
+                              set: { v in if let i = index(of: id) { settings.styles[i].prompt = v } })
+        let isActive = settings.activeStyleID == id
+
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack(spacing: 10) {
+                    TextField("Name", text: nameB).cleanField().frame(maxWidth: 240).disabled(isNormal)
+                    Button { settings.activeStyleID = id } label: {
+                        Label(isActive ? "Active" : "Make active", systemImage: isActive ? "checkmark.circle.fill" : "circle")
+                    }
+                    .buttonStyle(.borderless).disabled(isActive)
+                    Spacer()
+                    if !isNormal {
+                        Button(role: .destructive) { deleteStyle(id) } label: { Image(systemName: "trash") }
+                            .buttonStyle(.borderless).foregroundStyle(.red).help("Delete this style")
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Text("Style prompt").font(.subheadline.weight(.semibold))
+                        Text("layered on top of the mode when reprompting").font(.caption).foregroundStyle(.secondary)
+                    }
+                    if isNormal {
+                        Text("“Normal” is neutral: it adds nothing, so your modes behave exactly as their own prompts define. Create a new style to add a tone or format layer.")
+                            .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    } else {
+                        TextEditor(text: promptB)
+                            .font(.system(.callout, design: .monospaced)).scrollContentBackground(.hidden)
+                            .frame(minHeight: 200).padding(12)
+                            .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        Text("e.g. “British English, no exclamation marks, sign off with ‘, G’.” Applies on top of every mode except Flow (raw dictation).")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding(28)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    @discardableResult
+    private func addStyle() -> UUID {
+        let st = Style(name: "New style", prompt: "")
+        settings.styles.append(st)
+        return st.id
+    }
+
+    private func deleteStyle(_ id: UUID) {
+        selectedID = nil
+        settings.styles.removeAll { $0.id == id }
+        if settings.activeStyleID == id, let first = settings.styles.first { settings.activeStyleID = first.id }
     }
 }
 
@@ -437,66 +553,35 @@ struct StyleView: View {
 
 struct TransformsView: View {
     @ObservedObject var store = TransformsStore.shared
-    @ObservedObject var pad = Scratchpad.shared
-    @State private var running: UUID?
     @State private var errorMessage: String?
 
     var body: some View {
         SectionScaffold(title: "Transforms",
-                        subtitle: "One-tap rewrites you can run on the Scratchpad text.") {
+                        subtitle: "Actions that run on text you’ve selected. Highlight some text in any app, then speak the transform’s Verbal Shortcut (e.g. “fix grammar”) — Verba runs it on your selection and replaces it. Works in every mode.") {
             if store.items.isEmpty {
                 EmptyState(icon: "arrow.triangle.2.circlepath", title: "No transforms yet",
-                           message: "Build one-tap rewrites for your Scratchpad text, like “Make it formal”, “Translate to English”, or “Turn into bullet points”. Give each a name and a prompt, then run it on whatever is in the Scratchpad.")
+                           message: "Create reusable text actions like “Make it formal”, “Translate to English”, or “Turn into bullet points”. Give each a Verbal Shortcut (the phrase you’ll say) and a prompt. Then select text anywhere, say the shortcut, and Verba transforms the selection.")
             }
             VStack(spacing: 12) {
                 ForEach($store.items) { $t in
                     Card {
                         VStack(alignment: .leading, spacing: 10) {
                             HStack {
-                                TextField("Name", text: $t.name).cleanField().frame(width: 220)
+                                TextField("Verbal Shortcut", text: $t.name).cleanField().frame(width: 240)
                                 Spacer()
-                                Button { run(t) } label: {
-                                    Label(running == t.id ? "Running…" : "Run on Scratchpad", systemImage: "play.fill")
-                                }.disabled(running != nil || pad.text.isEmpty).buttonStyle(.borderless)
                                 removeButton { store.items.removeAll { $0.id == t.id } }
                             }
                             TextField("Prompt", text: $t.prompt, axis: .vertical).cleanField()
                         }
                     }
                 }
-                addButton("Add transform") { store.items.append(Transform(name: "New transform", prompt: "Rewrite the text…")) }
+                addButton("Add transform") { store.items.append(Transform(name: "New shortcut", prompt: "Rewrite the text…")) }
                 if let errorMessage {
                     Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                         .font(.callout)
                         .foregroundStyle(.red)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 2)
-                }
-            }
-        }
-    }
-
-    private func run(_ t: Transform) {
-        running = t.id
-        errorMessage = nil
-        let input = pad.text
-        Task {
-            do {
-                let out = try await Reprompter(model: Settings.shared.claudeModel)
-                    .reprompt(transcript: input, systemPrompt: t.prompt + "\nOutput ONLY the transformed text.")
-                await MainActor.run {
-                    let trimmed = out.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if trimmed.isEmpty {
-                        errorMessage = "Transform returned an empty result."
-                    } else {
-                        pad.text = out
-                    }
-                    running = nil
-                }
-            } catch {
-                await MainActor.run {
-                    errorMessage = "Transform failed: \(error.localizedDescription)"
-                    running = nil
                 }
             }
         }
@@ -524,7 +609,7 @@ struct ScratchpadView: View {
                 .overlay {
                     if pad.text.isEmpty {
                         EmptyState(icon: "note.text", title: "Empty scratchpad",
-                                   message: "A free-form space for text. Dictate into it, paste notes, then run a Transform on it (make it formal, translate, summarize…) and copy the result.")
+                                   message: "A free-form space for text. Dictate into it, paste notes, edit, and copy the result.")
                             .allowsHitTesting(false)
                     }
                 }

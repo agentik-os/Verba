@@ -100,6 +100,9 @@ enum Markdown {
         t = replace(t, #"\*\*([^*]+)\*\*"#, "<strong>$1</strong>")
         t = replace(t, #"__([^_]+)__"#, "<strong>$1</strong>")
         t = replace(t, #"(?<!\*)\*([^*\n]+)\*(?!\*)"#, "<em>$1</em>")
+        // Single-underscore italics (_word_), but only at word boundaries so snake_case
+        // identifiers like file_name_here are left untouched.
+        t = replace(t, #"(?<![\w_])_([^_\n]+)_(?![\w_])"#, "<em>$1</em>")
         t = replace(t, #"\[([^\]]+)\]\(([^)]+)\)"#, "<a href=\"$2\">$1</a>")
         return t
     }

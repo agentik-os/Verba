@@ -19,7 +19,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let fnSwitchThreshold = 0.4     // tap-toggle: hold Fn ≥ this (mid-recording) → switch mode & keep listening; shorter → stop & send
     private let fnHoldThreshold = 0.8   // hold longer than this → release auto-finishes; a
                                         // deliberate "tap" (≤0.8s) latches for hands-free listening
-    private var processingTask: Task<Void, Never>?
+    // Each in-flight Session runs its own concurrent processing Task, keyed by Session id, so
+    // several dictations can transcribe/reprompt in parallel (the recorder is free the instant a
+    // recording stops). Esc cancels them all. The old single-session `processingTask` is gone.
+    private var sessionTasks: [UUID: Task<Void, Never>] = [:]
     private let processingTimeout: Double = 180   // hard ceiling on transcribe+reprompt so a hung backend can't spin forever
     private var cancellables = Set<AnyCancellable>()
     private var tapPermissionNagged = false   // show the "grant Fn permission" alert at most once
@@ -30,9 +33,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var lastDeliveredBundle: String?  // app it was pasted into
 
     private enum State { case idle, recording, processing }
+    // `state` is the DISPLAY state of the overlay/menu-bar icon (idle / recording / processing).
+    // It no longer gates the recorder: a new recording can begin while older Sessions process.
+    // The recorder is busy only while `state == .recording`; processing lives in concurrent
+    // Sessions (see sessionTasks / SessionStore), so handing a recording off frees the recorder.
     private var state: State = .idle { didSet { refreshUI() } }
+
+    /// Everything one record→process→deliver run needs, snapshotted when the recording stops so
+    /// the Session's concurrent Task is self-contained and never reads a field a newer recording
+    /// has since overwritten. Mirrors the instance fields the old single-session finish() used.
+    private struct SessionContext {
+        let session: Session
+        let audioURL: URL
+        let capturedTarget: PasteTarget?
+        let capturedBundleID: String?
+        let recordStartedAt: Date?
+        let countStats: Bool
+    }
     private var statusLine = ""
     private var capturedBundleID: String?
+    private var capturedTarget: PasteTarget?  // app + focused field captured at record start, so auto-paste can restore focus across Space/app switches
     private var capturedSelection: String?  // text selected in the active app when recording started
     private var forcedProfile: Profile?     // set when a profile-specific shortcut started the dictation
 
@@ -45,6 +65,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var settingsWC: NSWindowController?
     private var historyWC: NSWindowController?
+    private var sessionsWC: NSWindowController?
     private var onboardingWC: NSWindowController?
     private var mainWC: NSWindowController?
     private var reviewWindow: NSWindow?
@@ -75,6 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         FnTap.shared.onFnUp = { [weak self] in self?.fnUp() }
         FnTap.shared.onFnControl = { [weak self] in self?.fnControlPressed() }   // ⌥+Fn → today's to-do glance
         FnTap.shared.onModeCycle = { [weak self] dir in self?.modeCycleGesture(dir) }   // Fn+Tab → next/prev mode
+        FnTap.shared.onStyleCycle = { [weak self] dir in self?.styleCycleGesture(dir) } // Fn+[ / Fn+] → prev/next style
         FnTap.shared.onNoteRecord = { [weak self] in self?.startNoteRecording() }   // Fn+Z → record a note
         FnTap.shared.onTodoCapture = { [weak self] in self?.startTodoCapture() }    // Fn+§ → add a to-do
         FnTap.shared.onDigit = { [weak self] n in self?.fnDigit(n) ?? false }
@@ -616,9 +638,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func trigger(forced: Profile?) {
         switch state {
-        case .idle: startRecording(forced: forced)
+        // `.processing` no longer blocks the recorder — start a new dictation over an in-flight
+        // Session (it keeps processing in the background) exactly as from idle.
+        case .idle, .processing: startRecording(forced: forced)
         case .recording: stopAndProcess()   // re-press = send (Lock); Direct stops on key release
-        case .processing: break
         }
     }
 
@@ -654,7 +677,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NotesController.shared.cancelRecord &+= 1
             noteLevelTimer?.invalidate(); noteLevelTimer = nil
         }
-        processingTask?.cancel(); processingTask = nil
+        // Cancel every in-flight Session's processing Task (Esc aborts whatever is happening) and
+        // drop them from the store so none lands in the completed list.
+        for (_, task) in sessionTasks { task.cancel() }
+        sessionTasks.removeAll()
+        for session in SessionStore.shared.inflight {
+            session.status = .cancelled
+            SessionStore.shared.complete(session)   // .cancelled is dropped, not listed
+        }
         todoCaptureTask?.cancel(); todoCaptureTask = nil
         if todoCaptureRecording { todoCaptureRecording = false }
         TodoCaptureController.shared.capturing = false
@@ -687,7 +717,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     //   • ⌥ + Fn (hold Option, tap Fn) → today's to-do glance popup (see fnControlPressed)
     private func fnDown() {
         guard Settings.shared.useFnAsPrimary else { return }
-        if state == .processing { return }
+        // `.processing` no longer blocks a new dictation: an in-flight Session keeps processing in
+        // the background while this Fn tap starts a fresh recording (handled by the idle branch
+        // below, since the recorder — busy only while .recording — is free).
         // A voice to-do capture is in flight (state stays .idle while it records): a bare Fn tap
         // now STOPS & finishes it — the user needn't re-press the Fn+§ chord. This also covers the
         // Fn+§ toggle-stop chord's bare-Fn half (don't spin up a phantom dictation on the shared
@@ -765,6 +797,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if state == .processing { return }
         InputCoach.shared.note(.doubleFn)   // mark the mode-switch gesture as learned
         cycleMode(dir)
+    }
+
+    /// Fn + ] (next) / Fn + [ (previous) → cycle the active style (the tone/format layer applied
+    /// on top of the mode when reprompting). Shows a brief overlay flash of the new style name.
+    private func styleCycleGesture(_ dir: Int) {
+        cancelToggleHold()
+        if state == .processing { return }
+        let style = Settings.shared.cycleStyle(dir)
+        SoundFX.mode()
+        if state == .idle {
+            flashMode("Style · \(style.name)")
+        } else {
+            refreshUI()   // recording: keep listening; menu-bar checkmark updates on next open
+        }
     }
 
     /// The change-mode action shared by the Fn gesture and the configurable global shortcut.
@@ -871,16 +917,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let p = profiles[n - 1]
         InputCoach.shared.note(.doubleFn)   // onboarding: "mode picker learned"
         switch state {
-        case .processing:
-            return false
         case .recording:
             // Fn + number while recording → switch THIS dictation's mode live.
             forcedProfile = p
             overlay.model.selectedID = p.id
             overlay.model.title = "Listening · \(p.name)"
             overlay.model.modeName = p.name
-        case .idle:
-            // Fn + number from idle (or with the picker open) → record in that mode.
+        case .idle, .processing:
+            // Fn + number from idle (or while a background Session processes) → record in that mode.
             if overlay.model.menu { Settings.shared.activeProfileID = p.id; dismissMenu() }
             startRecording(forced: p)
         }
@@ -989,7 +1033,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.state = .recording
             SoundFX.start()
             self.forcedProfile = forced
-            self.capturedBundleID = Output.frontmostBundleID()
+            self.capturedTarget = Output.captureTarget()   // app + focused field, for cross-Space auto-paste restore
+            self.capturedBundleID = self.capturedTarget?.bundleID ?? Output.frontmostBundleID()
             self.learnFromManualEdits()   // before recording: did the user fix our last paste by hand?
             self.capturedSelection = Settings.shared.useSelectionContext ? Output.selectedText() : nil
 
@@ -1040,59 +1085,128 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         levelTimer?.invalidate(); levelTimer = nil
         guard let url = recorder.stop() else { state = .idle; overlay.hide(); return }
         SoundFX.stop()
-        state = .processing
-        statusLine = "Transcribing…"
-        overlay.model.recording = false
-        overlay.model.paused = false
-        startQuips()   // rotate jokes during the whole process (transcription + reprompt), local too
-        refreshUI()
 
+        // Snapshot this recording's whole context, then free the recorder immediately so the user
+        // can start a NEW dictation while this one processes. The capture overwrites nothing the
+        // newer recording sets because everything lives in the SessionContext from here on.
         let bundleID = capturedBundleID
         let forced = forcedProfile
         // #2 Edit-last: treat this dictation as an instruction applied to the last result
         // (reuses selection mode: transcript = instruction, lastResultText = the text to edit).
         let selection = editLastInstruction ? lastResultText : capturedSelection
+        let modeName = (forced ?? Settings.shared.profile(forBundleID: bundleID)).name
+        let ctx = SessionContext(session: Session(modeName: modeName),
+                                 audioURL: url,
+                                 capturedTarget: capturedTarget,
+                                 capturedBundleID: bundleID,
+                                 recordStartedAt: recordStartedAt,
+                                 countStats: true)
         editLastInstruction = false
         forcedProfile = nil
         capturedSelection = nil
-        processingTask = Task {
+        capturedTarget = nil
+
+        // The recorder is now free. Show the processing pill for this latest Session.
+        state = .processing
+        statusLine = "Transcribing…"
+        overlay.model.recording = false
+        overlay.model.paused = false
+        showProcessingOverlay()
+
+        runSession(ctx, forcedProfile: forced, selection: selection)
+    }
+
+    /// Spawn the concurrent processing Task for a Session. Several of these can run at once; each is
+    /// tracked by Session id so Esc can cancel them all. On success it delivers (or, if the user has
+    /// since moved to an unrelated app, lands in the Sessions list with Copy); on failure it records
+    /// the error on the Session and surfaces it without blocking the recorder.
+    private func runSession(_ ctx: SessionContext, forcedProfile forced: Profile?, selection: String?) {
+        let session = ctx.session
+        SessionStore.shared.start(session)
+        let url = ctx.audioURL
+        let bundleID = ctx.capturedBundleID
+        sessionTasks[session.id] = Task {
             do {
-                // Hard ceiling so a hung transcription/reprompt backend can't spin the
-                // overlay forever — on timeout this throws and resets to idle below.
+                // Hard ceiling so a hung transcription/reprompt backend can't spin forever.
                 let result = try await withTimeout(seconds: self.processingTimeout) {
                     try await Pipeline.run(audioURL: url, frontmostBundleID: bundleID, forcedProfile: forced, selection: selection) { [weak self] s in
-                        DispatchQueue.main.async { self?.statusLine = s; self?.refreshUI() }   // jokes own the overlay title
+                        DispatchQueue.main.async {
+                            guard let self else { return }
+                            session.status = s.lowercased().contains("transcrib") ? .transcribing : .processing
+                            // The processing pill follows the LATEST Session's status line.
+                            if self.isLatestInflight(session) { self.statusLine = s; self.refreshUI() }
+                        }
                     }
                 }
                 if Task.isCancelled { return }
-                await MainActor.run { self.processingTask = nil; self.finish(result: result, audioURL: url) }
+                await MainActor.run {
+                    self.sessionTasks[session.id] = nil
+                    self.finish(ctx: ctx, result: result)
+                }
             } catch is CancellationError {
                 // user cancelled, handled by cancelEverything()
             } catch {
                 if Task.isCancelled { return }
                 await MainActor.run {
-                    self.processingTask = nil
-                    self.stopQuips()
-                    self.overlay.model.recording = false
-                    if error is TimeoutError {
-                        self.flashError("Timed out — try again")   // hung backend, reset to idle
-                        return
-                    }
-                    // Silent / unreadable audio is a benign non-event: show a quiet, auto
-                    // dismissing hint instead of a red error modal.
-                    let msg = error.localizedDescription.lowercased()
-                    let tooShort = msg.contains("at least 300ms") || msg.contains("invalid audio") || msg.contains("too short")
-                    if case TranscribeError.empty = error {
-                        self.flashInfo("Didn't catch that")
-                    } else if tooShort {
-                        self.flashInfo("Didn't catch that")   // benign: silence / too short
-                    } else {
-                        // Non-blocking red flash in the widget (no modal, no OK button).
-                        self.flashError("Transcription failed, try again")
-                    }
+                    self.sessionTasks[session.id] = nil
+                    self.failSession(session, error: error, latestShowsOverlay: true)
                 }
             }
         }
+    }
+
+    /// Mark a Session failed and surface it. The latest Session shows the overlay flash/info (so the
+    /// single-session happy path is byte-identical); an older background Session lands quietly in the
+    /// Sessions list as failed without hijacking the overlay the user is now using.
+    @MainActor
+    private func failSession(_ session: Session, error: Error, latestShowsOverlay: Bool) {
+        let wasLatest = latestShowsOverlay && isLatestInflight(session)
+        let msg = error.localizedDescription.lowercased()
+        let tooShort = msg.contains("at least 300ms") || msg.contains("invalid audio") || msg.contains("too short")
+        let benign: Bool
+        if case TranscribeError.empty = error { benign = true } else { benign = tooShort }
+
+        if benign {
+            session.status = .cancelled   // a silent/too-short capture is a non-event: don't list it
+        } else {
+            session.status = .failed
+            session.error = (error is TimeoutError) ? "Timed out" : "Transcription failed"
+        }
+        SessionStore.shared.complete(session)
+
+        guard wasLatest else { refreshUI(); return }   // background failure: just refresh the list
+        stopQuipsIfNoInflight()
+        overlay.model.recording = false
+        if benign {
+            flashInfo("Didn't catch that")
+        } else if error is TimeoutError {
+            flashError("Timed out — try again")
+        } else {
+            flashError("Transcription failed, try again")
+        }
+        // Older Sessions still processing behind this failed one → restore the processing pill.
+        if SessionStore.shared.hasInflight {
+            state = .processing; statusLine = "Transcribing…"; showProcessingOverlay()
+        }
+    }
+
+    /// True when `session` is the most recently started in-flight Session — the one whose status the
+    /// shared processing overlay reflects.
+    private func isLatestInflight(_ session: Session) -> Bool {
+        SessionStore.shared.inflight.last?.id == session.id
+    }
+
+    /// Show the shared processing pill (quips + spinner). Used when a recording hands off and when
+    /// the latest recording finished but older Sessions are still processing.
+    private func showProcessingOverlay() {
+        startQuips()
+        refreshUI()
+    }
+
+    /// Stop the rotating quips only once NO Session is still processing, so the pill keeps rotating
+    /// jokes while any background Session runs.
+    private func stopQuipsIfNoInflight() {
+        if !SessionStore.shared.hasInflight { stopQuips() }
     }
 
     /// Rotate a fresh joke (or the neutral word when off) every few seconds while processing,
@@ -1101,7 +1215,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         quipTimer?.invalidate()
         overlay.model.title = Quips.current()
         let t = Timer(timeInterval: 3.5, repeats: true) { [weak self] _ in
-            guard let self, self.state == .processing else { return }
+            // Keep rotating jokes while ANY Session is still processing (and the overlay isn't
+            // showing a live recording), not just while the latest one is.
+            guard let self, SessionStore.shared.hasInflight, !self.overlay.model.recording else { return }
             self.overlay.model.title = Quips.current()
         }
         RunLoop.main.add(t, forMode: .common)
@@ -1110,9 +1226,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func stopQuips() { quipTimer?.invalidate(); quipTimer = nil }
 
     @MainActor
-    private func finish(result: PipelineResult, audioURL: URL, countStats: Bool = true) {
-        stopQuips()
-        lastAudioURL = audioURL   // #8: keep the last recording so it can be redone in another mode
+    private func finish(ctx: SessionContext, result: PipelineResult) {
+        let session = ctx.session
+        session.original = result.original
+        let wasLatest = isLatestInflight(session)
+        lastAudioURL = ctx.audioURL   // #8: keep the last recording so it can be redone in another mode
         // Remember last used mode: the mode actually applied to this dictation (a mid-dictation
         // override or auto-detected match included) becomes the default for the next one.
         if Settings.shared.rememberLastMode, let usedID = result.profileID,
@@ -1120,43 +1238,120 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
            Settings.shared.activeProfileID != usedID {
             Settings.shared.activeProfileID = usedID
         }
+
+        // Whether it's safe to auto-paste into the ORIGINAL target right now. A background Session
+        // completing while the user has moved on to an unrelated app must NOT steal focus / paste
+        // there (task 18): only auto-paste when the captured app is still frontmost. Otherwise the
+        // result lands in the Sessions list with Copy. The single-session happy path (the user is
+        // still where they dictated, OR there's no captured app) always auto-pastes as before.
+        let safeToAutoPaste: Bool = {
+            guard let captured = ctx.capturedTarget, let pid = captured.pid else { return true }
+            return NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
+        }()
+
         let deliver: (String) -> Void = { [weak self] text in
             guard let self else { return }
+            session.resultText = text
+            session.status = .done
             // #7 smart formatting: pick rich/plain based on the target app (toggle in Labs).
-            let rich = Settings.shared.smartFormatting ? Output.prefersRichText(self.capturedBundleID)
-                                                       : Settings.shared.richTextPaste
-            if Settings.shared.autoPaste {
-                if Output.paste(text, rich: rich) {
+            let rich = Output.willPasteRich(ctx.capturedBundleID)
+            if Settings.shared.autoPaste && safeToAutoPaste {
+                if Output.paste(text, rich: rich, target: ctx.capturedTarget) {
+                    session.autoPasted = true
                     // Auto-learn: remember what we pasted so the NEXT dictation can diff it against
                     // any manual fix the user made in this field and learn the correction.
                     self.lastDelivered = text
-                    self.lastDeliveredBundle = self.capturedBundleID
+                    self.lastDeliveredBundle = ctx.capturedBundleID
                 } else {
                     Output.copyToClipboard(text, rich: rich)
                     Output.promptAccessibility()
                     self.notify("Copied to clipboard", "Grant Accessibility to enable auto-paste.")
                 }
+            } else if Settings.shared.autoPaste {
+                // Auto-paste is on but the user is in a different app now — copy to the clipboard
+                // (no focus hijack) and leave it in the Sessions list to paste when ready.
+                Output.copyToClipboard(text, rich: rich)
             } else if Settings.shared.copyToClipboard {
                 Output.copyToClipboard(text, rich: rich)
             }
             History.shared.add(original: result.original, reprompted: result.reprompted,
-                               profileName: result.profileName, engine: result.engine, audioURL: audioURL)
+                               profileName: result.profileName, engine: result.engine, audioURL: ctx.audioURL)
             self.lastResultText = text   // #2: remember for "edit last by voice"
-            if Settings.shared.toneMatch { ToneStore.record(bundleID: self.capturedBundleID, text: text) }
-            if countStats {
-                let dur = self.recordStartedAt.map { Date().timeIntervalSince($0) } ?? 0
+            if Settings.shared.toneMatch { ToneStore.record(bundleID: ctx.capturedBundleID, text: text) }
+            if ctx.countStats {
+                let dur = ctx.recordStartedAt.map { Date().timeIntervalSince($0) } ?? 0
                 Stats.shared.record(words: wordCount(text), seconds: dur)
                 Leaderboard.submit()   // keep the public leaderboard up to date
             }
-            self.flashDone()
+            // Surface the finished Session: list it (with Copy) and notify without stealing focus.
+            SessionStore.shared.complete(session)
+            self.notifySessionDone(session, wasLatest: wasLatest)
         }
 
-        if Settings.shared.reviewBeforeSend {
-            overlay.hide()
-            state = .idle
+        // Review-before-send only applies to the FOREGROUND (latest) Session — a background Session
+        // can't pop a modal review over the user's current work; it auto-delivers/lands in the list.
+        if Settings.shared.reviewBeforeSend && wasLatest && safeToAutoPaste {
+            // Processing is done; take it out of in-flight (it lands in the list on confirm via
+            // deliver→complete). Stop the pill only when no OTHER Session is still processing.
+            SessionStore.shared.endInflight(session)
+            stopQuipsIfNoInflight()
+            if SessionStore.shared.hasInflight {
+                state = .processing; statusLine = "Transcribing…"; overlay.model.recording = false; showProcessingOverlay()
+            } else {
+                overlay.hide(); state = .idle
+            }
             showReview(original: result.original, text: result.reprompted, onConfirm: deliver)
         } else {
             deliver(result.reprompted)
+        }
+    }
+
+    /// Surface a freshly-completed Session. The foreground (latest) Session gets the familiar
+    /// "✓ Done" overlay flash; a background Session that finished while the user worked elsewhere
+    /// gets a quiet, non-focus-stealing toast and sits in the Sessions list with Copy. Either way,
+    /// the rotating jokes stop only once no Session is left processing.
+    @MainActor
+    private func notifySessionDone(_ session: Session, wasLatest: Bool) {
+        if wasLatest {
+            flashDone()   // identical single-session happy-path flash; sets state = .idle
+            // If older Sessions are still processing behind this one, keep the pill alive for them.
+            if SessionStore.shared.hasInflight {
+                statusLine = "Transcribing…"
+                state = .processing
+                overlay.model.done = false
+                overlay.model.recording = false
+                showProcessingOverlay()
+            }
+        } else {
+            // Background completion: never hijack the overlay the user may be using. If nothing else
+            // is happening, a brief, silent toast; otherwise stay quiet (the Sessions list shows it).
+            SoundFX.done()
+            if state == .idle && !SessionStore.shared.hasInflight && !overlay.model.recording {
+                flashSessionToast(session)
+            }
+            refreshUI()   // rebuild the menu so the new result shows in "Recent results"
+        }
+        stopQuipsIfNoInflight()
+    }
+
+    /// A brief, non-focus-stealing "✓ <mode> ready" toast for a background Session completion, with
+    /// the result already on the clipboard / in the Sessions list. Mirrors flashInfo's lifecycle.
+    @MainActor
+    private func flashSessionToast(_ session: Session) {
+        overlay.model.recording = false
+        overlay.model.paused = false
+        overlay.model.menu = false
+        overlay.model.done = true
+        overlay.model.error = false
+        overlay.model.info = false
+        overlay.model.title = session.autoPasted ? "Done · \(session.modeName)" : "Ready · \(session.modeName)"
+        overlay.show()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+            guard let self, self.state == .idle, self.overlay.model.done,
+                  !SessionStore.shared.hasInflight, !self.overlay.model.recording else { return }
+            self.overlay.model.done = false
+            self.overlay.model.title = ""
+            self.overlay.hide()
         }
     }
 
@@ -1315,6 +1510,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(mi)
         }
 
+        // Style picker: a tone/format layer applied on top of the active mode (Fn + [ / Fn + ]).
+        menu.addItem(.separator())
+        let styleHeader = NSMenuItem(title: "Style", action: nil, keyEquivalent: "")
+        styleHeader.isEnabled = false
+        menu.addItem(styleHeader)
+        for st in s.styles {
+            let mi = NSMenuItem(title: st.name, action: #selector(pickDefaultStyle(_:)), keyEquivalent: "")
+            mi.target = self
+            mi.state = (st.id == s.activeStyleID) ? .on : .off
+            mi.representedObject = st.id.uuidString
+            menu.addItem(mi)
+        }
+
         // #2: edit the last result by voice ("make it shorter", "more formal", "translate"…).
         if s.voiceEditLast, lastResultText != nil, state == .idle {
             menu.addItem(.separator())
@@ -1333,6 +1541,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             redoParent.submenu = redoSub
             menu.addItem(redoParent)
+        }
+
+        // Recent results: completed Sessions (newest first), each with its mode + a Copy action, so
+        // a background result the user ran while busy elsewhere is never lost — they can paste it
+        // later. Surfaced here AND in the floating Sessions panel (Recent results… below).
+        let recent = SessionStore.shared.completed
+        if !recent.isEmpty {
+            menu.addItem(.separator())
+            let header = NSMenuItem(title: "Recent results", action: nil, keyEquivalent: "")
+            header.isEnabled = false
+            menu.addItem(header)
+            for sess in recent.prefix(6) {
+                let title = sess.status == .failed
+                    ? "\(sess.modeName) · \(sess.error ?? "Failed")"
+                    : "\(sess.modeName) · \(Self.preview(sess.resultText))"
+                let mi = NSMenuItem(title: title, action: #selector(copySessionResult(_:)), keyEquivalent: "")
+                mi.target = self
+                mi.representedObject = sess.id.uuidString
+                mi.image = NSImage(systemSymbolName: sess.status == .failed ? "exclamationmark.triangle" : "doc.on.doc",
+                                   accessibilityDescription: nil)
+                mi.isEnabled = sess.status != .failed
+                menu.addItem(mi)
+            }
+            add(menu, "Recent results…", #selector(openSessions), "")
+            add(menu, "Clear recent results", #selector(clearSessions), "")
         }
 
         menu.addItem(.separator())
@@ -1383,6 +1616,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(i)
     }
 
+    /// A one-line preview of a result for menu labels (first line, clipped).
+    static func preview(_ text: String, max: Int = 48) -> String {
+        let line = text.split(whereSeparator: { $0 == "\n" || $0 == "\r" }).first.map(String.init) ?? text
+        let t = line.trimmingCharacters(in: .whitespaces)
+        return t.count > max ? String(t.prefix(max)) + "…" : t
+    }
+
+    /// Copy a completed Session's result back to the clipboard (the "paste it later" path for a
+    /// background result the user couldn't auto-paste because they'd moved to another app).
+    @objc private func copySessionResult(_ sender: NSMenuItem) {
+        guard let idStr = sender.representedObject as? String, let id = UUID(uuidString: idStr),
+              let sess = SessionStore.shared.completed.first(where: { $0.id == id }),
+              !sess.resultText.isEmpty else { return }
+        Output.copyToClipboard(sess.resultText, rich: false)
+        flashInfo("Copied · \(sess.modeName)")
+    }
+
+    @objc private func clearSessions() { SessionStore.shared.clearCompleted(); refreshUI() }
+
     /// A read-only cheat-sheet of every keyboard shortcut, shown as a submenu off the menu-bar
     /// icon so the user always has a reminder of what's available. Items are non-actionable
     /// (autoenablesItems = false keeps them full-colour and readable, not greyed); section
@@ -1424,6 +1676,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             header("Modes  (while holding Fn)")
             ref("Fn + Tab", "Next mode  (add ⇧ for previous)")
             ref(maxN == 1 ? "Fn + 1" : "Fn + 1…\(maxN)", "Pick a mode by number")
+            ref("Fn + ]", "Next style  (Fn + [ for previous)")
 
             m.addItem(.separator())
             header("Capture  (while holding Fn)")
@@ -1444,6 +1697,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshUI()   // rebuild the menu so the checkmark moves to the new default
     }
 
+    @objc private func pickDefaultStyle(_ sender: NSMenuItem) {
+        guard let idStr = sender.representedObject as? String, let id = UUID(uuidString: idStr) else { return }
+        Settings.shared.activeStyleID = id
+        refreshUI()   // rebuild the menu so the checkmark moves to the new style
+    }
+
     /// Choose the microphone Verba records from ("" = follow the system default).
     @objc private func pickMic(_ sender: NSMenuItem) {
         Settings.shared.micUID = (sender.representedObject as? String) ?? ""
@@ -1460,34 +1719,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // #8: re-run the LAST recording through a different mode, no need to speak again.
     @objc private func redoLastMode(_ sender: NSMenuItem) {
-        guard state == .idle, let url = lastAudioURL,
+        // Allowed whenever the recorder is free (idle OR while a background Session processes).
+        guard state != .recording, let url = lastAudioURL,
               let idStr = sender.representedObject as? String, let id = UUID(uuidString: idStr),
               let profile = Settings.shared.profiles.first(where: { $0.id == id }) else { return }
+        // Redo runs as its own concurrent Session, just like a fresh dictation — it reuses the last
+        // recording's audio + captured target. countStats is false (it's a re-run, not new speech).
+        let ctx = SessionContext(session: Session(modeName: profile.name),
+                                 audioURL: url,
+                                 capturedTarget: capturedTarget,
+                                 capturedBundleID: capturedBundleID,
+                                 recordStartedAt: recordStartedAt,
+                                 countStats: false)
         state = .processing
         statusLine = "Redoing in \(profile.name)…"
         overlay.model.recording = false; overlay.model.menu = false
-        startQuips(); refreshUI()
-        let captured = capturedBundleID
-        processingTask = Task {
-            do {
-                let result = try await withTimeout(seconds: self.processingTimeout) {
-                    try await Pipeline.run(audioURL: url, frontmostBundleID: captured,
-                                           forcedProfile: profile, selection: nil) { [weak self] s in
-                        DispatchQueue.main.async { self?.statusLine = s; self?.refreshUI() }
-                    }
-                }
-                if Task.isCancelled { return }
-                await MainActor.run { self.processingTask = nil; self.finish(result: result, audioURL: url, countStats: false) }
-            } catch is CancellationError {
-                // user cancelled, handled by cancelEverything()
-            } catch {
-                if Task.isCancelled { return }
-                await MainActor.run {
-                    self.processingTask = nil; self.stopQuips(); self.overlay.hide(); self.state = .idle
-                    self.flashError(error is TimeoutError ? "Timed out — try again" : "Redo failed, try again")
-                }
-            }
-        }
+        showProcessingOverlay()
+        runSession(ctx, forcedProfile: profile, selection: nil)
     }
     @objc private func checkUpdates() { Updater.shared.checkForUpdates() }
     @objc private func quit() { NSApp.terminate(nil) }
@@ -1502,6 +1750,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func openHistory() {
         if historyWC == nil { historyWC = makeWindow(title: "Verba History", view: HistoryView(), size: NSSize(width: 780, height: 500)) }
         present(historyWC)
+    }
+
+    @objc private func openSessions() {
+        if sessionsWC == nil {
+            sessionsWC = makeWindow(title: "Recent Results",
+                                    view: SessionsView(store: SessionStore.shared),
+                                    size: NSSize(width: 460, height: 420), glass: true)
+        }
+        present(sessionsWC)
     }
 
     private func openOnboarding() {

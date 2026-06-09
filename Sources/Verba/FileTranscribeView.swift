@@ -4,18 +4,111 @@ import UniformTypeIdentifiers
 
 struct FileTranscribeView: View {
     @ObservedObject private var settings = Settings.shared
+    @ObservedObject private var store = TranscriptStore.shared
     @State private var state = "idle"   // idle / working / done / error
     @State private var result = ""
     @State private var error = ""
     @State private var fileName = ""
     @State private var dropTargeted = false
 
+    @State private var selectedID: UUID?      // saved transcript being viewed; nil = import pane
+    @State private var filterTag: String?
+    @State private var savedFlash = false     // brief "Saved ✓" after an import is filed
+
     var body: some View {
+        HStack(spacing: 0) {
+            sidebar.frame(width: 300)
+            Divider()
+            detail.frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .onChange(of: selectedID) { _, _ in if selectedID != nil { state = "idle"; result = ""; error = ""; fileName = "" } }
+    }
+
+    // MARK: - Left: library of saved transcripts
+    private var sidebar: some View {
+        let entries = filterTag == nil ? store.entries : store.entries.filter { $0.tags.contains(filterTag!) }
+        return VStack(spacing: 0) {
+            HStack {
+                Text("Transcripts").font(.system(size: 17, weight: .bold))
+                Spacer()
+                Button { selectedID = nil } label: { Image(systemName: "plus.circle") }
+                    .buttonStyle(.borderless).help("Transcribe a new file")
+            }
+            .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
+
+            if !store.allTags.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        tagChip(label: "All", on: filterTag == nil) { filterTag = nil }
+                        ForEach(store.allTags, id: \.self) { t in
+                            tagChip(label: "#\(t)", on: filterTag == t) { filterTag = (filterTag == t ? nil : t) }
+                        }
+                    }
+                    .padding(.horizontal, 14).padding(.bottom, 8)
+                }
+            }
+
+            if entries.isEmpty {
+                Spacer()
+                VStack(spacing: 6) {
+                    Image(systemName: "waveform").font(.system(size: 24)).foregroundStyle(.tertiary)
+                    Text(filterTag == nil ? "No transcripts yet" : "No transcripts with #\(filterTag!)")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+            } else {
+                List(selection: $selectedID) {
+                    ForEach(entries) { e in row(e).tag(e.id) }
+                }
+                .listStyle(.inset)
+                .scrollContentBackground(.hidden)
+            }
+        }
+    }
+
+    private func row(_ e: TranscriptEntry) -> some View {
+        HStack(alignment: .top, spacing: 9) {
+            Image(systemName: "waveform").font(.system(size: 13))
+                .foregroundStyle(.secondary).frame(width: 16).padding(.top, 2)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(e.sourceName.isEmpty ? snippet(e) : e.sourceName).font(.system(size: 13, weight: .medium)).lineLimit(1)
+                Text(e.date.formatted(date: .abbreviated, time: .omitted)).font(.caption2).foregroundStyle(.tertiary)
+                if !e.tags.isEmpty {
+                    Text(e.tags.prefix(3).map { "#\($0)" }.joined(separator: " "))
+                        .font(.caption2).foregroundStyle(.tint).lineLimit(1)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 3)
+        .contextMenu {
+            Button(role: .destructive) { remove(e) } label: { Label("Delete", systemImage: "trash") }
+        }
+    }
+
+    private func snippet(_ e: TranscriptEntry) -> String {
+        for raw in e.text.split(separator: "\n") {
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            if !line.isEmpty { return String(line.prefix(80)) }
+        }
+        return "Transcript"
+    }
+
+    // MARK: - Right: import a file, or view a saved transcript
+    @ViewBuilder private var detail: some View {
+        if let id = selectedID, let e = store.entries.first(where: { $0.id == id }) {
+            TranscriptDetailView(entry: e).id(e.id)
+        } else {
+            importPane
+        }
+    }
+
+    private var importPane: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Transcribe file").font(.system(size: 28, weight: .bold))
-                    Text("Drop in an audio or video file and Verba transcribes it with your current engine (\(settings.engine.label)).")
+                    Text("Drop in an audio or video file and Verba transcribes it with your current engine (\(settings.engine.label)). Imports are saved to your transcripts library.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
 
@@ -40,12 +133,19 @@ struct FileTranscribeView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Transcript").font(.subheadline.weight(.semibold))
+                            if savedFlash {
+                                Label("Saved to library", systemImage: "checkmark.circle.fill")
+                                    .font(.caption).foregroundStyle(.green)
+                            }
                             Spacer()
                             CopyButton(text: result, title: "Copy")
                         }
                         Text(result).textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(14).background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                        // Per-transcript quick-actions / intent / mic — reuse the shared AdaptPanel.
+                        AdaptPanel(source: result)
                     }
                 }
             }
@@ -102,6 +202,7 @@ struct FileTranscribeView: View {
 
     private func transcribe(_ url: URL) {
         state = "working"; error = ""; result = ""
+        let source = url.lastPathComponent
         let lang = settings.language.isEmpty ? nil : settings.language
         let t: Transcriber
         switch settings.engine {
@@ -117,10 +218,113 @@ struct FileTranscribeView: View {
                 defer { AudioInput.cleanup(readable, original: url) }
                 var text = try await t.transcribe(fileURL: readable, language: lang, hint: DictionaryStore.shared.hint())
                 text = DictionaryStore.shared.apply(to: text)
-                await MainActor.run { result = Output.trimTrailingNewlines(text); state = "done" }
+                let clean = Output.trimTrailingNewlines(text)
+                await MainActor.run {
+                    result = clean; state = "done"
+                    // SAVE every import into the transcripts library.
+                    if !clean.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        store.add(text: clean, sourceName: source)
+                        savedFlash = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { savedFlash = false }
+                    }
+                }
             } catch {
                 await MainActor.run { self.error = error.localizedDescription; state = "error" }
             }
+        }
+    }
+
+    private func remove(_ e: TranscriptEntry) {
+        let wasSelected = (selectedID == e.id)
+        store.delete(e)
+        if wasSelected { selectedID = nil }
+    }
+
+    private func tagChip(label: String, on: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 12.5, weight: on ? .semibold : .regular))
+                .padding(.horizontal, 12).padding(.vertical, 7)
+                .background(Capsule().fill(on ? Color.primary : Color.primary.opacity(0.07)))
+                .foregroundStyle(on ? AnyShapeStyle(Color(nsColor: .windowBackgroundColor)) : AnyShapeStyle(.primary))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// View/edit a saved transcript: its text, tags, an optional note, plus AdaptPanel quick-actions.
+private struct TranscriptDetailView: View {
+    let entry: TranscriptEntry
+    @ObservedObject private var store = TranscriptStore.shared
+    @State private var note = ""
+    @State private var tags: [String] = []
+    @State private var tagInput = ""
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(entry.sourceName.isEmpty ? "Transcript" : entry.sourceName)
+                            .font(.system(size: 22, weight: .bold)).lineLimit(1)
+                        Text(entry.date.formatted(date: .abbreviated, time: .shortened))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    CopyButton(text: entry.text, title: "Copy")
+                    Button(role: .destructive) { store.delete(entry) } label: { Image(systemName: "trash") }
+                        .buttonStyle(.borderless).foregroundStyle(.secondary).help("Delete transcript")
+                }
+
+                Text(entry.text).textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14).background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                tagEditor
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Note").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                    TextEditor(text: $note)
+                        .font(.body).frame(minHeight: 70)
+                        .padding(6).background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .onChange(of: note) { _, v in store.update(entry, note: v) }
+                }
+
+                // Per-transcript quick-actions / intent / mic — reuse the shared AdaptPanel.
+                AdaptPanel(source: entry.text)
+            }
+            .padding(24)
+        }
+        .onAppear { note = entry.note; tags = entry.tags }
+    }
+
+    private var tagEditor: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if !tags.isEmpty {
+                FlowLayout(spacing: 6) {
+                    ForEach(tags, id: \.self) { t in
+                        HStack(spacing: 4) {
+                            Text("#\(t)").font(.caption)
+                            Button { tags.removeAll { $0 == t }; store.update(entry, tags: tags) } label: { Image(systemName: "xmark.circle.fill") }
+                                .buttonStyle(.plain).foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 9).padding(.vertical, 4)
+                        .background(Capsule().fill(Color.primary.opacity(0.08)))
+                    }
+                }
+            }
+            HStack(spacing: 8) {
+                Image(systemName: "number").foregroundStyle(.secondary)
+                TextField("Add tags (press Enter)", text: $tagInput)
+                    .textFieldStyle(.plain)
+                    .onSubmit {
+                        let new = NotesStore.mergeTags(tagInput.split(whereSeparator: { $0 == " " || $0 == "," }).map(String.init))
+                        tags = NotesStore.mergeTags(tags + new); tagInput = ""
+                        store.update(entry, tags: tags)
+                    }
+            }
+            .padding(.horizontal, 12).padding(.vertical, 8)
+            .background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
     }
 }
