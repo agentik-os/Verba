@@ -656,6 +656,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             FnTap.shared.stop()
         }
+        // Rebuild the menu (incl. the Keyboard Shortcuts cheat-sheet) so it reflects the new
+        // trigger setting immediately, not only on the next state change.
+        refreshUI()
     }
 
     /// The Fn event tap failed to start → permissions are missing. Tell the user and open
