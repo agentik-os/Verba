@@ -19,3 +19,4 @@ website/tsconfig.tsbuildinfo
 dist/
 .vercel
 .env*
+.env*.local
