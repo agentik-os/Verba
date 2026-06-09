@@ -30,6 +30,10 @@ struct PipelineResult {
     var profileName: String
     var profileID: UUID? = nil         // the mode actually used (for "remember last used mode")
     var engine: String
+    // Context mode + Labs "Agentic actions": when the spoken request is an actionable command
+    // (create an event / reminder / draft an email), the vision model returns a structured action
+    // instead of text. Non-nil here means the caller must CONFIRM and execute it rather than paste.
+    var action: VerbaAction? = nil
 }
 
 /// record → transcribe → (Claude reprompt) → result. Output/side-effects handled by the caller.
@@ -61,6 +65,9 @@ enum Pipeline {
         // 2. A dedicated-shortcut profile wins; else auto-detect / active profile.
         let profile = forcedProfile ?? s.profile(forBundleID: frontmostBundleID)
         var reprompted = original
+        // Context mode + Labs "Agentic actions": set when the vision model resolves the spoken
+        // request into a structured, confirmable action instead of plain screen-grounded text.
+        var detectedAction: VerbaAction? = nil
         // Raw/Flow mode (or reprompting off) → return the transcript untouched, no Claude.
         if s.repromptEnabled && !profile.raw {
             var sys = profile.effectiveSystemPrompt   // Translate mode injects its target language
@@ -135,7 +142,23 @@ enum Pipeline {
                     throw RepromptError.http(0, "Couldn't capture the screen. If Screen Recording was just enabled, quit and reopen Verba, then try again.")
                 }
                 status(Quips.current())
-                reprompted = try await r.repromptVision(transcript: original, systemPrompt: sys, imagePNG: png)
+                // Labs "Agentic actions": ask the model to return EITHER a structured action OR
+                // plain text. The screenshot still goes to the vision model (so "draft a reply to
+                // this email" can read the on-screen email). Parse robustly; ANY parse failure falls
+                // back to treating the whole reply as text, so a result is never lost.
+                if s.agenticActions {
+                    let raw = try await r.repromptVision(
+                        transcript: original,
+                        systemPrompt: sys + agenticActionsAddendum,
+                        imagePNG: png)
+                    if let action = parseAgenticAction(raw) {
+                        detectedAction = action
+                    } else {
+                        reprompted = extractAgenticText(raw)
+                    }
+                } else {
+                    reprompted = try await r.repromptVision(transcript: original, systemPrompt: sys, imagePNG: png)
+                }
             } else if !sel.isEmpty && profile.targetLanguage == nil,
                       let transform = TransformsStore.shared.match(transcript: original) {
                 // Verbal Shortcut: the user selected text and spoke a short phrase that matches
@@ -178,7 +201,7 @@ enum Pipeline {
         // mid-sentence). Detect a mixed result and normalize it to its single dominant language.
         // Applies to EVERY mode, including Flow/raw (which otherwise ships the engine output as-is).
         // Skipped for Translate mode (its prompt already forces one target language).
-        if s.languageGuard, profile.targetLanguage == nil, isMixedLanguage(reprompted) {
+        if s.languageGuard, detectedAction == nil, profile.targetLanguage == nil, isMixedLanguage(reprompted) {
             status("Cleaning up language…")
             if let fixed = try? await normalizeLanguage(reprompted, model: profile.model ?? s.claudeModel) {
                 reprompted = fixed
@@ -189,7 +212,134 @@ enum Pipeline {
                               reprompted: reprompted,
                               profileName: profile.name,
                               profileID: profile.id,
-                              engine: engineLabel(s))
+                              engine: engineLabel(s),
+                              action: detectedAction)
+    }
+
+    // MARK: - Agentic actions (Context mode, Labs)
+
+    /// Current date/time + timezone, given to the model so it resolves "tomorrow at 3pm" /
+    /// "this afternoon" to a concrete ISO8601 datetime. Mirrors TodoAgent.nowContext.
+    private static func nowContext() -> String {
+        let f = ISO8601DateFormatter(); f.timeZone = .current
+        let tz = TimeZone.current
+        return "CONTEXT — NOW is \(f.string(from: Date())) (timezone \(tz.identifier), " +
+               "current UTC offset \(tz.secondsFromGMT() / 3600)h). Resolve \"tomorrow\", " +
+               "\"this afternoon\", \"tonight\", \"next monday\", times like \"3pm\"/\"15h\" relative to this."
+    }
+
+    /// Appended to the Context system prompt when Labs "Agentic actions" is ON. Asks the model to
+    /// return EITHER a structured action (when the request is an actionable command) OR plain text
+    /// (a normal screen-grounded answer), as a single JSON object.
+    static var agenticActionsAddendum: String {
+        """
+
+
+        AGENTIC ACTIONS MODE (OVERRIDE OF THE OUTPUT FORMAT ABOVE):
+        The user may dictate a COMMAND to create something on their Mac. Decide:
+
+        A) If the request is an actionable command to create a CALENDAR EVENT, a REMINDER, or an \
+        EMAIL DRAFT (e.g. "create an event tomorrow at 3pm for the team sync", "remind me to call \
+        the bank this afternoon", "draft a reply to this email"), reply with a SINGLE JSON object:
+          {"action":{"type":"calendar_event|reminder|email_draft",
+                     "title":"...",          // event/reminder title (calendar_event, reminder)
+                     "start":"ISO8601",      // event start (calendar_event) — REQUIRED for events
+                     "end":"ISO8601",        // event end (calendar_event) — optional
+                     "due":"ISO8601",        // reminder due date/time (reminder) — optional
+                     "to":"...",             // email recipient (email_draft) — optional
+                     "subject":"...",        // email subject (email_draft) — optional
+                     "body":"...",           // email body (email_draft) — required for email_draft
+                     "notes":"..."}}         // extra notes (calendar_event, reminder) — optional
+
+        B) Otherwise (a normal screen-grounded answer, a reply to insert, a rewrite, anything that \
+        is text to type where the cursor is), reply with a SINGLE JSON object:
+          {"text":"the exact text to insert"}
+
+        Rules:
+        - Reply with ONE JSON object and NOTHING else: no prose, no markdown, no code fence.
+        - For "draft a reply to this email", READ the on-screen email and write the reply in "body" \
+        (and "to"/"subject" if visible); type is "email_draft".
+        - Resolve all relative dates/times to concrete ISO8601 WITH timezone offset using the \
+        context below. Never invent a date the user didn't imply.
+        - Use the user's language for titles, bodies and notes.
+
+        \(nowContext())
+        """
+    }
+
+    /// Parse the model's reply into a VerbaAction when it returned `{"action":{…}}`. Robust: extracts
+    /// the first `{` to the last `}` (TodoAgent style), tolerates a missing wrapper, and resolves
+    /// ISO8601 dates. Returns nil for `{"text":…}` or any unparseable / non-action reply, so the
+    /// caller falls back to treating the reply as text — a result is never lost.
+    static func parseAgenticAction(_ raw: String) -> VerbaAction? {
+        var s = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let open = s.range(of: "{"), let close = s.range(of: "}", options: .backwards),
+           open.lowerBound <= close.lowerBound {
+            s = String(s[open.lowerBound...close.lowerBound])
+        }
+        guard let data = s.data(using: .utf8),
+              let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return nil }
+        // An explicit {"text":…} reply, or no "action" key → not an action.
+        guard let a = obj["action"] as? [String: Any] else { return nil }
+        let type = ((a["type"] as? String) ?? (a["kind"] as? String) ?? "")
+            .lowercased().replacingOccurrences(of: "-", with: "_")
+        let title = (a["title"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let notes = (a["notes"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let start = (a["start"] as? String).flatMap(parseISO)
+        let end = (a["end"] as? String).flatMap(parseISO)
+        let due = (a["due"] as? String).flatMap(parseISO)
+
+        switch type {
+        case "calendar_event", "calendarevent", "event":
+            guard let title, !title.isEmpty, let start else { return nil }
+            return .calendarEvent(title: title, start: start, end: end,
+                                  notes: (notes?.isEmpty == false) ? notes : nil)
+        case "reminder":
+            guard let title, !title.isEmpty else { return nil }
+            return .reminder(title: title, due: due, notes: (notes?.isEmpty == false) ? notes : nil)
+        case "email_draft", "emaildraft", "email":
+            let body = ((a["body"] as? String) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let to = (a["to"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let subject = (a["subject"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            // Need at least a body or a subject to be a meaningful draft.
+            guard !body.isEmpty || (subject?.isEmpty == false) else { return nil }
+            return .emailDraft(to: (to?.isEmpty == false) ? to : nil,
+                               subject: (subject?.isEmpty == false) ? subject : nil,
+                               body: body)
+        default:
+            return nil
+        }
+    }
+
+    /// Pull the text to insert from the model's reply when it isn't an action. Honors a
+    /// `{"text":…}` envelope; if the reply isn't that shape, returns the raw reply unchanged
+    /// (so a model that ignored the JSON contract still produces a usable result).
+    static func extractAgenticText(_ raw: String) -> String {
+        var s = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let open = s.range(of: "{"), let close = s.range(of: "}", options: .backwards),
+           open.lowerBound <= close.lowerBound {
+            let json = String(s[open.lowerBound...close.lowerBound])
+            if let data = json.data(using: .utf8),
+               let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+               let text = obj["text"] as? String {
+                return text.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+        // Not a recognizable envelope: use the reply verbatim so nothing is lost.
+        return s.isEmpty ? raw : s
+    }
+
+    /// Parse an ISO8601 date string (with or without fractional seconds, or date-only).
+    private static func parseISO(_ s: String) -> Date? {
+        let str = s.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !str.isEmpty else { return nil }
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = f.date(from: str) { return d }
+        f.formatOptions = [.withInternetDateTime]
+        if let d = f.date(from: str) { return d }
+        f.formatOptions = [.withFullDate]; f.timeZone = .current
+        return f.date(from: str)
     }
 
     /// Heuristic, offline detector for code-switched (mixed-language) text. Uses Apple's

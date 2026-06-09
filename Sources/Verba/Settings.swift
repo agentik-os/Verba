@@ -418,6 +418,9 @@ final class Settings: ObservableObject {
     @Published var autoLearnDictionary: Bool { didSet { d.set(autoLearnDictionary, forKey: "autoLearnDictionary") } }
     @Published var toneMatch: Bool { didSet { d.set(toneMatch, forKey: "toneMatch") } }
     @Published var voiceEditLast: Bool { didSet { d.set(voiceEditLast, forKey: "voiceEditLast") } }
+    // Context mode: turn a spoken command ("create an event tomorrow at 3pm") into a confirmable
+    // Calendar event / Reminder / email draft instead of inserting text. Always asks first. Default OFF.
+    @Published var agenticActions: Bool { didSet { d.set(agenticActions, forKey: "agenticActions") } }
     @Published var notesTabEnabled: Bool { didSet { d.set(notesTabEnabled, forKey: "notesTabEnabled") } }
     @Published var todosTabEnabled: Bool { didSet { d.set(todosTabEnabled, forKey: "todosTabEnabled") } }
     // Local reminder notifications 30 min before a to-do task's deadline.
@@ -556,6 +559,7 @@ final class Settings: ObservableObject {
         autoLearnDictionary = d.object(forKey: "autoLearnDictionary") as? Bool ?? true
         toneMatch = d.object(forKey: "toneMatch") as? Bool ?? false
         voiceEditLast = d.object(forKey: "voiceEditLast") as? Bool ?? true
+        agenticActions = d.object(forKey: "agenticActions") as? Bool ?? false
         notesTabEnabled = d.object(forKey: "notesTabEnabled") as? Bool ?? true
         todosTabEnabled = d.object(forKey: "todosTabEnabled") as? Bool ?? true
         todoReminders = d.object(forKey: "todoReminders") as? Bool ?? true

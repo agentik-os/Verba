@@ -331,6 +331,9 @@ struct SettingsView: View {
                 Toggle("Edit last result by voice", isOn: $settings.voiceEditLast)
                 Text("Adds “Edit last by voice…” to the menu, speak a change (“make it shorter”, “more formal”, “translate to English”) and Verba rewrites your last result.")
                     .font(.caption).foregroundStyle(.secondary)
+                Toggle("Agentic actions in Context mode", isOn: $settings.agenticActions)
+                Text("In Context mode, let Verba turn spoken commands into Calendar events, Reminders, or email drafts — it always asks you to confirm first.")
+                    .font(.caption).foregroundStyle(.secondary)
             } header: { Text("Labs") }
 
             Section {

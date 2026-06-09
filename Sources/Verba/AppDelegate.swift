@@ -69,6 +69,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var onboardingWC: NSWindowController?
     private var mainWC: NSWindowController?
     private var reviewWindow: NSWindow?
+    private var actionWindow: NSWindow?
     private var recordStartedAt: Date?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -1284,6 +1285,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
         }()
 
+        // Context mode + Labs "Agentic actions": the result is a structured action, not text. Never
+        // auto-paste — take it out of in-flight and present a confirmation sheet. On Confirm, execute
+        // it; on Cancel, discard. Plain Context/other modes (action == nil) fall through unchanged.
+        if let action = result.action {
+            session.original = result.original
+            session.status = .done
+            SessionStore.shared.endInflight(session)
+            SessionStore.shared.complete(session)
+            stopQuipsIfNoInflight()
+            if SessionStore.shared.hasInflight {
+                state = .processing; statusLine = "Transcribing…"; overlay.model.recording = false; showProcessingOverlay()
+            } else {
+                overlay.hide(); state = .idle
+            }
+            showActionConfirm(action)
+            return
+        }
+
         let deliver: (String) -> Void = { [weak self] text in
             guard let self else { return }
             session.resultText = text
@@ -1820,6 +1839,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                               onCancel: { close() })
         let wc = makeWindow(title: "Review dictation", view: view, size: NSSize(width: 520, height: 420), glass: true, resizable: false)
         reviewWindow = wc.window
+        present(wc)
+    }
+
+    /// Present the agentic-action confirmation sheet (Context mode + Labs). On Confirm, run the
+    /// action via ActionExecutor and flash success/error; on Cancel, just close and discard.
+    private func showActionConfirm(_ action: VerbaAction) {
+        let close: () -> Void = { [weak self] in
+            self?.actionWindow?.close(); self?.actionWindow = nil
+        }
+        let view = ActionConfirmView(
+            action: action,
+            onConfirm: { [weak self] in
+                close()
+                guard let self else { return }
+                Task { @MainActor in
+                    do {
+                        let message = try await ActionExecutor().perform(action)
+                        self.flashInfo(message)
+                    } catch {
+                        self.flashError(error.localizedDescription)
+                    }
+                }
+            },
+            onCancel: { close() })
+        let wc = makeWindow(title: "Confirm action", view: view, size: NSSize(width: 460, height: 320),
+                            glass: true, resizable: false)
+        actionWindow = wc.window
         present(wc)
     }
 
