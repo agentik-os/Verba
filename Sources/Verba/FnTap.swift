@@ -20,6 +20,7 @@ final class FnTap {
     var onArrow: ((Int) -> Bool)?     // -1 left / +1 right while menuActive
     var onEnter: (() -> Bool)?        // return / enter while menuActive
     var onControl: (() -> Void)?      // plain ⌃ tapped → pause/resume the current recording
+    var onOptionTap: (() -> Void)?    // lone ⌥ tapped (no ⌃, no Fn) → switch mode while hands-free recording
     var menuActive = false
 
     private var tap: CFMachPort?
@@ -29,6 +30,9 @@ final class FnTap {
     private var ctrlPresent = false             // edge-tracking for the plain-Control pause/resume tap
     private var optSeenDuringCtrl = false        // Option co-present during the current Control press → it's a ⌃⌥ chord, NOT a pause tap
     private var lastControlFire: TimeInterval = 0   // debounce so one physical tap fires once
+    private var optPresent = false              // edge-tracking for the lone-Option mode-switch tap
+    private var optCombo = false                 // Control or Fn co-present during the Option press → NOT a lone-Option tap
+    private var lastOptionFire: TimeInterval = 0
 
     /// True once the event tap is live. False means Accessibility/Input-Monitoring is not
     /// granted (the tap couldn't be created), so the Fn key does nothing until the user grants it.
@@ -67,8 +71,9 @@ final class FnTap {
     func stop() {
         if let t = tap { CGEvent.tapEnable(tap: t, enable: false) }
         if let s = source { CFRunLoopRemoveSource(CFRunLoopGetCurrent(), s, .commonModes) }
-        tap = nil; source = nil; fnDown = false; menuActive = false; active = false
+        tap = nil; source = nil; fnDown = false; optDown = false; menuActive = false; active = false
         ctrlPresent = false; optSeenDuringCtrl = false
+        optPresent = false; optCombo = false
         FnSystemPref.restore()
     }
 
@@ -107,6 +112,25 @@ final class FnTap {
                     if now - lastControlFire > 0.12 {
                         lastControlFire = now
                         if let cb = onControl { DispatchQueue.main.async(execute: cb) }
+                    }
+                }
+            }
+            // Lone ⌥ (Option) tap → switch mode while hands-free recording (AppDelegate gates on
+            // state == .recording). Mirror the Control logic: decide on the Option-UP edge and latch
+            // whether Control or Fn was EVER co-present during the press, so a ⌃⌥ chord (mode picker)
+            // and ⌥+Fn (to-do glance) never fire this. In hold-to-talk, Fn is held → optCombo latches
+            // → it correctly does nothing.
+            if opt {
+                if !optPresent { optPresent = true; optCombo = ctrlHeld || fn }
+                if ctrlHeld || fn { optCombo = true }
+            } else if optPresent {
+                let wasCombo = optCombo
+                optPresent = false; optCombo = false
+                if !wasCombo {
+                    let now = ProcessInfo.processInfo.systemUptime
+                    if now - lastOptionFire > 0.12 {
+                        lastOptionFire = now
+                        if let cb = onOptionTap { DispatchQueue.main.async(execute: cb) }
                     }
                 }
             }

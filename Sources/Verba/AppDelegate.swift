@@ -104,6 +104,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         FnTap.shared.onArrow = { [weak self] d in self?.fnArrow(d) ?? false }
         FnTap.shared.onEnter = { [weak self] in self?.fnEnter() ?? false }
         FnTap.shared.onControl = { [weak self] in InputCoach.shared.note(.control); self?.togglePause() }   // ⌃ pauses/resumes (reliable HID-tap path when Fn is primary)
+        FnTap.shared.onOptionTap = { [weak self] in self?.optionTapped() }   // lone ⌥ tap while hands-free recording → next mode
         overlay.model.onCancel = { [weak self] in self?.cancelEverything() }
         overlay.model.onPauseToggle = { [weak self] in self?.togglePause() }
         overlay.prepare()   // warm the floating panel so it appears instantly
@@ -820,6 +821,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if state == .processing { return }
         InputCoach.shared.note(.doubleFn)   // mark the mode-switch gesture as learned
         cycleMode(dir)
+    }
+
+    /// A lone ⌥ (Option) tap WHILE hands-free recording cycles to the next mode and keeps listening.
+    /// In toggle style the keyboard is free (Fn is already released), so a bare Option tap is the
+    /// cleanest mid-recording switch — no long-press ambiguity. Only acts during an active recording;
+    /// FnTap already guarantees this never fires for ⌃⌥ (picker) or ⌥+Fn (to-do glance).
+    private func optionTapped() {
+        guard Settings.shared.useFnAsPrimary, state == .recording else { return }
+        modeCycleGesture(1)
     }
 
     /// Fn + ] (next) / Fn + [ (previous) → cycle the active style (the tone/format layer applied
@@ -1731,6 +1741,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             header("Modes  (while holding Fn)")
             ref("Fn + Tab", "Next mode  (add ⇧ for previous)")
             ref(maxN == 1 ? "Fn + 1" : "Fn + 1…\(maxN)", "Pick a mode by number")
+            ref("⌥ (tap)", "Next mode while recording hands-free")
             ref("Fn + ]", "Next style  (Fn + [ for previous)")
 
             m.addItem(.separator())
