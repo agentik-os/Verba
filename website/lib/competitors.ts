@@ -26,7 +26,7 @@ export type Competitor = {
 export const VERBA = {
   name: "Verba",
   price: "$9.99/mo",
-  priceNote: "or $84/year · free tier 10,000 words/mo",
+  priceNote: "or $84/year · 33-dictation free trial",
   platforms: "macOS (Apple Silicon)",
   transcription: "On-device Whisper / Parakeet (or cloud, optional)",
   onDevice: "yes" as const,
@@ -62,7 +62,7 @@ export const competitors: Competitor[] = [
     ],
     verbaWins: [
       "Verba transcribes on-device by default, your audio never leaves your Mac, even offline.",
-      "$9.99/mo vs $15/mo, and a far roomier 10,000 words/month free tier.",
+      "$9.99/mo vs $15/mo, and the free trial is the full app: 33 dictations with every Pro feature.",
       "Bring your own AI account (Claude Code / your keys), heavy users don't subsidize a vendor's GPU bill.",
       "Per-mode models: Opus for coding prompts, Haiku for quick polish, you control cost and quality.",
     ],
@@ -94,7 +94,7 @@ export const competitors: Competitor[] = [
     ],
     verbaWins: [
       "On-device transcription by default, your audio never leaves your Mac.",
-      "$9.99/mo with a 10,000 words/month free tier.",
+      "$9.99/mo, and a free trial of 33 full-Pro dictations.",
       "Bring your own AI account (Claude Code / keys), no markup on a vendor's cloud.",
       "Per-mode models and intent mode for finer control.",
     ],
@@ -190,7 +190,7 @@ export const competitors: Competitor[] = [
     verbaWins: [
       "On-device transcription keeps your audio private and works offline.",
       "Bring your own model: route modes to Haiku, Sonnet or Opus as you like.",
-      "10,000 free words every month, not a one-time 1,000-word trial.",
+      "A real trial: 33 dictations with every Pro feature, not a crippled preview.",
     ],
     theirEdge: [
       "Aqua's proprietary Avalon model is very accurate.",
@@ -219,7 +219,7 @@ export const competitors: Competitor[] = [
     ],
     verbaWins: [
       "On-device is the default in Verba, not a paid upgrade.",
-      "Cheaper at $9.99/mo with a 10,000-word free tier.",
+      "Cheaper at $9.99/mo, with a 33-dictation free trial.",
       "Per-mode Claude models + intent mode give finer control than style presets.",
     ],
     theirEdge: [

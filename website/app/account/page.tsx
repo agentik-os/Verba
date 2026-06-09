@@ -5,7 +5,7 @@ import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/n
 
 export default function Account() {
   return (
-    <main className="mx-auto max-w-md px-6 py-20">
+    <main className="mx-auto flex min-h-[82vh] max-w-md flex-col justify-center px-6 py-16">
       <a href="/" className="text-sm muted hover:text-[var(--fg)]">← Verba</a>
       <div className="mt-6 flex items-center justify-between">
         <h1 className="text-3xl font-semibold tracking-tight">Account</h1>

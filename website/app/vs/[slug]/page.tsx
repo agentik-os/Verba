@@ -56,8 +56,9 @@ export default async function Vs({ params }: { params: Promise<{ slug: string }>
       </section>
 
       {/* Side-by-side */}
-      <div className="glass overflow-x-auto rounded-2xl">
-        <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+      <div className="table-scrim glass rounded-2xl">
+      <div className="overflow-x-auto">
+        <table className="table-pin w-full min-w-[640px] border-collapse text-left text-sm">
           <thead>
             <tr>
               <th className="p-4" />
@@ -74,6 +75,7 @@ export default async function Vs({ params }: { params: Promise<{ slug: string }>
             <Row label="Privacy" verba={VERBA.privacy} them={c.privacy} verbaGood />
           </tbody>
         </table>
+      </div>
       </div>
 
       {/* Why Verba */}
@@ -101,7 +103,7 @@ export default async function Vs({ params }: { params: Promise<{ slug: string }>
         <a href={DOWNLOAD} className="rounded-full bg-[var(--fg)] px-7 py-3 font-medium text-[var(--bg)] hover:opacity-90">
           Try Verba free
         </a>
-        <p className="mt-6 text-xs muted">10,000 words/month free · Pro $9.99/mo · 7-day trial</p>
+        <p className="mt-6 text-xs muted">33 free dictations · Pro $9.99/mo · 7-day trial</p>
       </div>
     </main>
   );

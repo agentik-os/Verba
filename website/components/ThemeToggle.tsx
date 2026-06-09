@@ -26,7 +26,7 @@ export default function ThemeToggle() {
     <button
       aria-label="Toggle theme"
       onClick={() => apply(mode === "dark" ? "light" : "dark")}
-      className="fixed right-4 top-4 z-50 grid h-10 w-10 place-items-center rounded-full glass transition hover:bg-[var(--tint-strong)]"
+      className="fixed bottom-5 right-5 z-50 grid h-9 w-9 place-items-center rounded-full glass text-[var(--muted)] transition hover:text-[var(--fg)] hover:bg-[var(--tint-strong)]"
     >
       {mode === "dark" ? (
         // sun

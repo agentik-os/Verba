@@ -34,8 +34,9 @@ export default function Compare() {
       </section>
 
       {/* Master matrix */}
-      <div className="glass overflow-x-auto rounded-2xl">
-        <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+      <div className="table-scrim glass rounded-2xl">
+      <div className="overflow-x-auto">
+        <table className="table-pin w-full min-w-[760px] border-collapse text-left text-sm">
           <thead>
             <tr className="muted">
               <th className="p-4 font-medium">App</th>
@@ -67,6 +68,7 @@ export default function Compare() {
           </tbody>
         </table>
       </div>
+      </div>
 
       {/* Per-competitor cards */}
       <h2 className="mt-20 text-center text-3xl font-semibold tracking-tight">Head-to-head</h2>
@@ -84,7 +86,7 @@ export default function Compare() {
         <a href={DOWNLOAD} className="rounded-full bg-[var(--fg)] px-7 py-3 font-medium text-[var(--bg)] hover:opacity-90">
           Download Verba for macOS
         </a>
-        <p className="mt-6 text-xs muted">Free 10,000 words/month · Pro $9.99/mo · cancel anytime</p>
+        <p className="mt-6 text-xs muted">33 free dictations · Pro $9.99/mo · cancel anytime</p>
       </div>
 
       <footer className="mt-24 flex flex-col items-center gap-3 border-t hairline pt-12 text-sm muted">

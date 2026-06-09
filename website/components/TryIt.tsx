@@ -129,7 +129,7 @@ export default function TryIt() {
           {state === "error" && <span className="text-red-400">{error}</span>}
         </p>
 
-        {(original || result) && (
+        {(original || result) ? (
           <div className="mt-6 grid gap-3 text-left sm:grid-cols-2">
             <div className="rounded-2xl bg-[#0c0c10] p-4" style={darkCard}>
               <p className="text-xs uppercase tracking-widest muted">You said</p>
@@ -140,6 +140,19 @@ export default function TryIt() {
               <p className="mt-1 whitespace-pre-line text-sm">{result}</p>
             </div>
           </div>
+        ) : (
+          state === "idle" && (
+            <div className="mt-6 grid gap-3 text-left opacity-55 sm:grid-cols-2" aria-hidden>
+              <div className="rounded-2xl bg-[#0c0c10] p-4" style={darkCard}>
+                <p className="text-xs uppercase tracking-widest muted">You'll say something like</p>
+                <p className="mt-1 text-sm italic">"um so basically can we uh move the call to thursday instead, something came up"</p>
+              </div>
+              <div className="rounded-2xl bg-[#0c0c10] p-4" style={darkCard}>
+                <p className="text-xs uppercase tracking-widest muted">Verba writes</p>
+                <p className="mt-1 text-sm">Can we move the call to Thursday instead? Something came up.</p>
+              </div>
+            </div>
+          )
         )}
       </div>
       <p className="mt-3 text-center text-xs muted">No sign-up needed · 7 free tries · your clip isn't stored.</p>

@@ -275,6 +275,32 @@ body::after {
 
 .tick { color: #6ee7a8; } [data-theme="light"] .tick { color: #16a34a; }
 
+/* ---- Keycap — physical, exact, the instrument detail ---- */
+.kbd {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 1.7em; padding: 0.05em 0.45em;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  background: var(--tint);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.78em; font-weight: 500; letter-spacing: 0.02em;
+  vertical-align: 0.08em;
+}
+
+/* ---- Comparison tables: pin the feature column, hint the overflow ---- */
+.table-pin th:first-child, .table-pin td:first-child {
+  position: sticky; left: 0; z-index: 1;
+  background: var(--bg);
+}
+.table-scrim { position: relative; }
+.table-scrim::after {
+  content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 36px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--bg));
+}
+@media (min-width: 768px) { .table-scrim::after { display: none; } }
+
 /* ---- Clerk widget hardening (bulletproof input/footer styling) ---- */
 .cl-formFieldInput,
 input.cl-formFieldInput {

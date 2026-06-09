@@ -19,18 +19,18 @@ const DAYS: Day[] = [
       "A huge day, much of it straight from your feedback and wishlist: French that stays French, comments on every wishlist idea, a Context mode that really sees your screen, a redesigned site, hold-to-talk and reliable pause, mid-sentence mode switching, editable Note modes, layered writing Styles, smarter Transforms, a Transcripts library, and concurrent sessions.",
     entries: [
       {
-        version: "0.1.96 – 0.2.0",
+        version: "0.1.96 → 0.2.0",
         title: "Straight from your feedback and wishlist",
         items: [
-          "From the wishlist: dictate in French and drop in an English word, and Verba now keeps the whole thing French instead of flipping the output to English — brand and loan words are kept exactly as you said them.",
-          "From the wishlist: you can now discuss a wishlist item. Each card shows a discreet comment count; tap it to expand a thread, read what others think, and add your own — every shipped idea keeps its “Developed” badge.",
+          "From the wishlist: dictate in French and drop in an English word, and Verba now keeps the whole thing French instead of flipping the output to English. Brand and loan words are kept exactly as you said them.",
+          "From the wishlist: you can now discuss a wishlist item. Each card shows a discreet comment count; tap it to expand a thread, read what others think, and add your own. Every shipped idea keeps its “Developed” badge.",
           "From your feedback: Context mode now genuinely sees your screen again and acts on what's there, and when something does go wrong you get the real reason instead of a generic “transcription failed”.",
-          "From your feedback: Action mode is clearer to trigger — a prompt tells you exactly how to run the command, with a focused confirmation before anything happens.",
-          "Two more built-in modes are available out of the box — Polish (a clean, faithful tidy-up) is the new default — and the menu-bar shortcut cheat-sheet updates the instant you change a shortcut in Settings.",
+          "From your feedback: Action mode is clearer to trigger. A prompt tells you exactly how to run the command, with a focused confirmation before anything happens.",
+          "Two more built-in modes are available out of the box, and Polish (a clean, faithful tidy-up) is the new default. The menu-bar shortcut cheat-sheet now updates the instant you change a shortcut in Settings.",
         ],
       },
       {
-        version: "0.1.94 – 0.1.95",
+        version: "0.1.94 → 0.1.95",
         title: "A Task Manager widget, and a smarter Wishlist",
         items: [
           "New macOS widget: add Verba's Task Manager to Notification Center or your desktop and see today's tasks at a glance, in the native widget look.",
@@ -47,12 +47,12 @@ const DAYS: Day[] = [
         ],
       },
       {
-        version: "0.1.90 – 0.1.91",
+        version: "0.1.90 → 0.1.91",
         title: "Action mode, and a polished Task Manager",
         items: [
           "Feedback now lets you attach a screenshot, so a report comes with everything we need to fix it fast.",
-          "New Action mode (Fn+X): speak a command and Verba does it — create an event or reminder, draft an email, open an app, play music, send a message, or run any of your macOS Shortcuts — always asking you to confirm first.",
-          "Add to dictionary by voice: select text, say “add to dictionary”, and Verba keeps that exact spelling (great for brand names) — and now preserves it through the AI rewrite too.",
+          "New Action mode (Fn+X): speak a command and Verba does it. Create an event or reminder, draft an email, open an app, play music, send a message, or run any of your macOS Shortcuts, always with a confirmation first.",
+          "Add to dictionary by voice: select text, say “add to dictionary”, and Verba keeps that exact spelling (great for brand names). It now survives the AI rewrite too.",
           "A modern calendar + time picker for deadlines (tasks and sub-tasks), replacing the old one.",
           "Feedback: dictate it with your voice, with the text field finally aligned.",
         ],
@@ -74,11 +74,11 @@ const DAYS: Day[] = [
         ],
       },
       {
-        version: "0.1.86 – 0.1.87",
+        version: "0.1.86 → 0.1.87",
         title: "Agentic actions, and switch mode with a tap",
         items: [
-          "Agentic actions are real: turn on the Labs toggle, and in Context mode say “create an event tomorrow at 3pm”, “remind me to call the bank this afternoon”, or “draft a reply to this email” — Verba reads your screen, shows a confirmation, and on your OK creates the Calendar event, Reminder, or email draft.",
-          "Switch mode hands-free with a single Option tap while you're recording — no need to stop or reach for a chord.",
+          "Agentic actions are real: turn on the Labs toggle, and in Context mode say “create an event tomorrow at 3pm”, “remind me to call the bank this afternoon”, or “draft a reply to this email”. Verba reads your screen, shows a confirmation, and on your OK creates the Calendar event, Reminder, or email draft.",
+          "Switch mode hands-free with a single Option tap while you're recording. No need to stop or reach for a chord.",
         ],
       },
       {
@@ -140,7 +140,7 @@ const DAYS: Day[] = [
       "A full day of deep work: a complete Task Manager workspace with a generative AI agent, the franglais bug killed, instant capture, and dozens of rough edges sanded down.",
     entries: [
       {
-        version: "0.1.68 – 0.1.80",
+        version: "0.1.68 → 0.1.80",
         title: "Task Manager grows up",
         items: [
           "To-dos is now the Task Manager, tucked under a new Tools section in the sidebar (Home · Insights · History, then Tools).",
@@ -191,7 +191,7 @@ const DAYS: Day[] = [
         ],
       },
       {
-        version: "0.1.62 – 0.1.63",
+        version: "0.1.62 → 0.1.63",
         title: "Microphone, modes & layout",
         items: [
           "Pick your microphone source in a click, from the menu bar and the app.",
@@ -219,7 +219,7 @@ const DAYS: Day[] = [
         ],
       },
       {
-        version: "0.1.33 – 0.1.55",
+        version: "0.1.33 → 0.1.55",
         title: "Twenty-three releases in a day",
         items: [
           "Onboarding, entitlement sync, trial model and paywall tuning.",
@@ -237,7 +237,7 @@ const DAYS: Day[] = [
       "Verba grew a memory: cloud sync, a learning dictionary, offline reprompting and a real Dynamic Island.",
     entries: [
       {
-        version: "0.1.1 – 0.1.32",
+        version: "0.1.1 → 0.1.32",
         title: "Sync, learning & local AI",
         items: [
           "Cloud history & stats sync, your Insights and totals follow your account across Macs.",
@@ -343,7 +343,7 @@ export default function Changelog() {
                     </div>
                     <ul className="mt-4 space-y-2">
                       {e.items.map((it) => (
-                        <li key={it} className="flex gap-3 text-sm">
+                        <li key={it} className="flex gap-3 text-sm leading-relaxed">
                           <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--fg)] opacity-50" />
                           <span className="muted">{it}</span>
                         </li>

@@ -88,9 +88,9 @@ function Hero() {
           <span className="text-[var(--fg-dim)]">Send it clean.</span>
         </h1>
         <p className="t-lead mt-7 max-w-xl">
-          The most complete voice-to-text on the Mac. Press a key, talk, and Verba lands polished,
-          formatted, on-brand text wherever your cursor is — reading your screen, taking hour-long
-          notes, translating live, running offline, on the AI account you already pay for.
+          The most complete voice-to-text on the Mac. Press a key, say it the way it comes,
+          and polished text lands exactly where your cursor is. No window to open, nothing
+          to clean up afterwards.
         </p>
         <div className="mt-9 flex flex-wrap items-center gap-3">
           <a href={DOWNLOAD_URL} className="btn-primary px-7 py-3">
@@ -98,7 +98,7 @@ function Hero() {
           </a>
           <a href="#how" className="btn-ghost px-7 py-3">See how it works</a>
         </div>
-        <p className="mt-4 text-xs muted">Free to start · 7-day Pro trial · cancel anytime · $9.99/mo</p>
+        <p className="mt-4 text-xs muted tnum">33 free dictations · Pro $9.99/mo with a 7-day trial · cancel anytime</p>
         <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[13px] muted">
           {["Dictate anywhere", "Reads your screen", "Hour-long notes", "Translate live", "Runs offline", "Bring your own AI"].map((p) => (
             <span key={p} className="flex items-center gap-2">
@@ -122,7 +122,7 @@ function LogosStrip() {
     <section className="overflow-hidden border-y hairline py-8">
       <p className="eyebrow text-center">Works in the apps you already use</p>
       <div className="relative mt-5 [mask-image:linear-gradient(90deg,transparent,#000_12%,#000_88%,transparent)]">
-        <div className="marquee gap-x-12 text-sm muted">
+        <div className="marquee gap-x-10 font-mono text-[11px] uppercase tracking-[0.18em] muted">
           {[...apps, ...apps].map((a, i) => (
             <span key={i} className="whitespace-nowrap">{a}</span>
           ))}
@@ -139,7 +139,7 @@ function TryNow() {
         <HeadCenter
           eyebrow="Live, in your browser"
           title="Try it right now"
-          lead="No download, no sign-up. Record a rambling message and watch Verba turn it into clean text — the exact same pipeline the app uses."
+          lead="No download, no sign-up. Record a rambling message and watch it come back clean. This is the same pipeline the app ships with."
         />
       </Reveal>
       <div className="mt-12"><TryIt /></div>
@@ -159,7 +159,7 @@ function Jokes() {
         <HeadCenter
           eyebrow="While Claude works"
           title="Loading screens that make you smile"
-          lead="Every time Verba is restructuring your words, it shows a short, ever-changing one-liner. Pick from 17 humor themes, or switch it off. It's never the same joke twice in a day."
+          lead="While Verba rewrites your words, it shows you a one-liner. 17 humor themes, an Off switch, and never the same joke twice in a day."
         />
       </Reveal>
 
@@ -184,7 +184,7 @@ function Bento() {
           eyebrow="Private by design"
           anchor
           title="Your voice stays yours"
-          lead="Verba runs open speech models — Whisper and Parakeet — right on your Mac. No servers, no uploads, no markup. Here is what that gets you."
+          lead="Verba runs open speech models, Whisper and Parakeet, right on your Mac. Nothing gets uploaded, and nobody resells your words. Here is what that gets you."
         />
       </Reveal>
 
@@ -203,7 +203,7 @@ function Bento() {
 
         <Reveal delay={60}><BentoStat big="99+" label="languages, on-device" sub="Whisper runs worldwide" /></Reveal>
         <Reveal delay={120}><BentoStat big="$9.99" label="vs $15 at Wispr Flow" sub="and you bring your own AI" /></Reveal>
-        <Reveal delay={180}><BentoStat big="10,000" label="free words / month" sub="no card, no trial clock" /></Reveal>
+        <Reveal delay={180}><BentoStat big="33" label="free dictations, full Pro" sub="no card required" /></Reveal>
         <Reveal delay={240}><BentoStat big="100%" label="works offline" sub="no internet required" /></Reveal>
 
         <Reveal delay={120} className="col-span-2">
@@ -258,7 +258,7 @@ function ContextMode() {
             eyebrow="New · Context mode"
             anchor
             title={<>Your voice meets<br />your screen</>}
-            lead="Press your shortcut, glance at the screen, and talk. Verba captures what is on your screen and grounds exactly what it writes. Reply to the email in front of you, summarize a document, comment on a photo — no copy-paste."
+            lead="Press your shortcut, glance at the screen, and talk. Verba captures what you are looking at and writes from it. Reply to the email in front of you, summarize a document, comment on a photo, without touching the clipboard."
           />
           {/* weighted hero tile — the focal example, in product chrome */}
           <div className="panel r-panel p-7">
@@ -344,7 +344,7 @@ function NotesTab() {
           eyebrow="Flagship feature"
           anchor
           title={<>Talk for an hour,<br />get a clean document</>}
-          lead="Open the Notes tab, pick a format, and record. Verba transcribes up to a full hour of speech and shapes it into a structured document ready to read, edit, and copy. Tag it with #hashtags (Bear style) to file and filter. Notes sync across your Macs."
+          lead="Open the Notes tab, pick a format, and talk. An hour of speech becomes a structured document you can read, edit and copy. File it with #hashtags, Bear style. It syncs across your Macs."
         />
       </Reveal>
 
@@ -420,8 +420,8 @@ function LanguageDetection() {
       <Reveal>
         <HeadCenter
           eyebrow="Multilingual"
-          title="Speak any language. It just works."
-          lead="Every transcription engine automatically detects the language you are speaking and writes the result in that same language. French in, French out. Switch mid-session, or say &quot;in English&quot; to override. No settings to change."
+          title="French in, French out."
+          lead="Every engine detects the language you are speaking and answers in it. Switch languages mid-session if you like, or say &quot;in English&quot; to override. There is no setting to change."
         />
       </Reveal>
       <div className="mt-12 grid gap-3 sm:grid-cols-2">
@@ -460,7 +460,7 @@ function VoiceTodos() {
           eyebrow="New · Voice task manager"
           anchor
           title="A Task Manager you just talk to"
-          lead="Press a key, talk, and Verba builds projects, tasks and sub-tasks, sets date-and-time deadlines, reminds you, and checks things off — all by voice. It can even generate a whole list for you. No other dictation app has a built-in task manager, let alone one this smart."
+          lead="Press a key, talk, and Verba builds projects, tasks and sub-tasks, sets real deadlines, reminds you, and checks things off. All by voice, including generating a whole list when you ask for one. No other dictation app ships a task manager."
         />
       </Reveal>
 
@@ -564,7 +564,7 @@ function TranslateMode() {
 function WhyBest() {
   const edges = [
     ["Does what others can't", "Reads your screen (Context), takes hour-long structured Notes, translates live, and runs agentic actions (Calendar, Reminders, email drafts). Most rivals only transcribe."],
-    ["Cheaper, and honest about it", "$9.99/mo, or ~$7 on annual. Wispr Flow is $12-15, others $15-17. And there's a real free tier: 10,000 words a month, no card."],
+    ["Cheaper, and honest about it", "$9.99/mo, or $7/mo billed annually. Wispr Flow is $12-15, others $15-17. And the trial is the real app: 33 dictations with every Pro feature, no card."],
     ["Bring your own AI", "Use your Anthropic key, OpenRouter, your existing Claude Code subscription with no key at all, or a fully local Ollama model. You're never locked into our markup."],
     ["Actually private", "On-device transcription with Parakeet and Whisper, your audio never leaves the Mac. API keys live in the macOS Keychain. Cloud tools upload every word you speak."],
     ["Works with no internet", "Parakeet ships inside the app and transcribes offline, instantly, in 25 languages. Pair it with a local LLM and the entire pipeline runs on your Mac."],
@@ -576,8 +576,9 @@ function WhyBest() {
     <section id="why" className="py-28">
       <Reveal>
         <HeadCenter
+          eyebrow="Why Verba"
           title="Why Verba wins"
-          lead="Other apps transcribe. Verba is a full voice workspace: it reads, writes, organizes, translates, and acts — on your terms, on your Mac, with your AI."
+          lead="Other apps stop at transcription. Verba reads your screen, files your tasks, translates as you speak, and acts on what it hears. On your Mac, with your AI."
         />
       </Reveal>
       <div className="mt-12 grid gap-3 sm:grid-cols-2">
@@ -613,25 +614,26 @@ function CompareTable() {
     ["Live translation mode", [true, "limited", false, "limited"]],
     ["Agentic actions (calendar, reminders)", [true, false, false, false]],
     ["Auto-learn your vocabulary & tone", [true, "partial", false, false]],
-    ["Free tier", ["10k words/mo", "limited", "trial", "limited"]],
+    ["Free trial", ["33 dictations, full Pro", "limited", "trial", "limited"]],
     ["Price / month", ["$9.99", "$12-15", "$8.49", "$10-17"]],
   ];
   const cell = (v: boolean | string) =>
     v === true ? <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] bg-[var(--fg)] text-[var(--bg)]"><MicGlyph size={9} /></span>
-      : v === false ? <span className="faint">—</span>
+      : v === false ? <span className="faint">✕</span>
       : <span className="text-xs muted">{v}</span>;
   return (
     <section className="py-28">
       <Reveal>
         <HeadCenter
+          eyebrow="Head-to-head"
           title="How Verba compares"
           lead="The honest, side-by-side. Verba does more, keeps your data on your Mac, and costs less."
         />
       </Reveal>
       <Reveal delay={60}>
-        <div className="card r-panel mt-12 overflow-hidden">
+        <div className="card r-panel mt-12 overflow-hidden table-scrim">
           <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-sm">
+          <table className="table-pin w-full min-w-[640px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-[var(--border)]">
                 <th className="px-5 py-4 text-left font-normal muted">Feature</th>
@@ -655,6 +657,7 @@ function CompareTable() {
         </div>
       </Reveal>
       <Reveal delay={100}>
+        <p className="mt-3 text-center text-[11px] muted md:hidden">Swipe the table sideways for the full picture.</p>
         <p className="mt-4 text-center text-xs muted">Competitor pricing and features as publicly listed; they change often. <Link href="/compare" className="underline hover:text-[var(--fg)]">Full comparison →</Link></p>
       </Reveal>
     </section>
@@ -674,6 +677,7 @@ function ModesModels() {
     <section className="py-28">
       <Reveal>
         <HeadCenter
+          eyebrow="The routing"
           title="Six modes, the right model for each"
           lead="Every mode routes to the model that fits: cheap and instant for quick polish, more powerful where it matters. You stay in control of cost and quality."
         />
@@ -778,7 +782,7 @@ function How() {
   ];
   return (
     <section id="how" className="py-28">
-      <HeadCenter title="From voice to done in one press" />
+      <HeadCenter eyebrow="How it works" title="From voice to done in one press" />
       <div className="mt-12 grid gap-3 sm:grid-cols-3">
         {steps.map(([t, d], i) => (
           <div key={t} className="card r-card relative p-7">
@@ -786,7 +790,7 @@ function How() {
               <span className="text-3xl font-semibold tabular-nums text-[var(--faint)]">{i + 1}</span>
               {i === 0 && <span className="rec-dot pulse" />}
             </div>
-            <h3 className="mt-4 font-medium">{t}</h3>
+            <h3 className="mt-4 font-medium">{t === "Press" ? <>Press <kbd className="kbd">fn</kbd></> : t}</h3>
             <p className="mt-1.5 text-sm muted">{d}</p>
           </div>
         ))}
@@ -819,7 +823,7 @@ function Pricing() {
 
   return (
     <section id="pricing" className="py-28">
-      <HeadCenter title={<>Start free. Go Pro when you&rsquo;re hooked.</>} />
+      <HeadCenter eyebrow="Pricing" title={<>Start free. Go Pro when you&rsquo;re hooked.</>} />
       <div className="mx-auto mt-8 flex w-fit items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--tint)] p-1 text-sm">
         {[["Monthly", false], ["Annual · save 30%", true]].map(([label, a]) => (
           <button
@@ -902,6 +906,7 @@ function FAQ() {
     <section className="py-28">
       <Reveal>
         <HeadCenter
+          eyebrow="FAQ"
           title="Questions, answered"
           lead="Everything you'd want to know before you press the key."
         />

@@ -28,7 +28,11 @@ export default function Reveal({
       { threshold: 0.15 }
     );
     io.observe(el);
-    return () => io.disconnect();
+    // Safety valve: never leave content hidden (full-page captures, crawlers,
+    // anchor jumps). What the viewer reaches early still animates; the rest
+    // settles in quietly off-screen.
+    const fallback = setTimeout(() => setShown(true), 2500);
+    return () => { io.disconnect(); clearTimeout(fallback); };
   }, []);
 
   return (
