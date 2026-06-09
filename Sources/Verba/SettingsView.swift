@@ -15,6 +15,8 @@ struct SettingsView: View {
     @State private var openRouterKey = Keychain.openRouterKey ?? ""
     @State private var verifying = false
     @State private var verifyMsg = ""
+    @State private var signingIn = false
+    @State private var confirmSignOut = false
     @State private var engineTab: TranscriptionEngine = Settings.shared.engine
     @State private var installing = false
     @State private var installProgress: Double = 0
@@ -558,9 +560,54 @@ struct SettingsView: View {
         }
     }
 
+    // MARK: Account — sign in / sign out. When signed in, shows the account email and a
+    // Sign out control (the clean inverse of AuthSession.signIn); when signed out, offers Sign in.
+    @ViewBuilder private var accountSection: some View {
+        Section {
+            if settings.proEmail.isEmpty {
+                HStack {
+                    Label("Not signed in", systemImage: "person.crop.circle.badge.questionmark")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button {
+                        signingIn = true
+                        AuthSession.shared.signIn { email in
+                            DispatchQueue.main.async {
+                                signingIn = false
+                                guard let email else { return }
+                                settings.proEmail = email
+                                Task { _ = await settings.verifyPro() }
+                            }
+                        }
+                    } label: { Text(signingIn ? "Signing in…" : "Sign in") }
+                        .disabled(signingIn)
+                }
+            } else {
+                HStack {
+                    Label(settings.proEmail, systemImage: "person.crop.circle.fill")
+                        .lineLimit(1).truncationMode(.middle)
+                    Spacer()
+                    Button(role: .destructive) { confirmSignOut = true } label: { Text("Sign out") }
+                        .confirmationDialog("Sign out of Verba?", isPresented: $confirmSignOut, titleVisibility: .visible) {
+                            Button("Sign out", role: .destructive) { AuthSession.shared.signOut() }
+                            Button("Cancel", role: .cancel) { }
+                        } message: {
+                            Text("This detaches your account from this Mac. Your local notes, transcripts and to-dos stay on this device, you can sign back in anytime.")
+                        }
+                }
+            }
+        } header: { Text("Account") } footer: {
+            Text(settings.proEmail.isEmpty
+                 ? "Sign in to sync your plan, use the included AI rewriting (no key needed), and earn referral rewards."
+                 : "Signed in. Signing out keeps everything stored locally on this Mac, it only disconnects this device from your account.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
     // MARK: Plan
     @ViewBuilder private var planSections: some View {
         Group {
+            accountSection
             Section {
                 HStack {
                     Label(settings.isPro ? "Pro" : "Free", systemImage: settings.isPro ? "sparkles" : "circle")

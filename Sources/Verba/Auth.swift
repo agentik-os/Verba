@@ -53,4 +53,26 @@ final class AuthSession: NSObject, ASWebAuthenticationPresentationContextProvidi
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         NSApp.windows.first(where: { $0.isVisible }) ?? NSApp.windows.first ?? ASPresentationAnchor()
     }
+
+    /// The clean inverse of `signIn`: detach the account from this device. Clears the
+    /// account identity (proEmail + referralCode) so `uid` reverts to the device-minted
+    /// uid, drops Pro, and re-keys the uid-scoped data (Leaderboard, History) the same way
+    /// sign-in did, just in the other direction. It deliberately does NOT touch the user's
+    /// local notes / transcripts / to-dos, sign-out is an account detach, not a data wipe.
+    @MainActor
+    func signOut() {
+        let old = Settings.shared.uid
+        Settings.shared.referralCode = ""           // empty referral → uid resolves to the device-minted "anon-…" uid
+        Settings.shared.proEmail = ""
+        Settings.shared.isPro = false               // Pro is account-bound; signing out drops the entitlement
+        if old != Settings.shared.uid {
+            Leaderboard.remove(uid: old)            // drop the account-uid score row
+            if Settings.shared.showOnLeaderboard {
+                Leaderboard.submit()                // re-submit under the device uid (username is local, so this is safe)
+            }
+            // Note: History push/pull are account-only (they guard on proEmail), so once
+            // signed out the local history simply stays local. We keep the user's notes,
+            // transcripts and to-dos untouched, this is an account detach, not a data wipe.
+        }
+    }
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import RefCapture from "@/components/RefCapture";
@@ -26,7 +27,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider
+      afterSignOutUrl="/"
       appearance={{
+        baseTheme: dark,
         variables: {
           colorPrimary: "#ffffff",
           colorBackground: "#101014",
@@ -54,6 +57,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             "min-h-[52px] text-base rounded-2xl font-semibold !bg-white !text-black hover:!bg-white/90",
           footerActionText: "!text-[rgba(244,245,248,0.6)]",
           footerActionLink: "!text-white font-medium",
+          // Account dropdown (UserButton popover) — on-brand dark, high-contrast text
+          userButtonPopoverCard:
+            "rounded-2xl border border-white/10 bg-[#101014] shadow-2xl",
+          userButtonPopoverMain: "bg-[#101014]",
+          userPreviewMainIdentifier: "!text-white font-medium",
+          userPreviewSecondaryIdentifier: "!text-[rgba(244,245,248,0.6)]",
+          userButtonPopoverActionButton:
+            "!text-[rgba(244,245,248,0.85)] hover:bg-white/[0.06] hover:!text-white",
+          userButtonPopoverActionButtonText: "!text-inherit",
+          userButtonPopoverActionButtonIcon: "!text-[rgba(244,245,248,0.7)]",
+          userButtonPopoverFooter: "bg-[#101014] border-t border-white/[0.06]",
         },
       }}
     >
