@@ -31,6 +31,25 @@ cat > "$ENTITLEMENTS" <<'PLIST'
   <key>com.apple.security.device.microphone</key><true/>
   <key>com.apple.security.personal-information.calendars</key><true/>
   <key>com.apple.security.personal-information.reminders</key><true/>
+  <!-- Shared container so the WidgetKit extension can read today's tasks.
+       The App Group "group.975755H4ZC.verba" MUST be registered in the Apple
+       Developer portal (Certificates, IDs & Profiles → Identifiers → App Groups)
+       and enabled on both the app ID (com.agentik.verba) and the widget ID
+       (com.agentik.verba.widget) BEFORE this entitlement will be honored. -->
+  <key>com.apple.security.application-groups</key>
+  <array><string>group.975755H4ZC.verba</string></array>
+</dict></plist>
+PLIST
+
+# Entitlements for the widget extension: just the shared App Group (it reads,
+# never records audio / hits the network in the spike). Hardened runtime too.
+WIDGET_ENTITLEMENTS="$(mktemp).plist"
+cat > "$WIDGET_ENTITLEMENTS" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>com.apple.security.application-groups</key>
+  <array><string>group.975755H4ZC.verba</string></array>
 </dict></plist>
 PLIST
 
@@ -51,6 +70,11 @@ if [ -d "$SPARKLE" ]; then
   done
   codesign --force --options runtime --timestamp --sign "$DEVID" "$SPARKLE"
 fi
+# Widget extension is signed inside-out too: before the host app, hardened
+# runtime, with its own App-Group entitlement.
+APPEX="$APP/Contents/PlugIns/VerbaWidget.appex"
+[ -d "$APPEX" ] && codesign --force --options runtime --timestamp \
+  --entitlements "$WIDGET_ENTITLEMENTS" --sign "$DEVID" "$APPEX"
 codesign --force --options runtime --timestamp \
   --entitlements "$ENTITLEMENTS" --sign "$DEVID" "$APP"
 codesign --verify --deep --strict --verbose=2 "$APP"

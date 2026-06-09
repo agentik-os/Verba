@@ -22,6 +22,14 @@ let package = Package(
             ],
             path: "Sources/Verba",
             swiftSettings: [ .swiftLanguageMode(.v5) ]
+        ),
+        // WidgetKit extension binary. Compiled by SwiftPM to an executable
+        // (@main WidgetBundle), then assembled into VerbaWidget.appex and
+        // embedded in Verba.app/Contents/PlugIns by bundle.sh.
+        .executableTarget(
+            name: "VerbaWidget",
+            path: "Sources/VerbaWidget",
+            swiftSettings: [ .swiftLanguageMode(.v5) ]
         )
     ]
 )

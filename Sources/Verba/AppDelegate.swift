@@ -131,6 +131,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { [weak self] _ in self?.refreshUI() }
             .store(in: &cancellables)
         TodoReminders.shared.start()   // schedule "30 min before deadline" to-do reminders, keep them in sync
+        WidgetBridge.shared.start()    // keep the WidgetKit "Today" snapshot in sync with the TodoStore
 
         // Re-apply hotkeys when the primary shortcut, profiles, or Fn option change.
         Publishers.MergeMany(
@@ -256,6 +257,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Self-heal the Fn suppression: if something (e.g. System Settings) reset "Press 🌐 to"
         // back to Change Input Source / Emoji, re-force it whenever Verba regains focus.
         if Settings.shared.useFnAsPrimary { FnSystemPref.reapplyIfDrifted() }
+        // Apply any task check-offs the user made from the widget while we were inactive.
+        WidgetBridge.shared.syncFromWidget()
     }
 
     private func applyDockPolicy() {

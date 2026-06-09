@@ -40,6 +40,41 @@ fi
 ditto ".build/release/Sparkle.framework" "$APP/Contents/Frameworks/Sparkle.framework"
 install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP/Contents/MacOS/Verba" 2>/dev/null || true
 
+# ── Embed the WidgetKit extension as a proper macOS app-extension bundle ──
+# VerbaWidget.appex/Contents/{Info.plist, MacOS/VerbaWidget}. The @main
+# WidgetBundle binary is launched by WidgetKit's extension runtime. Lives in
+# Verba.app/Contents/PlugIns so the host app advertises the widget.
+if [ -f ".build/release/VerbaWidget" ]; then
+  APPEX="$APP/Contents/PlugIns/VerbaWidget.appex"
+  mkdir -p "$APPEX/Contents/MacOS"
+  cp ".build/release/VerbaWidget" "$APPEX/Contents/MacOS/VerbaWidget"
+  # The extension links SwiftUI/WidgetKit dynamically from the OS; it also needs
+  # the Swift runtime rpath available to the host. The OS provides swift in /usr/lib/swift.
+  cat > "$APPEX/Contents/Info.plist" <<APPEXPLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>            <string>VerbaWidget</string>
+    <key>CFBundleDisplayName</key>     <string>Verba Widget</string>
+    <key>CFBundleExecutable</key>      <string>VerbaWidget</string>
+    <key>CFBundleIdentifier</key>      <string>com.agentik.verba.widget</string>
+    <key>CFBundleVersion</key>         <string>${VERSION}</string>
+    <key>CFBundleShortVersionString</key><string>${VERSION}</string>
+    <key>CFBundlePackageType</key>     <string>XPC!</string>
+    <key>LSMinimumSystemVersion</key>  <string>14.0</string>
+    <key>NSExtension</key>
+    <dict>
+        <key>NSExtensionPointIdentifier</key><string>com.apple.widgetkit-extension</string>
+    </dict>
+</dict>
+</plist>
+APPEXPLIST
+  echo "▸ Embedded VerbaWidget.appex"
+else
+  echo "⚠︎ VerbaWidget binary not found; skipping widget embed."
+fi
+
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -73,13 +108,45 @@ PLIST
 
 # Sign with a STABLE identity if available (Developer ID) so macOS keeps the
 # Accessibility/Microphone grant across rebuilds. Falls back to ad-hoc otherwise.
+# NOTE: this is the quick dev/local signature. The release path
+# (sign-and-notarize.sh) does the hardened-runtime + App-Group + inside-out
+# Sparkle + notarization signing. Here we just sign inside-out (appex, then app)
+# so the local bundle passes `codesign --verify --deep --strict`.
 SIGN_ID="${SIGN_ID:-Developer ID Application: Gareth Moison (975755H4ZC)}"
 if security find-identity -v -p codesigning 2>/dev/null | grep -q "$SIGN_ID"; then
-  codesign --force --deep --sign "$SIGN_ID" "$APP"
-  echo "▸ Signed with: $SIGN_ID"
+  SIGN_WITH="$SIGN_ID"
 else
-  codesign --force --deep --sign - "$APP" 2>/dev/null || true
-  echo "▸ Ad-hoc signed (set SIGN_ID for a stable signature)"
+  SIGN_WITH="-"
+fi
+
+# App-Group entitlement so the app and the widget extension share the
+# "today's tasks" container EVEN ON A LOCAL DEV BUILD. Verified empirically: a
+# Developer-ID signature honors this group's container on-device without portal
+# registration (the portal/provisioning-profile step is only required for the
+# notarized release flow in sign-and-notarize.sh). Ad-hoc ("-") signatures get
+# NO container, so the widget falls back to its placeholder — by design.
+GROUP_ENT="$(mktemp).plist"
+cat > "$GROUP_ENT" <<'GENT'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>com.apple.security.application-groups</key>
+  <array><string>group.975755H4ZC.verba</string></array>
+</dict></plist>
+GENT
+
+APPEX="$APP/Contents/PlugIns/VerbaWidget.appex"
+if [ "$SIGN_WITH" = "-" ]; then
+  # Ad-hoc: no entitlement (the group container is denied to ad-hoc signatures).
+  [ -d "$APPEX" ] && codesign --force --sign - "$APPEX"
+  codesign --force --sign - "$APP"
+  echo "▸ Ad-hoc signed (set SIGN_ID for a stable signature + working widget container)"
+else
+  # Developer ID: sign inside-out (appex first) WITH the App-Group entitlement so
+  # the widget actually reads the shared "today" snapshot during local testing.
+  [ -d "$APPEX" ] && codesign --force --entitlements "$GROUP_ENT" --sign "$SIGN_WITH" "$APPEX"
+  codesign --force --entitlements "$GROUP_ENT" --sign "$SIGN_WITH" "$APP"
+  echo "▸ Signed with: $SIGN_ID (App-Group entitlement applied)"
 fi
 
 echo "✅ Built $APP (v$VERSION)"
