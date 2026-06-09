@@ -761,11 +761,12 @@ private struct DeadlinePicker: View {
                     .disabled(deadline == nil)
                 Spacer()
                 Button("Done") { show = false }
-                    .buttonStyle(.borderedProminent)
+                    .controlSize(.regular).dialogPrimary()
             }
         }
         .padding(16)
         .frame(width: 312)
+        .dialogAppear()
     }
 
     /// A reasonable default when no deadline is set yet (today, 9am or next hour).

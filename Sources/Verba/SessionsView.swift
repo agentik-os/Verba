@@ -114,7 +114,7 @@ private struct SessionRow: View {
             }
         }
         .padding(10)
-        .background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private var timeLabel: String {
@@ -141,7 +141,7 @@ private struct InflightRow: View {
             Spacer()
         }
         .padding(10)
-        .background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private var stageLabel: String {

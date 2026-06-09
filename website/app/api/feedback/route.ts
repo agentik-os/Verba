@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAppToken } from "@/lib/apptoken";
+import { convexBump } from "@/lib/convex";
 
 export const runtime = "nodejs";
 
@@ -6,11 +8,21 @@ export const runtime = "nodejs";
 // Verba team's Feedback project — feedback text + a full Context section (version, OS,
 // engine, mode, user, time) and, when supplied, the screenshot uploaded via Linear's
 // own file-upload flow. The LINEAR_API_KEY is read server-side only; the app never holds it.
+// S11: rate-limited per IP + globally via shared Convex counters, screenshot size capped,
+// and the reported email is only trusted when it comes from a verified app-session token.
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
+
+// ≈6 MB of base64 PNG — anything bigger is rejected before touching Linear.
+const MAX_SCREENSHOT_CHARS = 8_000_000;
+
+function ipOf(req: NextRequest): string {
+  const xff = req.headers.get("x-forwarded-for") ?? "";
+  return xff.split(",")[0].trim() || req.headers.get("x-real-ip") || "unknown";
+}
 
 const LINEAR_URL = "https://api.linear.app/graphql";
 const TEAM_ID = "e2568123-2c86-4283-a88f-88e0b508f5ae";
@@ -94,6 +106,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Feedback isn't configured yet." }, { status: 503, headers: cors });
   }
 
+  // Rate limit: per-IP (fail open on Convex outage) + global daily ceiling (fail closed).
+  const day = new Date().toISOString().slice(0, 10);
+  const ip = ipOf(req);
+  const ipOk = await convexBump(`feedback:ip:${ip}:${day}`, 5, true);
+  const globalOk = await convexBump(`feedback:global:${day}`, 100, false);
+  if (!ipOk || !globalOk) {
+    return NextResponse.json(
+      { ok: false, error: "Too much feedback for today — please try again tomorrow." },
+      { status: 429, headers: cors }
+    );
+  }
+
   let body: Body;
   try {
     body = await req.json();
@@ -105,6 +129,12 @@ export async function POST(req: NextRequest) {
   if (!text) {
     return NextResponse.json({ ok: false, error: "Feedback text is required." }, { status: 400, headers: cors });
   }
+  if ((body.screenshotBase64 ?? "").length > MAX_SCREENSHOT_CHARS) {
+    return NextResponse.json({ ok: false, error: "Screenshot too large." }, { status: 413, headers: cors });
+  }
+
+  // The body's email is attacker-controlled; only a verified app-session token proves it.
+  const tok = verifyAppToken(req.headers.get("authorization"));
 
   // Optional screenshot upload (tolerate failure — we still file the issue without it).
   let assetUrl: string | null = null;
@@ -146,6 +176,7 @@ export async function POST(req: NextRequest) {
     `- **Engine:** ${dash(body.engine)}`,
     `- **Active mode:** ${dash(body.mode)}`,
     `- **User:** ${user}`,
+    tok ? `- **Verified email:** ${tok.email}` : `- **Identity:** unverified (no app token)`,
     `- **Submitted:** ${new Date().toISOString()}`,
     ...(assetUrl ? ["", "## Screenshot", "", `![screenshot](${assetUrl})`] : []),
   ].join("\n");

@@ -68,16 +68,25 @@ struct NotesView: View {
         .onAppear { if !modes.modes.contains(where: { $0.id == format.id }) { format = modes.modes.first ?? .cleanNote }; consumePending() }
         .sheet(isPresented: $showModeManager) {
             VStack(spacing: 0) {
-                HStack {
+                HStack(spacing: 12) {
+                    Image(systemName: "note.text")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+                        .frame(width: 32, height: 32)
+                        .background(Color.accentColor.opacity(0.13),
+                                    in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                     Text("Note modes").font(.title3.weight(.semibold))
                     Spacer()
-                    Button("Done") { showModeManager = false }.keyboardShortcut(.defaultAction)
+                    Button("Done") { showModeManager = false }
+                        .dialogPrimary()
+                        .keyboardShortcut(.defaultAction)
                 }
-                .padding(.horizontal, 16).padding(.vertical, 12)
-                Divider()
+                .padding(.horizontal, 20).padding(.vertical, 14)
                 NoteModesView()
             }
             .frame(width: 760, height: 520)
+            .presentationBackground(.thinMaterial)
+            .dialogAppear()
         }
         .onDisappear { notesCtl.isRecording = false; levelTimer?.invalidate(); levelTimer = nil; autosaveTask?.cancel(); autosaveCommit(); work?.cancel(); if isRecording { _ = recorder.stop(); recorder.releaseArmed() } }
     }

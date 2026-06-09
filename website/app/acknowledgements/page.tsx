@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ThemeToggle from "@/components/ThemeToggle";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -38,7 +39,10 @@ export default function Acknowledgements() {
     <main className="mx-auto max-w-3xl px-6 pb-24">
       <nav className="flex items-center justify-between py-6">
         <Link href="/" className="text-[17px] font-semibold tracking-tight">Verba</Link>
-        <Link href="/" className="text-sm muted hover:text-[var(--fg)]">← Home</Link>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <Link href="/" className="text-sm muted hover:text-[var(--fg)]">← Home</Link>
+        </div>
       </nav>
       <section className="py-12">
         <h1 className="text-4xl font-semibold tracking-tight">Acknowledgements</h1>

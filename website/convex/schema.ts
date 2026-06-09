@@ -44,4 +44,16 @@ export default defineSchema({
     createdAt: v.number(),
     status: v.optional(v.string()),
   }),
+
+  device_auth: defineTable({   // uid → sha256(device secret); multiple rows = multiple devices
+    uid: v.string(),
+    secretHash: v.string(),    // hex sha256 of the 64-char hex secret string
+    created: v.number(),
+  }).index("by_uid", ["uid"]),
+
+  ratelimits: defineTable({    // shared counters that survive serverless instances
+    key: v.string(),           // e.g. "try:ip:1.2.3.4:2026-06-10", "try:global:2026-06-10"
+    n: v.number(),
+    updated: v.number(),
+  }).index("by_key", ["key"]),
 });

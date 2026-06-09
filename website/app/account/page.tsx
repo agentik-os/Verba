@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/nextjs";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Account() {
   return (
@@ -9,7 +10,10 @@ export default function Account() {
       <a href="/" className="text-sm muted hover:text-[var(--fg)]">← Verba</a>
       <div className="mt-6 flex items-center justify-between">
         <h1 className="text-3xl font-semibold tracking-tight">Account</h1>
-        <SignedIn><UserButton afterSignOutUrl="/" /></SignedIn>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <SignedIn><UserButton afterSignOutUrl="/" /></SignedIn>
+        </div>
       </div>
 
       <SignedOut>

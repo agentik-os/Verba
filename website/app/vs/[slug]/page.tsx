@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ThemeToggle from "@/components/ThemeToggle";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { competitors, getCompetitor, VERBA, onDeviceLabel } from "@/lib/competitors";
@@ -44,7 +45,10 @@ export default async function Vs({ params }: { params: Promise<{ slug: string }>
           </span>
           <span className="text-[17px] font-semibold tracking-tight">Verba</span>
         </Link>
-        <Link href="/compare" className="text-sm muted hover:text-[var(--fg)]">All comparisons →</Link>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <Link href="/compare" className="text-sm muted hover:text-[var(--fg)]">All comparisons →</Link>
+        </div>
       </nav>
 
       <section className="py-14 text-center">

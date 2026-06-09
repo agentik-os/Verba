@@ -89,6 +89,7 @@ struct Reprompter {
         var req = URLRequest(url: URL(string: "https://verba.run/api/reprompt")!)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "content-type")
+        AuthToken.bearer(&req)   // the route is 401-gated: prove the signed-in session, not just an email
         req.timeoutInterval = 180
         var payload: [String: Any] = ["email": email, "transcript": transcript, "system": systemPrompt, "model": model]
         if let imageBase64 { payload["image"] = imageBase64 }

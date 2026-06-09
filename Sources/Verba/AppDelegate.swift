@@ -76,6 +76,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var mainWC: NSWindowController?
     private var reviewWindow: NSWindow?
     private var actionWindow: NSWindow?
+    private var alertWindow: NSWindow?   // the floating GlassAlertView panel (NSAlert replacement)
     private var recordStartedAt: Date?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -142,6 +143,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return false }
             return self.state != .idle || SessionStore.shared.hasInflight
                 || self.todoCaptureRecording || NotesController.shared.isRecording
+        }
+        // Present Sparkle's "install & relaunch?" prompt as a Liquid Glass panel (GlassAlertView)
+        // instead of a stock NSAlert. "Not Now" (Esc) keeps working — the update installs on quit.
+        Updater.shared.presentRelaunchPrompt = { [weak self] install in
+            self?.showGlassAlert(
+                icon: "arrow.triangle.2.circlepath",
+                title: "Install update and relaunch now?",
+                message: "A dictation is recording or still processing. Relaunching now will discard it. Choose Not Now to keep working — the update installs on the next quit.",
+                buttons: [
+                    .init(title: "Not Now", role: .cancel, action: {}),
+                    .init(title: "Install & Relaunch", isDefault: true, action: install),
+                ],
+                size: NSSize(width: 400, height: 230))
         }
         // Silent check shortly after launch so the menu/icon reflect availability without a popup.
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) { Updater.shared.checkInBackground() }
@@ -696,22 +710,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Never nag during onboarding (the permissions slide handles it), and only once per session.
         if tapPermissionNagged || !Settings.shared.onboarded || onboardingWC?.window?.isVisible == true { return }
         tapPermissionNagged = true
-        let alert = NSAlert()
-        alert.messageText = "Verba needs permission to use the Fn key"
-        alert.informativeText = "Grant Verba under Accessibility and Input Monitoring in System Settings ▸ Privacy & Security, then the Fn key and the recording overlay will work again."
-        alert.addButton(withTitle: "Open Accessibility")
-        alert.addButton(withTitle: "Open Input Monitoring")
-        alert.addButton(withTitle: "Later")
-        switch alert.runModal() {
-        case .alertFirstButtonReturn:
-            Output.promptAccessibility()
-        case .alertSecondButtonReturn:
-            IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
-            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent") {
-                NSWorkspace.shared.open(url)
-            }
-        default: break
-        }
+        showGlassAlert(
+            icon: "keyboard", tint: .orange,
+            title: "Verba needs permission to use the Fn key",
+            message: "Grant Verba under Accessibility and Input Monitoring in System Settings ▸ Privacy & Security, then the Fn key and the recording overlay will work again.",
+            buttons: [
+                .init(title: "Later", role: .cancel, action: {}),
+                .init(title: "Open Input Monitoring") {
+                    IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent") {
+                        NSWorkspace.shared.open(url)
+                    }
+                },
+                .init(title: "Open Accessibility", isDefault: true) {
+                    Output.promptAccessibility()
+                },
+            ],
+            size: NSSize(width: 400, height: 240))
     }
 
     // MARK: - Trigger handlers
@@ -2073,12 +2088,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Windows
 
     @objc private func openSettings() {
-        if settingsWC == nil { settingsWC = makeWindow(title: "Verba Settings", view: SettingsView(), size: NSSize(width: 560, height: 480)) }
+        if settingsWC == nil { settingsWC = makeWindow(title: "Verba Settings", view: SettingsView(), size: NSSize(width: 560, height: 480), glass: true) }
         present(settingsWC)
     }
 
     @objc private func openHistory() {
-        if historyWC == nil { historyWC = makeWindow(title: "Verba History", view: HistoryView(), size: NSSize(width: 780, height: 500)) }
+        if historyWC == nil { historyWC = makeWindow(title: "Verba History", view: HistoryView(), size: NSSize(width: 780, height: 500), glass: true) }
         present(historyWC)
     }
 
@@ -2218,30 +2233,53 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Liquid Glass NSAlert replacement: presents a GlassAlertView in a floating glass
+    /// panel via the same makeWindow(glass:)+presentFocused pattern as ActionConfirm, so
+    /// this LSUIElement app activates first and the panel actually gets key focus. Every
+    /// button closes the panel before running its action; defaultAction (↩) and the
+    /// cancel role (Esc) are wired through GlassAlertView itself.
+    func showGlassAlert(icon: String = "exclamationmark.circle", tint: Color = .accentColor,
+                        title: String, message: String?,
+                        buttons: [GlassAlertView.AlertButton],
+                        size: NSSize = NSSize(width: 400, height: 210)) {
+        alertWindow?.close(); alertWindow = nil   // one alert at a time, the newest wins
+        let close: () -> Void = { [weak self] in
+            self?.alertWindow?.close(); self?.alertWindow = nil
+        }
+        let wrapped = buttons.map { b in
+            GlassAlertView.AlertButton(title: b.title, role: b.role, isDefault: b.isDefault) {
+                close(); b.action()
+            }
+        }
+        let view = GlassAlertView(icon: icon, tint: tint, title: title, message: message, buttons: wrapped)
+        let wc = makeWindow(title: title, view: view, size: size, glass: true, resizable: false)
+        alertWindow = wc.window
+        presentFocused(wc)
+    }
+
     private func notify(_ title: String, _ body: String) {
-        let a = NSAlert()
-        a.messageText = title
-        a.informativeText = body
-        a.runModal()
+        showGlassAlert(icon: "info.circle", title: title, message: body,
+                       buttons: [.init(title: "OK", isDefault: true, action: {})],
+                       size: NSSize(width: 400, height: 190))
     }
 
     /// Shown when a free user hits the monthly word limit.
     private func showPaywall() {
         state = .idle
         overlay.hide()
-        NSApp.activate(ignoringOtherApps: true)
-        let a = NSAlert()
-        a.messageText = "Your free trial is used up"
-        a.informativeText = "You've used your \(Entitlement.freeTrialDictations) free Pro dictations. Upgrade to Verba Pro for unlimited dictation, $9.99/month."
-        a.addButton(withTitle: "Upgrade to Pro")
-        a.addButton(withTitle: "I already subscribed")
-        a.addButton(withTitle: "Later")
-        switch a.runModal() {
-        case .alertFirstButtonReturn:
-            if let u = URL(string: Entitlement.pricingURL) { NSWorkspace.shared.open(u) }
-        case .alertSecondButtonReturn:
-            openMain()   // Settings ▸ Plan to restore via email
-        default: break
-        }
+        showGlassAlert(
+            icon: "sparkles", tint: .accentColor,
+            title: "Your free trial is used up",
+            message: "You've used your \(Entitlement.freeTrialDictations) free Pro dictations. Upgrade to Verba Pro for unlimited dictation, $9.99/month.",
+            buttons: [
+                .init(title: "Later", role: .cancel, action: {}),
+                .init(title: "I already subscribed") { [weak self] in
+                    self?.openMain()   // Settings ▸ Plan to restore via email
+                },
+                .init(title: "Upgrade to Pro", isDefault: true) {
+                    if let u = URL(string: Entitlement.pricingURL) { NSWorkspace.shared.open(u) }
+                },
+            ],
+            size: NSSize(width: 400, height: 230))
     }
 }

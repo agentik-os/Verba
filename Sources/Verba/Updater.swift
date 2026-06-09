@@ -28,6 +28,13 @@ final class Updater: ObservableObject {
     /// silently kills an active dictation. Always called on the main thread.
     var isBusy: () -> Bool = { false }
 
+    /// Presents the "Install update and relaunch now?" prompt. AppDelegate replaces this at
+    /// launch with a Liquid Glass panel (GlassAlertView via makeWindow(glass:)+presentFocused);
+    /// the closure receives Sparkle's install handler to invoke on confirmation. The default
+    /// (pre-wiring — unreachable in practice, isBusy can't be true before launch finishes)
+    /// postpones: Sparkle then installs the update on the next quit. Called on the main thread.
+    var presentRelaunchPrompt: (@escaping () -> Void) -> Void = { _ in }
+
     private init() {
         controller = SPUStandardUpdaterController(startingUpdater: true,
                                                   updaterDelegate: delegate,
@@ -96,13 +103,10 @@ private final class UpdaterDelegate: NSObject, SPUUpdaterDelegate {
                  untilInvokingBlock installHandler: @escaping () -> Void) -> Bool {
         guard let owner, owner.isBusy() else { return false }   // idle → relaunch immediately
         VerbaLog.updater.info("postponing update relaunch: a dictation is recording or processing")
+        // Liquid Glass prompt (wired by AppDelegate) instead of a stock NSAlert; "Not Now"
+        // leaves the handler uninvoked, so Sparkle installs the update on the next quit.
         DispatchQueue.main.async {
-            let alert = NSAlert()
-            alert.messageText = "Install update and relaunch now?"
-            alert.informativeText = "A dictation is recording or still processing. Relaunching now will discard it. Choose Not Now to keep working — the update installs on the next quit."
-            alert.addButton(withTitle: "Install & Relaunch")
-            alert.addButton(withTitle: "Not Now")
-            if alert.runModal() == .alertFirstButtonReturn { installHandler() }
+            owner.presentRelaunchPrompt(installHandler)
         }
         return true
     }

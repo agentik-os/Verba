@@ -176,7 +176,7 @@ struct FeedbackView: View {
                             Text("Send feedback")
                         }
                     }
-                    .buttonStyle(.borderedProminent).tint(.primary)
+                    .dialogPrimary(tint: .primary)
                     .disabled(!canSubmit)
                 }
             }

@@ -30,8 +30,8 @@ export const VERBA = {
   platforms: "macOS (Apple Silicon)",
   transcription: "On-device Whisper / Parakeet (or cloud, optional)",
   onDevice: "yes" as const,
-  aiEditing: "Claude restructuring, per-mode models, intent mode, voice commands",
-  privacy: "Local-first: audio never leaves your Mac, nothing saved to disk, keys in Keychain",
+  aiEditing: "Eight built-in modes (Flow, Polish, Casual, Intent, Context, Coding, Translate, Custom), per-mode Claude models, voice commands",
+  privacy: "On-device transcription keeps audio on your Mac. Text history is local, synced only when signed in, with an off switch and retention controls. Keys in Keychain.",
 };
 
 export const onDeviceLabel = (v: "yes" | "no" | "partial") =>
@@ -61,7 +61,7 @@ export const competitors: Competitor[] = [
       "No offline mode at all",
     ],
     verbaWins: [
-      "Verba transcribes on-device by default, your audio never leaves your Mac, even offline.",
+      "Verba transcribes on-device by default, so your audio stays on your Mac, even offline.",
       "$9.99/mo vs $15/mo, and the free trial is the full app: 33 dictations with every Pro feature.",
       "Bring your own AI account (Claude Code / your keys), heavy users don't subsidize a vendor's GPU bill.",
       "Per-mode models: Opus for coding prompts, Haiku for quick polish, you control cost and quality.",
@@ -93,7 +93,7 @@ export const competitors: Competitor[] = [
       "Your voice leaves your Mac",
     ],
     verbaWins: [
-      "On-device transcription by default, your audio never leaves your Mac.",
+      "On-device transcription by default keeps your audio on your Mac.",
       "$9.99/mo, and a free trial of 33 full-Pro dictations.",
       "Bring your own AI account (Claude Code / keys), no markup on a vendor's cloud.",
       "Per-mode models and intent mode for finer control.",
@@ -125,7 +125,7 @@ export const competitors: Competitor[] = [
       "Requires Input Monitoring permission",
     ],
     verbaWins: [
-      "Verba never writes your audio to disk and stores keys in the macOS Keychain.",
+      "Verba never stores your audio recordings; text history is local with an off switch and retention controls, and keys live in the macOS Keychain.",
       "First-class Claude restructuring with per-mode model routing, not just a prompt box.",
       "Intent mode: say how you want the rest handled and Verba does exactly that.",
       "Native menu-bar app tuned for instant Fn-key dictation and auto-paste.",

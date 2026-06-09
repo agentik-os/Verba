@@ -1,43 +1,50 @@
 import Foundation
 
-/// Public leaderboard entry (no email, ever, only the alias + metrics).
+/// Public leaderboard entry (no email — and no uid once the server strips it; only the
+/// alias + metrics). `me` is set server-side when the caller proved its identity
+/// (uid + device secret), so views can highlight the user's own row without any uid.
 struct LeaderEntry: Identifiable, Decodable {
-    let uid: String
+    let id = UUID().uuidString   // local-only identity; the server no longer exposes uids
+    let uid: String?             // legacy field, nil once the server strips it (views move to `me`, HANDOFF-3)
     let alias: String
     let words: Double
     let wpm: Double
     let streak: Double
     let saved: Double?
-    var id: String { uid }
+    let me: Bool?
+
+    private enum CodingKeys: String, CodingKey { case uid, alias, words, wpm, streak, saved, me }
 }
 
-/// Talks to the shared Convex leaderboard over its HTTP API.
+/// Talks to the shared Convex leaderboard through the shared ConvexClient (S16).
 enum Leaderboard {
-    private static let base = "https://fortunate-aardvark-443.convex.cloud"
 
     /// Push this account's current stats (alias + totals). Optional completion on main.
     static func submit(_ done: @escaping () -> Void = {}) {
         let s = Settings.shared
         guard s.showOnLeaderboard else { DispatchQueue.main.async { done() }; return }   // opted out → never publish
-        let uid = s.uid
         let alias = s.username.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !alias.isEmpty else { DispatchQueue.main.async { done() }; return }
-        let args: [String: Any] = [
-            "uid": uid, "alias": alias,
+        ConvexClient.registerDevice(token: AuthToken.current)   // cheap + idempotent; the server dedups
+        let args = ConvexClient.authedArgs([
+            "alias": alias,
             "words": Stats.shared.totalWords, "wpm": Stats.shared.avgWPM,
             "streak": Stats.shared.streak, "saved": Stats.shared.timeSavedMinutes,
-        ]
-        post("mutation", path: "leaderboard:submit", args: args) { _ in DispatchQueue.main.async { done() } }
+        ])
+        ConvexClient.call("mutation", "leaderboard:submit", args) { _ in DispatchQueue.main.async { done() } }
     }
 
-    /// Delete a stale score row (the device-minted uid) after sign-in re-keys the identity.
+    /// Delete a stale score row after sign-in/out re-keys the identity. You can only remove
+    /// YOUR OWN row: this device's secret is registered under the old uid too.
     static func remove(uid: String) {
-        post("mutation", path: "leaderboard:remove", args: ["uid": uid]) { _ in }
+        ConvexClient.call("mutation", "leaderboard:remove",
+                          ["uid": uid, "secret": DeviceSecret.current]) { _ in }
     }
 
-    /// Fetch the whole board (alias + metrics only).
+    /// Fetch the whole board (alias + metrics only). Passing uid+secret lets the server
+    /// mark the caller's own row with `me: true`.
     static func fetch(_ done: @escaping ([LeaderEntry]) -> Void) {
-        post("query", path: "leaderboard:board", args: [:]) { data in
+        ConvexClient.call("query", "leaderboard:board", ConvexClient.authedArgs()) { data in
             guard let data,
                   let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   obj["status"] as? String == "success",
@@ -48,14 +55,5 @@ enum Leaderboard {
             }
             DispatchQueue.main.async { done(entries) }
         }
-    }
-
-    private static func post(_ kind: String, path: String, args: [String: Any], _ done: @escaping (Data?) -> Void) {
-        guard let url = URL(string: "\(base)/api/\(kind)") else { done(nil); return }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "content-type")
-        req.httpBody = try? JSONSerialization.data(withJSONObject: ["path": path, "args": args, "format": "json"])
-        URLSession.shared.dataTask(with: req) { data, _, _ in done(data) }.resume()
     }
 }

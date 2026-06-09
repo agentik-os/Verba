@@ -22,10 +22,14 @@ export default function AppAuth() {
     let ref: string | null = null;
     try { ref = localStorage.getItem("verba_ref"); } catch {}
 
-    const handBack = (code?: string) => {
+    const handBack = (code?: string, token?: string) => {
       setMsg("Done! Returning to Verba…");
       const q = new URLSearchParams({ email });
       if (code) q.set("code", code);
+      // The signed app-session token (issued fresh by /api/link-referral after this
+      // Clerk sign-in). The app stores it in the Keychain and sends it as a Bearer
+      // header on every protected app->site call.
+      if (token) q.set("token", token);
       // Deliberately do NOT hand the Clerk first/last name back: the public
       // leaderboard handle is a chosen username (synced via /api/username), never
       // the real name. Passing the name here would re-introduce a name-leak path.
@@ -39,7 +43,7 @@ export default function AppAuth() {
       body: JSON.stringify({ ref: ref ?? "" }),
     })
       .then((r) => r.json())
-      .then((d) => handBack(d?.referralCode))
+      .then((d) => handBack(d?.referralCode, d?.token))
       .catch(() => handBack());
   }, [isLoaded, isSignedIn, user]);
 

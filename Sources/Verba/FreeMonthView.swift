@@ -22,12 +22,13 @@ struct FreeMonthView: View {
                         Spacer()
                         Button(copied ? "Copied ✓" : "Copy link") {
                             let pb = NSPasteboard.general; pb.clearContents(); pb.setString(settings.referralLink, forType: .string); copied = true
-                        }.buttonStyle(.borderedProminent).tint(.primary)
+                        }.glassProminentButton().tint(.accentColor)
                     }
                     .padding(12).frame(maxWidth: .infinity)
                     .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     HStack {
                         Button { share() } label: { Label("Share…", systemImage: "square.and.arrow.up") }
+                            .glassButton()
                         Spacer()
                     }
                 }

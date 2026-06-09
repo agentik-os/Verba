@@ -106,9 +106,19 @@ struct ReviewView: View {
     let onCancel: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Review dictation").font(.headline)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                Image(systemName: "square.and.pencil")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 38, height: 38)
+                    .background(Color.accentColor.opacity(0.13),
+                                in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Review dictation").font(.title3.weight(.semibold))
+                    Text("Tweak before it's pasted.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
                 Spacer()
                 Toggle("Show raw transcript", isOn: $showOriginal).toggleStyle(.switch)
             }
@@ -116,8 +126,8 @@ struct ReviewView: View {
                 ScrollView { Text(original).textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading) }
                     .frame(minHeight: 80, maxHeight: 120)
-                    .padding(8)
-                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+                    .padding(10)
+                    .background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 Button("Use raw transcript instead") { text = original }
                     .font(.caption)
             }
@@ -125,24 +135,28 @@ struct ReviewView: View {
                 .font(.system(.body))
                 .frame(minWidth: 460, minHeight: 220).padding(2)
                 .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 Button(action: addSelectedWord) {
                     Label(didAddWord ? "Added" : "Add to Dictionary",
                           systemImage: didAddWord ? "checkmark" : "text.book.closed")
                 }
+                .dialogSecondary()
                 .disabled(editor.selectedWord == nil)
                 .help(editor.selectedWord == nil ? "Please select one word"
                                                  : "Add “\(editor.selectedWord ?? "")” to the dictionary")
                 Spacer()
                 Button("Cancel", role: .cancel) { onCancel() }
+                    .dialogSecondary()
                 Button("Copy") { Output.copyToClipboard(text); onCancel() }
+                    .dialogSecondary()
                 Button("Paste") { onConfirm(text) }
+                    .dialogPrimary()
                     .keyboardShortcut(.return, modifiers: [.command])
-                    .buttonStyle(.borderedProminent)
             }
         }
-        .padding(16)
+        .padding(20)
         .frame(width: 520)
+        .dialogAppear()
     }
 
     /// Add the single selected word as a pure vocabulary entry (empty spoken form), consistent with

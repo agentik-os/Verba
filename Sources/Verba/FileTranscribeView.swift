@@ -114,6 +114,7 @@ struct FileTranscribeView: View {
 
                 HStack {
                     Button { pick() } label: { Label("Choose file…", systemImage: "folder") }
+                        .glassButton()
                         .disabled(state == "working")
                     if !fileName.isEmpty { Text(fileName).font(.callout).foregroundStyle(.secondary).lineLimit(1) }
                     Spacer()

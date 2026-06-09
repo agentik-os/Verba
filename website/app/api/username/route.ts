@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser, clerkClient } from "@clerk/nextjs/server";
+import { verifyAppToken } from "@/lib/apptoken";
 
 export const runtime = "nodejs";
 
 // The public leaderboard identity. A deliberate handle the user chooses — NEVER
 // their real first/last name or email. Stored on the Clerk user's publicMetadata
 // so it syncs across the macOS app and the web.
+// S5: the target user is always the authenticated one (Clerk web session or
+// app-session token). The old `?email=` / body.email contract is gone — an
+// arbitrary email can no longer read or overwrite someone else's username.
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -27,22 +31,25 @@ function sanitizeUsername(raw: unknown): string | null {
   return collapsed;
 }
 
-// Resolve the Clerk userId for this request: an explicit email (app→site model,
-// like /api/entitlement) takes precedence, else the signed-in web user.
-async function resolveUserId(email: string): Promise<string | null> {
-  if (email) {
-    const client = await clerkClient();
-    const list = await client.users.getUserList({ emailAddress: [email] });
-    return list.data[0]?.id ?? null;
+// Resolve the AUTHENTICATED Clerk userId for this request: the signed-in web
+// user, else the verified app-session token's email. Never a caller-chosen email.
+async function resolveUserId(req: NextRequest): Promise<string | null> {
+  try {
+    const user = await currentUser();
+    if (user) return user.id;
+  } catch {
+    // fall through to the app token
   }
-  const user = await currentUser();
-  return user?.id ?? null;
+  const tok = verifyAppToken(req.headers.get("authorization"));
+  if (!tok) return null;
+  const client = await clerkClient();
+  const list = await client.users.getUserList({ emailAddress: [tok.email] });
+  return list.data[0]?.id ?? null;
 }
 
 export async function GET(req: NextRequest) {
   try {
-    const email = (req.nextUrl.searchParams.get("email") ?? "").trim();
-    const userId = await resolveUserId(email);
+    const userId = await resolveUserId(req);
     if (!userId) {
       return NextResponse.json({ username: null }, { headers: cors });
     }
@@ -56,7 +63,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { username?: unknown; email?: unknown } = {};
+  const userId = await resolveUserId(req);
+  if (!userId) {
+    return NextResponse.json({ error: "unauthenticated" }, { status: 401, headers: cors });
+  }
+
+  let body: { username?: unknown } = {};
   try {
     body = await req.json();
   } catch {
@@ -69,12 +81,6 @@ export async function POST(req: NextRequest) {
       { error: "username must be 2–24 chars, letters/digits/spaces/_/- only" },
       { status: 400, headers: cors }
     );
-  }
-
-  const email = typeof body.email === "string" ? body.email.trim() : "";
-  const userId = await resolveUserId(email);
-  if (!userId) {
-    return NextResponse.json({ error: "user not found" }, { status: 400, headers: cors });
   }
 
   const client = await clerkClient();

@@ -12,15 +12,16 @@ import Foundation
 enum Username {
     private static let endpoint = "https://verba.run/api/username"
 
-    /// Fetch the Clerk username for an account (keyed by email, like /api/entitlement).
-    /// Returns nil if the account has none or the request fails.
+    /// Fetch the Clerk username for the signed-in account. The account is identified by the
+    /// app-session token (Authorization: Bearer …), never by a spoofable email parameter; the
+    /// `email` argument is kept for call-site compatibility but only gates "are we signed in".
     static func fetch(email: String) async -> String? {
         let email = email.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !email.isEmpty, var c = URLComponents(string: endpoint) else { return nil }
-        c.queryItems = [URLQueryItem(name: "email", value: email)]
-        guard let url = c.url else { return nil }
+        guard !email.isEmpty, let url = URL(string: endpoint) else { return nil }
+        var req = URLRequest(url: url)
+        AuthToken.bearer(&req)
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let (data, _) = try await URLSession.shared.data(for: req)
             struct R: Decodable { let username: String? }
             let r = try? JSONDecoder().decode(R.self, from: data)
             let name = r?.username?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -38,7 +39,9 @@ enum Username {
         return String(collapsed.prefix(24))
     }
 
-    /// Push the username to Clerk for an account. Best-effort: failures are swallowed.
+    /// Push the username to Clerk for the signed-in account. Best-effort: failures are
+    /// swallowed. The target account comes from the app-session token, never from the body;
+    /// the `email` argument is kept for call-site compatibility (signed-in gate only).
     static func push(_ username: String, email: String) async {
         let email = email.trimmingCharacters(in: .whitespacesAndNewlines)
         let username = sanitize(username)
@@ -46,7 +49,8 @@ enum Username {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.httpBody = try? JSONSerialization.data(withJSONObject: ["username": username, "email": email])
+        AuthToken.bearer(&req)
+        req.httpBody = try? JSONSerialization.data(withJSONObject: ["username": username])
         _ = try? await URLSession.shared.data(for: req)
     }
 

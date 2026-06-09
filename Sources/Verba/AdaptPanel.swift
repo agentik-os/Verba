@@ -35,9 +35,7 @@ struct AdaptPanel: View {
             // Custom "Intent" adapt: type how you want it transformed, or speak it.
             HStack(spacing: 8) {
                 TextField("Describe how to adapt it (e.g. make it a bug report)", text: $customIntent)
-                    .textFieldStyle(.plain)
-                    .padding(.horizontal, 10).padding(.vertical, 8)
-                    .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .cleanField()
                     .onSubmit { adaptCustom() }
                     .disabled(recording || transcribing)
                 Button { toggleVoiceIntent() } label: {

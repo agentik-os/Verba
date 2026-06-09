@@ -1,20 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { entitlementByEmail } from "@/lib/billing";
+import { verifyAppToken } from "@/lib/apptoken";
+import { convexBump } from "@/lib/convex";
 
 export const runtime = "nodejs";
 
 // Verba's own hosted AI rewriting endpoint. The macOS app calls this so users don't
 // need their own API key: we run it on the company Anthropic key, gated by the user's
-// account (active subscribers, plus a small daily allowance that covers the free trial).
+// app-session token (S2 — the email is taken from the verified token, never the body).
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-// Best-effort per-email daily allowance for non-subscribers (covers the free trial).
-// The app enforces the real trial limit; this just protects the key from abuse.
-// Cold starts reset it; back with Upstash/KV for a hard guarantee.
+// Only these models may be requested; anything else is forced to the default so a
+// leaked token can't burn the key on expensive models.
+const ALLOWED_MODELS = ["claude-sonnet-4-6", "claude-haiku-4-5", "claude-opus-4-6"];
+const DEFAULT_MODEL = "claude-sonnet-4-6";
+
+// In-memory fast-path short-circuit only — the authoritative daily counter lives in
+// Convex (ratelimit:bump) and survives serverless instances.
 const freeHits = new Map<string, { day: string; n: number }>();
 const FREE_DAILY = 60;
 
@@ -28,22 +34,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "AI rewriting isn't configured yet." }, { status: 503, headers: cors });
   }
 
-  let body: { email?: string; transcript?: string; system?: string; model?: string; image?: string };
+  // S2: require a valid app-session token; the email comes from it, never the body.
+  const tok = verifyAppToken(req.headers.get("authorization"));
+  if (!tok) {
+    return NextResponse.json({ error: "Sign in to use Verba's AI rewriting." }, { status: 401, headers: cors });
+  }
+  const email = tok.email;
+
+  let body: { transcript?: string; system?: string; model?: string; image?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Bad request" }, { status: 400, headers: cors });
   }
 
-  const email = (body.email ?? "").trim().toLowerCase();
   const transcript = body.transcript ?? "";
   const system = body.system ?? "";
-  const model = body.model || "claude-sonnet-4-6";
+  const model = ALLOWED_MODELS.includes(body.model ?? "") ? (body.model as string) : DEFAULT_MODEL;
   const image = body.image; // optional base64 PNG (Context mode)
 
-  if (!email) {
-    return NextResponse.json({ error: "Sign in to use Verba's AI rewriting." }, { status: 401, headers: cors });
-  }
   if (!transcript && !image) {
     return NextResponse.json({ error: "Nothing to rewrite." }, { status: 400, headers: cors });
   }
@@ -52,13 +61,19 @@ export async function POST(req: NextRequest) {
   const ent = await entitlementByEmail(email).catch(() => ({ active: false }));
   if (!ent.active) {
     const day = new Date().toISOString().slice(0, 10);
+    const limitMsg = NextResponse.json(
+      { error: "Daily free limit reached. Upgrade to Pro for unlimited rewriting." },
+      { status: 402, headers: cors }
+    );
+    // Fast path: this warm instance already knows the limit is hit.
     const rec = freeHits.get(email);
     const n = rec && rec.day === day ? rec.n : 0;
-    if (n >= FREE_DAILY) {
-      return NextResponse.json(
-        { error: "Daily free limit reached. Upgrade to Pro for unlimited rewriting." },
-        { status: 402, headers: cors }
-      );
+    if (n >= FREE_DAILY) return limitMsg;
+    // Authoritative shared counter (fail open on Convex outage — the fast path still caps per instance).
+    const allowed = await convexBump(`reprompt:${email}:${day}`, FREE_DAILY, true);
+    if (!allowed) {
+      freeHits.set(email, { day, n: FREE_DAILY });
+      return limitMsg;
     }
     freeHits.set(email, { day, n: n + 1 });
   }

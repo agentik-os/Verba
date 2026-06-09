@@ -1,6 +1,16 @@
 import Foundation
 import Combine
 
+/// True when a ConvexClient response reports success (nil data = transport failure).
+/// R14: lets every cloud-sync call surface failures through VerbaLog.syncFailure
+/// instead of swallowing them in a `{ _ in }` completion.
+private func convexOK(_ data: Data?) -> Bool {
+    guard let data,
+          let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+          obj["status"] as? String == "success" else { return false }
+    return true
+}
+
 /// One dictation: the raw transcript + Claude's restructured version, kept side by
 /// side like Wispr Flow's backup. The audio file is moved into the history folder.
 struct HistoryEntry: Codable, Identifiable {
@@ -27,11 +37,13 @@ final class History: ObservableObject {
         dir = base
         indexURL = base.appendingPathComponent("index.json")
         load()
+        pruneExpired()
     }
 
     var audioFolder: URL { dir }
 
     func add(original: String, reprompted: String, profileName: String, engine: String, audioURL: URL?) {
+        guard Settings.shared.saveHistory else { return }   // S14: history off → nothing on disk, no audio copy, no cloud push
         var stored: String?
         if let audioURL {
             let dest = dir.appendingPathComponent(audioURL.lastPathComponent)
@@ -46,39 +58,46 @@ final class History: ObservableObject {
     }
 
     // MARK: - Cloud sync (Convex). Syncs the text of each dictation across the user's Macs.
-    private static let convex = "https://fortunate-aardvark-443.convex.cloud"
-    private var uid: String { Settings.shared.uid }
+    // All calls go through the shared ConvexClient and carry the device secret (S16).
 
     private func push(_ e: HistoryEntry) {
         guard !Settings.shared.proEmail.isEmpty else { return }   // only for signed-in users
-        post("mutation", "history:push", [
-            "uid": uid, "ts": e.date.timeIntervalSince1970 * 1000,
+        ConvexClient.call("mutation", "history:push", ConvexClient.authedArgs([
+            "ts": e.date.timeIntervalSince1970 * 1000,
             "original": e.original, "reprompted": e.reprompted,
             "profileName": e.profileName, "engine": e.engine,
-        ]) { _ in }
+        ])) { if !convexOK($0) { VerbaLog.syncFailure("history:push") } }   // R14
     }
 
     /// Push every local entry to the cloud (used after sign-in so anything dictated while
     /// signed out reaches the account). Server dedups by (uid, ts).
     func pushAll() {
         guard !Settings.shared.proEmail.isEmpty else { return }
+        ConvexClient.registerDevice(token: AuthToken.current)
         for e in entries { push(e) }
     }
 
     /// Pull cloud history and merge anything not already here (dedup by timestamp).
     func syncFromCloud() {
         guard !Settings.shared.proEmail.isEmpty else { return }
-        post("query", "history:pull", ["uid": uid]) { [weak self] data in
+        ConvexClient.registerDevice(token: AuthToken.current)
+        ConvexClient.call("query", "history:pull", ConvexClient.authedArgs()) { [weak self] data in
             guard let self, let data,
                   let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   obj["status"] as? String == "success",
-                  let arr = obj["value"] as? [[String: Any]] else { return }
+                  let arr = obj["value"] as? [[String: Any]] else {
+                VerbaLog.syncFailure("history:pull")   // R14: a failed pull was silently dropped
+                return
+            }
             DispatchQueue.main.async {
+                // Retention (S14): never merge back rows older than the local retention window.
+                let days = Settings.shared.historyRetentionDays
+                let cutoffMs = days > 0 ? (Date().timeIntervalSince1970 - Double(days) * 86400) * 1000 : 0
                 let known = Set(self.entries.map { ($0.date.timeIntervalSince1970 * 1000).rounded() })
                 var merged = self.entries
                 for r in arr {
                     let ts = (r["ts"] as? Double) ?? 0
-                    guard ts > 0, !known.contains(ts.rounded()) else { continue }
+                    guard ts > 0, ts >= cutoffMs, !known.contains(ts.rounded()) else { continue }
                     merged.append(HistoryEntry(
                         date: Date(timeIntervalSince1970: ts / 1000),
                         original: r["original"] as? String ?? "",
@@ -94,14 +113,6 @@ final class History: ObservableObject {
         }
     }
 
-    private func post(_ kind: String, _ path: String, _ args: [String: Any], _ cb: @escaping (Data?) -> Void) {
-        guard let url = URL(string: "\(Self.convex)/api/\(kind)") else { cb(nil); return }
-        var req = URLRequest(url: url); req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "content-type")
-        req.httpBody = try? JSONSerialization.data(withJSONObject: ["path": path, "args": args, "format": "json"])
-        URLSession.shared.dataTask(with: req) { d, _, _ in cb(d) }.resume()
-    }
-
     func delete(_ entry: HistoryEntry) {
         if let f = entry.audioFile {
             try? FileManager.default.removeItem(at: dir.appendingPathComponent(f))
@@ -110,7 +121,10 @@ final class History: ObservableObject {
         save()
         // Tombstone it in the cloud so it doesn't resurrect on the next sync.
         if !Settings.shared.proEmail.isEmpty {
-            post("mutation", "history:remove", ["uid": uid, "ts": entry.date.timeIntervalSince1970 * 1000]) { _ in }
+            ConvexClient.call("mutation", "history:remove",
+                              ConvexClient.authedArgs(["ts": entry.date.timeIntervalSince1970 * 1000])) {
+                if !convexOK($0) { VerbaLog.syncFailure("history:remove") }   // R14
+            }
         }
     }
 
@@ -118,6 +132,40 @@ final class History: ObservableObject {
         for e in entries { if let f = e.audioFile { try? FileManager.default.removeItem(at: dir.appendingPathComponent(f)) } }
         entries.removeAll()
         save()
+        // S10: wipe the cloud copy WITH tombstones so other Macs don't resurrect it.
+        if !Settings.shared.proEmail.isEmpty {
+            ConvexClient.call("mutation", "history:wipe", ConvexClient.authedArgs()) {
+                if !convexOK($0) { VerbaLog.syncFailure("history:wipe") }   // R14
+            }
+        }
+    }
+
+    /// S14 retention: drop local entries older than the retention window (audio included)
+    /// and, when signed in, tombstone-prune the same rows server-side. Called on launch.
+    func pruneExpired() {
+        let days = Settings.shared.historyRetentionDays
+        guard days > 0 else { return }
+        let cutoff = Date().addingTimeInterval(-Double(days) * 86400)
+        let expired = entries.filter { $0.date < cutoff }
+        guard !expired.isEmpty else {
+            // Still prune the cloud copy: another Mac may hold older rows for this account.
+            if !Settings.shared.proEmail.isEmpty {
+                ConvexClient.call("mutation", "history:prune",
+                                  ConvexClient.authedArgs(["beforeTs": cutoff.timeIntervalSince1970 * 1000])) {
+                    if !convexOK($0) { VerbaLog.syncFailure("history:prune") }   // R14
+                }
+            }
+            return
+        }
+        for e in expired { if let f = e.audioFile { try? FileManager.default.removeItem(at: dir.appendingPathComponent(f)) } }
+        entries.removeAll { $0.date < cutoff }
+        save()
+        if !Settings.shared.proEmail.isEmpty {
+            ConvexClient.call("mutation", "history:prune",
+                              ConvexClient.authedArgs(["beforeTs": cutoff.timeIntervalSince1970 * 1000])) {
+                if !convexOK($0) { VerbaLog.syncFailure("history:prune") }   // R14
+            }
+        }
     }
 
     func audioURL(for entry: HistoryEntry) -> URL? {
@@ -130,11 +178,11 @@ final class History: ObservableObject {
         entries[i].reprompted = text
         save()
         if !Settings.shared.proEmail.isEmpty {
-            post("mutation", "history:push", [
-                "uid": uid, "ts": entries[i].date.timeIntervalSince1970 * 1000,
+            ConvexClient.call("mutation", "history:push", ConvexClient.authedArgs([
+                "ts": entries[i].date.timeIntervalSince1970 * 1000,
                 "original": entries[i].original, "reprompted": text,
                 "profileName": entries[i].profileName, "engine": entries[i].engine,
-            ]) { _ in }
+            ])) { if !convexOK($0) { VerbaLog.syncFailure("history:push (re-run)") } }   // R14
         }
     }
 
@@ -177,6 +225,7 @@ final class History: ObservableObject {
     }
 
     private func save() {
-        if let data = try? JSONEncoder().encode(entries) { try? data.write(to: indexURL) }
+        do { try JSONEncoder().encode(entries).write(to: indexURL) }
+        catch { VerbaLog.syncFailure("history index save", error: error) }   // R14: was silently swallowed
     }
 }

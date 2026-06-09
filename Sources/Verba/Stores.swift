@@ -8,7 +8,18 @@ private func loadJSON<T: Decodable>(_ key: String, _ type: T.Type) -> T? {
     return try? JSONDecoder().decode(T.self, from: data)
 }
 private func saveJSON<T: Encodable>(_ key: String, _ value: T) {
-    if let data = try? JSONEncoder().encode(value) { UserDefaults.standard.set(data, forKey: key) }
+    do { UserDefaults.standard.set(try JSONEncoder().encode(value), forKey: key) }
+    catch { VerbaLog.syncFailure("saveJSON(\(key))", error: error) }   // R14: was silently swallowed
+}
+
+/// True when a ConvexClient response reports success (nil data = transport failure).
+/// R14: lets the Stats cloud sync surface failures through VerbaLog.syncFailure
+/// instead of swallowing them in a `{ _ in }` completion.
+private func convexOK(_ data: Data?) -> Bool {
+    guard let data,
+          let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+          obj["status"] as? String == "success" else { return false }
+    return true
 }
 
 // MARK: - Tone store (#5): a few of the user's recent messages per app, used as few-shot
@@ -103,30 +114,36 @@ final class Stats: ObservableObject {
     }
 
     // MARK: - Cloud sync (Convex). Insights / Total Words follow the account across Macs.
-    private static let convex = "https://fortunate-aardvark-443.convex.cloud"
-    private var uid: String { Settings.shared.uid }
+    // All calls go through the shared ConvexClient and carry the device secret (S16).
 
     /// Push one day's totals to the cloud (called after each dictation).
     func push(day: String) {
         guard !Settings.shared.proEmail.isEmpty, let d = days[day] else { return }
-        post("mutation", "stats:push",
-             ["uid": uid, "day": day, "words": d.words, "seconds": d.seconds, "count": d.count])
+        ConvexClient.call("mutation", "stats:push", ConvexClient.authedArgs(
+            ["day": day, "words": d.words, "seconds": d.seconds, "count": d.count])) {
+            if !convexOK($0) { VerbaLog.syncFailure("stats:push") }   // R14
+        }
     }
 
     /// Push every day (after sign-in, so anything dictated while signed out reaches the account).
     func pushAll() {
         guard !Settings.shared.proEmail.isEmpty else { return }
+        ConvexClient.registerDevice(token: AuthToken.current)
         for k in days.keys { push(day: k) }
     }
 
     /// Pull cloud stats and merge them in (max per day), so a new Mac / reinstall restores Insights.
     func syncFromCloud() {
         guard !Settings.shared.proEmail.isEmpty else { return }
-        post("query", "stats:pull", ["uid": uid]) { [weak self] data in
+        ConvexClient.registerDevice(token: AuthToken.current)
+        ConvexClient.call("query", "stats:pull", ConvexClient.authedArgs()) { [weak self] data in
             guard let self, let data,
                   let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   obj["status"] as? String == "success",
-                  let arr = obj["value"] as? [[String: Any]] else { return }
+                  let arr = obj["value"] as? [[String: Any]] else {
+                VerbaLog.syncFailure("stats:pull")   // R14: a failed pull was silently dropped
+                return
+            }
             DispatchQueue.main.async {
                 var merged = self.days
                 for r in arr {
@@ -147,13 +164,6 @@ final class Stats: ObservableObject {
         }
     }
 
-    private func post(_ kind: String, _ path: String, _ args: [String: Any], _ cb: @escaping (Data?) -> Void = { _ in }) {
-        guard let url = URL(string: "\(Self.convex)/api/\(kind)") else { cb(nil); return }
-        var req = URLRequest(url: url); req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "content-type")
-        req.httpBody = try? JSONSerialization.data(withJSONObject: ["path": path, "args": args, "format": "json"])
-        URLSession.shared.dataTask(with: req) { d, _, _ in cb(d) }.resume()
-    }
 }
 
 // MARK: - Dictionary (custom spellings / vocabulary)

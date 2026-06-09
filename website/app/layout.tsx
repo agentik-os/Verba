@@ -4,7 +4,6 @@ import { dark } from "@clerk/themes";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import RefCapture from "@/components/RefCapture";
-import ThemeToggle from "@/components/ThemeToggle";
 
 // Apply the saved theme before paint to avoid a flash; no choice → follow the machine.
 const themeScript = `(function(){try{var t=localStorage.getItem('verba_theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`;
@@ -75,7 +74,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <head><script dangerouslySetInnerHTML={{ __html: themeScript }} /></head>
         <body className="font-sans antialiased">
           <RefCapture />
-          <ThemeToggle />
           {children}
           <Analytics />
         </body>

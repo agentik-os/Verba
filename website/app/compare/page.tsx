@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ThemeToggle from "@/components/ThemeToggle";
 import type { Metadata } from "next";
 import { competitors, VERBA, onDeviceLabel } from "@/lib/competitors";
 
@@ -20,7 +21,10 @@ export default function Compare() {
           </span>
           <span className="text-[17px] font-semibold tracking-tight">Verba</span>
         </Link>
-        <Link href="/" className="text-sm muted hover:text-[var(--fg)]">← Home</Link>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <Link href="/" className="text-sm muted hover:text-[var(--fg)]">← Home</Link>
+        </div>
       </nav>
 
       <section className="py-14 text-center">
@@ -52,7 +56,7 @@ export default function Compare() {
               <td className="p-4">{VERBA.price}</td>
               <td className="p-4 tick">Yes</td>
               <td className="p-4">{VERBA.transcription}</td>
-              <td className="p-4">Local, audio never leaves your Mac</td>
+              <td className="p-4">On-device: audio stays on your Mac; local history, synced only when signed in</td>
             </tr>
             {competitors.map((c) => (
               <tr key={c.slug} className="grid-row">

@@ -50,6 +50,8 @@ struct NoteModesView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        // The hosting sheet (NotesView) no longer draws a hard Divider; this view owns its top spacing.
+        .padding(.top, 6)
         .onAppear { if selectedID == nil { selectedID = store.modes.first?.id } }
     }
 

@@ -9,25 +9,14 @@ struct ActionConfirmView: View {
     let onCancel: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 10) {
-                Image(systemName: action.icon)
-                    .font(.title2)
-                    .foregroundStyle(.tint)
-                    .frame(width: 30)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(heading).font(.headline)
-                    Text("Verba wants to do this for you. Review and confirm.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
+        GlassDialog(icon: action.icon,
+                    title: heading,
+                    subtitle: "Verba wants to do this for you. Review and confirm.",
+                    width: 460,
+                    drawsCard: false) {
+            VStack(alignment: .leading, spacing: 12) {
                 ForEach(fields, id: \.0) { label, value in
-                    HStack(alignment: .top, spacing: 8) {
-                        Text(label)
-                            .font(.caption).foregroundStyle(.secondary)
-                            .frame(width: 78, alignment: .trailing)
+                    GlassLabeledValue(label: label) {
                         Text(value)
                             .font(.system(.body))
                             .textSelection(.enabled)
@@ -35,21 +24,18 @@ struct ActionConfirmView: View {
                     }
                 }
             }
-            .padding(12)
+            .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-
-            HStack(spacing: 8) {
-                Spacer()
-                Button("Cancel", role: .cancel) { onCancel() }
-                    .keyboardShortcut(.cancelAction)
-                Button(confirmLabel) { onConfirm() }
-                    .keyboardShortcut(.return, modifiers: [.command])
-                    .buttonStyle(.borderedProminent)
-            }
+        } buttons: {
+            Spacer()
+            Button("Cancel", role: .cancel) { onCancel() }
+                .dialogSecondary()
+                .keyboardShortcut(.cancelAction)
+            Button(confirmLabel) { onConfirm() }
+                .dialogPrimary()
+                .keyboardShortcut(.return, modifiers: [.command])   // deliberate ⌘↩, not bare ↩ (agentic safety)
         }
-        .padding(18)
-        .frame(width: 460)
     }
 
     // MARK: Presentation

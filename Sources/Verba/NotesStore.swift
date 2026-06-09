@@ -1,6 +1,16 @@
 import Foundation
 import Combine
 
+/// True when a Convex response reports success (nil data = transport failure).
+/// R14: lets the notes cloud sync surface failures through VerbaLog.syncFailure
+/// instead of swallowing them in a `{ _ in }` completion.
+private func convexOK(_ data: Data?) -> Bool {
+    guard let data,
+          let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+          obj["status"] as? String == "success" else { return false }
+    return true
+}
+
 /// A saved long-form note: the raw transcript + the formatted document + which format made it.
 struct NotesEntry: Codable, Identifiable {
     var id: UUID = UUID()
@@ -83,7 +93,9 @@ final class NotesStore: ObservableObject {
         entries.removeAll { $0.id == entry.id }
         save()
         if !Settings.shared.proEmail.isEmpty {
-            post("mutation", "notes:remove", ["uid": uid, "ts": entry.date.timeIntervalSince1970 * 1000]) { _ in }
+            post("mutation", "notes:remove", ["uid": uid, "ts": entry.date.timeIntervalSince1970 * 1000]) {
+                if !convexOK($0) { VerbaLog.syncFailure("notes:remove") }   // R14
+            }
         }
     }
 
@@ -96,7 +108,7 @@ final class NotesStore: ObservableObject {
         post("mutation", "notes:push", [
             "uid": uid, "ts": e.date.timeIntervalSince1970 * 1000,
             "original": e.original, "formatted": e.formatted, "formatName": e.formatName, "tags": e.tags,
-        ]) { _ in }
+        ]) { if !convexOK($0) { VerbaLog.syncFailure("notes:push") } }   // R14
     }
 
     func pushAll() {
@@ -110,7 +122,10 @@ final class NotesStore: ObservableObject {
             guard let self, let data,
                   let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   obj["status"] as? String == "success",
-                  let arr = obj["value"] as? [[String: Any]] else { return }
+                  let arr = obj["value"] as? [[String: Any]] else {
+                VerbaLog.syncFailure("notes:pull")   // R14: a failed pull was silently dropped
+                return
+            }
             DispatchQueue.main.async {
                 let known = Set(self.entries.map { ($0.date.timeIntervalSince1970 * 1000).rounded() })
                 var merged = self.entries
@@ -150,7 +165,8 @@ final class NotesStore: ObservableObject {
         let snapshot = entries
         let url = indexURL
         DispatchQueue.global(qos: .utility).async {
-            if let data = try? JSONEncoder().encode(snapshot) { try? data.write(to: url) }
+            do { try JSONEncoder().encode(snapshot).write(to: url) }
+            catch { VerbaLog.syncFailure("notes index save", error: error) }   // R14: was silently swallowed
         }
     }
 }

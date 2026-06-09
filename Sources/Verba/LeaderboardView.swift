@@ -30,11 +30,8 @@ final class LeaderboardModel: ObservableObject {
 
 struct LeaderboardView: View {
     @StateObject private var model = LeaderboardModel()
-    @ObservedObject private var settings = Settings.shared
     @State private var metric: Metric = .words
     @State private var query = ""
-
-    private var myUID: String { settings.uid }
 
     private var ranked: [(rank: Int, entry: LeaderEntry)] {
         model.entries
@@ -46,7 +43,8 @@ struct LeaderboardView: View {
         guard !q.isEmpty else { return ranked }
         return ranked.filter { $0.entry.alias.lowercased().contains(q) }
     }
-    private var mine: (rank: Int, entry: LeaderEntry)? { ranked.first { $0.entry.uid == myUID } }
+    // HANDOFF-3: the server no longer exposes uids; it marks the caller's own row with `me`.
+    private var mine: (rank: Int, entry: LeaderEntry)? { ranked.first { $0.entry.me == true } }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -90,9 +88,9 @@ struct LeaderboardView: View {
             ScrollView {
                 LazyVStack(spacing: 6) {
                     // When the user is pinned on top (no search), don't list them again below.
-                    let items = query.isEmpty ? filtered.filter { $0.entry.uid != myUID } : filtered
+                    let items = query.isEmpty ? filtered.filter { $0.entry.me != true } : filtered
                     ForEach(items, id: \.entry.id) { item in
-                        row(item.rank, item.entry, highlighted: item.entry.uid == myUID)
+                        row(item.rank, item.entry, highlighted: item.entry.me == true)
                     }
                 }
                 .padding(.horizontal, 28).padding(.bottom, 18)

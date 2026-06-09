@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
+import { signAppToken } from "@/lib/apptoken";
 
 export const runtime = "nodejs";
 
@@ -40,5 +41,17 @@ export async function POST(req: NextRequest) {
   }
 
   await client.users.updateUserMetadata(userId, { publicMetadata: meta });
-  return NextResponse.json({ ok: true, referralCode });
+
+  // Issue the app-session token (S2/S4/S5/S6): the macOS app stores it in the Keychain
+  // and sends it as a Bearer header on protected app→site calls.
+  const email = (
+    user.primaryEmailAddress?.emailAddress ??
+    user.emailAddresses?.[0]?.emailAddress ??
+    ""
+  ).toLowerCase();
+  return NextResponse.json({
+    ok: true,
+    referralCode,
+    token: email && process.env.APP_TOKEN_SECRET ? signAppToken(email, referralCode) : undefined,
+  });
 }

@@ -1,14 +1,13 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-
-/// Server-side admin secret. adminList is gated by an exact match against this
-/// constant — anyone listing feedback must pass it. Rotate by regenerating.
-const ADMIN_SECRET = "df407ce003d909a5e48505f32eed72f1e990d57cde596fcea91bdf7f4d39a2aa";
+import { requireDevice } from "./auth";
 
 /// Issue a short-lived upload URL the app PUTs the screenshot PNG to.
+/// S15: only a registered device may mint one (stops anonymous storage abuse).
 export const generateUploadUrl = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: { uid: v.string(), secret: v.string() },
+  handler: async (ctx, a) => {
+    await requireDevice(ctx, a.uid, a.secret);
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -17,12 +16,14 @@ export const generateUploadUrl = mutation({
 export const submit = mutation({
   args: {
     uid: v.string(),
+    secret: v.string(),
     alias: v.string(),
     text: v.string(),
     version: v.optional(v.string()),
     screenshotId: v.optional(v.id("_storage")),
   },
   handler: async (ctx, a) => {
+    await requireDevice(ctx, a.uid, a.secret);
     const text = a.text.trim().slice(0, 4000);
     if (!text) return;
     await ctx.db.insert("feedback", {
@@ -37,13 +38,14 @@ export const submit = mutation({
   },
 });
 
-/// Admin-only listing. Gated by a secret compared to the server-side ADMIN_SECRET.
+/// Admin-only listing, gated by the ADMIN_SECRET Convex env var (S15: the old
+/// hardcoded constant is burned in git history — the env value must be a NEW secret).
 /// Returns [] on a wrong/missing secret. On success: all feedback newest-first,
 /// each with a resolvable screenshot URL (or null).
 export const adminList = query({
   args: { secret: v.string() },
   handler: async (ctx, a) => {
-    if (a.secret !== ADMIN_SECRET) return [];
+    if (!process.env.ADMIN_SECRET || a.secret !== process.env.ADMIN_SECRET) return [];
     const rows = await ctx.db.query("feedback").collect();
     rows.sort((x, y) => y.createdAt - x.createdAt);
     return await Promise.all(

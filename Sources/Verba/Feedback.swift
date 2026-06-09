@@ -37,6 +37,7 @@ enum Feedback {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        AuthToken.bearer(&req)   // lets the server mark the reporter's email as VERIFIED (body email alone is untrusted)
         req.httpBody = httpBody
         req.timeoutInterval = 30
 

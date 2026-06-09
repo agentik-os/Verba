@@ -66,47 +66,47 @@ struct ModesView: View {
 
     // MARK: New mode assistant — describe a need (typed or dictated), Verba builds the mode.
     private var generatorSheet: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("New mode").font(.title3.weight(.semibold))
-                Text("Describe what this mode should do, in plain words. You can type it or dictate it with Verba. It uses your configured AI, no extra setup.")
-                    .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            }
-
-            TextEditor(text: $genDescription)
-                .font(.system(.body, design: .default)).scrollContentBackground(.hidden)
-                .frame(minHeight: 130).padding(12)
-                .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(alignment: .topLeading) {
-                    if genDescription.isEmpty {
-                        Text("e.g. \u{201C}A mode for short, friendly customer-support replies that keep every detail I mention and stay polite.\u{201D}")
-                            .font(.body).foregroundStyle(.tertiary)
-                            .padding(.horizontal, 17).padding(.vertical, 20).allowsHitTesting(false)
+        GlassDialog(icon: "wand.and.stars",
+                    title: "New mode",
+                    subtitle: "Describe what this mode should do, in plain words. You can type it or dictate it with Verba. It uses your configured AI, no extra setup.",
+                    width: 520,
+                    drawsCard: true) {
+            VStack(alignment: .leading, spacing: 10) {
+                TextEditor(text: $genDescription)
+                    .font(.system(.body, design: .default)).scrollContentBackground(.hidden)
+                    .frame(minHeight: 130).padding(12)
+                    .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(alignment: .topLeading) {
+                        if genDescription.isEmpty {
+                            Text("e.g. \u{201C}A mode for short, friendly customer-support replies that keep every detail I mention and stay polite.\u{201D}")
+                                .font(.body).foregroundStyle(.tertiary)
+                                .padding(.horizontal, 17).padding(.vertical, 20).allowsHitTesting(false)
+                        }
                     }
+                    .disabled(genBusy)
+
+                if let genError {
+                    Text(genError).font(.caption).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
                 }
+            }
+        } buttons: {
+            Button("Create blank instead") { let p = addBlankProfile(); showGenerator = false; selectedID = p }
+                .buttonStyle(.borderless).disabled(genBusy)
+            Spacer()
+            Button("Cancel") { showGenerator = false }
+                .dialogSecondary()
+                .keyboardShortcut(.cancelAction)
                 .disabled(genBusy)
-
-            if let genError {
-                Text(genError).font(.caption).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
+            Button {
+                runGenerate()
+            } label: {
+                if genBusy { HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Building…") } }
+                else { Text("Build mode") }
             }
-
-            HStack {
-                Button("Create blank instead") { let p = addBlankProfile(); showGenerator = false; selectedID = p }
-                    .buttonStyle(.borderless).disabled(genBusy)
-                Spacer()
-                Button("Cancel") { showGenerator = false }.disabled(genBusy)
-                Button {
-                    runGenerate()
-                } label: {
-                    if genBusy { HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Building…") } }
-                    else { Text("Build mode") }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(genBusy || genDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
+            .dialogPrimary()
+            .disabled(genBusy || genDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
-        .padding(24)
-        .frame(width: 520)
+        .presentationBackground(.clear)
     }
 
     private func runGenerate() {

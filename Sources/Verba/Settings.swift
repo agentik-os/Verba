@@ -1,5 +1,11 @@
 import Foundation
 import Combine
+import CryptoKit
+
+/// Hex SHA-256 of a string (used to stamp built-in profile seeds for upgrade merges).
+func sha256Hex(_ s: String) -> String {
+    SHA256.hash(data: Data(s.utf8)).map { String(format: "%02x", $0) }.joined()
+}
 
 enum RecordStyle: String, Codable, CaseIterable, Identifiable {
     case lock      // press to start, press again to send (Esc cancels)
@@ -218,6 +224,7 @@ struct Profile: Codable, Identifiable, Equatable {
     var model: String? = nil            // per-mode Claude model override (nil = global default)
     var vision: Bool = false            // Context mode: capture the screen and act on it
     var targetLanguage: String? = nil   // Translate mode: render the dictation in THIS language
+    var seedHash: String? = nil         // sha256 of the systemPrompt as seeded; nil = legacy save (pre-stamping)
 
     /// The prompt actually sent to Claude. A mode with a target language becomes a translator:
     /// whatever language you speak, the output is written in that language.
@@ -486,8 +493,14 @@ final class Settings: ObservableObject {
     @Published var isPro: Bool { didSet { d.set(isPro, forKey: "verba.pro") } }
     @Published var proEmail: String { didSet { d.set(proEmail, forKey: "verba.email") } }
     @Published var referralCode: String { didSet { d.set(referralCode, forKey: "verba.referral") } }
-    var referralLink: String { "https://verba.run/?ref=\(referralCode)" }
+    var referralLink: String { referralCode.isEmpty ? "https://verba.run/" : "https://verba.run/?ref=\(referralCode)" }
+    /// Set when the server entitlement requires a fresh sign-in (no app-session token yet).
+    @Published var needsReauth: Bool = false
     @Published var username: String { didSet { d.set(username, forKey: "verba.username") } }
+    // S14: history controls. Off = nothing is written to disk, no audio copy, no cloud push.
+    @Published var saveHistory: Bool { didSet { d.set(saveHistory, forKey: "verba.saveHistory") } }
+    // History retention in days; 0 = keep forever (default). Options: 7 / 30 / 90.
+    @Published var historyRetentionDays: Int { didSet { d.set(historyRetentionDays, forKey: "verba.historyRetentionDays") } }
     // Opt out of the public leaderboard: hide the profile and stop submitting scores.
     @Published var showOnLeaderboard: Bool {
         didSet {
@@ -502,8 +515,15 @@ final class Settings: ObservableObject {
         let nouns = ["Falcon", "Otter", "Comet", "Vox", "Scribe", "Quill", "Echo", "Nova", "Pilot", "Sage"]
         return "\(adjectives.randomElement()!)\(nouns.randomElement()!)\(Int.random(in: 10...99))"
     }
+    /// Stable per-device anonymous uid, minted once. Never an email, never shared.
+    private(set) lazy var deviceUid: String = {
+        if let saved = d.string(forKey: "verba.deviceUid"), !saved.isEmpty { return saved }
+        let fresh = "anon-" + String(UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(12)).lowercased()
+        d.set(fresh, forKey: "verba.deviceUid")
+        return fresh
+    }()
     /// The single account identity used everywhere (leaderboard, history, wishlist).
-    var uid: String { referralCode.isEmpty ? "anon-" + (proEmail.isEmpty ? "local" : proEmail) : referralCode }
+    var uid: String { referralCode.isEmpty ? deviceUid : referralCode }
 
     var activeProfile: Profile {
         profiles.first { $0.id == activeProfileID } ?? profiles.first ?? .coding
@@ -519,12 +539,39 @@ final class Settings: ObservableObject {
         if on { hiddenNav.remove(item.rawValue) } else { hiddenNav.insert(item.rawValue) }
     }
 
-    /// Verify the subscription by email against verba.run and update `isPro`.
+    /// Verify the subscription against verba.run (token-authenticated) and update `isPro`.
+    /// S7: a network failure / rejected token is NOT a silent revoke — Pro survives a 72h
+    /// grace window from the last successful verification, with periodic revalidation.
     @MainActor
     func verifyPro() async -> Bool {
-        let ok = await Entitlement.verify(email: proEmail.trimmingCharacters(in: .whitespacesAndNewlines))
-        isPro = ok
-        return ok
+        switch await Entitlement.check() {
+        case .active:
+            isPro = true
+            needsReauth = false
+            d.set(Date().timeIntervalSince1970, forKey: "verba.proVerifiedAt")
+        case .inactive:
+            isPro = false                                  // explicit server "no" = real revoke
+            needsReauth = false
+        case .unreachable:
+            // Migration: a signed-in user with no app-session token yet must re-auth (the
+            // server now requires the token); show the prompt instead of revoking.
+            if !proEmail.isEmpty && AuthToken.current == nil { needsReauth = true }
+            var last = d.double(forKey: "verba.proVerifiedAt")
+            if isPro && last == 0 {
+                // First unreachable check after updating: start the grace clock now so
+                // existing Pro users aren't revoked before they can re-authenticate.
+                last = Date().timeIntervalSince1970
+                d.set(last, forKey: "verba.proVerifiedAt")
+            }
+            let within72h = Date().timeIntervalSince1970 - last < 72 * 3600
+            if isPro && within72h {
+                // Keep Pro; revalidate in 30 min.
+                Task { try? await Task.sleep(nanoseconds: 1_800_000_000_000); _ = await self.verifyPro() }
+            } else if isPro {
+                isPro = false                              // grace expired
+            }
+        }
+        return isPro
     }
 
     private init() {
@@ -583,6 +630,8 @@ final class Settings: ObservableObject {
         isPro = (ProcessInfo.processInfo.environment["VERBA_PRO"] != nil) || d.bool(forKey: "verba.pro")
         proEmail = d.string(forKey: "verba.email") ?? ""
         showOnLeaderboard = d.object(forKey: "verba.showOnLeaderboard") as? Bool ?? true
+        saveHistory = d.object(forKey: "verba.saveHistory") as? Bool ?? true
+        historyRetentionDays = d.object(forKey: "verba.historyRetentionDays") as? Int ?? 0
         // Public alias for the leaderboard (never the email or real name). Fun default if unset.
         if let u = d.string(forKey: "verba.username"), !u.isEmpty {
             username = u
@@ -591,28 +640,77 @@ final class Settings: ObservableObject {
             username = name
             d.set(name, forKey: "verba.username")
         }
-        if let saved = d.string(forKey: "verba.referral"), !saved.isEmpty {
+        // The referral code is the ACCOUNT identity, issued by the server at sign-in. Legacy
+        // builds minted one locally even without an account; such a code was never attributable
+        // server-side and would collide with the new device-auth model (non-"anon-" uids need an
+        // account token to register), so drop it and let `uid` fall back to the per-device
+        // anonymous uid. Signed-in users keep their server-issued code.
+        let savedEmail = d.string(forKey: "verba.email") ?? ""
+        if let saved = d.string(forKey: "verba.referral"), !saved.isEmpty, !savedEmail.isEmpty {
             referralCode = saved
         } else {
-            let code = String(UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(8)).lowercased()
-            referralCode = code
-            d.set(code, forKey: "verba.referral")
+            referralCode = ""
+            d.set("", forKey: "verba.referral")
         }
 
         // Re-seed built-ins when the profiles version bumps (new prompts/shortcuts).
+        // S3: a version bump MERGES the new defaults with the user's saved profiles instead of
+        // wiping them. Custom modes are kept verbatim; an edited built-in is never overwritten
+        // (detected via `seedHash`, the sha256 of the prompt as last seeded); an untouched
+        // built-in adopts the new prompt while preserving its id / app matches / user hotkey.
         let upToDate = d.integer(forKey: "profilesVersion") >= Self.profilesVersion
-        let loaded: [Profile]
-        if upToDate, let data = d.data(forKey: "profiles"),
-           let saved = try? JSONDecoder().decode([Profile].self, from: data), !saved.isEmpty {
-            loaded = saved
-        } else {
-            loaded = Profile.defaults
+        var saved: [Profile] = []
+        if let data = d.data(forKey: "profiles"),
+           let decoded = try? JSONDecoder().decode([Profile].self, from: data) {
+            saved = decoded
         }
-        let savedActive = (upToDate ? d.string(forKey: "activeProfileID").flatMap(UUID.init) : nil)
-        // Fresh installs default to Polish (a good general writing mode), not Flow (raw).
-        activeProfileID = savedActive ?? loaded.first(where: { $0.name == "Polish" })?.id ?? loaded.first!.id
+        let stampedDefaults = Settings.stampedDefaults()
+        let loaded: [Profile]
+        if saved.isEmpty {
+            loaded = stampedDefaults                      // fresh install
+        } else if upToDate {
+            loaded = saved                                // up to date → saved unchanged
+        } else {
+            // Version bump → merge.
+            let customs = saved.filter { !$0.builtin }    // user modes, kept verbatim in order
+            var mergedBuiltins: [Profile] = []
+            var matchedNames = Set<String>()
+            for D in stampedDefaults {
+                guard let S = saved.first(where: { $0.builtin && $0.name == D.name }) else {
+                    mergedBuiltins.append(D)              // new built-in mode appears
+                    continue
+                }
+                matchedNames.insert(D.name)
+                // Untouched ⇔ the prompt still matches its seed (or a legacy save whose prompt
+                // equals the new default). Anything else — including a legacy prompt that
+                // differs — is treated as edited and never overwritten.
+                let untouched = (S.seedHash != nil && S.seedHash == sha256Hex(S.systemPrompt))
+                    || (S.seedHash == nil && S.systemPrompt == D.systemPrompt)
+                if untouched {
+                    var u = D                             // new prompt/model/vision/raw/targetLanguage + fresh seedHash
+                    u.id = S.id
+                    u.matchBundleIDs = S.matchBundleIDs
+                    if S.hotkeyCode != nil || S.hotkeyMods != nil {
+                        u.hotkeyCode = S.hotkeyCode       // a user-set hotkey wins over the default's
+                        u.hotkeyMods = S.hotkeyMods
+                    }
+                    mergedBuiltins.append(u)
+                } else {
+                    mergedBuiltins.append(S)              // edited → keep verbatim (seedHash stays)
+                }
+            }
+            // Saved built-ins matching no current default (renamed/retired): keep them as
+            // user profiles — never silently deleted.
+            let retired = saved.filter { $0.builtin && !matchedNames.contains($0.name) }
+                .map { p -> Profile in var c = p; c.builtin = false; return c }
+            loaded = mergedBuiltins + retired + customs
+        }
+        // Keep the saved active mode if it survived the merge; else Polish; else first.
+        let savedActive = d.string(forKey: "activeProfileID").flatMap(UUID.init)
+        activeProfileID = savedActive.flatMap { id in loaded.first { $0.id == id }?.id }
+            ?? loaded.first(where: { $0.name == "Polish" })?.id ?? loaded.first!.id
         profiles = loaded
-        if !upToDate {
+        if !upToDate || saved.isEmpty {
             d.set(Self.profilesVersion, forKey: "profilesVersion")
             if let data = try? JSONEncoder().encode(loaded) { d.set(data, forKey: "profiles") }
         }
@@ -708,9 +806,17 @@ final class Settings: ObservableObject {
         return nil
     }
 
+    /// The canonical built-ins with their seed hash stamped (S3: every seed writes `seedHash`
+    /// so "untouched vs edited" detection is exact at future version bumps).
+    static func stampedDefaults() -> [Profile] {
+        Profile.defaults.map { p -> Profile in
+            var c = p; c.seedHash = sha256Hex(p.systemPrompt); return c
+        }
+    }
+
     /// Restore the built-in profiles (used after prompt changes ship in an update).
     func resetProfilesToDefaults() {
-        profiles = Profile.defaults
+        profiles = Settings.stampedDefaults()
         activeProfileID = profiles.first!.id
     }
 

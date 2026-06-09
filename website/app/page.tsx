@@ -10,6 +10,7 @@ import JokeBubbles from "@/components/JokeBubbles";
 import Icon from "@/components/Icon";
 import { getRef } from "@/components/RefCapture";
 import { Logo, MicMark, MicGlyph, HeadLeft, HeadCenter, MotifRule } from "@/components/Brand";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const PRICE = {
   monthly: { amount: "$9.99", sub: "/month", note: "billed monthly · cancel anytime" },
@@ -66,6 +67,7 @@ function Nav() {
         <SignedIn>
           <UserButton afterSignOutUrl="/" />
         </SignedIn>
+        <ThemeToggle />
         <a href={DOWNLOAD_URL} className="btn-primary px-4 py-2 text-sm">
           Download
         </a>
@@ -184,7 +186,7 @@ function Bento() {
           eyebrow="Private by design"
           anchor
           title="Your voice stays yours"
-          lead="Verba runs open speech models, Whisper and Parakeet, right on your Mac. Nothing gets uploaded, and nobody resells your words. Here is what that gets you."
+          lead="Verba runs open speech models, Whisper and Parakeet, right on your Mac. Your audio is never uploaded, and nobody resells your words. Here is what that gets you."
         />
       </Reveal>
 
@@ -196,7 +198,7 @@ function Bento() {
             <div>
               <div className="t-anchor tnum">0&nbsp;bytes</div>
               <p className="mt-3 font-medium">of audio leave your Mac</p>
-              <p className="mt-1.5 max-w-sm text-sm text-white/55">On-device mode transcribes locally and writes nothing to disk. Cloud tools upload every word; Verba doesn't have to.</p>
+              <p className="mt-1.5 max-w-sm text-sm text-white/55">On-device mode transcribes locally — your audio never leaves the Mac. Transcripts go to your local history, which you can switch off or auto-delete. Cloud tools upload every word; Verba doesn't have to.</p>
             </div>
           </div>
         </Reveal>
@@ -220,7 +222,7 @@ function Bento() {
             <Icon name="bolt" className="h-7 w-7 shrink-0 text-[var(--fg-dim)]" />
             <div>
               <p className="font-medium">Modes, the right model each time</p>
-              <p className="mt-1 text-sm muted">Flow (verbatim), Intent, Coding, Translate, Custom, and Context (vision). Sonnet for intent, Opus for code. Edit any prompt or add your own.</p>
+              <p className="mt-1 text-sm muted">Flow (verbatim), Polish, Casual, Intent, Coding, Translate, Custom, and Context (vision). Haiku for quick tone, Sonnet for intent, Opus for code. Edit any prompt or add your own.</p>
             </div>
           </div>
         </Reveal>
@@ -566,9 +568,9 @@ function WhyBest() {
     ["Does what others can't", "Reads your screen (Context), takes hour-long structured Notes, translates live, and runs agentic actions (Calendar, Reminders, email drafts). Most rivals only transcribe."],
     ["Cheaper, and honest about it", "$9.99/mo, or $7/mo billed annually. Wispr Flow is $12-15, others $15-17. And the trial is the real app: 33 dictations with every Pro feature, no card."],
     ["Bring your own AI", "Use your Anthropic key, OpenRouter, your existing Claude Code subscription with no key at all, or a fully local Ollama model. You're never locked into our markup."],
-    ["Actually private", "On-device transcription with Parakeet and Whisper, your audio never leaves the Mac. API keys live in the macOS Keychain. Cloud tools upload every word you speak."],
+    ["Actually private", "On-device transcription with Parakeet and Whisper, your audio never leaves the Mac. API keys live in the macOS Keychain, and your history is yours to control: switch it off entirely or auto-delete it after 7, 30, or 90 days."],
     ["Works with no internet", "Parakeet ships inside the app and transcribes offline, instantly, in 25 languages. Pair it with a local LLM and the entire pipeline runs on your Mac."],
-    ["Six modes, the right model each", "Flow, Intent, Context, Coding, Translate, Custom, routed to Haiku, Sonnet, or Opus so you only pay for power where it matters. Edit any prompt or build your own."],
+    ["Eight modes, the right model each", "Flow, Polish, Casual, Intent, Context, Coding, Translate, Custom, routed to Haiku, Sonnet, or Opus so you only pay for power where it matters. Edit any prompt or build your own."],
     ["It learns you", "Auto-learns your vocabulary from your edits, matches your writing tone per app, and remembers how you phrase things. It sounds like you, not a template."],
     ["One press, then done", "Tap Fn, talk, and clean text lands where your cursor is. Hands-free formatting, redo in another mode, edit the last result by voice. No app switching, ever."],
   ];
@@ -668,6 +670,8 @@ function ModesModels() {
   const rows = [
     ["Context", "Sonnet 4.6", "Takes a screenshot of your screen and acts on what it sees, based on what you say. Reply to the email on screen, summarize a document, comment on a photo."],
     ["Flow", "No AI", "Verbatim transcription, no rewriting. Your words, exactly as spoken, cleaned up for punctuation only."],
+    ["Polish", "Sonnet 4.6", "The default: a clean, faithful tidy-up. Filler gone, punctuation fixed, your meaning and tone untouched."],
+    ["Casual", "Haiku 4.5", "Quick, relaxed rewriting for chats and messages. Instant and cheap, the right weight for everyday talk."],
     ["Intent", "Sonnet 4.6", "State the goal at the start: \"turn this into a bug report\", \"rewrite as a formal email\". Verba follows your lead."],
     ["Coding", "Opus 4.8", "Turns rambling feedback into a precise prompt for Cursor or Claude Code."],
     ["Translate", "Sonnet 4.6", "Pick a target language once. Speak in any language and Verba writes it in the one you chose, every time."],
@@ -678,7 +682,7 @@ function ModesModels() {
       <Reveal>
         <HeadCenter
           eyebrow="The routing"
-          title="Six modes, the right model for each"
+          title="Eight modes, the right model for each"
           lead="Every mode routes to the model that fits: cheap and instant for quick polish, more powerful where it matters. You stay in control of cost and quality."
         />
       </Reveal>
@@ -730,7 +734,7 @@ function Features() {
     ["Keeps your voice", "Switch between modes for coding, work, and personal writing. Verba matches the right tone instead of flattening everything."],
     ["Hands-free formatting", "Say \"new line\", \"bullet point\", or \"scratch that\" and watch real formatting appear. Bold, headings, and lists paste through, ready to go."],
     ["Three transcription engines", "Cloud (OpenAI gpt-4o-transcribe, fastest and most accurate), WhisperKit (local Whisper, all sizes including large-v3), and Parakeet (NVIDIA Parakeet TDT v3, multilingual, strong on EU languages). Parakeet ships inside the app, works offline instantly, and needs no API key."],
-    ["Private by default", "On-device mode runs entirely on your Mac. Your audio never leaves the device. API keys live in your macOS Keychain."],
+    ["Private by default", "On-device mode runs entirely on your Mac and your audio never leaves the device. Transcripts are saved to your local history — turn it off entirely or auto-delete entries after 7, 30, or 90 days in Settings. API keys live in your macOS Keychain."],
     ["Flexible AI backends", "Use your Anthropic key, an OpenRouter key, your existing Claude Code subscription (no key needed), or a fully local Ollama model that runs offline. Verba can auto-install and start Ollama for you."],
     ["Recording indicator choices", "A floating glass pill (default), or Menu bar only (no overlay, the menu-bar icon turns into a red REC dot while recording). Pick the one that stays out of your way."],
     ["Auto-learn dictionary", "When you correct a word on the review screen, Verba remembers it and applies the fix automatically next time. Your vocabulary, learned silently."],
@@ -739,7 +743,7 @@ function Features() {
     ["Tone match per app", "Verba learns how you write in each app from your recent messages there and matches your personal tone automatically. Slack sounds like you in Slack. Mail sounds like you in Mail."],
     ["Smart formatting per app", "Rich text and markdown in apps that render it (Mail, Notion, Notes, Obsidian). Plain text in code editors and terminals. Verba detects the context and formats accordingly."],
     ["Custom sound cues", "Subtle audio cues signal recording start, paste, and errors. Adjust the volume or swap out sounds. Everything is customizable, or turn it off entirely."],
-    ["Synced to your account", "Your history, notes, and stats follow you. Sign in on another Mac and everything is there."],
+    ["Synced to your account", "Sign in and your history, notes, and stats follow you to your other Macs. Signed out, everything stays on this device — nothing is uploaded."],
     ["Automatic language detection", "Every transcription engine detects the language you are speaking and writes the result in that same language. No settings to change."],
   ];
   const [hero, ...rest] = items;
@@ -892,11 +896,11 @@ function FAQ() {
     ["Does it work in every app?", "Yes, Verba pastes into whatever you’re typing in: editors, browsers, chat apps, mail, notes. If your cursor is there, Verba can write there."],
     ["Can it work offline?", "Yes. On-device transcription (Whisper or Parakeet) runs entirely on your Mac, no internet needed, and your audio never leaves the device."],
     ["What languages does it understand?", "On-device Whisper covers ~99 languages worldwide. Parakeet is a faster option for 25 European languages. It writes back in the language you spoke."],
-    ["How do the AI modes work?", "Verba has Flow (verbatim, no AI), Intent, Coding, Custom, and Context. Each mode is a system prompt that shapes how the model rewrites your speech. Context also takes a screenshot to ground the output in what is on your screen. You can edit any prompt or create your own Custom mode."],
+    ["How do the AI modes work?", "Verba has eight modes: Flow (verbatim, no AI), Polish (the default tidy-up), Casual, Intent, Context, Coding, Translate, and Custom. Each mode is a system prompt that shapes how the model rewrites your speech. Context also takes a screenshot to ground the output in what is on your screen. You can edit any prompt or create your own Custom mode."],
     ["Do I need an API key?", "No. Verba uses your Claude Code plan if it is installed (no API key needed). You can also bring your own Anthropic key, an OpenRouter key, or run a local Ollama model entirely offline. You never pay a markup on someone’s cloud."],
     ["What is Context mode?", "Context mode takes a screenshot of your screen, analyzes it with a vision model, and writes based on what you say and what it sees. Say \"reply to this email\" and it drafts a reply to the message on screen. It requires macOS Screen Recording permission and a vision-capable model (Anthropic API key or OpenRouter key)."],
     ["Can it handle long recordings?", "Yes, talk for twenty minutes and Verba turns the whole thing into clean, well-ordered text."],
-    ["Is my data private?", "On-device mode keeps everything local and writes nothing to disk. API keys live in your macOS Keychain. Your history is yours."],
+    ["Is my data private?", "In on-device mode your audio never leaves your Mac. Transcripts are saved to your local history by default — you can turn history off entirely (nothing written, nothing synced) or auto-delete entries after 7, 30, or 90 days. When you sign in, your history, notes, and stats sync to your account so they follow you across Macs; signed out, nothing is uploaded. API keys live in your macOS Keychain, and you can delete all your cloud data at any time."],
     ["Can Verba take notes?", "Yes. The Notes tab lets you record up to a full hour of speech and Verba turns it into a clean, structured document. Pick a format before you start: Clean note, Brain dump to outline, Summary, Meeting notes, Journal, Email, Code task, To-do list, or Article outline. Markdown is rendered (headings, bold, checkboxes). You can tag notes with #hashtags to file and filter them, edit the result in place, and copy it anywhere."],
     ["Can it create calendar events or reminders?", "Yes, with the Labs toggle on in Context mode. Say \"create an event tomorrow at 3pm\", \"remind me to call the bank\", or \"draft a reply to this email\" and Verba creates the Calendar event, Reminder, or email draft for you. It always asks you to confirm before doing anything."],
     ["Do my notes sync across my Macs?", "Yes. Notes are tied to your Verba account, so they follow you when you sign in on another Mac. No iCloud setup needed."],

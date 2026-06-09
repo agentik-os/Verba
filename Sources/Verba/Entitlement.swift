@@ -20,17 +20,24 @@ enum Entitlement {
         max(0, freeTrialDictations - Stats.shared.totalCount)
     }
 
-    /// Verify an email against the live subscription and return whether it's active.
-    static func verify(email: String) async -> Bool {
-        guard var c = URLComponents(string: endpoint), !email.isEmpty else { return false }
-        c.queryItems = [URLQueryItem(name: "email", value: email)]
-        guard let url = c.url else { return false }
+    /// Token-authenticated subscription check. `.unreachable` (offline, server error, or a
+    /// rejected/missing token) is deliberately distinct from `.inactive`: only an explicit
+    /// server "no" revokes Pro — everything else goes through the S7 offline-grace window.
+    static func check() async -> ProStatus {
+        guard AuthToken.current != nil else { return .unreachable }   // migration: no token yet ≠ revoke
+        guard let url = URL(string: endpoint) else { return .unreachable }
+        var req = URLRequest(url: url)
+        AuthToken.bearer(&req)
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let (data, resp) = try await URLSession.shared.data(for: req)
+            let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
+            guard code != 401 else { return .unreachable }            // token rejected → re-auth flow, not silent revoke
+            guard (200..<300).contains(code) else { return .unreachable }
             struct R: Decodable { let active: Bool }
-            return (try? JSONDecoder().decode(R.self, from: data))?.active ?? false
-        } catch {
-            return false
-        }
+            return ((try? JSONDecoder().decode(R.self, from: data))?.active ?? false) ? .active : .inactive
+        } catch { return .unreachable }
     }
 }
+
+/// Result of an entitlement check (S7): an explicit "no" is the only real revoke.
+enum ProStatus { case active, inactive, unreachable }

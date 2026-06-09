@@ -18,6 +18,8 @@ struct SettingsView: View {
     @State private var verifyMsg = ""
     @State private var signingIn = false
     @State private var confirmSignOut = false
+    @State private var confirmCloudWipe = false
+    @State private var cloudWiped = false
     @State private var engineTab: TranscriptionEngine = Settings.shared.engine
     @State private var installing = false
     @State private var installProgress: Double = 0
@@ -262,7 +264,8 @@ struct SettingsView: View {
                 HStack {
                     Text("Add a to-do")
                     Spacer()
-                    Text("Fn + §").foregroundStyle(.secondary)   // built-in voice to-do capture
+                    // Layout-aware chord: Fn + § next to Fn on ISO keyboards, Fn + T on ANSI/JIS.
+                    Text(FnTap.todoChordLabel).foregroundStyle(.secondary)   // built-in voice to-do capture
                 }
                 HStack {
                     Text("Custom record-note shortcut")
@@ -273,7 +276,7 @@ struct SettingsView: View {
                         onClear: { settings.clearShortcut(.noteRecord) }
                     )
                 }
-                Text("Fn + Z opens the Notes tab and starts recording a new note instantly (notes auto-save as you go — no Save button). Fn + § instead captures a spoken to-do and files it into your projects. Set your own note key above.")
+                Text("Fn + Z opens the Notes tab and starts recording a new note instantly (notes auto-save as you go — no Save button). \(FnTap.todoChordLabel) instead captures a spoken to-do and files it into your projects. Set your own note key above.")
                     .font(.caption).foregroundStyle(.secondary)
             } header: { Text("Recording & trigger") }
 
@@ -584,6 +587,19 @@ struct SettingsView: View {
         }
     }
 
+    /// Launch the hosted sign-in flow (used by the Sign-in button and the re-auth banner).
+    private func startSignIn() {
+        signingIn = true
+        AuthSession.shared.signIn { email in
+            DispatchQueue.main.async {
+                signingIn = false
+                guard let email else { return }
+                settings.proEmail = email
+                Task { _ = await settings.verifyPro() }
+            }
+        }
+    }
+
     // MARK: Account — sign in / sign out. When signed in, shows the account email and a
     // Sign out control (the clean inverse of AuthSession.signIn); when signed out, offers Sign in.
     @ViewBuilder private var accountSection: some View {
@@ -593,17 +609,7 @@ struct SettingsView: View {
                     Label("Not signed in", systemImage: "person.crop.circle.badge.questionmark")
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Button {
-                        signingIn = true
-                        AuthSession.shared.signIn { email in
-                            DispatchQueue.main.async {
-                                signingIn = false
-                                guard let email else { return }
-                                settings.proEmail = email
-                                Task { _ = await settings.verifyPro() }
-                            }
-                        }
-                    } label: { Text(signingIn ? "Signing in…" : "Sign in") }
+                    Button { startSignIn() } label: { Text(signingIn ? "Signing in…" : "Sign in") }
                         .disabled(signingIn)
                 }
             } else {
@@ -618,6 +624,16 @@ struct SettingsView: View {
                         } message: {
                             Text("This detaches your account from this Mac. Your local notes, transcripts and to-dos stay on this device, you can sign back in anytime.")
                         }
+                }
+                if settings.needsReauth {
+                    HStack {
+                        Label("Please sign in again to keep Pro and sync secure.", systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption).foregroundStyle(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer()
+                        Button { startSignIn() } label: { Text(signingIn ? "Signing in…" : "Sign in again") }
+                            .disabled(signingIn)
+                    }
                 }
             }
         } header: { Text("Account") } footer: {
@@ -701,9 +717,24 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: Memory & space — let users reclaim disk without losing their text history.
+    // MARK: Memory & space — history controls (S14) + reclaim disk without losing text history.
     @ViewBuilder private var storageSection: some View {
         Section {
+            Toggle("Save dictation history", isOn: $settings.saveHistory)
+            if !settings.saveHistory {
+                Text("Off: new dictations are pasted and forgotten — nothing is written to disk, no audio is kept, nothing is synced. Existing history stays until you delete it below.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Picker("Keep history for", selection: $settings.historyRetentionDays) {
+                Text("Forever").tag(0)
+                Text("7 days").tag(7)
+                Text("30 days").tag(30)
+                Text("90 days").tag(90)
+            }
+            .onChange(of: settings.historyRetentionDays) { _, _ in
+                History.shared.pruneExpired()
+                cacheBytes = History.shared.audioCacheBytes()
+            }
             HStack {
                 Label("Saved audio & buffers", systemImage: "internaldrive")
                 Spacer()
@@ -717,8 +748,23 @@ struct SettingsView: View {
                 History.shared.clear()
                 cacheBytes = History.shared.audioCacheBytes()
             } label: { Label("Delete all history (text + audio)", systemImage: "trash.fill") }
-        } header: { Text("Memory & space") } footer: {
-            Text("Audio recordings pile up over time. Clear audio cache frees the disk by deleting saved recordings and temporary buffers while keeping your dictation history (the text). Delete all history removes everything.")
+            if !settings.proEmail.isEmpty {
+                Button(role: .destructive) { confirmCloudWipe = true } label: {
+                    Label(cloudWiped ? "Cloud data deleted ✓" : "Delete all my cloud data", systemImage: "icloud.slash")
+                }
+                .confirmationDialog("Delete all your cloud data?", isPresented: $confirmCloudWipe, titleVisibility: .visible) {
+                    Button("Delete cloud data", role: .destructive) {
+                        ConvexClient.call("mutation", "account:wipe", ConvexClient.authedArgs()) { _ in
+                            DispatchQueue.main.async { cloudWiped = true }
+                        }
+                    }
+                    Button("Cancel", role: .cancel) { }
+                } message: {
+                    Text("Removes your synced history, notes, stats and leaderboard score from Verba's servers (with tombstones, so other Macs won't re-upload them). Local data on this Mac is untouched.")
+                }
+            }
+        } header: { Text("History & space") } footer: {
+            Text("Retention deletes dictations older than the chosen window (text + audio, locally and in your account's cloud sync). Clear audio cache frees the disk by deleting saved recordings and temporary buffers while keeping your dictation history (the text). Delete all history removes everything.")
                 .font(.caption).foregroundStyle(.secondary)
         }
         .onAppear { cacheBytes = History.shared.audioCacheBytes() }

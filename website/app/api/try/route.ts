@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { convexBump } from "@/lib/convex";
 
 export const runtime = "nodejs";
 
-// Best-effort in-memory IP counter (per warm serverless instance). Combined with the
-// cookie below it deters token farming. For a hard guarantee, back this with Upstash/KV.
+// Layered rate limiting (S13): cookie (per browser) + in-memory IP map (per warm
+// instance, fast path) + Convex-backed shared counters that survive serverless
+// instances (per-IP daily cap and a global daily cost ceiling).
 const ipHits = new Map<string, number>();
 const FREE_TRIES = 7;
+const GLOBAL_DAILY = 300;
 
 const NODASH = `Never use an em dash, en dash, or a spaced hyphen; use commas, periods, parentheses, or colons instead.`;
 
@@ -44,11 +47,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "The live demo isn't configured yet." }, { status: 503 });
   }
 
-  // Rate limit: cookie (per browser) + IP (per instance).
+  // Rate limit: cookie (per browser) + IP (per instance) fast path…
   const used = Number(req.cookies.get("verba_try")?.value ?? "0");
   const ip = ipOf(req);
   const ipUsed = ipHits.get(ip) ?? 0;
   if (used >= FREE_TRIES || ipUsed >= FREE_TRIES) {
+    return NextResponse.json(
+      { error: "You've used your free demos. Download Verba to keep going, it's free up to 10,000 words/month." },
+      { status: 429 }
+    );
+  }
+  // …then the shared Convex counters. On a Convex outage: fail OPEN for the per-IP
+  // counter (availability) but fail CLOSED for the global cost ceiling (documented compromise).
+  const day = new Date().toISOString().slice(0, 10);
+  const ipOk = await convexBump(`try:ip:${ip}:${day}`, FREE_TRIES, true);
+  const globalOk = await convexBump(`try:global:${day}`, GLOBAL_DAILY, false);
+  if (!ipOk || !globalOk) {
     return NextResponse.json(
       { error: "You've used your free demos. Download Verba to keep going, it's free up to 10,000 words/month." },
       { status: 429 }

@@ -12,7 +12,6 @@ struct WishlistView: View {
     @State private var expanded: Set<String> = []
     @State private var commentDrafts: [String: String] = [:]
     @State private var posting: Set<String> = []
-    private var myUID: String { Wishlist.myUID }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -63,7 +62,7 @@ struct WishlistView: View {
     }
 
     private func row(_ item: WishItem) -> some View {
-        let voted = item.voters.contains(myUID)
+        let voted = item.mine   // HANDOFF-5: server `mine` flag + local vote cache, no voters list
         let shipped = item.shipped
         let isOpen = expanded.contains(item.id)
         return VStack(alignment: .leading, spacing: 0) {

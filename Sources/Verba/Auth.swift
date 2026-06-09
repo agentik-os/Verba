@@ -1,5 +1,20 @@
 import AppKit
 import AuthenticationServices
+import Foundation
+
+/// The app-session token (HMAC-signed by verba.run at sign-in). It proves "this device
+/// belongs to <email>/<code>" to the protected API routes and to Convex device
+/// registration. Keychain-persisted; cleared on sign-out.
+enum AuthToken {
+    static var current: String? {
+        let t = Keychain.get("app_session_token")
+        return (t?.isEmpty == false) ? t : nil
+    }
+    static func set(_ t: String?) { Keychain.set(t ?? "", for: "app_session_token") }
+    static func bearer(_ req: inout URLRequest) {
+        if let t = current { req.setValue("Bearer \(t)", forHTTPHeaderField: "Authorization") }
+    }
+}
 
 /// Real sign-in via the web: opens the Clerk-hosted sign-in/sign-up page on verba.run
 /// (Google, email, etc.), and captures the authenticated email through a `verba://`
@@ -27,6 +42,11 @@ final class AuthSession: NSObject, ASWebAuthenticationPresentationContextProvidi
             // Keep the anonymous generated alias, never the real name: the alias is PUBLIC on the
             // leaderboard, so we deliberately do NOT adopt the Clerk first/last name here.
 
+            // The app-session token proves this device belongs to the account; it authorizes
+            // the protected API routes and the Convex device registration below.
+            let token = comps.queryItems?.first(where: { $0.name == "token" })?.value
+            AuthToken.set(token)
+
             // The server returns this account's stable referral code → adopt it as the identity.
             // Re-key any data written under the device-minted uid so nothing forks on sign-in.
             if let code = comps.queryItems?.first(where: { $0.name == "code" })?.value, !code.isEmpty {
@@ -34,8 +54,10 @@ final class AuthSession: NSObject, ASWebAuthenticationPresentationContextProvidi
                     let old = Settings.shared.uid
                     Settings.shared.referralCode = code
                     Settings.shared.proEmail = email.lowercased()   // so uid resolves to the account code
+                    ConvexClient.registerDevice(token: token)       // claim the account uid BEFORE any authed sync
+                    Settings.shared.needsReauth = false             // fresh token → re-auth satisfied
                     if old != Settings.shared.uid {
-                        Leaderboard.remove(uid: old)        // drop the orphan device-uid score row
+                        Leaderboard.remove(uid: old)        // drop the orphan device-uid score row (device secret is registered under it)
                         Leaderboard.submit()                // re-submit under the account uid
                         History.shared.pushAll()            // re-key local history to the account
                         History.shared.syncFromCloud()      // pull anything from other Macs
@@ -62,9 +84,11 @@ final class AuthSession: NSObject, ASWebAuthenticationPresentationContextProvidi
     @MainActor
     func signOut() {
         let old = Settings.shared.uid
+        AuthToken.set(nil)                          // drop the app-session token (the device secret stays: it still authenticates the device uid)
         Settings.shared.referralCode = ""           // empty referral → uid resolves to the device-minted "anon-…" uid
         Settings.shared.proEmail = ""
         Settings.shared.isPro = false               // Pro is account-bound; signing out drops the entitlement
+        Settings.shared.needsReauth = false
         if old != Settings.shared.uid {
             Leaderboard.remove(uid: old)            // drop the account-uid score row
             if Settings.shared.showOnLeaderboard {

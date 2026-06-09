@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import Reveal from "@/components/Reveal";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export const metadata: Metadata = {
   title: "Changelog, Verba",
@@ -13,8 +14,27 @@ type Day = { date: string; tag?: string; window?: string; summary: string; entri
 
 const DAYS: Day[] = [
   {
-    date: "June 9, 2026",
+    date: "June 10, 2026",
     tag: "Today",
+    summary:
+      "A privacy and security day: your history gets a real off switch and auto-delete, your cloud data gets a delete-everything button, every sync request is now authenticated per device, and the site copy now says precisely what is stored where.",
+    entries: [
+      {
+        version: "0.2.1",
+        title: "Your data, under your control",
+        items: [
+          "New History controls in Settings: switch history off entirely (nothing written to disk, no audio copy, nothing synced) or auto-delete entries after 7, 30, or 90 days, on this Mac and in the cloud.",
+          "Delete all my cloud data: one click removes your synced history, notes, stats, and leaderboard entry from our servers.",
+          "Cloud sync hardened: every device now authenticates each request with its own secret, so only your Macs can read or write your data.",
+          "The public leaderboard no longer carries any account identifier, only your alias and your numbers.",
+          "Signed-in sessions are now token-verified end to end (AI reprompting, account, username, Pro status), and Pro keeps working through up to 72 hours offline instead of dropping the moment a check fails.",
+          "Honest copy: verba.run now spells out exactly what stays on your Mac, what syncs when you sign in, and the new off switch, and the modes pages show all eight built-in modes (Flow, Polish, Casual, Intent, Context, Coding, Translate, Custom).",
+        ],
+      },
+    ],
+  },
+  {
+    date: "June 9, 2026",
     summary:
       "A huge day, much of it straight from your feedback and wishlist: French that stays French, comments on every wishlist idea, a Context mode that really sees your screen, a redesigned site, hold-to-talk and reliable pause, mid-sentence mode switching, editable Note modes, layered writing Styles, smarter Transforms, a Transcripts library, and concurrent sessions.",
     entries: [
@@ -287,7 +307,10 @@ export default function Changelog() {
           </span>
           <span className="text-[17px] font-semibold tracking-tight">Verba</span>
         </Link>
-        <Link href="/" className="text-sm muted hover:text-[var(--fg)]">← Home</Link>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <Link href="/" className="text-sm muted hover:text-[var(--fg)]">← Home</Link>
+        </div>
       </nav>
 
       <section className="py-14 text-center">

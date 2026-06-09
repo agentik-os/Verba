@@ -13,6 +13,7 @@
     "@clerk/themes": "^2.2.14",
     "@vercel/analytics": "^2.0.1",
     "convex": "^1.40.0",
+    "js-sha256": "^0.11.1",
     "next": "15.5.19",
     "react": "19.2.0",
     "react-dom": "19.2.0",

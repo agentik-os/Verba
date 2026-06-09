@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { convexCall, convexBump } from "@/lib/convex";
 
 export const runtime = "nodejs";
 
@@ -14,8 +15,6 @@ const cors = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-const CONVEX_BASE = "https://fortunate-aardvark-443.convex.cloud";
-
 const LINEAR_URL = "https://api.linear.app/graphql";
 const TEAM_ID = "e2568123-2c86-4283-a88f-88e0b508f5ae";
 const PROJECT_ID = "6844e446-a0ca-46b6-a8b4-997cfa13ad83";
@@ -29,12 +28,14 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: cors });
 }
 
+// S12: Convex no longer exposes the voters uid list; `mine` is computed server-side
+// for callers that prove device ownership (uid + device secret).
 type WishItem = {
   id: string;
   text: string;
   author: string;
   votes: number;
-  voters: string[];
+  mine?: boolean;
 };
 
 type WishComment = {
@@ -50,21 +51,27 @@ type Body = {
   id?: string;
   uid?: string;
   alias?: string;
+  secret?: string;
 };
 
 /** Call a Convex function over its HTTP API. Returns the function's `value`, or throws. */
-async function convex<T>(kind: "query" | "mutation", path: string, args: Record<string, unknown>): Promise<T> {
-  const r = await fetch(`${CONVEX_BASE}/api/${kind}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path, args, format: "json" }),
-  });
-  const json = await r.json();
-  if (!r.ok || json?.status !== "success") {
-    const msg = json?.errorMessage ?? `Convex ${path} failed (${r.status})`;
-    throw new Error(msg);
+const convex = convexCall;
+
+/** Map a Convex mutation failure to the right HTTP error: device-auth failures are 401. */
+function convexErrorResponse(e: unknown, fallback: string) {
+  const msg = e instanceof Error ? e.message : fallback;
+  if (/unauthorized/i.test(msg)) {
+    return NextResponse.json(
+      { ok: false, error: "This device isn't registered. Update Verba and try again." },
+      { status: 401, headers: cors }
+    );
   }
-  return json.value as T;
+  return NextResponse.json({ ok: false, error: msg }, { status: 502, headers: cors });
+}
+
+function ipOf(req: NextRequest): string {
+  const xff = req.headers.get("x-forwarded-for") ?? "";
+  return xff.split(",")[0].trim() || req.headers.get("x-real-ip") || "unknown";
 }
 
 /** Run a Linear GraphQL request with the server-side key. Throws on transport/GraphQL errors. */
@@ -215,8 +222,16 @@ export async function GET() {
   return NextResponse.json({ ok: true, items: merged }, { headers: cors });
 }
 
-// POST — { action: "add" | "upvote", ... }
+// POST — { action: "add" | "upvote" | "comment", ... } (all require a registered device secret)
 export async function POST(req: NextRequest) {
+  // S12: shared per-IP daily cap on all wishlist mutations (fail open on Convex outage —
+  // the mutations themselves still require a registered device).
+  const day = new Date().toISOString().slice(0, 10);
+  const ipAllowed = await convexBump(`wish:ip:${ipOf(req)}:${day}`, 20, true);
+  if (!ipAllowed) {
+    return NextResponse.json({ ok: false, error: "Too many wishlist actions today." }, { status: 429, headers: cors });
+  }
+
   let body: Body;
   try {
     body = await req.json();
@@ -234,30 +249,30 @@ async function handleAdd(body: Body) {
   const text = (body.text ?? "").trim();
   const uid = (body.uid ?? "").trim();
   const alias = (body.alias ?? "").trim();
+  const secret = (body.secret ?? "").trim();
   if (!text) {
     return NextResponse.json({ ok: false, error: "Wish text is required." }, { status: 400, headers: cors });
   }
-  if (!uid) {
-    return NextResponse.json({ ok: false, error: "A uid is required." }, { status: 400, headers: cors });
+  if (!uid || !secret) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401, headers: cors });
   }
 
   // Convex enforces the same 280-char trim; mirror it so the Linear title matches the stored item.
   const stored = text.slice(0, 280);
 
-  // 1) Create the item in Convex.
+  // 1) Create the item in Convex (requireDevice validates uid+secret there).
   try {
-    await convex<unknown>("mutation", "wishlist:add", { uid, alias, text: stored });
+    await convex<unknown>("mutation", "wishlist:add", { uid, secret, alias, text: stored });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Couldn't save the wish.";
-    return NextResponse.json({ ok: false, error: msg }, { status: 502, headers: cors });
+    return convexErrorResponse(e, "Couldn't save the wish.");
   }
 
-  // 2) Re-list to find the id of the just-created item. The newest matching wish by this
-  //    uid+text is ours; voters always include the submitter on creation.
+  // 2) Re-list to find the id of the just-created item: the newest wish matching this
+  //    text that is `mine` (the submitter auto-votes on creation).
   let createdId: string | null = null;
   try {
-    const items = await convex<WishItem[]>("query", "wishlist:list", {});
-    const mine = items.filter((w) => w.text === stored && w.voters.includes(uid));
+    const items = await convex<WishItem[]>("query", "wishlist:list", { uid, secret });
+    const mine = items.filter((w) => w.text === stored && w.mine);
     // list() has no created field; if several match, the marker still links the most likely one.
     createdId = mine.length ? mine[mine.length - 1].id : null;
   } catch {
@@ -269,7 +284,7 @@ async function handleAdd(body: Body) {
   const key = process.env.LINEAR_API_KEY;
   if (key && createdId) {
     const title = stored.replace(/\s+/g, " ").trim().slice(0, 250) || "Feature wish";
-    const submitter = [alias, uid].filter(Boolean).join(" · ") || "anonymous";
+    const submitter = alias || "anonymous";
     const description = [
       stored,
       "",
@@ -277,7 +292,7 @@ async function handleAdd(body: Body) {
       "",
       `${CONVEX_MARKER} ${createdId}`,
       `Submitted by: ${submitter}`,
-      `Wanted by (voters): ${uid}`,
+      `Votes: 1`,
       `Filed: ${new Date().toISOString()}`,
     ].join("\n");
     try {
@@ -314,7 +329,7 @@ async function createIssueForWish(
   convexId: string,
   text: string,
   author: string,
-  voters: string[],
+  votes: number,
 ): Promise<string | null> {
   const title = (text || "Feature wish").replace(/\s+/g, " ").trim().slice(0, 250) || "Feature wish";
   const description = [
@@ -324,7 +339,7 @@ async function createIssueForWish(
     "",
     `${CONVEX_MARKER} ${convexId}`,
     `Submitted by: ${author || "anonymous"}`,
-    `Wanted by (voters): ${voters.join(", ")}`,
+    `Votes: ${Math.round(votes)}`,
     `Filed: ${new Date().toISOString()}`,
   ].join("\n");
   try {
@@ -356,11 +371,26 @@ async function handleComment(body: Body) {
   const uid = (body.uid ?? "").trim();
   const alias = (body.alias ?? "").trim();
   const text = (body.text ?? "").trim();
+  const secret = (body.secret ?? "").trim();
   if (!id || !uid) {
     return NextResponse.json({ ok: false, error: "id and uid are required." }, { status: 400, headers: cors });
   }
   if (!text) {
     return NextResponse.json({ ok: false, error: "Comment text is required." }, { status: 400, headers: cors });
+  }
+
+  // S12: comments are written to Linear, not Convex — require a registered device explicitly.
+  let registered = false;
+  try {
+    registered = secret ? await convex<boolean>("query", "auth:check", { uid, secret }) : false;
+  } catch {
+    registered = false;
+  }
+  if (!registered) {
+    return NextResponse.json(
+      { ok: false, error: "This device isn't registered. Update Verba and try again." },
+      { status: 401, headers: cors }
+    );
   }
 
   const key = process.env.LINEAR_API_KEY;
@@ -395,7 +425,7 @@ async function handleComment(body: Body) {
       id,
       wish?.text ?? "",
       wish?.author ?? alias,
-      wish?.voters ?? [uid],
+      wish?.votes ?? 1,
     );
   }
 
@@ -404,7 +434,8 @@ async function handleComment(body: Body) {
   }
 
   // Store the comment with the alias prefixed so the author survives the round-trip.
-  const speaker = alias || uid || "anonymous";
+  // Never fall back to the uid here — it would leak into the public comment list.
+  const speaker = alias || "anonymous";
   const commentBody = `${speaker}: ${text}`.slice(0, 4000);
   try {
     await linear<unknown>(
@@ -424,16 +455,19 @@ async function handleComment(body: Body) {
 async function handleUpvote(body: Body) {
   const id = (body.id ?? "").trim();
   const uid = (body.uid ?? "").trim();
+  const secret = (body.secret ?? "").trim();
   if (!id || !uid) {
     return NextResponse.json({ ok: false, error: "id and uid are required." }, { status: 400, headers: cors });
   }
+  if (!secret) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401, headers: cors });
+  }
 
-  // 1) Toggle the vote in Convex (the source of truth for vote counts).
+  // 1) Toggle the vote in Convex (the source of truth for vote counts; requireDevice there).
   try {
-    await convex<unknown>("mutation", "wishlist:upvote", { id, uid });
+    await convex<unknown>("mutation", "wishlist:upvote", { id, uid, secret });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Couldn't record the vote.";
-    return NextResponse.json({ ok: false, error: msg }, { status: 502, headers: cors });
+    return convexErrorResponse(e, "Couldn't record the vote.");
   }
 
   // 2) Best-effort: reflect the new vote count + voter on the matching Linear issue.
@@ -455,7 +489,6 @@ async function handleUpvote(body: Body) {
           `${CONVEX_MARKER} ${id}`,
           `Submitted by: ${wish.author}`,
           `Votes: ${Math.round(wish.votes)}`,
-          `Wanted by (voters): ${wish.voters.join(", ")}`,
           `Updated: ${new Date().toISOString()}`,
         ].join("\n");
         await linear<unknown>(
