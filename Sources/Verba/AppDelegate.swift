@@ -347,7 +347,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.overlay.model.context = .action
             self.overlay.model.modeName = ""
             self.overlay.model.profiles = []   // Action mode isn't a reprompt mode → no live switcher
-            self.overlay.model.title = "Listening · Action"
+            // DISCOVERABILITY: the Fn+X chord starts the recording, but the release does NOT stop it
+            // (fnPressAt was cleared when the phantom bare-Fn dictation was aborted) — in BOTH trigger
+            // styles the user finishes by tapping Fn once more. Spell that out in the pill so the user
+            // knows how to run the command (otherwise they speak and nothing happens). The title splits
+            // on " · " → the instruction is the first part, "Action" the trailing badge tag.
+            self.overlay.model.title = "Tap Fn to run · Action"
         }
     }
 
@@ -791,6 +796,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // but a longer hold cycles to the next mode and KEEPS recording (hands-free). The
             // release (fnUp) makes the call from the down→up duration; an in-flight timer fires the
             // mode switch the moment the threshold passes so the user gets immediate feedback.
+            // An Action recording (Fn+X) has NO modes to cycle (profiles == []), so a Fn tap must
+            // simply STOP & run it — never arm the toggle mode-switch (a slightly-long tap would
+            // otherwise hijack the action recording into a dictation mode). Stop immediately in both
+            // styles so "Tap Fn to run" always works.
+            if actionModeRecording {
+                lastFnDown = nil
+                stopAndProcess()
+                return
+            }
             if Settings.shared.triggerStyle == .toggle {
                 lastFnDown = Date()
                 fnToggleStopArmed = true
@@ -2005,7 +2019,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                               onCancel: { close() })
         let wc = makeWindow(title: "Review dictation", view: view, size: NSSize(width: 520, height: 420), glass: true, resizable: false)
         reviewWindow = wc.window
-        present(wc)
+        // Also raised from a background pipeline Task → force focus for the accessory app.
+        presentFocused(wc)
     }
 
     /// Present the agentic-action confirmation sheet (Context mode + Labs). On Confirm, run the
@@ -2032,7 +2047,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let wc = makeWindow(title: "Confirm action", view: view, size: NSSize(width: 460, height: 320),
                             glass: true, resizable: false)
         actionWindow = wc.window
-        present(wc)
+        // Fired from a background pipeline Task with no user click → must force focus for an
+        // accessory app, otherwise the confirmation is never seen and the loop silently dead-ends.
+        presentFocused(wc)
     }
 
     private func makeWindow<V: View>(title: String, view: V, size: NSSize,
@@ -2070,6 +2087,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
         wc?.showWindow(nil)
         wc?.window?.makeKeyAndOrderFront(nil)
+        // Accessory (.accessory / LSUIElement) apps don't reliably come forward from a non-click
+        // context; orderFrontRegardless makes the window appear even when activation is refused.
+        wc?.window?.orderFrontRegardless()
+    }
+
+    /// Present a window that MUST be seen and focused even when raised programmatically from a
+    /// background Task (e.g. the action-confirm sheet, which fires when the pipeline finishes — there
+    /// is no user click activating the app). An `.accessory` menu-bar app cannot reliably become
+    /// active, so `NSApp.activate` alone leaves the window unfocused, behind the frontmost app, or
+    /// invisible. We momentarily promote to `.regular` so the app can truly activate and own key
+    /// focus, raise the window above normal level, and request user attention. Reverts the dock
+    /// policy on the next runloop hop so the menu-bar-only footprint is preserved.
+    private func presentFocused(_ wc: NSWindowController?) {
+        guard let win = wc?.window else { return }
+        let wasAccessory = NSApp.activationPolicy() == .accessory
+        if wasAccessory { NSApp.setActivationPolicy(.regular) }
+        NSApp.activate(ignoringOtherApps: true)
+        win.level = .floating          // sit above the frontmost app / a full-screen space's normal windows
+        win.collectionBehavior.insert(.moveToActiveSpace)
+        win.center()
+        wc?.showWindow(nil)
+        win.makeKeyAndOrderFront(nil)
+        win.orderFrontRegardless()
+        // Drop back to a normal level once it's up so it behaves like an ordinary window thereafter,
+        // and restore the menu-bar-only dock policy. Done on the next hop so the raise/focus lands first.
+        DispatchQueue.main.async {
+            win.level = .normal
+            if wasAccessory, self.mainWC?.window?.isVisible != true {
+                // Only revert if no other regular window (e.g. the main window) is showing.
+                NSApp.setActivationPolicy(.accessory)
+            }
+            NSApp.requestUserAttention(.criticalRequest)
+        }
     }
 
     private func notify(_ title: String, _ body: String) {
