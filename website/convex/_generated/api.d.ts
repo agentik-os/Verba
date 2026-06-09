@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as feedback from "../feedback.js";
 import type * as history from "../history.js";
 import type * as leaderboard from "../leaderboard.js";
 import type * as notes from "../notes.js";
@@ -21,6 +22,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  feedback: typeof feedback;
   history: typeof history;
   leaderboard: typeof leaderboard;
   notes: typeof notes;

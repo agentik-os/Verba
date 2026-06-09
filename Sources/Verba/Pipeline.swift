@@ -34,6 +34,10 @@ struct PipelineResult {
     // (create an event / reminder / draft an email), the vision model returns a structured action
     // instead of text. Non-nil here means the caller must CONFIRM and execute it rather than paste.
     var action: VerbaAction? = nil
+    // Set when the dictation produced a SIDE-EFFECT (e.g. "add to dictionary" on a selection) rather
+    // than text to deliver. Non-nil means: do NOT paste/replace the selection — just flash this
+    // confirmation. `reprompted` is left as the original transcript and is not delivered.
+    var notice: String? = nil
 }
 
 /// record → transcribe → (Claude reprompt) → result. Output/side-effects handled by the caller.
@@ -79,6 +83,10 @@ enum Pipeline {
                 sys += "\n\nADDITIONAL STYLE PREFERENCES (apply while staying faithful): \(style)"
             }
             sys += SnippetsStore.shared.promptContext()   // intent-based snippet insertion
+            // Dictionary ↔ prompting link: tell Claude to PRESERVE the user's exact custom
+            // spellings / branding (already fed to transcription via hint() + applied via apply()),
+            // so the rewrite doesn't "correct" a brand like "Verba" or a specific capitalization.
+            sys += DictionaryStore.shared.preservePromptContext()
 
             // #5 Tone match: feed a few of the user's recent messages in THIS app as style
             // examples, so the rewrite mimics how they actually write here.
@@ -171,6 +179,21 @@ enum Pipeline {
                 // a saved Transform (e.g. "fix grammar", "translate to English"). Auto-run that
                 // transform's own prompt on the selection. Works in ALL modes. Longer/clearly
                 // full instructions don't match (see TransformsStore.match) and fall through.
+                if TransformsStore.isAddToDictionary(transform) {
+                    // "Add to dictionary" shortcut: this is a SIDE-EFFECT, not a rewrite. Add the
+                    // selected word(s) to the Dictionary preserving their exact written form (so
+                    // their spelling/branding survives future transcription + reprompting) and
+                    // surface a confirmation. Never replace the user's selection.
+                    let added = await MainActor.run { DictionaryStore.shared.addUserTerm(sel) }
+                    let short = sel.count > 40 ? String(sel.prefix(40)) + "…" : sel
+                    return PipelineResult(
+                        original: original,
+                        reprompted: original,
+                        profileName: profile.name,
+                        profileID: profile.id,
+                        engine: engineLabel(s),
+                        notice: added ? "Added “\(short)” to Dictionary" : "Already in Dictionary")
+                }
                 status("Working on your selection…")
                 reprompted = try await r.reprompt(
                     transcript: sel,

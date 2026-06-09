@@ -36,4 +36,12 @@ export default defineSchema({
   notes_deleted: defineTable({   // tombstones so note deletions stick across devices
     uid: v.string(), ts: v.number(),
   }).index("by_uid", ["uid"]),
+
+  feedback: defineTable({   // free-form user feedback (admin-reviewed), optional screenshot
+    uid: v.string(), alias: v.string(), text: v.string(),
+    version: v.optional(v.string()),
+    screenshot: v.optional(v.id("_storage")),
+    createdAt: v.number(),
+    status: v.optional(v.string()),
+  }),
 });

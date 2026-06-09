@@ -185,6 +185,42 @@ final class DictionaryStore: ObservableObject {
     /// Comma-separated written forms, fed to the transcription model as a vocab hint.
     func hint() -> String { terms.map(\.written).filter { !$0.isEmpty }.joined(separator: ", ") }
 
+    /// Reprompt context that tells Claude to PRESERVE the user's exact spellings / branding
+    /// (names, product names, specific capitalizations) and never "correct" them. Returns "" when
+    /// the dictionary is empty so a plain dictation prompt stays untouched. This closes the loop:
+    /// terms are fed to transcription (hint), applied as spellings (apply), AND protected through
+    /// the rewrite so a brand like "Verba" / "GitHub" survives end-to-end.
+    func preservePromptContext() -> String {
+        let written = terms.map { $0.written.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        // De-duplicate (case-sensitively keeps distinct brand casings) while preserving order.
+        var seen = Set<String>(); var unique: [String] = []
+        for w in written where !seen.contains(w) { seen.insert(w); unique.append(w) }
+        guard !unique.isEmpty else { return "" }
+        let list = unique.joined(separator: ", ")
+        return """
+
+
+        PRESERVE THESE EXACT TERMS (the user's custom vocabulary / brand spellings): \(list)
+        Keep each of these EXACTLY as written above — same spelling and capitalization. \
+        Never "correct", translate, expand, or reformat them, even if they look like a typo.
+        """
+    }
+
+    /// Add a user-typed/selected vocabulary term that must keep its EXACT written form (branding,
+    /// specific spellings). Spoken defaults to the written form when none is given. Idempotent on
+    /// the written form (case-insensitive) so repeated "add to dictionary" on the same word is a
+    /// no-op. Marked NOT auto (a deliberate user addition). Returns true when a new term was added.
+    @discardableResult
+    func addUserTerm(_ written: String, spoken: String? = nil) -> Bool {
+        let w = written.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !w.isEmpty else { return false }
+        let sp = (spoken?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : $0 } ?? w
+        if terms.contains(where: { $0.written.lowercased() == w.lowercased() }) { return false }
+        terms.append(DictTerm(spoken: sp, written: w, auto: false))
+        return true
+    }
+
     /// Replace spoken forms with the intended written form (case-insensitive).
     /// Whitespace-only spoken forms (a freshly seeded correction row) never replace anything.
     func apply(to text: String) -> String {
@@ -299,14 +335,41 @@ struct Transform: Codable, Identifiable { var id = UUID(); var name: String; var
 
 final class TransformsStore: ObservableObject {
     static let shared = TransformsStore()
+
+    /// The built-in "add to dictionary" verbal shortcut. Selecting text and speaking this adds the
+    /// selection to the Dictionary instead of reprompting (handled specially in Pipeline.run). It is
+    /// a normal, user-DELETABLE Transform; its prompt is informational only (never sent to Claude).
+    static let addToDictionaryName = "Add to dictionary"
+    private static func addToDictionaryTransform() -> Transform {
+        Transform(name: addToDictionaryName,
+                  prompt: "Add the selected text to the Dictionary so its exact spelling/branding is preserved.")
+    }
+    /// True when this transform is the special add-to-dictionary shortcut (match by name, so a
+    /// renamed-but-still-present default is still treated as it; deletion removes the behavior).
+    static func isAddToDictionary(_ t: Transform) -> Bool {
+        t.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            == addToDictionaryName.lowercased()
+    }
+
     @Published var items: [Transform] { didSet { saveJSON("transforms.items", items) } }
+    private static let seededAddToDictKey = "transforms.seededAddToDict"
     private init() {
         items = loadJSON("transforms.items", [Transform].self) ?? [
             Transform(name: "To bullet points", prompt: "Rewrite the text as a clear bulleted list. Keep all the information."),
             Transform(name: "Shorten", prompt: "Make the text shorter and tighter without losing meaning."),
             Transform(name: "Translate to English", prompt: "Translate the text into natural English."),
             Transform(name: "Fix grammar", prompt: "Fix grammar and spelling only. Keep wording and meaning."),
+            Self.addToDictionaryTransform(),
         ]
+        // One-time migration: seed the add-to-dictionary shortcut for existing users whose saved
+        // list predates it. Gated by a persisted flag so a DELIBERATE deletion survives relaunch —
+        // we only seed once, never resurrect a transform the user removed on purpose.
+        if !UserDefaults.standard.bool(forKey: Self.seededAddToDictKey) {
+            if !items.contains(where: { Self.isAddToDictionary($0) }) {
+                items.append(Self.addToDictionaryTransform())
+            }
+            UserDefaults.standard.set(true, forKey: Self.seededAddToDictKey)
+        }
     }
 
     /// Find a transform whose verbal shortcut the spoken `transcript` is invoking, for the

@@ -600,6 +600,7 @@ private struct ProjectPanel: View {
                 if prog.total > 0 {
                     Text("\(prog.done)/\(prog.total)")
                         .font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                        .lineLimit(1).fixedSize()
                         .padding(.horizontal, 8).padding(.vertical, 3)
                         .background(.softFill, in: Capsule())
                 }
@@ -732,7 +733,13 @@ private struct DeadlinePicker: View {
     }
 
     private var popover: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        // Drive the calendar + time editor off a single non-optional working date so
+        // the popover always has something to render; commit it back to `deadline`.
+        let working = Binding<Date>(
+            get: { deadline ?? defaultPickerDate() },
+            set: { deadline = $0 }
+        )
+        return VStack(alignment: .leading, spacing: 16) {
             Text("Deadline").font(.headline)
 
             // Quick presets
@@ -743,16 +750,11 @@ private struct DeadlinePicker: View {
                 }
             }
 
-            // Framed date + time editor (both day and hour/minute).
-            DatePicker(
-                "",
-                selection: Binding(get: { deadline ?? defaultPickerDate() }, set: { deadline = $0 }),
-                displayedComponents: [.date, .hourAndMinute]
-            )
-            .datePickerStyle(.graphical)
-            .labelsHidden()
-            .frame(width: 280)
-            .cleanCard(padding: 10)
+            // Custom month calendar — day selection.
+            CalendarMonth(selection: working)
+
+            // Custom hour + minute selector — exact time.
+            TimeSelector(selection: working)
 
             HStack {
                 Button("Clear") { deadline = nil; show = false }
@@ -763,7 +765,7 @@ private struct DeadlinePicker: View {
             }
         }
         .padding(16)
-        .frame(width: 320)
+        .frame(width: 312)
     }
 
     /// A reasonable default when no deadline is set yet (today, 9am or next hour).
@@ -803,6 +805,284 @@ private struct PresetChipRows<Content: View>: View {
             HStack(spacing: 8) { ForEach(0..<half, id: \.self) { content(items[$0].0, items[$0].1) } }
             HStack(spacing: 8) { ForEach(half..<items.count, id: \.self) { content(items[$0].0, items[$0].1) } }
         }
+    }
+}
+
+// MARK: - Custom month calendar (modern, on-brand — replaces stock .graphical)
+
+/// A clean custom month grid: month/year header with prev/next chevrons, a 7-column
+/// day grid, today subtly ringed, the selected day a filled accent pill, muted
+/// out-of-month and past days. Editing day preserves the time-of-day in `selection`.
+private struct CalendarMonth: View {
+    @Binding var selection: Date
+
+    /// The month currently shown in the grid (may differ from the selected day
+    /// once the user pages with the chevrons).
+    @State private var visibleMonth: Date = Date()
+
+    private let cal = Calendar.current
+
+    var body: some View {
+        VStack(spacing: 10) {
+            header
+            weekdayRow
+            grid
+        }
+        .cleanCard(padding: 12)
+        .onAppear { visibleMonth = cal.startOfDay(for: selection) }
+    }
+
+    // Month/year + paging chevrons.
+    private var header: some View {
+        HStack {
+            Text(monthTitle(visibleMonth))
+                .font(.subheadline.weight(.semibold))
+            Spacer()
+            HStack(spacing: 2) {
+                chevron("chevron.left") { page(-1) }
+                chevron("chevron.right") { page(1) }
+            }
+        }
+    }
+
+    private func chevron(_ name: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: { withAnimation(.easeInOut(duration: 0.16)) { action() } }) {
+            Image(systemName: name)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 26, height: 26)
+                .background(.softFill, in: Circle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // Localised single-letter weekday headers, ordered by the locale's first weekday.
+    private var weekdayRow: some View {
+        HStack(spacing: 0) {
+            ForEach(orderedWeekdaySymbols(), id: \.self) { sym in
+                Text(sym)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+    }
+
+    // The 6×7 day grid.
+    private var grid: some View {
+        let cells = monthCells()
+        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 4) {
+            ForEach(Array(cells.enumerated()), id: \.offset) { _, day in
+                if let day {
+                    DayCell(
+                        date: day,
+                        isSelected: cal.isDate(day, inSameDayAs: selection),
+                        isToday: cal.isDateInToday(day),
+                        isPast: day < cal.startOfDay(for: Date()),
+                        inMonth: cal.isDate(day, equalTo: visibleMonth, toGranularity: .month)
+                    ) { pick(day) }
+                } else {
+                    Color.clear.frame(height: 30)
+                }
+            }
+        }
+    }
+
+    // MARK: helpers
+
+    private func monthTitle(_ d: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale.current
+        f.setLocalizedDateFormatFromTemplate("MMMM yyyy")
+        return f.string(from: d)
+    }
+
+    private func orderedWeekdaySymbols() -> [String] {
+        let symbols = cal.veryShortStandaloneWeekdaySymbols // Sun-first
+        let first = cal.firstWeekday - 1 // 0-based
+        return Array(symbols[first...] + symbols[..<first])
+    }
+
+    private func page(_ delta: Int) {
+        if let m = cal.date(byAdding: .month, value: delta, to: visibleMonth) {
+            visibleMonth = m
+        }
+    }
+
+    /// Set the day while preserving the currently-selected hour/minute.
+    private func pick(_ day: Date) {
+        let t = cal.dateComponents([.hour, .minute], from: selection)
+        if let merged = cal.date(bySettingHour: t.hour ?? 9, minute: t.minute ?? 0, second: 0, of: day) {
+            selection = merged
+        }
+    }
+
+    /// All cells for the visible month, padded with nils so the 1st lands under its weekday.
+    private func monthCells() -> [Date?] {
+        guard let range = cal.range(of: .day, in: .month, for: visibleMonth),
+              let firstOfMonth = cal.date(from: cal.dateComponents([.year, .month], from: visibleMonth))
+        else { return [] }
+        let leading = (cal.component(.weekday, from: firstOfMonth) - cal.firstWeekday + 7) % 7
+        var cells: [Date?] = Array(repeating: nil, count: leading)
+        for d in range {
+            cells.append(cal.date(byAdding: .day, value: d - 1, to: firstOfMonth))
+        }
+        while cells.count % 7 != 0 { cells.append(nil) }
+        return cells
+    }
+}
+
+/// One day in the calendar grid.
+private struct DayCell: View {
+    let date: Date
+    let isSelected: Bool
+    let isToday: Bool
+    let isPast: Bool
+    let inMonth: Bool
+    let action: () -> Void
+
+    private var dayNumber: String { "\(Calendar.current.component(.day, from: date))" }
+
+    var body: some View {
+        Button(action: action) {
+            Text(dayNumber)
+                .font(.callout.weight(isSelected ? .semibold : .regular))
+                .foregroundStyle(foreground)
+                .frame(maxWidth: .infinity)
+                .frame(height: 30)
+                .background(background)
+                .overlay {
+                    if isToday && !isSelected {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .strokeBorder(Color.accentColor.opacity(0.55), lineWidth: 1.2)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var foreground: AnyShapeStyle {
+        if isSelected { return AnyShapeStyle(.white) }
+        if !inMonth { return AnyShapeStyle(.quaternary) }
+        if isPast { return AnyShapeStyle(.tertiary) }
+        return AnyShapeStyle(.primary)
+    }
+
+    @ViewBuilder private var background: some View {
+        if isSelected {
+            RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.accentColor)
+        } else {
+            Color.clear
+        }
+    }
+}
+
+// MARK: - Custom time selector (hour + minute, modern — replaces stock stepper)
+
+/// A compact, legible time control: quick time chips plus fine ± adjustment on a
+/// big, readable HH:mm readout. Edits hour/minute while preserving the day.
+private struct TimeSelector: View {
+    @Binding var selection: Date
+
+    private let cal = Calendar.current
+
+    /// Whether the locale uses a 12-hour clock (so we show AM/PM).
+    private var is12h: Bool {
+        let fmt = DateFormatter.dateFormat(fromTemplate: "j", options: 0, locale: Locale.current) ?? ""
+        return fmt.contains("a")
+    }
+
+    private var hour: Int { cal.component(.hour, from: selection) }
+    private var minute: Int { cal.component(.minute, from: selection) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: "clock").font(.system(size: 11)).foregroundStyle(.secondary)
+                Text("Time").font(.subheadline.weight(.semibold))
+                Spacer()
+                Text(readout)
+                    .font(.system(.title3, design: .rounded).weight(.semibold))
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+            }
+
+            // Fine adjustment: hour and minute steppers.
+            HStack(spacing: 8) {
+                stepper(label: "Hour", onMinus: { add(hours: -1) }, onPlus: { add(hours: 1) })
+                stepper(label: "Min", onMinus: { add(minutes: -5) }, onPlus: { add(minutes: 5) })
+            }
+
+            // Quick time chips.
+            HStack(spacing: 8) {
+                ForEach([(9, 0), (12, 0), (18, 0), (21, 0)], id: \.0) { h, m in
+                    timeChip(h, m)
+                }
+            }
+        }
+        .cleanCard(padding: 12)
+    }
+
+    private var readout: String {
+        let f = DateFormatter()
+        f.locale = Locale.current
+        f.setLocalizedDateFormatFromTemplate(is12h ? "h:mm a" : "HH:mm")
+        return f.string(from: selection)
+    }
+
+    private func stepper(label: String, onMinus: @escaping () -> Void, onPlus: @escaping () -> Void) -> some View {
+        HStack(spacing: 0) {
+            stepButton("minus", onMinus)
+            Text(label)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+            stepButton("plus", onPlus)
+        }
+        .padding(.vertical, 2)
+        .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+    }
+
+    private func stepButton(_ name: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: { withAnimation(.easeInOut(duration: 0.12)) { action() } }) {
+            Image(systemName: name)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.primary)
+                .frame(width: 30, height: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func timeChip(_ h: Int, _ m: Int) -> some View {
+        let active = hour == h && minute == m
+        let f = DateFormatter()
+        f.locale = Locale.current
+        f.setLocalizedDateFormatFromTemplate(is12h ? "h a" : "HH:mm")
+        let sample = cal.date(bySettingHour: h, minute: m, second: 0, of: selection) ?? selection
+        return Button {
+            withAnimation(.easeInOut(duration: 0.12)) { set(hour: h, minute: m) }
+        } label: {
+            Text(f.string(from: sample))
+                .font(.caption.weight(.medium))
+                .foregroundStyle(active ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(active ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.softFill), in: Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: mutation (always preserves the day)
+
+    private func add(hours: Int) {
+        if let d = cal.date(byAdding: .hour, value: hours, to: selection) { selection = d }
+    }
+    private func add(minutes: Int) {
+        if let d = cal.date(byAdding: .minute, value: minutes, to: selection) { selection = d }
+    }
+    private func set(hour: Int, minute: Int) {
+        if let d = cal.date(bySettingHour: hour, minute: minute, second: 0, of: selection) { selection = d }
     }
 }
 

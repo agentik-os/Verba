@@ -1345,6 +1345,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
         }()
 
+        // Side-effect result (e.g. "add to dictionary" on a selection): there is nothing to paste —
+        // the dictation performed an action. Finalize the session and flash a brief confirmation
+        // WITHOUT replacing the user's selection. (Checked before action/text delivery.)
+        if let notice = result.notice {
+            session.status = .done
+            SessionStore.shared.endInflight(session)
+            SessionStore.shared.complete(session)
+            stopQuipsIfNoInflight()
+            if SessionStore.shared.hasInflight {
+                state = .processing; statusLine = "Transcribing…"; overlay.model.recording = false; showProcessingOverlay()
+            } else {
+                flashInfo(notice)
+            }
+            return
+        }
+
         // Context mode + Labs "Agentic actions": the result is a structured action, not text. Never
         // auto-paste — take it out of in-flight and present a confirmation sheet. On Confirm, execute
         // it; on Cancel, discard. Plain Context/other modes (action == nil) fall through unchanged.
