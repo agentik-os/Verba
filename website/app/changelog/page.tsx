@@ -16,8 +16,19 @@ const DAYS: Day[] = [
     date: "June 9, 2026",
     tag: "Today",
     summary:
-      "A big control update: hold-to-talk, reliable pause, switch modes mid-sentence, editable Note modes, a sharper Task Manager agent, and voice re-adapt.",
+      "A huge day: hold-to-talk and reliable pause, mid-sentence mode switching, editable Note modes, layered writing Styles, smarter Transforms, a Transcripts library, concurrent sessions, and a sharper Task Manager agent.",
     entries: [
+      {
+        version: "0.1.84",
+        title: "Styles, Transforms, Transcripts library & concurrent sessions",
+        items: [
+          "Writing Styles: a tone/format layer on top of any mode, switch with Fn+[ / Fn+] or from the menu bar, add and edit your own (default “Normal” changes nothing).",
+          "Transforms upgraded: select text and just say a short shortcut (“fix grammar”, “translate to English”) to run it in any app, with clearer wording (“Verbal Shortcut”).",
+          "Transcripts library: imported transcripts are saved with tags and notes, history audio is exportable, and every transcript gets quick re-adapt actions + a voice intent.",
+          "Run several at once: start a new dictation while a slow one is still processing; finished sessions wait in a list with a Copy button.",
+          "Community → Feedback, a one-word “Add to Dictionary” from the review window, proper markdown on rich paste, and auto-paste that finds your field even across Spaces.",
+        ],
+      },
       {
         version: "0.1.83",
         title: "Hold-to-talk, pause, and mid-sentence mode switching",
