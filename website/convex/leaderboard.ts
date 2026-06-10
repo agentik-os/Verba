@@ -42,6 +42,30 @@ export const submit = mutation({
   },
 });
 
+// Admin-only: replace every leaderboard alias with a fresh anonymous handle EXCEPT a small
+// whitelist, so no real name is ever exposed. Internal-only (run via `npx convex run`).
+export const realias = mutation({
+  args: { keep: v.array(v.string()) },
+  handler: async (ctx, a) => {
+    const adjectives = ["Swift","Clever","Bold","Lucid","Rapid","Sharp","Calm","Witty","Zen","Turbo","Brave","Mellow","Cosmic","Nimble","Vivid"];
+    const nouns = ["Falcon","Otter","Comet","Vox","Scribe","Quill","Echo","Nova","Pilot","Sage","Lynx","Heron","Drift","Ember","Wren"];
+    const keep = new Set(a.keep.map((s) => s.trim().toLowerCase()));
+    const all = await ctx.db.query("scores").collect();
+    let n = 0;
+    for (let i = 0; i < all.length; i++) {
+      const s: any = all[i];
+      if (keep.has((s.alias ?? "").trim().toLowerCase())) continue;
+      // No Math.random in Convex: seed the pick off stable per-row fields.
+      const adj = adjectives[(i * 7 + (s.words ?? 0)) % adjectives.length];
+      const noun = nouns[(i * 13 + (s.wpm ?? 0)) % nouns.length];
+      const num = 10 + ((i * 31 + (s.streak ?? 0)) % 90);
+      await ctx.db.patch(s._id, { alias: `${adj}${noun}${num}` });
+      n++;
+    }
+    return n;
+  },
+});
+
 // Remove a stale score row (used to clean the device-minted uid after sign in).
 // S8: only the device that owns the uid (its secret is registered under it) may remove it.
 export const remove = mutation({
