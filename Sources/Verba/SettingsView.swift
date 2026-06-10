@@ -114,15 +114,16 @@ struct SettingsView: View {
 
     private var rail: some View {
         VStack(alignment: .leading, spacing: 4) {
+            // Header matches the Notes sidebar exactly (17pt bold, same padding rhythm).
             Text("Settings").font(.system(size: 17, weight: .bold))
-                .padding(.horizontal, 12).padding(.top, 22).padding(.bottom, 10)
+                .padding(.horizontal, 4).padding(.top, 14).padding(.bottom, 8)
             ForEach(SettingsSection.allCases) { s in
                 railRow(s)
             }
             Spacer()
         }
         .padding(.horizontal, 10)
-        .frame(width: 224)
+        .frame(width: 270)
         .frame(maxHeight: .infinity, alignment: .top)
     }
 
@@ -131,31 +132,25 @@ struct SettingsView: View {
         return Button {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { section = s }
         } label: {
-            HStack(spacing: 11) {
+            // IDENTICAL grammar to NotesView.noteRow: icon + 2-line card, padding 12/9,
+            // radius 12, fill 0.04 idle / 0.12 selected + 0.4 stroke (no accent bar).
+            HStack(alignment: .top, spacing: 9) {
                 Image(systemName: s.icon)
-                    .font(.system(size: 14, weight: .medium))
-                    .frame(width: 20)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(s.title).font(.system(size: 13, weight: selected ? .semibold : .medium))
-                    Text(s.subtitle).font(.system(size: 10.5))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    .font(.system(size: 13)).foregroundStyle(.secondary).frame(width: 16).padding(.top, 2)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(s.title).font(.system(size: 13, weight: .medium)).lineLimit(1)
+                    Text(s.subtitle).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer(minLength: 0)
             }
-            .foregroundStyle(selected ? AnyShapeStyle(Color.primary) : AnyShapeStyle(Color.primary))
-            .padding(.horizontal, 11).padding(.vertical, 9)
+            .padding(.horizontal, 12).padding(.vertical, 9)
             .background(
-                // Tonal accent highlight (matches the main-window sidebar) — never a black block.
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(selected ? AnyShapeStyle(Color.primary.opacity(0.07)) : AnyShapeStyle(Color.clear))
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
             )
-            .overlay(alignment: .leading) {
-                if selected {
-                    RoundedRectangle(cornerRadius: 2).fill(Color.primary).frame(width: 3, height: 18).padding(.leading, 2)
-                }
-            }
-            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
     }

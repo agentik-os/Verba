@@ -46,7 +46,7 @@ struct ModesView: View {
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
             }
-            .frame(width: 232)
+            .frame(width: 270)
 
             Group {
                 if let id = selectedID, settings.profiles.contains(where: { $0.id == id }) {
@@ -63,30 +63,41 @@ struct ModesView: View {
         .sheet(isPresented: $showGenerator) { generatorSheet }
     }
 
-    // MARK: Sidebar rows — exemplar cards (0.04 fill, selected 0.12 + 0.4 stroke), spring select.
+    // MARK: Sidebar rows — IDENTICAL grammar to NotesView.noteRow: a spacious 2-line card
+    // (icon + title line, secondary subtitle line), radius 12, padding 12/9, fill 0.04 idle /
+    // 0.12 selected + 0.4 stroke. Active mode marked with a check by the name; model + shortcut
+    // live on the quiet subtitle line (not crammed onto one row like before).
     private func modeRow(_ p: Profile) -> some View {
         let selected = p.id == selectedID
-        return HStack(spacing: 8) {
+        let isActive = p.id == settings.activeProfileID
+        return HStack(alignment: .top, spacing: 9) {
             Image(systemName: p.raw ? "waveform" : "wand.and.stars")
-                .foregroundStyle(.secondary).frame(width: 16)
-            Text(p.name).fontWeight(selected ? .semibold : .regular).lineLimit(1)
-            Spacer(minLength: 6)
-            if p.id == settings.activeProfileID {
-                Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint).font(.caption)
+                .font(.system(size: 13)).foregroundStyle(.secondary).frame(width: 16).padding(.top, 2)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 5) {
+                    Text(p.name).font(.system(size: 13, weight: .medium)).lineLimit(1)
+                    if isActive {
+                        Image(systemName: "checkmark.circle.fill").font(.system(size: 11)).foregroundStyle(.secondary)
+                    }
+                }
+                HStack(spacing: 5) {
+                    Text(modelPillLabel(p)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                    if let c = p.hotkeyCode, let m = p.hotkeyMods {
+                        Text("·").font(.caption2).foregroundStyle(.tertiary)
+                        Text(shortcutLabel(keyCode: c, modifiers: m)).font(.caption2).foregroundStyle(.tertiary)
+                    }
+                }
             }
-            modelPill(p)
-            if let c = p.hotkeyCode, let m = p.hotkeyMods {
-                keycap(shortcutLabel(keyCode: c, modifiers: m))
-            }
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 10).padding(.vertical, 8)
+        .padding(.horizontal, 12).padding(.vertical, 9)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
         )
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
             .strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
-        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .onTapGesture {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { selectedID = p.id }
         }
