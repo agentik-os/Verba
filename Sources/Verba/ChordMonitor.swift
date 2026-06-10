@@ -11,6 +11,7 @@ final class ChordMonitor {
     var onChordDown: (() -> Void)?   // ⌃⌥ became held
     var onChordUp: (() -> Void)?     // ⌃⌥ released
     var onEscape: (() -> Void)?      // Esc pressed
+    var escapeShouldCancel: (() -> Bool)?  // true only while something is in flight to cancel
     var onFnDown: (() -> Void)?      // Fn (globe) pressed
     var onFnUp: (() -> Void)?        // Fn (globe) released
     var onControl: (() -> Void)?     // plain ⌃ tapped (used to pause/resume while recording)
@@ -99,6 +100,13 @@ final class ChordMonitor {
 
     private func handleKey(_ e: NSEvent) {
         if e.keyCode == UInt16(kVK_Escape) {
+            // When the Fn event tap is live it owns the Esc-cancel gesture (gated behind its own
+            // escapeShouldCancel), so skip here to avoid running cancelEverything() twice during a
+            // recording — mirrors the onControl gate above.
+            if FnTap.shared.active { return }
+            // Otherwise gate on the same "is anything in flight" predicate FnTap uses, so a global
+            // Esc pressed to dismiss a dialog in another app doesn't run the full idle-teardown.
+            if let gate = escapeShouldCancel, gate() == false { return }
             DispatchQueue.main.async { self.onEscape?() }
             return
         }

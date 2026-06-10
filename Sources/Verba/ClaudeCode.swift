@@ -50,6 +50,9 @@ enum ClaudeCode {
 
     // MARK: - Process plumbing
 
+    /// Mutable box so a concurrent stderr-drain closure can hand back its bytes.
+    private final class ErrBox { var data = Data() }
+
     private static func run(_ path: String, _ args: [String], cwd: URL? = nil) async throws -> String {
         let task = Process()
         task.executableURL = URL(fileURLWithPath: path)
@@ -66,9 +69,20 @@ enum ClaudeCode {
                 DispatchQueue.global(qos: .userInitiated).async {
                     do {
                         try task.run()
+                        // Drain stderr concurrently so a chatty child (>~64KB stderr) can't
+                        // block on its stderr write while we're blocked reading stdout — that
+                        // sequential two-pipe drain is a classic deadlock that wedges the
+                        // dictation pipeline in .processing forever.
+                        let errBox = ErrBox()
+                        let errReady = DispatchSemaphore(value: 0)
+                        DispatchQueue.global(qos: .userInitiated).async {
+                            errBox.data = errPipe.fileHandleForReading.readDataToEndOfFile()
+                            errReady.signal()
+                        }
                         let outData = outPipe.fileHandleForReading.readDataToEndOfFile()
-                        let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
                         task.waitUntilExit()
+                        errReady.wait()
+                        let errData = errBox.data
                         if Task.isCancelled {
                             cont.resume(throwing: CancellationError())
                         } else if task.terminationStatus == 0 {
@@ -92,7 +106,10 @@ enum ClaudeCode {
         task.arguments = args
         let pipe = Pipe()
         task.standardOutput = pipe
-        task.standardError = Pipe()
+        // Discard stderr to the null device so a chatty child (>~64KB stderr) can
+        // always write without blocking — leaving an unread Pipe() here is the same
+        // sequential/undrained-pipe deadlock as run().
+        task.standardError = FileHandle.nullDevice
         try task.run()
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         task.waitUntilExit()

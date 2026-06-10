@@ -770,11 +770,41 @@ final class Settings: ObservableObject {
     // MARK: Shortcut assignment with conflict swap
 
     /// Assign a shortcut, swapping it away from whoever currently holds it.
+    /// The reserved ⌥X transform chord. It lives outside the `ShortcutTarget`/combo system
+    /// (it only stores a keycode; the modifier is always Option), so `holder()` can't represent
+    /// it. We surface it here so `assignShortcut` can detect a collision and relocate it.
+    /// `optionKey` (Carbon) == 1 << 11; spelled as a literal to avoid importing HIToolbox here.
+    private static let transformMods: UInt32 = 1 << 11
+    var transformChord: (UInt32, UInt32) { (UInt32(transformHotkeyCode), Settings.transformMods) }
+
     func assignShortcut(keyCode: UInt32, modifiers: UInt32, to target: ShortcutTarget) {
+        // The ⌥X transform gesture isn't a ShortcutTarget, so holder() can't see it. Without this,
+        // rebinding an action onto ⌥X silently double-binds: the HID tap consumes ⌥X for the
+        // transform picker before the action's Carbon hotkey ever fires (FnTap.swift:195). Relocate
+        // the transform key to a free Option-chord so the user's rebound action actually fires.
+        if keyCode == UInt32(transformHotkeyCode), modifiers == Settings.transformMods {
+            relocateTransformKey(avoiding: (keyCode, modifiers))
+        }
         if let holder = holder(ofKey: keyCode, mods: modifiers), holder != target {
             setCombo(combo(of: target), on: holder)   // previous holder inherits target's old combo
         }
         setCombo((keyCode, modifiers), on: target)
+    }
+
+    /// Move the transform key to the first free letter keycode whose Option-chord isn't already
+    /// bound (to a target, profile, or the chord being assigned). Falls back to leaving it in place
+    /// if nothing is free — but the new binding still wins, so the action fires regardless.
+    private func relocateTransformKey(avoiding taken: (UInt32, UInt32)) {
+        // ANSI letter keycodes excluding X (7): a,s,d,f,g,h,j,k,l … commonly free transform-able keys.
+        let candidates: [UInt32] = [0, 1, 2, 3, 5, 4, 38, 40, 37, 11, 9, 16, 17, 32, 34, 31, 35]
+        for code in candidates where code != UInt32(transformHotkeyCode) {
+            let chord = (code, Settings.transformMods)
+            if chord == taken { continue }
+            if holder(ofKey: code, mods: Settings.transformMods) == nil {
+                transformHotkeyCode = Int(code)
+                return
+            }
+        }
     }
 
     func clearShortcut(_ target: ShortcutTarget) { setCombo(nil, on: target) }
@@ -838,6 +868,9 @@ final class Settings: ObservableObject {
             }
         }
     }
+    /// Note: the ⌥X transform chord (`transformChord`) is intentionally NOT representable here —
+    /// it's not a `ShortcutTarget`. Collisions against it are handled in `assignShortcut` by
+    /// relocating the transform key, since this returns `ShortcutTarget?` and can't name it.
     private func holder(ofKey k: UInt32, mods m: UInt32) -> ShortcutTarget? {
         if let p = profiles.first(where: { $0.hotkeyCode == k && $0.hotkeyMods == m }) { return .profile(p.id) }
         if primaryMods != 0, primaryKeyCode == k, primaryMods == m { return .primary }

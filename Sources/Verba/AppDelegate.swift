@@ -57,6 +57,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var forcedProfile: Profile?     // set when a profile-specific shortcut started the dictation
     private var actionModeRecording = false  // Fn+X Action mode: this recording's request CONTROLS the Mac (confirm → execute)
 
+    private var transformInFlight = false   // a ⌥X transform is applying (background, network-bound): block any new
+                                            // capture/transform so its paste can't collide with a concurrently-started one
     private var todoCaptureRecording = false   // a voice "add to-do" capture is recording
     private var todoCaptureTask: Task<Void, Never>?
     private var noteLevelTimer: Timer?         // drives the shared overlay's waveform while a note records (NotesView owns the recorder)
@@ -197,11 +199,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         WidgetBridge.shared.start()    // keep the WidgetKit "Today" snapshot in sync with the TodoStore
 
         // Re-apply hotkeys when the primary shortcut, profiles, or Fn option change.
+        // Every rebindable Carbon target must be observed here — otherwise rebinding/clearing it in
+        // Settings mutates the @Published vars but applyTriggers() is never re-run, so the change
+        // silently does nothing (and a cleared binding stays live) until an unrelated edit or a
+        // relaunch happens to re-arm. Cover all eight targets, not just primary + mode-picker.
         Publishers.MergeMany(
             Settings.shared.$primaryKeyCode.map { _ in () }.eraseToAnyPublisher(),
             Settings.shared.$primaryMods.map { _ in () }.eraseToAnyPublisher(),
             Settings.shared.$modePickerKeyCode.map { _ in () }.eraseToAnyPublisher(),
             Settings.shared.$modePickerMods.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$noteRecordKeyCode.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$noteRecordMods.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$actionModeKeyCode.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$actionModeMods.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$todoCaptureKeyCode.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$todoCaptureMods.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$styleNextKeyCode.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$styleNextMods.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$stylePrevKeyCode.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$stylePrevMods.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$todoGlanceKeyCode.map { _ in () }.eraseToAnyPublisher(),
+            Settings.shared.$todoGlanceMods.map { _ in () }.eraseToAnyPublisher(),
             Settings.shared.$profiles.map { _ in () }.eraseToAnyPublisher(),
             Settings.shared.$useFnAsPrimary.map { _ in () }.eraseToAnyPublisher()
         )
@@ -771,6 +789,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         } else {
             FnTap.shared.stop()
+            // ⌥X transform picker is an Option-only chord, conceptually INDEPENDENT of Fn, but it was
+            // wired ONLY through the HID tap (FnTap.onTransformKey), which we just stopped. For the
+            // many users whose primary trigger is ⌃⌥Space (default install) or who disable Fn, that
+            // left the whole transform feature silently dead. Keep it alive here via a Carbon hotkey
+            // on the configured transform key + Option. (When Fn IS primary, the live tap already
+            // owns ⌥X — and also consumes the key so it can't type ≈ — so we register this Carbon
+            // fallback ONLY when the tap is stopped, avoiding a double-fire.) unregisterAll() at the
+            // top of applyTriggers tears it down again the moment Fn becomes primary.
+            HotKeys.shared.register(id: 9,
+                                    keyCode: UInt32(s.transformHotkeyCode),
+                                    modifiers: UInt32(1 << 11) /* Carbon optionKey */) { [weak self] in
+                self?.showTransformPicker()
+            }
         }
         // Rebuild the menu (incl. the Keyboard Shortcuts cheat-sheet) so it reflects the new
         // trigger setting immediately, not only on the next state change.
@@ -854,6 +885,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// (numbered 1-9) at the cursor; picking one runs it on the selection and replaces it.
     private func showTransformPicker() {
         guard state == .idle else { return }   // not while recording/processing
+        // A transform is already applying in the background (multi-second, network-bound): don't let
+        // a second ⌥X re-enter — its paste would collide with the in-flight one into whatever is
+        // frontmost. (The visible "Transforming…" panel is torn down by hide() in the completion just
+        // before it pastes, so isShowing alone has a race window — this flag covers the full run.)
+        if transformInFlight { return }
         if TransformPickerController.shared.isShowing { TransformPickerController.shared.hide(); return }
         let sel = (Output.selectedText() ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         guard !sel.isEmpty else { flashError("Select some text first, then press the transform key to transform it."); return }
@@ -866,9 +902,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func runTransformOnSelection(_ transform: Transform, selection: String, target: PasteTarget?) {
+        // Mark the transform busy for its ENTIRE async lifetime so no Fn dictation or second ⌥X can
+        // start while it's applying (they would each eventually Output.paste into a now-wrong field,
+        // colliding). Set on the main queue before dispatching; cleared in the main-queue completion.
+        transformInFlight = true
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let outcome = TransformsStore.runOnSelectionSync(transform, selection: selection)
             DispatchQueue.main.async {
+                self?.transformInFlight = false
                 TransformPickerController.shared.hide()   // dismiss the "Transforming…" panel
                 switch outcome {
                 case .success(let text): _ = Output.paste(text, rich: false, target: target)
@@ -885,6 +926,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // The glance is a .nonactivatingPanel that may not own key focus, so its own local Esc
         // monitor can't be relied on — dismiss it here via the GLOBAL Esc path too.
         TodoGlanceController.shared.hide()
+        // Same reasoning for the ⌥X transform picker: it is also a .nonactivatingPanel whose own
+        // local keyMonitor never receives Esc/digits when it can't take key focus (e.g. over a
+        // full-screen / foreign app that won't yield it). Tear it down via the SAME reliable global
+        // Esc path so it's never stuck with click-away as the only dismiss.
+        TransformPickerController.shared.hide()
         // A note recording lives in NotesView's own recorder; ask it to discard (the pill is then
         // torn down by the isRecording→false observer).
         if NotesController.shared.isRecording {
@@ -959,6 +1005,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         if overlay.model.menu { dismissMenu(); lastFnDown = nil; return }
+
+        // A ⌥X transform is applying in the background (state is still .idle for its whole run): don't
+        // start a fresh dictation on top of it — the transform's pending Output.paste would otherwise
+        // land in the dictation's field (or vice-versa). The stop/cancel paths above still run; only
+        // the NEW-capture path is suppressed for the brief, bounded transform window.
+        if transformInFlight { return }
 
         // Idle → record instantly with the active mode. Remember the press so a
         // sustained hold-then-release can auto-finish (push-to-talk).

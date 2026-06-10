@@ -102,8 +102,12 @@ struct MainWindow: View {
     var body: some View {
         // The WHOLE window is glass (the user's chosen Customize material), and the page content
         // floats as an inset rounded CARD with padding on top/right/bottom — modern, not edge-to-edge.
-        ZStack {
-            VisualEffectView().ignoresSafeArea()   // whole-window glass
+        // The floating card's corner radius honors the Customize 'Corner radius' slider.
+        let r = VAppr.corner(16, scale: appearance.cornerScale)
+        return ZStack {
+            VisualEffectView()
+                .blur(radius: appearance.blur * 0.25)   // App-interface Blur slider, live
+                .ignoresSafeArea()                       // whole-window glass
 
             HStack(spacing: 0) {
                 sidebar
@@ -114,8 +118,8 @@ struct MainWindow: View {
                     // A readable content material, clipped to a rounded card so text stays crisp
                     // while the glass window shows around the inset edges.
                     .background(VisualEffectView(material: .contentBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .clipShape(RoundedRectangle(cornerRadius: r, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: r, style: .continuous)
                         .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1))
                     .shadow(color: .black.opacity(0.12), radius: 16, y: 6)
                     .padding(.top, 12).padding(.trailing, 12).padding(.bottom, 12)
@@ -159,7 +163,7 @@ struct MainWindow: View {
 
                     // Collapsible "Tools" group (Task Manager + Notes + Scratchpad).
                     groupHeader("Tools", collapsed: toolsCollapsed) {
-                        withAnimation(.easeInOut(duration: 0.18)) { toolsCollapsed.toggle() }
+                        withAnimation(appearance.reduceMotion ? nil : .easeInOut(duration: 0.18)) { toolsCollapsed.toggle() }
                     }
                     if !toolsCollapsed {
                         if settings.todosTabEnabled { row(.todos) }
@@ -168,7 +172,7 @@ struct MainWindow: View {
                     }
 
                     groupHeader("Library", collapsed: libraryCollapsed) {
-                        withAnimation(.easeInOut(duration: 0.18)) { libraryCollapsed.toggle() }
+                        withAnimation(appearance.reduceMotion ? nil : .easeInOut(duration: 0.18)) { libraryCollapsed.toggle() }
                     }
                     if !libraryCollapsed {
                         row(.modes)
@@ -181,7 +185,7 @@ struct MainWindow: View {
 
                     // Collapsible "Community" group (leaderboard / wishlist / free month + Telegram).
                     groupHeader("Community", collapsed: communityCollapsed) {
-                        withAnimation(.easeInOut(duration: 0.18)) { communityCollapsed.toggle() }
+                        withAnimation(appearance.reduceMotion ? nil : .easeInOut(duration: 0.18)) { communityCollapsed.toggle() }
                     }
                     if !communityCollapsed {
                         if settings.navVisible(.leaderboard) { row(.leaderboard) }
@@ -299,7 +303,7 @@ struct MainWindow: View {
     /// out in light AND dark mode (primary/background flip with the appearance).
     private func row(_ item: NavItem) -> some View {
         SidebarRow(item: item, isSelected: selection == item) {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { selection = item }
+            withAnimation(appearance.reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.85)) { selection = item }
         }
     }
 

@@ -616,6 +616,7 @@ struct NotesView: View {
 
     // MARK: selection / lifecycle
     private func newNote() {
+        autosaveTask?.cancel(); autosaveTask = nil; autosaveCommit()   // flush any pending title/body edit before clearing
         work?.cancel(); busy = false; status = ""
         if isRecording { stopRecorderHard() }
         selectedID = nil
@@ -632,6 +633,7 @@ struct NotesView: View {
 
     private func loadSelection(_ id: UUID?) {
         guard let id, let e = store.entries.first(where: { $0.id == id }) else { return }
+        autosaveTask?.cancel(); autosaveTask = nil; autosaveCommit()   // flush the outgoing note's pending edit before loading the new one
         work?.cancel(); busy = false; status = ""
         if isRecording { stopRecorderHard() }
         transcript = e.original

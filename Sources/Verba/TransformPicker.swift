@@ -103,6 +103,7 @@ final class TransformPickerController {
     private var panel: NSPanel?
     private var clickMonitor: Any?
     private var keyMonitor: Any?
+    private var workingEscapeMonitor: Any?
     private var transforms: [Transform] = []
     private var onPick: ((Transform) -> Void)?
     private let model = TransformPickerModel()
@@ -162,8 +163,13 @@ final class TransformPickerController {
 
     private func pick(_ t: Transform) {
         // Flip to the live "Transforming…" state and keep the panel up; the action handler runs the
-        // transform and calls hide() when it finishes (or fails). Stop accepting more key/click input.
+        // transform and calls hide() when it finishes (or fails). Stop accepting list input (number
+        // keys / click-away) so a second transform can't be launched mid-run — but keep an Esc-only
+        // monitor alive so a stalled/slow provider call can never leave the panel spinning forever
+        // with no dismiss affordance. Esc here just orders the panel out (the eventual completion
+        // still calls hide()); it is the one always-available escape hatch during .working.
         removeDismissMonitors()
+        installWorkingEscapeMonitor()
         model.phase = .working(t.name)
         onPick?(t)
     }
@@ -171,6 +177,23 @@ final class TransformPickerController {
     func hide() {
         panel?.orderOut(nil)
         removeDismissMonitors()
+        removeWorkingEscapeMonitor()
+    }
+
+    /// During the `.working` phase the list monitors are gone; keep a lone Esc monitor so the spinner
+    /// panel always has a dismiss affordance, even if the background transform stalls. Esc orders the
+    /// panel out (a still-running transform's late result is handled by the action handler's hide()).
+    private func installWorkingEscapeMonitor() {
+        removeWorkingEscapeMonitor()
+        workingEscapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self else { return event }
+            if event.keyCode == UInt16(kVK_Escape) { self.hide(); return nil }
+            return event
+        }
+    }
+
+    private func removeWorkingEscapeMonitor() {
+        if let m = workingEscapeMonitor { NSEvent.removeMonitor(m); workingEscapeMonitor = nil }
     }
 
     private func installDismissMonitors() {

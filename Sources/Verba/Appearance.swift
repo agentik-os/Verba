@@ -252,11 +252,49 @@ final class VerbaAppearance: ObservableObject {
     /// Posted after any widget-appearance change (so the bridge reloads timelines).
     static let widgetDidChange = Notification.Name("verba.appearance.widgetDidChange")
 
-    private init() {}
+    private init() {
+        // Newly-opened Verba windows (main / Settings / History / Onboarding, incl.
+        // the cached WCs in AppDelegate) come up with the SYSTEM NSAppearance. Observe
+        // window activation so each one picks up the user's color mode the moment it
+        // appears — without any AppDelegate wiring (makeWindow/openMain stay untouched).
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(windowDidBecomeKey(_:)),
+            name: NSWindow.didBecomeKeyNotification, object: nil)
+    }
+
+    @objc private func windowDidBecomeKey(_ note: Notification) {
+        guard let w = note.object as? NSWindow else { return }
+        Self.apply(to: w)
+    }
 
     private func changed() {
         objectWillChange.send()
         NotificationCenter.default.post(name: VerbaAppearance.didChange, object: nil)
+        Self.applyToOpenWindows()
+    }
+
+    /// Push the current color mode onto every live window.
+    ///
+    /// `.preferredColorScheme` only tints the SwiftUI environment; the whole-window
+    /// glass (`NSVisualEffectView` with `.behindWindow`, Glass.swift) renders against
+    /// the WINDOW's effective `NSAppearance`, as does the titlebar / traffic-light
+    /// region. Forcing Light/Dark must therefore set `window.appearance`, or the
+    /// frosted backdrop keeps the system look — a visibly half-dark window. Because
+    /// the visual-effect material is rendered against that appearance, fixing the
+    /// appearance also re-tints the glass to match (no manual material poke needed).
+    ///
+    /// Covers the cached/secondary panels too (Settings/History/Onboarding), which
+    /// never received color mode at all. `nil` = follow the system. Main thread only.
+    static func applyToOpenWindows() {
+        let work = {
+            for w in NSApp.windows { apply(to: w) }
+        }
+        if Thread.isMainThread { work() } else { DispatchQueue.main.async(execute: work) }
+    }
+
+    /// Apply the current color mode to a single window (`nil` = follow system).
+    static func apply(to window: NSWindow) {
+        window.appearance = VAppr.colorMode.nsAppearance
     }
     private func widgetChanged() {
         objectWillChange.send()
