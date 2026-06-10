@@ -1,11 +1,11 @@
 import SwiftUI
 
 enum NavItem: String, CaseIterable, Identifiable {
-    case home, notes, todos, insights, modes, dictionary, snippets, style, transforms, scratchpad, files, history, leaderboard, wishlist, feedback, freeMonth, settings
+    case home, notes, todos, insights, modes, dictionary, snippets, style, transforms, scratchpad, files, history, achievements, leaderboard, wishlist, feedback, freeMonth, settings
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .home: return "Home"; case .notes: return "Notes"; case .todos: return "Task Manager"; case .insights: return "Insights"; case .modes: return "Modes"
+        case .achievements: return "Achievements"; case .home: return "Home"; case .notes: return "Notes"; case .todos: return "Task Manager"; case .insights: return "Insights"; case .modes: return "Modes"
         case .dictionary: return "Dictionary"; case .snippets: return "Snippets"; case .style: return "Style"
         case .transforms: return "Transforms"; case .scratchpad: return "Scratchpad"; case .files: return "Transcribe file"
         case .history: return "History"; case .leaderboard: return "Leaderboard"
@@ -14,7 +14,7 @@ enum NavItem: String, CaseIterable, Identifiable {
     }
     var icon: String {
         switch self {
-        case .home: return "house"; case .notes: return "doc.badge.ellipsis"; case .todos: return "checklist"; case .insights: return "chart.bar"; case .modes: return "wand.and.stars"
+        case .achievements: return "rosette"; case .home: return "house"; case .notes: return "doc.badge.ellipsis"; case .todos: return "checklist"; case .insights: return "chart.bar"; case .modes: return "wand.and.stars"
         case .dictionary: return "character.book.closed"; case .snippets: return "text.badge.plus"
         case .style: return "paintbrush"; case .transforms: return "arrow.triangle.2.circlepath"
         case .scratchpad: return "note.text"; case .files: return "waveform.badge.plus"
@@ -131,6 +131,8 @@ struct MainWindow: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
+        // Gamification: confetti + reward card for any newly-earned achievement / level-up.
+        .overlay(CelebrationOverlay())
         // Customize: monochrome by default (.primary); a chosen accent + color mode apply app-wide.
         .tint(appearance.accentColor)
         .preferredColorScheme(appearance.colorMode.colorScheme)
@@ -192,6 +194,7 @@ struct MainWindow: View {
                         withAnimation(appearance.reduceMotion ? nil : .easeInOut(duration: 0.18)) { communityCollapsed.toggle() }
                     }
                     if !communityCollapsed {
+                        if settings.navVisible(.achievements) { row(.achievements) }
                         if settings.navVisible(.leaderboard) { row(.leaderboard) }
                         if settings.navVisible(.wishlist) { row(.wishlist) }
                         if settings.navVisible(.feedback) { row(.feedback) }
@@ -371,6 +374,7 @@ struct MainWindow: View {
         case .scratchpad: ScratchpadView()
         case .files: FileTranscribeView()
         case .history: HistoryView()
+        case .achievements: BadgesView()
         case .leaderboard: LeaderboardView()
         case .wishlist: WishlistView()
         case .feedback: FeedbackView()

@@ -122,9 +122,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         FnTap.shared.onFnControl = { [weak self] in self?.fnControlPressed() }   // ⌥+Fn → today's to-do glance
         FnTap.shared.onModeCycle = { [weak self] dir in self?.modeCycleGesture(dir) }   // Fn+Tab → next/prev mode
         FnTap.shared.onStyleCycle = { [weak self] dir in self?.styleCycleGesture(dir) } // Fn+[ / Fn+] → prev/next style
-        FnTap.shared.onNoteRecord = { [weak self] in self?.startNoteRecording() }   // Fn+Z → record a note
-        FnTap.shared.onTodoCapture = { [weak self] in self?.startTodoCapture() }    // Fn+T (Fn+§ on ISO) → add a to-do
-        FnTap.shared.onActionMode = { [weak self] in self?.startActionMode() }      // Fn+X → Action mode (speech controls the Mac)
+        FnTap.shared.onNoteRecord = { [weak self] in Gamification.shared.flag(.usedVoiceNote); self?.startNoteRecording() }   // Fn+Z → record a note
+        FnTap.shared.onTodoCapture = { [weak self] in Gamification.shared.flag(.usedVoiceTodo); self?.startTodoCapture() }    // Fn+T (Fn+§ on ISO) → add a to-do
+        FnTap.shared.onActionMode = { [weak self] in Gamification.shared.flag(.usedActionMode); self?.startActionMode() }      // Fn+X → Action mode (speech controls the Mac)
         FnTap.shared.onDigit = { [weak self] n in self?.fnDigit(n) ?? false }
         FnTap.shared.onDigitOutOfRange = { [weak self] n in self?.flashInfo("No mode \(n)") }   // Fn + an unmapped digit → brief feedback instead of a silent swallow
         FnTap.shared.onArrow = { [weak self] d in self?.fnArrow(d) ?? false }
@@ -906,6 +906,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func runTransformOnSelection(_ transform: Transform, selection: String, target: PasteTarget?) {
+        Gamification.shared.flag(.usedTransform)
         // Mark the transform busy for its ENTIRE async lifetime so no Fn dictation or second ⌥X can
         // start while it's applying (they would each eventually Output.paste into a now-wrong field,
         // colliding). Set on the main queue before dispatching; cleared in the main-queue completion.
@@ -1671,6 +1672,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let dur = ctx.recordStartedAt.map { Date().timeIntervalSince($0) } ?? 0
                 Stats.shared.record(words: wordCount(text), seconds: dur)
                 Leaderboard.submit()   // keep the public leaderboard up to date
+                // Gamification: note which mode was used + time-of-day, then re-evaluate achievements.
+                Gamification.shared.flag(Gamification.flagForMode(result.profileName))
+                Gamification.shared.noteDictationTime()
             }
             // Surface the finished Session: list it (with Copy) and notify without stealing focus.
             SessionStore.shared.complete(session)

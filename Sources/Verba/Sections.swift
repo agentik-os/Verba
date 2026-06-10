@@ -900,23 +900,9 @@ struct DictionaryView: View {
                 }
                 .padding(.horizontal, 16).padding(.vertical, 12)
                 .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-
-                // Clean up the existing terms with the AI.
-                HStack(spacing: 12) {
-                    Image(systemName: "sparkles").font(.system(size: 18)).foregroundStyle(.secondary)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Improve with AI").font(.headline)
-                        Text(aiError ?? "Fix the spelling and capitalization of your terms, and propose the spoken form where it helps.")
-                            .font(.caption).foregroundStyle(aiError == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
-                    }
-                    Spacer()
-                    if aiBusy { ProgressView().controlSize(.small) }
-                    Button(action: improveWithAI) { Text("Improve with AI") }
-                        .glassProminentButton()
-                        .disabled(aiBusy || !hasWritten)
-                }
-                .padding(.horizontal, 16).padding(.vertical, 12)
-                .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                // VER-20: the "Improve with AI" cleanup button was removed from the Dictionary —
+                // it felt out of place here and confused users. The Dictionary stays focused on
+                // adding words and corrections.
             }
             .padding(.horizontal, 28).padding(.vertical, 28)
             .frame(maxWidth: .infinity, alignment: .leading)
