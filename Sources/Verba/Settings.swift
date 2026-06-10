@@ -229,6 +229,7 @@ struct Profile: Codable, Identifiable, Equatable {
     var vision: Bool = false            // Context mode: capture the screen and act on it
     var targetLanguage: String? = nil   // Translate mode: render the dictation in THIS language
     var seedHash: String? = nil         // sha256 of the systemPrompt as seeded; nil = legacy save (pre-stamping)
+    var explainer: String? = nil        // a friendly, AI-written "what this mode does + how to use it"
 
     /// The prompt actually sent to Claude. A mode with a target language becomes a translator:
     /// whatever language you speak, the output is written in that language.
@@ -332,7 +333,8 @@ extension Profile {
     static let flow = Profile(
         name: "Flow",
         systemPrompt: "(Free-flow dictation, your words are transcribed exactly, with no AI reprompting or reordering.)",
-        builtin: true, hotkeyCode: 18 /* 1 */, hotkeyMods: kCtrlOpt, raw: true)
+        builtin: true, hotkeyCode: 18 /* 1 */, hotkeyMods: kCtrlOpt, raw: true,
+        explainer: "Flow is pure dictation: your exact words land as text, with no AI rewriting. Reach for it when you want a faithful transcript, like notes or quotes. Just press your trigger and talk.")
 
     static let polish = Profile(
         name: "Polish",
@@ -774,7 +776,11 @@ final class Settings: ObservableObject {
         let savedActive = d.string(forKey: "activeProfileID").flatMap(UUID.init)
         activeProfileID = savedActive.flatMap { id in loaded.first { $0.id == id }?.id }
             ?? loaded.first(where: { $0.name == "Flow" })?.id ?? loaded.first!.id
-        profiles = loaded
+        // Backfill the built-in mode descriptions for existing users (saved before explainers existed).
+        profiles = loaded.map { p in
+            guard p.builtin, (p.explainer ?? "").isEmpty, let ex = Settings.builtinExplainers[p.name] else { return p }
+            var c = p; c.explainer = ex; return c
+        }
         if !upToDate || saved.isEmpty {
             d.set(Self.profilesVersion, forKey: "profilesVersion")
             if let data = try? JSONEncoder().encode(loaded) { d.set(data, forKey: "profiles") }
@@ -936,9 +942,22 @@ final class Settings: ObservableObject {
 
     /// The canonical built-ins with their seed hash stamped (S3: every seed writes `seedHash`
     /// so "untouched vs edited" detection is exact at future version bumps).
+    /// Friendly, plain-language descriptions for the built-in modes (shown in the mode editor;
+    /// the user can regenerate any of them, and custom modes get one via the Explain button).
+    static let builtinExplainers: [String: String] = [
+        "Flow": "Flow is pure dictation: your exact words land as text, with no AI rewriting. Reach for it when you want a faithful transcript, like notes or quotes. Press your trigger and talk.",
+        "Polish": "Polish hears what you meant. As you talk and correct yourself, it follows your changes to the final version and drops the parts you took back, then writes clean, finished prose. Great for thinking out loud into a tidy message.",
+        "Intent": "Intent lets you say the goal first, then the content. Start with how you want it handled, like turn this into a bug report or rewrite as a formal email, then speak the material. Verba applies your instruction and outputs only the result.",
+        "Translate": "Translate writes your speech in another language. Pick a target language once, then talk in whatever language is natural; the output always comes back in the one you chose. Perfect for replying across languages without a second tab.",
+        "Context": "Context can see your screen. It takes a screenshot and acts on what is visible based on what you say, like reply to the email on screen or summarize this document. Look at something, describe what you want, and it drafts it.",
+        "Coding": "Coding turns rambling feedback into a precise prompt for a coding agent like Cursor or Claude Code, keeping every detail. Talk through the change you want and paste the clean prompt straight into your tool.",
+    ]
+
     static func stampedDefaults() -> [Profile] {
         Profile.defaults.map { p -> Profile in
-            var c = p; c.seedHash = sha256Hex(p.systemPrompt); return c
+            var c = p; c.seedHash = sha256Hex(p.systemPrompt)
+            if c.explainer == nil { c.explainer = builtinExplainers[p.name] }
+            return c
         }
     }
 

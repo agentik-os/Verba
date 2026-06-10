@@ -8,6 +8,7 @@ import SwiftUI
 struct BadgesView: View {
     @ObservedObject private var game = Gamification.shared
     @ObservedObject private var stats = Stats.shared
+    @StateObject private var board = LeaderboardModel()
 
     private let cols = [GridItem(.adaptive(minimum: 150), spacing: 12)]
 
@@ -39,6 +40,8 @@ struct BadgesView: View {
 
                 recordsCard.padding(.horizontal, 28)
 
+                standingCard.padding(.horizontal, 28)
+
                 Text("Badges").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
                     .textCase(.uppercase).padding(.horizontal, 28)
 
@@ -48,7 +51,48 @@ struct BadgesView: View {
                 .padding(.horizontal, 28).padding(.bottom, 28)
             }
         }
-        .onAppear { Gamification.shared.evaluate() }
+        .onAppear { Gamification.shared.evaluate(); board.load() }
+    }
+
+    // MARK: Wave 3 — social standing (rank + rivals) from the leaderboard
+
+    private var ranked: [LeaderEntry] { board.entries.sorted { $0.words > $1.words } }
+
+    @ViewBuilder private var standingCard: some View {
+        let rows = ranked
+        if let myIdx = rows.firstIndex(where: { $0.me == true }) {
+            let ahead = myIdx > 0 ? rows[myIdx - 1] : nil
+            let behind = myIdx < rows.count - 1 ? rows[myIdx + 1] : nil
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "person.2.fill").foregroundStyle(.secondary)
+                    Text("Your standing").font(.subheadline.weight(.semibold))
+                    Spacer()
+                    Text("#\(myIdx + 1) of \(rows.count)").font(.callout.weight(.bold)).monospacedDigit()
+                }
+                if let a = ahead {
+                    rivalRow(icon: "arrow.up.right", tint: .orange,
+                             text: "Catch \(a.alias)", detail: "\(Int(a.words - rows[myIdx].words)) words ahead")
+                } else {
+                    rivalRow(icon: "crown.fill", tint: .yellow, text: "You're #1", detail: "everyone is chasing you")
+                }
+                if let b = behind {
+                    rivalRow(icon: "arrow.down.right", tint: .green,
+                             text: "\(b.alias) is behind", detail: "\(Int(rows[myIdx].words - b.words)) words back")
+                }
+            }
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            .glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+    }
+
+    private func rivalRow(icon: String, tint: Color, text: String, detail: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon).foregroundStyle(tint).frame(width: 18)
+            Text(text).font(.callout)
+            Spacer()
+            Text(detail).font(.caption).foregroundStyle(.secondary).monospacedDigit()
+        }
     }
 
     // MARK: extra cards

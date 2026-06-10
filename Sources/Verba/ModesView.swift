@@ -12,6 +12,8 @@ struct ModesView: View {
     @State private var genError: String?
     @State private var pendingDeleteID: UUID?   // built-in mode awaiting delete confirmation
     @State private var pendingReset = false     // restore-defaults awaiting confirmation
+    @State private var explaining = false       // generating the AI "what this mode does" blurb
+    @State private var explainError: String?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -259,6 +261,25 @@ struct ModesView: View {
 
     private func index(of id: UUID) -> Int? { settings.profiles.firstIndex { $0.id == id } }
 
+    /// Generate (or regenerate) the friendly "what this mode does" blurb with AI, store it.
+    private func explainMode(id: UUID) {
+        guard !explaining, let p = settings.profiles.first(where: { $0.id == id }) else { return }
+        explaining = true; explainError = nil
+        Task {
+            do {
+                let text = try await ModeGenerator.explain(
+                    name: p.name, systemPrompt: p.systemPrompt, raw: p.raw,
+                    vision: p.vision, targetLanguage: p.targetLanguage)
+                await MainActor.run {
+                    if let i = index(of: id) { settings.profiles[i].explainer = text }
+                    explaining = false
+                }
+            } catch {
+                await MainActor.run { explainError = error.localizedDescription; explaining = false }
+            }
+        }
+    }
+
     private func editor(id: UUID) -> some View {
         let nameB = Binding(get: { settings.profiles.first { $0.id == id }?.name ?? "" },
                             set: { v in if let i = index(of: id) { settings.profiles[i].name = v } })
@@ -365,6 +386,32 @@ struct ModesView: View {
                         }
                     }
                 }
+                // Friendly, AI-written "what this mode does + how to use it" for the user.
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Text("Description").font(.subheadline.weight(.semibold))
+                        Text("what it's for, in plain words").font(.caption).foregroundStyle(.secondary)
+                        Spacer()
+                        if explaining { ProgressView().controlSize(.small) }
+                        Button {
+                            explainMode(id: id)
+                        } label: {
+                            Label(p?.explainer?.isEmpty == false ? "Regenerate" : "Explain with AI",
+                                  systemImage: "sparkles")
+                        }
+                        .buttonStyle(.borderless).disabled(explaining)
+                    }
+                    if let ex = p?.explainer, !ex.isEmpty {
+                        Text(ex).font(.callout).foregroundStyle(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                            .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    } else {
+                        Text(explainError ?? "Tap Explain with AI for a plain-language summary of what this mode does and how to use it.")
+                            .font(.caption).foregroundStyle(explainError == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
+                    }
+                }
+
                 if !isRaw && !isTranslate {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 6) {

@@ -55,6 +55,23 @@ struct ConfettiCannon: View {
     }
 }
 
+/// A slowly spinning radial ray burst (conic gradient) used behind a level-up.
+struct RaysBurst: View {
+    var tint: Color
+    @State private var spin = false
+    var body: some View {
+        AngularGradient(gradient: Gradient(stops: (0..<24).map { i in
+            .init(color: i % 2 == 0 ? tint.opacity(0.16) : .clear, location: Double(i) / 24)
+        }), center: .center)
+        .frame(width: 900, height: 900)
+        .rotationEffect(.degrees(spin ? 360 : 0))
+        .blur(radius: 2)
+        .allowsHitTesting(false)
+        .onAppear { withAnimation(.linear(duration: 24).repeatForever(autoreverses: false)) { spin = true } }
+        .mask(RadialGradient(colors: [.white, .clear], center: .center, startRadius: 60, endRadius: 420))
+    }
+}
+
 /// Sits once near the app root and celebrates each queued Celebration.
 struct CelebrationOverlay: View {
     @ObservedObject private var game = Gamification.shared
@@ -68,6 +85,8 @@ struct CelebrationOverlay: View {
                 if !reduceMotion {
                     ConfettiCannon(tint: c.tint, seed: c.id.hashValue)
                         .ignoresSafeArea()
+                    // A spinning ray burst behind a LEVEL-UP, for extra punch.
+                    if case .levelUp = c.kind { RaysBurst(tint: c.tint).opacity(shown ? 1 : 0) }
                 }
                 card(c)
                     .scaleEffect(shown ? 1 : 0.8)

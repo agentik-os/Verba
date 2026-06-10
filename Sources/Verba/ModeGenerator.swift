@@ -111,6 +111,26 @@ enum ModeGenerator {
         return try parse(raw)
     }
 
+    /// Write a short, friendly explanation of what a mode does and how to use it, FROM its prompt,
+    /// for the user (not the model). 2 to 4 sentences, plain language, the speaker's app language.
+    static func explain(name: String, systemPrompt: String, raw: Bool, vision: Bool, targetLanguage: String?) async throws -> String {
+        let what: String
+        if raw { what = "This mode does no AI rewriting; it transcribes the user's words verbatim." }
+        else if let lang = targetLanguage, !lang.isEmpty { what = "This mode translates whatever the user dictates into \(lang)." }
+        else if vision { what = "This mode takes a screenshot of the user's screen and acts on what is visible, based on the spoken request." }
+        else { what = "This is the mode's system prompt:\n\"\"\"\n\(systemPrompt.prefix(2000))\n\"\"\"" }
+        let sys = """
+        You write a SHORT, friendly help blurb for a Verba dictation mode named "\(name)", aimed at \
+        the END USER (not at an AI). In 2 to 4 plain sentences: say what this mode is good for, when \
+        to reach for it, and one concrete example of how to use it. Be concrete and warm, no jargon. \
+        Write in the same language the mode/name suggests, defaulting to English. NEVER use em dashes, \
+        en dashes, or spaced hyphens. Output ONLY the blurb, no preamble, no quotes, no markdown.
+        """
+        let r = Reprompter(model: "claude-sonnet-4-6")
+        let out = try await r.reprompt(transcript: what, systemPrompt: sys)
+        return out.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     /// Extract the JSON object even if the model wrapped it in a code fence or added stray text.
     static func parse(_ text: String) throws -> Draft {
         var s = text.trimmingCharacters(in: .whitespacesAndNewlines)
