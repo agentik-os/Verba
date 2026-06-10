@@ -37,6 +37,29 @@ export const remove = internalMutation({
   },
 });
 
+// Admin-only: wipe every wishlist item (used to reset the board). Internal-only.
+export const wipe = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("wishlist").collect();
+    for (const w of all) await ctx.db.delete(w._id);
+    return all.length;
+  },
+});
+
+// Admin-only: seed an item with an explicit vote count + creation time. Returns its id so the
+// caller can file the matching Linear issue (convexId marker) that drives the `shipped` flag.
+export const seed = internalMutation({
+  args: { text: v.string(), author: v.string(), votes: v.number(), created: v.number() },
+  handler: async (ctx, a) => {
+    const n = Math.max(0, Math.round(a.votes));
+    const voters = Array.from({ length: n }, (_, i) => `seed-${i}`);
+    return await ctx.db.insert("wishlist", {
+      text: a.text, author: a.author, votes: n, voters, created: a.created,
+    });
+  },
+});
+
 export const upvote = mutation({
   args: { id: v.id("wishlist"), uid: v.string(), secret: v.string() },
   handler: async (ctx, a) => {
