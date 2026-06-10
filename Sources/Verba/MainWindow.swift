@@ -103,13 +103,16 @@ struct MainWindow: View {
         HStack(spacing: 0) {
             sidebar
                 .frame(width: sidebarWidth)
-                .background(Color(nsColor: .windowBackgroundColor).ignoresSafeArea())
+                // Glassy chrome: the sidebar uses the user's chosen Customize glass material.
+                .background(VisualEffectView().ignoresSafeArea())
 
             Divider().opacity(0.4)
 
             detail(selection ?? .home)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(nsColor: .textBackgroundColor).ignoresSafeArea())  // crisp white content
+                // Content stays readable but modern: a vibrant content-background material
+                // (text stays crisp) over the now-translucent window.
+                .background(VisualEffectView(material: .contentBackground).ignoresSafeArea())
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()

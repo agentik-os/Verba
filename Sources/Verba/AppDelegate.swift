@@ -641,8 +641,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             win.title = "Verba"
             win.titlebarAppearsTransparent = true
             win.titleVisibility = .hidden
-            win.isOpaque = true
-            win.backgroundColor = .windowBackgroundColor   // solid white, no desktop bleed
+            win.isOpaque = false
+            win.backgroundColor = .clear   // let the glass materials in MainWindow show through
             let host = NSHostingController(rootView: MainWindow())
             host.sizingOptions = []   // don't let SwiftUI content shrink the window
             win.contentViewController = host
