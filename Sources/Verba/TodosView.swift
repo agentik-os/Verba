@@ -383,130 +383,181 @@ enum TodoAgent {
 struct TodosView: View {
     @ObservedObject var store = TodoStore.shared
     @ObservedObject private var capture = TodoCaptureController.shared
-    @State private var expandedProjects: Set<UUID> = []
     @State private var expandedTasks: Set<UUID> = []
     @State private var genText = ""
     @State private var genBusy = false
     @State private var genError: String?
     @State private var activeTags: Set<String> = []
     @State private var statusFilter: StatusFilter = .all
+    @State private var selectedProjectID: UUID?   // project shown in the detail pane; nil = All tasks
 
+    // MARK: - Layout (two-pane Notes grammar, adapted to Projects ▸ Tasks ▸ Sub-tasks)
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        HStack(spacing: 0) {
+            sidebar.frame(width: 270)
+            Divider()
+            detail.frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        // If the selected project was deleted, drop the selection so the detail pane never
+        // points at a gone project. (TodoProject isn't Equatable, so observe the id set —
+        // stable and Equatable — which captures every add/remove.)
+        .onChange(of: store.projects.map(\.id)) { _, _ in
+            if let id = selectedProjectID, !store.projects.contains(where: { $0.id == id }) {
+                selectedProjectID = nil
+            }
+        }
+        // When the live filters hide the selected project, fall back to the All-tasks pane.
+        .onChange(of: statusFilter) { _, _ in syncSelectionToFilter() }
+        .onChange(of: activeTags) { _, _ in syncSelectionToFilter() }
+    }
+
+    /// Drop the selection when the live filters hide the currently-selected project.
+    private func syncSelectionToFilter() {
+        if let id = selectedProjectID, let p = store.projects.first(where: { $0.id == id }), !matchesFilter(p) {
+            selectedProjectID = nil
+        }
+    }
+
+    // MARK: - Left: capture affordance + filters + tap-selected project cards
+    private var sidebar: some View {
+        let visible = store.projects.filter(matchesFilter)
+        return VStack(spacing: 0) {
             HStack {
-                Text("Task Manager").font(.system(size: 28, weight: .bold))
+                Text("Tasks").font(.system(size: 17, weight: .bold))
                 Spacer()
-                Button {
-                    let id = store.addProject(); expandedProjects.insert(id)
-                } label: { Image(systemName: "plus") }
+                Button { newProject() } label: { Image(systemName: "plus") }
                     .buttonStyle(.borderless).help("New project")
             }
-            .padding(.horizontal, 28).padding(.top, 28).padding(.bottom, 2)
-            Text("Capture tasks by voice, sorted by project. Dictate into any field, or ask the agent to build a list.")
-                .font(.callout).foregroundStyle(.secondary).padding(.horizontal, 28).padding(.bottom, 14)
+            .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 10)
 
-            agentBar
-                .padding(.horizontal, 28).padding(.bottom, 12)
+            captureCard
+                .padding(.horizontal, 12).padding(.bottom, 10)
 
-            filterBar
-                .padding(.horizontal, 28).padding(.bottom, 12)
+            statusChips
+                .padding(.horizontal, 14).padding(.bottom, 8)
+
+            if !store.allTags.isEmpty {
+                tagChips
+                    .padding(.horizontal, 14).padding(.bottom, 8)
+            }
 
             if store.projects.isEmpty {
+                Spacer()
                 EmptyState(icon: "checklist", title: "No projects yet",
-                           message: "Make a project for anything you need to track (Groceries, Launch, Trip…), then add tasks and sub-tasks. Or describe a list above and the agent builds it for you.")
-                    .padding(.horizontal, 28)
-            } else if !store.projects.contains(where: matchesFilter) {
-                filteredEmptyNote
-                    .padding(.horizontal, 28).padding(.bottom, 8)
-            }
-
-            ScrollView {
-                LazyVStack(spacing: 12) {
-                    ForEach($store.projects) { $project in
-                        if matchesFilter(project) {
-                            ProjectPanel(
-                                project: $project,
-                                expanded: projectExpansion(project.id),
-                                expandedTasks: $expandedTasks,
-                                onDelete: { store.removeProject(project.id) },
-                                onAddTask: { store.addTask(project.id) },
-                                onRemoveTask: { tid in store.removeTask(project.id, tid) },
-                                onAddSubtask: { tid in store.addSubtask(project.id, tid) },
-                                onAddTag: { tag in store.addTag(project.id, tag) },
-                                onRemoveTag: { tag in store.removeTag(project.id, tag) }
-                            )
+                           message: "Make a project for anything you track (Groceries, Launch, Trip…), or describe a list above and the agent builds it.")
+                    .padding(.horizontal, 14)
+                Spacer()
+            } else if visible.isEmpty {
+                Spacer()
+                EmptyState(icon: "line.3.horizontal.decrease.circle",
+                           title: "Nothing matches",
+                           message: "No projects match this filter — clear it above to see everything.")
+                    .padding(.horizontal, 14)
+                Spacer()
+            } else {
+                // Tap-selected cards (Notes grammar) — NOT List(selection:), whose system
+                // highlight would paint under our card and double-box it.
+                ScrollView {
+                    LazyVStack(spacing: 4) {
+                        ForEach(visible) { p in
+                            projectRow(p)
+                                .onTapGesture { selectedProjectID = p.id }
                         }
                     }
-
-                    Button {
-                        let id = store.addProject(); expandedProjects.insert(id)
-                    } label: { Label("New project", systemImage: "plus") }
-                        .buttonStyle(.borderless)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 8).padding(.vertical, 4)
                 }
-                .padding(.horizontal, 28).padding(.top, 2).padding(.bottom, 18)
+                .scrollContentBackground(.hidden)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    /// Quiet note when active filters hide every project (exemplar hiddenNote grammar).
-    private var filteredEmptyNote: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "line.3.horizontal.decrease.circle").foregroundStyle(.secondary)
-            Text("No projects match this filter — clear it above to see everything.")
-                .font(.callout).foregroundStyle(.secondary)
-            Spacer()
-        }
-        .padding(.horizontal, 14).padding(.vertical, 11)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.04)))
-    }
-
-    private var agentBar: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                HStack(spacing: 7) {
-                    Image(systemName: "wand.and.sparkles").foregroundStyle(.secondary).font(.system(size: 12))
-                    TextField("Describe a list… e.g. “shopping list for a raclette dinner”", text: $genText)
-                        .textFieldStyle(.plain)
-                        .onSubmit(generate)
-                    if genBusy { ProgressView().controlSize(.small) }
-                }
-                .padding(.horizontal, 10).padding(.vertical, 7)
-                .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                Button(action: generate) { Text("Build") }
-                    .glassProminentButton()
-                    .disabled(genBusy || genText.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
-            if let genError { errorNote(genError) }
-
-            HStack(spacing: 10) {
-                Button { capture.requestCapture() } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: capture.capturing ? "stop.circle.fill" : "mic.fill")
-                            .font(.system(size: 10, weight: .semibold))
-                        Text(capture.capturing ? "Listening — tap to add" : "Capture by voice")
-                            .font(.system(size: 12, weight: .medium))
+    /// A project card in the sidebar: folder icon + name + monospacedDigit progress count.
+    private func projectRow(_ p: TodoProject) -> some View {
+        let selected = selectedProjectID == p.id
+        let prog = store.progress(p)
+        return HStack(alignment: .top, spacing: 9) {
+            Image(systemName: "folder").font(.system(size: 13))
+                .foregroundStyle(.secondary).frame(width: 16).padding(.top, 2)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(p.name.trimmingCharacters(in: .whitespaces).isEmpty ? "New project" : p.name)
+                    .font(.system(size: 13, weight: .medium)).lineLimit(1)
+                HStack(spacing: 5) {
+                    Text("\(p.tasks.count) task\(p.tasks.count == 1 ? "" : "s")")
+                        .font(.caption2).foregroundStyle(.secondary)
+                    if prog.total > 0 {
+                        Text("·").font(.caption2).foregroundStyle(.tertiary)
+                        Text("\(prog.done)/\(prog.total)").font(.caption2).monospacedDigit().foregroundStyle(.tertiary)
                     }
-                    .padding(.horizontal, 12).padding(.vertical, 6.5)
-                    .foregroundStyle(capture.capturing ? AnyShapeStyle(.white) : AnyShapeStyle(.primary.opacity(0.75)))
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(capture.capturing ? AnyShapeStyle(Color.red) : AnyShapeStyle(Color.primary.opacity(0.055)))
-                    )
-                    .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(capture.capturing ? 0 : 0.09), lineWidth: 1))
-                    .contentShape(Capsule())
                 }
-                .buttonStyle(.plain)
-                if capture.capturing { ProgressView().controlSize(.small) }
-                Text("Speak a task and the agent files it under the right project.")
-                    .font(.caption).foregroundStyle(.secondary)
-                Spacer(minLength: 0)
+                if !p.tags.isEmpty {
+                    HStack(spacing: 4) {
+                        ForEach(p.tags.prefix(3), id: \.self) { t in
+                            Text(t)
+                                .font(.system(size: 9.5, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 6).padding(.vertical, 2)
+                                .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
+                                .lineLimit(1)
+                        }
+                    }
+                }
             }
-            if let err = capture.lastError { errorNote(err) }
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16).padding(.vertical, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12).padding(.vertical, 9)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
+        )
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
+        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .contextMenu {
+            Button(role: .destructive) { removeProject(p.id) } label: { Label("Delete", systemImage: "trash") }
+        }
+    }
+
+    /// The "Capture by voice" + agent-build card — the new-note equivalent at the top of the sidebar.
+    private var captureCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button { capture.requestCapture() } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: capture.capturing ? "stop.circle.fill" : "mic.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text(capture.capturing ? "Listening — tap to add" : "Capture by voice")
+                        .font(.system(size: 12, weight: .semibold))
+                    if capture.capturing { Spacer(minLength: 0); ProgressView().controlSize(.small) }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 12).padding(.vertical, 8)
+                .foregroundStyle(capture.capturing ? AnyShapeStyle(.white) : AnyShapeStyle(.primary.opacity(0.85)))
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(capture.capturing ? AnyShapeStyle(Color.red) : AnyShapeStyle(Color.primary.opacity(0.055)))
+                )
+                .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(capture.capturing ? 0 : 0.09), lineWidth: 1))
+                .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            if let err = capture.lastError { errorNote(err) }
+
+            HStack(spacing: 7) {
+                Image(systemName: "wand.and.sparkles").foregroundStyle(.secondary).font(.system(size: 12))
+                TextField("Describe a list…", text: $genText)
+                    .textFieldStyle(.plain).font(.system(size: 12))
+                    .onSubmit(generate)
+                if genBusy { ProgressView().controlSize(.small) }
+                else {
+                    Button(action: generate) { Image(systemName: "arrow.up.circle.fill").font(.system(size: 16)) }
+                        .buttonStyle(.plain).foregroundStyle(.secondary)
+                        .disabled(genText.trimmingCharacters(in: .whitespaces).isEmpty)
+                        .help("Build the list")
+                }
+            }
+            .padding(.horizontal, 10).padding(.vertical, 7)
+            .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            if let genError { errorNote(genError) }
+        }
+        .padding(12)
         .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
@@ -514,42 +565,158 @@ struct TodosView: View {
     private func errorNote(_ message: String) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle").font(.system(size: 11)).foregroundStyle(.red)
-            Text(message).font(.caption).foregroundStyle(.secondary)
+            Text(message).font(.caption2).foregroundStyle(.secondary)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 10).padding(.vertical, 7)
+        .padding(.horizontal, 10).padding(.vertical, 6)
         .background(Color.red.opacity(0.07), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
     }
 
-    /// Status chips (always shown) + tag chips (once a tag exists), directly on the page surface.
-    @ViewBuilder private var filterBar: some View {
-        let tags = store.allTags
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
+    /// Status filter chips (horizontal scroll, exemplar chip grammar).
+    private var statusChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
                 ForEach(StatusFilter.allCases) { s in
-                    FilterPill(label: s.rawValue, icon: s.icon, selected: statusFilter == s) {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { statusFilter = s }
-                    }
-                }
-                Spacer()
-            }
-            if !tags.isEmpty {
-                FlowLayout(spacing: 6) {
-                    FilterPill(label: "All tags", icon: "tag", selected: activeTags.isEmpty) {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { activeTags.removeAll() }
-                    }
-                    ForEach(tags, id: \.self) { tag in
-                        FilterPill(label: tag, icon: "tag", selected: activeTags.contains(tag)) {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
-                                if activeTags.contains(tag) { activeTags.remove(tag) } else { activeTags.insert(tag) }
-                            }
-                        }
+                    chip(label: s.rawValue, icon: s.icon, on: statusFilter == s) {
+                        statusFilter = s
                     }
                 }
             }
         }
     }
 
+    /// Tag filter chips, shown once any project carries a tag.
+    @ViewBuilder private var tagChips: some View {
+        let tags = store.allTags
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                chip(label: "All tags", icon: "tag", on: activeTags.isEmpty) { activeTags.removeAll() }
+                ForEach(tags, id: \.self) { tag in
+                    chip(label: tag, icon: "tag", on: activeTags.contains(tag)) {
+                        if activeTags.contains(tag) { activeTags.remove(tag) } else { activeTags.insert(tag) }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Exemplar chip helper (monochrome; soft neutral fill + bold text + quiet border when on).
+    @ViewBuilder private func chip(label: String, icon: String?, on: Bool, action: @escaping () -> Void) -> some View {
+        Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { action() }
+        } label: {
+            HStack(spacing: 5) {
+                if let icon { Image(systemName: icon).font(.system(size: 10, weight: .semibold)) }
+                Text(label).font(.system(size: 12, weight: on ? .semibold : .medium))
+            }
+            .padding(.horizontal, 12).padding(.vertical, 6.5)
+            .foregroundStyle(on ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.primary.opacity(0.75)))
+            .background(
+                Capsule(style: .continuous)
+                    .fill(on ? AnyShapeStyle(Color.primary.opacity(0.10)) : AnyShapeStyle(Color.primary.opacity(0.055)))
+            )
+            .overlay(Capsule(style: .continuous).strokeBorder(on ? Color.primary.opacity(0.18) : Color.primary.opacity(0.09), lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Right: the selected project's tasks, or an "all tasks" overview
+    @ViewBuilder private var detail: some View {
+        if let id = selectedProjectID, let idx = store.projects.firstIndex(where: { $0.id == id }) {
+            ProjectDetail(
+                project: $store.projects[idx],
+                expandedTasks: $expandedTasks,
+                onDelete: { removeProject(id) },
+                onAddTask: { store.addTask(id) },
+                onRemoveTask: { tid in store.removeTask(id, tid) },
+                onAddSubtask: { tid in store.addSubtask(id, tid) },
+                onAddTag: { tag in store.addTag(id, tag) },
+                onRemoveTag: { tag in store.removeTag(id, tag) }
+            )
+            .id(id)   // reset per-project local state (tag draft) when switching projects
+        } else {
+            allTasksDetail
+        }
+    }
+
+    /// The default right pane when no project is selected: every visible task across projects,
+    /// honoring the active status/tag filters, with a check-off and deadline per task.
+    private var allTasksDetail: some View {
+        let visible = store.projects.filter(matchesFilter)
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("All tasks").font(.system(size: 20, weight: .bold))
+                Spacer()
+                Button { newProject() } label: { Label("New project", systemImage: "plus") }
+                    .glassButton().controlSize(.small)
+            }
+            .padding(.horizontal, 22).padding(.top, 18).padding(.bottom, 12)
+
+            if visible.isEmpty {
+                Spacer()
+                EmptyState(icon: "checklist", title: "Pick a project",
+                           message: "Select a project on the left to see and edit its tasks, or capture a task by voice and the agent files it for you.")
+                    .padding(.horizontal, 22)
+                Spacer()
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 14) {
+                        ForEach($store.projects) { $project in
+                            if matchesFilter(project) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Button { selectedProjectID = project.id } label: {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "folder").font(.system(size: 12)).foregroundStyle(.secondary)
+                                            Text(project.name.trimmingCharacters(in: .whitespaces).isEmpty ? "New project" : project.name)
+                                                .font(.system(size: 14, weight: .semibold))
+                                            let prog = store.progress(project)
+                                            if prog.total > 0 {
+                                                Text("\(prog.done)/\(prog.total)").font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(.secondary)
+                                                    .padding(.horizontal, 8).padding(.vertical, 3).background(.softFill, in: Capsule())
+                                            }
+                                            Spacer()
+                                            Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(.tertiary)
+                                        }
+                                        .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    ForEach($project.tasks) { $task in
+                                        TaskPanel(
+                                            task: $task,
+                                            expanded: taskExpansion(task.id),
+                                            onDelete: { store.removeTask(project.id, task.id) },
+                                            onAddSubtask: { store.addSubtask(project.id, task.id) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 22).padding(.top, 2).padding(.bottom, 22)
+                }
+                .scrollContentBackground(.hidden)
+            }
+        }
+    }
+
+    // MARK: - selection / actions
+    private func newProject() {
+        let id = store.addProject()
+        selectedProjectID = id
+    }
+
+    private func removeProject(_ id: UUID) {
+        if selectedProjectID == id { selectedProjectID = nil }
+        store.removeProject(id)
+    }
+
+    private func taskExpansion(_ id: UUID) -> Binding<Bool> {
+        Binding(get: { expandedTasks.contains(id) },
+                set: { if $0 { expandedTasks.insert(id) } else { expandedTasks.remove(id) } })
+    }
+
+    // MARK: - filtering
     /// A project is visible when it passes BOTH the tag filter and the status filter.
     private func matchesFilter(_ project: TodoProject) -> Bool {
         matchesTags(project) && matchesStatus(project)
@@ -579,7 +746,7 @@ struct TodosView: View {
                 let d = try await TodoAgent.generate(from: desc)
                 await MainActor.run {
                     store.addGenerated(name: d.name, tasks: d.tasks)
-                    if let id = store.projects.last?.id { expandedProjects.insert(id) }
+                    if let id = store.projects.last?.id { selectedProjectID = id }
                     genText = ""; genBusy = false
                 }
             } catch {
@@ -587,19 +754,12 @@ struct TodosView: View {
             }
         }
     }
-
-    /// A Binding<Bool> for whether project `id` is expanded.
-    private func projectExpansion(_ id: UUID) -> Binding<Bool> {
-        Binding(get: { expandedProjects.contains(id) },
-                set: { if $0 { expandedProjects.insert(id) } else { expandedProjects.remove(id) } })
-    }
 }
 
-// MARK: - Project panel (accordion)
+// MARK: - Project detail (right pane: header + the project's tasks & sub-tasks)
 
-private struct ProjectPanel: View {
+private struct ProjectDetail: View {
     @Binding var project: TodoProject
-    @Binding var expanded: Bool
     @Binding var expandedTasks: Set<UUID>
     let onDelete: () -> Void
     let onAddTask: () -> Void
@@ -613,9 +773,56 @@ private struct ProjectPanel: View {
 
     private var prog: (done: Int, total: Int) { TodoStore.shared.progress(project) }
 
-    /// Removable tag chips plus an "Add tag" affordance, shown inline on the project title line.
-    /// A plain HStack with .fixedSize() so it takes only the width it needs (no greedy ScrollView
-    /// that would blow up the row width and clip the title). The title keeps layout priority.
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            header
+            Divider().padding(.horizontal, 22)
+            ScrollView {
+                LazyVStack(spacing: 8) {
+                    ForEach($project.tasks) { $task in
+                        TaskPanel(
+                            task: $task,
+                            expanded: Binding(get: { expandedTasks.contains(task.id) },
+                                              set: { if $0 { expandedTasks.insert(task.id) } else { expandedTasks.remove(task.id) } }),
+                            onDelete: { onRemoveTask(task.id) },
+                            onAddSubtask: { onAddSubtask(task.id) }
+                        )
+                    }
+                    Button(action: onAddTask) { Label("Add task", systemImage: "plus") }
+                        .buttonStyle(.borderless).font(.callout)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 2)
+                }
+                .padding(.horizontal, 22).padding(.top, 12).padding(.bottom, 22)
+            }
+            .scrollContentBackground(.hidden)
+        }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: "folder").foregroundStyle(.secondary)
+                TextField("Project", text: $project.name).textFieldStyle(.plain)
+                    .font(.system(size: 20, weight: .bold))
+                Spacer(minLength: 8)
+                if prog.total > 0 {
+                    Text("\(prog.done)/\(prog.total)")
+                        .font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(.secondary)
+                        .lineLimit(1).fixedSize()
+                        .padding(.horizontal, 8).padding(.vertical, 3)
+                        .background(.softFill, in: Capsule())
+                }
+                Button(role: .destructive, action: onDelete) { Image(systemName: "trash") }
+                    .buttonStyle(.borderless).foregroundStyle(.secondary)
+                    .help("Delete project")
+            }
+            tagsRow
+        }
+        .padding(.horizontal, 22).padding(.top, 18).padding(.bottom, 12)
+    }
+
+    /// Removable tag chips plus an "Add tag" affordance.
     private var tagsRow: some View {
         FlowLayout(spacing: 6) {
             ForEach(project.tags, id: \.self) { tag in
@@ -647,60 +854,12 @@ private struct ProjectPanel: View {
                 .background(.softFill, in: Capsule())
             }
         }
-        .layoutPriority(0)
     }
 
     private func commitTag() {
         let t = tagDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         if !t.isEmpty { onAddTag(t) }
         tagDraft = ""; addingTag = false
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 10) {
-                Button { withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { expanded.toggle() } } label: {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary)
-                        .rotationEffect(.degrees(expanded ? 90 : 0)).frame(width: 16)
-                }.buttonStyle(.plain)
-                Image(systemName: "folder").foregroundStyle(.secondary)
-                TextField("Project", text: $project.name).textFieldStyle(.plain).font(.headline)
-                    .frame(minWidth: 80, idealWidth: 160)
-                    .layoutPriority(1)
-                tagsRow
-                Spacer(minLength: 8)
-                if prog.total > 0 {
-                    Text("\(prog.done)/\(prog.total)")
-                        .font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(.secondary)
-                        .lineLimit(1).fixedSize()
-                        .padding(.horizontal, 8).padding(.vertical, 3)
-                        .background(.softFill, in: Capsule())
-                }
-                Button(role: .destructive, action: onDelete) { Image(systemName: "trash") }
-                    .buttonStyle(.borderless).foregroundStyle(.tertiary)
-            }
-            .padding(.vertical, 4)
-
-            if expanded {
-                VStack(spacing: 8) {
-                    ForEach($project.tasks) { $task in
-                        TaskPanel(
-                            task: $task,
-                            expanded: Binding(get: { expandedTasks.contains(task.id) },
-                                              set: { if $0 { expandedTasks.insert(task.id) } else { expandedTasks.remove(task.id) } }),
-                            onDelete: { onRemoveTask(task.id) },
-                            onAddSubtask: { onAddSubtask(task.id) }
-                        )
-                    }
-                    Button(action: onAddTask) { Label("Add task", systemImage: "plus") }
-                        .buttonStyle(.borderless).font(.callout)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(.top, 8).padding(.leading, 26)
-            }
-        }
-        .cleanCard(padding: 16)
     }
 }
 
@@ -733,32 +892,6 @@ private enum StatusFilter: String, CaseIterable, Identifiable {
             guard !t.done, let d = t.deadline else { return false }
             return d < Date()
         }
-    }
-}
-
-// MARK: - Filter pill (capsule chip — exemplar grammar: symbol + label, inverted when selected)
-
-private struct FilterPill: View {
-    let label: String
-    var icon: String? = nil
-    let selected: Bool
-    let action: () -> Void
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 5) {
-                if let icon { Image(systemName: icon).font(.system(size: 10, weight: .semibold)) }
-                Text(label).font(.system(size: 12, weight: selected ? .semibold : .medium))
-            }
-            .padding(.horizontal, 12).padding(.vertical, 6.5)
-            .foregroundStyle(selected ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.primary.opacity(0.75)))
-            .background(
-                Capsule(style: .continuous)
-                    .fill(selected ? AnyShapeStyle(Color.primary.opacity(0.10)) : AnyShapeStyle(Color.primary.opacity(0.055)))
-            )
-            .overlay(Capsule(style: .continuous).strokeBorder(selected ? Color.primary.opacity(0.18) : Color.primary.opacity(0.09), lineWidth: 1))
-            .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
     }
 }
 

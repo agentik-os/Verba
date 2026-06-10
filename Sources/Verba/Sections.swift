@@ -66,27 +66,6 @@ struct TagChip: View {
     }
 }
 
-/// Exemplar row card (Color.primary 0.04 fill, r12 continuous) whose trailing remove
-/// button only appears on hover — quiet by default, discoverable on intent.
-private struct HoverRowCard<Content: View>: View {
-    var alignment: VerticalAlignment = .center
-    let onRemove: () -> Void
-    @ViewBuilder var content: () -> Content
-    @State private var hovering = false
-    var body: some View {
-        HStack(alignment: alignment, spacing: 10) {
-            content()
-            Button(action: onRemove) { Image(systemName: "minus.circle.fill") }
-                .buttonStyle(.borderless).foregroundStyle(.tertiary)
-                .opacity(hovering ? 1 : 0)
-                .help("Remove")
-        }
-        .padding(.horizontal, 14).padding(.vertical, 11)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.04)))
-        .onHover { h in withAnimation(.easeOut(duration: 0.15)) { hovering = h } }
-    }
-}
-
 // MARK: - Home
 
 struct HomeView: View {
@@ -312,6 +291,9 @@ struct DictionaryView: View {
     @ObservedObject var settings = Settings.shared
     @State private var aiBusy = false
     @State private var aiError: String?
+    @State private var selectedID: UUID?    // entry being edited; nil = the "Add" form
+    @State private var search = ""
+    @State private var filterCorrections: Bool? = nil   // nil = all, true = corrections, false = words
 
     private var autoCount: Int { store.terms.filter(\.auto).count }
     private var hasWritten: Bool {
@@ -323,91 +305,247 @@ struct DictionaryView: View {
     /// single space so they render as a correction before the user types anything.
     private func isCorrection(_ t: DictTerm) -> Bool { !t.spoken.isEmpty }
 
-    @ViewBuilder private func rowBadges(_ t: DictTerm) -> some View {
-        if t.auto {
-            Text("auto")
-                .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
-                .padding(.horizontal, 7).padding(.vertical, 3)
-                .background(.softFill, in: Capsule())
-                .help("Auto-learned from one of your edits")
+    /// Terms passing the search + correction/word filter, in store order.
+    private var filtered: [DictTerm] {
+        let q = search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return store.terms.filter { t in
+            if let want = filterCorrections, isCorrection(t) != want { return false }
+            if q.isEmpty { return true }
+            return t.written.lowercased().contains(q) || t.spoken.lowercased().contains(q)
         }
     }
 
+    // MARK: Layout
     var body: some View {
-        SectionScaffold(title: "Dictionary",
-                        subtitle: "Teach Verba names and terms it should always spell right.") {
-            // Auto-add control, right where the terms live — in-place management glass card.
-            HStack(spacing: 12) {
-                Image(systemName: "wand.and.sparkles").font(.system(size: 18)).foregroundStyle(.secondary)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Auto-add from your edits").font(.headline)
-                    Text(autoCount > 0
-                         ? "Verba learned \(autoCount) term\(autoCount == 1 ? "" : "s") from your corrections."
-                         : "When you fix a word after pasting, Verba adds it here automatically.")
-                        .font(.caption).monospacedDigit().foregroundStyle(.secondary)
-                }
-                Spacer()
-                Toggle(isOn: $settings.autoLearnDictionary) {
-                    Text("Auto-add").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
-                }
-                .toggleStyle(.switch).controlSize(.small)
-            }
-            .padding(.horizontal, 16).padding(.vertical, 12)
-            .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        HStack(spacing: 0) {
+            sidebar.frame(width: 270)
+            Divider()
+            detail.frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .onChange(of: store.terms.count) { _, _ in
+            // A removed selection falls back to the Add form.
+            if let id = selectedID, !store.terms.contains(where: { $0.id == id }) { selectedID = nil }
+        }
+    }
 
-            // Clean up the existing terms with the AI.
-            HStack(spacing: 12) {
-                Image(systemName: "sparkles").font(.system(size: 18)).foregroundStyle(.secondary)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Improve with AI").font(.headline)
-                    Text(aiError ?? "Fix the spelling and capitalization of your terms, and propose the spoken form where it helps.")
-                        .font(.caption).foregroundStyle(aiError == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
-                }
+    // MARK: Left — search + tap-selected list of terms
+    private var sidebar: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Dictionary").font(.system(size: 17, weight: .bold))
                 Spacer()
-                if aiBusy { ProgressView().controlSize(.small) }
-                Button(action: improveWithAI) { Text("Improve with AI") }
-                    .glassProminentButton()
-                    .disabled(aiBusy || !hasWritten)
+                Button { newWord() } label: { Image(systemName: "plus") }
+                    .buttonStyle(.borderless).help("Add a word")
             }
-            .padding(.horizontal, 16).padding(.vertical, 12)
-            .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
 
-            if store.terms.isEmpty {
-                EmptyState(icon: "character.book.closed", title: "No terms yet",
-                           message: "Teach Verba names, jargon, and acronyms it should always spell right. Use “Add a word” to give it a vocabulary hint (e.g. “Verba”), or “Correct a misspelling” to auto-fix a mis-hearing (say “verba” → write “Verba”). With Auto-add on, it also learns from the corrections you make after pasting.")
+            HStack(spacing: 7) {
+                Image(systemName: "magnifyingglass").font(.system(size: 11)).foregroundStyle(.secondary)
+                TextField("Search terms", text: $search).textFieldStyle(.plain)
             }
-            VStack(spacing: 10) {
-                ForEach($store.terms) { $t in
-                    // A row with an empty spoken form is a pure vocabulary hint ("Add a word");
-                    // one with a spoken form is a misspelling correction.
-                    if isCorrection(t) {
-                        HoverRowCard(onRemove: { store.terms.removeAll { $0.id == t.id } }) {
-                            TextField("Said", text: $t.spoken).cleanField()
-                                .help("The word as it gets mis-heard. Verba auto-replaces it with the written form.")
-                            Image(systemName: "arrow.right").foregroundStyle(.tertiary)
-                            TextField("Written", text: $t.written).cleanField()
-                                .help("The correct spelling Verba should write instead.")
-                            rowBadges(t)
-                        }
-                    } else {
-                        HoverRowCard(onRemove: { store.terms.removeAll { $0.id == t.id } }) {
-                            Image(systemName: "text.book.closed").foregroundStyle(.tertiary)
-                            TextField("Word — the transcriber should spell right", text: $t.written).cleanField()
-                                .help("A vocabulary hint sent to the transcriber so it recognizes and spells this word.")
-                            rowBadges(t)
+            .padding(.horizontal, 11).padding(.vertical, 7)
+            .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .padding(.horizontal, 14).padding(.bottom, 8)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    paneChip(label: "All", icon: nil, on: filterCorrections == nil) { filterCorrections = nil }
+                    paneChip(label: "Words", icon: "text.book.closed", on: filterCorrections == false) { filterCorrections = false }
+                    paneChip(label: "Corrections", icon: "arrow.right", on: filterCorrections == true) { filterCorrections = true }
+                }
+                .padding(.horizontal, 14).padding(.bottom, 8)
+            }
+
+            if filtered.isEmpty {
+                Spacer()
+                EmptyState(icon: "character.book.closed",
+                           title: store.terms.isEmpty ? "No terms yet" : "No matches",
+                           message: store.terms.isEmpty
+                               ? "Teach Verba names, jargon, and acronyms it should always spell right."
+                               : "Try another search or filter, or All to see every term.")
+                    .padding(.horizontal, 14)
+                Spacer()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 4) {
+                        ForEach(filtered) { t in
+                            termRow(t).onTapGesture { selectedID = t.id }
                         }
                     }
+                    .padding(.horizontal, 8).padding(.vertical, 4)
                 }
+                .scrollContentBackground(.hidden)
+            }
+        }
+    }
+
+    private func termRow(_ t: DictTerm) -> some View {
+        let selected = selectedID == t.id
+        let correction = isCorrection(t)
+        return HStack(alignment: .top, spacing: 9) {
+            Image(systemName: correction ? "arrow.right" : "text.book.closed").font(.system(size: 13))
+                .foregroundStyle(.secondary).frame(width: 16).padding(.top, 2)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(t.written.isEmpty ? "New term" : t.written)
+                    .font(.system(size: 13, weight: .medium)).lineLimit(1)
+                    .foregroundStyle(t.written.isEmpty ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+                HStack(spacing: 5) {
+                    if correction, !t.spoken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Text("said “\(t.spoken)”").font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                    } else {
+                        Text(correction ? "correction" : "vocabulary").font(.caption2).foregroundStyle(.secondary)
+                    }
+                    if t.auto {
+                        Text("·").font(.caption2).foregroundStyle(.tertiary)
+                        Text("auto").font(.caption2).foregroundStyle(.tertiary)
+                    }
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 9)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
+        )
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
+        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .contextMenu {
+            Button(role: .destructive) { remove(t) } label: { Label("Delete", systemImage: "trash") }
+        }
+    }
+
+    // MARK: Right — editor for the selected term, or the add forms
+    @ViewBuilder private var detail: some View {
+        if let id = selectedID, let idx = store.terms.firstIndex(where: { $0.id == id }) {
+            entryEditor(idx: idx)
+        } else {
+            addForms
+        }
+    }
+
+    /// Editor for the selected term: edit its written form, the spoken form (when a correction),
+    /// flip its auto badge, or delete it.
+    private func entryEditor(idx: Int) -> some View {
+        let t = store.terms[idx]
+        let correction = isCorrection(t)
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
                 HStack(spacing: 10) {
-                    primaryAddButton("Add a word") { store.terms.append(DictTerm(spoken: "", written: "")) }
-                    addButton("Correct a misspelling") { store.terms.append(DictTerm(spoken: " ", written: "")) }
+                    Image(systemName: correction ? "arrow.right" : "text.book.closed")
+                        .font(.system(size: 15)).foregroundStyle(.secondary)
+                    Text(correction ? "Misspelling correction" : "Vocabulary word")
+                        .font(.system(size: 17, weight: .bold))
+                    if t.auto {
+                        Text("auto").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                            .padding(.horizontal, 7).padding(.vertical, 3)
+                            .background(.softFill, in: Capsule())
+                            .help("Auto-learned from one of your edits")
+                    }
+                    Spacer()
+                    Button(role: .destructive) { remove(t) } label: { Image(systemName: "trash") }
+                        .buttonStyle(.borderless).foregroundStyle(.red).help("Delete this term")
+                }
+
+                if correction {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Said").font(.subheadline.weight(.semibold))
+                        TextField("The word as it gets mis-heard", text: $store.terms[idx].spoken).cleanField()
+                            .help("The word as it gets mis-heard. Verba auto-replaces it with the written form.")
+                    }
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Written").font(.subheadline.weight(.semibold))
+                    TextField(correction ? "The correct spelling Verba should write" : "Word the transcriber should spell right",
+                              text: $store.terms[idx].written).cleanField()
+                        .help(correction
+                              ? "The correct spelling Verba should write instead."
+                              : "A vocabulary hint sent to the transcriber so it recognizes and spells this word.")
+                }
+
+                Text(correction
+                     ? "When Verba hears the “Said” word, it writes the “Written” form instead."
+                     : "This teaches the transcriber a name or term so it always spells it right — no correction needed.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .padding(28)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// The two add paths + the auto-add toggle + Improve-with-AI — shown when nothing is selected.
+    private var addForms: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Add to dictionary").font(.system(size: 28, weight: .bold))
+                    Text("Teach Verba names and terms it should always spell right.")
+                        .font(.callout).foregroundStyle(.secondary)
+                }
+
+                HStack(spacing: 12) {
+                    primaryAddButton("Add a word") { newWord() }
+                    addButton("Correct a misspelling") {
+                        store.terms.append(DictTerm(spoken: " ", written: ""))
+                        selectedID = store.terms.last?.id
+                    }
                     Spacer()
                 }
-                .padding(.top, 2)
+
+                Text("“Add a word” teaches the transcriber a name or term so it spells it right — no correction needed. “Correct a misspelling” pairs a mis-heard spoken word with the written form so Verba swaps it automatically.")
+                    .font(.caption).foregroundStyle(.secondary)
+
+                // Auto-add control.
+                HStack(spacing: 12) {
+                    Image(systemName: "wand.and.sparkles").font(.system(size: 18)).foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Auto-add from your edits").font(.headline)
+                        Text(autoCount > 0
+                             ? "Verba learned \(autoCount) term\(autoCount == 1 ? "" : "s") from your corrections."
+                             : "When you fix a word after pasting, Verba adds it here automatically.")
+                            .font(.caption).monospacedDigit().foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Toggle(isOn: $settings.autoLearnDictionary) {
+                        Text("Auto-add").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                    }
+                    .toggleStyle(.switch).controlSize(.small)
+                }
+                .padding(.horizontal, 16).padding(.vertical, 12)
+                .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                // Clean up the existing terms with the AI.
+                HStack(spacing: 12) {
+                    Image(systemName: "sparkles").font(.system(size: 18)).foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Improve with AI").font(.headline)
+                        Text(aiError ?? "Fix the spelling and capitalization of your terms, and propose the spoken form where it helps.")
+                            .font(.caption).foregroundStyle(aiError == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
+                    }
+                    Spacer()
+                    if aiBusy { ProgressView().controlSize(.small) }
+                    Button(action: improveWithAI) { Text("Improve with AI") }
+                        .glassProminentButton()
+                        .disabled(aiBusy || !hasWritten)
+                }
+                .padding(.horizontal, 16).padding(.vertical, 12)
+                .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
-            Text("“Add a word” teaches the transcriber a name or term so it spells it right — no correction needed. “Correct a misspelling” pairs a mis-heard spoken word with the written form so Verba swaps it automatically. Auto-added terms work the same, edit or remove any of them.")
-                .font(.caption).foregroundStyle(.secondary)
+            .padding(.horizontal, 28).padding(.vertical, 28)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    /// Append a fresh vocabulary word and jump to its editor.
+    private func newWord() {
+        store.terms.append(DictTerm(spoken: "", written: ""))
+        selectedID = store.terms.last?.id
+    }
+
+    private func remove(_ t: DictTerm) {
+        let wasSelected = (selectedID == t.id)
+        store.terms.removeAll { $0.id == t.id }
+        if wasSelected { selectedID = nil }
     }
 
     private func improveWithAI() {
@@ -454,27 +592,137 @@ struct DictionaryView: View {
 
 struct SnippetsView: View {
     @ObservedObject var store = SnippetsStore.shared
+    @State private var selectedID: UUID?
+
+    // MARK: Layout
     var body: some View {
-        SectionScaffold(title: "Snippets",
-                        subtitle: "Say a trigger; Verba expands it into longer text.") {
-            if store.items.isEmpty {
-                EmptyState(icon: "text.badge.plus", title: "No snippets yet",
-                           message: "Create shortcuts: say a short trigger and Verba expands it into longer text, like your address, an email signature, or a boilerplate reply. Add your first one below.")
+        HStack(spacing: 0) {
+            sidebar.frame(width: 270)
+            Divider()
+            detail.frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .onChange(of: store.items.count) { _, _ in
+            if let id = selectedID, !store.items.contains(where: { $0.id == id }) { selectedID = nil }
+        }
+    }
+
+    // MARK: Left — list of snippet triggers as cards
+    private var sidebar: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Snippets").font(.system(size: 17, weight: .bold))
+                Spacer()
+                Button { newSnippet() } label: { Image(systemName: "plus") }
+                    .buttonStyle(.borderless).help("Add snippet")
             }
-            VStack(spacing: 10) {
-                ForEach($store.items) { $s in
-                    HoverRowCard(alignment: .top, onRemove: { store.items.removeAll { $0.id == s.id } }) {
-                        TextField("Trigger", text: $s.trigger).cleanField().frame(width: 160)
-                        TextField("Expands to…", text: $s.expansion, axis: .vertical).cleanField()
+            .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
+
+            if store.items.isEmpty {
+                Spacer()
+                EmptyState(icon: "text.badge.plus", title: "No snippets yet",
+                           message: "Say a short trigger and Verba expands it into longer text, like your address or an email signature.")
+                    .padding(.horizontal, 14)
+                Spacer()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 4) {
+                        ForEach(store.items) { s in
+                            snippetRow(s).onTapGesture { selectedID = s.id }
+                        }
                     }
+                    .padding(.horizontal, 8).padding(.vertical, 4)
                 }
-                HStack {
-                    primaryAddButton("Add snippet") { store.items.append(Snippet(trigger: "", expansion: "")) }
-                    Spacer()
-                }
-                .padding(.top, 2)
+                .scrollContentBackground(.hidden)
             }
         }
+    }
+
+    private func snippetRow(_ s: Snippet) -> some View {
+        let selected = selectedID == s.id
+        return HStack(alignment: .top, spacing: 9) {
+            Image(systemName: "text.badge.plus").font(.system(size: 13))
+                .foregroundStyle(.secondary).frame(width: 16).padding(.top, 2)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(s.trigger.isEmpty ? "New snippet" : s.trigger)
+                    .font(.system(size: 13, weight: .medium)).lineLimit(1)
+                    .foregroundStyle(s.trigger.isEmpty ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+                if !s.expansion.isEmpty {
+                    Text(s.expansion).font(.caption2).foregroundStyle(.secondary).lineLimit(2)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 9)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
+        )
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
+        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .contextMenu {
+            Button(role: .destructive) { remove(s) } label: { Label("Delete", systemImage: "trash") }
+        }
+    }
+
+    // MARK: Right — trigger + expansion editor, or the add prompt
+    @ViewBuilder private var detail: some View {
+        if let id = selectedID, let idx = store.items.firstIndex(where: { $0.id == id }) {
+            editor(idx: idx)
+        } else {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("New snippet").font(.system(size: 28, weight: .bold))
+                        Text("Create shortcuts: say a short trigger and Verba expands it into longer text, like your address, an email signature, or a boilerplate reply.")
+                            .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    }
+                    HStack {
+                        primaryAddButton("Add snippet") { newSnippet() }
+                        Spacer()
+                    }
+                }
+                .padding(.horizontal, 28).padding(.vertical, 28)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    private func editor(idx: Int) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack(spacing: 10) {
+                    Image(systemName: "text.badge.plus").font(.system(size: 15)).foregroundStyle(.secondary)
+                    Text("Snippet").font(.system(size: 17, weight: .bold))
+                    Spacer()
+                    Button(role: .destructive) { remove(store.items[idx]) } label: { Image(systemName: "trash") }
+                        .buttonStyle(.borderless).foregroundStyle(.red).help("Delete this snippet")
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Trigger").font(.subheadline.weight(.semibold))
+                    TextField("Trigger", text: $store.items[idx].trigger).cleanField()
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Expands to").font(.subheadline.weight(.semibold))
+                    TextField("Expands to…", text: $store.items[idx].expansion, axis: .vertical)
+                        .cleanField().lineLimit(4...12)
+                }
+                Text("Say the trigger and Verba inserts the expansion. In AI modes it inserts the block only when you ask for it by intent.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .padding(28)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func newSnippet() {
+        store.items.append(Snippet(trigger: "", expansion: ""))
+        selectedID = store.items.last?.id
+    }
+
+    private func remove(_ s: Snippet) {
+        let wasSelected = (selectedID == s.id)
+        store.items.removeAll { $0.id == s.id }
+        if wasSelected { selectedID = nil }
     }
 }
 
@@ -484,80 +732,85 @@ struct StyleView: View {
     @ObservedObject var settings = Settings.shared
     @State private var selectedID: UUID?
 
+    // MARK: Layout
     var body: some View {
-        SectionScaffold(title: "Styles",
-                        subtitle: "A tone & format layer applied on top of the active mode.") {
-            // Info bubble explaining what styles do.
-            Card {
-                HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: "info.circle.fill").foregroundStyle(.tint).font(.title3)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("What is a style?").font(.subheadline.weight(.semibold))
-                        Text("A style is a second prompt layer added on top of your dictation mode. The mode decides what Claude does with your words; the active style nudges how the result reads (tone, register, formatting). The built-in “Normal” style is neutral, so it changes nothing. Switch styles anytime with Fn + [ and Fn + ], or from the menu bar.")
-                            .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-            }
-
-            HStack(spacing: 0) {
-                list
-                Divider()
-                Group {
-                    if let id = selectedID, settings.styles.contains(where: { $0.id == id }) {
-                        editor(id: id)
-                    } else {
-                        EmptyState(icon: "paintbrush", title: "Select a style",
-                                   message: "Each style is a reusable tone/format layer added on top of your mode.")
-                            .frame(maxHeight: .infinity)
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .frame(minHeight: 420)
-        } actions: {
-            Button { let id = addStyle(); selectedID = id } label: { Image(systemName: "plus") }
-                .buttonStyle(.borderless).help("Add a new style")
-            Button { settings.resetStylesToDefaults(); selectedID = settings.activeStyleID } label: {
-                Image(systemName: "arrow.counterclockwise")
-            }
-            .buttonStyle(.borderless).help("Remove all custom styles, keep only Normal")
+        HStack(spacing: 0) {
+            sidebar.frame(width: 270)
+            Divider()
+            detail.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear { if selectedID == nil { selectedID = settings.activeStyleID } }
     }
 
-    private var list: some View {
-        List {
-            ForEach(settings.styles) { st in
-                let selected = st.id == selectedID
-                HStack(spacing: 8) {
-                    Image(systemName: "paintbrush")
-                        .foregroundStyle(.secondary).frame(width: 16)
-                    Text(st.name).fontWeight(selected ? .semibold : .regular).lineLimit(1)
-                    Spacer(minLength: 6)
-                    if st.id == settings.activeStyleID {
-                        Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint).font(.caption)
-                    }
+    // MARK: Left — styles as cards (built-ins + custom), drag-reorderable
+    private var sidebar: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Styles").font(.system(size: 17, weight: .bold))
+                Spacer()
+                Button { settings.resetStylesToDefaults(); selectedID = settings.activeStyleID } label: {
+                    Image(systemName: "arrow.counterclockwise")
                 }
-                .padding(.horizontal, 10).padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
-                )
-                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
-                .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .onTapGesture {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { selectedID = st.id }
-                }
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 2, leading: 6, bottom: 2, trailing: 6))
+                .buttonStyle(.borderless).help("Remove all custom styles, keep only Normal")
+                Button { let id = addStyle(); selectedID = id } label: { Image(systemName: "plus") }
+                    .buttonStyle(.borderless).help("Add a new style")
             }
-            .onMove { from, to in settings.styles.move(fromOffsets: from, toOffset: to) }
+            .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
+
+            // A List (NOT List(selection:)) keeps drag-reorder via .onMove while rows render as
+            // tap-selected cards — the exemplar card grammar, just inside a reorderable List.
+            List {
+                ForEach(settings.styles) { st in
+                    styleRow(st)
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 8))
+                }
+                .onMove { from, to in settings.styles.move(fromOffsets: from, toOffset: to) }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .frame(width: 220)
+    }
+
+    private func styleRow(_ st: Style) -> some View {
+        let selected = st.id == selectedID
+        let active = st.id == settings.activeStyleID
+        return HStack(spacing: 9) {
+            Image(systemName: "paintbrush").font(.system(size: 13))
+                .foregroundStyle(.secondary).frame(width: 16)
+            Text(st.name).font(.system(size: 13, weight: selected ? .semibold : .medium)).lineLimit(1)
+            Spacer(minLength: 6)
+            if active {
+                HStack(spacing: 3) {
+                    Image(systemName: "checkmark.circle.fill").font(.system(size: 11))
+                    Text("Active").font(.system(size: 10, weight: .semibold))
+                }
+                .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 12).padding(.vertical, 9)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
+        )
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
+        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .onTapGesture {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { selectedID = st.id }
+        }
+    }
+
+    // MARK: Right — the style prompt editor for the selected style
+    @ViewBuilder private var detail: some View {
+        if let id = selectedID, settings.styles.contains(where: { $0.id == id }) {
+            editor(id: id)
+        } else {
+            EmptyState(icon: "paintbrush", title: "Select a style",
+                       message: "Each style is a reusable tone/format layer added on top of your mode. Switch styles anytime with Fn + [ and Fn + ], or from the menu bar.")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 
     private func index(of id: UUID) -> Int? { settings.styles.firstIndex { $0.id == id } }
@@ -628,56 +881,147 @@ struct StyleView: View {
 struct TransformsView: View {
     @ObservedObject var store = TransformsStore.shared
     @State private var errorMessage: String?
+    @State private var selectedID: UUID?
 
+    // MARK: Layout
     var body: some View {
-        SectionScaffold(title: "Transforms",
-                        subtitle: "Actions that run on text you’ve selected. Highlight some text in any app, then speak the transform’s Verbal Shortcut (e.g. “fix grammar”) — Verba runs it on your selection and replaces it. Works in every mode.") {
-            if store.items.isEmpty {
-                EmptyState(icon: "arrow.triangle.2.circlepath", title: "No transforms yet",
-                           message: "Create reusable text actions like “Make it formal”, “Translate to English”, or “Turn into bullet points”. Give each a Verbal Shortcut (the phrase you’ll say) and a prompt. Then select text anywhere, say the shortcut, and Verba transforms the selection.")
+        HStack(spacing: 0) {
+            sidebar.frame(width: 270)
+            Divider()
+            detail.frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .onChange(of: store.items.count) { _, _ in
+            if let id = selectedID, !store.items.contains(where: { $0.id == id }) { selectedID = nil }
+        }
+    }
+
+    // MARK: Left — transforms as cards
+    private var sidebar: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Transforms").font(.system(size: 17, weight: .bold))
+                Spacer()
+                Button { newTransform() } label: { Image(systemName: "plus") }
+                    .buttonStyle(.borderless).help("Add transform")
             }
-            VStack(spacing: 12) {
-                ForEach($store.items) { $t in
-                    TransformRow(t: $t) { store.items.removeAll { $0.id == t.id } }
+            .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
+
+            if store.items.isEmpty {
+                Spacer()
+                EmptyState(icon: "arrow.triangle.2.circlepath", title: "No transforms yet",
+                           message: "Reusable text actions like “Make it formal” or “Translate to English”. Select text anywhere, say the shortcut, and Verba transforms the selection.")
+                    .padding(.horizontal, 14)
+                Spacer()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 4) {
+                        ForEach(store.items) { t in
+                            transformRow(t).onTapGesture { selectedID = t.id }
+                        }
+                    }
+                    .padding(.horizontal, 8).padding(.vertical, 4)
                 }
-                HStack {
-                    primaryAddButton("Add transform") { store.items.append(Transform(name: "New shortcut", prompt: "Rewrite the text…")) }
-                    Spacer()
-                }
-                .padding(.top, 2)
-                if let errorMessage {
-                    Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
-                        .font(.callout)
-                        .foregroundStyle(.red)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 2)
-                }
+                .scrollContentBackground(.hidden)
             }
         }
     }
-}
 
-/// One transform card: exemplar chrome, remove revealed on hover (top-right).
-private struct TransformRow: View {
-    @Binding var t: Transform
-    let onRemove: () -> Void
-    @State private var hovering = false
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                TextField("Verbal Shortcut", text: $t.name).cleanField().frame(width: 240)
-                Spacer()
-                Button(action: onRemove) { Image(systemName: "minus.circle.fill") }
-                    .buttonStyle(.borderless).foregroundStyle(.tertiary)
-                    .opacity(hovering ? 1 : 0)
-                    .help("Remove")
+    private func transformRow(_ t: Transform) -> some View {
+        let selected = selectedID == t.id
+        return HStack(alignment: .top, spacing: 9) {
+            Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 13))
+                .foregroundStyle(.secondary).frame(width: 16).padding(.top, 2)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(t.name.isEmpty ? "New shortcut" : t.name)
+                    .font(.system(size: 13, weight: .medium)).lineLimit(1)
+                    .foregroundStyle(t.name.isEmpty ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+                if !t.prompt.isEmpty {
+                    Text(t.prompt).font(.caption2).foregroundStyle(.secondary).lineLimit(2)
+                }
             }
-            TextField("Prompt", text: $t.prompt, axis: .vertical).cleanField()
+            Spacer(minLength: 0)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.04)))
-        .onHover { h in withAnimation(.easeOut(duration: 0.15)) { hovering = h } }
+        .padding(.horizontal, 12).padding(.vertical, 9)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
+        )
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
+        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .contextMenu {
+            Button(role: .destructive) { remove(t) } label: { Label("Delete", systemImage: "trash") }
+        }
+    }
+
+    // MARK: Right — Verbal Shortcut + instruction editor, or the add prompt
+    @ViewBuilder private var detail: some View {
+        if let id = selectedID, let idx = store.items.firstIndex(where: { $0.id == id }) {
+            editor(idx: idx)
+        } else {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("New transform").font(.system(size: 28, weight: .bold))
+                        Text("Actions that run on text you’ve selected. Highlight text in any app, speak the Verbal Shortcut (e.g. “fix grammar”), and Verba runs it on your selection and replaces it. Works in every mode.")
+                            .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    }
+                    HStack {
+                        primaryAddButton("Add transform") { newTransform() }
+                        Spacer()
+                    }
+                    if let errorMessage {
+                        Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                            .font(.callout).foregroundStyle(.red)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .padding(.horizontal, 28).padding(.vertical, 28)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    private func editor(idx: Int) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack(spacing: 10) {
+                    Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 15)).foregroundStyle(.secondary)
+                    Text("Transform").font(.system(size: 17, weight: .bold))
+                    Spacer()
+                    Button(role: .destructive) { remove(store.items[idx]) } label: { Image(systemName: "trash") }
+                        .buttonStyle(.borderless).foregroundStyle(.red).help("Delete this transform")
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Verbal Shortcut").font(.subheadline.weight(.semibold))
+                    TextField("Verbal Shortcut", text: $store.items[idx].name).cleanField()
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Instruction").font(.subheadline.weight(.semibold))
+                    TextField("Prompt", text: $store.items[idx].prompt, axis: .vertical)
+                        .cleanField().lineLimit(4...12)
+                }
+                Text("Select text anywhere, say the Verbal Shortcut, and Verba runs this instruction on your selection and replaces it.")
+                    .font(.caption).foregroundStyle(.secondary)
+                if let errorMessage {
+                    Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                        .font(.callout).foregroundStyle(.red)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .padding(28)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func newTransform() {
+        store.items.append(Transform(name: "New shortcut", prompt: "Rewrite the text…"))
+        selectedID = store.items.last?.id
+    }
+
+    private func remove(_ t: Transform) {
+        let wasSelected = (selectedID == t.id)
+        store.items.removeAll { $0.id == t.id }
+        if wasSelected { selectedID = nil }
     }
 }
 
@@ -686,17 +1030,19 @@ private struct TransformRow: View {
 struct ScratchpadView: View {
     @ObservedObject var pad = Scratchpad.shared
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
+        // Single full-bleed text area (not split): header + toolbar pinned, the pad fills the rest —
+        // aligned to the exemplar's detail-pane header/padding grammar.
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
                 Text("Scratchpad").font(.system(size: 28, weight: .bold))
-                Spacer()
+                Spacer(minLength: 8)
                 CopyButton(text: pad.text, title: "Copy")
                 Button(role: .destructive) { pad.text = "" } label: { Label("Clear", systemImage: "trash") }
                     .buttonStyle(.borderless)
             }
-            .padding(28)
             TextEditor(text: $pad.text)
                 .font(.system(size: 15)).scrollContentBackground(.hidden)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.horizontal, 24).padding(.vertical, 20)
                 .background(.softFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .overlay {
@@ -706,8 +1052,9 @@ struct ScratchpadView: View {
                             .allowsHitTesting(false)
                     }
                 }
-                .padding(.horizontal, 28).padding(.bottom, 28)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 14)
     }
 }
 
@@ -753,4 +1100,27 @@ private func addButton(_ title: String, _ action: @escaping () -> Void) -> some 
 private func primaryAddButton(_ title: String, _ action: @escaping () -> Void) -> some View {
     Button(action: action) { Label(title, systemImage: "plus") }
         .glassProminentButton()
+}
+
+/// Sidebar filter chip — the exemplar (NotesView) chip grammar: monochrome capsule, soft neutral
+/// fill, bold label + quiet border when selected. Shared by the two-pane manager sidebars.
+@ViewBuilder
+func paneChip(label: String, icon: String?, on: Bool, action: @escaping () -> Void) -> some View {
+    Button {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { action() }
+    } label: {
+        HStack(spacing: 5) {
+            if let icon { Image(systemName: icon).font(.system(size: 10, weight: .semibold)) }
+            Text(label).font(.system(size: 12, weight: on ? .semibold : .medium))
+        }
+        .padding(.horizontal, 12).padding(.vertical, 6.5)
+        .foregroundStyle(on ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.primary.opacity(0.75)))
+        .background(
+            Capsule(style: .continuous)
+                .fill(on ? AnyShapeStyle(Color.primary.opacity(0.10)) : AnyShapeStyle(Color.primary.opacity(0.055)))
+        )
+        .overlay(Capsule(style: .continuous).strokeBorder(on ? Color.primary.opacity(0.18) : Color.primary.opacity(0.09), lineWidth: 1))
+        .contentShape(Capsule())
+    }
+    .buttonStyle(.plain)
 }

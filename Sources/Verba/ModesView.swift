@@ -14,24 +14,32 @@ struct ModesView: View {
     var body: some View {
         HStack(spacing: 0) {
             VStack(spacing: 0) {
-                // Management lives at the top of the pane, as quiet borderless icons.
-                HStack(spacing: 12) {
+                // Header (Notes grammar): title + primary "new mode" action; reset-defaults is a
+                // quiet secondary borderless icon beside it.
+                HStack(spacing: 10) {
+                    Text("Modes").font(.system(size: 17, weight: .bold))
                     Spacer()
-                    Button { genError = nil; genDescription = ""; showGenerator = true } label: { Image(systemName: "plus") }
-                        .disabled(!settings.isPro)
-                        .help(settings.isPro ? "Describe a mode and let Verba build it" : "Custom modes are a Pro feature")
                     Button { settings.resetProfilesToDefaults(); selectedID = settings.activeProfileID } label: {
                         Image(systemName: "arrow.counterclockwise")
-                    }.help("Restore Flow / Intent / Context / Coding / Translate / Custom")
+                    }
+                    .buttonStyle(.borderless).foregroundStyle(.secondary)
+                    .help("Restore Flow / Intent / Context / Coding / Translate / Custom")
+                    Button { genError = nil; genDescription = ""; showGenerator = true } label: { Image(systemName: "plus") }
+                        .buttonStyle(.borderless)
+                        .disabled(!settings.isPro)
+                        .help(settings.isPro ? "Describe a mode and let Verba build it" : "Custom modes are a Pro feature")
                 }
-                .buttonStyle(.borderless)
-                .padding(.horizontal, 14).padding(.top, 10).padding(.bottom, 4)
+                .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
+
+                // Drag-reorder REQUIRES List(.onMove); LazyVStack can't reorder. We keep the
+                // exemplar look by clearing the row background/separators and styling the card
+                // ourselves — there is no List(selection:), so no system-blue highlight paints.
                 List {
                     ForEach(settings.profiles) { p in
                         modeRow(p)
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
-                            .listRowInsets(EdgeInsets(top: 2, leading: 6, bottom: 2, trailing: 6))
+                            .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 8))
                     }
                     .onMove { from, to in settings.profiles.move(fromOffsets: from, toOffset: to) }
                 }
