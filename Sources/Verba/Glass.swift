@@ -291,14 +291,19 @@ struct GlassDialog<Content: View, Buttons: View>: View {
 
 private struct GlassCardIf: ViewModifier {
     let enabled: Bool
+    // Observe the live appearance so an already-presented menu/dialog re-renders
+    // when the user changes the Menu material/blur in Customize (matches how
+    // MainWindow consumes appearance.blur). Reading the published menuMaterial/
+    // menuBlur through this object establishes the SwiftUI dependency.
+    @ObservedObject private var appearance = VerbaAppearance.shared
     func body(content: Content) -> some View {
         if enabled {
             let shape = RoundedRectangle(cornerRadius: 20, style: .continuous)
             content
                 // Menus / dialogs honor the user's chosen MENU glass material + adjustable blur,
                 // clipped to the card shape (Customize ▸ Menus).
-                .background(VisualEffectView(material: VAppr.menuMaterial.nsMaterial,
-                                             blurRadius: VAppr.menuBlur).clipShape(shape))
+                .background(VisualEffectView(material: appearance.menuMaterial.nsMaterial,
+                                             blurRadius: appearance.menuBlur).clipShape(shape))
                 .overlay(shape.strokeBorder(Color.primary.opacity(0.06), lineWidth: 1))
                 .clipShape(shape)
                 .shadow(color: .black.opacity(0.13), radius: 26, y: 10)

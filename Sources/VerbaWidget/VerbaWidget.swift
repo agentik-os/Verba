@@ -329,7 +329,7 @@ private struct TodoRow: View {
                     .padding(.horizontal, 6).padding(.vertical, 2)
                     .background(
                         (todo.overdue ? Brand.overdue.opacity(0.10) : Color.primary.opacity(0.06)),
-                        in: Capsule()
+                        in: RoundedRectangle(cornerRadius: chipRadius, style: .continuous)
                     )
                     .fixedSize()
             }
@@ -338,9 +338,12 @@ private struct TodoRow: View {
 
     @ViewBuilder private var checkbox: some View {
         let symbol = todo.done ? "checkmark.circle.fill" : "circle"
+        // Open (not-done, not-overdue) checkboxes pick up the user's widget accent
+        // when set; monochrome (accent == nil) keeps the default `.secondary` look.
+        let openTint: AnyShapeStyle = accent.map { AnyShapeStyle($0) } ?? AnyShapeStyle(.secondary)
         let tint: AnyShapeStyle = todo.done
             ? AnyShapeStyle(.green)
-            : (todo.overdue ? AnyShapeStyle(Brand.overdue) : AnyShapeStyle(.secondary))
+            : (todo.overdue ? AnyShapeStyle(Brand.overdue) : openTint)
         let icon = Image(systemName: symbol)
             .font(.system(size: compact ? 13 : 15))
             .foregroundStyle(tint)
@@ -396,7 +399,9 @@ struct VerbaWidgetEntryView: View {
                         TodoRow(todo: todo,
                                 showProject: family != .systemSmall,
                                 showTime: family != .systemSmall,
-                                compact: family == .systemSmall)
+                                compact: family == .systemSmall,
+                                accent: WidgetAppearance.resolvedAccent,
+                                chipRadius: WidgetAppearance.corner(8))
                     }
                 }
                 if openFirst.count > rows.count {
@@ -413,13 +418,28 @@ struct VerbaWidgetEntryView: View {
         // task title, the header, or empty space opens the app instead of doing
         // nothing. (The per-row checkbox keeps its own AppIntent — it wins locally.)
         .widgetURL(WidgetLink.todos)
-        .containerBackground(.fill.tertiary, for: .widget)
+        // Honour the user's widget light/dark selection (auto → nil, follows system).
+        .preferredColorScheme(WidgetAppearance.colorMode.colorScheme)
+        // Material-aware glass: the baseline `.fill.tertiary` look at material
+        // .frosted (fillOpacity 1.0), thinning/thickening with the chosen material,
+        // plus a faint accent wash when a non-monochrome accent is set.
+        .containerBackground(for: .widget) {
+            ZStack {
+                Color.clear.background(.fill.tertiary)
+                    .opacity(WidgetAppearance.material.fillOpacity)
+                if let accent = WidgetAppearance.resolvedAccent {
+                    accent.opacity(0.06)
+                }
+            }
+        }
     }
 
     private var header: some View {
         HStack(spacing: 6) {
             Image(systemName: Brand.mark)
                 .font(.system(size: family == .systemSmall ? 12 : 13, weight: .semibold))
+                // Tint the mark with the user's widget accent (monochrome → inherit .primary).
+                .foregroundStyle(WidgetAppearance.resolvedAccent ?? .primary)
             // The snapshot is overdue + due-today (with an undated fallback), not strictly
             // "today" — so the header reads "Up next" to honestly match the list's contents
             // and the open-item count beside it.

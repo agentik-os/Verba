@@ -2281,7 +2281,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             win.isOpaque = false
             win.backgroundColor = .clear
             win.isMovableByWindowBackground = true
-            let root = view.background(VisualEffectView().ignoresSafeArea())
+            // Dialog/popover windows (Settings, History, Onboarding, Review, Alert, ActionConfirm)
+            // are 'menu/dialog' surfaces → honor the Customize ▸ Menus material + blur, not the
+            // main-window material. (MainWindow keeps VAppr.material via its own VisualEffectView.)
+            let root = view.background(VisualEffectView(material: VAppr.menuMaterial.nsMaterial,
+                                                        blurRadius: VAppr.menuBlur).ignoresSafeArea())
             let host = NSHostingController(rootView: root)
             host.sizingOptions = []
             win.contentViewController = host

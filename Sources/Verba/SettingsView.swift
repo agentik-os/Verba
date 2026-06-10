@@ -318,8 +318,11 @@ struct SettingsView: View {
                              label: String) -> some View {
         let radius = VAppr.corner(16, scale: cornerScale)
         return ZStack {
-            VisualEffectView(material: material.nsMaterial)
-                .blur(radius: blur * 0.25)   // a hint of the blur slider, kept subtle/readable
+            // Drive the real glass code path: blurRadius routes through GlassBlurView's
+            // CAFilter (Glass.swift) exactly like the live app/widget surfaces, instead of
+            // a faint quarter-strength SwiftUI .blur smear. The tile's NSVisualEffectView is
+            // themed by colorMode via its scoped NSAppearance (set in TileColorScheme below).
+            VisualEffectView(material: material.nsMaterial, blurRadius: blur)
             HStack(spacing: 10) {
                 Circle().fill(accent).frame(width: 26, height: 26)
                     .overlay(Image(systemName: "waveform").font(.system(size: 12, weight: .semibold))
@@ -337,7 +340,25 @@ struct SettingsView: View {
         .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
         .hairline(radius)
         .softElevation(shadow)
-        .preferredColorScheme(colorMode.colorScheme)
+        // Scope the appearance to THIS tile only. `.environment(\.colorScheme,)` is
+        // subtree-scoped (unlike `.preferredColorScheme`, which propagates up to the
+        // hosting scene and would flip the whole Settings window), so two tiles with
+        // different color modes no longer fight over the window's appearance.
+        .modifier(TileColorScheme(colorMode: colorMode))
+    }
+
+    /// Confines a preview tile's light/dark look to the tile's own subtree.
+    /// Auto (nil) leaves the tile following the window; light/dark force the SwiftUI
+    /// color scheme locally without touching the scene-level preference.
+    private struct TileColorScheme: ViewModifier {
+        let colorMode: VAppr.ColorMode
+        func body(content: Content) -> some View {
+            if let scheme = colorMode.colorScheme {
+                content.environment(\.colorScheme, scheme)
+            } else {
+                content
+            }
+        }
     }
 
     private func apprLabel(_ t: String) -> some View {
@@ -396,6 +417,13 @@ struct SettingsView: View {
                 Circle().strokeBorder(customSel ? customColor.opacity(0.9) : Color.hairlineTint,
                                       lineWidth: customSel ? 2 : 1)
                     .frame(width: 24, height: 24)
+                // A plain tap re-selects the existing custom accent (restoring the stored
+                // hex) without forcing a trip through the system color picker. This sits
+                // UNDER the ColorPicker, so a tap on the well still opens the picker to
+                // change the hue, while a tap that misses the well still reactivates .custom.
+                Button { onCustom(customColor) } label: {
+                    Color.clear.frame(width: 24, height: 24).contentShape(Circle())
+                }.buttonStyle(.plain)
                 ColorPicker("", selection: Binding(get: { customColor }, set: { onCustom($0) }),
                             supportsOpacity: false)
                     .labelsHidden().opacity(0.02)   // invisible but still opens the system picker

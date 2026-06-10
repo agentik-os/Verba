@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import Combine
+import WidgetKit
 
 // MARK: - Verba appearance / personalization store
 //
@@ -189,12 +190,26 @@ enum VAppr {
         get { ColorMode(rawValue: app.integer(forKey: "verba.appr.colormode")) ?? .auto }
         set { app.set(newValue.rawValue, forKey: "verba.appr.colormode") }
     }
+    /// The user's explicit app-level override, independent of the system flag.
+    /// `nil` until the user touches the toggle, then a hard true/false. Kept
+    /// separate so a user with system Reduce Motion ON can still opt the *app*
+    /// coupling OFF (otherwise the getter snapped the toggle back on — it looked
+    /// stuck). The effective value (override OR system) lives in `reduceMotion`.
+    static var reduceMotionOverride: Bool? {
+        get { app.object(forKey: "verba.appr.reducemotion") as? Bool }
+        set {
+            if let v = newValue { app.set(v, forKey: "verba.appr.reducemotion") }
+            else { app.removeObject(forKey: "verba.appr.reducemotion") }
+        }
+    }
+    /// Effective reduce-motion for animation call sites: the explicit app
+    /// override when the user has set one, otherwise the live system setting.
     static var reduceMotion: Bool {
         get {
-            if app.object(forKey: "verba.appr.reducemotion") as? Bool == true { return true }
+            if let override = reduceMotionOverride { return override }
             return NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         }
-        set { app.set(newValue, forKey: "verba.appr.reducemotion") }
+        set { reduceMotionOverride = newValue }
     }
 
     // =========================================================================
@@ -208,6 +223,12 @@ enum VAppr {
         get { Material(rawValue: widget.integer(forKey: "widget.appr.material")) ?? .frosted }
         set { widget.set(newValue.rawValue, forKey: "widget.appr.material") }
     }
+    /// NOTE: WidgetKit composites the widget itself and cannot host a live
+    /// NSVisualEffectView blur, so this value is currently inert on the widget —
+    /// `WidgetAppearance` (VerbaWidget.swift) exposes no `blur` reader. The real
+    /// user-facing fix (drop the Widget-card blur slider, or repurpose it to drive
+    /// the material overlay's fillOpacity + add a `blur` reader) lives in
+    /// SettingsView.swift + VerbaWidget.swift, outside this file's scope.
     static var widgetBlur: Double {
         get { clamp(widget.object(forKey: "widget.appr.blur") as? Double ?? 0, blurRange) }
         set { widget.set(clamp(newValue, blurRange), forKey: "widget.appr.blur") }
@@ -309,6 +330,10 @@ final class VerbaAppearance: ObservableObject {
     private func widgetChanged() {
         objectWillChange.send()
         NotificationCenter.default.post(name: VerbaAppearance.widgetDidChange, object: nil)
+        // Tell WidgetKit to rebuild the timeline now so the on-screen widget
+        // repaints with the new styling immediately, instead of waiting for the
+        // next debounced todo-store write or the hourly timeline backstop.
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     // MARK: APP appearance (published surface)
