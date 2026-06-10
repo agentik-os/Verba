@@ -20,6 +20,16 @@ const DAYS: Day[] = [
       "A privacy, security and craft day: history gets a real off switch and auto-delete, cloud data gets a delete-everything button, every sync request is authenticated per device, every dialog moves to the new glass design, and verba.run gets a full craft pass.",
     entries: [
       {
+        version: "0.2.9 → 0.3.3",
+        title: "Make it yours, plus a wave of fixes",
+        items: [
+          "New Customize settings: style the app and the macOS widget independently — glass material, blur, corner radius, accent color (monochrome by default, plus a palette or your own custom color), and one-tap presets. Liquid Glass, your way.",
+          "Modes are reordered (Flow, Intent, Translate, Context, Coding on ⌃⌥1-5); create your own with the AI mode generator instead of editing a placeholder.",
+          "From your feedback: Escape now cancels even while Verba is polishing; attaching a screenshot sends the real image (not a file path); a clear notice appears if you prompt with AI rewriting turned off; the feedback Dictate button shows a live, mic-reactive waveform; and Improve-with-AI now structures your report into Section / Issue / Expected.",
+          "Send as much feedback as you want — the per-user limit is gone.",
+        ],
+      },
+      {
         version: "0.2.6 → 0.2.8",
         title: "Consistent, monochrome, and it remembers you",
         items: [
