@@ -87,7 +87,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         preloadEngine()   // load the local transcription model now so the first dictation is instant
         // Re-check the real subscription on launch so Pro reflects Stripe, not just sign-in.
         if !Settings.shared.proEmail.isEmpty {
-            Task { _ = await Settings.shared.verifyPro() }
+            Task { @MainActor in
+                _ = await Settings.shared.verifyPro()
+                // Migration to token auth: signed-in but no token yet → ONE friendly
+                // reconnect prompt at launch (never a paywall, never a logout).
+                if Settings.shared.needsReauth { self.showReauthPrompt() }
+            }
             Task { await Username.reconcileOnSignIn() }  // adopt the Clerk username so the handle syncs across Macs
             History.shared.syncFromCloud()   // pull dictation history from the user's other Macs
             Stats.shared.syncFromCloud()     // restore Insights / Total Words for the account
@@ -2264,9 +2269,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Shown when a free user hits the monthly word limit.
+    /// One-click account reconnect (token migration / rejected token). Reuses the normal
+    /// sign-in flow: the browser session is usually still warm so it's a single click,
+    /// and the callback re-mints the app-session token + re-registers the device.
+    func showReauthPrompt() {
+        let email = Settings.shared.proEmail
+        showGlassAlert(
+            icon: "person.crop.circle.badge.checkmark", tint: .accentColor,
+            title: "Reconnect your account",
+            message: "You're signed in as \(email). After a security upgrade, this Mac just needs one click to reconnect — nothing else changes.",
+            buttons: [
+                .init(title: "Later", role: .cancel, action: {}),
+                .init(title: "Reconnect", isDefault: true) {
+                    AuthSession.shared.signIn { ok in
+                        if ok != nil { Task { _ = await Settings.shared.verifyPro() } }
+                    }
+                },
+            ],
+            size: NSSize(width: 400, height: 200))
+    }
+
     private func showPaywall() {
         state = .idle
         overlay.hide()
+        // A signed-in user who only needs to re-mint the session token must NEVER see a
+        // subscribe pitch — their Pro may be intact server-side. Offer the reconnect instead.
+        if !Settings.shared.proEmail.isEmpty && (Settings.shared.needsReauth || AuthToken.current == nil) {
+            showReauthPrompt()
+            return
+        }
         showGlassAlert(
             icon: "sparkles", tint: .accentColor,
             title: "Your free trial is used up",

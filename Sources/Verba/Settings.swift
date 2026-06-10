@@ -540,8 +540,11 @@ final class Settings: ObservableObject {
     }
 
     /// Verify the subscription against verba.run (token-authenticated) and update `isPro`.
-    /// S7: a network failure / rejected token is NOT a silent revoke — Pro survives a 72h
-    /// grace window from the last successful verification, with periodic revalidation.
+    /// THE RULE: once Pro, the ONLY thing that revokes Pro is an explicit server "no"
+    /// (HTTP 200, active:false, on a token-authenticated check). Wifi changes, offline,
+    /// server errors, rejected/missing tokens — none of these ever downgrade the user or
+    /// nag them to subscribe. Unreachable just means "keep the last known state and
+    /// quietly revalidate later".
     @MainActor
     func verifyPro() async -> Bool {
         switch await Entitlement.check() {
@@ -550,25 +553,15 @@ final class Settings: ObservableObject {
             needsReauth = false
             d.set(Date().timeIntervalSince1970, forKey: "verba.proVerifiedAt")
         case .inactive:
-            isPro = false                                  // explicit server "no" = real revoke
+            isPro = false                                  // explicit server "no" = the one real revoke
             needsReauth = false
         case .unreachable:
             // Migration: a signed-in user with no app-session token yet must re-auth (the
-            // server now requires the token); show the prompt instead of revoking.
+            // server now requires the token); surface the one-click prompt, never a paywall.
             if !proEmail.isEmpty && AuthToken.current == nil { needsReauth = true }
-            var last = d.double(forKey: "verba.proVerifiedAt")
-            if isPro && last == 0 {
-                // First unreachable check after updating: start the grace clock now so
-                // existing Pro users aren't revoked before they can re-authenticate.
-                last = Date().timeIntervalSince1970
-                d.set(last, forKey: "verba.proVerifiedAt")
-            }
-            let within72h = Date().timeIntervalSince1970 - last < 72 * 3600
-            if isPro && within72h {
-                // Keep Pro; revalidate in 30 min.
+            // Keep the last known state indefinitely; quietly revalidate in 30 min.
+            if isPro {
                 Task { try? await Task.sleep(nanoseconds: 1_800_000_000_000); _ = await self.verifyPro() }
-            } else if isPro {
-                isPro = false                              // grace expired
             }
         }
         return isPro
