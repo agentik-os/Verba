@@ -291,7 +291,7 @@ extension Profile {
         """,
         matchBundleIDs: ["com.todesktop.230313mzl4w4u92", "com.microsoft.VSCode", "com.apple.dt.Xcode",
                          "com.googlecode.iterm2", "com.apple.Terminal", "dev.warp.Warp-Stable"],
-        builtin: true, hotkeyCode: 18 /* 1 */, hotkeyMods: kCtrlOpt, model: "claude-opus-4-8")
+        builtin: true, hotkeyCode: 23 /* 5 */, hotkeyMods: kCtrlOpt, model: "claude-opus-4-8")
 
     static let intent = Profile(
         name: "Intent",
@@ -323,17 +323,17 @@ extension Profile {
 
         Output ONLY the final result. No preamble, no echo of the intent, no commentary.
         """,
-        builtin: true, hotkeyCode: 21 /* 4 */, hotkeyMods: kCtrlOpt, model: "claude-sonnet-4-6")
+        builtin: true, hotkeyCode: 19 /* 2 */, hotkeyMods: kCtrlOpt, model: "claude-sonnet-4-6")
 
     static let flow = Profile(
         name: "Flow",
         systemPrompt: "(Free-flow dictation, your words are transcribed exactly, with no AI reprompting or reordering.)",
-        builtin: true, hotkeyCode: 22 /* 6 */, hotkeyMods: kCtrlOpt, raw: true)
+        builtin: true, hotkeyCode: 18 /* 1 */, hotkeyMods: kCtrlOpt, raw: true)
 
     static let translate = Profile(
         name: "Translate",
         systemPrompt: "Translate the dictation into the chosen target language.",
-        builtin: true, hotkeyCode: 28 /* 8 */, hotkeyMods: kCtrlOpt,
+        builtin: true, hotkeyCode: 20 /* 3 */, hotkeyMods: kCtrlOpt,
         model: nil /* use the user's default model */, targetLanguage: "English")
 
     static let custom = Profile(
@@ -368,13 +368,13 @@ extension Profile {
         - NEVER use an em dash, an en dash, or a spaced hyphen. Use commas, periods, \
         parentheses, or colons instead.
         """,
-        builtin: true, hotkeyCode: 26 /* 7 */, hotkeyMods: kCtrlOpt,
+        builtin: true, hotkeyCode: 21 /* 4 */, hotkeyMods: kCtrlOpt,
         model: "claude-sonnet-4-6", vision: true)
 
-    static let defaults: [Profile] = [.flow, .intent, .context, .coding, .translate, .custom]
+    static let defaults: [Profile] = [.flow, .intent, .translate, .context, .coding]
     /// Built-in modes that were shipped once and then retired — dropped on migration so they
     /// disappear for existing users too (not kept as orphan custom modes).
-    static let retiredBuiltinNames: Set<String> = ["Polish", "Casual"]
+    static let retiredBuiltinNames: Set<String> = ["Polish", "Casual", "Custom"]
 }
 
 final class Settings: ObservableObject {
@@ -382,7 +382,7 @@ final class Settings: ObservableObject {
     private let d = UserDefaults.standard
 
     // Bump when the built-in profiles change so users get the new prompts/shortcuts.
-    static let profilesVersion = 18  // retire Polish + Casual everywhere; default-active stays Flow (verbatim, no AI)
+    static let profilesVersion = 19  // order Flow/Intent/Translate/Context/Coding (⌃⌥1-5), retire Polish/Casual/Custom; default Flow
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }

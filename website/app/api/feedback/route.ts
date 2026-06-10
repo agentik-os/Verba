@@ -106,14 +106,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Feedback isn't configured yet." }, { status: 503, headers: cors });
   }
 
-  // Rate limit: per-IP (fail open on Convex outage) + global daily ceiling (fail closed).
+  // NO per-user feedback limit — send as many as you want. We keep only a very high global
+  // daily ceiling as pure abuse protection (a runaway script), never a per-user cap.
   const day = new Date().toISOString().slice(0, 10);
-  const ip = ipOf(req);
-  const ipOk = await convexBump(`feedback:ip:${ip}:${day}`, 5, true);
-  const globalOk = await convexBump(`feedback:global:${day}`, 100, false);
-  if (!ipOk || !globalOk) {
+  const globalOk = await convexBump(`feedback:global:${day}`, 20000, false);
+  if (!globalOk) {
     return NextResponse.json(
-      { ok: false, error: "Too much feedback for today — please try again tomorrow." },
+      { ok: false, error: "Feedback is temporarily unavailable, please try again shortly." },
       { status: 429, headers: cors }
     );
   }
