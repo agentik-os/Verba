@@ -88,7 +88,7 @@ const DAYS: Day[] = [
           "Cloud sync hardened: every device now authenticates each request with its own secret, so only your Macs can read or write your data.",
           "The public leaderboard no longer carries any account identifier, only your alias and your numbers.",
           "Signed-in sessions are now token-verified end to end (AI reprompting, account, username, Pro status), and Pro keeps working through up to 72 hours offline instead of dropping the moment a check fails.",
-          "Honest copy: verba.run now spells out exactly what stays on your Mac, what syncs when you sign in, and the new off switch, and the modes pages show all six built-in modes (Flow, Intent, Context, Coding, Translate, Custom).",
+          "Honest copy: verba.run now spells out exactly what stays on your Mac, what syncs when you sign in, and the new off switch, and the modes pages show every built-in mode.",
         ],
       },
     ],
