@@ -30,76 +30,64 @@ struct HistoryView: View {
     @StateObject private var audio = AudioPreview()
     @State private var selection: HistoryEntry.ID?
     @State private var query = ""
+    @State private var showSearch = false
+    @State private var filterMode: String?     // filter by profile / mode name; nil = All
+    @State private var filterEngine: String?   // filter by engine family (e.g. "openai"); nil = All
     @State private var rerunning = false
 
-    // List card showing full text (the detail "Adapt" panel manages its own state).
-    @State private var expandedCard: HistoryEntry.ID?
-    @State private var hoveredCard: HistoryEntry.ID?   // hover-revealed card actions
+    // MARK: - Derived filter sets
+    /// Distinct mode (profile) names present in history, in first-seen order.
+    private var modeNames: [String] {
+        var seen = Set<String>(); var out: [String] = []
+        for e in history.entries where !e.profileName.isEmpty {
+            if seen.insert(e.profileName).inserted { out.append(e.profileName) }
+        }
+        return out
+    }
 
-    private var filtered: [HistoryEntry] {
-        let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !q.isEmpty else { return history.entries }
-        return history.entries.filter {
-            $0.reprompted.lowercased().contains(q)
-            || $0.original.lowercased().contains(q)
-            || $0.profileName.lowercased().contains(q)
+    /// Distinct engine families present in history (the part before the ":" in the stored
+    /// "family:model" label, e.g. "openai", "whisper", "parakeet"), in first-seen order.
+    private var engineFamilies: [String] {
+        var seen = Set<String>(); var out: [String] = []
+        for e in history.entries {
+            let fam = Self.engineFamily(e.engine)
+            guard !fam.isEmpty else { continue }
+            if seen.insert(fam).inserted { out.append(fam) }
+        }
+        return out
+    }
+
+    private static func engineFamily(_ raw: String) -> String {
+        String(raw.split(separator: ":").first ?? "")
+    }
+
+    private static func engineLabel(_ fam: String) -> String {
+        switch fam.lowercased() {
+        case "openai":   return "OpenAI"
+        case "whisper":  return "Whisper"
+        case "parakeet": return "Parakeet"
+        default:         return fam.isEmpty ? "Engine" : fam.capitalized
         }
     }
 
+    private var filtered: [HistoryEntry] {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return history.entries.filter { e in
+            if let m = filterMode, e.profileName != m { return false }
+            if let f = filterEngine, Self.engineFamily(e.engine) != f { return false }
+            guard !q.isEmpty else { return true }
+            return e.reprompted.lowercased().contains(q)
+                || e.original.lowercased().contains(q)
+                || e.profileName.lowercased().contains(q)
+        }
+    }
+
+    private var hasFilters: Bool { filterMode != nil || filterEngine != nil }
+
     var body: some View {
         HStack(spacing: 0) {
-            // List column, block cards, no separator lines.
-            VStack(spacing: 0) {
-                // 20px inset (not the 28px grammar): the 340pt sidebar would starve the cards.
-                HStack {
-                    Text("History").font(.system(size: 28, weight: .bold))
-                    Spacer()
-                    Button(role: .destructive) { audio.stop(); history.clear() } label: { Image(systemName: "trash") }
-                        .buttonStyle(.borderless).help("Clear all")
-                }
-                .padding(.horizontal, 20).padding(.top, 26).padding(.bottom, 2)
-                Text("Search, replay, and re-adapt past dictations.")
-                    .font(.callout).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20).padding(.bottom, 12)
-
-                // Search field.
-                HStack(spacing: 7) {
-                    Image(systemName: "magnifyingglass").foregroundStyle(.secondary).font(.system(size: 12))
-                    TextField("Search your dictations", text: $query)
-                        .textFieldStyle(.plain)
-                    if !query.isEmpty {
-                        Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
-                            .buttonStyle(.plain).foregroundStyle(.tertiary)
-                    }
-                }
-                .padding(.horizontal, 10).padding(.vertical, 7)
-                .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                .padding(.horizontal, 20).padding(.bottom, 10)
-
-                ScrollView {
-                    LazyVStack(spacing: 8) {
-                        let items = filtered
-                        if items.isEmpty {
-                            if query.isEmpty {
-                                EmptyState(icon: "clock.arrow.circlepath", title: "No dictations yet",
-                                           message: "Every dictation you make lands here, searchable, replayable, and re-adaptable.")
-                            } else {
-                                Text("No matches for “\(query)”.")
-                                    .font(.callout).foregroundStyle(.secondary)
-                                    .frame(maxWidth: .infinity).padding(.top, 30)
-                            }
-                        }
-                        ForEach(items) { e in
-                            Button { selection = e.id } label: { card(e, selected: e.id == selection) }
-                                .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(.horizontal, 20).padding(.bottom, 16)
-                }
-            }
-            .frame(width: 340)
-
+            sidebar.frame(width: 270)
+            Divider()
             // Detail.
             Group {
                 if let e = history.entries.first(where: { $0.id == selection }) {
@@ -117,71 +105,150 @@ struct HistoryView: View {
         .onDisappear { audio.stop() }
     }
 
-    private func card(_ e: HistoryEntry, selected: Bool) -> some View {
-        let full = e.reprompted.isEmpty ? e.original : e.reprompted
-        let expanded = expandedCard == e.id
-        let long = full.count > 140 || full.contains("\n")
-        return VStack(alignment: .leading, spacing: 5) {
-            Text(full)
-                .lineLimit(expanded ? nil : 2).font(.callout).foregroundStyle(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .textSelection(.enabled)
-            if long {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        expandedCard = expanded ? nil : e.id
-                    }
-                } label: {
-                    Text(expanded ? "Show less" : "Show more")
-                        .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+    // MARK: - Left: header + filter chips + search + scrollable cards
+    private var sidebar: some View {
+        let items = filtered
+        return VStack(spacing: 0) {
+            HStack {
+                Text("History").font(.system(size: 17, weight: .bold))
+                Spacer()
+                Button { withAnimation(.easeInOut(duration: 0.18)) { showSearch.toggle(); if !showSearch { query = "" } } } label: {
+                    Image(systemName: showSearch ? "magnifyingglass.circle.fill" : "magnifyingglass")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless).help("Search dictations")
+                if !history.entries.isEmpty {
+                    Button(role: .destructive) { audio.stop(); history.clear(); selection = nil } label: { Image(systemName: "trash") }
+                        .buttonStyle(.borderless).help("Clear all")
+                }
             }
-            HStack(spacing: 6) {
-                Text(e.date.formatted(date: .abbreviated, time: .shortened))
-                    .font(.caption2).foregroundStyle(.secondary).monospacedDigit()
-                Text(e.profileName)
-                    .font(.caption2.weight(.medium))
-                    .padding(.horizontal, 6).padding(.vertical, 1.5)
-                    .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.08)))
-                    .foregroundStyle(.secondary)
+            .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
+
+            // Filter chips: by mode and/or by engine (Notes chip grammar).
+            if !modeNames.isEmpty || !engineFamilies.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        chip(label: "All", icon: nil, on: !hasFilters) { filterMode = nil; filterEngine = nil }
+                        ForEach(modeNames, id: \.self) { m in
+                            chip(label: m, icon: "text.bubble", on: filterMode == m) { filterMode = (filterMode == m ? nil : m) }
+                        }
+                        ForEach(engineFamilies, id: \.self) { f in
+                            chip(label: Self.engineLabel(f), icon: "waveform", on: filterEngine == f) { filterEngine = (filterEngine == f ? nil : f) }
+                        }
+                    }
+                    .padding(.horizontal, 14).padding(.bottom, 8)
+                }
+            }
+
+            // Search field over dictation text + mode (toggled from the header action).
+            if showSearch {
+                HStack(spacing: 7) {
+                    Image(systemName: "magnifyingglass").foregroundStyle(.secondary).font(.system(size: 12))
+                    TextField("Search your dictations", text: $query)
+                        .textFieldStyle(.plain)
+                    if !query.isEmpty {
+                        Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
+                            .buttonStyle(.plain).foregroundStyle(.tertiary)
+                    }
+                }
+                .padding(.horizontal, 10).padding(.vertical, 7)
+                .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .padding(.horizontal, 14).padding(.bottom, 8)
+                .transition(.opacity)
+            }
+
+            if items.isEmpty {
+                Spacer()
+                if history.entries.isEmpty {
+                    EmptyState(icon: "clock.arrow.circlepath", title: "No dictations yet",
+                               message: "Every dictation you make lands here, searchable, replayable, and re-adaptable.")
+                        .padding(.horizontal, 14)
+                } else {
+                    EmptyState(icon: "magnifyingglass", title: "No matches",
+                               message: "No dictation matches the current search or filters. Clear them to see everything.")
+                        .padding(.horizontal, 14)
+                }
+                Spacer()
+            } else {
+                // Tap-selected cards (Notes grammar) — NOT a Button/List, whose system-blue
+                // highlight would paint under our custom card and double-box it.
+                ScrollView {
+                    LazyVStack(spacing: 4) {
+                        ForEach(items) { e in
+                            card(e, selected: e.id == selection)
+                                .onTapGesture { selection = e.id }
+                        }
+                    }
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                }
+                .scrollContentBackground(.hidden)
             }
         }
-        .padding(12)
+    }
+
+    private func card(_ e: HistoryEntry, selected: Bool) -> some View {
+        let full = e.reprompted.isEmpty ? e.original : e.reprompted
+        return VStack(alignment: .leading, spacing: 3) {
+            Text(snippet(full)).font(.system(size: 13, weight: .medium)).lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 5) {
+                Text(e.profileName.isEmpty ? "Flow" : e.profileName)
+                    .font(.system(size: 9.5, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 6).padding(.vertical, 1.5)
+                    .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.08)))
+                    .lineLimit(1)
+                Text("·").font(.caption2).foregroundStyle(.tertiary)
+                Text(e.date.formatted(date: .abbreviated, time: .shortened))
+                    .font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
+            }
+        }
+        .padding(.horizontal, 12).padding(.vertical, 9)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(selected ? Color.primary.opacity(0.12) : Color.primary.opacity(0.04))
+                .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1)
         )
-        // Hover-revealed quick actions: copy / delete without selecting the row first.
-        .overlay(alignment: .topTrailing) {
-            if hoveredCard == e.id {
-                HStack(spacing: 4) {
-                    CopyButton(text: full)
-                    Button {
-                        audio.stop(); history.delete(e)
-                        if selection == e.id { selection = nil }
-                    } label: { Image(systemName: "trash").font(.system(size: 11)) }
-                    .buttonStyle(.borderless).foregroundStyle(.secondary)
-                    .help("Delete this dictation")
-                }
-                .padding(.horizontal, 7).padding(.vertical, 4)
-                .background(.ultraThinMaterial, in: Capsule(style: .continuous))
-                .padding(6)
-                .transition(.opacity)
-            }
-        }
-        .onHover { inside in
-            withAnimation(.easeInOut(duration: 0.12)) {
-                if inside { hoveredCard = e.id }
-                else if hoveredCard == e.id { hoveredCard = nil }
-            }
-        }
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .contextMenu {
+            Button { Output.copyToClipboard(full) } label: { Label("Copy", systemImage: "doc.on.doc") }
+            Button(role: .destructive) {
+                audio.stop(); history.delete(e)
+                if selection == e.id { selection = nil }
+            } label: { Label("Delete", systemImage: "trash") }
+        }
+    }
+
+    /// First meaningful line of the dictation for the list title (single line, trimmed).
+    private func snippet(_ text: String) -> String {
+        for raw in text.split(separator: "\n") {
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            if !line.isEmpty { return String(line.prefix(120)) }
+        }
+        return "Empty dictation"
+    }
+
+    @ViewBuilder private func chip(label: String, icon: String?, on: Bool, action: @escaping () -> Void) -> some View {
+        Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { action() }
+        } label: {
+            HStack(spacing: 5) {
+                if let icon { Image(systemName: icon).font(.system(size: 10, weight: .semibold)) }
+                Text(label).font(.system(size: 12, weight: on ? .semibold : .medium))
+            }
+            .padding(.horizontal, 12).padding(.vertical, 6.5)
+            .foregroundStyle(on ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.primary.opacity(0.75)))
+            .background(
+                Capsule(style: .continuous)
+                    .fill(on ? AnyShapeStyle(Color.primary.opacity(0.10)) : AnyShapeStyle(Color.primary.opacity(0.055)))
+            )
+            .overlay(Capsule(style: .continuous).strokeBorder(on ? Color.primary.opacity(0.18) : Color.primary.opacity(0.09), lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 
     private func detail(_ e: HistoryEntry) -> some View {

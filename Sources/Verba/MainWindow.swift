@@ -114,6 +114,7 @@ struct MainWindow: View {
         .ignoresSafeArea()
         .tint(.primary)   // full B&W: selection / accents are black, not blue
         .onChange(of: notesCtl.navSignal) { _, _ in selection = .notes }   // Fn+Z → jump to Notes
+        .onChange(of: notesCtl.leaderboardNavSignal) { _, _ in selection = .leaderboard }   // Insights "your standing" → Leaderboard
         .onChange(of: settings.hiddenNav) { _, _ in
             // If the section you're on just got hidden, fall back to Home.
             if let sel = selection, sel != .home, sel != .modes, sel != .settings, !settings.navVisible(sel) {

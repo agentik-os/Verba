@@ -179,10 +179,48 @@ struct HomeView: View {
 
 // MARK: - Insights
 
+/// Fetches the public leaderboard once so Insights can show the user's standing (rank / percentile /
+/// words behind #1) without leaving the tab — mirrors LeaderboardModel, but read-only for one card.
+@MainActor
+final class InsightsStanding: ObservableObject {
+    @Published var entries: [LeaderEntry] = []
+    @Published var loading = true
+
+    /// Rows sorted by total words, descending — the canonical leaderboard ordering.
+    private var ranked: [LeaderEntry] { entries.sorted { $0.words > $1.words } }
+
+    /// The caller's own row + its 1-based rank, when present on the board.
+    var mine: (rank: Int, entry: LeaderEntry)? {
+        guard let idx = ranked.firstIndex(where: { $0.me == true }) else { return nil }
+        return (idx + 1, ranked[idx])
+    }
+    var total: Int { entries.count }
+    /// "Top X%" — smaller is better; 1 means you're #1.
+    var percentile: Int? {
+        guard let m = mine, total > 0 else { return nil }
+        return max(1, Int((Double(m.rank) / Double(total) * 100).rounded()))
+    }
+    /// Words the leader has beyond you (0 when you ARE the leader).
+    var wordsBehindLeader: Int? {
+        guard let m = mine, let top = ranked.first else { return nil }
+        return max(0, Int(top.words - m.entry.words))
+    }
+
+    func load() {
+        loading = true
+        Leaderboard.fetch { [weak self] in self?.entries = $0; self?.loading = false }
+    }
+}
+
 struct InsightsView: View {
     @ObservedObject var stats = Stats.shared
+    @ObservedObject private var settings = Settings.shared
+    @StateObject private var standing = InsightsStanding()
+    private let notesCtl = NotesController.shared
+
     var body: some View {
-        SectionScaffold(title: "Insights", subtitle: "Your dictation over the last 14 days.") {
+        SectionScaffold(title: "Insights", subtitle: "Your dictation, by the numbers.") {
+            // The chart stays the hero, unchanged.
             Card {
                 Chart(stats.recentDays(14), id: \.label) { day in
                     BarMark(x: .value("Day", day.label), y: .value("Words", day.words))
@@ -194,31 +232,307 @@ struct InsightsView: View {
                 .chartXAxis { AxisMarks { AxisValueLabel() } }
                 .chartYAxis { AxisMarks { AxisValueLabel() } }
             }
-            HStack(spacing: 14) {
-                metric("\(stats.totalWords.formatted())", "total words")
-                metric("\(stats.totalCount)", "dictations")
-                metric("\(stats.avgWPM)", "words / min")
+
+            // STANDING — the gamification hero: rank, percentile, gap to #1.
+            standingCard
+
+            // TODAY
+            group("Today", "sun.max") {
+                grid([
+                    kpi("\(wordsToday.formatted())", "words today", "text.word.spacing",
+                        delta: dayDelta),
+                    kpi("\(wordsYesterday.formatted())", "words yesterday", "calendar"),
+                    kpi("\(stats.streak)", "day streak", "flame.fill",
+                        caption: stats.streak >= longestStreak && stats.streak > 0 ? "your best ever" : "best \(longestStreak)"),
+                ])
             }
-            HStack(spacing: 14) {
-                metric("\(stats.streak)", "day streak")
-                metric("\(stats.wordsThisWeek.formatted())", "words this week")
-                metric("\(stats.avgWordsPerDictation)", "avg / dictation")
+
+            // THIS WEEK
+            group("This week", "calendar") {
+                grid([
+                    kpi("\(stats.wordsThisWeek.formatted())", "words this week", "text.alignleft",
+                        delta: weekDelta),
+                    kpi("\(sevenDayAvg.formatted())", "7-day average", "chart.bar",
+                        caption: "words / day"),
+                    kpi(mostProductiveDay.label, "most productive day", "star.fill",
+                        caption: mostProductiveDay.words > 0 ? "\(mostProductiveDay.words.formatted()) words" : "—"),
+                    kpi("\(activeDays7)/7", "active days", "checkmark.circle"),
+                    kpi("\(stats.wordsThisMonth.formatted())", "words this month", "calendar.badge.clock"),
+                    kpi(speedMultiple, "faster than typing", "hare.fill",
+                        caption: "vs ~40 wpm by hand"),
+                ])
             }
-            HStack(spacing: 14) {
-                metric("\(Int(stats.totalSeconds / 60)) min", "spoken")
-                metric(timeSaved, "≈ time saved typing")
-                metric("\(stats.bestDayWords.formatted())", "best day")
+
+            // ALL TIME
+            group("All time", "infinity") {
+                grid([
+                    kpi("\(stats.totalWords.formatted())", "total words", "text.word.spacing"),
+                    kpi("\(stats.totalCount.formatted())", "dictations", "mic.fill"),
+                    kpi("\(stats.avgWPM)", "words / min", "gauge.with.dots.needle.67percent"),
+                    kpi("\(stats.avgWordsPerDictation)", "avg / dictation", "number"),
+                    kpi("\(stats.bestDayWords.formatted())", "best day ever", "trophy.fill"),
+                    kpi(spokenTime, "time spoken", "waveform"),
+                    kpi(timeSaved, "time saved typing", "clock.arrow.circlepath",
+                        caption: "vs typing it by hand"),
+                    kpi("\(longestStreak)", "longest streak", "flame",
+                        caption: stats.streak == longestStreak && longestStreak > 0 ? "you're on it now" : "days in a row"),
+                ])
+            }
+
+            // MILESTONE — the next round-number target, with a thin progress bar.
+            milestoneCard
+        }
+        .onAppear { if standing.entries.isEmpty { standing.load() } }
+    }
+
+    // MARK: Standing hero
+
+    @ViewBuilder private var standingCard: some View {
+        Card(padding: 18) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 8) {
+                    Image(systemName: "trophy.fill").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
+                    Text("Your standing").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
+                    Spacer()
+                    Button { notesCtl.leaderboardNavSignal &+= 1 } label: {
+                        HStack(spacing: 4) {
+                            Text("Leaderboard").font(.system(size: 12, weight: .medium))
+                            Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
+                        }
+                        .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain).help("Open the full leaderboard")
+                }
+
+                if standing.loading {
+                    HStack(spacing: 10) { ProgressView().controlSize(.small); Text("Ranking you…").font(.callout).foregroundStyle(.secondary) }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else if !settings.showOnLeaderboard {
+                    standingNote("eye.slash", "You're hidden from the leaderboard. Flip “Show me” there to claim your rank.")
+                } else if let m = standing.mine {
+                    HStack(alignment: .top, spacing: 0) {
+                        bigStat(rankText(m.rank), "global rank", "of \(standing.total.formatted()) people")
+                        Divider().frame(height: 56)
+                        if let p = standing.percentile {
+                            bigStat("top \(p)%", "percentile", p <= 1 ? "the very top" : "you're ahead of \(100 - p)%")
+                            Divider().frame(height: 56)
+                        }
+                        if let behind = standing.wordsBehindLeader {
+                            bigStat(behind == 0 ? "—" : behind.formatted(), behind == 0 ? "you lead 🥇" : "words behind #1",
+                                    behind == 0 ? "everyone's chasing you" : "keep dictating to close it")
+                        }
+                    }
+                } else {
+                    standingNote("flag.checkered", "You're not on the board yet — dictate anything to claim your spot.")
+                }
             }
         }
     }
+
+    private func bigStat(_ value: String, _ label: String, _ sub: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(value).font(.system(size: 30, weight: .bold)).monospacedDigit().contentTransition(.numericText())
+            Text(label).font(.caption).foregroundStyle(.secondary)
+            Text(sub).font(.caption2).foregroundStyle(.tertiary).lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 2)
+    }
+
+    private func standingNote(_ icon: String, _ text: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon).foregroundStyle(.secondary)
+            Text(text).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func rankText(_ r: Int) -> String {
+        switch r { case 1: "🥇 #1"; case 2: "🥈 #2"; case 3: "🥉 #3"; default: "#\(r)" }
+    }
+
+    // MARK: Milestone
+
+    @ViewBuilder private var milestoneCard: some View {
+        let target = nextMilestone
+        let done = stats.totalCount
+        let prev = previousMilestone
+        let span = max(1, target - prev)
+        let progress = min(1, max(0, Double(done - prev) / Double(span)))
+        Card(padding: 18) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    Image(systemName: "target").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
+                    Text("Next milestone").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
+                    Spacer()
+                    Text("\(done.formatted()) / \(target.formatted())").font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(.secondary)
+                }
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.primary.opacity(0.08)).frame(height: 8)
+                        Capsule().fill(Color.primary.opacity(0.75)).frame(width: max(8, geo.size.width * progress), height: 8)
+                    }
+                }
+                .frame(height: 8)
+                Text("\(max(0, target - done).formatted()) more dictation\(target - done == 1 ? "" : "s") to reach \(target.formatted()).")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    // MARK: Layout helpers — a labelled group + a responsive KPI grid.
+
+    @ViewBuilder private func group<Content: View>(_ title: String, _ icon: String, @ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 7) {
+                Image(systemName: icon).font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary)
+                Text(title).font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary).textCase(.uppercase).kerning(0.5)
+            }
+            content()
+        }
+    }
+
+    private func grid(_ cards: [KPI]) -> some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 14)], spacing: 14) {
+            ForEach(cards) { $0 }
+        }
+    }
+
+    // MARK: KPI card — big monospaced number + caption + SF symbol + optional delta.
+
+    struct KPI: View, Identifiable {
+        let id = UUID()
+        let value: String
+        let label: String
+        let icon: String
+        var caption: String? = nil
+        var delta: Delta? = nil
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Image(systemName: icon).font(.system(size: 13)).foregroundStyle(.secondary)
+                    Spacer()
+                    if let delta { delta.badge }
+                }
+                Text(value).font(.system(size: 26, weight: .bold)).monospacedDigit().contentTransition(.numericText())
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(label).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    if let caption { Text(caption).font(.caption2).foregroundStyle(.tertiary).lineLimit(1) }
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)
+            .cleanCard(padding: 14)
+        }
+    }
+
+    /// A comparison delta: a direction arrow + percent. Monochrome — "up" reads bold/primary,
+    /// "down"/"flat" sit quiet in secondary (the app is strict B&W, no green/red accents here).
+    struct Delta {
+        let percent: Int   // signed; 0 = flat
+        var badge: some View {
+            Group {
+                if percent == 0 {
+                    HStack(spacing: 3) { Image(systemName: "equal"); Text("flat") }
+                        .foregroundStyle(.secondary)
+                } else {
+                    HStack(spacing: 3) {
+                        Image(systemName: percent > 0 ? "arrow.up.right" : "arrow.down.right")
+                        Text("\(abs(percent))%")
+                    }
+                    .foregroundStyle(percent > 0 ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.secondary))
+                }
+            }
+            .font(.system(size: 11, weight: .semibold)).monospacedDigit()
+        }
+    }
+
+    private func kpi(_ value: String, _ label: String, _ icon: String, caption: String? = nil, delta: Delta? = nil) -> KPI {
+        KPI(value: value, label: label, icon: icon, caption: caption, delta: delta)
+    }
+
+    // MARK: Derived values (all from Stats.shared — no new persistence)
+
+    private var recent: [(label: String, words: Int)] { stats.recentDays(14) }
+
+    private var wordsToday: Int { recent.last?.words ?? 0 }
+    private var wordsYesterday: Int { recent.count >= 2 ? recent[recent.count - 2].words : 0 }
+
+    /// Today vs yesterday, as a signed percent (nil-safe: needs a yesterday baseline).
+    private var dayDelta: Delta? {
+        guard wordsYesterday > 0 else { return wordsToday > 0 ? Delta(percent: 100) : nil }
+        return Delta(percent: Int(((Double(wordsToday) - Double(wordsYesterday)) / Double(wordsYesterday) * 100).rounded()))
+    }
+
+    /// This week (last 7d) vs the previous 7 days — the key "comparing" hook.
+    private var weekDelta: Delta? {
+        let last7 = recent.suffix(7).reduce(0) { $0 + $1.words }
+        let prev7 = recent.prefix(max(0, recent.count - 7)).suffix(7).reduce(0) { $0 + $1.words }
+        guard prev7 > 0 else { return last7 > 0 ? Delta(percent: 100) : nil }
+        return Delta(percent: Int(((Double(last7) - Double(prev7)) / Double(prev7) * 100).rounded()))
+    }
+
+    private var sevenDayAvg: Int { recent.suffix(7).reduce(0) { $0 + $1.words } / 7 }
+
+    /// Active days in the last 7 (days with any words).
+    private var activeDays7: Int { recent.suffix(7).filter { $0.words > 0 }.count }
+
+    /// The best single day in the last 14 (label + words) — "most productive day".
+    private var mostProductiveDay: (label: String, words: Int) {
+        recent.max { $0.words < $1.words } ?? (label: "—", words: 0)
+    }
+
+    /// How many times faster dictation is than ~40 wpm typing.
+    private var speedMultiple: String {
+        guard stats.avgWPM > 0 else { return "—" }
+        let x = Double(stats.avgWPM) / 40.0
+        return x >= 10 ? "\(Int(x.rounded()))×" : String(format: "%.1f×", x)
+    }
+
+    private var spokenTime: String {
+        let m = Int(stats.totalSeconds / 60)
+        return m >= 60 ? "\(m / 60)h \(m % 60)m" : "\(m) min"
+    }
+
     private var timeSaved: String {
         let m = stats.timeSavedMinutes
         return m >= 60 ? "\(m / 60)h \(m % 60)m" : "\(m) min"
     }
-    private func metric(_ v: String, _ l: String) -> some View {
-        Card { VStack(alignment: .leading, spacing: 4) {
-            Text(v).font(.title2.bold()).monospacedDigit(); Text(l).font(.caption).foregroundStyle(.secondary) } }
-        .frame(maxWidth: .infinity, alignment: .leading)
+
+    /// Longest run of consecutive active days across all recorded history.
+    private var longestStreak: Int {
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
+        let active = Set(stats.days.filter { $0.value.count > 0 }.keys)
+        guard !active.isEmpty else { return 0 }
+        // Walk every active day; a day starts a run if the day before it is inactive.
+        var best = 0
+        for key in active {
+            guard let d = f.date(from: key) else { continue }
+            let prevKey = f.string(from: d.addingTimeInterval(-86400))
+            if active.contains(prevKey) { continue }   // not a run start
+            var len = 1
+            var cur = d
+            while true {
+                let nextKey = f.string(from: cur.addingTimeInterval(86400))
+                if active.contains(nextKey) { len += 1; cur = cur.addingTimeInterval(86400) } else { break }
+            }
+            best = max(best, len)
+        }
+        return best
+    }
+
+    /// Next round-number dictation milestone (100 / 500 / 1000 / 2500 / 5000 / 10k…).
+    private var nextMilestone: Int {
+        let ladder = [100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000]
+        let c = stats.totalCount
+        return ladder.first { $0 > c } ?? (((c / 100000) + 1) * 100000)
+    }
+    /// The milestone just below the current count (the progress-bar floor).
+    private var previousMilestone: Int {
+        let ladder = [0, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000]
+        let c = stats.totalCount
+        return ladder.last { $0 <= c } ?? 0
     }
 }
 
