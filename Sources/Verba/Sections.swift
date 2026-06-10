@@ -633,7 +633,7 @@ struct DictionaryView: View {
     var body: some View {
         HStack(spacing: 0) {
             sidebar.frame(width: 270)
-            Divider()
+            Divider().opacity(0.4)
             detail.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onChange(of: store.terms.count) { _, _ in
@@ -912,7 +912,7 @@ struct SnippetsView: View {
     var body: some View {
         HStack(spacing: 0) {
             sidebar.frame(width: 270)
-            Divider()
+            Divider().opacity(0.4)
             detail.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onChange(of: store.items.count) { _, _ in
@@ -1050,7 +1050,7 @@ struct StyleView: View {
     var body: some View {
         HStack(spacing: 0) {
             sidebar.frame(width: 270)
-            Divider()
+            Divider().opacity(0.4)
             detail.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear { if selectedID == nil { selectedID = settings.activeStyleID } }
@@ -1201,7 +1201,7 @@ struct TransformsView: View {
     var body: some View {
         HStack(spacing: 0) {
             sidebar.frame(width: 270)
-            Divider()
+            Divider().opacity(0.4)
             detail.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onChange(of: store.items.count) { _, _ in

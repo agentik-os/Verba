@@ -39,7 +39,7 @@ struct SessionsView: View {
     var body: some View {
         HStack(spacing: 0) {
             sidebar.frame(width: 270)
-            Divider()
+            Divider().opacity(0.4)
             detail.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 720, minHeight: 360)

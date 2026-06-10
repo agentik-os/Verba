@@ -46,7 +46,7 @@ struct NotesView: View {
     var body: some View {
         HStack(spacing: 0) {
             sidebar.frame(width: 270)
-            Divider()
+            Divider().opacity(0.4)
             detail.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onReceive(tick) { _ in if isRecording && !isPaused { elapsed = pausedAccum + Int(Date().timeIntervalSince(recordStart)) } }

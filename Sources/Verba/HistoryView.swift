@@ -87,7 +87,7 @@ struct HistoryView: View {
     var body: some View {
         HStack(spacing: 0) {
             sidebar.frame(width: 270)
-            Divider()
+            Divider().opacity(0.4)
             // Detail.
             Group {
                 if let e = history.entries.first(where: { $0.id == selection }) {

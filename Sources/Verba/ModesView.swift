@@ -47,6 +47,8 @@ struct ModesView: View {
             }
             .frame(width: 270)
 
+            Divider().opacity(0.4)   // same separator as the main sidebar (Notes/Dictionary/Snippets/Style)
+
             Group {
                 if let id = selectedID, settings.profiles.contains(where: { $0.id == id }) {
                     editor(id: id)

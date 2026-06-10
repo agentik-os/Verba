@@ -18,7 +18,7 @@ struct FileTranscribeView: View {
     var body: some View {
         HStack(spacing: 0) {
             sidebar.frame(width: 300)
-            Divider()
+            Divider().opacity(0.4)
             detail.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onChange(of: selectedID) { _, _ in if selectedID != nil { state = "idle"; result = ""; error = ""; fileName = "" } }
