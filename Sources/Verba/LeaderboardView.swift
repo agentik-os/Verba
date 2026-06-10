@@ -3,6 +3,9 @@ import SwiftUI
 private enum Metric: String, CaseIterable, Identifiable {
     case words = "Total words", wpm = "Words / min", streak = "Day streak", saved = "Time saved"
     var id: String { rawValue }
+    var icon: String {
+        switch self { case .words: "text.word.spacing"; case .wpm: "gauge.with.needle"; case .streak: "flame"; case .saved: "clock.arrow.circlepath" }
+    }
     func value(_ e: LeaderEntry) -> Double {
         switch self { case .words: e.words; case .wpm: e.wpm; case .streak: e.streak; case .saved: e.saved ?? 0 }
     }
@@ -26,12 +29,19 @@ final class LeaderboardModel: ObservableObject {
             Leaderboard.fetch { self?.entries = $0; self?.loading = false }
         }
     }
+    /// Reload AFTER the debounced alias→submit sink (0.9s in AppDelegate) has pushed,
+    /// so the fresh fetch reflects the new alias / visibility.
+    func reloadSoon(after seconds: Double = 1.3) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { [weak self] in self?.load() }
+    }
 }
 
 struct LeaderboardView: View {
     @StateObject private var model = LeaderboardModel()
+    @ObservedObject private var settings = Settings.shared
     @State private var metric: Metric = .words
     @State private var query = ""
+    @FocusState private var aliasFocused: Bool
 
     private var ranked: [(rank: Int, entry: LeaderEntry)] {
         model.entries
@@ -55,10 +65,13 @@ struct LeaderboardView: View {
             }
             .padding(.horizontal, 28).padding(.top, 28).padding(.bottom, 2)
             Text("Where you rank against everyone using Verba. Aliases only, no names or emails.")
-                .font(.callout).foregroundStyle(.secondary).padding(.horizontal, 28).padding(.bottom, 12)
+                .font(.callout).foregroundStyle(.secondary).padding(.horizontal, 28).padding(.bottom, 14)
 
-            Picker("", selection: $metric) { ForEach(Metric.allCases) { Text($0.rawValue).tag($0) } }
-                .pickerStyle(.segmented).labelsHidden().padding(.horizontal, 28).padding(.bottom, 10)
+            identityCard
+                .padding(.horizontal, 28).padding(.bottom, 12)
+
+            metricChips
+                .padding(.horizontal, 28).padding(.bottom, 12)
 
             HStack(spacing: 7) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary).font(.system(size: 12))
@@ -68,7 +81,10 @@ struct LeaderboardView: View {
             .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             .padding(.horizontal, 28).padding(.bottom, 10)
 
-            if let mine, query.isEmpty {
+            if !settings.showOnLeaderboard, query.isEmpty {
+                hiddenNote
+                    .padding(.horizontal, 28).padding(.bottom, 8)
+            } else if let mine, query.isEmpty {
                 row(mine.rank, mine.entry, highlighted: true)
                     .padding(.horizontal, 28).padding(.bottom, 8)
             }
@@ -100,12 +116,84 @@ struct LeaderboardView: View {
         .onAppear { model.load() }
     }
 
+    // MARK: Identity — edit the public alias + the visibility switch, right where they matter.
+    // Writing to Settings is enough: the AppDelegate sink debounces alias changes to the
+    // board + Clerk, and the showOnLeaderboard didSet submits/removes the row server-side.
+    private var identityCard: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "person.crop.circle.fill")
+                .font(.system(size: 22)).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Your public alias").font(.caption).foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    TextField("Alias", text: $settings.username)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 14, weight: .semibold))
+                        .focused($aliasFocused)
+                        .onSubmit { aliasFocused = false; model.reloadSoon() }
+                    Button {
+                        settings.username = Settings.randomAlias()
+                        model.reloadSoon()
+                    } label: { Image(systemName: "shuffle").font(.system(size: 11)) }
+                        .buttonStyle(.borderless).help("Shuffle a new alias")
+                }
+            }
+            Spacer()
+            Toggle(isOn: $settings.showOnLeaderboard) {
+                Text("Show me").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+            }
+            .toggleStyle(.switch).controlSize(.small)
+            .help("Show me on the public leaderboard")
+            .onChange(of: settings.showOnLeaderboard) { _, _ in model.reloadSoon(after: 0.8) }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12)
+        .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private var hiddenNote: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "eye.slash").foregroundStyle(.secondary)
+            Text("You're hidden from the public leaderboard. Flip “Show me” above to claim your spot.")
+                .font(.callout).foregroundStyle(.secondary)
+            Spacer()
+        }
+        .padding(.horizontal, 14).padding(.vertical, 11)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.04)))
+    }
+
+    // MARK: Metric switcher — capsule tag chips, not a cramped segmented control.
+    private var metricChips: some View {
+        HStack(spacing: 8) {
+            ForEach(Metric.allCases) { m in
+                let selected = metric == m
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { metric = m }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: m.icon).font(.system(size: 10, weight: .semibold))
+                        Text(m.rawValue).font(.system(size: 12, weight: selected ? .semibold : .medium))
+                    }
+                    .padding(.horizontal, 12).padding(.vertical, 6.5)
+                    .foregroundStyle(selected ? AnyShapeStyle(.background) : AnyShapeStyle(.primary.opacity(0.75)))
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(selected ? AnyShapeStyle(Color.primary) : AnyShapeStyle(Color.primary.opacity(0.055)))
+                    )
+                    .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(selected ? 0 : 0.09), lineWidth: 1))
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer()
+        }
+    }
+
     private func row(_ rank: Int, _ e: LeaderEntry, highlighted: Bool) -> some View {
         HStack(spacing: 12) {
             Text(medal(rank)).font(.system(size: 15, weight: .semibold)).frame(width: 36, alignment: .leading)
             Text(e.alias + (highlighted ? "  (you)" : "")).fontWeight(highlighted ? .semibold : .regular).lineLimit(1)
             Spacer()
-            Text(metric.format(metric.value(e))).font(.callout.weight(.medium)).foregroundStyle(highlighted ? .primary : .secondary)
+            Text(metric.format(metric.value(e))).font(.callout.weight(.medium)).monospacedDigit().foregroundStyle(highlighted ? .primary : .secondary)
         }
         .padding(.horizontal, 14).padding(.vertical, 11)
         .background(
