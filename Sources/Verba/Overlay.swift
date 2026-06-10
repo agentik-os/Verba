@@ -146,8 +146,14 @@ struct OverlayView: View {
 
     @ViewBuilder private func label(size: CGFloat) -> some View {
         if model.error {
+            // The outer pill applies .fixedSize() (both axes), which would otherwise resolve
+            // this Text's horizontal ideal to the FULL unwrapped string width — so lineLimit(2)
+            // never wraps and a long error stretches the pill past the screen. Cap the width and
+            // fix only the vertical axis so the text wraps to ≤2 lines within that bound.
             Text(model.title.isEmpty ? "Error" : model.title)
                 .font(.system(size: size, weight: .medium)).foregroundStyle(.red).lineLimit(2)
+                .frame(maxWidth: 280, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
         } else if model.done {
             Text(model.title.isEmpty ? "Done" : model.title).font(.system(size: size, weight: .medium)).lineLimit(1)
         } else if model.menu {

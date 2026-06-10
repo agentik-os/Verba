@@ -617,7 +617,7 @@ private struct ProjectPanel: View {
     /// A plain HStack with .fixedSize() so it takes only the width it needs (no greedy ScrollView
     /// that would blow up the row width and clip the title). The title keeps layout priority.
     private var tagsRow: some View {
-        HStack(spacing: 6) {
+        FlowLayout(spacing: 6) {
             ForEach(project.tags, id: \.self) { tag in
                 HStack(spacing: 5) {
                     Text(tag).font(.caption).lineLimit(1)
@@ -647,7 +647,7 @@ private struct ProjectPanel: View {
                 .background(.softFill, in: Capsule())
             }
         }
-        .fixedSize()
+        .layoutPriority(0)
     }
 
     private func commitTag() {

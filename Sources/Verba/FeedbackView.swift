@@ -92,22 +92,6 @@ struct FeedbackView: View {
                         .padding(editorInset)
                         .frame(minHeight: 160)
                         .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .overlay(alignment: .bottomTrailing) {
-                            // Mic button floats in the corner of the editor.
-                            Button { toggleVoice() } label: {
-                                if recording {
-                                    Label("Listening…", systemImage: "stop.circle.fill").foregroundStyle(.red)
-                                } else if transcribing {
-                                    Label("Transcribing…", systemImage: "waveform")
-                                } else {
-                                    Image(systemName: "mic.fill")
-                                }
-                            }
-                            .buttonStyle(.borderless)
-                            .disabled(submitting || transcribing)
-                            .help("Dictate your feedback")
-                            .padding(10)
-                        }
                         .onChange(of: draft) { _, _ in
                             if sent { sent = false }
                             if error != nil { error = nil }
@@ -133,8 +117,27 @@ struct FeedbackView: View {
                     handleDrop(providers)
                 }
 
-                // Screenshot: either an "Attach screenshot" affordance or a thumbnail with a remove (×).
+                // Screenshot + dictation affordances, then "Improve with AI".
                 HStack(spacing: 10) {
+                    // Dictate: a chip that mirrors the three voice states (idle / listening / transcribing).
+                    // Lives in the action row — never floating over the editor's growing text.
+                    Button { toggleVoice() } label: {
+                        if recording {
+                            ActionChip(title: "Listening…", icon: "stop.circle.fill")
+                        } else if transcribing {
+                            HStack(spacing: 6) {
+                                ProgressView().controlSize(.small)
+                                Text("Transcribing…").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                            }
+                            .padding(.horizontal, 12).padding(.vertical, 4.5)
+                        } else {
+                            ActionChip(title: "Dictate", icon: "mic.fill")
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(submitting || transcribing)
+                    .help("Dictate your feedback")
+
                     if let thumb = screenshotThumb {
                         ZStack(alignment: .topTrailing) {
                             Image(nsImage: thumb)

@@ -110,7 +110,7 @@ struct HomeView: View {
                     Text("Start dictating").font(.headline)
                     Text("Press \(triggerLabel) and talk. Fn + Tab jumps to the next mode (even mid-sentence), ⌃ pauses & resumes, or use ⌃⌥1-6 for a specific mode.")
                         .foregroundStyle(.secondary)
-                    HStack(spacing: 8) {
+                    FlowLayout(spacing: 8) {
                         ForEach(settings.profiles.prefix(6)) { p in
                             Text(p.name).font(.caption.weight(.medium))
                                 .padding(.horizontal, 11).padding(.vertical, 5)
