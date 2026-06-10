@@ -107,7 +107,7 @@ private struct SessionRow: View {
                 if session.autoPasted {
                     Text("pasted").font(.system(size: 9, weight: .medium))
                         .padding(.horizontal, 5).padding(.vertical, 1)
-                        .background(Capsule().fill(Color.primary.opacity(0.08)))
+                        .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.08)))
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
