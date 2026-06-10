@@ -108,7 +108,7 @@ export default function LiveDemo() {
           <button
             key={x.name}
             onClick={() => setMode(i)}
-            className={`rounded-full px-3.5 py-1.5 text-[13px] transition ${
+            className={`rounded-full px-3.5 py-1.5 text-[13px] transition-colors duration-150 ${
               i === mode
                 ? "bg-[var(--fg)] text-[var(--bg)] font-medium"
                 : "border border-[var(--border)] text-[var(--muted)] hover:text-[var(--fg)]"
@@ -120,7 +120,7 @@ export default function LiveDemo() {
       </div>
 
       {/* THE hero artifact — solid product chrome, not frosted glass */}
-      <div className="panel r-panel float overflow-hidden">
+      <div className="panel r-panel overflow-hidden" style={{ borderColor: "var(--border-warm)" }}>
         {/* macOS title bar */}
         <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3">
           <div className="flex items-center gap-2">
@@ -132,7 +132,7 @@ export default function LiveDemo() {
             <span className={`rec-dot ${listening ? "pulse" : ""}`} style={{ opacity: listening ? 1 : 0.3 }} />
             {listening ? "Listening" : `Pasting into ${m.app}`}
           </div>
-          <span className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px] font-medium text-white/70 tnum">
+          <span className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 font-mono text-[11px] text-white/70 tnum">
             {m.name} · {m.model}
           </span>
         </div>
@@ -156,7 +156,7 @@ export default function LiveDemo() {
           <p className="mt-1.5 min-h-[6.5em] whitespace-pre-line text-[15px] leading-relaxed">
             {typed}
             {phase === "writing" && typed.length < m.wrote.length && (
-              <span className="ml-0.5 inline-block h-[1.05em] w-[2px] animate-pulse bg-white align-text-bottom" />
+              <span className="ml-0.5 inline-block h-[1.05em] w-[2px] caret bg-white align-text-bottom" />
             )}
           </p>
         </div>

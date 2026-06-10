@@ -26,7 +26,10 @@
   /* Solid product-chrome panel (macOS window look, opaque, not frosted) */
   --panel: #0c0c10;
   --panel-2: #101015;
-  --panel-shadow: 0 40px 80px -32px rgba(0, 0, 0, 0.85), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  --panel-shadow:
+    0 40px 80px -32px rgba(0, 0, 0, 0.85),
+    0 8px 24px -12px rgba(0, 0, 0, 0.6),
+    0 1px 1px rgba(255, 90, 77, 0.06);   /* the rec hue lives subliminally in every elevation */
 
   /* Flat tinted supporting card — crisp 1px border, NO blur */
   --card: rgba(255, 255, 255, 0.022);
@@ -54,7 +57,10 @@
 
   --panel: #0c0c10;          /* the hero chrome stays dark in both modes — it IS the app */
   --panel-2: #101015;
-  --panel-shadow: 0 40px 90px -34px rgba(20, 22, 40, 0.45), 0 8px 24px -14px rgba(20, 22, 40, 0.30);
+  --panel-shadow:
+    0 40px 90px -34px rgba(20, 22, 40, 0.45),
+    0 8px 24px -14px rgba(20, 22, 40, 0.30),
+    0 1px 1px rgba(226, 59, 46, 0.05);
 
   --card: rgba(255, 255, 255, 0.66);
   --card-hover: rgba(255, 255, 255, 0.92);
@@ -66,9 +72,20 @@
   color-scheme: light;
 }
 
+/* ---- Motion tokens — THE interaction signature: 150ms ease-out, everywhere
+   (Liveblocks: 53 els, Resend: 52 els) [M1] ---- */
+:root {
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-out-soft: cubic-bezier(0.33, 1, 0.68, 1);   /* Liveblocks mask-flare easing */
+  --dur-fast: 150ms;     /* hovers, link color, border-color, FAQ content */
+  --dur-med: 250ms;      /* reveals-adjacent, theme transitions */
+  --border-warm: rgba(255, 220, 214, 0.10);   /* faint warm-cast border for accent zones (Resend's tinted-border trick) */
+}
+
 html, body { height: 100%; }
 
 body {
+  overflow-x: clip;   /* full-bleed CrossRule uses w-screen; never let it create a horizontal scroll */
   background: var(--bg);
   color: var(--fg);
   -webkit-font-smoothing: antialiased;
@@ -164,12 +181,13 @@ body::after {
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  transition: background-color .25s ease, border-color .25s ease, transform .28s cubic-bezier(.2,.7,.2,1);
+  transition: background-color var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out);
 }
 .card.lift:hover {
   background: var(--card-hover);
   border-color: var(--border-strong);
-  transform: translateY(-3px);
+  /* NO transform — flat grid reads more expensive [C7] */
 }
 
 /* (3) GLASS — translucency reserved for nav + the live-demo overlay only. */
@@ -237,15 +255,30 @@ body::after {
 .btn-primary {
   background: var(--fg); color: var(--bg);
   border-radius: 10px; font-weight: 500;
-  transition: transform .2s ease, opacity .2s ease, box-shadow .2s ease;
+  transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
   box-shadow: 0 1px 0 rgba(255,255,255,0.12) inset, 0 10px 30px -12px rgba(0,0,0,0.6);
 }
-.btn-primary:hover { transform: translateY(-1px); opacity: .94; }
+.btn-primary:hover { opacity: .92; }            /* NO translateY [G8] */
+.btn-primary:active { transform: scale(0.98); } /* press compresses */
 .btn-ghost {
   border: 1px solid var(--border-strong); border-radius: 10px; font-weight: 500;
-  background: var(--tint); transition: background-color .2s ease, border-color .2s ease;
+  background: var(--tint);
+  transition: background-color var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
 }
 .btn-ghost:hover { background: var(--tint-strong); border-color: var(--fg); }
+.btn-ghost:active { transform: scale(0.98); }
+
+/* Instrument-grade tertiary action (footer status, meta links) [C6] */
+.btn-meta {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.72rem; font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 6px 12px; border-radius: 6px;
+  border: 1px solid var(--border); background: transparent; color: var(--muted);
+  transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.btn-meta:hover { border-color: var(--border-strong); color: var(--fg); }
 
 /* ============================================================================
    MOTION — confined; tasteful
@@ -258,7 +291,7 @@ body::after {
 
 /* Logo marquee */
 @keyframes scrollx { from { transform: translateX(0) } to { transform: translateX(-50%) } }
-.marquee { display: flex; width: max-content; animation: scrollx 34s linear infinite; }
+.marquee { display: flex; width: max-content; animation: scrollx 90s linear infinite; }
 .marquee:hover { animation-play-state: paused; }
 
 @keyframes shimmer { 0% { background-position: -200% 0 } 100% { background-position: 200% 0 } }
@@ -270,7 +303,8 @@ body::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .float, .marquee, .shine, .rec-dot.pulse { animation: none; }
+  .float, .marquee, .shine, .rec-dot.pulse, .glow-rec, .caret { animation: none; }
+  .anim-nav, .anim-h1, .anim-sub, .anim-cta, .anim-demo { animation: none; }
 }
 
 .tick { color: #6ee7a8; } [data-theme="light"] .tick { color: #16a34a; }
@@ -313,3 +347,64 @@ input.cl-formFieldInput {
 .cl-formFieldInput::placeholder { color: rgba(11, 11, 15, 0.45) !important; -webkit-text-fill-color: rgba(11,11,15,0.45) !important; }
 .cl-footer, .cl-footerAction, .cl-cardBox { background: transparent !important; box-shadow: none !important; }
 .cl-card { box-shadow: 0 20px 60px rgba(0,0,0,0.45) !important; }
+
+
+/* ============================================================================
+   TIER-1 LAYER — mono voice, drawn rules, hero choreography, the one glow
+   ========================================================================== */
+
+/* The mono voice: DATA only (indices, dates, prices, models, shortcuts) [C1, G10] */
+.mono-meta {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.72rem; font-weight: 400; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+.mono-index {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.72rem; font-weight: 400; letter-spacing: 0.06em;
+  color: var(--faint); font-variant-numeric: tabular-nums;
+}
+
+/* Breathing rec glow — ONE place only: behind the hero demo [M3] */
+.glow-rec {
+  position: absolute; inset: auto 8% -12% 8%; height: 45%;
+  z-index: -1; pointer-events: none; border-radius: 50%;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(255,90,77,0.55), transparent 70%);
+  filter: blur(60px);
+  opacity: 0.07;
+  animation: glow-breathe 4s var(--ease-out-soft) infinite alternate;
+}
+@keyframes glow-breathe { from { opacity: 0.06; } to { opacity: 0.12; } }
+
+/* Crosshair chapter rules — Cal.com hairline architecture [C2] */
+.crosshair-rule { position: relative; height: 1px; background: var(--border); }
+.crosshair-rule::before, .crosshair-rule::after {
+  content: ""; position: absolute; top: -3.5px; width: 8px; height: 8px;
+  background:
+    linear-gradient(var(--faint), var(--faint)) center/8px 1px no-repeat,
+    linear-gradient(var(--faint), var(--faint)) center/1px 8px no-repeat;
+}
+.crosshair-rule::before { left: max(1.5rem, calc((100vw - 72rem) / 2)); }
+.crosshair-rule::after  { right: max(1.5rem, calc((100vw - 72rem) / 2)); }
+
+/* Caret blink — Resend's measured keyframe [M8] */
+@keyframes caret-blink { 0% { opacity: 1; } 20%, 50% { opacity: 0; } 70%, 100% { opacity: 1; } }
+.caret { animation: caret-blink 1s steps(1) infinite; }
+
+/* Hero load choreography — ±14px travel, 3-step stagger, hero ONLY [M2] */
+@keyframes rise-in  { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes drop-in  { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
+@keyframes develop  { 0% { opacity: 0; transform: scale(0.97); } 30% { opacity: 0; } 100% { opacity: 1; transform: none; } }
+.anim-nav  { animation: drop-in .5s var(--ease-out) both; }
+.anim-h1   { animation: rise-in .6s var(--ease-out) .08s both; }
+.anim-sub  { animation: rise-in .6s var(--ease-out) .16s both; }
+.anim-cta  { animation: rise-in .6s var(--ease-out) .24s both; }
+.anim-demo { animation: develop .9s var(--ease-out) .15s both; }
+
+/* FAQ answer fade-in [1.12] */
+details[open] > .faq-body { animation: rise-in .25s var(--ease-out) both; }
+
+/* Text links: underline as state [C10] */
+.link-quiet { transition: color var(--dur-fast) var(--ease-out); }
+.link-quiet:hover { color: var(--fg); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--border-strong); }

@@ -43,12 +43,14 @@ export function MotifRule({ label }: { label?: string }) {
 /* Left-aligned section header — used to break the centered-stack loop. */
 export function HeadLeft({
   eyebrow,
+  index,
   title,
   lead,
   anchor = false,
   children,
 }: {
   eyebrow?: string;
+  index?: string;
   title: ReactNode;
   lead?: ReactNode;
   anchor?: boolean;
@@ -59,6 +61,7 @@ export function HeadLeft({
       {eyebrow && (
         <div className="mb-4 flex items-center gap-2.5">
           <span className="rec-dot" />
+          {index && <span className="mono-index">{index}</span>}
           <span className="eyebrow">{eyebrow}</span>
         </div>
       )}
@@ -72,11 +75,13 @@ export function HeadLeft({
 /* Centered section header — reserved for the few moments that earn it. */
 export function HeadCenter({
   eyebrow,
+  index,
   title,
   lead,
   anchor = false,
 }: {
   eyebrow?: string;
+  index?: string;
   title: ReactNode;
   lead?: ReactNode;
   anchor?: boolean;
@@ -86,11 +91,26 @@ export function HeadCenter({
       {eyebrow && (
         <div className="mb-4 flex items-center justify-center gap-2.5">
           <span className="rec-dot" />
+          {index && <span className="mono-index">{index}</span>}
           <span className="eyebrow">{eyebrow}</span>
         </div>
       )}
       <h2 className={`${anchor ? "t-anchor" : "t-section"} text-balance`}>{title}</h2>
       {lead && <p className="t-lead mx-auto mt-5 text-balance">{lead}</p>}
+    </div>
+  );
+}
+
+/* Museum caption: tiny mono label ABOVE and OUTSIDE a showcase panel [C8 — rauno]. */
+export function PanelCaption({ children }: { children: ReactNode }) {
+  return <p className="mono-meta mb-2.5">{children}</p>;
+}
+
+/* Full-bleed crosshair chapter rule — drawn architecture, used ~7 times total [C2]. */
+export function CrossRule() {
+  return (
+    <div aria-hidden className="relative left-1/2 w-screen -translate-x-1/2">
+      <div className="crosshair-rule" />
     </div>
   );
 }

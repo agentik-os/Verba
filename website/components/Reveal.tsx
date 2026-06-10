@@ -41,8 +41,8 @@ export default function Reveal({
       className={className}
       style={{
         opacity: shown ? 1 : 0,
-        transform: shown ? "none" : "translateY(22px)",
-        transition: `opacity .7s ease ${delay}ms, transform .7s cubic-bezier(.2,.7,.2,1) ${delay}ms`,
+        transform: shown ? "none" : "translateY(14px)",
+        transition: `opacity .55s cubic-bezier(0,0,0.2,1) ${Math.min(delay, 240)}ms, transform .55s cubic-bezier(0,0,0.2,1) ${Math.min(delay, 240)}ms`,
       }}
     >
       {children}
