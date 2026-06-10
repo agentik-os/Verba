@@ -112,7 +112,7 @@ struct FileTranscribeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Transcribe file").font(.system(size: 28, weight: .bold))
+                    Text("Transcribe file").font(.system(size: 17, weight: .bold))
                     Text("Drop in an audio or video file and Verba transcribes it with your current engine (\(settings.engine.label)). Imports are saved to your transcripts library.")
                         .font(.callout).foregroundStyle(.secondary)
                 }

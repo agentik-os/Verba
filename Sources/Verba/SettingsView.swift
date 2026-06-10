@@ -114,7 +114,7 @@ struct SettingsView: View {
 
     private var rail: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Settings").font(.system(size: 19, weight: .bold))
+            Text("Settings").font(.system(size: 17, weight: .bold))
                 .padding(.horizontal, 12).padding(.top, 22).padding(.bottom, 10)
             ForEach(SettingsSection.allCases) { s in
                 railRow(s)
@@ -162,7 +162,7 @@ struct SettingsView: View {
 
     private var detailHeader: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(section.title).font(.system(size: 28, weight: .bold))
+            Text(section.title).font(.system(size: 17, weight: .bold))
             Text(section.subtitle).font(.callout).foregroundStyle(.secondary)
         }
         .padding(.bottom, 2)
@@ -713,65 +713,123 @@ struct SettingsView: View {
     // MARK: - 5 · Shortcuts
 
     @ViewBuilder private var shortcutsDetail: some View {
-        card("Primary trigger") {
-            toggleRow("Use the Fn (🌐 globe) key", $settings.useFnAsPrimary)
-            if settings.useFnAsPrimary {
+        let fnOn = settings.useFnAsPrimary
+
+        // DICTATION — how you start, pause and cancel a dictation.
+        card("Dictation") {
+            toggleRow("Use the Fn (🌐 globe) key as the trigger", $settings.useFnAsPrimary)
+            if fnOn {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Trigger").font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                    Text("When you press Fn").font(.caption.weight(.medium)).foregroundStyle(.secondary)
                     chips(TriggerStyle.allCases, selected: settings.triggerStyle,
                           label: { $0.label }, onPick: { settings.triggerStyle = $0 })
                 }
-                Text(settings.triggerStyle == .hold
-                     ? "Hold Fn while you talk, release to send. Fn + 1-9 = dictate in a specific mode · Fn + Tab = next mode (even mid-hold) · ⌃ pauses · Esc cancels."
-                     : "Tap Fn to start, tap again to send. Fn + 1-9 = dictate in a specific mode · Fn + Tab = next mode (even mid-dictation) · ⌃ pauses · Esc cancels.")
-                    .font(.caption).foregroundStyle(.secondary)
+                chordRow(settings.triggerStyle == .hold
+                         ? "Hold to talk, release to send" : "Tap to start, tap again to send",
+                         caps: ["Fn"])
             } else {
-                shortcutRow("Primary shortcut",
-                            has: settings.primaryHasShortcut,
-                            code: settings.primaryKeyCode, mods: settings.primaryMods,
-                            target: .primary)
+                chordRecorderRow("Start / stop dictation",
+                                 has: settings.primaryHasShortcut,
+                                 code: settings.primaryKeyCode, mods: settings.primaryMods,
+                                 target: .primary)
+            }
+            chordRow("Pause / resume while recording", caps: ["⌃"])
+            chordRow("Cancel recording or processing", caps: ["⎋"])
+            cardCaption(fnOn
+                ? "Your trigger is everything: tap or hold to dictate, then ⌃ to pause and ⎋ to cancel."
+                : "Pick the keystroke that starts and stops a dictation. ⌃ pauses, ⎋ cancels.")
+        }
+
+        // MODES — choosing which rewriting mode the dictation runs through.
+        if fnOn {
+            card("Modes") {
+                toggleRow("Change-mode jumps straight to the next mode (no list)", $settings.modeGestureCycles)
+                toggleRow("Remember the last mode you used", $settings.rememberLastMode,
+                          help: "After each dictation, the mode you just used becomes the default for the next one.")
+                chordRow("Next mode  (add ⇧ for previous)", caps: ["Fn", "⇥"])
+                chordRow("Pick a mode by number", caps: ["Fn", "1–9"])
+                chordRow("Next mode hands-free while recording", caps: ["⌥"])
+                chordRecorderRow("Custom change-mode shortcut",
+                                 has: settings.modePickerHasShortcut,
+                                 code: settings.modePickerKeyCode, mods: settings.modePickerMods,
+                                 target: .modePicker)
+                cardCaption(settings.modeGestureCycles
+                    ? "Fn + Tab cycles to the next mode even mid-dictation; turn the toggle off to open a numbered picker instead. Each mode also gets its own ⌃⌥1–6 shortcut over in Modes."
+                    : "Fn + Tab opens a numbered picker; turn the toggle on to cycle straight to the next mode instead. Each mode also gets its own ⌃⌥1–6 shortcut over in Modes.")
             }
         }
 
-        card("Mode switching") {
-            toggleRow("Change-mode jumps to the next mode (no list)", $settings.modeGestureCycles)
-            toggleRow("Remember last used mode", $settings.rememberLastMode,
-                      help: "After each dictation, the mode you used becomes the default for the next one.")
-            staticChord("Change-mode shortcut", "Fn + Tab")
-            shortcutRow("Custom change-mode shortcut",
-                        has: settings.modePickerHasShortcut,
-                        code: settings.modePickerKeyCode, mods: settings.modePickerMods,
-                        target: .modePicker)
-            Text(settings.modeGestureCycles
-                 ? "Fn + Tab jumps straight to the next mode — even mid-dictation; Fn + 1-9 picks a specific mode. Turn this off to open a numbered picker instead. Per-mode shortcuts are in Modes."
-                 : "Fn + Tab opens the mode picker; Fn + 1-9 picks a specific mode. Turn the toggle on to cycle straight to the next mode instead. Per-mode shortcuts are in Modes.")
-                .font(.caption).foregroundStyle(.secondary)
+        // STYLES — the tone/format layer on top of the active mode.
+        if fnOn {
+            card("Styles") {
+                chordRow("Next style", caps: ["Fn", "]"])
+                chordRow("Previous style", caps: ["Fn", "["])
+                cardCaption("Styles tweak the tone or format on top of whatever mode you're in — flick between them without leaving your dictation.")
+            }
         }
 
-        card("Notes & to-dos") {
-            staticChord("Today's to-do glance", "⌥ + Fn")
-            toggleRow("Enable the ⌥ + Fn task glance", $settings.todoGlanceEnabled,
-                      help: "Press ⌥ (Option) + Fn to pop up a compact glance of today's tasks. Press it again or Esc to dismiss.")
-            staticChord("Record a note", "Fn + Z")
-            staticChord("Add a to-do", FnTap.todoChordLabel)
-            shortcutRow("Custom record-note shortcut",
-                        has: settings.noteRecordHasShortcut,
-                        code: settings.noteRecordKeyCode, mods: settings.noteRecordMods,
-                        target: .noteRecord)
-            Text("Fn + Z opens the Notes tab and starts recording a new note instantly (notes auto-save as you go). \(FnTap.todoChordLabel) instead captures a spoken to-do and files it into your projects.")
-                .font(.caption).foregroundStyle(.secondary)
+        // CAPTURE — voice notes, to-dos and the Mac-controlling Action mode.
+        if fnOn {
+            card("Capture") {
+                chordRow("Add a to-do by voice", caps: FnTap.todoChordLabel.components(separatedBy: " + "))
+                chordRow("Capture a note by voice", caps: ["Fn", "Z"])
+                chordRecorderRow("Custom record-note shortcut",
+                                 has: settings.noteRecordHasShortcut,
+                                 code: settings.noteRecordKeyCode, mods: settings.noteRecordMods,
+                                 target: .noteRecord)
+                chordRow("Action mode — speak a command to control your Mac", caps: ["Fn", "X"])
+                chordRow("Stop an in-progress note / to-do capture", caps: ["Fn"])
+                Divider().opacity(0.4)
+                toggleRow("Show today's to-dos on ⌥ + Fn", $settings.todoGlanceEnabled,
+                          help: "Press ⌥ (Option) + Fn for a compact glance of today's tasks. Press it again or ⎋ to dismiss.")
+                chordRow("Today's to-dos  (quick glance)", caps: ["⌥", "Fn"])
+                cardCaption("Capture things hands-free: a note files into Notes, a to-do files into your projects, and Action mode turns speech into a command that runs on your Mac.")
+            }
         }
 
-        card("Cheat sheet") {
-            statusLabel("Fn + 1-9 picks a mode · Fn + Tab cycles · ⌃ pauses · Esc cancels · Fn + X for Action mode.",
-                        system: "command", tint: .secondary)
+        // EDITING — fixing or re-running the last dictation. Menu-bar actions (no chord).
+        if fnOn {
+            card("Editing") {
+                menuActionRow("Edit the last result by voice",
+                              "Say a change (\u{201C}shorter\u{201D}, \u{201C}more formal\u{201D}\u{2026}) to rewrite what you just dictated.")
+                menuActionRow("Redo the last recording in another mode",
+                              "Re-run your last recording through a different mode \u{2014} no need to speak again.")
+                cardCaption("Both live in Verba's menu-bar icon, under your recent result.")
+            }
         }
     }
 
-    private func shortcutRow(_ title: String, has: Bool, code: UInt32, mods: UInt32, target: ShortcutTarget) -> some View {
-        HStack {
-            Text(title).font(.system(size: 13))
-            Spacer()
+    /// A single keycap: monospace glyph in a soft-filled rounded rect with a subtle border.
+    private func keycap(_ label: String) -> some View {
+        Text(label)
+            .font(.system(size: 11.5, weight: .medium, design: .monospaced))
+            .foregroundStyle(.primary)
+            .padding(.horizontal, label.count > 1 ? 7 : 6).padding(.vertical, 3)
+            .frame(minWidth: 22)
+            .background(.softFill, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+    }
+
+    /// A row of individual keycaps (e.g. ⌥ ⌘ T as separate caps).
+    private func keycaps(_ caps: [String]) -> some View {
+        HStack(spacing: 4) { ForEach(Array(caps.enumerated()), id: \.offset) { keycap($0.element) } }
+    }
+
+    /// Description on the left, the chord rendered as individual keycaps on the right.
+    private func chordRow(_ desc: String, caps: [String]) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            Text(desc).font(.system(size: 13)).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            keycaps(caps)
+        }
+    }
+
+    /// A chord row whose binding is user-configurable — keeps the recorder control on the right.
+    private func chordRecorderRow(_ desc: String, has: Bool, code: UInt32, mods: UInt32, target: ShortcutTarget) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            Text(desc).font(.system(size: 13)).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
             ShortcutRecorder(
                 label: has ? shortcutLabel(keyCode: code, modifiers: mods) : "",
                 onCapture: { c, m in settings.assignShortcut(keyCode: c, modifiers: m, to: target) },
@@ -780,15 +838,28 @@ struct SettingsView: View {
         }
     }
 
-    private func staticChord(_ title: String, _ chord: String) -> some View {
-        HStack {
-            Text(title).font(.system(size: 13))
-            Spacer()
-            Text(chord).font(.system(.callout, design: .rounded).weight(.medium))
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 9).padding(.vertical, 4)
-                .background(.softFill, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+    /// A menu-bar action (no keyboard chord): description + sub-line, tagged "Menu".
+    private func menuActionRow(_ title: String, _ subtitle: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.system(size: 13))
+                Text(subtitle).font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            Label("Menu", systemImage: "menubar.arrow.up.rectangle")
+                .labelStyle(.titleAndIcon)
+                .font(.caption2.weight(.medium)).foregroundStyle(.secondary)
+                .padding(.horizontal, 7).padding(.vertical, 3)
+                .background(.softFill, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .fixedSize()
         }
+    }
+
+    /// A one-line caption under a Shortcuts group.
+    private func cardCaption(_ text: String) -> some View {
+        Text(text).font(.caption).foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     // MARK: - 6 · Privacy & history

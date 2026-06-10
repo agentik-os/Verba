@@ -18,7 +18,7 @@ private struct SectionScaffold<Content: View, Actions: View>: View {
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        Text(title).font(.system(size: 28, weight: .bold))
+                        Text(title).font(.system(size: 17, weight: .bold))
                         Spacer()
                         actions()
                     }
@@ -792,7 +792,7 @@ struct DictionaryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Add to dictionary").font(.system(size: 28, weight: .bold))
+                    Text("Add to dictionary").font(.system(size: 17, weight: .bold))
                     Text("Teach Verba names and terms it should always spell right.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
@@ -986,7 +986,7 @@ struct SnippetsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("New snippet").font(.system(size: 28, weight: .bold))
+                        Text("New snippet").font(.system(size: 17, weight: .bold))
                         Text("Create shortcuts: say a short trigger and Verba expands it into longer text, like your address, an email signature, or a boilerplate reply.")
                             .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     }
@@ -1275,7 +1275,7 @@ struct TransformsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("New transform").font(.system(size: 28, weight: .bold))
+                        Text("New transform").font(.system(size: 17, weight: .bold))
                         Text("Actions that run on text you’ve selected. Highlight text in any app, speak the Verbal Shortcut (e.g. “fix grammar”), and Verba runs it on your selection and replaces it. Works in every mode.")
                             .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     }
@@ -1348,7 +1348,7 @@ struct ScratchpadView: View {
         // aligned to the exemplar's detail-pane header/padding grammar.
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
-                Text("Scratchpad").font(.system(size: 28, weight: .bold))
+                Text("Scratchpad").font(.system(size: 17, weight: .bold))
                 Spacer(minLength: 8)
                 CopyButton(text: pad.text, title: "Copy")
                 Button(role: .destructive) { pad.text = "" } label: { Label("Clear", systemImage: "trash") }

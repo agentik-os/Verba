@@ -30,7 +30,7 @@ struct WishlistView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Wishlist").font(.system(size: 28, weight: .bold))
+                Text("Wishlist").font(.system(size: 17, weight: .bold))
                 Spacer()
                 Button { model.load() } label: { Image(systemName: "arrow.clockwise") }.buttonStyle(.borderless).help("Refresh")
             }

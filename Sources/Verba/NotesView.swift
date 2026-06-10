@@ -214,7 +214,7 @@ struct NotesView: View {
 
     private var intro: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("New note").font(.system(size: 28, weight: .bold))
+            Text("New note").font(.system(size: 17, weight: .bold))
             Text("Speak freely, even for an hour. Verba transcribes it and turns it into a clean, formatted document.")
                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }

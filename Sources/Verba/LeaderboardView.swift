@@ -59,7 +59,7 @@ struct LeaderboardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Leaderboard").font(.system(size: 28, weight: .bold))
+                Text("Leaderboard").font(.system(size: 17, weight: .bold))
                 Spacer()
                 Button { model.load() } label: { Image(systemName: "arrow.clockwise") }.buttonStyle(.borderless).help("Refresh")
             }

@@ -61,7 +61,7 @@ struct FeedbackView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Feedback").font(.system(size: 28, weight: .bold))
+                Text("Feedback").font(.system(size: 17, weight: .bold))
                 Spacer()
             }
             .padding(.horizontal, 28).padding(.top, 28).padding(.bottom, 2)
