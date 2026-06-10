@@ -20,6 +20,16 @@ const DAYS: Day[] = [
       "A privacy, security and craft day: history gets a real off switch and auto-delete, cloud data gets a delete-everything button, every sync request is authenticated per device, every dialog moves to the new glass design, and verba.run gets a full craft pass.",
     entries: [
       {
+        version: "0.4.9 → 0.5.0",
+        title: "Verba is now a game you can win",
+        items: [
+          "New Achievements section: your Level and XP, a daily words goal ring, your weekly League (Bronze to Diamond), and 24 badges to unlock as you dictate, switch modes, build streaks and save hours.",
+          "Confetti and a reward card celebrate every achievement and level up, the moment you earn it.",
+          "Your Customize look (app and widget) now syncs to your account, so a new Mac or a fresh sign-in restores it exactly.",
+          "Plus a sweep of per-tool fixes across Notes, Tasks, Dictionary, Transforms, History, Modes and Settings.",
+        ],
+      },
+      {
         version: "0.4.4 → 0.4.8",
         title: "A new Polish mode, numbers as digits, and a private leaderboard",
         items: [
