@@ -44,7 +44,6 @@ export default function Home() {
       <Personalize />
       <Shortcuts />
       <How />
-      <CompareTable />
       <CompareTeaser />
       <Pricing />
       <FAQ />
