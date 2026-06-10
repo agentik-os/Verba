@@ -82,6 +82,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         applyDockPolicy()
         installMainMenu()   // menu-bar apps have no main menu → no ⌘C/⌘V in text fields without this
+        VerbaServiceProvider.register()   // VER-19: "Transform with Verba…" in the Services menu (right-click on any selection)
         Quips.refillIfLow(tone: Settings.shared.quipTone)  // pre-warm the AI-generated loading lines
         EngineManager.seedBundledModels()   // copy the app-bundled Parakeet model into cache (first run, offline-instant)
         preloadEngine()   // load the local transcription model now so the first dictation is instant

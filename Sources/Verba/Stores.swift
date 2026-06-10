@@ -415,6 +415,43 @@ final class TransformsStore: ObservableObject {
         return nil
     }
 
+    /// The system prompt used to run a transform's instruction on a piece of selected text.
+    /// Single source of truth shared by the verbal-shortcut path (Pipeline) and the macOS
+    /// Services path (VerbaServiceProvider), so both produce identical results.
+    static func selectionSystemPrompt(for transform: Transform) -> String {
+        transform.prompt + "\nOutput ONLY the transformed text."
+    }
+
+    /// Outcome of a synchronous transform-on-selection run: the replacement text, or a
+    /// user-facing error message to surface in the Services error channel.
+    enum SelectionOutcome { case success(String); case failure(String) }
+
+    /// Run a transform's instruction on `selection` and return the replacement text, BLOCKING
+    /// until done. Used by the macOS Services entry point (VER-19 point 1), which the system
+    /// delivers synchronously on the main thread — so we drive the async Reprompter with a
+    /// semaphore on a background thread and wait. Reuses the exact prompt the verbal shortcut uses.
+    static func runOnSelectionSync(_ transform: Transform, selection: String) -> SelectionOutcome {
+        let model = Settings.shared.claudeModel
+        let sys = selectionSystemPrompt(for: transform)
+        let sem = DispatchSemaphore(value: 0)
+        var out: SelectionOutcome = .failure("Transform failed. Try again.")
+        Task {
+            do {
+                let text = try await Reprompter(model: model).reprompt(transcript: selection, systemPrompt: sys)
+                let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                out = trimmed.isEmpty ? .failure("Verba returned nothing for that selection.") : .success(trimmed)
+            } catch {
+                out = .failure((error as? LocalizedError)?.errorDescription ?? "Transform failed: \(error.localizedDescription)")
+            }
+            sem.signal()
+        }
+        // 60s ceiling so a wedged backend can't hang the calling app's Services menu forever.
+        if sem.wait(timeout: .now() + 60) == .timedOut {
+            return .failure("Timed out — the backend took too long. Try again.")
+        }
+        return out
+    }
+
     /// Lowercased, punctuation-stripped, single-spaced form for tolerant matching.
     private static func normalize(_ s: String) -> String {
         let lowered = s.lowercased()

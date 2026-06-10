@@ -110,6 +110,23 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>SUEnableAutomaticChecks</key> <true/>
     <key>SUAutomaticallyUpdate</key>   <true/>
     <key>SUScheduledCheckInterval</key><integer>3600</integer>
+    <!-- VER-19: register Transforms as a macOS Service so selecting text in ANY app and
+         right-clicking shows Services ▸ "Transform with Verba…", which runs a chosen transform
+         on the selection and replaces it. The provider is VerbaServiceProvider (Services.swift),
+         installed via NSApp.servicesProvider; NSMessage is the selector, NSPortName the process. -->
+    <key>NSServices</key>
+    <array>
+      <dict>
+        <key>NSMenuItem</key>
+        <dict>
+          <key>default</key><string>Transform with Verba…</string>
+        </dict>
+        <key>NSMessage</key>       <string>transformWithVerba</string>
+        <key>NSPortName</key>      <string>Verba</string>
+        <key>NSSendTypes</key>     <array><string>NSStringPboardType</string></array>
+        <key>NSReturnTypes</key>   <array><string>NSStringPboardType</string></array>
+      </dict>
+    </array>
 </dict>
 </plist>
 PLIST

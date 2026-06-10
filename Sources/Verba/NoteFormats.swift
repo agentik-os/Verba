@@ -60,13 +60,19 @@ struct NoteFormat: Codable, Identifiable, Equatable, Hashable {
         """,
         builtin: true, intent: true)
 
-    /// The instruction-aware prompt actually sent to Claude. For an Intent mode the user's one-off
-    /// instruction is woven in front of the base prompt; other modes ignore it.
+    /// The instruction-aware prompt actually sent to Claude. Whenever the user supplied a one-off
+    /// instruction (Intent mode, or an intent typed alongside any mode) it is woven IN FRONT of the
+    /// base prompt with strong precedence, so the note honours it instead of being passed verbatim.
+    /// An empty instruction leaves the mode's base prompt untouched.
     func effectiveSystemPrompt(instruction: String) -> String {
-        guard intent else { return systemPrompt }
         let trimmed = instruction.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return systemPrompt }
-        return "INSTRUCTION FROM THE USER: \(trimmed)\n\n\(systemPrompt)"
+        return """
+        INSTRUCTION FROM THE USER (apply this faithfully — it takes precedence over the formatting \
+        guidance below): \(trimmed)
+
+        \(systemPrompt)
+        """
     }
 
     static var cleanNote: NoteFormat { allBuiltIn[0] }

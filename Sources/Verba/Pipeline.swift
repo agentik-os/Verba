@@ -307,7 +307,7 @@ enum Pipeline {
                 status("Working on your selection…")
                 reprompted = try await r.reprompt(
                     transcript: sel,
-                    systemPrompt: transform.prompt + "\nOutput ONLY the transformed text.")
+                    systemPrompt: TransformsStore.selectionSystemPrompt(for: transform))
             } else if !sel.isEmpty && profile.targetLanguage == nil {
                 // Selection mode: the dictation is an INSTRUCTION acting on the selected text.
                 // (Skipped for Translate modes — they always translate the spoken words.)

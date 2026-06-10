@@ -25,6 +25,8 @@ struct NotesView: View {
     @State private var selectedID: UUID?      // saved note being viewed/edited; nil = composing a new note
     @State private var format = NoteFormat.cleanNote
     @State private var intentText = ""        // Intent mode: the one-off instruction to apply
+    @State private var intentApplied = false  // the user confirmed (Enter / Validate) the intent above
+    @FocusState private var intentFocused: Bool
     @State private var showModeManager = false  // CRUD sheet for note modes
     @State private var transcript = ""        // raw source (for re-formatting)
     @State private var editorText = ""        // shown / edited / saved document
@@ -317,17 +319,50 @@ struct NotesView: View {
     }
 
     /// Free-form instruction for the Intent note mode: a one-off directive shaping THIS note.
+    /// Multi-line / auto-expanding so a long intent stays fully visible; Enter (or the Validate
+    /// button) confirms it, flipping an "applied" state so the user knows the instruction registered.
     private var intentField: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "wand.and.rays").font(.system(size: 12)).foregroundStyle(.secondary)
-            Divider().frame(height: 12)
-            TextField("How should this note be shaped? (e.g. \u{201C}as a bug report\u{201D})", text: $intentText)
-                .textFieldStyle(.plain)
-                .onSubmit { if !transcript.isEmpty { applyFormat() } }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "wand.and.rays").font(.system(size: 12)).foregroundStyle(.secondary).padding(.top, 2)
+                Divider().frame(height: 16)
+                // axis:.vertical grows the field to fit a long instruction (1…6 visible lines).
+                TextField("How should this note be shaped? (e.g. \u{201C}as a bug report\u{201D})",
+                          text: $intentText, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .lineLimit(1...6)
+                    .focused($intentFocused)
+                    .onChange(of: intentText) { _, _ in intentApplied = false }   // editing un-confirms
+                    .onSubmit { validateIntent() }                                // Enter confirms
+                Button { validateIntent() } label: {
+                    Image(systemName: intentApplied ? "checkmark.circle.fill" : "return")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(intentApplied ? Color.green : Color.secondary)
+                }
+                .buttonStyle(.borderless)
+                .disabled(intentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .help(intentApplied ? "Intent applied" : "Validate this intent (Enter)")
+            }
+            if intentApplied, !intentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Label("Intent applied — this note will follow it", systemImage: "checkmark.circle.fill")
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(.green)
+                    .transition(.opacity)
+            }
         }
         .padding(.horizontal, 12).padding(.vertical, 9)
         .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
         .frame(maxWidth: 460)
+    }
+
+    /// Confirm the typed intent: flip the "applied" state (visible feedback) and, if a transcript is
+    /// already present, immediately re-format the note so it picks up the new instruction.
+    private func validateIntent() {
+        let trimmed = intentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { intentApplied = false; return }
+        withAnimation(.easeInOut(duration: 0.18)) { intentApplied = true }
+        intentFocused = false
+        if !transcript.isEmpty { applyFormat() }
     }
 
     private var processingRow: some View {
@@ -506,7 +541,7 @@ struct NotesView: View {
         work?.cancel(); busy = false; status = ""
         if isRecording { stopRecorderHard() }
         selectedID = nil
-        transcript = ""; editorText = ""; noteTags = []; tagInput = ""; intentText = ""
+        transcript = ""; editorText = ""; noteTags = []; tagInput = ""; intentText = ""; intentApplied = false
         recordingURL = nil; appendMode = false
     }
 
@@ -619,10 +654,13 @@ struct NotesView: View {
         status = ""; recordError = ""; recordStart = Date(); elapsed = 0
         pausedAccum = 0; pauseStart = nil; isPaused = false; notesCtl.level = 0
         isRecording = true
-        // Feed the shared overlay pill's waveform (AppDelegate reads notesCtl.level).
+        // Feed the shared overlay pill's waveform (AppDelegate reads notesCtl.level) AND drive the
+        // elapsed clock from this same proven timer — the body-level Timer.publish tick can detach
+        // after the two-pane refactor and leave the displayed time stuck at 0:00.
         levelTimer?.invalidate()
         let t = Timer(timeInterval: 0.04, repeats: true) { _ in
             notesCtl.level = isPaused ? 0 : recorder.level()
+            if isRecording && !isPaused { elapsed = pausedAccum + Int(Date().timeIntervalSince(recordStart)) }
         }
         RunLoop.main.add(t, forMode: .common)
         levelTimer = t
@@ -696,12 +734,17 @@ struct NotesView: View {
     private func applyFormat() {
         guard !transcript.isEmpty else { return }
         busy = true; status = "Organizing into \(format.name)…"
+        // Snapshot the intent on the main actor so the system prompt always reflects what the user
+        // typed, and flag it applied so the note demonstrably follows the instruction (Point 4).
+        let intentSnapshot = intentText
+        if !intentSnapshot.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { intentApplied = true }
+        let fmt = format
         work = Task {
             do {
-                var sys = format.effectiveSystemPrompt(instruction: intentText)
+                var sys = fmt.effectiveSystemPrompt(instruction: intentSnapshot)
                 let style = Settings.shared.activeStyle.prompt.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !style.isEmpty { sys += "\n\nSTYLE: \(style)" }
-                let r = Reprompter(model: format.model ?? Settings.shared.claudeModel)
+                let r = Reprompter(model: fmt.model ?? Settings.shared.claudeModel)
                 let out = try await r.reprompt(transcript: transcript, systemPrompt: sys, fast: true)
                 if Task.isCancelled { return }
                 await MainActor.run {
