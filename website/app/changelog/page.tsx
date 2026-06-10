@@ -20,6 +20,17 @@ const DAYS: Day[] = [
       "A privacy, security and craft day: history gets a real off switch and auto-delete, cloud data gets a delete-everything button, every sync request is authenticated per device, every dialog moves to the new glass design, and verba.run gets a full craft pass.",
     entries: [
       {
+        version: "0.2.6 → 0.2.8",
+        title: "Consistent, monochrome, and it remembers you",
+        items: [
+          "Every tool in the Library now uses the same two-pane layout as Notes: a list with filter chips on the left, the editor on the right (Task Manager, Modes, Dictionary, Snippets, Style, Transforms, History, Recent Results).",
+          "History matches Notes exactly now, and Insights gained a stack of new stats: this week vs last week, your most productive day, current vs longest streak, milestone progress, time saved, and your live leaderboard standing (rank and percentile).",
+          "Pure black-and-white UI: selection is a quiet neutral highlight, never a heavy black block or a stray blue tint. Page titles are the exact same size on every screen.",
+          "The Shortcuts settings are grouped into clear cards with real keycaps, so every trigger is easy to find.",
+          "Your chosen username now sticks across restarts instead of resetting, and a fresh install starts in Flow (verbatim) mode.",
+        ],
+      },
+      {
         version: "0.2.5",
         title: "Every screen, redesigned",
         items: [
