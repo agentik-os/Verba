@@ -293,33 +293,6 @@ extension Profile {
                          "com.googlecode.iterm2", "com.apple.Terminal", "dev.warp.Warp-Stable"],
         builtin: true, hotkeyCode: 18 /* 1 */, hotkeyMods: kCtrlOpt, model: "claude-opus-4-8")
 
-    static let polish = Profile(
-        name: "Polish",
-        systemPrompt: faithfulCore + """
-
-
-        CONTEXT: professional writing (work email, Slack to a colleague or client, a \
-        document). Make it clear, well-structured, and courteous, confident and concise, \
-        in the speaker's own voice, never stiff or corporate. Tighten loose sentences and \
-        order the points logically, but keep every point the speaker made.
-        """,
-        matchBundleIDs: ["com.tinyspeck.slackmacgap", "com.apple.mail", "com.microsoft.Outlook",
-                         "com.readdle.smartemail-Mac", "notion.id"],
-        builtin: true, hotkeyCode: 19 /* 2 */, hotkeyMods: kCtrlOpt, model: "claude-sonnet-4-6")
-
-    static let casual = Profile(
-        name: "Casual",
-        systemPrompt: faithfulCore + """
-
-
-        CONTEXT: a casual personal message or note (text to a friend, a reminder, a quick \
-        message). Keep it warm, natural, and relaxed, the speaker's everyday voice and \
-        slang. Just clean it up and order it lightly; keep all the content and the casual tone.
-        """,
-        matchBundleIDs: ["net.whatsapp.WhatsApp", "ru.keepcoder.Telegram", "com.hnc.Discord",
-                         "com.apple.MobileSMS", "com.apple.Notes"],
-        builtin: true, hotkeyCode: 20 /* 3 */, hotkeyMods: kCtrlOpt, model: "claude-haiku-4-5")
-
     static let intent = Profile(
         name: "Intent",
         systemPrompt: """
@@ -398,7 +371,10 @@ extension Profile {
         builtin: true, hotkeyCode: 26 /* 7 */, hotkeyMods: kCtrlOpt,
         model: "claude-sonnet-4-6", vision: true)
 
-    static let defaults: [Profile] = [.flow, .polish, .casual, .intent, .context, .coding, .translate, .custom]
+    static let defaults: [Profile] = [.flow, .intent, .context, .coding, .translate, .custom]
+    /// Built-in modes that were shipped once and then retired — dropped on migration so they
+    /// disappear for existing users too (not kept as orphan custom modes).
+    static let retiredBuiltinNames: Set<String> = ["Polish", "Casual"]
 }
 
 final class Settings: ObservableObject {
@@ -406,7 +382,7 @@ final class Settings: ObservableObject {
     private let d = UserDefaults.standard
 
     // Bump when the built-in profiles change so users get the new prompts/shortcuts.
-    static let profilesVersion = 17  // seeds Polish + Casual into defaults; fresh installs default-active to Flow (verbatim, no AI)
+    static let profilesVersion = 18  // retire Polish + Casual everywhere; default-active stays Flow (verbatim, no AI)
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }
@@ -678,7 +654,10 @@ final class Settings: ObservableObject {
         } else if upToDate {
             loaded = saved                                // up to date → saved unchanged
         } else {
-            // Version bump → merge.
+            // Version bump → merge. Drop any retired built-in (Polish/Casual) up front so it
+            // disappears for existing users instead of lingering as an orphan custom mode.
+            let saved2 = saved.filter { !($0.builtin && Profile.retiredBuiltinNames.contains($0.name)) }
+            let saved = saved2
             let customs = saved.filter { !$0.builtin }    // user modes, kept verbatim in order
             var mergedBuiltins: [Profile] = []
             var matchedNames = Set<String>()

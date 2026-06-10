@@ -230,7 +230,7 @@ function Bento() {
             <Icon name="bolt" className="h-7 w-7 shrink-0 text-[var(--fg-dim)]" />
             <div>
               <p className="font-medium">Modes, the right model each time</p>
-              <p className="mt-1 text-sm muted">Flow (verbatim), Polish, Casual, Intent, Coding, Translate, Custom, and Context (vision). Haiku for quick tone, Sonnet for intent, Opus for code. Edit any prompt or add your own.</p>
+              <p className="mt-1 text-sm muted">Flow (verbatim), Intent, Coding, Translate, Custom, and Context (vision). Sonnet for intent, Opus for code. Edit any prompt or add your own.</p>
             </div>
           </div>
         </Reveal>
@@ -600,7 +600,7 @@ function WhyBest() {
     ["Bring your own AI", "Use your Anthropic key, OpenRouter, your existing Claude Code subscription with no key at all, or a fully local Ollama model. You're never locked into our markup."],
     ["Actually private", "On-device transcription with Parakeet and Whisper, your audio never leaves the Mac. API keys live in the macOS Keychain, and your history is yours to control: switch it off entirely or auto-delete it after 7, 30, or 90 days."],
     ["Works with no internet", "Parakeet ships inside the app and transcribes offline, instantly, in 25 languages. Pair it with a local LLM and the entire pipeline runs on your Mac."],
-    ["Eight modes, the right model each", "Flow, Polish, Casual, Intent, Context, Coding, Translate, Custom, routed to Haiku, Sonnet, or Opus so you only pay for power where it matters. Edit any prompt or build your own."],
+    ["Six modes, the right model each", "Flow, Intent, Context, Coding, Translate, Custom, routed to Sonnet or Opus so you only pay for power where it matters. Edit any prompt or build your own."],
     ["It learns you", "Auto-learns your vocabulary from your edits, matches your writing tone per app, and remembers how you phrase things. It sounds like you, not a template."],
     ["One press, then done", "Tap Fn, talk, and clean text lands where your cursor is. Hands-free formatting, redo in another mode, edit the last result by voice. No app switching, ever."],
   ];
@@ -702,8 +702,6 @@ function ModesModels() {
   const rows = [
     ["Context", "Sonnet 4.6", "Takes a screenshot of your screen and acts on what it sees, based on what you say. Reply to the email on screen, summarize a document, comment on a photo."],
     ["Flow", "No AI", "Verbatim transcription, no rewriting. Your words, exactly as spoken, cleaned up for punctuation only."],
-    ["Polish", "Sonnet 4.6", "The default: a clean, faithful tidy-up. Filler gone, punctuation fixed, your meaning and tone untouched."],
-    ["Casual", "Haiku 4.5", "Quick, relaxed rewriting for chats and messages. Instant and cheap, the right weight for everyday talk."],
     ["Intent", "Sonnet 4.6", "State the goal at the start: \"turn this into a bug report\", \"rewrite as a formal email\". Verba follows your lead."],
     ["Coding", "Opus 4.8", "Turns rambling feedback into a precise prompt for Cursor or Claude Code."],
     ["Translate", "Sonnet 4.6", "Pick a target language once. Speak in any language and Verba writes it in the one you chose, every time."],
@@ -715,7 +713,7 @@ function ModesModels() {
         <HeadCenter
           eyebrow="The routing"
           index="05"
-          title="Eight modes, the right model for each"
+          title="Six modes, the right model for each"
           lead="Every mode routes to the model that fits: cheap and instant for quick polish, more powerful where it matters. You stay in control of cost and quality."
         />
       </Reveal>
@@ -934,7 +932,7 @@ function FAQ() {
     ["Does it work in every app?", "Yes, Verba pastes into whatever you’re typing in: editors, browsers, chat apps, mail, notes. If your cursor is there, Verba can write there."],
     ["Can it work offline?", "Yes. On-device transcription (Whisper or Parakeet) runs entirely on your Mac, no internet needed, and your audio never leaves the device."],
     ["What languages does it understand?", "On-device Whisper covers ~99 languages worldwide. Parakeet is a faster option for 25 European languages. It writes back in the language you spoke."],
-    ["How do the AI modes work?", "Verba has eight modes: Flow (verbatim, no AI), Polish (the default tidy-up), Casual, Intent, Context, Coding, Translate, and Custom. Each mode is a system prompt that shapes how the model rewrites your speech. Context also takes a screenshot to ground the output in what is on your screen. You can edit any prompt or create your own Custom mode."],
+    ["How do the AI modes work?", "Verba has six modes: Flow (verbatim, no AI, the default), Intent, Context, Coding, Translate, and Custom. Each mode is a system prompt that shapes how the model rewrites your speech. Context also takes a screenshot to ground the output in what is on your screen. You can edit any prompt or create your own Custom mode."],
     ["Do I need an API key?", "No. Verba uses your Claude Code plan if it is installed (no API key needed). You can also bring your own Anthropic key, an OpenRouter key, or run a local Ollama model entirely offline. You never pay a markup on someone’s cloud."],
     ["What is Context mode?", "Context mode takes a screenshot of your screen, analyzes it with a vision model, and writes based on what you say and what it sees. Say \"reply to this email\" and it drafts a reply to the message on screen. It requires macOS Screen Recording permission and a vision-capable model (Anthropic API key or OpenRouter key)."],
     ["Can it handle long recordings?", "Yes, talk for twenty minutes and Verba turns the whole thing into clean, well-ordered text."],

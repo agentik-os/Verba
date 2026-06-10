@@ -78,7 +78,7 @@ const DAYS: Day[] = [
           "Cloud sync hardened: every device now authenticates each request with its own secret, so only your Macs can read or write your data.",
           "The public leaderboard no longer carries any account identifier, only your alias and your numbers.",
           "Signed-in sessions are now token-verified end to end (AI reprompting, account, username, Pro status), and Pro keeps working through up to 72 hours offline instead of dropping the moment a check fails.",
-          "Honest copy: verba.run now spells out exactly what stays on your Mac, what syncs when you sign in, and the new off switch, and the modes pages show all eight built-in modes (Flow, Polish, Casual, Intent, Context, Coding, Translate, Custom).",
+          "Honest copy: verba.run now spells out exactly what stays on your Mac, what syncs when you sign in, and the new off switch, and the modes pages show all six built-in modes (Flow, Intent, Context, Coding, Translate, Custom).",
         ],
       },
     ],
@@ -96,7 +96,7 @@ const DAYS: Day[] = [
           "From the wishlist: you can now discuss a wishlist item. Each card shows a discreet comment count; tap it to expand a thread, read what others think, and add your own. Every shipped idea keeps its “Developed” badge.",
           "From your feedback: Context mode now genuinely sees your screen again and acts on what's there, and when something does go wrong you get the real reason instead of a generic “transcription failed”.",
           "From your feedback: Action mode is clearer to trigger. A prompt tells you exactly how to run the command, with a focused confirmation before anything happens.",
-          "Two more built-in modes are available out of the box, and Polish (a clean, faithful tidy-up) is the new default. The menu-bar shortcut cheat-sheet now updates the instant you change a shortcut in Settings.",
+          "The menu-bar shortcut cheat-sheet now updates the instant you change a shortcut in Settings.",
         ],
       },
       {

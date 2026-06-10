@@ -328,15 +328,7 @@ struct MainWindow: View {
         case .notes: NotesView()
         case .todos: TodosView()
         case .insights: InsightsView()
-        case .modes:
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Modes").font(.system(size: 17, weight: .bold))
-                    .padding(.horizontal, 28).padding(.top, 28).padding(.bottom, 2)
-                Text("Drag to reorder. The active mode (✓) is what a single Fn tap dictates with.")
-                    .font(.callout).foregroundStyle(.secondary)
-                    .padding(.horizontal, 28).padding(.bottom, 10)
-                ModesView()
-            }
+        case .modes: ModesView()   // ModesView owns its own two-pane layout + header (like Notes)
         case .dictionary: DictionaryView()
         case .snippets: SnippetsView()
         case .style: StyleView()
