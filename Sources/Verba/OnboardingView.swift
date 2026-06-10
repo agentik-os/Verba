@@ -67,6 +67,16 @@ struct OnboardingView: View {
             // so the trigger-key step can detect taps (idempotent once started).
             if imGranted && settings.useFnAsPrimary { FnTap.shared.start() }
         }
+        .onChange(of: step) { newStep in
+            // Reset the coach flags for the gesture slides on (re)entry so a Back/retry
+            // reflects the CURRENT attempt rather than staying permanently green from
+            // an earlier visit. Step 4 = trigger key (tap/hold/mode), step 5 = pause.
+            switch newStep {
+            case 4: coach.singleFn = false; coach.holdFn = false; coach.doubleFn = false
+            case 5: coach.singleFn = false; coach.control = false
+            default: break
+            }
+        }
     }
 
     private var accent: Color { .primary }
@@ -394,6 +404,9 @@ struct OnboardingView: View {
                     Button(copied ? "Copied ✓" : "Copy") {
                         let pb = NSPasteboard.general; pb.clearContents(); pb.setString(settings.referralLink, forType: .string); copied = true
                     }.glassButton()
+                    // Same Share affordance as the Free Month tab + Account card.
+                    Button { shareReferral() } label: { Label("Share…", systemImage: "square.and.arrow.up") }
+                        .glassButton()
                 }
                 .padding(12).frame(maxWidth: .infinity).glass(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
@@ -467,6 +480,16 @@ struct OnboardingView: View {
     }
 
     // MARK: helpers
+
+    /// Share the referral link through the native macOS share sheet — mirrors the
+    /// Free Month tab + Account card so the referral surfaces stay consistent.
+    private func shareReferral() {
+        let picker = NSSharingServicePicker(items: [URL(string: settings.referralLink) ?? settings.referralLink as Any])
+        if let win = NSApp.keyWindow, let view = win.contentView {
+            picker.show(relativeTo: .zero, of: view, preferredEdge: .minY)
+        }
+    }
+
     private func title(_ t: String, _ s: String) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(t).font(.title.bold())

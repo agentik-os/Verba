@@ -18,6 +18,7 @@ final class FnTap {
     var onTodoCapture: (() -> Void)?  // Fn + T (also Fn + § on ISO keyboards) → voice "add to-do" capture
     var onActionMode: (() -> Void)?   // Fn + X → Action mode: speech CONTROLS the Mac (confirm → execute)
     var onDigit: ((Int) -> Bool)?     // 1-9 while menuActive; return true to consume
+    var onDigitOutOfRange: ((Int) -> Void)?   // Fn + digit with no profile at that index → brief "No mode N" info flash
     var onArrow: ((Int) -> Bool)?     // -1 left / +1 right while menuActive
     var onEnter: (() -> Bool)?        // return / enter while menuActive
     var onControl: (() -> Void)?      // plain ⌃ tapped → pause/resume the current recording
@@ -40,7 +41,20 @@ final class FnTap {
     private var optDown = false   // Option held during the current Fn-hold (fires onFnControl → to-do glance)
     private var ctrlPresent = false             // edge-tracking for the plain-Control pause/resume tap
     private var optSeenDuringCtrl = false        // Option co-present during the current Control press → it's a ⌃⌥ chord, NOT a pause tap
-    private var lastControlFire: TimeInterval = 0   // debounce so one physical tap fires once
+
+    /// SINGLE process-wide debounce timestamp for the plain-⌃ pause/resume gesture, shared by BOTH
+    /// owners (this HID tap and ChordMonitor's NSEvent fallback). ChordMonitor only fires when this
+    /// tap is inactive, so in steady state exactly one owner runs — but during the brief tap
+    /// (re)start window both could momentarily see the same Control release. A shared 0.12s gate
+    /// makes a double-fire impossible regardless of which path observes the edge first. Returns
+    /// true (and stamps) when the caller may fire; false to swallow a duplicate.
+    static var lastControlFire: TimeInterval = 0
+    static func claimControlFire() -> Bool {
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastControlFire > 0.12 else { return false }
+        lastControlFire = now
+        return true
+    }
     private var optPresent = false              // edge-tracking for the lone-Option mode-switch tap
     private var optCombo = false                 // Control or Fn co-present during the Option press → NOT a lone-Option tap
     private var lastOptionFire: TimeInterval = 0
@@ -117,13 +131,10 @@ final class FnTap {
                 ctrlPresent = false
                 optSeenDuringCtrl = false
                 if !wasChord {
-                    let now = ProcessInfo.processInfo.systemUptime
-                    // Short debounce on a per-release edge: a deliberate fast second tap (after a
-                    // real release) always registers; this only swallows a duplicate up event.
-                    if now - lastControlFire > 0.12 {
-                        lastControlFire = now
-                        if let cb = onControl { DispatchQueue.main.async(execute: cb) }
-                    }
+                    // Short debounce on a per-release edge via the SHARED process-wide gate (also
+                    // consulted by ChordMonitor): a deliberate fast second tap (after a real release)
+                    // always registers; this only swallows a duplicate up event, even across owners.
+                    if Self.claimControlFire(), let cb = onControl { DispatchQueue.main.async(execute: cb) }
                 }
             }
             // Lone ⌥ (Option) tap → switch mode while hands-free recording (AppDelegate gates on
@@ -188,13 +199,16 @@ final class FnTap {
             if fnDown, code == kVK_ANSI_RightBracket, onStyleCycle != nil { onStyleCycle?(1); return nil }
             if fnDown, code == kVK_ANSI_LeftBracket, onStyleCycle != nil { onStyleCycle?(-1); return nil }
             // Fn + number selects a mode whenever Fn is held (or the picker menu is open).
-            // While Fn is held, ALWAYS consume a mapped digit 1-9 (never leak the literal digit to
-            // the focused app) — the handler simply no-ops when the index is out of profile range.
+            // A digit that maps to an existing profile is consumed (and switches/starts that mode).
+            // A digit with NO profile at that index is NOT silently swallowed: while Fn is held we
+            // surface a brief "No mode N" info flash so the keystroke isn't just eaten with no
+            // feedback, then still consume it (the user clearly meant a mode, not a literal digit).
             if menuActive || fnDown {
                 if let n = Self.digit(code) {
                     let handled = onDigit?(n) == true
-                    if fnDown { return nil }                 // Fn held → consume regardless of range
-                    if menuActive, handled { return nil }    // picker open → consume only if it took the digit
+                    if handled { return nil }                // mapped to a profile → consume
+                    if fnDown { onDigitOutOfRange?(n); return nil }  // Fn held, no such mode → flash + consume
+                    // picker open but unhandled (out of range) → let the digit pass through
                 }
             }
             // Arrow navigation + Enter ONLY while the picker is open (no global conflict).

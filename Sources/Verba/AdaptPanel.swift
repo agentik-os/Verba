@@ -27,10 +27,16 @@ struct AdaptPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 7) {
-                Image(systemName: "wand.and.stars")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
-                Text("Adapt this dictation").font(.headline)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 7) {
+                    Image(systemName: "wand.and.stars")
+                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
+                    Text("Adapt this dictation").font(.headline)
+                }
+                // Make clear Adapt is a throwaway variation, in contrast to Re-run which overwrites
+                // the saved entry, so the two reprocessing paths aren't confused.
+                Text("Try a variation, this doesn't change the saved entry. Use Save to keep one.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
 
             // One-click mode buttons.

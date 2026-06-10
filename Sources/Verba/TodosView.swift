@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 // MARK: - Agent: turn a spoken request into a project of tasks (+ sub-tasks)
 
@@ -689,13 +690,18 @@ struct TodosView: View {
                                         .contentShape(Rectangle())
                                     }
                                     .buttonStyle(.plain)
+                                    // With a status filter active, show only the tasks that match it
+                                    // (not the project's whole task list), so e.g. "Overdue" lists only
+                                    // overdue tasks rather than every task in a project that has one.
                                     ForEach($project.tasks) { $task in
-                                        TaskPanel(
-                                            task: $task,
-                                            expanded: taskExpansion(task.id),
-                                            onDelete: { store.removeTask(project.id, task.id) },
-                                            onAddSubtask: { store.addSubtask(project.id, task.id) }
-                                        )
+                                        if statusFilter == .all || statusFilter.matches(task) {
+                                            TaskPanel(
+                                                task: $task,
+                                                expanded: taskExpansion(task.id),
+                                                onDelete: { store.removeTask(project.id, task.id) },
+                                                onAddSubtask: { store.addSubtask(project.id, task.id) }
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -979,12 +985,13 @@ private struct DeadlinePicker: View {
         let satBase = cal.date(byAdding: .day, value: daysToSat == 0 ? 7 : daysToSat, to: now) ?? now
         let weekend = at(satBase, hour: 10)
         let nextWeek = at(cal.date(byAdding: .day, value: 7, to: now) ?? now, hour: 9)
+        // No "Clear" chip here — clearing lives solely in the footer "Clear" button below,
+        // so the popover has a single, unambiguous clear affordance.
         return [
             ("Today 6pm", today6),
             ("Tomorrow 9am", tomorrow9),
             ("This weekend", weekend),
-            ("Next week", nextWeek),
-            ("Clear", nil)
+            ("Next week", nextWeek)
         ]
     }
 
@@ -1363,6 +1370,16 @@ private struct TaskPanel: View {
     let onDelete: () -> Void
     let onAddSubtask: () -> Void
 
+    @ObservedObject private var reminders = TodoReminders.shared
+    @ObservedObject private var settings = Settings.shared
+
+    /// True when this task would get a reminder but notifications aren't granted — i.e. it has a
+    /// future deadline, isn't done, reminders are enabled, yet the system won't let them fire.
+    private var remindersBlocked: Bool {
+        guard settings.todoReminders, !task.done, let d = task.deadline, d > Date() else { return false }
+        return reminders.notificationsAllowed == false
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 9) {
@@ -1394,6 +1411,27 @@ private struct TaskPanel: View {
                     .buttonStyle(.borderless).foregroundStyle(.tertiary)
             }
             .padding(.horizontal, 12).padding(.vertical, 9)
+
+            // Reminders are on and this task has a future deadline, but notifications are blocked:
+            // nudge inline so the user knows the reminder won't actually fire, with a one-tap fix.
+            if remindersBlocked {
+                Button {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.notifications") {
+                        NSWorkspace.shared.open(url)
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "bell.slash").font(.system(size: 10))
+                        Text("Enable notifications to get reminded").font(.system(size: 11))
+                        Image(systemName: "arrow.up.forward.app").font(.system(size: 9))
+                    }
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 12).padding(.bottom, 8)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Open System Settings ▸ Notifications to allow Verba reminders")
+            }
 
             if expanded {
                 VStack(spacing: 6) {

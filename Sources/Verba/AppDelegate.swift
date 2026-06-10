@@ -121,6 +121,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         FnTap.shared.onTodoCapture = { [weak self] in self?.startTodoCapture() }    // Fn+T (Fn+§ on ISO) → add a to-do
         FnTap.shared.onActionMode = { [weak self] in self?.startActionMode() }      // Fn+X → Action mode (speech controls the Mac)
         FnTap.shared.onDigit = { [weak self] n in self?.fnDigit(n) ?? false }
+        FnTap.shared.onDigitOutOfRange = { [weak self] n in self?.flashInfo("No mode \(n)") }   // Fn + an unmapped digit → brief feedback instead of a silent swallow
         FnTap.shared.onArrow = { [weak self] d in self?.fnArrow(d) ?? false }
         FnTap.shared.onEnter = { [weak self] in self?.fnEnter() ?? false }
         FnTap.shared.onControl = { [weak self] in InputCoach.shared.note(.control); self?.togglePause() }   // ⌃ pauses/resumes (reliable HID-tap path when Fn is primary)
@@ -1561,6 +1562,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             session.status = .done
             // #7 smart formatting: pick rich/plain based on the target app (toggle in Labs).
             let rich = Output.willPasteRich(ctx.capturedBundleID)
+            // Multi-line editors keep a single intentional trailing newline; chat/search fields
+            // still get fully stripped so the clipboard fallbacks match the auto-paste decision.
+            let keepNL = Output.prefersTrailingNewline(ctx.capturedBundleID)
             session.rich = rich   // persist so the Sessions list Copy preserves the same formatting
             if Settings.shared.autoPaste && safeToAutoPaste {
                 if Output.paste(text, rich: rich, target: ctx.capturedTarget) {
@@ -1570,16 +1574,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self.lastDelivered = text
                     self.lastDeliveredBundle = ctx.capturedBundleID
                 } else {
-                    Output.copyToClipboard(text, rich: rich)
+                    Output.copyToClipboard(text, rich: rich, keepTrailingNewline: keepNL)
                     Output.promptAccessibility()
                     self.notify("Copied to clipboard", "Grant Accessibility to enable auto-paste.")
                 }
             } else if Settings.shared.autoPaste {
                 // Auto-paste is on but the user is in a different app now — copy to the clipboard
                 // (no focus hijack) and leave it in the Sessions list to paste when ready.
-                Output.copyToClipboard(text, rich: rich)
+                Output.copyToClipboard(text, rich: rich, keepTrailingNewline: keepNL)
             } else if Settings.shared.copyToClipboard {
-                Output.copyToClipboard(text, rich: rich)
+                Output.copyToClipboard(text, rich: rich, keepTrailingNewline: keepNL)
             }
             History.shared.add(original: result.original, reprompted: result.reprompted,
                                profileName: result.profileName, engine: result.engine, audioURL: ctx.audioURL)

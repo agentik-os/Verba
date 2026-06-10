@@ -13,6 +13,7 @@ struct GlanceItem: Identifiable {
     var done: Bool
     let deadline: Date?
     let overdue: Bool
+    let subtaskCount: Int   // >0 → checking off here cascades to this many sub-tasks
 }
 
 /// Computes "today's" relevant to-dos across all projects:
@@ -32,7 +33,8 @@ enum TodoGlance {
             for t in p.tasks where !t.done {
                 let item: (Bool) -> GlanceItem = { overdue in
                     GlanceItem(id: t.id, projectID: p.id, project: p.name,
-                               title: t.title, done: t.done, deadline: t.deadline, overdue: overdue)
+                               title: t.title, done: t.done, deadline: t.deadline, overdue: overdue,
+                               subtaskCount: t.subtasks.count)
                 }
                 if let d = t.deadline {
                     if d < todayStart {              // overdue
@@ -118,12 +120,20 @@ struct TodoGlanceView: View {
             }
             .buttonStyle(.plain)
 
-            Text(row.title.isEmpty ? "Untitled task" : row.title)
-                .font(.system(size: 12))
-                .foregroundStyle(row.done ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
-                .strikethrough(row.done, color: .secondary)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(row.title.isEmpty ? "Untitled task" : row.title)
+                    .font(.system(size: 12))
+                    .foregroundStyle(row.done ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
+                    .strikethrough(row.done, color: .secondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                // Checking off cascades to the sub-tasks; surface the count so the cascade is expected.
+                if row.subtaskCount > 0 {
+                    Text("\(row.subtaskCount) item\(row.subtaskCount == 1 ? "" : "s")")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
+                }
+            }
 
             Spacer(minLength: 4)
 

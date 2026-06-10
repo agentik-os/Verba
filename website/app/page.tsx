@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import LiveDemo from "@/components/LiveDemo";
@@ -11,6 +11,7 @@ import Icon from "@/components/Icon";
 import { getRef } from "@/components/RefCapture";
 import { Logo, MicMark, MicGlyph, HeadLeft, HeadCenter, PanelCaption, CrossRule } from "@/components/Brand";
 import ThemeToggle from "@/components/ThemeToggle";
+import { homeCompareCols, homeCompareRows } from "@/lib/competitors";
 
 const PRICE = {
   monthly: { amount: "$9.99", sub: "/month", note: "billed monthly · cancel anytime" },
@@ -35,6 +36,7 @@ export default function Home() {
       <LanguageDetection />
       <Jokes />
       <Features />
+      <Personalize />
       <How />
       <CompareTable />
       <CompareTeaser />
@@ -101,7 +103,8 @@ function Hero() {
           </a>
           <a href="#how" className="btn-ghost px-7 py-3">See how it works</a>
         </div>
-        <p className="anim-cta mt-4 font-mono text-[11px] tracking-wide muted tnum">33 free dictations · Pro $9.99/mo with a 7-day trial · cancel anytime</p>
+        <p className="anim-cta mt-4 font-mono text-[11px] tracking-wide muted tnum">33 free dictations in-app, no card · then a 7-day Pro trial when you subscribe · cancel anytime</p>
+        <p className="anim-cta mt-2 font-mono text-[11px] tracking-wide faint tnum">Requires Apple Silicon · macOS 14+</p>
         <div className="anim-cta mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[13px] muted">
           {["Dictate anywhere", "Reads your screen", "Hour-long notes", "Translate live", "Runs offline", "Bring your own AI"].map((p) => (
             <span key={p} className="flex items-center gap-2">
@@ -634,22 +637,8 @@ function WhyBest() {
 }
 
 function CompareTable() {
-  const cols = ["Verba", "Wispr Flow", "superwhisper", "Aqua"];
-  const rows: [string, (boolean | string)[]][] = [
-    ["Dictate in any app", [true, true, true, true]],
-    ["Runs fully offline", [true, false, true, false]],
-    ["On-device, audio never uploaded", [true, false, true, false]],
-    ["Bring your own AI key / no markup", [true, false, false, false]],
-    ["Use Claude Code sub, no key", [true, false, false, false]],
-    ["Reads your screen (vision)", [true, false, false, false]],
-    ["Hour-long structured notes", [true, false, false, false]],
-    ["Voice Task Manager (projects, sub-tasks, generated lists)", [true, false, false, false]],
-    ["Live translation mode", [true, "limited", false, "limited"]],
-    ["Agentic actions (calendar, reminders)", [true, false, false, false]],
-    ["Auto-learn your vocabulary & tone", [true, "partial", false, false]],
-    ["Free trial", ["33 dictations, full Pro", "limited", "trial", "limited"]],
-    ["Price / month", ["$9.99", "$12-15", "$8.49", "$10-17"]],
-  ];
+  const cols = homeCompareCols;
+  const rows = homeCompareRows;
   const cell = (v: boolean | string) =>
     v === true ? <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] bg-[var(--fg)] text-[var(--bg)]"><MicGlyph size={9} /></span>
       : v === false ? <span className="faint">✕</span>
@@ -745,7 +734,7 @@ function CompareTeaser() {
           <div className="mx-auto mb-7 w-fit"><MicMark size={40} glyph={20} /></div>
           <h2 className="t-statement mx-auto max-w-3xl text-balance">Cloud tools upload your voice. Verba doesn't.</h2>
           <p className="mx-auto mt-5 max-w-xl text-balance text-black/55">
-            Wispr Flow, Aqua and Willow send every word to their servers and charge $12-17/mo.
+            Wispr Flow, Aqua and Willow send every word to their servers, and the popular ones run $12-15/mo.
             Verba runs on your Mac, lets you bring your own AI account, and costs $9.99.
           </p>
           <Link href="/compare" className="mt-9 inline-flex items-center gap-2 rounded-[10px] bg-[#0a0a0c] px-7 py-3 font-medium text-white transition-opacity duration-150 hover:opacity-90">
@@ -811,6 +800,37 @@ function Features() {
   );
 }
 
+function Personalize() {
+  const cards = [
+    { icon: "key", label: "Make it yours", text: "A dedicated Customize area: glass materials, accent color, recording indicator, sounds, and hotkeys. Tune Verba until it feels like your Mac, not a stock app." },
+    { icon: "check", label: "macOS widget", text: "Pin your to-dos to the desktop or Notification Center. Your next tasks stay one glance away, updated as you check things off by voice." },
+  ];
+  return (
+    <section id="customize" className="py-28">
+      <Reveal>
+        <HeadCenter
+          eyebrow="Make it yours"
+          title="Personalize Verba, and keep it close"
+          lead="A full Customize area to tune the look, sounds and shortcuts, plus a macOS widget that keeps your tasks one glance away."
+        />
+      </Reveal>
+      <div className="mt-12 grid gap-3 sm:grid-cols-2">
+        {cards.map(({ icon, label, text }, i) => (
+          <Reveal key={label} delay={i * 60}>
+            <div className="card lift r-card flex h-full gap-4 p-7">
+              <Icon name={icon} className="mt-0.5 h-6 w-6 shrink-0 text-[var(--fg-dim)]" />
+              <div>
+                <h3 className="font-medium">{label}</h3>
+                <p className="mt-1.5 text-sm muted">{text}</p>
+              </div>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function How() {
   const steps = [
     ["Press", "Tap your shortcut, or the Fn key, from any app."],
@@ -841,10 +861,24 @@ function Pricing() {
   const { isSignedIn } = useUser();
   const [annual, setAnnual] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [justSignedIn, setJustSignedIn] = useState(false);
+  const proRef = useRef<HTMLDivElement>(null);
   const plan = annual ? "annual" : "monthly";
+
+  // After signing in via the Pro CTA, the user is redirected back to /#pricing.
+  // Scroll them to the Pro card and confirm they're signed in and ready to start.
+  useEffect(() => {
+    if (isSignedIn && typeof window !== "undefined" && window.location.hash === "#pricing") {
+      setJustSignedIn(true);
+      const t = setTimeout(() => proRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 150);
+      return () => clearTimeout(t);
+    }
+  }, [isSignedIn]);
 
   async function checkout() {
     setLoading(true);
+    setError("");
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -853,7 +887,9 @@ function Pricing() {
       });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
-      else alert(data.error ?? "Checkout unavailable.");
+      else setError(data.error ?? "Checkout unavailable. Please try again.");
+    } catch {
+      setError("Checkout unavailable. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -880,7 +916,7 @@ function Pricing() {
         <div className="card r-panel p-8">
           <h3 className="text-lg font-medium">Free</h3>
           <div className="mt-3 font-mono text-4xl font-semibold tnum">$0</div>
-          <p className="mt-1 text-sm muted">Try everything, 33 dictations, no card.</p>
+          <p className="mt-1 text-sm muted">33 dictations free in-app, no card. When you want unlimited, start a Pro trial.</p>
           <ul className="mt-6 space-y-2.5 text-sm muted">
             {["33 dictations to try, full Pro features", "On-device or cloud transcription", "All modes + voice formatting", "No card required"].map((b) => (
               <li key={b} className="flex gap-2.5"><span className="text-[var(--accent-line)]">·</span>{b}</li>
@@ -889,10 +925,11 @@ function Pricing() {
           <a href={DOWNLOAD_URL} className="btn-ghost mt-7 block w-full px-6 py-3 text-center">
             Download free
           </a>
+          <p className="mt-3 text-center font-mono text-[11px] tracking-wide faint tnum">Requires Apple Silicon · macOS 14+</p>
         </div>
 
         {/* Pro — the ONE glass-budget moment among pricing: solid panel chrome */}
-        <div className="panel r-panel p-8" style={{ borderColor: "var(--border-warm)" }}>
+        <div ref={proRef} className="panel r-panel p-8" style={{ borderColor: "var(--border-warm)" }}>
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium text-white">Pro</h3>
             <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs text-white/70">
@@ -903,22 +940,35 @@ function Pricing() {
             <span className="font-mono text-4xl font-semibold tnum">{PRICE[plan].amount}</span>
             <span className="mb-1 text-sm text-white/50">{PRICE[plan].sub}</span>
           </div>
-          <p className="mt-1 text-sm text-white/50 tnum">{PRICE[plan].note} · 7-day trial</p>
+          <p className="mt-1 text-sm text-white/50 tnum">{PRICE[plan].note} · 7-day trial, card required</p>
           <ul className="mt-6 space-y-2.5 text-sm text-white/85">
             {["Unlimited dictation", "All modes + custom modes", "Voice-command formatting", "Sync across your Macs", "Priority support"].map((b) => (
               <li key={b} className="flex items-center gap-2.5"><span className="inline-flex h-4 w-4 items-center justify-center rounded-[4px] bg-white text-black"><MicGlyph size={8} /></span>{b}</li>
             ))}
           </ul>
           {isSignedIn ? (
-            <button onClick={checkout} disabled={loading} className="mt-7 w-full rounded-[10px] bg-white px-6 py-3 font-medium text-black transition hover:opacity-90 disabled:opacity-60">
-              {loading ? "Redirecting…" : "Start 7-day trial"}
-            </button>
+            <>
+              {justSignedIn && (
+                <p className="mt-6 flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-white/75">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#6ee7a8]" />
+                  You&rsquo;re signed in. Start your 7-day trial below.
+                </p>
+              )}
+              <button onClick={checkout} disabled={loading} className="mt-7 w-full rounded-[10px] bg-white px-6 py-3 font-medium text-black transition hover:opacity-90 disabled:opacity-60">
+                {loading ? "Redirecting…" : "Start 7-day trial"}
+              </button>
+            </>
           ) : (
             <SignInButton mode="modal" forceRedirectUrl="/#pricing">
               <button className="mt-7 w-full rounded-[10px] bg-white px-6 py-3 font-medium text-black transition hover:opacity-90">
                 Sign in to start trial
               </button>
             </SignInButton>
+          )}
+          {error && (
+            <p role="alert" className="mt-3 rounded-lg border border-[#ff5f57]/30 bg-[#ff5f57]/10 px-3 py-2 text-xs text-[#ff8a84]">
+              {error}
+            </p>
           )}
         </div>
       </div>
@@ -1002,7 +1052,7 @@ function Footer() {
           <div>
             <p className="mono-meta mb-4">Company</p>
             <ul className="space-y-2.5 muted">
-              <li><a href="/account" className="link-quiet">Account</a></li>
+              <li><Link href="/account" className="link-quiet">Account</Link></li>
               <li><a href="https://t.me/verba_run" target="_blank" rel="noopener" className="link-quiet">Community</a></li>
             </ul>
           </div>

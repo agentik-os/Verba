@@ -10,8 +10,13 @@ import UserNotifications
 /// one). Tasks that are done, deleted, had the deadline cleared, or whose 30-min mark is
 /// already past get no notification (cleared by the full re-sync). Gated by
 /// `Settings.todoReminders`.
-final class TodoReminders {
+final class TodoReminders: ObservableObject {
     static let shared = TodoReminders()
+
+    /// Whether reminders can actually fire: false when the user denied notifications (or hasn't
+    /// decided yet) while reminders are ON. Views observe this to show an inline "enable
+    /// notifications" nudge near a future deadline. `nil` until the first status read.
+    @Published private(set) var notificationsAllowed: Bool?
 
     /// Minutes before the deadline that the reminder fires.
     private static let leadMinutes: TimeInterval = 30 * 60
@@ -31,7 +36,21 @@ final class TodoReminders {
         if Settings.shared.todoReminders {
             requestAuthorizationIfNeeded()
         }
+        refreshAuthStatus()
         reconcile()
+    }
+
+    /// Refresh `notificationsAllowed` from the system's current authorization state.
+    /// `.authorized`/`.provisional`/`.ephemeral` → true; denied/undetermined → false.
+    func refreshAuthStatus() {
+        UNUserNotificationCenter.current().getNotificationSettings { [weak self] settings in
+            let ok: Bool
+            switch settings.authorizationStatus {
+            case .authorized, .provisional, .ephemeral: ok = true
+            default: ok = false
+            }
+            DispatchQueue.main.async { self?.notificationsAllowed = ok }
+        }
     }
 
     /// Ask for notification permission (alert + sound). Triggers the system prompt the first
@@ -39,7 +58,9 @@ final class TodoReminders {
     func requestAuthorizationIfNeeded() {
         guard !authRequested else { return }
         authRequested = true
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { [weak self] _, _ in
+            self?.refreshAuthStatus()
+        }
     }
 
     /// React to the settings toggle: ON → request permission + (re)schedule; OFF → cancel all.
@@ -47,6 +68,7 @@ final class TodoReminders {
         if enabled {
             authRequested = false           // allow re-prompting if they'd never been asked
             requestAuthorizationIfNeeded()
+            refreshAuthStatus()
             reconcile()
         } else {
             cancelAll()

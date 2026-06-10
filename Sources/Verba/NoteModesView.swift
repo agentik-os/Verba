@@ -8,6 +8,7 @@ import AppKit
 struct NoteModesView: View {
     @ObservedObject var store = NoteModesStore.shared
     @State private var selectedID: UUID?
+    @State private var confirmingReset = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -31,9 +32,17 @@ struct NoteModesView: View {
                     Button { let m = store.addBlank(); selectedID = m.id } label: { Label("New", systemImage: "plus") }
                         .help("Create a new note mode")
                     Spacer()
-                    Button { store.resetToDefaults(); selectedID = store.modes.first?.id } label: {
+                    Button { confirmingReset = true } label: {
                         Label("Reset defaults", systemImage: "arrow.counterclockwise")
                     }.help("Restore the shipped note modes")
+                    .confirmationDialog("Reset note modes?", isPresented: $confirmingReset, titleVisibility: .visible) {
+                        Button("Reset note modes", role: .destructive) {
+                            store.resetToDefaults(); selectedID = store.modes.first?.id
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text("This removes your custom note modes and restores the shipped ones.")
+                    }
                 }
                 .buttonStyle(.borderless).font(.callout)
                 .padding(.horizontal, 14).padding(.vertical, 9).padding(.bottom, 4)

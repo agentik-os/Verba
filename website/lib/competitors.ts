@@ -1,6 +1,9 @@
 // Competitor dataset for the comparison pages. Facts verified mid-2026.
 // Verba's positioning: native macOS, local-first transcription, BYO-AI-account
-// (Claude Code / OpenRouter / keys), Claude restructuring, $9.99/mo.
+// (your Claude / OpenRouter / local model), AI restructuring, $9.99/mo.
+//
+// Single source of truth: the homepage CompareTable and the /compare and /vs
+// pages all read prices and cells from here, so they can never drift apart.
 
 export type Cell = { v: string; good?: boolean; bad?: boolean };
 
@@ -126,7 +129,7 @@ export const competitors: Competitor[] = [
     ],
     verbaWins: [
       "Verba never stores your audio recordings; text history is local with an off switch and retention controls, and keys live in the macOS Keychain.",
-      "First-class Claude restructuring with per-mode model routing, not just a prompt box.",
+      "First-class AI restructuring (your Claude / OpenRouter / local model) with per-mode model routing, not just a prompt box.",
       "Intent mode: say how you want the rest handled and Verba does exactly that.",
       "Native menu-bar app tuned for instant Fn-key dictation and auto-paste.",
     ],
@@ -158,7 +161,7 @@ export const competitors: Competitor[] = [
     ],
     verbaWins: [
       "Verba is built for the speak → polished → pasted-where-your-cursor-is flow, not file transcription.",
-      "Claude restructuring with modes and intent is the core, not an add-on.",
+      "AI restructuring (your Claude / OpenRouter / local model) with modes and intent is the core, not an add-on.",
       "Auto-paste, voice-command formatting, and per-app mode matching out of the box.",
     ],
     theirEdge: [
@@ -249,7 +252,7 @@ export const competitors: Competitor[] = [
       "No managed sync / account",
     ],
     verbaWins: [
-      "Verba's Claude restructuring, intent mode and per-mode models are first-class and tuned.",
+      "Verba's AI restructuring (your Claude / OpenRouter / local model), intent mode and per-mode models are first-class and tuned.",
       "Polished native UX with auto-paste, voice commands and three indicator styles.",
       "Managed account, sync and a 7-day Pro trial, no build-from-source needed.",
     ],
@@ -322,3 +325,33 @@ export const competitors: Competitor[] = [
 ];
 
 export const getCompetitor = (slug: string) => competitors.find((c) => c.slug === slug);
+
+// --- Homepage head-to-head table (single source of truth) ---------------------
+// The homepage CompareTable reads its columns and cells from here so prices and
+// claims can never contradict the competitor records above. Prices are pulled
+// straight from each competitor's `price` field; everything else is explicit.
+type Cmp = boolean | string;
+
+const priceOf = (slug: string) => getCompetitor(slug)?.price ?? "";
+
+export const homeCompareCols = ["Verba", "Wispr Flow", "superwhisper", "Aqua"] as const;
+
+// Rows: [label, [Verba, Wispr Flow, superwhisper, Aqua]]
+export const homeCompareRows: [string, Cmp[]][] = [
+  ["Dictate in any app", [true, true, true, true]],
+  ["Runs fully offline", [true, false, true, false]],
+  ["On-device, audio never uploaded", [true, false, true, false]],
+  ["Bring your own AI key / no markup", [true, false, false, false]],
+  ["Use Claude Code sub, no key", [true, false, false, false]],
+  ["Reads your screen (vision)", [true, false, false, false]],
+  ["Hour-long structured notes", [true, false, false, false]],
+  ["Voice Task Manager (projects, sub-tasks, generated lists)", [true, false, false, false]],
+  // 'limited': cloud-only command/editing modes can translate on request, but
+  // there is no dedicated set-a-target-language Translate mode like Verba's.
+  ["Live translation mode", [true, "limited", false, "limited"]],
+  ["Agentic actions (calendar, reminders)", [true, false, false, false]],
+  ["Auto-learn your vocabulary & tone", [true, "partial", false, false]],
+  ["Free trial", ["33 dictations, full Pro", "limited", "trial", "limited"]],
+  // Prices come straight from the competitor records so the table can't drift.
+  ["Price / month", [VERBA.price.replace("/mo", ""), priceOf("wispr-flow").replace("/mo", ""), priceOf("superwhisper").replace("/mo", ""), priceOf("aqua-voice").replace("/mo", "")]],
+];

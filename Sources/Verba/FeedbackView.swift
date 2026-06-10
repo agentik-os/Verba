@@ -52,7 +52,6 @@ private struct FeedbackWaveform: View {
 struct FeedbackView: View {
     @State private var draft = ""
     @State private var submitting = false
-    @State private var sent = false
     @State private var error: String?
 
     // Drag & drop highlight + post-send toast.
@@ -112,20 +111,9 @@ struct FeedbackView: View {
                 .font(.callout).foregroundStyle(.secondary)
                 .padding(.horizontal, 28).padding(.bottom, 16)
 
-            // Quiet confirmation row (the toast is the headline feedback): doesn't
-            // push the editor around the way a full EmptyState block did.
-            if sent {
-                HStack(spacing: 10) {
-                    Image(systemName: "checkmark.circle").foregroundStyle(.secondary)
-                    Text("Thanks for the feedback — we read every message. Want to send another? Just start typing below.")
-                        .font(.callout).foregroundStyle(.secondary)
-                    Spacer()
-                }
-                .padding(.horizontal, 14).padding(.vertical, 11)
-                .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.04)))
-                .padding(.horizontal, 28).padding(.bottom, 12)
-            }
-
+            // Send confirmation is the transient "Feedback sent" toast (flashToast) alone —
+            // a single, non-redundant acknowledgement. The earlier persistent "thanks" row was
+            // dropped so we don't confirm the same send twice.
             VStack(alignment: .leading, spacing: 10) {
                 ZStack(alignment: .topLeading) {
                     TextEditor(text: $draft)
@@ -135,7 +123,6 @@ struct FeedbackView: View {
                         .frame(minHeight: 160)
                         .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .onChange(of: draft) { _, newValue in
-                            if sent { sent = false }
                             if error != nil { error = nil }
                             // Any manual edit that diverges from the AI rewrite retires
                             // the "revert" affordance (we'd no longer restore cleanly).
@@ -200,7 +187,9 @@ struct FeedbackView: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .disabled(submitting || transcribing)
+                    // Mirror canImprove/canSubmit: while an AI rewrite is in flight, the draft is
+                    // about to be replaced, so block concurrent dictation that would be discarded.
+                    .disabled(submitting || transcribing || improving)
                     .help("Dictate your feedback")
 
                     if let thumb = screenshotThumb {
@@ -227,7 +216,9 @@ struct FeedbackView: View {
                             ActionChip(title: "Attach screenshot", icon: "camera.viewfinder")
                         }
                         .buttonStyle(.plain)
-                        .disabled(submitting)
+                        // Disabled while improving too: parity with Dictate/Send so an in-flight
+                        // AI rewrite can't be raced by a concurrent draft/attachment mutation.
+                        .disabled(submitting || improving)
                         .help("Capture the current screen, or drag an image onto the editor, to attach it")
                     }
                     Spacer()
@@ -419,13 +410,11 @@ struct FeedbackView: View {
         guard !t.isEmpty else { return }
         submitting = true
         error = nil
-        sent = false
         Feedback.submit(t, screenshot: screenshot) { err in
             submitting = false
             if let err {
                 error = err
             } else {
-                sent = true
                 draft = ""
                 screenshot = nil
                 screenshotThumb = nil

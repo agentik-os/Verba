@@ -1025,7 +1025,7 @@ struct SnippetsView: View {
                     TextField("Expands to…", text: $store.items[idx].expansion, axis: .vertical)
                         .cleanField().lineLimit(4...12)
                 }
-                Text("Say the trigger and Verba inserts the expansion. In AI modes it inserts the block only when you ask for it by intent.")
+                Text("Say the trigger and Verba inserts the expansion. In AI modes it inserts the block only when you ask for it by intent, for example “add my email signature” or “sign off with my address”.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             .padding(28)
@@ -1050,6 +1050,7 @@ struct SnippetsView: View {
 struct StyleView: View {
     @ObservedObject var settings = Settings.shared
     @State private var selectedID: UUID?
+    @State private var pendingReset = false   // restore-defaults awaiting confirmation
 
     // MARK: Layout
     var body: some View {
@@ -1059,6 +1060,18 @@ struct StyleView: View {
             detail.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear { if selectedID == nil { selectedID = settings.activeStyleID } }
+        .confirmationDialog("Restore the built-in styles?",
+                            isPresented: $pendingReset,
+                            titleVisibility: .visible) {
+            Button("Restore defaults", role: .destructive) {
+                settings.resetStylesToDefaults()
+                selectedID = settings.activeStyleID
+                pendingReset = false
+            }
+            Button("Cancel", role: .cancel) { pendingReset = false }
+        } message: {
+            Text("This removes any custom styles you’ve created and restores the built-in ones.")
+        }
     }
 
     // MARK: Left — styles as cards (built-ins + custom), drag-reorderable
@@ -1068,10 +1081,10 @@ struct StyleView: View {
                 HStack {
                     Text("Styles").font(.system(size: 17, weight: .bold))
                     Spacer()
-                    Button { settings.resetStylesToDefaults(); selectedID = settings.activeStyleID } label: {
+                    Button { pendingReset = true } label: {
                         Image(systemName: "arrow.counterclockwise")
                     }
-                    .buttonStyle(.borderless).help("Remove all custom styles, keep only Normal")
+                    .buttonStyle(.borderless).help("Restore the built-in styles; this removes your custom ones")
                     Button { let id = addStyle(); selectedID = id } label: { Image(systemName: "plus") }
                         .buttonStyle(.borderless).help("Add a new style")
                 }
@@ -1343,7 +1356,12 @@ struct TransformsView: View {
     }
 
     private func newTransform() {
-        store.items.append(Transform(name: "New shortcut", prompt: "Rewrite the text…"))
+        // Start blank rather than seeding a runnable-but-meaningless default ("New shortcut" /
+        // "Rewrite the text…"): an unnamed, empty-prompt transform won't match a verbal trigger
+        // (TransformsStore.match skips empty names) and shows as "(unnamed)" in the Services
+        // picker, so it can't silently no-op before the user has actually filled it in. The row
+        // renders the "New shortcut" placeholder for the empty name.
+        store.items.append(Transform(name: "", prompt: ""))
         selectedID = store.items.last?.id
     }
 

@@ -420,7 +420,10 @@ struct VerbaWidgetEntryView: View {
         HStack(spacing: 6) {
             Image(systemName: Brand.mark)
                 .font(.system(size: family == .systemSmall ? 12 : 13, weight: .semibold))
-            Text("Today")
+            // The snapshot is overdue + due-today (with an undated fallback), not strictly
+            // "today" — so the header reads "Up next" to honestly match the list's contents
+            // and the open-item count beside it.
+            Text("Up next")
                 .font(.system(size: family == .systemSmall ? 13 : 14, weight: .semibold))
             Spacer(minLength: 4)
             if openCount > 0 {
@@ -440,7 +443,7 @@ struct VerbaWidgetEntryView: View {
                 Image(systemName: "checkmark.circle")
                     .font(.system(size: 15))
                     .foregroundStyle(.green)
-                Text("Nothing due today")
+                Text("Nothing on deck")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.secondary)
             }

@@ -44,7 +44,14 @@ struct SessionsView: View {
             detail.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 720, minHeight: 360)
-        .onChange(of: store.completed.count) { _, _ in pruneSelection() }
+        .onChange(of: store.completed.count) { old, new in
+            pruneSelection()
+            // When a background dictation finishes and the detail pane is empty, auto-select the
+            // freshly-completed (newest) result so a completing session isn't lost behind a blank pane.
+            if new > old, selectedID == nil, let newest = store.completed.first {
+                selectedID = newest.id
+            }
+        }
     }
 
     // MARK: - Left: scrollable list of all results

@@ -90,8 +90,10 @@ struct OverlayView: View {
                 label(size: 13)
                 // The cancel/X is shown whenever something is in flight (recording OR
                 // processing) and must ALWAYS be clickable so a hung process can be aborted
-                // without quitting. Hidden only on the brief done flash and the mode picker.
-                if !model.menu && !model.done {
+                // without quitting. Hidden on the mode picker and on every transient flash
+                // (done/error/info/mode) where there is nothing to cancel — otherwise the ×
+                // looks live but Esc is a no-op (escapeShouldCancel is false at idle).
+                if showCancel {
                     Button { model.onCancel?() } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "xmark.circle.fill").font(.system(size: 16)).foregroundStyle(.secondary)
@@ -146,6 +148,13 @@ struct OverlayView: View {
     // Esc-to-cancel is meaningful only while something is actually cancellable (recording or
     // the processing spinner) — never during the brief done/error/info/mode flashes or the picker.
     private var showEscHint: Bool {
+        !model.menu && !model.done && !model.error && !model.info && !model.modeHint
+    }
+
+    // The × is only an honest affordance while something is cancellable. During a pure
+    // done/error/info/mode flash at idle nothing is in flight, so it matches the Esc gate's
+    // lifecycle (escapeShouldCancel returns false there) — hide it rather than show a dead button.
+    private var showCancel: Bool {
         !model.menu && !model.done && !model.error && !model.info && !model.modeHint
     }
 
@@ -250,11 +259,14 @@ struct OverlayView: View {
             .fixedSize()
             .help("Switch mode — keeps recording")
         } else {
+            // Static (non-switchable) tag: no chevron AND a slightly muted fill so it reads as a
+            // plain label, not a dead-looking copy of the interactive switcher (which carries the
+            // chevron + hover affordance). Distinct on purpose so users don't try to click it.
             Text(name)
                 .font(.system(size: size - 1, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.white.opacity(0.85))
                 .padding(.horizontal, 8).padding(.vertical, 2)
-                .background(Capsule().fill(Color.black))
+                .background(Capsule().fill(Color.black.opacity(0.8)))
                 .fixedSize(horizontal: true, vertical: false)
         }
     }

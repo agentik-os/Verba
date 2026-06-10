@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Account() {
   return (
     <main className="mx-auto flex min-h-[82vh] max-w-md flex-col justify-center px-6 py-16">
-      <a href="/" className="text-sm muted hover:text-[var(--fg)]">← Verba</a>
+      <Link href="/" className="text-sm muted hover:text-[var(--fg)]">← Verba</Link>
       <div className="mt-6 flex items-center justify-between">
         <h1 className="text-3xl font-semibold tracking-tight">Account</h1>
         <div className="flex items-center gap-3">
@@ -30,24 +31,40 @@ export default function Account() {
   );
 }
 
+type PlanState = "loading" | "error" | "free" | "pro";
+
 function Panel() {
   const { user } = useUser();
-  const [plan, setPlan] = useState<string | null>(null);
+  const [plan, setPlan] = useState<PlanState>("loading");
+  const [manageError, setManageError] = useState("");
 
-  useEffect(() => {
-    fetch("/api/me").then((r) => r.json()).then((d) => setPlan(d.plan ?? "free")).catch(() => setPlan("free"));
-  }, []);
+  function loadPlan() {
+    setPlan("loading");
+    fetch("/api/me")
+      .then((r) => { if (!r.ok) throw new Error("bad status"); return r.json(); })
+      .then((d) => setPlan(d.plan === "pro" ? "pro" : "free"))
+      .catch(() => setPlan("error"));
+  }
+
+  useEffect(loadPlan, []);
 
   async function manage() {
-    const res = await fetch("/api/portal", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: user?.primaryEmailAddress?.emailAddress }),
-    });
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-    else alert(data.error ?? "No subscription found.");
+    setManageError("");
+    try {
+      const res = await fetch("/api/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user?.primaryEmailAddress?.emailAddress }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else setManageError(data.error ?? "We couldn't open the billing portal. Please try again.");
+    } catch {
+      setManageError("We couldn't open the billing portal. Please try again.");
+    }
   }
+
+  const planLabel = plan === "pro" ? "Pro" : plan === "free" ? "Free" : plan === "error" ? "Unavailable" : "…";
 
   return (
     <div className="mt-8 space-y-4">
@@ -57,17 +74,33 @@ function Panel() {
         <div className="mt-4 flex items-center gap-2">
           <span className="text-sm muted">Plan</span>
           <span className={`rounded-full px-2.5 py-1 text-xs ${plan === "pro" ? "bg-[var(--fg)] text-[var(--bg)]" : "bg-[var(--tint)]"}`}>
-            {plan === null ? "…" : plan === "pro" ? "Pro" : "Free"}
+            {planLabel}
           </span>
         </div>
-        {plan === "pro" ? (
-          <button onClick={manage} className="mt-5 w-full rounded-xl glass px-6 py-3 font-medium hover:bg-[var(--tint-strong)]">
-            Manage subscription
-          </button>
-        ) : (
+        {plan === "error" ? (
+          <div className="mt-5 space-y-2">
+            <p className="text-sm muted">Unable to load your plan right now.</p>
+            <button onClick={loadPlan} className="w-full rounded-xl glass px-6 py-3 font-medium hover:bg-[var(--tint-strong)]">
+              Retry
+            </button>
+          </div>
+        ) : plan === "pro" ? (
+          <>
+            <button onClick={manage} className="mt-5 w-full rounded-xl glass px-6 py-3 font-medium hover:bg-[var(--tint-strong)]">
+              Manage subscription
+            </button>
+            {manageError && (
+              <p role="alert" className="mt-3 rounded-lg border border-[#ff5f57]/30 bg-[#ff5f57]/10 px-3 py-2 text-xs text-[#ff8a84]">
+                {manageError}
+              </p>
+            )}
+          </>
+        ) : plan === "free" ? (
           <a href="/#pricing" className="mt-5 block w-full rounded-xl bg-[var(--fg)] px-6 py-3 text-center font-medium text-[var(--bg)]">
             Upgrade to Pro
           </a>
+        ) : (
+          <div className="mt-5 h-12 w-full animate-pulse rounded-xl bg-[var(--tint)]" />
         )}
       </div>
       <a

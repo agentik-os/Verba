@@ -26,6 +26,7 @@ struct NotesView: View {
     @State private var format = NoteFormat.cleanNote
     @State private var intentText = ""        // Intent mode: the one-off instruction to apply
     @FocusState private var intentFocused: Bool
+    @FocusState private var titleFocused: Bool
     @State private var showModeManager = false  // CRUD sheet for note modes
     @State private var transcript = ""        // raw source (for re-formatting)
     @State private var editorText = ""        // shown / edited / saved document
@@ -498,9 +499,10 @@ struct NotesView: View {
                 }
             }
             // Title field, then the content below.
-            TextField("Title", text: $noteTitle)
+            TextField("Add a title", text: $noteTitle)
                 .textFieldStyle(.plain)
                 .font(.system(size: 20, weight: .bold))
+                .focused($titleFocused)
                 .padding(.horizontal, 4).padding(.top, 4).padding(.bottom, 2)
                 .onChange(of: noteTitle) { _, _ in scheduleAutosave() }
             // Single always-editable Markdown editor (Bear-style live styling), fills all space.
@@ -686,6 +688,9 @@ struct NotesView: View {
             Stats.shared.record(words: wordCount(doc), seconds: Double(elapsed))
             selectedID = e.id          // keep editing the just-saved note
             noteTags = e.tags          // reflect auto-extracted #hashtags
+            // First save with no title yet: focus the Title field so the (easy-to-miss) titling
+            // affordance is discoverable and the sidebar list gains a real label, not "Untitled".
+            if titleTrim.isEmpty && !titleFocused { titleFocused = true }
         }
         savedFlash = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { savedFlash = false }

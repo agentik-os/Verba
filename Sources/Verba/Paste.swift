@@ -48,6 +48,25 @@ enum Output {
         "com.apple.TextEdit", "com.apple.iWork.Pages", "net.shinyfrog.bear", "md.obsidian",
         "com.apple.Notes", "com.microsoft.Word",
     ]
+    // Multi-line editors where a trailing newline is content, not an accidental submit: code
+    // editors/terminals and long-form writing apps never auto-send on a trailing \n. For these we
+    // preserve a SINGLE trailing newline so intentional multi-paragraph dictation isn't mangled,
+    // unlike chat/search/single-line fields (Slack, iMessage, browser URL bars) where a trailing
+    // newline submits — there we still strip it. Editors are the union of the code-plain set and
+    // the long-form rich-text writing apps.
+    private static let multiLineEditorApps: Set<String> =
+        plainTextApps.union([
+            "notion.id", "com.apple.TextEdit", "com.apple.iWork.Pages", "net.shinyfrog.bear",
+            "md.obsidian", "com.apple.Notes", "com.microsoft.Word",
+        ])
+
+    /// Whether the target app is a multi-line editor where a single trailing newline is meaningful
+    /// (paragraph break) rather than an accidental message submit. Drives whether we preserve one
+    /// trailing newline on paste. Unknown apps → false (keep the safe strip-everything behaviour).
+    static func prefersTrailingNewline(_ bundleID: String?) -> Bool {
+        guard let b = bundleID else { return false }
+        return multiLineEditorApps.contains(b)
+    }
     /// Decide rich vs plain for the target app. Known plain apps → plain; known rich apps →
     /// rich; otherwise fall back to the user's default.
     static func prefersRichText(_ bundleID: String?) -> Bool {
@@ -100,8 +119,13 @@ enum Output {
     /// `rich` writes a styled (RTF) representation from Markdown alongside clean
     /// plain text, so formatting apps render bold/headings/lists and plain fields
     /// get the de-marked text.
-    static func copyToClipboard(_ text: String, rich: Bool = false) {
-        let text = trimTrailingNewlines(text)
+    static func copyToClipboard(_ text: String, rich: Bool = false, keepTrailingNewline: Bool = false) {
+        // For multi-line editors (keepTrailingNewline) we preserve ONE trailing newline so
+        // intentional paragraph dictation survives; everywhere else we strip all trailing
+        // whitespace so auto-paste never lands a stray Return in a chat/search/single-line field.
+        let text = keepTrailingNewline
+            ? trimTrailingWhitespacePreservingOneNewline(text)
+            : trimTrailingNewlines(text)
         let pb = NSPasteboard.general
         pb.clearContents()
         if rich {
@@ -110,6 +134,10 @@ enum Output {
             let m = NSMutableAttributedString(attributedString: Markdown.attributed(text))
             while let last = m.string.last, last == "\n" || last == "\r" || last == " " || last == "\t" {
                 m.deleteCharacters(in: NSRange(location: m.length - 1, length: 1))
+            }
+            // Re-append the single paragraph newline for editors (the Markdown render dropped it).
+            if keepTrailingNewline, text.last == "\n" {
+                m.append(NSAttributedString(string: "\n"))
             }
             pb.writeObjects([m])
         } else {
@@ -125,6 +153,24 @@ enum Output {
         return String(t)
     }
 
+    /// Strip trailing whitespace but keep a SINGLE trailing newline when the original ended in one
+    /// — for multi-line editors where a paragraph break is intentional content. Collapses runs of
+    /// trailing newlines/spaces/tabs to exactly one "\n" (never more, so we still can't auto-submit
+    /// a multi-line field by piling on blank lines).
+    static func trimTrailingNewlinesPreservingOne(_ text: String) -> String {
+        trimTrailingWhitespacePreservingOneNewline(text)
+    }
+
+    private static func trimTrailingWhitespacePreservingOneNewline(_ text: String) -> String {
+        let hadNewline = { () -> Bool in
+            var t = Substring(text)
+            while let last = t.last, last == " " || last == "\t" { t = t.dropLast() }
+            return t.last == "\n" || t.last == "\r"
+        }()
+        let stripped = trimTrailingNewlines(text)
+        return hadNewline ? stripped + "\n" : stripped
+    }
+
     /// Whether we're trusted for Accessibility (needed to synthesize ⌘V into other apps).
     static var accessibilityTrusted: Bool {
         AXIsProcessTrusted()
@@ -138,8 +184,8 @@ enum Output {
     /// Put text on the clipboard and paste it into the frontmost app via ⌘V.
     /// Returns false if Accessibility isn't granted (caller can fall back to clipboard only).
     @discardableResult
-    static func paste(_ text: String, rich: Bool = false) -> Bool {
-        copyToClipboard(text, rich: rich)   // already trims trailing newlines
+    static func paste(_ text: String, rich: Bool = false, keepTrailingNewline: Bool = false) -> Bool {
+        copyToClipboard(text, rich: rich, keepTrailingNewline: keepTrailingNewline)   // trims trailing newlines (keeping one for editors)
         guard accessibilityTrusted else { return false }
         postPasteShortcut(after: 0.05)
         return true
@@ -175,7 +221,10 @@ enum Output {
     /// Returns false only when Accessibility isn't granted (caller falls back to clipboard-only).
     @discardableResult
     static func paste(_ text: String, rich: Bool = false, target: PasteTarget?) -> Bool {
-        copyToClipboard(text, rich: rich)   // already trims trailing newlines
+        // Preserve a single trailing newline only for multi-line editors (code/long-form), where a
+        // paragraph break is intentional; chat/search/single-line targets still get a full strip so
+        // we never auto-submit. The decision keys off the captured target's bundle id.
+        copyToClipboard(text, rich: rich, keepTrailingNewline: prefersTrailingNewline(target?.bundleID))
         guard accessibilityTrusted else { return false }
 
         // No captured target (or capture failed) → behave exactly like the legacy paste.

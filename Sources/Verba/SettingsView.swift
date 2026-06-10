@@ -67,6 +67,7 @@ struct SettingsView: View {
     @State private var confirmSignOut = false
     @State private var confirmCloudWipe = false
     @State private var cloudWiped = false
+    @State private var confirmUninstall = false
     @State private var engineTab: TranscriptionEngine = Settings.shared.engine
     @State private var installing = false
     @State private var installProgress: Double = 0
@@ -225,8 +226,22 @@ struct SettingsView: View {
     /// Generic capsule-chip enum picker (the exemplar grammar for small enums).
     private func chips<T: Hashable & Identifiable>(_ options: [T], selected: T,
                                                    label: @escaping (T) -> String, icon: ((T) -> String)? = nil,
+                                                   help: ((T) -> String)? = nil,
                                                    onPick: @escaping (T) -> Void) -> some View {
-        SettingsChips(options: options, selected: selected, label: label, icon: icon, onPick: onPick)
+        SettingsChips(options: options, selected: selected, label: label, icon: icon, help: help, onPick: onPick)
+    }
+
+    /// One-line description of what each glass material looks like, for chip tooltips.
+    /// The scale runs Frosted (most opaque) → Ultra (most translucent).
+    private func materialHelp(_ m: VAppr.Material) -> String {
+        switch m {
+        case .frosted: return "Frosted — the most opaque, menu-like glass."
+        case .soft:    return "Soft — a light popover-style frost."
+        case .sidebar: return "Sidebar — the translucency macOS uses for sidebars."
+        case .hud:     return "HUD — a darker heads-up-display glass."
+        case .crystal: return "Crystal — deep, very translucent (Notification Center look)."
+        case .ultra:   return "Ultra — the most translucent, full-screen-style glass."
+        }
     }
 
     /// Preset chips whose selection reflects the REAL active preset (nil = a custom
@@ -251,7 +266,8 @@ struct SettingsView: View {
             apprLabel("Appearance")
             chips(VAppr.ColorMode.allCases, selected: appearance.colorMode, label: { $0.label }) { appearance.colorMode = $0 }
             apprLabel("Glass material")
-            chips(VAppr.Material.allCases, selected: appearance.material, label: { $0.label }) { appearance.material = $0 }
+            chips(VAppr.Material.allCases, selected: appearance.material, label: { $0.label },
+                  help: materialHelp) { appearance.material = $0 }
             apprLabel("Accent")
             accentSwatches(selected: appearance.accent,
                            customHex: appearance.accentHex,
@@ -273,7 +289,8 @@ struct SettingsView: View {
             apprLabel("Appearance")
             chips(VAppr.ColorMode.allCases, selected: appearance.widgetColorMode, label: { $0.label }) { appearance.widgetColorMode = $0 }
             apprLabel("Glass material")
-            chips(VAppr.Material.allCases, selected: appearance.widgetMaterial, label: { $0.label }) { appearance.widgetMaterial = $0 }
+            chips(VAppr.Material.allCases, selected: appearance.widgetMaterial, label: { $0.label },
+                  help: materialHelp) { appearance.widgetMaterial = $0 }
             apprLabel("Accent")
             accentSwatches(selected: appearance.widgetAccent,
                            customHex: appearance.widgetAccentHex,
@@ -349,7 +366,10 @@ struct SettingsView: View {
                             .frame(width: 24, height: 24)
                     }
                     .softElevation(isSel)
-                }.buttonStyle(.plain).help(a.label)
+                }.buttonStyle(.plain)
+                .help(a == .monochrome
+                      ? "Mono — no tint, follows light/dark automatically (the default)."
+                      : "\(a.label) — tints buttons, selections and the recording dot.")
             }
             // Custom color well
             let customSel = selected == .custom
@@ -477,14 +497,27 @@ struct SettingsView: View {
         if !settings.isPro {
             let used = Stats.shared.totalCount
             let limit = Entitlement.freeTrialDictations
+            let exhausted = used >= limit
             card("Free trial",
                  footer: "Free is a full-Pro trial of \(limit) dictations. Pro ($9.99/mo) unlocks unlimited dictation, editable system prompts and custom modes.") {
-                HStack {
-                    Text("\(min(used, limit)) / \(limit) dictations").font(.callout).monospacedDigit()
-                    Spacer()
-                    Text("\(max(0, limit - used)) left").font(.callout).monospacedDigit().foregroundStyle(.secondary)
+                if exhausted {
+                    // Trial used up: a clear upgrade state instead of a silently pinned bar.
+                    HStack(spacing: 10) {
+                        statusLabel("Free trial used up. Upgrade for unlimited dictation.",
+                                    system: "checkmark.circle.fill", tint: .secondary)
+                        Spacer()
+                        if let u = URL(string: Entitlement.pricingURL) {
+                            Link("Upgrade", destination: u).glassProminentButton().controlSize(.small)
+                        }
+                    }
+                } else {
+                    HStack {
+                        Text("\(used) / \(limit) dictations").font(.callout).monospacedDigit()
+                        Spacer()
+                        Text("\(limit - used) left").font(.callout).monospacedDigit().foregroundStyle(.secondary)
+                    }
+                    ProgressView(value: Double(used), total: Double(limit))
                 }
-                ProgressView(value: Double(min(used, limit)), total: Double(limit))
             }
         }
 
@@ -526,9 +559,20 @@ struct SettingsView: View {
                     Label(copiedReferral ? "Copied" : "Copy", systemImage: copiedReferral ? "checkmark" : "doc.on.doc")
                 }
                 .glassButton().controlSize(.small)
+                // Same Share affordance as the Free Month tab, so the referral surfaces match.
+                Button { shareReferral() } label: { Label("Share…", systemImage: "square.and.arrow.up") }
+                    .glassButton().controlSize(.small)
             }
             .padding(.horizontal, 11).padding(.vertical, 9)
             .background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+    }
+
+    /// Share the referral link through the native macOS share sheet — mirrors FreeMonthView.
+    private func shareReferral() {
+        let picker = NSSharingServicePicker(items: [URL(string: settings.referralLink) ?? settings.referralLink as Any])
+        if let win = NSApp.keyWindow, let view = win.contentView {
+            picker.show(relativeTo: .zero, of: view, preferredEdge: .minY)
         }
     }
 
@@ -714,11 +758,18 @@ struct SettingsView: View {
                         : "Using Verba's included rewriting (no key, no setup).",
                         system: "wand.and.stars", tint: .secondary)
         case .verba:
-            statusLabel(settings.proEmail.isEmpty
-                        ? "Sign in (Account) to use the included rewriting, no API key needed."
-                        : "Included with Verba, no API key needed. Runs on Verba's servers.",
-                        system: settings.proEmail.isEmpty ? "exclamationmark.triangle.fill" : "checkmark.seal.fill",
-                        tint: settings.proEmail.isEmpty ? .orange : .green)
+            if settings.proEmail.isEmpty {
+                HStack(alignment: .top, spacing: 10) {
+                    statusLabel("Sign in to use the included rewriting, no API key needed.",
+                                system: "exclamationmark.triangle.fill", tint: .orange)
+                    Spacer()
+                    Button { startSignIn() } label: { Text(signingIn ? "Signing in…" : "Sign in") }
+                        .glassButton().controlSize(.small).disabled(signingIn)
+                }
+            } else {
+                statusLabel("Included with Verba, no API key needed. Runs on Verba's servers.",
+                            system: "checkmark.seal.fill", tint: .green)
+            }
         case .claudeCode:
             statusLabel(ClaudeCode.isAvailable
                         ? "Claude Code detected, uses your Claude plan, no API key."
@@ -1029,7 +1080,14 @@ struct SettingsView: View {
                 .confirmationDialog("Delete all your cloud data?", isPresented: $confirmCloudWipe, titleVisibility: .visible) {
                     Button("Delete cloud data", role: .destructive) {
                         ConvexClient.call("mutation", "account:wipe", ConvexClient.authedArgs()) { _ in
-                            DispatchQueue.main.async { cloudWiped = true }
+                            DispatchQueue.main.async {
+                                withAnimation(.spring(response: 0.28, dampingFraction: 0.6)) { cloudWiped = true }
+                                // Return the button to its actionable label after a short beat,
+                                // mirroring the keysSaved/copied confirmation patterns.
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+                                    withAnimation(.easeOut(duration: 0.2)) { cloudWiped = false }
+                                }
+                            }
                         }
                     }
                     Button("Cancel", role: .cancel) { }
@@ -1155,7 +1213,8 @@ struct SettingsView: View {
                 let _ = engineRefresh
                 let ready = EngineManager.isReady(engineTab, model: settings.localModel)
                 HStack {
-                    Label("Downloaded", systemImage: "checkmark.circle.fill").font(.caption).foregroundStyle(.green)
+                    Label("Downloaded · \(EngineManager.sizeGB(engineTab)) on disk", systemImage: "checkmark.circle.fill")
+                        .font(.caption).foregroundStyle(.green)
                     Spacer()
                     if activating && active {
                         ProgressView().controlSize(.small); Text("Activating…").font(.caption).foregroundStyle(.secondary)
@@ -1165,7 +1224,13 @@ struct SettingsView: View {
                     } else {
                         Button(active ? "Activate" : "Use this model") { activate(engineTab) }.glassProminentButton().controlSize(.small)
                     }
-                    Button("Uninstall", role: .destructive) { uninstallEngine(engineTab) }.glassButton().controlSize(.small)
+                    Button("Uninstall", role: .destructive) { confirmUninstall = true }.glassButton().controlSize(.small)
+                        .confirmationDialog("Uninstall this model?", isPresented: $confirmUninstall, titleVisibility: .visible) {
+                            Button("Uninstall", role: .destructive) { uninstallEngine(engineTab) }
+                            Button("Cancel", role: .cancel) { }
+                        } message: {
+                            Text("Deletes the \(EngineManager.sizeGB(engineTab)) model from this Mac. You can re-download it anytime.")
+                        }
                 }
                 if active && !ready && !activating, let err = EngineManager.lastInstallError {
                     statusLabel("Couldn't load this model: \(err). Tap Activate to retry, or Uninstall + redownload.",
@@ -1212,9 +1277,25 @@ struct SettingsView: View {
                 Button("Download model") { pullModel() }.glassProminentButton().controlSize(.small)
             }
         }
-        Text("Reformulation runs entirely on your Mac. We start the local engine for you (and download it if needed). Qwen 2.5 7B recommended (~4.7 GB).")
+        Text("Reformulation runs entirely on your Mac. Tap Set up to install the local engine (~30 MB) the first time. Qwen 2.5 7B recommended (~4.7 GB).")
             .font(.caption).foregroundStyle(.secondary)
-            .onAppear { setupEngine() }
+            // Probe state non-intrusively. If the engine is already installed we start it,
+            // but we never auto-DOWNLOAD the binary — that stays behind the explicit Set up button.
+            .onAppear { probeEngine() }
+    }
+
+    /// Reflect the local-engine state without installing anything. The binary download
+    /// is gated behind the explicit "Set up & start" button (see setupEngine()).
+    private func probeEngine() {
+        LocalLLM.isRunning { up in
+            if up {
+                ollamaUp = true
+                LocalLLM.hasModel(settings.localLLMModel) { ollamaHasModel = $0 }
+            } else if LocalLLM.locateBinary() != nil {
+                // Installed but not running yet — bring it up (no download involved).
+                setupEngine()
+            }
+        }
     }
 
     private func setupEngine() {
@@ -1358,17 +1439,19 @@ private struct SettingsChips<T: Hashable & Identifiable>: View {
     let selectedOptional: T?
     let label: (T) -> String
     var icon: ((T) -> String)? = nil
+    /// Optional per-chip tooltip text, so opaque option names can explain themselves.
+    var help: ((T) -> String)? = nil
     let onPick: (T) -> Void
 
     init(options: [T], selected: T, label: @escaping (T) -> String,
-         icon: ((T) -> String)? = nil, onPick: @escaping (T) -> Void) {
+         icon: ((T) -> String)? = nil, help: ((T) -> String)? = nil, onPick: @escaping (T) -> Void) {
         self.options = options; self.selectedOptional = selected
-        self.label = label; self.icon = icon; self.onPick = onPick
+        self.label = label; self.icon = icon; self.help = help; self.onPick = onPick
     }
     init(options: [T], selectedOptional: T?, label: @escaping (T) -> String,
-         icon: ((T) -> String)? = nil, onPick: @escaping (T) -> Void) {
+         icon: ((T) -> String)? = nil, help: ((T) -> String)? = nil, onPick: @escaping (T) -> Void) {
         self.options = options; self.selectedOptional = selectedOptional
-        self.label = label; self.icon = icon; self.onPick = onPick
+        self.label = label; self.icon = icon; self.help = help; self.onPick = onPick
     }
 
     var body: some View {
@@ -1392,8 +1475,16 @@ private struct SettingsChips<T: Hashable & Identifiable>: View {
                     .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
+                .ifLet(help?(opt)) { $0.help($1) }
             }
         }
+    }
+}
+
+private extension View {
+    /// Apply a modifier only when an optional value is present (used for per-chip tooltips).
+    @ViewBuilder func ifLet<V>(_ value: V?, @ViewBuilder _ transform: (Self, V) -> some View) -> some View {
+        if let value { transform(self, value) } else { self }
     }
 }
 

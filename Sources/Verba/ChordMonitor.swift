@@ -24,7 +24,8 @@ final class ChordMonitor {
     private var fnHeld = false
     private var ctrlPresent = false                 // edge-tracking for the plain-Control pause/resume tap
     private var optSeenDuringCtrl = false            // Option co-present during the Control press → ⌃⌥ chord, not a pause tap
-    private var lastControlFire: TimeInterval = 0   // debounce for the Control pause/resume tap
+    // Pause/resume debounce is the SHARED FnTap.claimControlFire() gate, so this NSEvent fallback
+    // and the HID tap can never double-fire during the tap (re)start window.
     private static let fnKeyCode: UInt16 = 63   // the globe / Fn key
 
     func start() {
@@ -79,12 +80,8 @@ final class ChordMonitor {
                 let wasChord = optSeenDuringCtrl
                 ctrlPresent = false
                 optSeenDuringCtrl = false
-                if !wasChord {
-                    let now = ProcessInfo.processInfo.systemUptime
-                    if now - lastControlFire > 0.12 {
-                        lastControlFire = now
-                        DispatchQueue.main.async { self.onControl?() }
-                    }
+                if !wasChord, FnTap.claimControlFire() {
+                    DispatchQueue.main.async { self.onControl?() }
                 }
             }
         }

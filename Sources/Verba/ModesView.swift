@@ -11,6 +11,7 @@ struct ModesView: View {
     @State private var genBusy = false
     @State private var genError: String?
     @State private var pendingDeleteID: UUID?   // built-in mode awaiting delete confirmation
+    @State private var pendingReset = false     // restore-defaults awaiting confirmation
 
     var body: some View {
         HStack(spacing: 0) {
@@ -20,11 +21,11 @@ struct ModesView: View {
                 HStack(spacing: 10) {
                     Text("Modes").font(.system(size: 17, weight: .bold))
                     Spacer()
-                    Button { settings.resetProfilesToDefaults(); selectedID = settings.activeProfileID } label: {
+                    Button { pendingReset = true } label: {
                         Image(systemName: "arrow.counterclockwise")
                     }
                     .buttonStyle(.borderless).foregroundStyle(.secondary)
-                    .help("Restore the built-in Flow / Intent / Translate / Context / Coding modes")
+                    .help("Restore the built-in modes; this removes your custom ones")
                     Button { genError = nil; genDescription = ""; showGenerator = true } label: { Image(systemName: "plus") }
                         .buttonStyle(.borderless)
                         .help("Describe a mode and let Verba build it")
@@ -64,7 +65,7 @@ struct ModesView: View {
                                 Label("New mode", systemImage: "plus")
                             }
                             .glassProminentButton()
-                            Button { settings.resetProfilesToDefaults(); selectedID = settings.activeProfileID } label: {
+                            Button { pendingReset = true } label: {
                                 Label("Restore built-in modes", systemImage: "arrow.counterclockwise")
                             }
                             .glassButton()
@@ -88,6 +89,18 @@ struct ModesView: View {
             Button("Cancel", role: .cancel) { pendingDeleteID = nil }
         } message: {
             Text("You can bring the built-in modes back anytime with Restore.")
+        }
+        .confirmationDialog("Restore the built-in modes?",
+                            isPresented: $pendingReset,
+                            titleVisibility: .visible) {
+            Button("Restore defaults", role: .destructive) {
+                settings.resetProfilesToDefaults()
+                selectedID = settings.activeProfileID
+                pendingReset = false
+            }
+            Button("Cancel", role: .cancel) { pendingReset = false }
+        } message: {
+            Text("This removes any custom modes you’ve created and restores the built-in ones.")
         }
     }
 
@@ -157,17 +170,6 @@ struct ModesView: View {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
             settings.profiles.swapAt(index, dest)
         }
-    }
-
-    /// The model that actually rewrites this mode, as a quiet mono pill (backend-aware,
-    /// mirrors the editor's Model field logic).
-    private func modelPill(_ p: Profile) -> some View {
-        Text(modelPillLabel(p))
-            .font(.system(size: 10, design: .monospaced))
-            .lineLimit(1)
-            .padding(.horizontal, 6).padding(.vertical, 2)
-            .background(.softFill, in: Capsule())
-            .foregroundStyle(.secondary)
     }
 
     private func modelPillLabel(_ p: Profile) -> String {
@@ -446,14 +448,6 @@ struct ModesView: View {
             }
             content()
         }
-    }
-
-    private func keycap(_ s: String) -> some View {
-        Text(s)
-            .font(.system(size: 11, weight: .semibold, design: .rounded))
-            .padding(.horizontal, 6).padding(.vertical, 2)
-            .background(.quaternary, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
-            .foregroundStyle(.secondary)
     }
 
     @discardableResult

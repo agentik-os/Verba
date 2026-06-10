@@ -131,16 +131,26 @@ struct HistoryView: View {
             }
             .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
 
-            // Filter chips: by mode and/or by engine (Notes chip grammar).
+            // Filter chips: two clearly-separated dimensions (Mode and Engine), each behind a
+            // small sub-label so the icon-only chips aren't one undifferentiated row.
             if !modeNames.isEmpty || !engineFamilies.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
                         chip(label: "All", icon: nil, on: !hasFilters) { filterMode = nil; filterEngine = nil }
-                        ForEach(modeNames, id: \.self) { m in
-                            chip(label: m, icon: "text.bubble", on: filterMode == m) { filterMode = (filterMode == m ? nil : m) }
+                        if !modeNames.isEmpty {
+                            filterDimensionLabel("Mode")
+                            ForEach(modeNames, id: \.self) { m in
+                                chip(label: m, icon: "text.bubble", on: filterMode == m) { filterMode = (filterMode == m ? nil : m) }
+                            }
                         }
-                        ForEach(engineFamilies, id: \.self) { f in
-                            chip(label: Self.engineLabel(f), icon: "waveform", on: filterEngine == f) { filterEngine = (filterEngine == f ? nil : f) }
+                        if !engineFamilies.isEmpty {
+                            if !modeNames.isEmpty {
+                                Divider().frame(height: 16).padding(.horizontal, 2)
+                            }
+                            filterDimensionLabel("Engine")
+                            ForEach(engineFamilies, id: \.self) { f in
+                                chip(label: Self.engineLabel(f), icon: "waveform", on: filterEngine == f) { filterEngine = (filterEngine == f ? nil : f) }
+                            }
                         }
                     }
                     .padding(.horizontal, 14).padding(.bottom, 8)
@@ -232,6 +242,14 @@ struct HistoryView: View {
         return "Empty dictation"
     }
 
+    /// A small dimension sub-label ("Mode" / "Engine") that prefixes a group of filter chips.
+    private func filterDimensionLabel(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 9, weight: .semibold))
+            .foregroundStyle(.tertiary)
+            .padding(.trailing, 1)
+    }
+
     @ViewBuilder private func chip(label: String, icon: String?, on: Bool, action: @escaping () -> Void) -> some View {
         Button {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { action() }
@@ -280,11 +298,11 @@ struct HistoryView: View {
                         Text("Re-running…").font(.caption).foregroundStyle(.secondary)
                     } else {
                         Button { rerun(e) } label: {
-                            Label("Re-run as \(rerunModeLabel(e))", systemImage: "arrow.clockwise")
+                            Label("Redo & save as \(rerunModeLabel(e))", systemImage: "arrow.clockwise")
                                 .font(.system(size: 12, weight: .medium))
                         }
                         .buttonStyle(.borderless)
-                        .help("Re-run with Claude using this dictation's own mode (\(rerunModeLabel(e))) on its raw transcript")
+                        .help("Re-run Claude on the raw transcript using this dictation's own mode (\(rerunModeLabel(e))) and OVERWRITE the saved entry. To try a variation without changing this entry, use Adapt below.")
                     }
                     Spacer()
                     Button(role: .destructive) { audio.stop(); history.delete(e); selection = nil } label: {
