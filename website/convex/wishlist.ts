@@ -37,6 +37,20 @@ export const remove = internalMutation({
   },
 });
 
+// Admin-only: set every wishlist item's author to one of the provided handles (round-robin),
+// so the seeded wishes match the real names visible on the leaderboard. Internal-only.
+export const reauthor = mutation({
+  args: { authors: v.array(v.string()) },
+  handler: async (ctx, a) => {
+    if (a.authors.length === 0) return 0;
+    const all = await ctx.db.query("wishlist").collect();
+    for (let i = 0; i < all.length; i++) {
+      await ctx.db.patch(all[i]._id, { author: a.authors[i % a.authors.length] });
+    }
+    return all.length;
+  },
+});
+
 // Admin-only: wipe every wishlist item (used to reset the board). Internal-only.
 export const wipe = internalMutation({
   args: {},
