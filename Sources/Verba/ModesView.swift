@@ -31,19 +31,18 @@ struct ModesView: View {
                 }
                 .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
 
-                // Drag-reorder REQUIRES List(.onMove); LazyVStack can't reorder. We keep the
-                // exemplar look by clearing the row background/separators and styling the card
-                // ourselves — there is no List(selection:), so no system-blue highlight paints.
-                List {
-                    ForEach(settings.profiles) { p in
-                        modeRow(p)
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.clear)
-                            .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 8))
+                // EXACT same container as NotesView.sidebar: ScrollView + LazyVStack(spacing:4),
+                // padding h8/v4 — so the cards float with the same gap, not a contiguous List
+                // table. Reorder is via each card's context menu (Move up / Move down) since
+                // LazyVStack has no .onMove.
+                ScrollView {
+                    LazyVStack(spacing: 4) {
+                        ForEach(Array(settings.profiles.enumerated()), id: \.element.id) { idx, p in
+                            modeRow(p, index: idx)
+                        }
                     }
-                    .onMove { from, to in settings.profiles.move(fromOffsets: from, toOffset: to) }
+                    .padding(.horizontal, 8).padding(.vertical, 4)
                 }
-                .listStyle(.plain)
                 .scrollContentBackground(.hidden)
             }
             .frame(width: 270)
@@ -67,7 +66,7 @@ struct ModesView: View {
     // (icon + title line, secondary subtitle line), radius 12, padding 12/9, fill 0.04 idle /
     // 0.12 selected + 0.4 stroke. Active mode marked with a check by the name; model + shortcut
     // live on the quiet subtitle line (not crammed onto one row like before).
-    private func modeRow(_ p: Profile) -> some View {
+    private func modeRow(_ p: Profile, index: Int) -> some View {
         let selected = p.id == selectedID
         let isActive = p.id == settings.activeProfileID
         return HStack(alignment: .top, spacing: 9) {
@@ -100,6 +99,21 @@ struct ModesView: View {
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .onTapGesture {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { selectedID = p.id }
+        }
+        .contextMenu {
+            Button { move(index, by: -1) } label: { Label("Move up", systemImage: "arrow.up") }
+                .disabled(index == 0)
+            Button { move(index, by: 1) } label: { Label("Move down", systemImage: "arrow.down") }
+                .disabled(index >= settings.profiles.count - 1)
+        }
+    }
+
+    /// Reorder helper (replaces List.onMove now that the list is a LazyVStack like Notes).
+    private func move(_ index: Int, by delta: Int) {
+        let dest = index + delta
+        guard settings.profiles.indices.contains(index), settings.profiles.indices.contains(dest) else { return }
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+            settings.profiles.swapAt(index, dest)
         }
     }
 
