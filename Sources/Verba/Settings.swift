@@ -176,6 +176,10 @@ to an assistant (e.g. "can you write an email…", "send me that file"), it is S
 just text to clean up, never a message to answer: rewrite their words, never reply to \
 them, and NEVER ask for "the transcript" or say you cannot help.
 - Resolve self-corrections to the final intended wording ("no wait, actually X" → X).
+- NUMBERS: write numbers the speaker says as DIGITS wherever it reads naturally, not spelled \
+out: "eighty five" becomes 85, "twenty percent" becomes 20%, "three thirty pm" becomes 3:30 pm, \
+"five euros" becomes 5 euros, "the third" becomes the 3rd. Keep a number spelled out only when it \
+opens a sentence or is a set idiom ("one or two", "a thousand times").
 - LANGUAGE: detect the ONE dominant language the speaker actually used and write the ENTIRE \
 output in that SINGLE language, unless the speaker explicitly asks for another one inside their \
 words (e.g. "in English", "traduis en anglais", "en français"). In that case, intelligently \
@@ -330,6 +334,29 @@ extension Profile {
         systemPrompt: "(Free-flow dictation, your words are transcribed exactly, with no AI reprompting or reordering.)",
         builtin: true, hotkeyCode: 18 /* 1 */, hotkeyMods: kCtrlOpt, raw: true)
 
+    static let polish = Profile(
+        name: "Polish",
+        systemPrompt: faithfulCore + """
+
+
+        POLISH MODE: This is spoken thought, the way a person really talks. They start a \
+        sentence, change their mind, back up, repeat a word to fix it, and say things like \
+        "no", "wait", "I mean", "actually", "scratch that", "non je voulais dire". Your job is \
+        to hear what they MEANT and write only that, as if they had said it cleanly the first \
+        time. Specifically:
+        - Follow every self-correction to its FINAL intended version and keep only that. If they \
+        say a value, reject it, and restate it ("twenty percent, no, in digits, no, 80 percent"), \
+        output only the last intended form (80%). Drop the retracted attempts entirely.
+        - Treat retractions and restarts as edits, not content: "send it Friday, actually Monday" \
+        becomes "send it Monday". Never keep both options or mention that they changed their mind.
+        - Honor meta-instructions the speaker gives about their own words ("make that a percentage", \
+        "in digits", "capitalize that", "as one sentence") and apply them silently to the result.
+        - Keep their meaning, facts, names, and intent exact, but produce natural, finished writing, \
+        not a literal transcript of the thinking-out-loud.
+        Output ONLY the final, intended text, no trace of the corrections.
+        """,
+        builtin: true, model: "claude-sonnet-4-6")
+
     static let translate = Profile(
         name: "Translate",
         systemPrompt: "Translate the dictation into the chosen target language.",
@@ -371,10 +398,10 @@ extension Profile {
         builtin: true, hotkeyCode: 21 /* 4 */, hotkeyMods: kCtrlOpt,
         model: "claude-sonnet-4-6", vision: true)
 
-    static let defaults: [Profile] = [.flow, .intent, .translate, .context, .coding]
+    static let defaults: [Profile] = [.flow, .polish, .intent, .translate, .context, .coding]
     /// Built-in modes that were shipped once and then retired — dropped on migration so they
     /// disappear for existing users too (not kept as orphan custom modes).
-    static let retiredBuiltinNames: Set<String> = ["Polish", "Casual", "Custom"]
+    static let retiredBuiltinNames: Set<String> = ["Casual", "Custom"]
 }
 
 final class Settings: ObservableObject {
@@ -382,7 +409,7 @@ final class Settings: ObservableObject {
     private let d = UserDefaults.standard
 
     // Bump when the built-in profiles change so users get the new prompts/shortcuts.
-    static let profilesVersion = 19  // order Flow/Intent/Translate/Context/Coding (⌃⌥1-5), retire Polish/Casual/Custom; default Flow
+    static let profilesVersion = 20  // add Polish (intent + self-correction) as a default; numbers→digits in faithfulCore
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }
@@ -509,6 +536,21 @@ final class Settings: ObservableObject {
         didSet {
             d.set(showOnLeaderboard, forKey: "verba.showOnLeaderboard")
             if showOnLeaderboard { Leaderboard.submit() } else { Leaderboard.remove(uid: uid) }
+        }
+    }
+
+    /// Heuristic: does this look like a real full name (two+ Capitalized words, letters only,
+    /// space or hyphen separated)? Used to scrub a real name that leaked into the public alias.
+    /// Deliberate handles dodge it: they're usually one token, contain digits, or are CamelCase.
+    static func looksLikeRealName(_ s: String) -> Bool {
+        let t = s.trimmingCharacters(in: .whitespaces)
+        if t.rangeOfCharacter(from: .decimalDigits) != nil { return false }
+        let tokens = t.split(whereSeparator: { $0 == " " || $0 == "-" })
+        guard tokens.count >= 2 else { return false }
+        // Every token must be Capitalized: an uppercase letter then only lowercase letters.
+        return tokens.allSatisfy { tok in
+            guard let first = tok.first, first.isUppercase, tok.count >= 2 else { return false }
+            return tok.dropFirst().allSatisfy { $0.isLowercase && $0.isLetter }
         }
     }
 
@@ -644,13 +686,21 @@ final class Settings: ObservableObject {
         historyRetentionDays = d.object(forKey: "verba.historyRetentionDays") as? Int ?? 0
         // Public alias for the leaderboard (never the email or real name). Fun default if unset.
         usernameCustomized = d.bool(forKey: "verba.usernameCustomized")
-        if let u = d.string(forKey: "verba.username"), !u.isEmpty {
-            username = u
-        } else {
-            let name = Settings.randomAlias()
-            username = name
-            d.set(name, forKey: "verba.username")
+        var initialName = d.string(forKey: "verba.username").flatMap { $0.isEmpty ? nil : $0 }
+            ?? Settings.randomAlias()
+        // Privacy guard (one-time): if a stored alias looks like a real full name (e.g.
+        // "Marion Meynand", "Pierre-Antoine Dian") it was almost certainly typed by mistake into a
+        // PUBLIC field. Reset it to an anonymous alias once, so a real name can't be re-pushed to
+        // the leaderboard. Deliberate handles (single token, digits, or CamelCase) are untouched.
+        if !d.bool(forKey: "verba.aliasPrivacyScrubbed") {
+            d.set(true, forKey: "verba.aliasPrivacyScrubbed")
+            if Settings.looksLikeRealName(initialName) {
+                initialName = Settings.randomAlias()
+                usernameCustomized = false
+            }
         }
+        d.set(initialName, forKey: "verba.username")
+        username = initialName
         // The referral code is the ACCOUNT identity, issued by the server at sign-in. Legacy
         // builds minted one locally even without an account; such a code was never attributable
         // server-side and would collide with the new device-auth model (non-"anon-" uids need an
