@@ -125,16 +125,17 @@ struct NotesView: View {
                     .padding(.horizontal, 14)
                 Spacer()
             } else {
-                List(selection: $selectedID) {
-                    ForEach(entries) { e in
-                        noteRow(e)
-                            .tag(e.id)
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.clear)
-                            .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 8))
+                // Tap-selected cards (Leaderboard grammar) — NOT List(selection:), whose
+                // system-blue highlight would paint UNDER our custom card and double-box it.
+                ScrollView {
+                    LazyVStack(spacing: 4) {
+                        ForEach(entries) { e in
+                            noteRow(e)
+                                .onTapGesture { selectedID = e.id }
+                        }
                     }
+                    .padding(.horizontal, 8).padding(.vertical, 4)
                 }
-                .listStyle(.inset)
                 .scrollContentBackground(.hidden)
             }
         }
