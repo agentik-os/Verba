@@ -1180,44 +1180,16 @@ private struct SettingsChips<T: Hashable & Identifiable>: View {
     }
 }
 
-/// Minimal wrapping HStack (chips flow to the next line when they run out of width).
+/// Wrapping HStack: chips flow to the next line when they run out of width.
+/// Backed by the shared native FlowLayout (ModesView.swift) so the reported height is
+/// ALWAYS the true wrapped height — the old GeometryReader+alignmentGuide version reported
+/// a single row's height, which let later content overlap multi-row chip groups (the
+/// "Lock/Direct over Recording indicator" overlap bug).
 private struct WrapHStack<Content: View>: View {
     var spacing: CGFloat = 8
     var rowSpacing: CGFloat = 8
     @ViewBuilder var content: () -> Content
-    @State private var totalHeight: CGFloat = 0
-
     var body: some View {
-        GeometryReader { geo in
-            self.layout(in: geo.size.width)
-        }
-        .frame(height: totalHeight)
-    }
-
-    private func layout(in maxWidth: CGFloat) -> some View {
-        var x: CGFloat = 0
-        var y: CGFloat = 0
-        return ZStack(alignment: .topLeading) {
-            content()
-                .padding(.trailing, spacing).padding(.bottom, rowSpacing)
-                .alignmentGuide(.leading) { d in
-                    if abs(x - d.width) > maxWidth { x = 0; y -= d.height }
-                    let result = x
-                    x -= d.width
-                    return result
-                }
-                .alignmentGuide(.top) { _ in
-                    let result = y
-                    return result
-                }
-        }
-        .background(heightReader)
-    }
-
-    private var heightReader: some View {
-        GeometryReader { geo -> Color in
-            DispatchQueue.main.async { self.totalHeight = geo.size.height }
-            return Color.clear
-        }
+        FlowLayout(spacing: spacing) { content() }
     }
 }
