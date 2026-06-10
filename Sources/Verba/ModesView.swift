@@ -138,12 +138,6 @@ struct ModesView: View {
                     let hasModelPill = p.raw || isCloud
                     if hasModelPill {
                         Text(modelPillLabel(p)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-                        if p.hotkeyCode != nil {
-                            Text("·").font(.caption2).foregroundStyle(.tertiary)
-                        }
-                    }
-                    if let c = p.hotkeyCode, let m = p.hotkeyMods {
-                        Text(shortcutLabel(keyCode: c, modifiers: m)).font(.caption2).foregroundStyle(.tertiary)
                     }
                 }
             }
@@ -281,8 +275,6 @@ struct ModesView: View {
                             set: { v in if let i = index(of: id) { settings.profiles[i].targetLanguage = v } })
         let isActive = settings.activeProfileID == id
         let bundleIDs = p?.matchBundleIDs ?? []
-        let shortcut: String = { guard let p, let c = p.hotkeyCode, let m = p.hotkeyMods else { return "" }
-            return shortcutLabel(keyCode: c, modifiers: m) }()
 
         return ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -298,13 +290,6 @@ struct ModesView: View {
                         Image(systemName: "trash")
                     }
                     .buttonStyle(.borderless).foregroundStyle(.red).help("Delete this mode")
-                }
-
-                // Shortcut, moved up, right under the name.
-                field("Dedicated shortcut") {
-                    ShortcutRecorder(label: shortcut,
-                        onCapture: { c, m in settings.assignShortcut(keyCode: c, modifiers: m, to: .profile(id)) },
-                        onClear: { settings.clearShortcut(.profile(id)) })
                 }
 
                 if isVision {

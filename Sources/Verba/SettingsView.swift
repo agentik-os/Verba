@@ -948,8 +948,8 @@ struct SettingsView: View {
                                  code: settings.modePickerKeyCode, mods: settings.modePickerMods,
                                  target: .modePicker)
                 cardCaption(settings.modeGestureCycles
-                    ? "Fn + Tab cycles to the next mode even mid-dictation; turn the toggle off to open a numbered picker instead. Each mode also gets its own ⌃⌥1–6 shortcut over in Modes."
-                    : "Fn + Tab opens a numbered picker; turn the toggle on to cycle straight to the next mode instead. Each mode also gets its own ⌃⌥1–6 shortcut over in Modes.")
+                    ? "Fn + Tab cycles to the next mode even mid-dictation; turn the toggle off to open a numbered picker instead."
+                    : "Fn + Tab opens a numbered picker; turn the toggle on to cycle straight to the next mode instead.")
             }
         }
 

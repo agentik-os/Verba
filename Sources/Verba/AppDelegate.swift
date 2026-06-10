@@ -770,14 +770,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.fnControlPressed()
             }
         }
-        // Per-profile dedicated shortcuts (⌃⌥1-6).
-        for (i, p) in s.profiles.enumerated() {
-            guard let code = p.hotkeyCode, let mods = p.hotkeyMods else { continue }
-            let pid = p.id
-            HotKeys.shared.register(id: UInt32(100 + i), keyCode: code, modifiers: mods) { [weak self] in
-                self?.trigger(forced: Settings.shared.profiles.first { $0.id == pid })
-            }
-        }
+        // (Per-mode dedicated ⌃⌥1-6 shortcuts were removed — modes are switched via Fn+Tab,
+        // Fn+1-9, the lone-⌥ tap, or the rebindable change-mode shortcut instead.)
         // Fn-as-primary needs an event tap (to consume the globe key + digit picks).
         if s.useFnAsPrimary {
             // If the tap can't be created, Accessibility/Input-Monitoring was revoked
