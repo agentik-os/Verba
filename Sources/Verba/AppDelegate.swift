@@ -869,6 +869,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let outcome = TransformsStore.runOnSelectionSync(transform, selection: selection)
             DispatchQueue.main.async {
+                TransformPickerController.shared.hide()   // dismiss the "Transforming…" panel
                 switch outcome {
                 case .success(let text): _ = Output.paste(text, rich: false, target: target)
                 case .failure(let msg):  self?.flashError(msg)

@@ -157,13 +157,14 @@ struct MainWindow: View {
                     if settings.navVisible(.insights) { row(.insights) }
                     if settings.navVisible(.history) { row(.history) }
 
-                    // Collapsible "Tools" group (Task Manager + Notes).
+                    // Collapsible "Tools" group (Task Manager + Notes + Scratchpad).
                     groupHeader("Tools", collapsed: toolsCollapsed) {
                         withAnimation(.easeInOut(duration: 0.18)) { toolsCollapsed.toggle() }
                     }
                     if !toolsCollapsed {
                         if settings.todosTabEnabled { row(.todos) }
                         if settings.notesTabEnabled { row(.notes) }
+                        if settings.navVisible(.scratchpad) { row(.scratchpad) }
                     }
 
                     groupHeader("Library", collapsed: libraryCollapsed) {
@@ -175,7 +176,6 @@ struct MainWindow: View {
                         if settings.navVisible(.snippets) { row(.snippets) }
                         if settings.navVisible(.style) { row(.style) }
                         if settings.navVisible(.transforms) { row(.transforms) }
-                        if settings.navVisible(.scratchpad) { row(.scratchpad) }
                         if settings.navVisible(.files) { row(.files) }
                     }
 

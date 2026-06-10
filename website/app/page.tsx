@@ -37,6 +37,7 @@ export default function Home() {
       <Jokes />
       <Features />
       <Personalize />
+      <Shortcuts />
       <How />
       <CompareTable />
       <CompareTeaser />
@@ -56,6 +57,7 @@ function Nav() {
         <a href="#notes" className="transition-colors duration-150 hover:text-[var(--fg)]">Notes</a>
         <a href="#translate" className="transition-colors duration-150 hover:text-[var(--fg)]">Translate</a>
         <a href="#features" className="transition-colors duration-150 hover:text-[var(--fg)]">Features</a>
+        <a href="#shortcuts" className="transition-colors duration-150 hover:text-[var(--fg)]">Shortcuts</a>
         <Link href="/compare" className="transition-colors duration-150 hover:text-[var(--fg)]">Compare</Link>
         <Link href="/changelog" className="transition-colors duration-150 hover:text-[var(--fg)]">Changelog</Link>
         <a href="#pricing" className="transition-colors duration-150 hover:text-[var(--fg)]">Pricing</a>
@@ -827,6 +829,106 @@ function Personalize() {
           </Reveal>
         ))}
       </div>
+    </section>
+  );
+}
+
+function Shortcuts() {
+  // groups of shortcuts: keys render as little glass keycaps, plus a use case that makes the power click.
+  const groups: { title: string; blurb: string; rows: { keys: string[]; desc: string; use: string }[] }[] = [
+    {
+      title: "Dictate",
+      blurb: "Start, pause, cancel. One key does the talking.",
+      rows: [
+        { keys: ["fn"], desc: "Tap or hold to dictate", use: "Tap once and talk, or set it to hold-to-talk. No window to open, text lands at your cursor." },
+        { keys: ["⌃"], desc: "Pause and resume while recording", use: "Someone walks in. Hit Control, handle it, hit Control again, keep going." },
+        { keys: ["⎋"], desc: "Cancel the recording or processing", use: "Changed your mind halfway through a sentence. Press Escape and nothing is pasted." },
+      ],
+    },
+    {
+      title: "Switch modes and styles",
+      blurb: "Flip between Flow, Intent, Translate and your own modes mid-thought.",
+      rows: [
+        { keys: ["fn", "⇥"], desc: "Next mode, add ⇧ for previous", use: "Mid-dictation you decide this should be a Slack message, not an email. Fn + Tab, keep talking." },
+        { keys: ["fn", "1-9"], desc: "Jump to a mode by number", use: "Fn + 3 drops you straight into Translate without hunting through a list." },
+        { keys: ["⌥"], desc: "Next mode hands-free while recording", use: "Tap Option to cycle modes without ever leaving the recording." },
+        { keys: ["⌃", "⌥", "1-6"], desc: "Each mode's own dedicated shortcut", use: "Bind Coding to ⌃⌥5 and reach it from anywhere, no cycling." },
+        { keys: ["fn", "]"], desc: "Next Style, Fn + [ for previous", use: "Same mode, new tone. Flick from neutral to formal as a layer on top." },
+      ],
+    },
+    {
+      title: "Capture",
+      blurb: "Notes, to-dos and a quick glance, all by voice.",
+      rows: [
+        { keys: ["fn", "T"], desc: "Add a to-do by voice, Fn + § on ISO", use: "\"Pay the invoice Friday at 6pm\" files a dated task without opening anything." },
+        { keys: ["fn", "Z"], desc: "Capture a voice note", use: "A 20-minute brain dump becomes one clean, structured document in Notes." },
+        { keys: ["fn"], desc: "Stop an in-progress note or to-do", use: "Done talking. One tap of Fn closes the capture." },
+        { keys: ["⌥", "fn"], desc: "Today's to-dos, quick glance", use: "Option + Fn shows what's due today, then dismiss it the same way." },
+      ],
+    },
+    {
+      title: "Transform and control",
+      blurb: "Rewrite any selection, or speak a command that runs your Mac.",
+      rows: [
+        { keys: ["⌥", "X"], desc: "Transform picker on selected text", use: "Select a clumsy paragraph anywhere, press it, pick a numbered transform, and it rewrites in place." },
+        { keys: ["fn", "X"], desc: "Action mode, control your Mac by voice", use: "\"Set a timer for 10 minutes\" or \"play my focus playlist.\" Your voice runs your Mac, confirmed before it acts." },
+      ],
+    },
+  ];
+  return (
+    <section id="shortcuts" className="py-28">
+      <Reveal>
+        <HeadCenter
+          eyebrow="Every shortcut, every power"
+          title="One keyboard, the whole app"
+          lead="Verba lives under your fingers. Start a dictation, switch modes, capture a note, rewrite a selection, or speak a command that runs your Mac, all without leaving the keyboard. Here is the full set."
+        />
+      </Reveal>
+
+      <div className="mt-12 grid gap-3 lg:grid-cols-2">
+        {groups.map((g, gi) => (
+          <Reveal key={g.title} delay={(gi % 2) * 60}>
+            <div className="card lift r-card flex h-full flex-col p-7">
+              <div>
+                <h3 className="font-medium">{g.title}</h3>
+                <p className="mt-1.5 text-sm muted">{g.blurb}</p>
+              </div>
+              <div className="mt-5 space-y-4">
+                {g.rows.map((r, ri) => (
+                  <div key={ri} className="border-t border-[var(--border)] pt-4 first:border-0 first:pt-0">
+                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
+                      <span className="flex shrink-0 items-center gap-1">
+                        {r.keys.map((k, ki) => (
+                          <span key={ki} className="flex items-center gap-1">
+                            {ki > 0 && <span className="faint text-xs">+</span>}
+                            <kbd className="kbd">{k}</kbd>
+                          </span>
+                        ))}
+                      </span>
+                      <span className="text-sm font-medium">{r.desc}</span>
+                    </div>
+                    <p className="mt-1.5 text-sm muted">{r.use}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+
+      <Reveal delay={80}>
+        <div className="card r-card mt-3 flex items-start gap-4 p-7">
+          <Icon name="key" className="mt-0.5 h-6 w-6 shrink-0 text-[var(--fg-dim)]" />
+          <div>
+            <p className="font-medium">Make it yours</p>
+            <p className="mt-1.5 text-sm muted">
+              Every one of these is rebindable in Settings, Triggers and chords. The primary trigger, change-mode,
+              styles, add-to-do, record-note, the glance, Action mode, and the transform key. Don't use Fn? Bind a
+              custom shortcut and run the entire app from keys you already love.
+            </p>
+          </div>
+        </div>
+      </Reveal>
     </section>
   );
 }

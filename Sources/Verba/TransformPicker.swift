@@ -2,11 +2,24 @@ import SwiftUI
 import AppKit
 import Carbon.HIToolbox
 
+/// The phase of the transform picker: choosing from the list, or running the chosen transform.
+enum TransformPickerPhase: Equatable {
+    case list
+    case working(String)   // the transform name being applied
+}
+
+final class TransformPickerModel: ObservableObject {
+    @Published var phase: TransformPickerPhase = .list
+}
+
 /// The ⌥X transform picker: a floating glass panel (same design language as the to-do glance and
 /// the widget) listing the user's transforms, NUMBERED 1-9. Press the number — or click a row — to
-/// run that transform on the current selection. Esc or a click-away dismisses it.
+/// run that transform on the current selection. While it runs, the panel shows a live
+/// "Transforming…" state (mirroring the dictation pill's listening / transcribing states). Esc or a
+/// click-away dismisses it.
 struct TransformPickerView: View {
     let transforms: [Transform]
+    @ObservedObject var model: TransformPickerModel
     var onPick: (Transform) -> Void
     var onClose: () -> Void
 
@@ -23,18 +36,39 @@ struct TransformPickerView: View {
                 .buttonStyle(.plain).help("Close (Esc)")
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                ForEach(Array(transforms.prefix(9).enumerated()), id: \.element.id) { i, t in
-                    row(index: i + 1, transform: t)
+            switch model.phase {
+            case .list:
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(Array(transforms.prefix(9).enumerated()), id: \.element.id) { i, t in
+                        row(index: i + 1, transform: t)
+                    }
                 }
+                Text("Press 1-9 or click")
+                    .font(.system(size: 10)).foregroundStyle(.tertiary)
+                    .padding(.top, 2)
+            case .working(let name):
+                workingRow(name)
             }
-            Text("Press 1-9 or click")
-                .font(.system(size: 10)).foregroundStyle(.tertiary)
-                .padding(.top, 2)
         }
         .padding(.horizontal, 16).padding(.vertical, 14)
         .frame(width: 300, alignment: .leading)
         .glass(in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .animation(.easeInOut(duration: 0.18), value: model.phase)
+    }
+
+    /// The live "applying this transform" state — a spinner + the transform name, styled like the
+    /// dictation pill's transcribing state.
+    @ViewBuilder private func workingRow(_ name: String) -> some View {
+        HStack(spacing: 10) {
+            ProgressView().controlSize(.small).scaleEffect(0.85)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Transforming…").font(.system(size: 13, weight: .medium))
+                Text(name.isEmpty ? "your selection" : name)
+                    .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+            }
+            Spacer(minLength: 4)
+        }
+        .padding(.horizontal, 8).padding(.vertical, 8)
     }
 
     @ViewBuilder private func row(index: Int, transform t: Transform) -> some View {
@@ -71,13 +105,18 @@ final class TransformPickerController {
     private var keyMonitor: Any?
     private var transforms: [Transform] = []
     private var onPick: ((Transform) -> Void)?
+    private let model = TransformPickerModel()
 
     var isShowing: Bool { panel?.isVisible ?? false }
+
+    /// Flip the open panel to the live "Transforming…" state (called by the action handler).
+    func showWorking(_ name: String) { model.phase = .working(name) }
 
     /// Present the picker near a screen point (typically the mouse), for the given transforms.
     func present(_ transforms: [Transform], at point: NSPoint, onPick: @escaping (Transform) -> Void) {
         self.transforms = Array(transforms.prefix(9))
         self.onPick = onPick
+        model.phase = .list
         rebuild()
         guard let panel, let screen = NSScreen.screens.first(where: { NSMouseInRect(point, $0.frame, false) }) ?? NSScreen.main else { return }
         panel.layoutIfNeeded()
@@ -113,6 +152,7 @@ final class TransformPickerController {
         }()
         let host = NSHostingController(rootView: TransformPickerView(
             transforms: transforms,
+            model: model,
             onPick: { [weak self] t in self?.pick(t) },
             onClose: { [weak self] in self?.hide() }))
         host.sizingOptions = [.preferredContentSize]
@@ -121,9 +161,11 @@ final class TransformPickerController {
     }
 
     private func pick(_ t: Transform) {
-        let cb = onPick
-        hide()
-        cb?(t)
+        // Flip to the live "Transforming…" state and keep the panel up; the action handler runs the
+        // transform and calls hide() when it finishes (or fails). Stop accepting more key/click input.
+        removeDismissMonitors()
+        model.phase = .working(t.name)
+        onPick?(t)
     }
 
     func hide() {
