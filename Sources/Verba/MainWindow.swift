@@ -106,7 +106,9 @@ struct MainWindow: View {
                 // Glassy chrome: the sidebar uses the user's chosen Customize glass material.
                 .background(VisualEffectView().ignoresSafeArea())
 
-            Divider().opacity(0.4)
+            // No hard divider line — the two materials meet seamlessly (Apple-grade glass).
+            // A whisper-thin hairline keeps just enough separation without a visible black line.
+            Rectangle().fill(Color.primary.opacity(0.05)).frame(width: 1).ignoresSafeArea()
 
             detail(selection ?? .home)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

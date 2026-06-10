@@ -164,12 +164,13 @@ final class FnTap {
             let code = Int(event.getIntegerValueField(.keyboardEventKeycode))
             if code == 63 { return nil }                          // bare globe key
             // Esc → cancel an in-flight dictation, reliably, INCLUDING the processing/polishing
-            // phase (the HID tap sees Esc before the focused app can swallow it). Only fires when
-            // there's actually something to cancel; never consumes the event, so Esc still works
-            // normally everywhere else.
+            // phase (the HID tap sees Esc before the focused app can swallow it). When Verba is
+            // actually recording/processing, the Esc belongs ONLY to Verba: CONSUME it (return nil)
+            // so the app behind doesn't also act on it (close a sheet / lose a selection / quit a
+            // tool). When there's nothing to cancel, Esc passes through untouched everywhere else.
             if code == kVK_Escape, escapeShouldCancel?() == true {
                 if let cb = onEscape { DispatchQueue.main.async(execute: cb) }
-                return Unmanaged.passUnretained(event)
+                return nil
             }
             // Fn + T → voice "add to-do" capture (Fn + § still works on ISO keyboards — the §
             // key, keycode 10, doesn't exist on ANSI/US layouts, so T is the universal default);
