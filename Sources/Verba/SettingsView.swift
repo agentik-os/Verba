@@ -957,7 +957,15 @@ struct SettingsView: View {
         if fnOn {
             card("Styles") {
                 chordRow("Next style", caps: ["Fn", "]"])
+                chordRecorderRow("Custom next-style shortcut",
+                                 has: settings.styleNextHasShortcut,
+                                 code: settings.styleNextKeyCode, mods: settings.styleNextMods,
+                                 target: .styleNext)
                 chordRow("Previous style", caps: ["Fn", "["])
+                chordRecorderRow("Custom previous-style shortcut",
+                                 has: settings.stylePrevHasShortcut,
+                                 code: settings.stylePrevKeyCode, mods: settings.stylePrevMods,
+                                 target: .stylePrev)
                 cardCaption("Styles tweak the tone or format on top of whatever mode you're in — flick between them without leaving your dictation.")
             }
         }
@@ -966,17 +974,29 @@ struct SettingsView: View {
         if fnOn {
             card("Capture") {
                 chordRow("Add a to-do by voice", caps: FnTap.todoChordLabel.components(separatedBy: " + "))
+                chordRecorderRow("Custom add-to-do shortcut",
+                                 has: settings.todoCaptureHasShortcut,
+                                 code: settings.todoCaptureKeyCode, mods: settings.todoCaptureMods,
+                                 target: .todoCapture)
                 chordRow("Capture a note by voice", caps: ["Fn", "Z"])
                 chordRecorderRow("Custom record-note shortcut",
                                  has: settings.noteRecordHasShortcut,
                                  code: settings.noteRecordKeyCode, mods: settings.noteRecordMods,
                                  target: .noteRecord)
                 chordRow("Action mode — speak a command to control your Mac", caps: ["Fn", "X"])
+                chordRecorderRow("Custom Action-mode shortcut",
+                                 has: settings.actionModeHasShortcut,
+                                 code: settings.actionModeKeyCode, mods: settings.actionModeMods,
+                                 target: .actionMode)
                 chordRow("Stop an in-progress note / to-do capture", caps: ["Fn"])
                 Divider().opacity(0.4)
                 toggleRow("Show today's to-dos on ⌥ + Fn", $settings.todoGlanceEnabled,
                           help: "Press ⌥ (Option) + Fn for a compact glance of today's tasks. Press it again or ⎋ to dismiss.")
                 chordRow("Today's to-dos  (quick glance)", caps: ["⌥", "Fn"])
+                chordRecorderRow("Custom to-do glance shortcut",
+                                 has: settings.todoGlanceHasShortcut,
+                                 code: settings.todoGlanceKeyCode, mods: settings.todoGlanceMods,
+                                 target: .todoGlance)
                 cardCaption("Capture things hands-free: a note files into Notes, a to-do files into your projects, and Action mode turns speech into a command that runs on your Mac.")
             }
         }

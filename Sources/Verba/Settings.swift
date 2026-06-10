@@ -152,7 +152,7 @@ enum RepromptBackend: String, Codable, CaseIterable, Identifiable {
 private let kCtrlOpt: UInt32 = 4096 | 2048
 
 /// What a shortcut is being assigned to (for conflict resolution).
-enum ShortcutTarget: Equatable { case primary; case modePicker; case noteRecord; case profile(UUID) }
+enum ShortcutTarget: Equatable { case primary; case modePicker; case noteRecord; case actionMode; case todoCapture; case styleNext; case stylePrev; case todoGlance; case profile(UUID) }
 
 /// The shared editing contract for every profile: improve HOW it's written,
 /// never change WHAT was said. This is the fix for "Claude interprets too much".
@@ -464,6 +464,17 @@ final class Settings: ObservableObject {
     // Custom global shortcut to record a new note (in addition to the built-in Fn + Z). Default none.
     @Published var noteRecordKeyCode: UInt32 { didSet { d.set(Int(noteRecordKeyCode), forKey: "noteRecordKeyCode") } }
     @Published var noteRecordMods: UInt32 { didSet { d.set(Int(noteRecordMods), forKey: "noteRecordMods") } }
+    // Optional global rebinds for the remaining actions (each ALSO has its built-in Fn gesture).
+    @Published var actionModeKeyCode: UInt32 { didSet { d.set(Int(actionModeKeyCode), forKey: "actionModeKeyCode") } }
+    @Published var actionModeMods: UInt32 { didSet { d.set(Int(actionModeMods), forKey: "actionModeMods") } }
+    @Published var todoCaptureKeyCode: UInt32 { didSet { d.set(Int(todoCaptureKeyCode), forKey: "todoCaptureKeyCode") } }
+    @Published var todoCaptureMods: UInt32 { didSet { d.set(Int(todoCaptureMods), forKey: "todoCaptureMods") } }
+    @Published var styleNextKeyCode: UInt32 { didSet { d.set(Int(styleNextKeyCode), forKey: "styleNextKeyCode") } }
+    @Published var styleNextMods: UInt32 { didSet { d.set(Int(styleNextMods), forKey: "styleNextMods") } }
+    @Published var stylePrevKeyCode: UInt32 { didSet { d.set(Int(stylePrevKeyCode), forKey: "stylePrevKeyCode") } }
+    @Published var stylePrevMods: UInt32 { didSet { d.set(Int(stylePrevMods), forKey: "stylePrevMods") } }
+    @Published var todoGlanceKeyCode: UInt32 { didSet { d.set(Int(todoGlanceKeyCode), forKey: "todoGlanceKeyCode") } }
+    @Published var todoGlanceMods: UInt32 { didSet { d.set(Int(todoGlanceMods), forKey: "todoGlanceMods") } }
 
     @Published var profiles: [Profile] { didSet { persistProfiles() } }
     @Published var activeProfileID: UUID { didSet { d.set(activeProfileID.uuidString, forKey: "activeProfileID") } }
@@ -616,6 +627,16 @@ final class Settings: ObservableObject {
         rememberLastMode = d.object(forKey: "rememberLastMode") as? Bool ?? true
         noteRecordKeyCode = UInt32(d.object(forKey: "noteRecordKeyCode") as? Int ?? 0)
         noteRecordMods = UInt32(d.object(forKey: "noteRecordMods") as? Int ?? 0)
+        actionModeKeyCode = UInt32(d.object(forKey: "actionModeKeyCode") as? Int ?? 0)
+        actionModeMods = UInt32(d.object(forKey: "actionModeMods") as? Int ?? 0)
+        todoCaptureKeyCode = UInt32(d.object(forKey: "todoCaptureKeyCode") as? Int ?? 0)
+        todoCaptureMods = UInt32(d.object(forKey: "todoCaptureMods") as? Int ?? 0)
+        styleNextKeyCode = UInt32(d.object(forKey: "styleNextKeyCode") as? Int ?? 0)
+        styleNextMods = UInt32(d.object(forKey: "styleNextMods") as? Int ?? 0)
+        stylePrevKeyCode = UInt32(d.object(forKey: "stylePrevKeyCode") as? Int ?? 0)
+        stylePrevMods = UInt32(d.object(forKey: "stylePrevMods") as? Int ?? 0)
+        todoGlanceKeyCode = UInt32(d.object(forKey: "todoGlanceKeyCode") as? Int ?? 0)
+        todoGlanceMods = UInt32(d.object(forKey: "todoGlanceMods") as? Int ?? 0)
         isPro = (ProcessInfo.processInfo.environment["VERBA_PRO"] != nil) || d.bool(forKey: "verba.pro")
         proEmail = d.string(forKey: "verba.email") ?? ""
         showOnLeaderboard = d.object(forKey: "verba.showOnLeaderboard") as? Bool ?? true
@@ -763,12 +784,22 @@ final class Settings: ObservableObject {
     var modePickerHasShortcut: Bool { modePickerMods != 0 }
 
     var noteRecordHasShortcut: Bool { noteRecordMods != 0 }
+    var actionModeHasShortcut: Bool { actionModeMods != 0 }
+    var todoCaptureHasShortcut: Bool { todoCaptureMods != 0 }
+    var styleNextHasShortcut: Bool { styleNextMods != 0 }
+    var stylePrevHasShortcut: Bool { stylePrevMods != 0 }
+    var todoGlanceHasShortcut: Bool { todoGlanceMods != 0 }
 
     private func combo(of t: ShortcutTarget) -> (UInt32, UInt32)? {
         switch t {
         case .primary: return primaryMods == 0 ? nil : (primaryKeyCode, primaryMods)
         case .modePicker: return modePickerMods == 0 ? nil : (modePickerKeyCode, modePickerMods)
         case .noteRecord: return noteRecordMods == 0 ? nil : (noteRecordKeyCode, noteRecordMods)
+        case .actionMode: return actionModeMods == 0 ? nil : (actionModeKeyCode, actionModeMods)
+        case .todoCapture: return todoCaptureMods == 0 ? nil : (todoCaptureKeyCode, todoCaptureMods)
+        case .styleNext: return styleNextMods == 0 ? nil : (styleNextKeyCode, styleNextMods)
+        case .stylePrev: return stylePrevMods == 0 ? nil : (stylePrevKeyCode, stylePrevMods)
+        case .todoGlance: return todoGlanceMods == 0 ? nil : (todoGlanceKeyCode, todoGlanceMods)
         case .profile(let id):
             guard let p = profiles.first(where: { $0.id == id }), let c = p.hotkeyCode, let m = p.hotkeyMods else { return nil }
             return (c, m)
@@ -785,6 +816,21 @@ final class Settings: ObservableObject {
         case .noteRecord:
             noteRecordKeyCode = combo?.0 ?? 0
             noteRecordMods = combo?.1 ?? 0
+        case .actionMode:
+            actionModeKeyCode = combo?.0 ?? 0
+            actionModeMods = combo?.1 ?? 0
+        case .todoCapture:
+            todoCaptureKeyCode = combo?.0 ?? 0
+            todoCaptureMods = combo?.1 ?? 0
+        case .styleNext:
+            styleNextKeyCode = combo?.0 ?? 0
+            styleNextMods = combo?.1 ?? 0
+        case .stylePrev:
+            stylePrevKeyCode = combo?.0 ?? 0
+            stylePrevMods = combo?.1 ?? 0
+        case .todoGlance:
+            todoGlanceKeyCode = combo?.0 ?? 0
+            todoGlanceMods = combo?.1 ?? 0
         case .profile(let id):
             if let i = profiles.firstIndex(where: { $0.id == id }) {
                 profiles[i].hotkeyCode = combo?.0
@@ -797,6 +843,11 @@ final class Settings: ObservableObject {
         if primaryMods != 0, primaryKeyCode == k, primaryMods == m { return .primary }
         if modePickerMods != 0, modePickerKeyCode == k, modePickerMods == m { return .modePicker }
         if noteRecordMods != 0, noteRecordKeyCode == k, noteRecordMods == m { return .noteRecord }
+        if actionModeMods != 0, actionModeKeyCode == k, actionModeMods == m { return .actionMode }
+        if todoCaptureMods != 0, todoCaptureKeyCode == k, todoCaptureMods == m { return .todoCapture }
+        if styleNextMods != 0, styleNextKeyCode == k, styleNextMods == m { return .styleNext }
+        if stylePrevMods != 0, stylePrevKeyCode == k, stylePrevMods == m { return .stylePrev }
+        if todoGlanceMods != 0, todoGlanceKeyCode == k, todoGlanceMods == m { return .todoGlance }
         return nil
     }
 

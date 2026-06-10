@@ -726,6 +726,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.startNoteRecording()
             }
         }
+        // Optional global rebinds for the remaining actions (each also keeps its Fn gesture).
+        if s.actionModeHasShortcut {
+            HotKeys.shared.register(id: 4, keyCode: s.actionModeKeyCode, modifiers: s.actionModeMods) { [weak self] in
+                self?.startActionMode()
+            }
+        }
+        if s.todoCaptureHasShortcut {
+            HotKeys.shared.register(id: 5, keyCode: s.todoCaptureKeyCode, modifiers: s.todoCaptureMods) { [weak self] in
+                self?.startTodoCapture()
+            }
+        }
+        if s.styleNextHasShortcut {
+            HotKeys.shared.register(id: 6, keyCode: s.styleNextKeyCode, modifiers: s.styleNextMods) { [weak self] in
+                self?.styleCycleGesture(1)
+            }
+        }
+        if s.stylePrevHasShortcut {
+            HotKeys.shared.register(id: 7, keyCode: s.stylePrevKeyCode, modifiers: s.stylePrevMods) { [weak self] in
+                self?.styleCycleGesture(-1)
+            }
+        }
+        if s.todoGlanceHasShortcut {
+            HotKeys.shared.register(id: 8, keyCode: s.todoGlanceKeyCode, modifiers: s.todoGlanceMods) { [weak self] in
+                self?.fnControlPressed()
+            }
+        }
         // Per-profile dedicated shortcuts (⌃⌥1-6).
         for (i, p) in s.profiles.enumerated() {
             guard let code = p.hotkeyCode, let mods = p.hotkeyMods else { continue }

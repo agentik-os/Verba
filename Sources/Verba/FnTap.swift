@@ -175,6 +175,11 @@ final class FnTap {
         case .keyDown:
             let code = Int(event.getIntegerValueField(.keyboardEventKeycode))
             if code == 63 { return nil }                          // bare globe key
+            // Holding a key down fires repeated keyDown events. Our action chords (transform, Fn+T/
+            // Z/X, Fn+Tab, Fn+[ ], Fn+digit) must fire ONCE per physical press, never on auto-repeat
+            // — otherwise holding ⌥X or Fn+Z spawns a storm of pickers/recordings. We still CONSUME
+            // the repeat (so the held key can't spam a character into the focused app).
+            let isRepeat = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
             // Esc → cancel an in-flight dictation, reliably, INCLUDING the processing/polishing
             // phase (the HID tap sees Esc before the focused app can swallow it). When Verba is
             // actually recording/processing, the Esc belongs ONLY to Verba: CONSUME it (return nil)
@@ -191,23 +196,23 @@ final class FnTap {
                 let f = event.flags
                 let optOnly = f.contains(.maskAlternate)
                     && !f.contains(.maskCommand) && !f.contains(.maskControl) && !f.contains(.maskShift)
-                if optOnly { onTransformKey?(); return nil }
+                if optOnly { if !isRepeat { onTransformKey?() }; return nil }
             }
             // Fn + T → voice "add to-do" capture (Fn + § still works on ISO keyboards — the §
             // key, keycode 10, doesn't exist on ANSI/US layouts, so T is the universal default);
             // Fn + Z → record a new note (anywhere).
-            if fnDown, code == kVK_ANSI_T || code == kVK_ISO_Section, onTodoCapture != nil { onTodoCapture?(); return nil }
-            if fnDown, code == kVK_ANSI_Z, onNoteRecord != nil { onNoteRecord?(); return nil }
+            if fnDown, code == kVK_ANSI_T || code == kVK_ISO_Section, onTodoCapture != nil { if !isRepeat { onTodoCapture?() }; return nil }
+            if fnDown, code == kVK_ANSI_Z, onNoteRecord != nil { if !isRepeat { onNoteRecord?() }; return nil }
             // Fn + X → Action mode: the spoken request is a command that CONTROLS the Mac
             // (run a Shortcut / open an app / play music / send a message / …), confirmed before it runs.
-            if fnDown, code == kVK_ANSI_X, onActionMode != nil { onActionMode?(); return nil }
+            if fnDown, code == kVK_ANSI_X, onActionMode != nil { if !isRepeat { onActionMode?() }; return nil }
             // Fn + Tab → next mode, Fn + ⇧ + Tab → previous. Works even mid-dictation.
             if fnDown, code == kVK_Tab {
-                onModeCycle?(event.flags.contains(.maskShift) ? -1 : 1); return nil
+                if !isRepeat { onModeCycle?(event.flags.contains(.maskShift) ? -1 : 1) }; return nil
             }
             // Fn + ] → next style, Fn + [ → previous style. A second prompt layer on top of the mode.
-            if fnDown, code == kVK_ANSI_RightBracket, onStyleCycle != nil { onStyleCycle?(1); return nil }
-            if fnDown, code == kVK_ANSI_LeftBracket, onStyleCycle != nil { onStyleCycle?(-1); return nil }
+            if fnDown, code == kVK_ANSI_RightBracket, onStyleCycle != nil { if !isRepeat { onStyleCycle?(1) }; return nil }
+            if fnDown, code == kVK_ANSI_LeftBracket, onStyleCycle != nil { if !isRepeat { onStyleCycle?(-1) }; return nil }
             // Fn + number selects a mode whenever Fn is held (or the picker menu is open).
             // A digit that maps to an existing profile is consumed (and switches/starts that mode).
             // A digit with NO profile at that index is NOT silently swallowed: while Fn is held we
@@ -215,6 +220,7 @@ final class FnTap {
             // feedback, then still consume it (the user clearly meant a mode, not a literal digit).
             if menuActive || fnDown {
                 if let n = Self.digit(code) {
+                    if isRepeat { return fnDown ? nil : Unmanaged.passUnretained(event) }  // consume held digit while Fn down, no re-switch
                     let handled = onDigit?(n) == true
                     if handled { return nil }                // mapped to a profile → consume
                     if fnDown { onDigitOutOfRange?(n); return nil }  // Fn held, no such mode → flash + consume
