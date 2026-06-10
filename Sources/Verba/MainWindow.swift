@@ -94,6 +94,8 @@ struct MainWindow: View {
     @State private var qwenStatus = ""
 
     private let sidebarWidth: CGFloat = 240
+    @ObservedObject private var feedbackInbox = FeedbackInbox.shared
+    @State private var feedbackDropTargeted = false
     @AppStorage("toolsCollapsed") private var toolsCollapsed = false
     @AppStorage("libraryCollapsed") private var libraryCollapsed = false
     @AppStorage("communityCollapsed") private var communityCollapsed = false
@@ -133,6 +135,7 @@ struct MainWindow: View {
         .tint(appearance.accentColor)
         .preferredColorScheme(appearance.colorMode.colorScheme)
         .onChange(of: notesCtl.navSignal) { _, _ in selection = .notes }   // Fn+Z → jump to Notes
+        .onChange(of: feedbackInbox.openSignal) { _, _ in selection = .feedback }   // screenshot dropped on the Feedback row
         .onChange(of: notesCtl.leaderboardNavSignal) { _, _ in selection = .leaderboard }   // Insights "your standing" → Leaderboard
         .onChange(of: settings.hiddenNav) { _, _ in
             // If the section you're on just got hidden, fall back to Home.
@@ -302,9 +305,22 @@ struct MainWindow: View {
 
     /// A nav row. Selected = solid primary pill with inverted label, so it stands
     /// out in light AND dark mode (primary/background flip with the appearance).
+    @ViewBuilder
     private func row(_ item: NavItem) -> some View {
-        SidebarRow(item: item, isSelected: selection == item) {
+        let base = SidebarRow(item: item, isSelected: selection == item) {
             withAnimation(appearance.reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.85)) { selection = item }
+        }
+        if item == .feedback {
+            // Drop a screenshot directly onto the Feedback row → it attaches + opens Feedback.
+            base.onDrop(of: [.fileURL, .image], isTargeted: $feedbackDropTargeted) { providers in
+                FeedbackInbox.shared.ingest(providers)
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(appearance.accentColor.opacity(feedbackDropTargeted ? 0.4 : 0), lineWidth: 2)
+            )
+        } else {
+            base
         }
     }
 

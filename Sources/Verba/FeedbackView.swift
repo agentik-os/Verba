@@ -81,6 +81,7 @@ struct FeedbackView: View {
     @State private var levelTimer: Timer?
 
     // Optional screenshot attachment (PNG bytes + a thumbnail for display).
+    @ObservedObject private var feedbackInbox = FeedbackInbox.shared
     @State private var screenshot: Data?
     @State private var screenshotThumb: NSImage?
 
@@ -301,11 +302,23 @@ struct FeedbackView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
+        // A screenshot dropped on the sidebar Feedback row lands here: attach it on appear (and if
+        // another lands while Feedback is already open, the openSignal change re-consumes it).
+        .onAppear { consumeInbox() }
+        .onChange(of: feedbackInbox.openSignal) { _, _ in consumeInbox() }
         // Clean teardown if the panel goes away mid-recording.
         .onDisappear {
             if recording { _ = recorder.stop(); recorder.releaseArmed(); recording = false }
             stopLevelMeter()
         }
+    }
+
+    /// Attach a screenshot that was dropped onto the sidebar Feedback row.
+    private func consumeInbox() {
+        guard let png = feedbackInbox.take() else { return }
+        error = nil
+        screenshot = png
+        screenshotThumb = NSImage(data: png)
     }
 
     /// Flash the "Feedback sent" toast: animate in, hold ~1s, animate out gracefully.
