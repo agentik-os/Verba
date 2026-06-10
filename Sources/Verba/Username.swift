@@ -61,9 +61,19 @@ enum Username {
     static func reconcileOnSignIn() async {
         let email = Settings.shared.proEmail
         guard !email.isEmpty else { return }
-        if let remote = await fetch(email: email) {
+        // LOCAL WINS once the user has chosen an alias: push it to the account, never pull
+        // over it. Pulling on every launch was resetting a freshly-typed name back to the
+        // random alias still stored on the account. A device that never customized adopts
+        // the account's alias (cross-device sync stays intact for new Macs).
+        if Settings.shared.usernameCustomized {
+            await push(Settings.shared.username, email: email)
+            return
+        }
+        if let remote = await fetch(email: email), !remote.isEmpty {
             if remote != Settings.shared.username {
-                Settings.shared.username = remote   // $username sink re-submits the leaderboard
+                Settings.shared.adoptingRemoteUsername = true
+                Settings.shared.username = remote   // adopt the account's alias (not a user choice)
+                Settings.shared.adoptingRemoteUsername = false
             }
         } else {
             // Clerk has no username yet → publish this device's current one.

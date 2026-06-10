@@ -496,7 +496,20 @@ final class Settings: ObservableObject {
     var referralLink: String { referralCode.isEmpty ? "https://verba.run/" : "https://verba.run/?ref=\(referralCode)" }
     /// Set when the server entitlement requires a fresh sign-in (no app-session token yet).
     @Published var needsReauth: Bool = false
-    @Published var username: String { didSet { d.set(username, forKey: "verba.username") } }
+    /// True once the USER explicitly picks/edits/shuffles their alias. When true, the local
+    /// alias is authoritative: a launch-time reconcile pushes it to the account instead of
+    /// pulling (and overwriting) it — that pull was resetting custom names back to the
+    /// originally-seeded random alias on every restart.
+    @Published var usernameCustomized: Bool = false { didSet { d.set(usernameCustomized, forKey: "verba.usernameCustomized") } }
+    /// Set by reconcile when ADOPTING the account's alias, so the didSet below doesn't
+    /// mis-flag that programmatic adoption as a user choice.
+    var adoptingRemoteUsername = false
+    @Published var username: String {
+        didSet {
+            d.set(username, forKey: "verba.username")
+            if !adoptingRemoteUsername && username != oldValue { usernameCustomized = true }
+        }
+    }
     // S14: history controls. Off = nothing is written to disk, no audio copy, no cloud push.
     @Published var saveHistory: Bool { didSet { d.set(saveHistory, forKey: "verba.saveHistory") } }
     // History retention in days; 0 = keep forever (default). Options: 7 / 30 / 90.
@@ -626,6 +639,7 @@ final class Settings: ObservableObject {
         saveHistory = d.object(forKey: "verba.saveHistory") as? Bool ?? true
         historyRetentionDays = d.object(forKey: "verba.historyRetentionDays") as? Int ?? 0
         // Public alias for the leaderboard (never the email or real name). Fun default if unset.
+        usernameCustomized = d.bool(forKey: "verba.usernameCustomized")
         if let u = d.string(forKey: "verba.username"), !u.isEmpty {
             username = u
         } else {
