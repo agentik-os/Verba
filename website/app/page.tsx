@@ -436,11 +436,14 @@ function NotesTab() {
 }
 
 function LanguageDetection() {
+  // Spoken = raw speech (filler, no caps/punctuation); written = the same language,
+  // cleaned. The mode tag shows this is Flow (verbatim) — that's why it stays in your
+  // language word-for-word, just tidied up.
   const pairs = [
-    { spoken: "Bonjour, j'ai besoin d'aide avec mon compte.", written: "Bonjour, j'ai besoin d'aide avec mon compte." },
-    { spoken: "Hola, quiero cancelar mi suscripción.", written: "Hola, quiero cancelar mi suscripción." },
-    { spoken: "Hey, can we reschedule to Thursday?", written: "Hey, can we reschedule to Thursday?" },
-    { spoken: "Ich brauche die Rechnung bis Freitag.", written: "Ich brauche die Rechnung bis Freitag." },
+    { mode: "Flow · FR", spoken: "euh bonjour j'aurais besoin d'aide avec mon compte", written: "Bonjour, j'ai besoin d'aide avec mon compte." },
+    { mode: "Flow · ES", spoken: "hola eh quiero cancelar mi suscripción", written: "Hola, quiero cancelar mi suscripción." },
+    { mode: "Flow · EN", spoken: "hey um can we like reschedule to thursday", written: "Hey, can we reschedule to Thursday?" },
+    { mode: "Flow · DE", spoken: "ähm ich brauche die rechnung bis freitag", written: "Ich brauche die Rechnung bis Freitag." },
   ];
   return (
     <section className="py-28">
@@ -453,10 +456,13 @@ function LanguageDetection() {
         />
       </Reveal>
       <div className="mt-12 grid gap-3 sm:grid-cols-2">
-        {pairs.map(({ spoken, written }, i) => (
+        {pairs.map(({ mode, spoken, written }, i) => (
           <Reveal key={i} delay={i * 60}>
             <div className="card lift r-card p-5">
-              <p className="eyebrow">You say</p>
+              <div className="flex items-center justify-between">
+                <p className="eyebrow">You say</p>
+                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/55">{mode}</span>
+              </div>
               <p className="mt-1.5 text-sm muted italic">"{spoken}"</p>
               <p className="mt-3 eyebrow">Verba writes</p>
               <p className="mt-1.5 text-sm">{written}</p>
