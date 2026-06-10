@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import LiveDemo from "@/components/LiveDemo";
+import HeroFlux from "@/components/HeroFlux";
+import SpeedRace from "@/components/SpeedRace";
 import Reveal from "@/components/Reveal";
 import TryIt from "@/components/TryIt";
 import JokeBubbles from "@/components/JokeBubbles";
@@ -24,7 +26,9 @@ export default function Home() {
     <main className="relative mx-auto max-w-6xl px-6">
       <Nav />
       <Hero />
+      <SpeedProof />
       <LogosStrip />
+      <Personas />
       <TryNow />
       <ContextMode />
       <NotesTab />
@@ -35,6 +39,7 @@ export default function Home() {
       <WhyBest />
       <LanguageDetection />
       <Jokes />
+      <FeatureBlurbs />
       <Features />
       <Personalize />
       <Shortcuts />
@@ -84,8 +89,26 @@ function Nav() {
 function Hero() {
   return (
     <section className="relative grid gap-12 pb-16 pt-20 sm:pt-32 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.82fr)] lg:items-center lg:gap-16">
+      {/* GPU particle flux: voice becoming text, as a premium full-bleed backdrop.
+          Full-bleed via negative margins; masked at the edges so it never fights
+          the copy; sits below everything (LiveDemo stays the focal artifact). */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -z-10 hidden sm:block"
+        style={{
+          inset: "-6rem max(-50vw + 50%, -8rem)",
+          maskImage:
+            "radial-gradient(120% 90% at 62% 45%, #000 35%, transparent 78%)",
+          WebkitMaskImage:
+            "radial-gradient(120% 90% at 62% 45%, #000 35%, transparent 78%)",
+          opacity: 0.9,
+        }}
+      >
+        <HeroFlux className="absolute inset-0" />
+      </div>
+
       {/* Left: opinionated, tight copy column */}
-      <div>
+      <div className="relative">
         <div className="anim-h1 mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--tint)] px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide muted">
           <MicGlyph size={12} />
           For macOS · Apple Silicon
@@ -95,18 +118,18 @@ function Hero() {
           <span className="text-[var(--fg-dim)]">Send it clean.</span>
         </h1>
         <p className="anim-sub t-lead mt-7 max-w-xl">
-          The most complete voice-to-text on the Mac. Press a key, say it the way it comes,
-          and polished text lands exactly where your cursor is. No window to open, nothing
-          to clean up afterwards.
+          The most complete voice-to-text on the Mac. Press a key, talk the way it comes out,
+          and polished text lands exactly where your cursor is. In any app, in any language,
+          with your own AI.
         </p>
         <div className="anim-cta mt-9 flex flex-wrap items-center gap-3">
           <a href={DOWNLOAD_URL} className="btn-primary px-7 py-3">
-            Download for macOS
+            Download for free
           </a>
           <a href="#how" className="btn-ghost px-7 py-3">See how it works</a>
         </div>
-        <p className="anim-cta mt-4 font-mono text-[11px] tracking-wide muted tnum">33 free dictations in-app, no card · then a 7-day Pro trial when you subscribe · cancel anytime</p>
-        <p className="anim-cta mt-2 font-mono text-[11px] tracking-wide faint tnum">Requires Apple Silicon · macOS 14+</p>
+        <p className="anim-cta mt-4 font-mono text-[11px] tracking-wide muted tnum">Download free · 33 dictations in-app, no card · then a 7-day Pro trial, cancel anytime</p>
+        <p className="anim-cta mt-2 font-mono text-[11px] tracking-wide faint tnum">Apple Silicon · macOS 14+</p>
         <div className="anim-cta mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[13px] muted">
           {["Dictate anywhere", "Reads your screen", "Hour-long notes", "Translate live", "Runs offline", "Bring your own AI"].map((p) => (
             <span key={p} className="flex items-center gap-2">
@@ -116,10 +139,85 @@ function Hero() {
         </div>
       </div>
 
-      {/* Right: THE focal artifact — the live talk → clean text demonstration */}
-      <div className="anim-demo relative lg:pl-2">
+      {/* Right: THE focal artifact — the live talk → clean text demonstration,
+          layered above the flux backdrop. */}
+      <div className="anim-demo relative z-10 lg:pl-2">
         <div className="glow-rec" />
         <LiveDemo />
+      </div>
+    </section>
+  );
+}
+
+/* SPEED-PROOF — your mouth is faster than your hands. The SpeedRace canvas makes
+   the 150 vs 40 wpm gap visceral, sitting inside product chrome near the top. */
+function SpeedProof() {
+  return (
+    <section className="pb-8 pt-6 sm:pt-10">
+      <Reveal>
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-center lg:gap-12">
+          <div>
+            <p className="eyebrow">The case for talking</p>
+            <h2 className="t-section mt-3 text-balance">Your mouth is faster than your hands. Use it.</h2>
+            <p className="mt-4 text-[15px] leading-relaxed muted max-w-md">
+              You think out loud all day. Verba just writes it down, cleaned up and ready to
+              send, while you keep moving. Speaking is roughly 3x faster than typing.
+            </p>
+            <div className="mt-6 flex items-center gap-8">
+              <div>
+                <div className="text-3xl font-semibold tracking-tight tnum">150<span className="ml-1 text-base font-normal muted">wpm</span></div>
+                <p className="mt-0.5 text-xs muted">Speaking</p>
+              </div>
+              <div className="h-10 w-px bg-[var(--border)]" />
+              <div>
+                <div className="text-3xl font-semibold tracking-tight tnum faint">40<span className="ml-1 text-base font-normal faint">wpm</span></div>
+                <p className="mt-0.5 text-xs faint">Typing</p>
+              </div>
+            </div>
+          </div>
+          <div className="panel r-panel p-7">
+            <p className="mono-meta">Voice vs typing · live</p>
+            <SpeedRace className="mt-4 h-40 w-full" wordsPerMinVoice={150} wordsPerMinType={40} />
+          </div>
+        </div>
+      </Reveal>
+    </section>
+  );
+}
+
+/* PERSONAS — who it's for, in one line each. Benefit-led, talk once and move on. */
+function Personas() {
+  const personas: { name: string; line: string }[] = [
+    { name: "Founders", line: "Clear the inbox, the doc, and the standup notes between meetings. Talk once, send clean, move on." },
+    { name: "Engineers", line: "Turn rambling feedback into a precise prompt for Cursor or Claude Code, routed to Opus. File the bug as you describe it." },
+    { name: "Writers", line: "Capture the draft at the speed you think it. An hour of voice becomes a structured document you can actually edit." },
+    { name: "Support and ops", line: "Answer every ticket in your own tone, per app. Verba matches how you write in Slack, Mail, and Notion." },
+    { name: "Multilingual teams", line: "Think in your language, write in theirs. Speak French, send English. Every time, no prefix, no second tab." },
+    { name: "Busy everyone", line: "Reply to the email on your screen, build a to-do list by voice, set a reminder, run your Mac. All from one key." },
+  ];
+  return (
+    <section className="py-16">
+      <Reveal>
+        <HeadCenter
+          eyebrow="Who it's for"
+          title="One key, for the way you actually work"
+          lead="Verba is the complete voice OS for your Mac. It doesn't just transcribe: it reads your screen, files your tasks, translates as you speak, and acts on what it hears."
+        />
+      </Reveal>
+      <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {personas.map(({ name, line }, i) => (
+          <Reveal key={name} delay={(i % 3) * 60}>
+            <div className="card lift r-card flex h-full flex-col p-6">
+              <div className="flex items-center gap-2.5">
+                <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--fg)] text-[var(--bg)]">
+                  <MicGlyph size={10} />
+                </span>
+                <h3 className="font-medium">{name}</h3>
+              </div>
+              <p className="mt-3 text-sm muted">{line}</p>
+            </div>
+          </Reveal>
+        ))}
       </div>
     </section>
   );
@@ -217,7 +315,7 @@ function Bento() {
         </Reveal>
 
         <Reveal delay={60}><BentoStat big="99+" label="languages, on-device" sub="Whisper runs worldwide" /></Reveal>
-        <Reveal delay={120}><BentoStat big="$9.99" label="vs $15 at Wispr Flow" sub="and you bring your own AI" /></Reveal>
+        <Reveal delay={120}><BentoStat big="$9.99" label="a month, all in" sub="and you bring your own AI" /></Reveal>
         <Reveal delay={180}><BentoStat big="33" label="free dictations, full Pro" sub="no card required" /></Reveal>
         <Reveal delay={240}><BentoStat big="100%" label="works offline" sub="no internet required" /></Reveal>
 
@@ -235,7 +333,7 @@ function Bento() {
             <Icon name="bolt" className="h-7 w-7 shrink-0 text-[var(--fg-dim)]" />
             <div>
               <p className="font-medium">Modes, the right model each time</p>
-              <p className="mt-1 text-sm muted">Flow (verbatim), Intent, Translate, Context (vision), and Coding. Sonnet for intent, Opus for code. Edit any prompt, or describe a need and let AI build you a custom mode.</p>
+              <p className="mt-1 text-sm muted">Flow (verbatim), Polish (hears what you meant), Intent, Translate, Context (vision), and Coding. Sonnet for intent, Opus for code. Edit any prompt, or describe a need and let AI build you a custom mode.</p>
             </div>
           </div>
         </Reveal>
@@ -607,11 +705,11 @@ function TranslateMode() {
 function WhyBest() {
   const edges = [
     ["Does what others can't", "Reads your screen (Context), takes hour-long structured Notes, translates live, and runs agentic actions (Calendar, Reminders, email drafts). Most rivals only transcribe."],
-    ["Cheaper, and honest about it", "$9.99/mo, or $7/mo billed annually. Wispr Flow is $12-15, others $15-17. And the trial is the real app: 33 dictations with every Pro feature, no card."],
+    ["Cheaper, and honest about it", "$9.99/mo, or $7/mo billed annually, while most cloud tools run $15 to $17. And the trial is the real app: 33 dictations with every Pro feature, no card."],
     ["Bring your own AI", "Use your Anthropic key, OpenRouter, your existing Claude Code subscription with no key at all, or a fully local Ollama model. You're never locked into our markup."],
     ["Actually private", "On-device transcription with Parakeet and Whisper, your audio never leaves the Mac. API keys live in the macOS Keychain, and your history is yours to control: switch it off entirely or auto-delete it after 7, 30, or 90 days."],
     ["Works with no internet", "Parakeet ships inside the app and transcribes offline, instantly, in 25 languages. Pair it with a local LLM and the entire pipeline runs on your Mac."],
-    ["Five modes, plus your own", "Flow, Intent, Translate, Context and Coding, routed to Sonnet or Opus so you only pay for power where it matters. Edit any prompt, or describe a need and AI builds you a custom mode."],
+    ["Six modes, plus your own", "Flow, Polish, Intent, Translate, Context and Coding, routed to Sonnet or Opus so you only pay for power where it matters. Edit any prompt, or describe a need and AI builds you a custom mode."],
     ["It learns you", "Auto-learns your vocabulary from your edits, matches your writing tone per app, and remembers how you phrase things. It sounds like you, not a template."],
     ["One press, then done", "Tap Fn, talk, and clean text lands where your cursor is. Hands-free formatting, redo in another mode, edit the last result by voice. No app switching, ever."],
   ];
@@ -621,11 +719,29 @@ function WhyBest() {
         <HeadCenter
           eyebrow="Why Verba"
           index="07"
-          title="Why Verba wins"
-          lead="Other apps stop at transcription. Verba reads your screen, files your tasks, translates as you speak, and acts on what it hears. On your Mac, with your AI."
+          title="The complete voice OS for your Mac"
+          lead="It doesn't just transcribe. It reads your screen, files your tasks, translates as you speak, and acts on what it hears. On your Mac, in every app, with your own AI."
         />
       </Reveal>
-      <div className="mt-12 grid gap-3 sm:grid-cols-2">
+
+      {/* Social-proof bar — truthful, verifiable signals of a serious, live product. */}
+      <Reveal delay={40}>
+        <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            ["Shipping constantly", "40+ public releases and counting, all on the live changelog."],
+            ["A live usage leaderboard", "See your rank, percentile and streak among everyone using Verba."],
+            ["Works in every app", "If your cursor is there, Verba writes there. No window, no paste."],
+            ["Your AI, or fully offline", "Bring your own key or run on-device. No vendor markup, no uploads."],
+          ].map(([t, d]) => (
+            <div key={t} className="card r-card p-5">
+              <p className="flex items-center gap-2 font-medium"><span className="rec-dot" />{t}</p>
+              <p className="mt-1.5 text-sm muted">{d}</p>
+            </div>
+          ))}
+        </div>
+      </Reveal>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
         {edges.map(([t, d], i) => (
           <Reveal key={t} delay={(i % 2) * 60}>
             <div className="card lift r-card flex h-full gap-4 p-6">
@@ -698,6 +814,7 @@ function CompareTable() {
 function ModesModels() {
   const rows = [
     ["Flow", "No AI", "Verbatim transcription, no rewriting. Your words, exactly as spoken, cleaned up for punctuation only."],
+    ["Polish", "Sonnet 4.6", "Hears what you meant. It follows your self-corrections to the final version, drops the parts you took back, and writes finished prose, not a transcript of thinking out loud."],
     ["Intent", "Sonnet 4.6", "State the goal at the start: \"turn this into a bug report\", \"rewrite as a formal email\". Verba follows your lead."],
     ["Translate", "Sonnet 4.6", "Pick a target language once. Speak in any language and Verba writes it in the one you chose, every time."],
     ["Context", "Sonnet 4.6", "Takes a screenshot of your screen and acts on what it sees, based on what you say. Reply to the email on screen, summarize a document, comment on a photo."],
@@ -709,7 +826,7 @@ function ModesModels() {
         <HeadCenter
           eyebrow="The routing"
           index="05"
-          title="Five modes, plus the ones you build"
+          title="Six modes, plus the ones you build"
           lead="Every mode routes to the model that fits: cheap and instant for quick polish, more powerful where it matters. You stay in control of cost and quality."
         />
       </Reveal>
@@ -742,7 +859,7 @@ function CompareTeaser() {
           <div className="mx-auto mb-7 w-fit"><MicMark size={40} glyph={20} /></div>
           <h2 className="t-statement mx-auto max-w-3xl text-balance">Cloud tools upload your voice. Verba doesn't.</h2>
           <p className="mx-auto mt-5 max-w-xl text-balance text-black/55">
-            Wispr Flow, Aqua and Willow send every word to their servers, and the popular ones run $12-15/mo.
+            The popular cloud dictation tools send every word to their servers, and most run $15 to $17 a month.
             Verba runs on your Mac, lets you bring your own AI account, and costs $9.99.
           </p>
           <Link href="/compare" className="mt-9 inline-flex items-center gap-2 rounded-[10px] bg-[#0a0a0c] px-7 py-3 font-medium text-white transition-opacity duration-150 hover:opacity-90">
@@ -750,6 +867,48 @@ function CompareTeaser() {
           </Link>
         </div>
       </Reveal>
+    </section>
+  );
+}
+
+/* The eight core pillars, framed benefit-led: the problem people live with,
+   then exactly how Verba removes it. Truthful to shipped features. */
+function FeatureBlurbs() {
+  const blurbs: { name: string; problem: string; example: string }[] = [
+    { name: "Dictate anywhere", problem: "Switching to a transcription window breaks your flow and means copy-paste every time.", example: "Press Fn in Slack, Mail, VS Code, anywhere. Clean text lands right at your cursor. No window, no paste." },
+    { name: "Context mode reads your screen", problem: "Most dictation tools are blind. They can only transcribe, never act on what you're looking at.", example: "Glance at an email, say \"reply that I'll be there,\" and Verba drafts it from what's on screen. No copy-paste." },
+    { name: "Talk an hour, get a document", problem: "Long voice memos pile up as raw transcripts nobody wants to clean afterward.", example: "Open Notes, pick Meeting notes, talk for 40 minutes. Out comes a structured, tagged, editable markdown doc." },
+    { name: "A task manager you just talk to", problem: "Capturing to-dos means stopping, opening an app, and typing the thing you already said out loud.", example: "\"Pay the invoice Friday at 6pm\" files a dated task. \"I bought the tomatoes\" ticks it off. By voice, no tapping." },
+    { name: "Translate as you speak", problem: "Writing in a second language means drafting, copying into a translator, then pasting back. Three steps, every message.", example: "Pick a target language once. Speak French, Verba writes fluent English in place. Tone, names, and numbers preserved." },
+    { name: "Bring your own AI", problem: "Cloud dictation tools lock you into their model and charge a markup on every word.", example: "Use your Anthropic key, OpenRouter, your existing Claude Code plan with no key at all, or a fully local Ollama model." },
+    { name: "It learns how you write", problem: "Generic rewriters flatten your voice into the same corporate template every time.", example: "Correct a word once and Verba remembers it. It matches your tone per app, so you in Slack still sounds like you." },
+    { name: "Runs fully offline", problem: "Cloud tools upload every word you speak and stop working the moment your connection drops.", example: "Parakeet ships inside the app and transcribes on-device, instantly, in 25 languages. Pair a local model and nothing leaves your Mac." },
+  ];
+  return (
+    <section className="py-28">
+      <Reveal>
+        <HeadCenter
+          eyebrow="The whole picture"
+          title="Eight reasons it replaces your keyboard"
+          lead="Other apps stop at transcription. Each of these starts from a problem you live with, and ends with one key press."
+        />
+      </Reveal>
+      <div className="mt-12 grid gap-3 sm:grid-cols-2">
+        {blurbs.map(({ name, problem, example }, i) => (
+          <Reveal key={name} delay={(i % 2) * 60}>
+            <div className="card lift r-card flex h-full flex-col p-6">
+              <div className="flex items-center gap-2.5">
+                <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--fg)] text-[var(--bg)]">
+                  <MicGlyph size={10} />
+                </span>
+                <h3 className="font-medium">{name}</h3>
+              </div>
+              <p className="mt-3 text-sm faint">{problem}</p>
+              <p className="mt-2 text-sm muted">{example}</p>
+            </div>
+          </Reveal>
+        ))}
+      </div>
     </section>
   );
 }
@@ -781,7 +940,7 @@ function Features() {
         index="10"
         anchor
         title="Everything you say, written better"
-        lead="Sixteen things Verba does once your cursor is in the box. The first one is the whole promise; the rest are why people stay."
+        lead="Sixteen more things Verba does once your cursor is in the box. The headline move is dictation anywhere; these are why people stay."
       />
       <div className="mt-12 grid gap-3 lg:grid-cols-3">
         {/* hero feature — weighted, in product chrome, breaks the equal grid */}
@@ -1089,7 +1248,7 @@ function FAQ() {
     ["Does it work in every app?", "Yes, Verba pastes into whatever you’re typing in: editors, browsers, chat apps, mail, notes. If your cursor is there, Verba can write there."],
     ["Can it work offline?", "Yes. On-device transcription (Whisper or Parakeet) runs entirely on your Mac, no internet needed, and your audio never leaves the device."],
     ["What languages does it understand?", "On-device Whisper covers ~99 languages worldwide. Parakeet is a faster option for 25 European languages. It writes back in the language you spoke."],
-    ["How do the AI modes work?", "Verba ships five modes: Flow (verbatim, no AI, the default), Intent, Translate, Context, and Coding. Each mode is a system prompt that shapes how the model rewrites your speech. Context also takes a screenshot to ground the output in what is on your screen. You can edit any prompt, or just describe what you need and AI builds you a custom mode."],
+    ["How do the AI modes work?", "Verba ships six modes: Flow (verbatim, no AI, the default), Polish (resolves your self-corrections), Intent, Translate, Context, and Coding. Each mode is a system prompt that shapes how the model rewrites your speech. Context also takes a screenshot to ground the output in what is on your screen. You can edit any prompt, or just describe what you need and AI builds you a custom mode."],
     ["Do I need an API key?", "No. Verba uses your Claude Code plan if it is installed (no API key needed). You can also bring your own Anthropic key, an OpenRouter key, or run a local Ollama model entirely offline. You never pay a markup on someone’s cloud."],
     ["What is Context mode?", "Context mode takes a screenshot of your screen, analyzes it with a vision model, and writes based on what you say and what it sees. Say \"reply to this email\" and it drafts a reply to the message on screen. It requires macOS Screen Recording permission and a vision-capable model (Anthropic API key or OpenRouter key)."],
     ["Can it handle long recordings?", "Yes, talk for twenty minutes and Verba turns the whole thing into clean, well-ordered text."],

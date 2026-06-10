@@ -20,6 +20,16 @@ const DAYS: Day[] = [
       "A privacy, security and craft day: history gets a real off switch and auto-delete, cloud data gets a delete-everything button, every sync request is authenticated per device, every dialog moves to the new glass design, and verba.run gets a full craft pass.",
     entries: [
       {
+        version: "0.4.4 → 0.4.8",
+        title: "A new Polish mode, numbers as digits, and a private leaderboard",
+        items: [
+          "New Polish mode (a default): it hears what you meant. When you talk and correct yourself, it follows your self-corrections to the final version, drops the parts you took back, and writes finished prose instead of a transcript of you thinking out loud.",
+          "Numbers you say now come out as digits where it reads naturally: \"eighty five\" becomes 85, \"twenty percent\" becomes 20%, \"three thirty\" becomes 3:30.",
+          "The leaderboard is private by design: it only ever shows a public handle, never a real name. Your handle is set during onboarding and a guard resets anything that looks like a real name to an anonymous alias.",
+          "Every keyboard shortcut is rebindable, the ⌥X transform picker shows a live state, and the app window is fully glass with adjustable blur for both the app and its menus.",
+        ],
+      },
+      {
         version: "0.3.7 → 0.3.8",
         title: "A window that feels like glass",
         items: [
