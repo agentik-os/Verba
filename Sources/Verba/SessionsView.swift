@@ -11,6 +11,7 @@ struct SessionsView: View {
     @State private var query = ""
     @State private var filter: SessionFilter = .all
     @State private var selectedID: UUID?
+    @State private var confirmClear = false   // guard the destructive "clear all results"
 
     /// View-local search over completed results (text or mode name); in-flight rows always show.
     private var filteredCompleted: [Session] {
@@ -59,12 +60,18 @@ struct SessionsView: View {
                             .foregroundStyle(.secondary)
                     }
                     .padding(.horizontal, 7).padding(.vertical, 2)
-                    .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.06)))
+                    .background(Capsule(style: .continuous).fill(.softFill))
                 }
                 Spacer()
                 if !store.completed.isEmpty {
-                    Button { store.clearCompleted(); selectedID = nil } label: { Image(systemName: "trash") }
+                    Button { confirmClear = true } label: { Image(systemName: "trash") }
                         .buttonStyle(.borderless).help("Clear all results")
+                        .confirmationDialog("Clear all results?", isPresented: $confirmClear, titleVisibility: .visible) {
+                            Button("Clear all", role: .destructive) { store.clearCompleted(); selectedID = nil }
+                            Button("Cancel", role: .cancel) { }
+                        } message: {
+                            Text("This removes every completed result from this list. This can't be undone.")
+                        }
                 }
             }
             .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
@@ -146,11 +153,7 @@ struct SessionsView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 12).padding(.vertical, 9)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
-        )
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
+        .glassCard(selected: selected, cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .contextMenu {
             Button(role: .destructive) { remove(sess) } label: { Label("Delete", systemImage: "trash") }
@@ -189,9 +192,9 @@ struct SessionsView: View {
             .foregroundStyle(on ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.primary.opacity(0.75)))
             .background(
                 Capsule(style: .continuous)
-                    .fill(on ? AnyShapeStyle(Color.primary.opacity(0.10)) : AnyShapeStyle(Color.primary.opacity(0.055)))
+                    .fill(Color.primary.opacity(on ? VGlass.fillSelected : VGlass.fillSecondary))
             )
-            .overlay(Capsule(style: .continuous).strokeBorder(on ? Color.primary.opacity(0.18) : Color.primary.opacity(0.09), lineWidth: 1))
+            .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(on ? VGlass.hairlineSelected : VGlass.hairline), lineWidth: 1))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -239,11 +242,11 @@ private struct SessionDetail: View {
                     .foregroundStyle(session.status == .failed ? Color.red : Color.green)
                 Text(session.modeName).font(.system(size: 13, weight: .semibold))
                     .padding(.horizontal, 8).padding(.vertical, 2.5)
-                    .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.08)))
+                    .background(Capsule(style: .continuous).fill(.softFill))
                 if session.autoPasted {
                     Text("pasted").font(.system(size: 10, weight: .medium))
                         .padding(.horizontal, 6).padding(.vertical, 1.5)
-                        .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.08)))
+                        .background(Capsule(style: .continuous).fill(.softFill))
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -289,8 +292,8 @@ private struct SessionDetail: View {
     }
 
     private func card(_ r: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: r, style: .continuous).fill(Color.primary.opacity(0.035))
-            .overlay(RoundedRectangle(cornerRadius: r, style: .continuous).stroke(Color.primary.opacity(0.07), lineWidth: 1))
+        RoundedRectangle(cornerRadius: r, style: .continuous).fill(Color.primary.opacity(VGlass.fillRest))
+            .overlay(RoundedRectangle(cornerRadius: r, style: .continuous).strokeBorder(Color.hairlineTint, lineWidth: 1))
     }
 
     private var timeLabel: String {

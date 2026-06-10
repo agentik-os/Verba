@@ -57,9 +57,9 @@ struct TagChip: View {
             .foregroundStyle(selected ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.primary.opacity(0.75)))
             .background(
                 Capsule(style: .continuous)
-                    .fill(selected ? AnyShapeStyle(Color.primary.opacity(0.10)) : AnyShapeStyle(Color.primary.opacity(0.055)))
+                    .fill(selected ? AnyShapeStyle(Color.selectionFill) : AnyShapeStyle(Color.softFill))
             )
-            .overlay(Capsule(style: .continuous).strokeBorder(selected ? Color.primary.opacity(0.18) : Color.primary.opacity(0.09), lineWidth: 1))
+            .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(selected ? VGlass.hairlineSelected : VGlass.hairline), lineWidth: 1))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -608,16 +608,24 @@ struct DictionaryView: View {
     @State private var selectedID: UUID?    // entry being edited; nil = the "Add" form
     @State private var search = ""
     @State private var filterCorrections: Bool? = nil   // nil = all, true = corrections, false = words
+    // Rows the user explicitly created as a "Correct a misspelling" entry but hasn't typed the
+    // spoken form into yet. Tracks the term KIND explicitly instead of inferring it from a fragile
+    // space sentinel in `spoken`, so editing whitespace can't flip the row's type and no literal
+    // space leaks into the UI or AI payloads.
+    @State private var correctionDrafts: Set<UUID> = []
 
     private var autoCount: Int { store.terms.filter(\.auto).count }
     private var hasWritten: Bool {
         store.terms.contains { !$0.written.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
-    /// A row is a misspelling correction when it carries a spoken form; an empty spoken form
-    /// means it's a pure vocabulary hint ("Add a word"). New correction rows are seeded with a
-    /// single space so they render as a correction before the user types anything.
-    private func isCorrection(_ t: DictTerm) -> Bool { !t.spoken.isEmpty }
+    /// A row is a misspelling correction when it carries a spoken form, OR when the user just
+    /// created it via "Correct a misspelling" and hasn't typed the spoken form yet (tracked in
+    /// `correctionDrafts`). A pure vocabulary hint ("Add a word") has an empty spoken form and is
+    /// not a draft. No space sentinel — the kind never flips on a whitespace edit.
+    private func isCorrection(_ t: DictTerm) -> Bool {
+        !t.spoken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || correctionDrafts.contains(t.id)
+    }
 
     /// Terms passing the search + correction/word filter, in store order.
     private var filtered: [DictTerm] {
@@ -639,6 +647,9 @@ struct DictionaryView: View {
         .onChange(of: store.terms.count) { _, _ in
             // A removed selection falls back to the Add form.
             if let id = selectedID, !store.terms.contains(where: { $0.id == id }) { selectedID = nil }
+            // Drop draft flags for terms that no longer exist.
+            let live = Set(store.terms.map(\.id))
+            correctionDrafts.formIntersection(live)
         }
     }
 
@@ -718,11 +729,7 @@ struct DictionaryView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 12).padding(.vertical, 9)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
-        )
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
+        .glassCard(selected: selected, cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .contextMenu {
             Button(role: .destructive) { remove(t) } label: { Label("Delete", systemImage: "trash") }
@@ -800,8 +807,10 @@ struct DictionaryView: View {
                 HStack(spacing: 12) {
                     primaryAddButton("Add a word") { newWord() }
                     addButton("Correct a misspelling") {
-                        store.terms.append(DictTerm(spoken: " ", written: ""))
-                        selectedID = store.terms.last?.id
+                        let t = DictTerm(spoken: "", written: "")
+                        correctionDrafts.insert(t.id)
+                        store.terms.append(t)
+                        selectedID = t.id
                     }
                     Spacer()
                 }
@@ -967,11 +976,7 @@ struct SnippetsView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 12).padding(.vertical, 9)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
-        )
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
+        .glassCard(selected: selected, cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .contextMenu {
             Button(role: .destructive) { remove(s) } label: { Label("Delete", systemImage: "trash") }
@@ -1059,15 +1064,21 @@ struct StyleView: View {
     // MARK: Left — styles as cards (built-ins + custom), drag-reorderable
     private var sidebar: some View {
         VStack(spacing: 0) {
-            HStack {
-                Text("Styles").font(.system(size: 17, weight: .bold))
-                Spacer()
-                Button { settings.resetStylesToDefaults(); selectedID = settings.activeStyleID } label: {
-                    Image(systemName: "arrow.counterclockwise")
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Styles").font(.system(size: 17, weight: .bold))
+                    Spacer()
+                    Button { settings.resetStylesToDefaults(); selectedID = settings.activeStyleID } label: {
+                        Image(systemName: "arrow.counterclockwise")
+                    }
+                    .buttonStyle(.borderless).help("Remove all custom styles, keep only Normal")
+                    Button { let id = addStyle(); selectedID = id } label: { Image(systemName: "plus") }
+                        .buttonStyle(.borderless).help("Add a new style")
                 }
-                .buttonStyle(.borderless).help("Remove all custom styles, keep only Normal")
-                Button { let id = addStyle(); selectedID = id } label: { Image(systemName: "plus") }
-                    .buttonStyle(.borderless).help("Add a new style")
+                // Persistent discoverability of the cycle shortcut (was only in the empty state).
+                Label("Cycle with Fn + [ and Fn + ]", systemImage: "command")
+                    .labelStyle(.titleOnly)
+                    .font(.caption2).foregroundStyle(.tertiary)
             }
             .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
 
@@ -1104,12 +1115,7 @@ struct StyleView: View {
             }
         }
         .padding(.horizontal, 12).padding(.vertical, 9)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
-        )
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
+        .glassCard(selected: selected, cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .onTapGesture {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { selectedID = st.id }
@@ -1129,11 +1135,24 @@ struct StyleView: View {
 
     private func index(of id: UUID) -> Int? { settings.styles.firstIndex { $0.id == id } }
 
+    /// "Normal" is the reserved neutral built-in style. A custom style must not take that name,
+    /// or two differently-behaving "Normal" rows appear. Any case/whitespace variant maps to a
+    /// safe, distinct label instead.
+    private func sanitizedStyleName(_ v: String, for id: UUID) -> String {
+        let trimmed = v.trimmingCharacters(in: .whitespacesAndNewlines)
+        let isReserved = trimmed.compare("Normal", options: .caseInsensitive) == .orderedSame
+        // Only block the reserved word for non-builtin styles (the real Normal keeps its name).
+        if isReserved, settings.styles.first(where: { $0.id == id })?.builtin != true {
+            return "Normal (custom)"
+        }
+        return v
+    }
+
     private func editor(id: UUID) -> some View {
         let st = settings.styles.first { $0.id == id }
         let isNormal = (st?.builtin ?? false) && (st?.name == "Normal")
         let nameB = Binding(get: { settings.styles.first { $0.id == id }?.name ?? "" },
-                            set: { v in if let i = index(of: id) { settings.styles[i].name = v } })
+                            set: { v in if let i = index(of: id) { settings.styles[i].name = sanitizedStyleName(v, for: id) } })
         let promptB = Binding(get: { settings.styles.first { $0.id == id }?.prompt ?? "" },
                               set: { v in if let i = index(of: id) { settings.styles[i].prompt = v } })
         let isActive = settings.activeStyleID == id
@@ -1223,7 +1242,7 @@ struct TransformsView: View {
             if store.items.isEmpty {
                 Spacer()
                 EmptyState(icon: "arrow.triangle.2.circlepath", title: "No transforms yet",
-                           message: "Reusable text actions like “Make it formal” or “Translate to English”. Select text anywhere, say the shortcut, and Verba transforms the selection.")
+                           message: "Reusable text actions like “Make it formal” or “Translate to English”. Select text anywhere, then either say the shortcut or right-click ▸ Services ▸ Transform with Verba, and Verba transforms the selection.")
                     .padding(.horizontal, 14)
                 Spacer()
             } else {
@@ -1256,11 +1275,7 @@ struct TransformsView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 12).padding(.vertical, 9)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
-        )
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
+        .glassCard(selected: selected, cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .contextMenu {
             Button(role: .destructive) { remove(t) } label: { Label("Delete", systemImage: "trash") }
@@ -1276,7 +1291,7 @@ struct TransformsView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("New transform").font(.system(size: 17, weight: .bold))
-                        Text("Actions that run on text you’ve selected. Highlight text in any app, speak the Verbal Shortcut (e.g. “fix grammar”), and Verba runs it on your selection and replaces it. Works in every mode.")
+                        Text("Actions that run on text you’ve selected. Highlight text in any app, then speak the Verbal Shortcut (e.g. “fix grammar”) or right-click ▸ Services ▸ Transform with Verba, and Verba runs it on your selection and replaces it. Works in every mode.")
                             .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     }
                     HStack {
@@ -1314,7 +1329,7 @@ struct TransformsView: View {
                     TextField("Prompt", text: $store.items[idx].prompt, axis: .vertical)
                         .cleanField().lineLimit(4...12)
                 }
-                Text("Select text anywhere, say the Verbal Shortcut, and Verba runs this instruction on your selection and replaces it.")
+                Text("Select text anywhere, then say the Verbal Shortcut or right-click ▸ Services ▸ Transform with Verba, and Verba runs this instruction on your selection and replaces it.")
                     .font(.caption).foregroundStyle(.secondary)
                 if let errorMessage {
                     Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
@@ -1403,8 +1418,8 @@ private func addButton(_ title: String, _ action: @escaping () -> Void) -> some 
         }
         .padding(.horizontal, 12).padding(.vertical, 6.5)
         .foregroundStyle(.primary.opacity(0.75))
-        .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
-        .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+        .background(Capsule(style: .continuous).fill(Color.softFill))
+        .overlay(Capsule(style: .continuous).strokeBorder(Color.hairlineTint, lineWidth: 1))
         .contentShape(Capsule())
     }
     .buttonStyle(.plain)
@@ -1431,9 +1446,9 @@ func paneChip(label: String, icon: String?, on: Bool, action: @escaping () -> Vo
         .foregroundStyle(on ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.primary.opacity(0.75)))
         .background(
             Capsule(style: .continuous)
-                .fill(on ? AnyShapeStyle(Color.primary.opacity(0.10)) : AnyShapeStyle(Color.primary.opacity(0.055)))
+                .fill(on ? AnyShapeStyle(Color.selectionFill) : AnyShapeStyle(Color.softFill))
         )
-        .overlay(Capsule(style: .continuous).strokeBorder(on ? Color.primary.opacity(0.18) : Color.primary.opacity(0.09), lineWidth: 1))
+        .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(on ? VGlass.hairlineSelected : VGlass.hairline), lineWidth: 1))
         .contentShape(Capsule())
     }
     .buttonStyle(.plain)

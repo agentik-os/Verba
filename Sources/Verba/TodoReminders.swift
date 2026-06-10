@@ -75,24 +75,37 @@ final class TodoReminders {
             let now = Date()
             let df = DateFormatter()
             df.dateStyle = .none; df.timeStyle = .short
+
+            /// Schedule one 30-min-ahead reminder for a single deadline-bearing item.
+            func schedule(id: UUID, title: String, deadline: Date, project: String, isSubtask: Bool) {
+                let fireAt = deadline.addingTimeInterval(-Self.leadMinutes)
+                guard fireAt > now else { return }   // 30-min mark already passed → skip
+
+                let content = UNMutableNotificationContent()
+                content.title = "Soon: \(title.isEmpty ? (isSubtask ? "Untitled sub-task" : "Untitled task") : title)"
+                content.body = "\(project) · due at \(df.string(from: deadline))"
+                content.sound = .default
+
+                let interval = fireAt.timeIntervalSince(now)
+                let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
+                center.add(UNNotificationRequest(
+                    identifier: Self.idPrefix + id.uuidString,
+                    content: content,
+                    trigger: trigger))
+            }
+
             for project in snapshot {
                 for task in project.tasks {
-                    guard !task.done, let deadline = task.deadline else { continue }
-                    let fireAt = deadline.addingTimeInterval(-Self.leadMinutes)
-                    guard fireAt > now else { continue }   // 30-min mark already passed → skip
-
-                    let content = UNMutableNotificationContent()
-                    content.title = "Soon: \(task.title.isEmpty ? "Untitled task" : task.title)"
-                    content.body = "\(project.name) · due at \(df.string(from: deadline))"
-                    content.sound = .default
-
-                    let interval = fireAt.timeIntervalSince(now)
-                    let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
-                    let request = UNNotificationRequest(
-                        identifier: Self.idPrefix + task.id.uuidString,
-                        content: content,
-                        trigger: trigger)
-                    center.add(request)
+                    if !task.done, let deadline = task.deadline {
+                        schedule(id: task.id, title: task.title, deadline: deadline,
+                                 project: project.name, isSubtask: false)
+                    }
+                    // Sub-task deadlines fire too — the row offers a DeadlinePicker, so it must reconcile.
+                    for sub in task.subtasks {
+                        guard !sub.done, let deadline = sub.deadline else { continue }
+                        schedule(id: sub.id, title: sub.title, deadline: deadline,
+                                 project: project.name, isSubtask: true)
+                    }
                 }
             }
         }

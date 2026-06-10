@@ -10,6 +10,7 @@ struct ModesView: View {
     @State private var genDescription = ""
     @State private var genBusy = false
     @State private var genError: String?
+    @State private var pendingDeleteID: UUID?   // built-in mode awaiting delete confirmation
 
     var body: some View {
         HStack(spacing: 0) {
@@ -23,11 +24,10 @@ struct ModesView: View {
                         Image(systemName: "arrow.counterclockwise")
                     }
                     .buttonStyle(.borderless).foregroundStyle(.secondary)
-                    .help("Restore Flow / Intent / Context / Coding / Translate / Custom")
+                    .help("Restore the built-in Flow / Intent / Translate / Context / Coding modes")
                     Button { genError = nil; genDescription = ""; showGenerator = true } label: { Image(systemName: "plus") }
                         .buttonStyle(.borderless)
-                        .disabled(!settings.isPro)
-                        .help(settings.isPro ? "Describe a mode and let Verba build it" : "Custom modes are a Pro feature")
+                        .help("Describe a mode and let Verba build it")
                 }
                 .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
 
@@ -53,15 +53,51 @@ struct ModesView: View {
                 if let id = selectedID, settings.profiles.contains(where: { $0.id == id }) {
                     editor(id: id)
                 } else {
-                    EmptyState(icon: "wand.and.stars", title: "Select a mode",
-                               message: "Each mode is a different way Claude reorders and improves your dictation.")
-                        .frame(maxHeight: .infinity)
+                    VStack(spacing: 16) {
+                        EmptyState(icon: "wand.and.stars",
+                                   title: settings.profiles.isEmpty ? "No modes yet" : "Select a mode",
+                                   message: settings.profiles.isEmpty
+                                       ? "Modes are the different ways Claude reorders and improves your dictation. Create one, or restore the built-in modes."
+                                       : "Each mode is a different way Claude reorders and improves your dictation.")
+                        HStack(spacing: 10) {
+                            Button { genError = nil; genDescription = ""; showGenerator = true } label: {
+                                Label("New mode", systemImage: "plus")
+                            }
+                            .glassProminentButton()
+                            Button { settings.resetProfilesToDefaults(); selectedID = settings.activeProfileID } label: {
+                                Label("Restore built-in modes", systemImage: "arrow.counterclockwise")
+                            }
+                            .glassButton()
+                        }
+                    }
+                    .frame(maxHeight: .infinity)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear { if selectedID == nil { selectedID = settings.activeProfileID } }
         .sheet(isPresented: $showGenerator) { generatorSheet }
+        .confirmationDialog("Delete this built-in mode?",
+                            isPresented: Binding(get: { pendingDeleteID != nil },
+                                                 set: { if !$0 { pendingDeleteID = nil } }),
+                            titleVisibility: .visible) {
+            Button("Delete mode", role: .destructive) {
+                if let id = pendingDeleteID { deleteProfile(id) }
+                pendingDeleteID = nil
+            }
+            Button("Cancel", role: .cancel) { pendingDeleteID = nil }
+        } message: {
+            Text("You can bring the built-in modes back anytime with Restore.")
+        }
+    }
+
+    /// Deleting a built-in mode asks first (they can be restored); custom modes delete immediately.
+    private func confirmOrDelete(_ id: UUID) {
+        if settings.profiles.first(where: { $0.id == id })?.builtin == true {
+            pendingDeleteID = id
+        } else {
+            deleteProfile(id)
+        }
     }
 
     // MARK: Sidebar rows — IDENTICAL grammar to NotesView.noteRow: a spacious 2-line card
@@ -82,9 +118,18 @@ struct ModesView: View {
                     }
                 }
                 HStack(spacing: 5) {
-                    Text(modelPillLabel(p)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                    // The per-mode model is only meaningful on the cloud backend; under Local /
+                    // OpenRouter one configured model rewrites every mode, so we don't imply a
+                    // per-mode choice here (raw modes always show "raw").
+                    let isCloud = settings.repromptBackend != .localLLM && settings.repromptBackend != .openRouter
+                    let hasModelPill = p.raw || isCloud
+                    if hasModelPill {
+                        Text(modelPillLabel(p)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                        if p.hotkeyCode != nil {
+                            Text("·").font(.caption2).foregroundStyle(.tertiary)
+                        }
+                    }
                     if let c = p.hotkeyCode, let m = p.hotkeyMods {
-                        Text("·").font(.caption2).foregroundStyle(.tertiary)
                         Text(shortcutLabel(keyCode: c, modifiers: m)).font(.caption2).foregroundStyle(.tertiary)
                     }
                 }
@@ -92,12 +137,7 @@ struct ModesView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 12).padding(.vertical, 9)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
-        )
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
+        .glassCard(selected: selected, cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .onTapGesture {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { selectedID = p.id }
@@ -234,6 +274,7 @@ struct ModesView: View {
         let p = settings.profiles.first { $0.id == id }
         let isRaw = p?.raw ?? false
         let isTranslate = (p?.targetLanguage != nil)
+        let isVision = p?.vision ?? false
         let langB = Binding(get: { settings.profiles.first { $0.id == id }?.targetLanguage ?? "English" },
                             set: { v in if let i = index(of: id) { settings.profiles[i].targetLanguage = v } })
         let isActive = settings.activeProfileID == id
@@ -251,7 +292,7 @@ struct ModesView: View {
                             selected: isActive) { settings.activeProfileID = id }
                         .disabled(isActive)
                     Spacer()
-                    Button(role: .destructive) { deleteProfile(id) } label: {
+                    Button(role: .destructive) { confirmOrDelete(id) } label: {
                         Image(systemName: "trash")
                     }
                     .buttonStyle(.borderless).foregroundStyle(.red).help("Delete this mode")
@@ -262,6 +303,27 @@ struct ModesView: View {
                     ShortcutRecorder(label: shortcut,
                         onCapture: { c, m in settings.assignShortcut(keyCode: c, modifiers: m, to: .profile(id)) },
                         onClear: { settings.clearShortcut(.profile(id)) })
+                }
+
+                if isVision {
+                    field("Screen capture") {
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: "camera.viewfinder")
+                                .font(.system(size: 16)).foregroundStyle(.secondary)
+                                .frame(width: 20).padding(.top, 1)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("This mode screenshots the frontmost window and sends it to Claude along with your spoken request, so it can act on what's on screen (reply to the visible email, comment on a photo, answer the question shown).")
+                                    .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                                Label("The screenshot is sent to your AI backend only for this request and is never stored.",
+                                      systemImage: "lock.shield")
+                                    .font(.caption).foregroundStyle(.tertiary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        .padding(14)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .glassCard(cornerRadius: 14)
+                    }
                 }
 
                 if isTranslate {
@@ -315,19 +377,14 @@ struct ModesView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 6) {
                             Text("System prompt").font(.subheadline.weight(.semibold))
-                            Text("how Claude reinterprets your audio").font(.caption).foregroundStyle(.secondary)
-                            Spacer()
-                            if !settings.isPro { Label("Pro", systemImage: "lock.fill").font(.caption).foregroundStyle(.tint) }
+                            Text(isVision ? "what Claude does with the screenshot + your spoken request"
+                                          : "how Claude reinterprets your audio")
+                                .font(.caption).foregroundStyle(.secondary)
                         }
                         TextEditor(text: promptB)
                             .font(.system(.callout, design: .monospaced)).scrollContentBackground(.hidden)
                             .frame(minHeight: 220).padding(12)
                             .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .disabled(!settings.isPro).opacity(settings.isPro ? 1 : 0.55)
-                        if !settings.isPro {
-                            Text("Editing modes is a Pro feature. Free includes the built-in modes as-is.")
-                                .font(.caption).foregroundStyle(.secondary)
-                        }
                     }
                 }
 
@@ -352,9 +409,13 @@ struct ModesView: View {
     }
 
     private func deleteProfile(_ id: UUID) {
-        selectedID = nil
         settings.profiles.removeAll { $0.id == id }
+        // If we just removed the active mode, promote the first remaining one.
         if settings.activeProfileID == id, let first = settings.profiles.first { settings.activeProfileID = first.id }
+        // Land the selection on the (new) active mode rather than a dangling empty state.
+        selectedID = settings.profiles.contains(where: { $0.id == settings.activeProfileID })
+            ? settings.activeProfileID
+            : settings.profiles.first?.id
     }
 
     /// Pick .app bundles in a Finder panel and add their bundle identifiers.

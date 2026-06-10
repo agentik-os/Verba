@@ -444,7 +444,7 @@ struct TodosView: View {
             if store.projects.isEmpty {
                 Spacer()
                 EmptyState(icon: "checklist", title: "No projects yet",
-                           message: "Make a project for anything you track (Groceries, Launch, Trip…), or describe a list above and the agent builds it.")
+                           message: "Make a project for anything you track (Groceries, Launch, Trip…), or describe a list above and the agent builds it. Speak short commands here; for a long-form document, use the Notes tab.")
                     .padding(.horizontal, 14)
                 Spacer()
             } else if visible.isEmpty {
@@ -505,11 +505,7 @@ struct TodosView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 12).padding(.vertical, 9)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
-        )
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
+        .glassCard(selected: selected, cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .contextMenu {
             Button(role: .destructive) { removeProject(p.id) } label: { Label("Delete", systemImage: "trash") }
@@ -534,10 +530,15 @@ struct TodosView: View {
                     Capsule(style: .continuous)
                         .fill(capture.capturing ? AnyShapeStyle(Color.red) : AnyShapeStyle(Color.primary.opacity(0.055)))
                 )
-                .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(capture.capturing ? 0 : 0.09), lineWidth: 1))
+                .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(capture.capturing ? 0 : VGlass.hairline), lineWidth: 1))
                 .contentShape(Capsule())
             }
             .buttonStyle(.plain)
+            if !capture.capturing {
+                Text("Short spoken commands → tasks. For a long note, use the Notes tab.")
+                    .font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             if let err = capture.lastError { errorNote(err) }
 
             HStack(spacing: 7) {
@@ -613,9 +614,9 @@ struct TodosView: View {
             .foregroundStyle(on ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.primary.opacity(0.75)))
             .background(
                 Capsule(style: .continuous)
-                    .fill(on ? AnyShapeStyle(Color.primary.opacity(0.10)) : AnyShapeStyle(Color.primary.opacity(0.055)))
+                    .fill(Color.primary.opacity(on ? VGlass.fillSelected : VGlass.fillSecondary))
             )
-            .overlay(Capsule(style: .continuous).strokeBorder(on ? Color.primary.opacity(0.18) : Color.primary.opacity(0.09), lineWidth: 1))
+            .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(on ? VGlass.hairlineSelected : VGlass.hairline), lineWidth: 1))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -655,9 +656,16 @@ struct TodosView: View {
 
             if visible.isEmpty {
                 Spacer()
-                EmptyState(icon: "checklist", title: "Pick a project",
-                           message: "Select a project on the left to see and edit its tasks, or capture a task by voice and the agent files it for you.")
-                    .padding(.horizontal, 22)
+                if store.projects.isEmpty {
+                    EmptyState(icon: "checklist", title: "Pick a project",
+                               message: "Select a project on the left to see and edit its tasks, or capture a task by voice and the agent files it for you.")
+                        .padding(.horizontal, 22)
+                } else {
+                    // Projects exist but the active filter hides them all — mirror the sidebar.
+                    EmptyState(icon: "line.3.horizontal.decrease.circle", title: "Nothing matches",
+                               message: "No projects match this filter — clear it above to see everything.")
+                        .padding(.horizontal, 22)
+                }
                 Spacer()
             } else {
                 ScrollView {
@@ -1211,10 +1219,11 @@ private struct DayCell: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 30)
                 .background(background)
-                .overlay {
+                .background {
+                    // "Today" reads through a soft filled pill (behind the digit), not a heavy 0.45 ring.
                     if isToday && !isSelected {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .strokeBorder(Color.primary.opacity(0.45), lineWidth: 1.2)
+                            .fill(Color.primary.opacity(VGlass.fillSelected))
                     }
                 }
         }
@@ -1357,7 +1366,13 @@ private struct TaskPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 9) {
-                Button { task.done.toggle() } label: {
+                Button {
+                    // Cascade like markDone(): toggling the parent sets every sub-task to match, so
+                    // the checkbox, the n/m count, and the project progress chip all agree.
+                    let next = !task.done
+                    task.done = next
+                    for i in task.subtasks.indices { task.subtasks[i].done = next }
+                } label: {
                     Image(systemName: task.done ? "checkmark.circle.fill" : "circle")
                         .foregroundStyle(task.done ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
                 }.buttonStyle(.plain)
@@ -1384,7 +1399,12 @@ private struct TaskPanel: View {
                 VStack(spacing: 6) {
                     ForEach($task.subtasks) { $sub in
                         HStack(spacing: 9) {
-                            Button { sub.done.toggle() } label: {
+                            Button {
+                                sub.done.toggle()
+                                // Keep the parent in sync so its checkbox matches the sub-tasks:
+                                // all sub-tasks done → parent done; any undone → parent not done.
+                                task.done = task.subtasks.allSatisfy(\.done)
+                            } label: {
                                 Image(systemName: sub.done ? "checkmark.circle.fill" : "circle")
                                     .font(.system(size: 12))
                                     .foregroundStyle(sub.done ? AnyShapeStyle(.green) : AnyShapeStyle(.tertiary))

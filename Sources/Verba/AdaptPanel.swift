@@ -12,6 +12,7 @@ struct AdaptPanel: View {
     @State private var adaptError: String?
     @State private var adaptLabel = ""        // which mode/intent produced the result
     @State private var customIntent = ""
+    @State private var saved = false          // the adapted result was saved into History
 
     // Voice intent: a dedicated recorder so we never touch the global dictation recorder.
     @State private var recorder = AudioRecorder()
@@ -84,20 +85,32 @@ struct AdaptPanel: View {
                 Text(err).font(.caption).foregroundStyle(.red)
             } else if !adaptResult.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
-                    HStack {
+                    HStack(spacing: 12) {
                         Text(adaptLabel.isEmpty ? "Result" : "Result · \(adaptLabel)")
                             .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
                         Spacer()
+                        // The adapted output is no longer a dead-end: paste it where you were typing,
+                        // or keep it as a new dictation in History, alongside Copy.
+                        Button { _ = Output.paste(adaptResult) } label: {
+                            Label("Paste", systemImage: "arrow.down.doc")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Paste the adapted text into the app you were last using")
+                        Button { saveToHistory() } label: {
+                            Label(saved ? "Saved" : "Save", systemImage: saved ? "checkmark" : "tray.and.arrow.down")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(saved)
+                        .help("Keep this adapted result as a new dictation in your History")
                         CopyButton(text: adaptResult)
                     }
                     Text(adaptResult)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(14)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(Color.primary.opacity(0.04))
-                        )
+                        .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
             }
         }
@@ -205,8 +218,19 @@ struct AdaptPanel: View {
         }
     }
 
+    /// Persist the adapted result as a new dictation in History so it isn't a throwaway.
+    /// Stored with the original (pre-adapt) source as the raw transcript and the adapted text
+    /// as the reprompted output, tagged with the mode/intent that produced it.
+    private func saveToHistory() {
+        guard !adaptResult.isEmpty, !saved else { return }
+        History.shared.add(original: source, reprompted: adaptResult,
+                           profileName: adaptLabel.isEmpty ? "Adapt" : adaptLabel,
+                           engine: "adapt", audioURL: nil)
+        withAnimation(.easeOut(duration: 0.2)) { saved = true }
+    }
+
     private func runAdapt(label: String, systemPrompt: String, model: String, transcript: String) {
-        adapting = true; adaptError = nil; adaptResult = ""; adaptLabel = label
+        adapting = true; adaptError = nil; adaptResult = ""; adaptLabel = label; saved = false
         Task {
             do {
                 let out = try await Reprompter(model: model).reprompt(transcript: transcript, systemPrompt: systemPrompt)
@@ -232,8 +256,8 @@ struct AdaptModeChips: View {
                         .font(.system(size: 12, weight: .medium))
                         .padding(.horizontal, 12).padding(.vertical, 6)
                         .foregroundStyle(.primary.opacity(0.75))
-                        .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
-                        .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                        .background(Capsule(style: .continuous).fill(Color.primary.opacity(VGlass.fillSecondary)))
+                        .overlay(Capsule(style: .continuous).strokeBorder(Color.hairlineTint, lineWidth: 1))
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)

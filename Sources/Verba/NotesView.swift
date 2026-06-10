@@ -25,7 +25,6 @@ struct NotesView: View {
     @State private var selectedID: UUID?      // saved note being viewed/edited; nil = composing a new note
     @State private var format = NoteFormat.cleanNote
     @State private var intentText = ""        // Intent mode: the one-off instruction to apply
-    @State private var intentApplied = false  // the user confirmed (Enter / Validate) the intent above
     @FocusState private var intentFocused: Bool
     @State private var showModeManager = false  // CRUD sheet for note modes
     @State private var transcript = ""        // raw source (for re-formatting)
@@ -41,6 +40,7 @@ struct NotesView: View {
     @State private var appendMode = false   // next recording is appended to the current note
     @State private var autosaveTask: Task<Void, Never>?
     @State private var savedFlash = false   // brief "Saved ✓" after an autosave commit
+    @State private var addedToTasksFlash = false   // brief confirmation after "Add to Tasks"
     @StateObject private var md = MarkdownEditorController()   // drives the formatting toolbar
 
     private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -172,11 +172,7 @@ struct NotesView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 12).padding(.vertical, 9)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
-        )
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
+        .glassCard(selected: selected, cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .contextMenu {
             Button(role: .destructive) { remove(e) } label: { Label("Delete", systemImage: "trash") }
@@ -220,8 +216,11 @@ struct NotesView: View {
     private var intro: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("New note").font(.system(size: 17, weight: .bold))
-            Text("Speak freely, even for an hour. Verba transcribes it and turns it into a clean, formatted document.")
+            Text("Speak freely, even for an hour — this is for long-form documents. Verba transcribes it and turns it into a clean, formatted note.")
                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            Label("Just capturing quick to-dos? Use the Tasks tab — short spoken commands become tasks.",
+                  systemImage: "checklist")
+                .font(.caption).foregroundStyle(.tertiary).fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -236,7 +235,7 @@ struct NotesView: View {
             .foregroundStyle(.secondary)
             .padding(.horizontal, 9).padding(.vertical, 4)
             .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
-            .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+            .overlay(Capsule(style: .continuous).strokeBorder(Color.hairlineTint, lineWidth: 1))
             .transition(.opacity)
         }
     }
@@ -251,7 +250,7 @@ struct NotesView: View {
             }
             .padding(.horizontal, 16).padding(.vertical, 8)
             .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
-            .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+            .overlay(Capsule(style: .continuous).strokeBorder(Color.hairlineTint, lineWidth: 1))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -335,21 +334,24 @@ struct NotesView: View {
                     .textFieldStyle(.plain)
                     .lineLimit(1...6)
                     .focused($intentFocused)
-                    .onChange(of: intentText) { _, _ in intentApplied = false }   // editing un-confirms
-                    .onSubmit { validateIntent() }                                // Enter confirms
-                Button { validateIntent() } label: {
-                    Image(systemName: intentApplied ? "checkmark.circle.fill" : "return")
+                    .onSubmit { applyIntentNow() }                                // Enter re-formats now
+                // No confirm/applied ceremony: applyFormat() always reads the CURRENT intent text,
+                // so the live text IS what gets sent. This button just re-formats the existing
+                // transcript with the latest instruction right now.
+                Button { applyIntentNow() } label: {
+                    Image(systemName: "arrow.clockwise")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(intentApplied ? Color.green : Color.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.borderless)
-                .disabled(intentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .help(intentApplied ? "Intent applied" : "Validate this intent (Enter)")
+                .disabled(busy || transcript.isEmpty || intentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .help("Re-format this note with the current instruction")
             }
-            if intentApplied, !intentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                Label("Intent applied — this note will follow it", systemImage: "checkmark.circle.fill")
+            if !intentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Label(transcript.isEmpty ? "This instruction will shape your note" : "This note follows your instruction",
+                      systemImage: "checkmark.circle")
                     .font(.system(size: 10.5, weight: .medium))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(.secondary)
                     .transition(.opacity)
             }
         }
@@ -358,14 +360,59 @@ struct NotesView: View {
         .frame(maxWidth: 460)
     }
 
-    /// Confirm the typed intent: flip the "applied" state (visible feedback) and, if a transcript is
-    /// already present, immediately re-format the note so it picks up the new instruction.
-    private func validateIntent() {
+    /// Re-format the existing transcript with the CURRENT intent text. No "applied" flag to keep in
+    /// sync — applyFormat() snapshots the live intentText, so what you see is what gets sent.
+    private func applyIntentNow() {
         let trimmed = intentText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { intentApplied = false; return }
-        withAnimation(.easeInOut(duration: 0.18)) { intentApplied = true }
+        guard !trimmed.isEmpty else { return }
         intentFocused = false
         if !transcript.isEmpty { applyFormat() }
+    }
+
+    /// Checklist lines (`- [ ]` / `- [x]`) parsed out of the current note text, in order. Empty
+    /// when the note isn't a checklist, which hides the "Add to Tasks" affordance.
+    private var checklistItems: [(title: String, done: Bool)] {
+        var out: [(String, Bool)] = []
+        for raw in editorText.split(separator: "\n", omittingEmptySubsequences: false) {
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            // Match "- [ ] task", "* [x] task", "- [X] task" (Markdown task-list syntax).
+            guard line.count > 5 else { continue }
+            let lower = line.lowercased()
+            guard lower.hasPrefix("- [") || lower.hasPrefix("* [") else { continue }
+            let afterBullet = line.dropFirst(2).trimmingCharacters(in: .whitespaces)   // "[ ] task"
+            guard afterBullet.hasPrefix("["), afterBullet.count >= 3 else { continue }
+            let mark = afterBullet[afterBullet.index(afterBullet.startIndex, offsetBy: 1)]
+            guard afterBullet.dropFirst(2).first == "]" else { continue }
+            let title = afterBullet.drop(while: { $0 != "]" }).dropFirst().trimmingCharacters(in: .whitespaces)
+            guard !title.isEmpty else { continue }
+            out.append((title, mark == "x" || mark == "X"))
+        }
+        return out
+    }
+
+    /// Turn the note's checklist into a real Tasks project so the markdown isn't a dead end.
+    /// Each `- [ ]` line becomes a task (its checked state carried over), filed under a project
+    /// named after the note's title (or its format).
+    private func sendChecklistToTasks() {
+        let items = checklistItems
+        guard !items.isEmpty else { return }
+        let name: String = {
+            let t = noteTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !t.isEmpty { return t }
+            return format.name == "To-do list" ? "To-do list" : "\(format.name) tasks"
+        }()
+        let pid = TodoStore.shared.addProject(name)
+        TodoStore.shared.appendTasks(pid, items.map { (title, _) in (title, [String](), nil) })
+        // Carry over already-checked items so a partially-done list lands consistent.
+        if let pi = TodoStore.shared.projects.firstIndex(where: { $0.id == pid }) {
+            for (idx, item) in items.enumerated() where item.done && idx < TodoStore.shared.projects[pi].tasks.count {
+                TodoStore.shared.projects[pi].tasks[idx].done = true
+            }
+        }
+        withAnimation(.easeInOut(duration: 0.18)) { addedToTasksFlash = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
+            withAnimation(.easeOut(duration: 0.25)) { addedToTasksFlash = false }
+        }
     }
 
     private var processingRow: some View {
@@ -398,7 +445,7 @@ struct NotesView: View {
                     }
                     .padding(.horizontal, 11).padding(.vertical, 5.5)
                     .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
-                    .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                    .overlay(Capsule(style: .continuous).strokeBorder(Color.hairlineTint, lineWidth: 1))
                     .contentShape(Capsule())
                 }
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
@@ -407,10 +454,25 @@ struct NotesView: View {
                 Spacer(minLength: 8)
 
                 autosaveBadge
+                // Always-visible way back to "record a new note" — the recorder card only shows for an
+                // empty, unsaved composition, so without this a saved note has no path to a fresh one.
+                Button { newNote() } label: {
+                    Label("New note", systemImage: "square.and.pencil").font(.system(size: 12, weight: .medium))
+                }
+                .buttonStyle(.borderless).help("Start a new note (record again)").disabled(busy && !isRecording)
                 Button { applyFormat() } label: { Image(systemName: "wand.and.stars") }
                     .buttonStyle(.borderless).help("Re-apply format").disabled(busy || transcript.isEmpty)
                 Button { appendMode = true; toggleRecord() } label: { Image(systemName: isRecording ? "stop.circle.fill" : "mic.badge.plus") }
                     .buttonStyle(.borderless).help("Record more and add it to this note").disabled(busy && !isRecording)
+                // When this note is a checklist (- [ ] lines), offer to send it to the Task Manager so
+                // the markdown isn't a dead end. Parses every checklist line into a new project's tasks.
+                if !checklistItems.isEmpty {
+                    Button { sendChecklistToTasks() } label: {
+                        Label("Add to Tasks", systemImage: "checklist").font(.system(size: 12, weight: .medium))
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Create a Tasks project from this checklist (\(checklistItems.count) item\(checklistItems.count == 1 ? "" : "s"))")
+                }
                 CopyButton(text: editorText)
                 Button(role: .destructive) { if let id = selectedID, let e = store.entries.first(where: { $0.id == id }) { remove(e) } else { newNote() } } label: { Image(systemName: "trash") }
                     .buttonStyle(.borderless).foregroundStyle(.secondary)
@@ -418,6 +480,11 @@ struct NotesView: View {
             }
             formatToolbar
             if format.intent { intentField }
+            if addedToTasksFlash {
+                Label("Added to Tasks — open the Tasks tab to see them", systemImage: "checkmark.circle.fill")
+                    .font(.system(size: 11, weight: .medium)).foregroundStyle(.green)
+                    .transition(.opacity)
+            }
             if busy { processingRow }
             if !recordError.isEmpty { recordErrorBanner }
             if isRecording {
@@ -498,7 +565,7 @@ struct NotesView: View {
                         }
                         .padding(.horizontal, 9).padding(.vertical, 4)
                         .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
-                        .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                        .overlay(Capsule(style: .continuous).strokeBorder(Color.hairlineTint, lineWidth: 1))
                     }
                 }
             }
@@ -519,8 +586,8 @@ struct NotesView: View {
 
     // MARK: shared bits
     private func card(_ r: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: r, style: .continuous).fill(Color.primary.opacity(0.035))
-            .overlay(RoundedRectangle(cornerRadius: r, style: .continuous).stroke(Color.primary.opacity(0.07), lineWidth: 1))
+        RoundedRectangle(cornerRadius: r, style: .continuous).fill(Color.primary.opacity(VGlass.fillRest))
+            .overlay(RoundedRectangle(cornerRadius: r, style: .continuous).strokeBorder(Color.hairlineTint, lineWidth: 1))
     }
 
     @ViewBuilder private func chip(label: String, icon: String?, on: Bool, action: @escaping () -> Void) -> some View {
@@ -535,9 +602,9 @@ struct NotesView: View {
             .foregroundStyle(on ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.primary.opacity(0.75)))
             .background(
                 Capsule(style: .continuous)
-                    .fill(on ? AnyShapeStyle(Color.primary.opacity(0.10)) : AnyShapeStyle(Color.primary.opacity(0.055)))
+                    .fill(Color.primary.opacity(on ? VGlass.fillSelected : VGlass.fillSecondary))
             )
-            .overlay(Capsule(style: .continuous).strokeBorder(on ? Color.primary.opacity(0.18) : Color.primary.opacity(0.09), lineWidth: 1))
+            .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(on ? VGlass.hairlineSelected : VGlass.hairline), lineWidth: 1))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -550,7 +617,7 @@ struct NotesView: View {
         work?.cancel(); busy = false; status = ""
         if isRecording { stopRecorderHard() }
         selectedID = nil
-        transcript = ""; editorText = ""; noteTitle = ""; noteTags = []; tagInput = ""; intentText = ""; intentApplied = false
+        transcript = ""; editorText = ""; noteTitle = ""; noteTags = []; tagInput = ""; intentText = ""
         recordingURL = nil; appendMode = false
     }
 
@@ -746,9 +813,8 @@ struct NotesView: View {
         guard !transcript.isEmpty else { return }
         busy = true; status = "Organizing into \(format.name)…"
         // Snapshot the intent on the main actor so the system prompt always reflects what the user
-        // typed, and flag it applied so the note demonstrably follows the instruction (Point 4).
+        // typed RIGHT NOW (the live text is the single source of truth — no separate applied flag).
         let intentSnapshot = intentText
-        if !intentSnapshot.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { intentApplied = true }
         let fmt = format
         work = Task {
             do {

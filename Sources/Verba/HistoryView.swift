@@ -34,6 +34,8 @@ struct HistoryView: View {
     @State private var filterMode: String?     // filter by profile / mode name; nil = All
     @State private var filterEngine: String?   // filter by engine family (e.g. "openai"); nil = All
     @State private var rerunning = false
+    @State private var rerunError: String?      // surfaced inline when a re-run fails
+    @State private var confirmClear = false     // guard the destructive "clear all"
 
     // MARK: - Derived filter sets
     /// Distinct mode (profile) names present in history, in first-seen order.
@@ -101,7 +103,7 @@ struct HistoryView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onChange(of: selection) { _, _ in audio.stop() }   // stop when switching entry
+        .onChange(of: selection) { _, _ in audio.stop(); rerunError = nil }   // stop + clear stale error when switching entry
         .onDisappear { audio.stop() }
     }
 
@@ -117,8 +119,14 @@ struct HistoryView: View {
                 }
                 .buttonStyle(.borderless).help("Search dictations")
                 if !history.entries.isEmpty {
-                    Button(role: .destructive) { audio.stop(); history.clear(); selection = nil } label: { Image(systemName: "trash") }
+                    Button(role: .destructive) { confirmClear = true } label: { Image(systemName: "trash") }
                         .buttonStyle(.borderless).help("Clear all")
+                        .confirmationDialog("Clear all dictations?", isPresented: $confirmClear, titleVisibility: .visible) {
+                            Button("Clear all", role: .destructive) { audio.stop(); history.clear(); selection = nil }
+                            Button("Cancel", role: .cancel) { }
+                        } message: {
+                            Text("This permanently deletes every dictation in your history, including their transcripts and recordings. This can't be undone.")
+                        }
                 }
             }
             .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
@@ -195,7 +203,7 @@ struct HistoryView: View {
                     .font(.system(size: 9.5, weight: .medium, design: .monospaced))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 6).padding(.vertical, 1.5)
-                    .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.08)))
+                    .background(Capsule(style: .continuous).fill(.softFill))
                     .lineLimit(1)
                 Text("·").font(.caption2).foregroundStyle(.tertiary)
                 Text(e.date.formatted(date: .abbreviated, time: .shortened))
@@ -204,14 +212,7 @@ struct HistoryView: View {
         }
         .padding(.horizontal, 12).padding(.vertical, 9)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1)
-        )
+        .glassCard(selected: selected, cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .contextMenu {
             Button { Output.copyToClipboard(full) } label: { Label("Copy", systemImage: "doc.on.doc") }
@@ -243,9 +244,9 @@ struct HistoryView: View {
             .foregroundStyle(on ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.primary.opacity(0.75)))
             .background(
                 Capsule(style: .continuous)
-                    .fill(on ? AnyShapeStyle(Color.primary.opacity(0.10)) : AnyShapeStyle(Color.primary.opacity(0.055)))
+                    .fill(Color.primary.opacity(on ? VGlass.fillSelected : VGlass.fillSecondary))
             )
-            .overlay(Capsule(style: .continuous).strokeBorder(on ? Color.primary.opacity(0.18) : Color.primary.opacity(0.09), lineWidth: 1))
+            .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(on ? VGlass.hairlineSelected : VGlass.hairline), lineWidth: 1))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -279,10 +280,11 @@ struct HistoryView: View {
                         Text("Re-running…").font(.caption).foregroundStyle(.secondary)
                     } else {
                         Button { rerun(e) } label: {
-                            Image(systemName: "arrow.clockwise").font(.system(size: 13, weight: .medium))
+                            Label("Re-run as \(rerunModeLabel(e))", systemImage: "arrow.clockwise")
+                                .font(.system(size: 12, weight: .medium))
                         }
                         .buttonStyle(.borderless)
-                        .help("Re-run with Claude: restructure the raw transcript again")
+                        .help("Re-run with Claude using this dictation's own mode (\(rerunModeLabel(e))) on its raw transcript")
                     }
                     Spacer()
                     Button(role: .destructive) { audio.stop(); history.delete(e); selection = nil } label: {
@@ -292,10 +294,21 @@ struct HistoryView: View {
                     .help("Delete this dictation")
                 }
                 .padding(.horizontal, 14).padding(.vertical, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.primary.opacity(0.04))
-                )
+                .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                // Surface a failed re-run inline instead of silently stopping the spinner.
+                if let err = rerunError {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 12)).foregroundStyle(.secondary)
+                        Text(err).font(.caption).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 9)
+                    .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .transition(.opacity)
+                }
 
                 AdaptPanel(source: e.reprompted.isEmpty ? e.original : e.reprompted)
                     .id(e.id)   // reset the panel's state when switching entry
@@ -303,20 +316,51 @@ struct HistoryView: View {
         }
     }
 
-    /// Re-run the AI restructuring on this entry's raw transcript (e.g. if Claude failed or
-    /// it was never reprompted), and update the saved entry in place.
+    /// Resolve the Profile a re-run should use: the entry's OWN mode (matched by name),
+    /// falling back to the active profile only if that mode no longer exists. If the
+    /// resolved mode is raw (no reprompting) we borrow the first reprompting mode's prompt,
+    /// since re-run exists precisely to restructure the raw transcript.
+    private func rerunProfile(_ e: HistoryEntry) -> Profile {
+        if !e.profileName.isEmpty,
+           let own = Settings.shared.profiles.first(where: { $0.name == e.profileName }) {
+            return own
+        }
+        return Settings.shared.activeProfile
+    }
+
+    /// Short label for the mode a re-run will use, shown on the button so the user knows.
+    private func rerunModeLabel(_ e: HistoryEntry) -> String {
+        let p = rerunProfile(e)
+        if p.raw, let first = Settings.shared.profiles.first(where: { !$0.raw }) { return first.name }
+        return p.name
+    }
+
+    /// Re-run the AI restructuring on this entry's raw transcript using the entry's OWN mode
+    /// (e.g. if Claude failed or it was never reprompted), and update the saved entry in place.
+    /// Failures are surfaced inline via `rerunError` instead of silently stopping the spinner.
     private func rerun(_ e: HistoryEntry) {
         guard !rerunning else { return }
         rerunning = true
+        rerunError = nil
         Task {
             do {
-                let p = Settings.shared.activeProfile
-                let sys = p.raw ? Settings.shared.profiles.first(where: { !$0.raw })?.systemPrompt ?? "" : p.systemPrompt
+                let p = rerunProfile(e)
+                // Re-run is about restructuring: if the entry's own mode is raw, borrow the
+                // first reprompting mode's prompt so re-run actually does something.
+                let sys = p.raw
+                    ? Settings.shared.profiles.first(where: { !$0.raw })?.effectiveSystemPrompt ?? ""
+                    : p.effectiveSystemPrompt
                 let r = Reprompter(model: p.model ?? Settings.shared.claudeModel)
                 let out = try await r.reprompt(transcript: e.original, systemPrompt: sys)
-                await MainActor.run { history.updateReprompted(e, text: out); rerunning = false }
+                await MainActor.run {
+                    history.updateReprompted(e, text: out)
+                    rerunning = false
+                }
             } catch {
-                await MainActor.run { rerunning = false }
+                await MainActor.run {
+                    rerunError = "Re-run failed: \(error.localizedDescription)"
+                    rerunning = false
+                }
             }
         }
     }

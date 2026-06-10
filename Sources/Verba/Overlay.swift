@@ -47,6 +47,10 @@ final class OverlayModel: ObservableObject {
     var onStart: ((Profile) -> Void)?    // user picked a mode from the menu → start recording
     var onCancel: (() -> Void)?          // discard / abort whatever is happening
     @Published var style: OverlayStyle = .floating
+    // Background captures still transcribing/polishing while THIS pill shows a new recording.
+    // Surfaced as a small "N processing" dot so the user retains awareness that earlier
+    // dictations are still in flight (and could still fail) — never silent.
+    @Published var inflightCount: Int = 0
 }
 
 /// The recording indicator. Two looks (set in Settings ▸ Recording):
@@ -70,6 +74,12 @@ struct OverlayView: View {
         VStack(spacing: 8) {
             HStack(spacing: 12) {
                 leading(big: true)
+                // Background-capture awareness: when a NEW recording is live but earlier
+                // dictations are still transcribing/polishing in the background, show a small
+                // "N" dot so the user never loses track of pending captures that may still fail.
+                if model.recording, model.inflightCount > 0 {
+                    inflightDot(model.inflightCount)
+                }
                 if model.recording {
                     Button { model.onPauseToggle?() } label: {
                         Image(systemName: model.paused ? "play.fill" : "pause.fill").font(.system(size: 11))
@@ -83,8 +93,18 @@ struct OverlayView: View {
                 // without quitting. Hidden only on the brief done flash and the mode picker.
                 if !model.menu && !model.done {
                     Button { model.onCancel?() } label: {
-                        Image(systemName: "xmark.circle.fill").font(.system(size: 16)).foregroundStyle(.secondary)
-                            .padding(8).contentShape(Rectangle())   // big, always-hittable target
+                        HStack(spacing: 4) {
+                            Image(systemName: "xmark.circle.fill").font(.system(size: 16)).foregroundStyle(.secondary)
+                            // Persistent "Esc to cancel" micro-hint: Esc is the documented universal
+                            // escape hatch but was only ever a tooltip. Surface it inline so users
+                            // (esp. push-to-talk) can discover it during recording/processing.
+                            if showEscHint {
+                                Text("esc").font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(.secondary).opacity(0.7)
+                                    .padding(.trailing, 1)
+                            }
+                        }
+                        .padding(8).contentShape(Rectangle())   // big, always-hittable target
                     }
                     .buttonStyle(.plain)
                     .help("Cancel (Esc)")
@@ -104,6 +124,7 @@ struct OverlayView: View {
         .animation(.easeInOut(duration: 0.22), value: model.done)
         .animation(.easeInOut(duration: 0.22), value: model.title)
         .animation(.easeInOut(duration: 0.22), value: model.modeName)
+        .animation(.easeInOut(duration: 0.22), value: model.inflightCount)
     }
 
     // MARK: Minimal top bar
@@ -120,6 +141,23 @@ struct OverlayView: View {
         .background(Color.black.opacity(0.9), in: Capsule(style: .continuous))
         .environment(\.colorScheme, .dark)
         .fixedSize()
+    }
+
+    // Esc-to-cancel is meaningful only while something is actually cancellable (recording or
+    // the processing spinner) — never during the brief done/error/info/mode flashes or the picker.
+    private var showEscHint: Bool {
+        !model.menu && !model.done && !model.error && !model.info && !model.modeHint
+    }
+
+    /// Small "N" dot for background captures still in flight while a new recording runs.
+    private func inflightDot(_ n: Int) -> some View {
+        Text("\(n)")
+            .font(.system(size: 10, weight: .bold))
+            .foregroundStyle(.secondary)
+            .frame(minWidth: 16, minHeight: 16)
+            .background(Color.primary.opacity(VGlass.fillSelected), in: Circle())
+            .help("\(n) earlier \(n == 1 ? "dictation is" : "dictations are") still processing")
+            .transition(.opacity)
     }
 
     // MARK: Shared pieces

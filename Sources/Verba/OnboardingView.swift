@@ -12,7 +12,6 @@ struct OnboardingView: View {
 
     @State private var step = 0
     @ObservedObject private var coach = InputCoach.shared
-    @State private var anthropicKey = Keychain.anthropicKey ?? ""
     @State private var copied = false
     @State private var signingIn = false
     @State private var micGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
@@ -261,18 +260,38 @@ struct OnboardingView: View {
                     Spacer()
                 }
             }
-            HStack {
-                Text("Three ways to use it").font(.headline)
-                Spacer()
-                Text("Try each one now 👇").font(.caption).foregroundStyle(.secondary)
-            }
-            actionRow("hand.tap", "Single tap", "Tap Fn once to start recording your default mode. Tap again to send.", done: coach.singleFn)
-            actionRow("hand.tap.fill", "Press & hold", "Hold Fn while you speak, release to send (push-to-talk).", done: coach.holdFn)
-            actionRow("number.circle", "Fn + number", "Hold Fn and press 1 to 9 to dictate in a specific mode (1 Flow, 2 Intent, …).", done: coach.doubleFn)
-            actionRow("slider.horizontal.3", "Change mode", "Fn + Tab jumps to the next mode (Fn + ⇧ + Tab for the previous one) — even mid-sentence while you're holding Fn. ⌃ (Control) pauses & resumes.", done: coach.doubleFn)
-            if coach.singleFn && coach.holdFn && coach.doubleFn {
-                Label("Nice, you've got the trigger key down.", systemImage: "checkmark.seal.fill")
-                    .font(.caption).foregroundStyle(.green)
+            if settings.useFnAsPrimary {
+                HStack {
+                    Text("Three ways to use it").font(.headline)
+                    Spacer()
+                    Text("Try each one now 👇").font(.caption).foregroundStyle(.secondary)
+                }
+                actionRow("hand.tap", "Single tap", "Tap Fn once to start recording your default mode. Tap again to send.", done: coach.singleFn)
+                actionRow("hand.tap.fill", "Press & hold", "Hold Fn while you speak, release to send (push-to-talk).", done: coach.holdFn)
+                actionRow("number.circle", "Fn + number", "Hold Fn and press 1 to 9 to dictate in a specific mode (1 Flow, 2 Intent, …).", done: coach.doubleFn)
+                actionRow("slider.horizontal.3", "Change mode", "Fn + Tab jumps to the next mode (Fn + ⇧ + Tab for the previous one) — even mid-sentence while you're holding Fn. ⌃ (Control) pauses & resumes.", done: coach.doubleFn)
+                if coach.singleFn && coach.holdFn && coach.doubleFn {
+                    Label("Nice, you've got the trigger key down.", systemImage: "checkmark.seal.fill")
+                        .font(.caption).foregroundStyle(.green)
+                }
+            } else {
+                // Shortcut path: the Fn-tap/hold/number gestures don't apply, so coach the
+                // ONE achievable action — pressing the chosen shortcut. `singleFn` fires from
+                // the shared startDictation path whether the trigger is Fn or a shortcut.
+                HStack {
+                    Text("Try your shortcut").font(.headline)
+                    Spacer()
+                    Text("Press it now 👇").font(.caption).foregroundStyle(.secondary)
+                }
+                actionRow("command", "Start / stop dictation",
+                          "Press your shortcut to start recording your default mode. Press it again to send.",
+                          done: coach.singleFn)
+                Text("Tip: ⌃ (Control) pauses & resumes while recording, ⌥ (Option) switches mode mid-sentence, and Esc cancels — these work no matter which trigger you choose.")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                if coach.singleFn {
+                    Label("Nice, your shortcut works.", systemImage: "checkmark.seal.fill")
+                        .font(.caption).foregroundStyle(.green)
+                }
             }
         }
     }
@@ -442,7 +461,7 @@ struct OnboardingView: View {
     }
 
     private func finish() {
-        Keychain.anthropicKey = anthropicKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        // API-key entry lives in Settings ▸ AI rewriting; onboarding never touches it.
         settings.onboarded = true
         onDone()
     }

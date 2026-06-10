@@ -19,9 +19,41 @@ struct VisualEffectView: NSViewRepresentable {
 
 // Clean, borderless design helpers (modern, no harsh stroke lines).
 
+// MARK: - Refined glass design tokens
+//
+// Single source of truth for the new refined-glass look. Hierarchy reads through
+// ELEVATION + SUBTLE glass, never a heavy black stroke. No stroke above 0.12 opacity
+// anywhere; selection is a soft fill step + an ultra-subtle hairline (+ optional shadow).
+
+enum VGlass {
+    // Fill steps — depth by translucency, not boxes.
+    static let fillRest: Double      = 0.04   // resting card/row fill
+    static let fillSecondary: Double = 0.055  // inputs, secondary chips
+    static let fillSelected: Double  = 0.10   // selected/active fill step
+    static let fillHover: Double     = 0.07   // hover lift
+
+    // Hairlines — always <= 0.10. A whisper, never a border.
+    static let hairline: Double         = 0.06  // resting hairline
+    static let hairlineSelected: Double = 0.10  // selected hairline (max)
+
+    // Soft elevation shadow for the brought-forward / active element.
+    static let shadowColor   = Color.black.opacity(0.10)
+    static let shadowRadius: CGFloat = 14
+    static let shadowY: CGFloat      = 5
+
+    /// Standard concentric continuous corners.
+    static func shape(_ r: CGFloat) -> RoundedRectangle {
+        RoundedRectangle(cornerRadius: r, style: .continuous)
+    }
+}
+
 extension ShapeStyle where Self == Color {
     /// Subtle fill for inputs/cards that adapts to light/dark, no border needed.
-    static var softFill: Color { Color.primary.opacity(0.055) }
+    static var softFill: Color { Color.primary.opacity(VGlass.fillSecondary) }
+    /// Selection fill step (replaces the old 0.12 selected fill).
+    static var selectionFill: Color { Color.primary.opacity(VGlass.fillSelected) }
+    /// Ultra-subtle hairline tint (<= 0.10).
+    static var hairlineTint: Color { Color.primary.opacity(VGlass.hairline) }
 }
 
 extension View {
@@ -40,6 +72,55 @@ extension View {
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(.softFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    // MARK: Refined-glass shared helpers
+
+    /// Ultra-subtle hairline overlay (<= 0.10). Use INSTEAD of any visible stroke.
+    /// Pass `selected` to bump the resting hairline up to the 0.10 max.
+    func hairline(_ cornerRadius: CGFloat = 12, selected: Bool = false) -> some View {
+        overlay(
+            VGlass.shape(cornerRadius)
+                .strokeBorder(Color.primary.opacity(selected ? VGlass.hairlineSelected : VGlass.hairline),
+                              lineWidth: 1)
+        )
+    }
+
+    /// Soft elevation shadow that brings the important/active element forward.
+    /// Gate on an `active` flag so secondary elements stay flat (recede).
+    func softElevation(_ active: Bool = true) -> some View {
+        shadow(color: active ? VGlass.shadowColor : .clear,
+               radius: active ? VGlass.shadowRadius : 0,
+               y: active ? VGlass.shadowY : 0)
+    }
+
+    /// Bring an element forward: soft fill + selected hairline + soft shadow.
+    /// The single "this matters" treatment, monochrome by default.
+    func bringForward(_ cornerRadius: CGFloat = 12) -> some View {
+        background(Color.selectionFill, in: VGlass.shape(cornerRadius))
+            .hairline(cornerRadius, selected: true)
+            .softElevation(true)
+    }
+
+    /// THE replacement for the harsh `strokeBorder(Color.primary.opacity(selected ? 0.4 : 0))`
+    /// selected-card pattern. Apply over the existing fill: a soft hairline that bumps on
+    /// selection (0.06 → 0.10) plus a soft elevation shadow only when selected.
+    ///   `.overlay(RoundedRectangle(...).strokeBorder(...0.4...))` → `.glassSelection(selected)`
+    @ViewBuilder
+    func glassSelection(_ selected: Bool, cornerRadius: CGFloat = 12) -> some View {
+        self
+            .hairline(cornerRadius, selected: selected)
+            .softElevation(selected)
+    }
+
+    /// Full refined-glass card: resting/selected fill step + hairline + elevation-on-select.
+    /// Drop-in for the `RoundedRectangle.fill(...selected ? 0.12 : 0.04)` + harsh-stroke pair.
+    func glassCard(selected: Bool = false, cornerRadius: CGFloat = 12) -> some View {
+        background(
+            VGlass.shape(cornerRadius)
+                .fill(Color.primary.opacity(selected ? VGlass.fillSelected : VGlass.fillRest))
+        )
+        .glassSelection(selected, cornerRadius: cornerRadius)
     }
 }
 
@@ -176,7 +257,7 @@ private struct GlassCardIf: ViewModifier {
         if enabled {
             content
                 .glass(in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                .shadow(color: .black.opacity(0.18), radius: 24, y: 8)
+                .shadow(color: .black.opacity(0.13), radius: 26, y: 10)
         } else { content }
     }
 }

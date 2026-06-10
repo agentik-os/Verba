@@ -41,6 +41,7 @@ struct FreeMonthView: View {
                 }
                 .padding(18).frame(maxWidth: .infinity, alignment: .leading)
                 .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .softElevation()   // the primary action card sits forward; the steps recede
 
                 // How it works
                 VStack(alignment: .leading, spacing: 12) {

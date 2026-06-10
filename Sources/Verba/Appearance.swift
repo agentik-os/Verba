@@ -124,6 +124,15 @@ enum VAppr {
             case .vibrant:  return (.sidebar, .purple,     .auto,  1.2, true,  8)
             }
         }
+
+        /// True when this preset's combo matches the given appearance tuple.
+        /// Blur/cornerScale compared with a small epsilon (slider drift tolerant).
+        func matches(material: Material, accent: Accent, colorMode: ColorMode,
+                     cornerScale: Double, shadow: Bool, blur: Double) -> Bool {
+            let (m, a, c, corner, sh, bl) = combo
+            return m == material && a == accent && c == colorMode && sh == shadow
+                && abs(corner - cornerScale) < 0.001 && abs(bl - blur) < 0.001
+        }
     }
 
     // =========================================================================
@@ -345,6 +354,22 @@ final class VerbaAppearance: ObservableObject {
         VAppr.shadow = sh
         VAppr.blur = bl
         changed()
+    }
+
+    /// The preset whose combo currently matches the APP appearance, or nil for a
+    /// custom mix. Lets the Presets chips reflect the real active state instead of a
+    /// hard-coded default.
+    var activePreset: VAppr.Preset? {
+        VAppr.Preset.allCases.first { $0.matches(
+            material: material, accent: accent, colorMode: colorMode,
+            cornerScale: cornerScale, shadow: shadow, blur: blur) }
+    }
+
+    /// The preset currently matching the WIDGET appearance, or nil for a custom mix.
+    var activeWidgetPreset: VAppr.Preset? {
+        VAppr.Preset.allCases.first { $0.matches(
+            material: widgetMaterial, accent: widgetAccent, colorMode: widgetColorMode,
+            cornerScale: widgetCornerScale, shadow: widgetShadow, blur: widgetBlur) }
     }
 
     /// Apply a preset to the WIDGET appearance and notify once.

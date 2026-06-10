@@ -10,13 +10,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var levelTimer: Timer?
     private var quipTimer: Timer?
     private var statusPulseTimer: Timer?
-    private var fnHoldTimer: Timer?
+    private var fnHoldTimer: Timer?   // push-to-talk auto-finish guard slot (cleared in reset paths)
     private var fnActionTaken = false
     private var lastFnDown: Date?
     private var fnPressAt: Date?        // when the current hold started (push-to-talk)
-    private var fnToggleStopArmed = false   // tap-toggle: a Fn tap landed mid-recording; release decides stop vs. switch-mode
-    private var fnToggleSwitched = false    // a long Fn hold already cycled the mode this press → release must not stop
-    private let fnSwitchThreshold = 0.6     // tap-toggle: hold Fn ≥ this (mid-recording) → switch mode & keep listening; a quick stop tap (well under this) → stop & send. Widened from 0.4 so stop-vs-switch has a humanly-distinguishable dead-band.
     private let fnHoldThreshold = 0.8   // hold longer than this → release auto-finishes; a
                                         // deliberate "tap" (≤0.8s) latches for hands-free listening
     // Each in-flight Session runs its own concurrent processing Task, keyed by Session id, so
@@ -108,6 +105,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ChordMonitor.shared.onEscape = { [weak self] in self?.escapePressed() }
         ChordMonitor.shared.onControl = { [weak self] in InputCoach.shared.note(.control); self?.togglePause() }   // ⌃ pauses/resumes
         ChordMonitor.shared.onTransformKey = { [weak self] in self?.showTransformPicker() }   // ⌥/ on a selection
+        // Dead-end guard: when Fn is the primary trigger but the HID event tap couldn't start
+        // (Accessibility/Input-Monitoring not granted, or revoked after launch), pressing Fn does
+        // NOTHING and the user gets no signal why. ChordMonitor's lighter NSEvent monitor still
+        // sees the bare Fn key, so we use it purely to DETECT that first dead Fn press and surface
+        // the actionable permission prompt at press time. It self-heals first (re-tries the tap),
+        // so a press right after granting just works; only a still-dead tap shows the alert.
+        ChordMonitor.shared.onFnDown = { [weak self] in self?.fnPressedWhileTapInactive() }
         FnTap.shared.onFnDown = { [weak self] in self?.fnDown() }
         FnTap.shared.onFnUp = { [weak self] in self?.fnUp() }
         FnTap.shared.onFnControl = { [weak self] in self?.fnControlPressed() }   // ⌥+Fn → today's to-do glance
@@ -209,6 +213,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Settings.shared.$showMenuBarIcon
             .dropFirst().receive(on: RunLoop.main)
             .sink { [weak self] show in self?.statusItem.isVisible = show }
+            .store(in: &cancellables)
+
+        // Background-capture awareness: keep the recording pill's "N processing" dot in sync with
+        // the in-flight Sessions, so starting a NEW dictation over still-processing ones is never
+        // silent. The dot only renders while model.recording is true (see OverlayView.floating).
+        SessionStore.shared.$inflight
+            .map(\.count).removeDuplicates().receive(on: RunLoop.main)
+            .sink { [weak self] n in self?.overlay.model.inflightCount = n }
             .store(in: &cancellables)
 
         // "Capture by voice" button (or a future shortcut) → start/stop a voice to-do capture.
@@ -314,7 +326,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         // Self-heal the Fn suppression: if something (e.g. System Settings) reset "Press 🌐 to"
         // back to Change Input Source / Emoji, re-force it whenever Verba regains focus.
-        if Settings.shared.useFnAsPrimary { FnSystemPref.reapplyIfDrifted() }
+        if Settings.shared.useFnAsPrimary {
+            FnSystemPref.reapplyIfDrifted()
+            // Self-heal the Fn event tap too: if it's dead (permission revoked/not yet granted),
+            // re-try on focus so the Fn key recovers the moment the user grants access and clicks
+            // back to Verba — and prompt if it's still dead, so the dead key is never silent.
+            if !FnTap.shared.active {
+                if FnTap.shared.start() { tapPermissionNagged = false }
+                else if Settings.shared.onboarded { promptTapPermissions() }
+            }
+        }
         // Apply any task check-offs the user made from the widget while we were inactive.
         WidgetBridge.shared.syncFromWidget()
     }
@@ -363,7 +384,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Fn + Z (or a custom shortcut): open the Notes tab and immediately start a new note recording.
     @objc func startNoteRecording() {
         guard Settings.shared.onboarded else { openOnboarding(); return }
-        cancelToggleHold()   // Fn+Z is a chord → don't let the Fn release stop/switch a tap-toggle recording
         // Fn+Z chord: the bare Fn already auto-started a dictation — discard it and record a note.
         abortPhantomFnDictation()
         // Any OTHER in-flight dictation (a deliberate one, no Fn hold) must not collide with a note.
@@ -390,7 +410,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// regardless of the active mode or the Labs "Agentic actions" toggle.
     @objc func startActionMode() {
         guard Settings.shared.onboarded else { openOnboarding(); return }
-        cancelToggleHold()   // Fn+X is a chord → don't let the Fn release stop/switch a tap-toggle recording
         // Fn+X chord: the bare Fn already auto-started a dictation — discard it and record an action.
         abortPhantomFnDictation()
         // Don't collide with any OTHER in-flight capture (deliberate dictation / note / to-do).
@@ -461,7 +480,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// First call starts recording; a second call (or pressing the button again) stops & processes.
     @objc func startTodoCapture() {
         guard Settings.shared.onboarded else { openOnboarding(); return }
-        cancelToggleHold()   // Fn+T/§ is a chord → don't let the Fn release stop/switch a tap-toggle recording
         // A bare-Fn tap already stopped this capture (Fn+T/§ stop chord): swallow the trailing
         // T/§-keyDown so it doesn't immediately restart a new capture.
         if todoCaptureJustStopped { todoCaptureJustStopped = false; return }
@@ -719,7 +737,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if s.useFnAsPrimary {
             // If the tap can't be created, Accessibility/Input-Monitoring was revoked
             // (common after a rebuild/re-sign). Surface it instead of silently doing nothing.
-            if !FnTap.shared.start() { promptTapPermissions() }
+            if FnTap.shared.start() {
+                tapPermissionNagged = false   // tap is live → re-arm the nag if it later dies (revoked)
+            } else {
+                promptTapPermissions()
+            }
         } else {
             FnTap.shared.stop()
         }
@@ -751,6 +773,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 },
             ],
             size: NSSize(width: 400, height: 240))
+    }
+
+    /// The user pressed Fn while Fn IS the primary trigger but the HID event tap is not live —
+    /// so nothing happened. Detected via ChordMonitor's NSEvent monitor (the dead tap can't fire
+    /// its own callbacks). First self-heal: re-try starting the tap (a press right after granting
+    /// permission then just works, no alert). If the tap is still dead, surface the actionable
+    /// permission prompt at press time so the dead Fn key is never a silent dead-end.
+    private func fnPressedWhileTapInactive() {
+        guard Settings.shared.useFnAsPrimary, !FnTap.shared.active else { return }
+        // Don't intrude over onboarding (its permissions slide owns this), or a live capture.
+        guard Settings.shared.onboarded, onboardingWC?.window?.isVisible != true else { return }
+        if FnTap.shared.start() {
+            tapPermissionNagged = false   // recovered — re-arm the nag for any future revocation
+            return
+        }
+        promptTapPermissions()
     }
 
     // MARK: - Trigger handlers
@@ -867,7 +905,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         TodoCaptureController.shared.capturing = false
         levelTimer?.invalidate(); levelTimer = nil
         fnHoldTimer?.invalidate(); fnHoldTimer = nil
-        fnToggleStopArmed = false; fnToggleSwitched = false; lastFnDown = nil; fnPressAt = nil
+        lastFnDown = nil; fnPressAt = nil
         stopQuips()
         // R12: an Esc-discarded recording is never processed — delete its buffer too.
         if let url = recorder.stop() { try? FileManager.default.removeItem(at: url) }
@@ -911,37 +949,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if state == .recording {
             fnPressAt = nil
-            // Hold-to-talk: a tap while recording sends immediately (legacy behaviour).
-            // Tap-to-toggle: DON'T decide yet — a quick tap (< fnSwitchThreshold) stops & sends,
-            // but a longer hold cycles to the next mode and KEEPS recording (hands-free). The
-            // release (fnUp) makes the call from the down→up duration; an in-flight timer fires the
-            // mode switch the moment the threshold passes so the user gets immediate feedback.
-            // An Action recording (Fn+X) has NO modes to cycle (profiles == []), so a Fn tap must
-            // simply STOP & run it — never arm the toggle mode-switch (a slightly-long tap would
-            // otherwise hijack the action recording into a dictation mode). Stop immediately in both
-            // styles so "Tap Fn to run" always works.
-            if actionModeRecording {
-                lastFnDown = nil
-                stopAndProcess()
-                return
-            }
-            if Settings.shared.triggerStyle == .toggle {
-                lastFnDown = Date()
-                fnToggleStopArmed = true
-                fnToggleSwitched = false
-                fnHoldTimer?.invalidate()
-                let t = Timer(timeInterval: fnSwitchThreshold, repeats: false) { [weak self] _ in
-                    guard let self, self.state == .recording, self.fnToggleStopArmed else { return }
-                    self.fnToggleSwitched = true   // held long enough → switch mode, keep listening
-                    self.cycleMode(1)              // cycleMode plays SoundFX.mode() + sets "Listening · X"
-                    self.flashModeSwitch()         // unambiguous switch feedback: distinct title flash so the user knows this was a SWITCH, not a stop
-                }
-                RunLoop.main.add(t, forMode: .common)
-                fnHoldTimer = t
-            } else {
-                lastFnDown = nil
-                stopAndProcess()
-            }
+            lastFnDown = nil
+            // A Fn tap while recording always STOPS & sends — in BOTH trigger styles. Mid-recording
+            // mode SWITCHING lives on the dedicated, unambiguous gestures (Fn+Tab, Fn+1-9, lone ⌥
+            // tap), so the old duration-overloaded "hold Fn past a threshold to cycle the mode and
+            // keep listening" was dropped: one physical key press (the same tap that means "stop &
+            // send") must not secretly mean "switch mode" when held a beat longer. This also makes
+            // Action-mode (Fn+X, no modes to cycle) and dictation behave identically: Fn = stop.
+            stopAndProcess()
             return
         }
         if overlay.model.menu { dismissMenu(); lastFnDown = nil; return }
@@ -958,7 +973,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Mode switching now lives on Fn + Tab and Fn + 1-9 only; this no longer changes mode.
     private func fnControlPressed() {
         guard Settings.shared.useFnAsPrimary else { return }
-        cancelToggleHold()   // ⌥+Fn is a chord → don't let the pending toggle-switch timer cycle the mode on release
         // Don't pop the glance over a live capture: if ⌥ is tapped mid-Fn-hold while a dictation,
         // note, or to-do voice capture is recording, leave the recording untouched.
         if state == .recording || todoCaptureRecording || NotesController.shared.isRecording { return }
@@ -971,37 +985,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         TodoGlanceController.shared.toggle()
     }
 
-    /// A Fn+<key> chord fired during this Fn hold → this press is a chord, not a bare tap. Cancel
-    /// any armed tap-toggle stop/switch so releasing Fn doesn't ALSO stop the recording or cycle
-    /// the mode a second time. Safe to call from every Fn-chord handler.
-    private func cancelToggleHold() {
-        guard fnToggleStopArmed else { return }
-        fnHoldTimer?.invalidate(); fnHoldTimer = nil
-        fnToggleStopArmed = false
-        fnToggleSwitched = false
-        lastFnDown = nil
-    }
-
-    /// Toggle-style mode SWITCH feedback: when the in-flight toggle timer cycles the mode mid-
-    /// recording, flash a distinct "Switched · X" title for ~1s so the user unambiguously knows a
-    /// switch (not a stop) happened, then settle back to the steady "Listening · X". Recording
-    /// keeps running throughout. SoundFX.mode() is already played by cycleMode().
-    private func flashModeSwitch() {
-        guard state == .recording else { return }
-        let name = (forcedProfile ?? Settings.shared.activeProfile).name
-        overlay.model.title = "Switched · \(name)"
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            guard let self, self.state == .recording else { return }
-            // Only revert if nothing else changed the title since (still our switch flash).
-            if self.overlay.model.title == "Switched · \(name)" {
-                self.overlay.model.title = "Listening · \(name)"
-            }
-        }
-    }
-
     /// Fn + Tab (next) / Fn + ⇧ + Tab (previous) → cycle the active mode, live while recording.
     private func modeCycleGesture(_ dir: Int) {
-        cancelToggleHold()
         if state == .processing { return }
         InputCoach.shared.note(.doubleFn)   // mark the mode-switch gesture as learned
         cycleMode(dir)
@@ -1019,7 +1004,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Fn + ] (next) / Fn + [ (previous) → cycle the active style (the tone/format layer applied
     /// on top of the mode when reprompting). Shows a brief overlay flash of the new style name.
     private func styleCycleGesture(_ dir: Int) {
-        cancelToggleHold()
         if state == .processing { return }
         let style = Settings.shared.cycleStyle(dir)
         SoundFX.mode()
@@ -1094,23 +1078,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func fnUp() {
         guard Settings.shared.useFnAsPrimary else { return }
-        // Tap-to-toggle, mid-recording Fn press released: a quick tap stops & sends, a longer hold
-        // already switched the mode (via the fnHoldTimer) and keeps listening. Decide from the
-        // down→up duration; cancel the pending switch timer either way.
-        if fnToggleStopArmed {
-            fnHoldTimer?.invalidate(); fnHoldTimer = nil
-            fnToggleStopArmed = false
-            let held = lastFnDown.map { Date().timeIntervalSince($0) } ?? 0
-            lastFnDown = nil
-            // The timer already cycled the mode → keep recording, do nothing on release.
-            if fnToggleSwitched { fnToggleSwitched = false; return }
-            // Quick tap (released before the threshold) → stop & send.
-            if held < fnSwitchThreshold, state == .recording {
-                InputCoach.shared.note(.holdFn)
-                stopAndProcess()
-            }
-            return
-        }
+        // A mid-recording Fn TAP is now resolved entirely in fnDown (it stops & sends in both
+        // styles), so there's no armed "release decides stop-vs-switch" timer to settle here.
+        // fnUp only matters for the push-to-talk hold: a release after a sustained hold sends.
         guard state == .recording, let pressed = fnPressAt else { return }
         fnPressAt = nil
         // Hold-to-talk: ANY release sends immediately (push-to-talk).
@@ -1128,7 +1098,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func fnDigit(_ n: Int) -> Bool {
         guard Settings.shared.useFnAsPrimary else { return false }
-        cancelToggleHold()   // Fn+number is a chord, not a bare tap → don't let the release stop/switch
         let profiles = Settings.shared.profiles
         guard n >= 1, n <= profiles.count else { return false }
         let p = profiles[n - 1]
@@ -1238,7 +1207,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func cancelRecording() {
         levelTimer?.invalidate(); levelTimer = nil
         fnHoldTimer?.invalidate(); fnHoldTimer = nil
-        fnToggleStopArmed = false; fnToggleSwitched = false; lastFnDown = nil
+        lastFnDown = nil
         resetOneShotFlags()   // R3: a cancelled dictation must not leak its one-shot routing into the next one
         // R12: a cancelled recording's buffer is never processed — delete it now.
         if let url = recorder.stop() { try? FileManager.default.removeItem(at: url) }
@@ -1293,6 +1262,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.overlay.model.info = false
             self.overlay.model.context = .dictation
             self.overlay.model.modeName = s.repromptEnabled ? initial.name : ""
+            // Prime the background-capture count so the "N processing" dot is correct from the
+            // first frame (the $inflight subscription only fires on subsequent changes).
+            self.overlay.model.inflightCount = SessionStore.shared.inflight.count
             self.overlay.model.recording = true
             self.overlay.model.title = "Listening · \(initial.name)"
             self.overlay.model.level = 0

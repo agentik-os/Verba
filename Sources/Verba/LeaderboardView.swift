@@ -187,9 +187,9 @@ struct LeaderboardView: View {
                     .foregroundStyle(selected ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.primary.opacity(0.75)))
                     .background(
                         Capsule(style: .continuous)
-                            .fill(selected ? AnyShapeStyle(Color.primary.opacity(0.10)) : AnyShapeStyle(Color.primary.opacity(0.055)))
+                            .fill(Color.primary.opacity(selected ? VGlass.fillSelected : VGlass.fillSecondary))
                     )
-                    .overlay(Capsule(style: .continuous).strokeBorder(selected ? Color.primary.opacity(0.18) : Color.primary.opacity(0.09), lineWidth: 1))
+                    .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(selected ? VGlass.hairlineSelected : VGlass.hairline), lineWidth: 1))
                     .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
@@ -206,11 +206,7 @@ struct LeaderboardView: View {
             Text(metric.format(metric.value(e))).font(.callout.weight(.medium)).monospacedDigit().foregroundStyle(highlighted ? .primary : .secondary)
         }
         .padding(.horizontal, 14).padding(.vertical, 11)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(highlighted ? Color.primary.opacity(0.12) : Color.primary.opacity(0.04))
-        )
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(highlighted ? 0.4 : 0), lineWidth: 1))
+        .glassCard(selected: highlighted, cornerRadius: 12)
     }
 
     private func medal(_ r: Int) -> String {

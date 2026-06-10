@@ -15,8 +15,8 @@ private struct ActionChip: View {
         }
         .padding(.horizontal, 12).padding(.vertical, 6.5)
         .foregroundStyle(.primary.opacity(isEnabled ? 0.75 : 0.35))
-        .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
-        .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+        .background(Capsule(style: .continuous).fill(Color.softFill))
+        .overlay(Capsule(style: .continuous).strokeBorder(Color.hairlineTint, lineWidth: 1))
         .contentShape(Capsule())
     }
 }
@@ -61,6 +61,13 @@ struct FeedbackView: View {
 
     // "Improve with AI" reformat state.
     @State private var improving = false
+    // VER-8: the pre-improve draft, kept so the rewrite is reversible. Non-nil only
+    // while the current draft IS an AI rewrite the user hasn't edited or reverted yet.
+    @State private var preImproveDraft: String?
+    // The exact text "Improve with AI" produced; an edit away from it retires the revert chip.
+    @State private var lastImproved: String?
+    /// True when the current draft is still a pristine AI rewrite we can revert.
+    private var canRevertImprove: Bool { preImproveDraft != nil && draft == lastImproved }
 
     // Voice dictation: a dedicated recorder so we never touch the global dictation recorder.
     @State private var recorder = AudioRecorder()
@@ -127,9 +134,15 @@ struct FeedbackView: View {
                         .padding(editorInset)
                         .frame(minHeight: 160)
                         .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .onChange(of: draft) { _, _ in
+                        .onChange(of: draft) { _, newValue in
                             if sent { sent = false }
                             if error != nil { error = nil }
+                            // Any manual edit that diverges from the AI rewrite retires
+                            // the "revert" affordance (we'd no longer restore cleanly).
+                            if preImproveDraft != nil, !improving, newValue != lastImproved {
+                                preImproveDraft = nil
+                                lastImproved = nil
+                            }
                         }
 
                     if draft.isEmpty {
@@ -144,9 +157,16 @@ struct FeedbackView: View {
                     }
                 }
                 // VER-6: drag & drop an image file onto the editor to attach it as the screenshot.
+                // Active drop feedback reads through a soft accent wash + a gentle accent
+                // ring (the one allowed accent use), never a harsh full-opacity black border.
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(VerbaAppearance.shared.accentColor.opacity(dropTargeted ? 0.06 : 0))
+                )
                 .overlay(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(Color.primary, lineWidth: dropTargeted ? 2 : 0)
+                        .strokeBorder(VerbaAppearance.shared.accentColor.opacity(dropTargeted ? 0.35 : 0),
+                                      lineWidth: 1.5)
                 )
                 .onDrop(of: [.fileURL, .image], isTargeted: $dropTargeted) { providers in
                     handleDrop(providers)
@@ -166,8 +186,8 @@ struct FeedbackView: View {
                             }
                             .padding(.horizontal, 12).padding(.vertical, 5)
                             .foregroundStyle(.primary.opacity(0.75))
-                            .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
-                            .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                            .background(Capsule(style: .continuous).fill(Color.softFill))
+                            .overlay(Capsule(style: .continuous).strokeBorder(Color.hairlineTint, lineWidth: 1))
                             .contentShape(Capsule())
                         } else if transcribing {
                             HStack(spacing: 6) {
@@ -189,7 +209,7 @@ struct FeedbackView: View {
                                 .resizable().aspectRatio(contentMode: .fill)
                                 .frame(width: 96, height: 60)
                                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Color.primary.opacity(0.1)))
+                                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Color.hairlineTint))
                             Button {
                                 screenshot = nil; screenshotThumb = nil
                             } label: {
@@ -211,6 +231,17 @@ struct FeedbackView: View {
                         .help("Capture the current screen, or drag an image onto the editor, to attach it")
                     }
                     Spacer()
+                    // VER-8: revert an AI rewrite back to the user's original words.
+                    // Only present while the draft is still the pristine rewrite.
+                    if canRevertImprove {
+                        Button { revertImprove() } label: {
+                            ActionChip(title: "Revert", icon: "arrow.uturn.backward")
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(submitting || improving)
+                        .help("Restore your original feedback (undo the AI rewrite)")
+                        .transition(.opacity)
+                    }
                     // VER-8: reformat the current draft through the reprompt pipeline.
                     Button { improveWithAI() } label: {
                         if improving {
@@ -268,8 +299,8 @@ struct FeedbackView: View {
                     .font(.callout.weight(.medium))
                     .padding(.horizontal, 16).padding(.vertical, 10)
                     .glass(in: Capsule())
-                    .overlay(Capsule().strokeBorder(Color.primary.opacity(0.1)))
-                    .shadow(color: .black.opacity(0.25), radius: 12, y: 4)
+                    .overlay(Capsule().strokeBorder(Color.hairlineTint))
+                    .shadow(color: VGlass.shadowColor, radius: VGlass.shadowRadius, y: VGlass.shadowY)
                     .padding(.top, 18)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
@@ -405,6 +436,14 @@ struct FeedbackView: View {
 
     // MARK: Improve with AI (VER-8)
 
+    /// Restore the pre-improve draft (undo the AI rewrite). Clears the revert state.
+    private func revertImprove() {
+        guard let original = preImproveDraft else { return }
+        preImproveDraft = nil
+        lastImproved = nil
+        draft = original
+    }
+
     /// Send the current draft through the reprompt pipeline with a concise clean-up instruction
     /// and replace the draft with the improved version. Non-destructive on error.
     private func improveWithAI() {
@@ -430,6 +469,11 @@ struct FeedbackView: View {
                 await MainActor.run {
                     improving = false
                     guard !improved.isEmpty else { return }
+                    // Stash the original BEFORE swapping in the rewrite so the user can
+                    // revert. Set the trackers first so the draft-onChange (which fires
+                    // on the next line) sees a matching `lastImproved` and keeps them.
+                    preImproveDraft = original
+                    lastImproved = improved
                     draft = improved
                 }
             } catch {

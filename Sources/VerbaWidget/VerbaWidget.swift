@@ -155,19 +155,30 @@ private extension Color {
     }
 }
 
+/// Deep links the widget opens in the app (handled by the `verba://` URL scheme).
+enum WidgetLink {
+    /// Opens Verba's Task Manager (Today / Todos). Tapping any non-checkbox area
+    /// of the widget routes here so the surface is never a dead-end.
+    static let todos = URL(string: "verba://todos")!
+}
+
 enum WidgetData {
-    /// Read today's tasks from the shared App-Group defaults. Returns a static
-    /// placeholder list if the app hasn't written a snapshot yet (fresh install,
-    /// or App Group not yet provisioned) so the widget always renders something.
-    static func today() -> [WidgetTodo] {
-        if let defaults = UserDefaults(suiteName: kAppGroup),
-           let data = defaults.data(forKey: kTodayKey),
-           let rows = try? JSONDecoder().decode([WidgetTodo].self, from: data) {
-            return rows
+    /// Read today's real tasks from the shared App-Group defaults. Returns `nil`
+    /// when the app hasn't written a snapshot yet (fresh install, or App Group not
+    /// yet provisioned) — the caller then renders the empty/"open Verba" state
+    /// rather than fabricating tasks. Real data is the ONLY thing the live widget
+    /// ever shows; `placeholder` is reserved for WidgetKit's gallery preview.
+    static func todayOrNil() -> [WidgetTodo]? {
+        guard let defaults = UserDefaults(suiteName: kAppGroup),
+              let data = defaults.data(forKey: kTodayKey),
+              let rows = try? JSONDecoder().decode([WidgetTodo].self, from: data) else {
+            return nil
         }
-        return placeholder
+        return rows
     }
 
+    /// Sample tasks shown ONLY in WidgetKit's add-widget gallery / placeholder
+    /// preview — never on the user's actual home screen (see `todayOrNil`).
     static let placeholder: [WidgetTodo] = [
         WidgetTodo(id: "p1", title: "Ship the widget", project: "Verba", done: false, overdue: false, deadline: Date()),
         WidgetTodo(id: "p2", title: "Reply to Gareth", project: "Inbox", done: false, overdue: true, deadline: Date().addingTimeInterval(-3600)),
@@ -217,22 +228,41 @@ struct ToggleTodoIntent: AppIntent {
 struct TodayEntry: TimelineEntry {
     let date: Date
     let todos: [WidgetTodo]
+    /// True when no real App-Group snapshot exists yet (fresh install / App Group
+    /// not provisioned). The view then shows a "connect Verba" prompt instead of
+    /// pretending the (empty) list is the user's real, all-clear day.
+    var notConnected: Bool = false
 }
 
 struct TodayProvider: TimelineProvider {
+    /// WidgetKit's gallery/preview context — sample tasks are appropriate ONLY here.
     func placeholder(in context: Context) -> TodayEntry {
         TodayEntry(date: Date(), todos: WidgetData.placeholder)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (TodayEntry) -> Void) {
-        completion(TodayEntry(date: Date(), todos: WidgetData.today()))
+        // The add-widget gallery preview uses sample data; the real installed
+        // widget always reflects the user's actual snapshot (or the connect prompt).
+        if context.isPreview {
+            completion(TodayEntry(date: Date(), todos: WidgetData.placeholder))
+        } else {
+            completion(entryFromSnapshot())
+        }
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<TodayEntry>) -> Void) {
-        let entry = TodayEntry(date: Date(), todos: WidgetData.today())
+        let entry = entryFromSnapshot()
         // Refresh hourly as a backstop; the app nudges WidgetKit on every store change.
         let next = Calendar.current.date(byAdding: .hour, value: 1, to: Date()) ?? Date().addingTimeInterval(3600)
         completion(Timeline(entries: [entry], policy: .after(next)))
+    }
+
+    /// Build the live entry from the real snapshot — never from sample data.
+    private func entryFromSnapshot() -> TodayEntry {
+        if let rows = WidgetData.todayOrNil() {
+            return TodayEntry(date: Date(), todos: rows)
+        }
+        return TodayEntry(date: Date(), todos: [], notConnected: true)
     }
 }
 
@@ -291,11 +321,16 @@ private struct TodoRow: View {
             Spacer(minLength: 4)
 
             if showTime, let d = todo.deadline {
+                // Soft glass chip: a subtle primary tint, no hard box outline —
+                // overdue reads through red text + a faint red wash, not a border.
                 Text(timeChip(d))
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(todo.overdue ? AnyShapeStyle(Brand.overdue) : AnyShapeStyle(.secondary))
                     .padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(.quaternary, in: Capsule())
+                    .background(
+                        (todo.overdue ? Brand.overdue.opacity(0.10) : Color.primary.opacity(0.06)),
+                        in: Capsule()
+                    )
                     .fixedSize()
             }
         }
@@ -350,7 +385,9 @@ struct VerbaWidgetEntryView: View {
         VStack(alignment: .leading, spacing: family == .systemLarge ? 8 : 6) {
             header
 
-            if entry.todos.isEmpty {
+            if entry.notConnected {
+                connectState
+            } else if entry.todos.isEmpty {
                 emptyState
             } else {
                 let rows = Array(openFirst.prefix(rowLimit))
@@ -363,13 +400,19 @@ struct VerbaWidgetEntryView: View {
                     }
                 }
                 if openFirst.count > rows.count {
+                    // Tapping "+N more" opens the full Task Manager (no dead-end).
                     Text("+\(openFirst.count - rows.count) more")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        // The whole surface is a deep link into Verba's Task Manager, so tapping a
+        // task title, the header, or empty space opens the app instead of doing
+        // nothing. (The per-row checkbox keeps its own AppIntent — it wins locally.)
+        .widgetURL(WidgetLink.todos)
         .containerBackground(.fill.tertiary, for: .widget)
     }
 
@@ -405,6 +448,30 @@ struct VerbaWidgetEntryView: View {
                 Text("You're all clear.")
                     .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Shown when no real snapshot exists yet — instead of fake tasks or a
+    /// misleading "all clear", we invite the user to open Verba (the whole
+    /// widget deep-links there) so today's tasks start syncing.
+    private var connectState: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Spacer(minLength: 0)
+            HStack(spacing: 7) {
+                Image(systemName: "arrow.up.forward.app")
+                    .font(.system(size: 15))
+                    .foregroundStyle(.secondary)
+                Text("Open Verba")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.primary)
+            }
+            if family != .systemSmall {
+                Text("Tap to sync today's tasks.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
         }

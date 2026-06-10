@@ -148,12 +148,7 @@ struct SettingsView: View {
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 12).padding(.vertical, 9)
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
-            )
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
+            .glassCard(selected: selected, cornerRadius: 12)
             .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
@@ -234,13 +229,25 @@ struct SettingsView: View {
         SettingsChips(options: options, selected: selected, label: label, icon: icon, onPick: onPick)
     }
 
+    /// Preset chips whose selection reflects the REAL active preset (nil = a custom
+    /// mix, so no chip is highlighted) instead of a hard-coded default.
+    private func presetChips(selected: VAppr.Preset?,
+                             onPick: @escaping (VAppr.Preset) -> Void) -> some View {
+        SettingsChips(options: VAppr.Preset.allCases, selectedOptional: selected,
+                      label: { $0.rawValue }, icon: nil, onPick: onPick)
+    }
+
     // MARK: - Customize (LiquidPad-style personalization: app interface + widget)
 
     @ViewBuilder private var customizeDetail: some View {
         // INTERFACE
         card("Interface", footer: "Make the app yours. Defaults are monochrome and macOS-native; everything here is optional.") {
             apprLabel("Presets")
-            chips(VAppr.Preset.allCases, selected: VAppr.Preset.frosted, label: { $0.rawValue }) { appearance.applyPreset($0) }
+            presetChips(selected: appearance.activePreset) { appearance.applyPreset($0) }
+            // Live preview — re-renders with the current material + blur + corner + accent.
+            previewTile(material: appearance.material, blur: appearance.blur,
+                        cornerScale: appearance.cornerScale, accent: appearance.accentColor,
+                        colorMode: appearance.colorMode, shadow: appearance.shadow, label: "App preview")
             apprLabel("Appearance")
             chips(VAppr.ColorMode.allCases, selected: appearance.colorMode, label: { $0.label }) { appearance.colorMode = $0 }
             apprLabel("Glass material")
@@ -250,7 +257,7 @@ struct SettingsView: View {
                            customHex: appearance.accentHex,
                            onPick: { appearance.accent = $0 },
                            onCustom: { appearance.setCustomAccent($0) })
-            sliderRow("Blur", value: $appearance.blur, range: 0...40, suffix: "")
+            sliderRow("Blur", value: $appearance.blur, range: 0...40, suffix: "pt")
             sliderRow("Corner radius", value: $appearance.cornerScale, range: 0.7...1.4, suffix: "×")
             toggleRow("Shadow on panels", $appearance.shadow)
             toggleRow("Reduce motion", $appearance.reduceMotion)
@@ -259,7 +266,10 @@ struct SettingsView: View {
         // WIDGET
         card("Widget", footer: "Style the macOS Task Manager widget independently from the app.") {
             apprLabel("Presets")
-            chips(VAppr.Preset.allCases, selected: VAppr.Preset.frosted, label: { $0.rawValue }) { appearance.applyWidgetPreset($0) }
+            presetChips(selected: appearance.activeWidgetPreset) { appearance.applyWidgetPreset($0) }
+            previewTile(material: appearance.widgetMaterial, blur: appearance.widgetBlur,
+                        cornerScale: appearance.widgetCornerScale, accent: appearance.widgetAccentColor,
+                        colorMode: appearance.widgetColorMode, shadow: appearance.widgetShadow, label: "Widget preview")
             apprLabel("Appearance")
             chips(VAppr.ColorMode.allCases, selected: appearance.widgetColorMode, label: { $0.label }) { appearance.widgetColorMode = $0 }
             apprLabel("Glass material")
@@ -269,10 +279,40 @@ struct SettingsView: View {
                            customHex: appearance.widgetAccentHex,
                            onPick: { appearance.widgetAccent = $0 },
                            onCustom: { appearance.setWidgetCustomAccent($0) })
-            sliderRow("Blur", value: $appearance.widgetBlur, range: 0...40, suffix: "")
+            sliderRow("Blur", value: $appearance.widgetBlur, range: 0...40, suffix: "pt")
             sliderRow("Corner radius", value: $appearance.widgetCornerScale, range: 0.7...1.4, suffix: "×")
             toggleRow("Shadow", $appearance.widgetShadow)
         }
+    }
+
+    /// A small live-preview tile that re-renders with the current material, blur,
+    /// corner radius, accent and color mode, so Customize sliders/chips show their
+    /// effect instead of being abstract numbers.
+    private func previewTile(material: VAppr.Material, blur: Double, cornerScale: Double,
+                             accent: Color, colorMode: VAppr.ColorMode, shadow: Bool,
+                             label: String) -> some View {
+        let radius = VAppr.corner(16, scale: cornerScale)
+        return ZStack {
+            VisualEffectView(material: material.nsMaterial)
+                .blur(radius: blur * 0.25)   // a hint of the blur slider, kept subtle/readable
+            HStack(spacing: 10) {
+                Circle().fill(accent).frame(width: 26, height: 26)
+                    .overlay(Image(systemName: "waveform").font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(colorMode == .dark ? .white : .primary))
+                VStack(alignment: .leading, spacing: 3) {
+                    Capsule().fill(.primary.opacity(0.55)).frame(width: 96, height: 7)
+                    Capsule().fill(.primary.opacity(0.22)).frame(width: 60, height: 6)
+                }
+                Spacer(minLength: 0)
+                Text(label).font(.caption2).foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 14)
+        }
+        .frame(height: 64).frame(maxWidth: .infinity)
+        .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+        .hairline(radius)
+        .softElevation(shadow)
+        .preferredColorScheme(colorMode.colorScheme)
     }
 
     private func apprLabel(_ t: String) -> some View {
@@ -295,6 +335,7 @@ struct SettingsView: View {
         HStack(spacing: 8) {
             ForEach(VAppr.Accent.allCases.filter { $0 != .custom }) { a in
                 let isSel = selected == a
+                let swatch = a.nsColor.map { Color(nsColor: $0) } ?? Color.primary
                 Button { onPick(a) } label: {
                     ZStack {
                         Circle().fill(a.nsColor.map { Color(nsColor: $0) } ?? Color.primary.opacity(0.18))
@@ -302,17 +343,23 @@ struct SettingsView: View {
                         if a == .monochrome {
                             Image(systemName: "circle.lefthalf.filled").font(.system(size: 12)).foregroundStyle(.primary)
                         }
-                        Circle().strokeBorder(Color.primary.opacity(isSel ? 0.85 : 0.12), lineWidth: isSel ? 2 : 1)
+                        // Selected swatches read through the swatch's OWN tint ring (selection
+                        // feedback, the one allowed accent exception); unselected stays a hairline.
+                        Circle().strokeBorder(isSel ? swatch.opacity(0.9) : Color.hairlineTint, lineWidth: isSel ? 2 : 1)
                             .frame(width: 24, height: 24)
                     }
+                    .softElevation(isSel)
                 }.buttonStyle(.plain).help(a.label)
             }
             // Custom color well
+            let customSel = selected == .custom
+            let customColor = Color(nsColor: VAppr.resolved(.custom, hex: customHex) ?? .systemIndigo)
             ColorPicker("", selection: Binding(
-                get: { Color(nsColor: VAppr.resolved(.custom, hex: customHex) ?? .systemIndigo) },
+                get: { customColor },
                 set: { onCustom($0) }), supportsOpacity: false)
                 .labelsHidden().frame(width: 24, height: 24)
-                .overlay(Circle().strokeBorder(Color.primary.opacity(selected == .custom ? 0.85 : 0.12), lineWidth: selected == .custom ? 2 : 1).frame(width: 24, height: 24))
+                .overlay(Circle().strokeBorder(customSel ? customColor.opacity(0.9) : Color.hairlineTint, lineWidth: customSel ? 2 : 1).frame(width: 24, height: 24))
+                .softElevation(customSel)
                 .help("Custom")
             Spacer()
         }
@@ -340,12 +387,7 @@ struct SettingsView: View {
             }
             .padding(.horizontal, 13).padding(.vertical, 11)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(selected ? Color.primary.opacity(0.09) : Color.primary.opacity(0.035))
-            )
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Color.primary.opacity(selected ? 0.3 : 0.07), lineWidth: 1))
+            .glassCard(selected: selected, cornerRadius: 12)
             .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
@@ -504,7 +546,7 @@ struct SettingsView: View {
             }
             Spacer(minLength: 0)
             if !settings.isPro, let u = URL(string: Entitlement.pricingURL) {
-                Link(destination: u) { Text("Upgrade · 14-day trial") }
+                Link(destination: u) { Text("Upgrade · 7-day trial") }
                     .glassProminentButton().controlSize(.large)
             } else if settings.isPro {
                 Label("Active", systemImage: "checkmark.seal.fill").font(.caption).foregroundStyle(.green)
@@ -513,6 +555,7 @@ struct SettingsView: View {
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .softElevation(!settings.isPro)
     }
 
     // MARK: - 2 · Dictation
@@ -892,7 +935,7 @@ struct SettingsView: View {
             .frame(minWidth: 22)
             .background(.softFill, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+                .strokeBorder(Color.hairlineTint, lineWidth: 1))
     }
 
     /// A row of individual keycaps (e.g. ⌥ ⌘ T as separate caps).
@@ -1311,15 +1354,27 @@ private struct RetentionOption: Hashable, Identifiable {
 /// Capsule tag chips that wrap onto multiple rows — the exemplar grammar for small enums.
 private struct SettingsChips<T: Hashable & Identifiable>: View {
     let options: [T]
-    let selected: T
+    /// Optional so callers (e.g. presets) can express "no chip active" — a custom mix.
+    let selectedOptional: T?
     let label: (T) -> String
     var icon: ((T) -> String)? = nil
     let onPick: (T) -> Void
 
+    init(options: [T], selected: T, label: @escaping (T) -> String,
+         icon: ((T) -> String)? = nil, onPick: @escaping (T) -> Void) {
+        self.options = options; self.selectedOptional = selected
+        self.label = label; self.icon = icon; self.onPick = onPick
+    }
+    init(options: [T], selectedOptional: T?, label: @escaping (T) -> String,
+         icon: ((T) -> String)? = nil, onPick: @escaping (T) -> Void) {
+        self.options = options; self.selectedOptional = selectedOptional
+        self.label = label; self.icon = icon; self.onPick = onPick
+    }
+
     var body: some View {
         WrapHStack(spacing: 8, rowSpacing: 8) {
             ForEach(options) { opt in
-                let isSel = opt == selected
+                let isSel = opt == selectedOptional
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { onPick(opt) }
                 } label: {
@@ -1329,10 +1384,11 @@ private struct SettingsChips<T: Hashable & Identifiable>: View {
                     }
                     .padding(.horizontal, 12).padding(.vertical, 6.5)
                     .foregroundStyle(isSel ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.primary.opacity(0.75)))
+                    // Glass chip: soft fill step, ultra-subtle hairline (0.10 max on select).
                     .background(Capsule(style: .continuous)
-                        .fill(isSel ? AnyShapeStyle(Color.primary.opacity(0.10)) : AnyShapeStyle(Color.primary.opacity(0.055))))
+                        .fill(Color.primary.opacity(isSel ? VGlass.fillSelected : VGlass.fillSecondary)))
                     .overlay(Capsule(style: .continuous)
-                        .strokeBorder(isSel ? Color.primary.opacity(0.18) : Color.primary.opacity(0.09), lineWidth: 1))
+                        .strokeBorder(Color.primary.opacity(isSel ? VGlass.hairlineSelected : VGlass.hairline), lineWidth: 1))
                     .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
