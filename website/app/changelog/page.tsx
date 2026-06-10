@@ -20,6 +20,15 @@ const DAYS: Day[] = [
       "A privacy, security and craft day: history gets a real off switch and auto-delete, cloud data gets a delete-everything button, every sync request is authenticated per device, every dialog moves to the new glass design, and verba.run gets a full craft pass.",
     entries: [
       {
+        version: "0.2.3",
+        title: "Your leaderboard identity, managed on the leaderboard",
+        items: [
+          "Edit your public alias directly on the leaderboard page (with a shuffle button), and flip “Show me on the public leaderboard” right there. No more round-trip to Settings.",
+          "Hiding yourself now shows a clear note on the board instead of your row just vanishing.",
+          "The metric switcher (Total words, Words / min, Day streak, Time saved) is now a row of proper tag chips with icons, replacing the cramped segmented control.",
+        ],
+      },
+      {
         version: "0.2.2",
         title: "Glass everywhere, and an app that behaves",
         items: [
