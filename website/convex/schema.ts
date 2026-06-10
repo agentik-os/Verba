@@ -27,6 +27,12 @@ export default defineSchema({
     words: v.number(), seconds: v.number(), count: v.number(), updated: v.number(),
   }).index("by_uid", ["uid"]),
 
+  settings: defineTable({   // Customize/appearance settings (app + widget), synced across the user's Macs
+    uid: v.string(),
+    appr: v.string(),       // JSON blob of all verba.appr.* / widget.appr.* values
+    updated: v.number(),
+  }).index("by_uid", ["uid"]),
+
   notes: defineTable({   // long-form Notes, synced text-only across the user's Macs
     uid: v.string(), ts: v.number(),
     original: v.string(), formatted: v.string(), formatName: v.string(),

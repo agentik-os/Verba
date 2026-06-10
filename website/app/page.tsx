@@ -13,7 +13,6 @@ import Icon from "@/components/Icon";
 import { getRef } from "@/components/RefCapture";
 import { Logo, MicMark, MicGlyph, HeadLeft, HeadCenter, PanelCaption, CrossRule } from "@/components/Brand";
 import ThemeToggle from "@/components/ThemeToggle";
-import { homeCompareCols, homeCompareRows } from "@/lib/competitors";
 
 const PRICE = {
   monthly: { amount: "$9.99", sub: "/month", note: "billed monthly · cancel anytime" },
@@ -755,57 +754,6 @@ function WhyBest() {
           </Reveal>
         ))}
       </div>
-    </section>
-  );
-}
-
-function CompareTable() {
-  const cols = homeCompareCols;
-  const rows = homeCompareRows;
-  const cell = (v: boolean | string) =>
-    v === true ? <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] bg-[var(--fg)] text-[var(--bg)]"><MicGlyph size={9} /></span>
-      : v === false ? <span className="faint">✕</span>
-      : <span className="font-mono text-xs muted tnum">{v}</span>;
-  return (
-    <section className="py-28">
-      <Reveal>
-        <HeadCenter
-          eyebrow="Head-to-head"
-          index="12"
-          title="How Verba compares"
-          lead="The honest, side-by-side. Verba does more, keeps your data on your Mac, and costs less."
-        />
-      </Reveal>
-      <Reveal delay={60}>
-        <div className="card r-panel mt-12 overflow-hidden table-scrim">
-          <div className="overflow-x-auto">
-          <table className="table-pin w-full min-w-[640px] border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-[var(--border)]">
-                <th className="px-5 py-4 text-left font-normal muted">Feature</th>
-                {cols.map((c, i) => (
-                  <th key={c} className={`px-3 py-4 text-center font-semibold ${i === 0 ? "text-[var(--fg)]" : "muted"}`}>{c}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(([label, vals]) => (
-                <tr key={label} className="border-b border-[var(--border)] last:border-0">
-                  <td className="px-5 py-3.5 text-left">{label}</td>
-                  {vals.map((v, i) => (
-                    <td key={i} className={`px-3 py-3.5 text-center ${i === 0 ? "bg-[var(--tint)]" : ""}`}>{cell(v)}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
-        </div>
-      </Reveal>
-      <Reveal delay={100}>
-        <p className="mt-3 text-center text-[11px] muted md:hidden">Swipe the table sideways for the full picture.</p>
-        <p className="mt-4 text-center text-xs muted">Competitor pricing and features as publicly listed; they change often. <Link href="/compare" className="link-quiet underline">Full comparison →</Link></p>
-      </Reveal>
     </section>
   );
 }
