@@ -87,6 +87,7 @@ private struct SidebarRow: View {
 struct MainWindow: View {
     @ObservedObject var settings = Settings.shared
     @ObservedObject private var notesCtl = NotesController.shared
+    @ObservedObject private var appearance = VerbaAppearance.shared
     @State private var selection: NavItem? = .home
     @State private var qwenInstalling = false
     @State private var qwenProgress: Double = 0
@@ -112,7 +113,9 @@ struct MainWindow: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
-        .tint(.primary)   // full B&W: selection / accents are black, not blue
+        // Customize: monochrome by default (.primary); a chosen accent + color mode apply app-wide.
+        .tint(appearance.accentColor)
+        .preferredColorScheme(appearance.colorMode.colorScheme)
         .onChange(of: notesCtl.navSignal) { _, _ in selection = .notes }   // Fn+Z → jump to Notes
         .onChange(of: notesCtl.leaderboardNavSignal) { _, _ in selection = .leaderboard }   // Insights "your standing" → Leaderboard
         .onChange(of: settings.hiddenNav) { _, _ in

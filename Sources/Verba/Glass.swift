@@ -2,16 +2,19 @@ import SwiftUI
 import AppKit
 
 /// A translucent window background (NSVisualEffectView) for that frosted-glass Apple feel.
+/// Default material follows the user's Customize choice (VAppr.material); pass an explicit
+/// material to override (e.g. a specific dialog that always wants one look).
 struct VisualEffectView: NSViewRepresentable {
-    var material: NSVisualEffectView.Material = .hudWindow
+    var material: NSVisualEffectView.Material? = nil   // nil → user's chosen glass material
+    private var resolved: NSVisualEffectView.Material { material ?? VAppr.material.nsMaterial }
     func makeNSView(context: Context) -> NSVisualEffectView {
         let v = NSVisualEffectView()
-        v.material = material
+        v.material = resolved
         v.blendingMode = .behindWindow
         v.state = .active
         return v
     }
-    func updateNSView(_ v: NSVisualEffectView, context: Context) { v.material = material }
+    func updateNSView(_ v: NSVisualEffectView, context: Context) { v.material = resolved }
 }
 
 // Clean, borderless design helpers (modern, no harsh stroke lines).

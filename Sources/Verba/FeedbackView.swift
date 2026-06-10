@@ -21,6 +21,34 @@ private struct ActionChip: View {
     }
 }
 
+/// VER-16: compact, monochrome live mic meter for the feedback Dictate chip. Mirrors the floating
+/// overlay's Waveform grammar (level + a self-advanced phase so motion never stalls while another
+/// app owns the run loop), sized to sit inline beside "Listening…".
+private struct FeedbackWaveform: View {
+    let level: Float
+    let phase: Double
+    private let bars = 7
+    private let maxH: CGFloat = 13
+
+    var body: some View {
+        let lvl = CGFloat(max(0.05, min(1, level)))
+        HStack(spacing: 2) {
+            ForEach(0..<bars, id: \.self) { i in
+                // two detuned sines per bar → organic motion; amplitude follows the live level
+                let w = (sin(phase * 3.4 + Double(i) * 0.9) + sin(phase * 5.1 + Double(i) * 1.7)) / 2.0
+                let wobble = CGFloat((w + 1) / 2)                  // 0…1
+                let center = 1 - abs(CGFloat(i) - CGFloat(bars - 1) / 2) / CGFloat(bars)  // taller in middle
+                let h = max(0.12, min(1, lvl * (0.35 + 0.95 * wobble) * (0.6 + 0.6 * center)))
+                Capsule()
+                    .fill(.primary.opacity(0.5 + 0.4 * Double(h)))
+                    .frame(width: 2.5, height: h * maxH)
+            }
+        }
+        .frame(height: maxH, alignment: .center)
+        .animation(.linear(duration: 0.05), value: phase)
+    }
+}
+
 struct FeedbackView: View {
     @State private var draft = ""
     @State private var submitting = false
@@ -38,6 +66,13 @@ struct FeedbackView: View {
     @State private var recorder = AudioRecorder()
     @State private var recording = false      // mic is capturing
     @State private var transcribing = false   // captured audio is being transcribed
+
+    // VER-16: live mic-level animation for the Dictate chip while listening. `level` is the
+    // metered mic input (0…1); `phase` is advanced by our own timer so the waveform keeps
+    // moving even when the focused app owns the run loop — same idiom as the floating overlay.
+    @State private var level: Float = 0
+    @State private var phase: Double = 0
+    @State private var levelTimer: Timer?
 
     // Optional screenshot attachment (PNG bytes + a thumbnail for display).
     @State private var screenshot: Data?
@@ -123,7 +158,17 @@ struct FeedbackView: View {
                     // Lives in the action row — never floating over the editor's growing text.
                     Button { toggleVoice() } label: {
                         if recording {
-                            ActionChip(title: "Listening…", icon: "stop.circle.fill")
+                            // Live, level-driven meter so the chip visibly reacts to the voice.
+                            HStack(spacing: 7) {
+                                Image(systemName: "stop.circle.fill").font(.system(size: 10, weight: .semibold))
+                                Text("Listening…").font(.system(size: 12, weight: .medium))
+                                FeedbackWaveform(level: level, phase: phase)
+                            }
+                            .padding(.horizontal, 12).padding(.vertical, 5)
+                            .foregroundStyle(.primary.opacity(0.75))
+                            .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
+                            .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                            .contentShape(Capsule())
                         } else if transcribing {
                             HStack(spacing: 6) {
                                 ProgressView().controlSize(.small)
@@ -232,6 +277,7 @@ struct FeedbackView: View {
         // Clean teardown if the panel goes away mid-recording.
         .onDisappear {
             if recording { _ = recorder.stop(); recorder.releaseArmed(); recording = false }
+            stopLevelMeter()
         }
     }
 
@@ -260,19 +306,41 @@ struct FeedbackView: View {
             }
             if recorder.start() {
                 recording = true
+                startLevelMeter()
             } else {
                 // Single deferred retry: the mic may take a beat to free if just released.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                    if recorder.start() { recording = true }
+                    if recorder.start() { recording = true; startLevelMeter() }
                     else { error = "Couldn't start recording. The microphone may be in use — wait a moment, then try again." }
                 }
             }
         }
     }
 
+    /// Drive the Dictate chip's waveform from live mic metering. We advance `phase` ourselves
+    /// (rather than rely on TimelineView) so the animation never stalls while another app owns
+    /// the run loop — the same approach the floating recording overlay uses.
+    private func startLevelMeter() {
+        levelTimer?.invalidate()
+        let t = Timer(timeInterval: 0.04, repeats: true) { _ in
+            guard recording else { return }
+            let lvl = recorder.level()
+            level = lvl
+            phase += 0.025 + 0.18 * Double(lvl)
+        }
+        RunLoop.main.add(t, forMode: .common)
+        levelTimer = t
+    }
+
+    private func stopLevelMeter() {
+        levelTimer?.invalidate(); levelTimer = nil
+        level = 0
+    }
+
     private func stopVoice() {
         guard recording else { return }
         recording = false
+        stopLevelMeter()
         let url = recorder.stop()
         recorder.releaseArmed()   // free the mic; symmetric to AdaptPanel
         guard let url else {
@@ -345,7 +413,15 @@ struct FeedbackView: View {
         improving = true
         error = nil
         let model = Settings.shared.claudeModel.hasPrefix("claude-") ? Settings.shared.claudeModel : "claude-sonnet-4-6"
-        let system = "You clean up and format user feedback. Rewrite the text so it reads clearly and is well structured, fixing grammar, punctuation and flow. Keep the original meaning, tone and all concrete details — do not add new ideas, do not answer or comment on the feedback. Return only the improved feedback text, with no preamble, quotes or labels."
+        let system = """
+        You structure user feedback so the team instantly understands what part of the app it concerns, what is wrong, and what the user wants. Rewrite the feedback into exactly these three labelled lines, fixing grammar, punctuation and flow:
+
+        Section: <which screen, feature or area of the app the feedback targets>
+        Issue: <what is currently wrong, confusing or missing>
+        Expected: <the behaviour or outcome the user wants instead>
+
+        Rules: Keep every concrete detail, the original meaning and the user's tone. Be concise — one short line per field. Do not add new ideas, do not answer or comment on the feedback. If a field is genuinely not stated and cannot be reasonably inferred from the text, write "—" for that field rather than inventing content. Return only the three labelled lines, with no preamble, quotes or extra commentary.
+        """
         Task {
             do {
                 let improved = try await Reprompter(model: model)
@@ -365,23 +441,38 @@ struct FeedbackView: View {
         }
     }
 
-    // MARK: drag & drop image attachment (VER-6)
+    // MARK: drag & drop image attachment (VER-6 / VER-14)
 
-    /// Accept a dropped image (file URL or in-memory image) and attach it as the screenshot.
+    /// Accept a dropped image and attach it as the screenshot.
+    ///
+    /// VER-14: we must attach the actual image BYTES, never a file-path string. The hard case
+    /// is a screenshot dragged from the macOS screenshot-UI thumbnail: that item is a short-lived
+    /// security-scoped temp file (…/TemporaryItems/…/Screenshot.png) and/or a file promise, so
+    /// resolving it to a URL and re-reading from disk races the OS deleting the temp file and can
+    /// silently fail. So we ask the provider for the raw DATA of the image type directly —
+    /// `loadDataRepresentation` materializes file promises and hands back bytes, no path involved.
     private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
-        // Prefer a file URL (gives us the on-disk image, incl. PNG/JPEG).
-        if let provider = providers.first(where: { $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) }) {
-            _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                guard let url, let img = NSImage(contentsOf: url) else {
-                    DispatchQueue.main.async { self.error = "That file isn't a readable image. Drop a PNG or JPEG." }
-                    return
+        guard let provider = providers.first(where: { isImageDrop($0) }) else { return false }
+
+        // 1) Pull the real image bytes for the best matching image UTI (png/jpeg/tiff/heic/generic image).
+        if let typeID = imageTypeIdentifier(for: provider) {
+            _ = provider.loadDataRepresentation(forTypeIdentifier: typeID) { data, _ in
+                if let data, let img = NSImage(data: data) {
+                    self.attach(image: img)
+                } else {
+                    // 2) Bytes-by-type failed — fall back to the on-disk file URL (security-scoped read).
+                    self.attachFromFileURL(provider)
                 }
-                self.attach(image: img)
             }
             return true
         }
-        // Fall back to an in-memory image payload.
-        if let provider = providers.first(where: { $0.canLoadObject(ofClass: NSImage.self) }) {
+
+        // 3) No image-typed payload advertised — try the file URL, then an in-memory NSImage.
+        if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+            attachFromFileURL(provider)
+            return true
+        }
+        if provider.canLoadObject(ofClass: NSImage.self) {
             _ = provider.loadObject(ofClass: NSImage.self) { obj, _ in
                 guard let img = obj as? NSImage else {
                     DispatchQueue.main.async { self.error = "Couldn't read the dropped image. Try a PNG or JPEG." }
@@ -392,6 +483,44 @@ struct FeedbackView: View {
             return true
         }
         return false
+    }
+
+    /// True if the provider advertises any image payload (image UTI or an image file URL).
+    private func isImageDrop(_ provider: NSItemProvider) -> Bool {
+        imageTypeIdentifier(for: provider) != nil
+            || provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier)
+            || provider.canLoadObject(ofClass: NSImage.self)
+    }
+
+    /// The most specific image UTI the provider can vend as data, if any.
+    private func imageTypeIdentifier(for provider: NSItemProvider) -> String? {
+        let preferred: [UTType] = [.png, .jpeg, .tiff, .heic, .gif, .bmp, .image]
+        for type in preferred where provider.hasItemConformingToTypeIdentifier(type.identifier) {
+            return type.identifier
+        }
+        // Any registered type that conforms to public.image (covers exotic screenshot UTIs).
+        return provider.registeredTypeIdentifiers.first {
+            UTType($0)?.conforms(to: .image) == true
+        }
+    }
+
+    /// Resolve the provider's file URL and read the image bytes off disk, honoring the
+    /// security-scoped access the screenshot-UI temp file requires. Reads into Data immediately
+    /// (synchronously inside the access scope) so we never depend on a path surviving.
+    private func attachFromFileURL(_ provider: NSItemProvider) {
+        _ = provider.loadObject(ofClass: URL.self) { url, _ in
+            guard let url else {
+                DispatchQueue.main.async { self.error = "That file isn't a readable image. Drop a PNG or JPEG." }
+                return
+            }
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            guard let data = try? Data(contentsOf: url), let img = NSImage(data: data) else {
+                DispatchQueue.main.async { self.error = "That file isn't a readable image. Drop a PNG or JPEG." }
+                return
+            }
+            self.attach(image: img)
+        }
     }
 
     /// Re-encode an NSImage to PNG and set it as the attached screenshot (with thumbnail).

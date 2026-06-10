@@ -6,7 +6,7 @@ import IOKit.hid
 // MARK: - Settings sections (the custom left rail)
 
 private enum SettingsSection: String, CaseIterable, Identifiable {
-    case account, dictation, rewriting, output, shortcuts, privacy, updates
+    case account, dictation, rewriting, output, customize, shortcuts, privacy, updates
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -14,6 +14,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .dictation: return "Dictation"
         case .rewriting: return "AI rewriting"
         case .output:    return "Output & feedback"
+        case .customize: return "Customize"
         case .shortcuts: return "Shortcuts"
         case .privacy:   return "Privacy & history"
         case .updates:   return "Updates & about"
@@ -25,6 +26,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .dictation: return "waveform"
         case .rewriting: return "wand.and.stars"
         case .output:    return "arrow.down.doc"
+        case .customize: return "paintpalette"
         case .shortcuts: return "keyboard"
         case .privacy:   return "lock.shield"
         case .updates:   return "arrow.triangle.2.circlepath"
@@ -36,6 +38,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .dictation: return "Engine, mic, language"
         case .rewriting: return "Backend, model, API keys"
         case .output:    return "Paste, overlay, sounds"
+        case .customize: return "Glass, accent, widget"
         case .shortcuts: return "Triggers & chords"
         case .privacy:   return "History, permissions"
         case .updates:   return "Version & releases"
@@ -45,6 +48,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 
 struct SettingsView: View {
     @ObservedObject var settings = Settings.shared
+    @ObservedObject private var appearance = VerbaAppearance.shared
     @State private var section: SettingsSection = .account
 
     @State private var micGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
@@ -169,6 +173,7 @@ struct SettingsView: View {
         case .dictation: dictationDetail
         case .rewriting: rewritingDetail
         case .output:    outputDetail
+        case .customize: customizeDetail
         case .shortcuts: shortcutsDetail
         case .privacy:   privacyDetail
         case .updates:   updatesDetail
@@ -227,6 +232,90 @@ struct SettingsView: View {
                                                    label: @escaping (T) -> String, icon: ((T) -> String)? = nil,
                                                    onPick: @escaping (T) -> Void) -> some View {
         SettingsChips(options: options, selected: selected, label: label, icon: icon, onPick: onPick)
+    }
+
+    // MARK: - Customize (LiquidPad-style personalization: app interface + widget)
+
+    @ViewBuilder private var customizeDetail: some View {
+        // INTERFACE
+        card("Interface", footer: "Make the app yours. Defaults are monochrome and macOS-native; everything here is optional.") {
+            apprLabel("Presets")
+            chips(VAppr.Preset.allCases, selected: VAppr.Preset.frosted, label: { $0.rawValue }) { appearance.applyPreset($0) }
+            apprLabel("Appearance")
+            chips(VAppr.ColorMode.allCases, selected: appearance.colorMode, label: { $0.label }) { appearance.colorMode = $0 }
+            apprLabel("Glass material")
+            chips(VAppr.Material.allCases, selected: appearance.material, label: { $0.label }) { appearance.material = $0 }
+            apprLabel("Accent")
+            accentSwatches(selected: appearance.accent,
+                           customHex: appearance.accentHex,
+                           onPick: { appearance.accent = $0 },
+                           onCustom: { appearance.setCustomAccent($0) })
+            sliderRow("Blur", value: $appearance.blur, range: 0...40, suffix: "")
+            sliderRow("Corner radius", value: $appearance.cornerScale, range: 0.7...1.4, suffix: "×")
+            toggleRow("Shadow on panels", $appearance.shadow)
+            toggleRow("Reduce motion", $appearance.reduceMotion)
+        }
+
+        // WIDGET
+        card("Widget", footer: "Style the macOS Task Manager widget independently from the app.") {
+            apprLabel("Presets")
+            chips(VAppr.Preset.allCases, selected: VAppr.Preset.frosted, label: { $0.rawValue }) { appearance.applyWidgetPreset($0) }
+            apprLabel("Appearance")
+            chips(VAppr.ColorMode.allCases, selected: appearance.widgetColorMode, label: { $0.label }) { appearance.widgetColorMode = $0 }
+            apprLabel("Glass material")
+            chips(VAppr.Material.allCases, selected: appearance.widgetMaterial, label: { $0.label }) { appearance.widgetMaterial = $0 }
+            apprLabel("Accent")
+            accentSwatches(selected: appearance.widgetAccent,
+                           customHex: appearance.widgetAccentHex,
+                           onPick: { appearance.widgetAccent = $0 },
+                           onCustom: { appearance.setWidgetCustomAccent($0) })
+            sliderRow("Blur", value: $appearance.widgetBlur, range: 0...40, suffix: "")
+            sliderRow("Corner radius", value: $appearance.widgetCornerScale, range: 0.7...1.4, suffix: "×")
+            toggleRow("Shadow", $appearance.widgetShadow)
+        }
+    }
+
+    private func apprLabel(_ t: String) -> some View {
+        Text(t).font(.caption.weight(.medium)).foregroundStyle(.secondary)
+    }
+
+    private func sliderRow(_ title: String, value: Binding<Double>, range: ClosedRange<Double>, suffix: String) -> some View {
+        HStack(spacing: 10) {
+            Text(title).font(.system(size: 13)).frame(width: 110, alignment: .leading)
+            Slider(value: value, in: range)
+            Text(String(format: suffix == "×" ? "%.2f%@" : "%.0f%@", value.wrappedValue, suffix))
+                .font(.caption.monospacedDigit()).foregroundStyle(.secondary).frame(width: 44, alignment: .trailing)
+        }
+    }
+
+    /// Accent picker: monochrome + fixed colors as round swatches + a custom color well.
+    private func accentSwatches(selected: VAppr.Accent, customHex: String,
+                                onPick: @escaping (VAppr.Accent) -> Void,
+                                onCustom: @escaping (Color) -> Void) -> some View {
+        HStack(spacing: 8) {
+            ForEach(VAppr.Accent.allCases.filter { $0 != .custom }) { a in
+                let isSel = selected == a
+                Button { onPick(a) } label: {
+                    ZStack {
+                        Circle().fill(a.nsColor.map { Color(nsColor: $0) } ?? Color.primary.opacity(0.18))
+                            .frame(width: 22, height: 22)
+                        if a == .monochrome {
+                            Image(systemName: "circle.lefthalf.filled").font(.system(size: 12)).foregroundStyle(.primary)
+                        }
+                        Circle().strokeBorder(Color.primary.opacity(isSel ? 0.85 : 0.12), lineWidth: isSel ? 2 : 1)
+                            .frame(width: 24, height: 24)
+                    }
+                }.buttonStyle(.plain).help(a.label)
+            }
+            // Custom color well
+            ColorPicker("", selection: Binding(
+                get: { Color(nsColor: VAppr.resolved(.custom, hex: customHex) ?? .systemIndigo) },
+                set: { onCustom($0) }), supportsOpacity: false)
+                .labelsHidden().frame(width: 24, height: 24)
+                .overlay(Circle().strokeBorder(Color.primary.opacity(selected == .custom ? 0.85 : 0.12), lineWidth: selected == .custom ? 2 : 1).frame(width: 24, height: 24))
+                .help("Custom")
+            Spacer()
+        }
     }
 
     /// A selectable "card" for engines / backends: icon, title, subtitle, selected ring.

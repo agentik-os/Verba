@@ -119,6 +119,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         FnTap.shared.onEnter = { [weak self] in self?.fnEnter() ?? false }
         FnTap.shared.onControl = { [weak self] in InputCoach.shared.note(.control); self?.togglePause() }   // ⌃ pauses/resumes (reliable HID-tap path when Fn is primary)
         FnTap.shared.onOptionTap = { [weak self] in self?.optionTapped() }   // lone ⌥ tap while hands-free recording → next mode
+        // Esc → cancel whatever is in flight, via the reliable HID tap too (not only ChordMonitor's
+        // best-effort NSEvent global monitor): once the user's editor regains focus during the
+        // processing/polishing phase it swallows Esc before the observe-only monitor sees it, so Esc
+        // appeared dead while Verba was reprompting. The tap sees Esc at head-insert; the guard fires
+        // cancel ONLY while a recording / in-flight dictation actually exists.
+        FnTap.shared.onEscape = { [weak self] in self?.cancelEverything() }
+        FnTap.shared.escapeShouldCancel = { [weak self] in
+            guard let self else { return false }
+            return self.state != .idle
+                || SessionStore.shared.hasInflight
+                || !self.sessionTasks.isEmpty
+                || self.todoCaptureRecording
+                || NotesController.shared.isRecording
+                || self.overlay.model.menu
+                || TodoGlanceController.shared.isShowing
+                || self.reviewWindow != nil
+        }
         overlay.model.onCancel = { [weak self] in self?.cancelEverything() }
         overlay.model.onPauseToggle = { [weak self] in self?.togglePause() }
         overlay.prepare()   // warm the floating panel so it appears instantly

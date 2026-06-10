@@ -134,6 +134,22 @@ enum Pipeline {
         // run the LLM in EVERY mode — including Flow/raw and when reprompting is globally off
         // (those gates exist to keep ordinary dictation untouched, not to kill an explicit edit).
         let editingLast = editLast && !sel.isEmpty
+        // VER-15: the user picked an AI mode (NOT a raw/Flow mode) but "Rewriting with Claude" is
+        // globally OFF — so the mode's whole purpose (rewrite / translate / context / selection
+        // instruction) can't run and we'd otherwise silently paste the raw transcript, leaving the
+        // user thinking the mode did nothing. Surface a clear notice telling them to turn rewriting
+        // on, and DON'T deliver the unprocessed transcript (notice == no paste, see finish()).
+        // Edit-last is exempt: it always reprompts regardless of the global toggle (see above), so
+        // it never hits this branch.
+        if !profile.raw && !s.repromptEnabled && !editingLast {
+            return PipelineResult(
+                original: original,
+                reprompted: original,
+                profileName: profile.name,
+                profileID: profile.id,
+                engine: engineLabel(s),
+                notice: "AI rewriting is off — enable it in Settings to use “\(profile.name)”")
+        }
         // Raw/Flow mode (or reprompting off) → return the transcript untouched, no Claude —
         // EXCEPT for an explicit edit-last instruction, which always reprompts (see above).
         if (s.repromptEnabled && !profile.raw) || editingLast {

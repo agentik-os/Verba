@@ -48,6 +48,113 @@ struct WidgetTodo: Codable, Identifiable {
     }
 }
 
+// MARK: - Widget appearance (shared App-Group, read-only mirror of VAppr's WIDGET namespace)
+//
+// The widget extension links NOTHING from the app target (see the note at the
+// top of this file), so it cannot reference `VAppr`. Instead it reads the same
+// `widget.appr.*` keys VAppr writes into the shared App-Group suite. The key
+// names, raw enum orders, and defaults MUST stay byte-for-byte identical to
+// Sources/Verba/Appearance.swift (the WIDGET namespace).
+//
+// DEFAULTS REPRODUCE THE CURRENT LOOK EXACTLY: material .frosted, accent
+// .monochrome (→ .primary, no forced color), corner scale 1.0, blur 0 — so a
+// fresh install / unprovisioned App Group renders identically to before.
+
+enum WidgetAppearance {
+    /// Glass material → a translucent overlay tint. The widget can't host an
+    /// NSVisualEffectView (WidgetKit composites the widget itself), so each
+    /// material maps to an opacity over `.fill`, approximating its depth.
+    enum Material: Int {
+        case frosted = 0, soft, sidebar, hud, crystal, ultra
+        /// Opacity of the `.fill` glass overlay behind the content.
+        var fillOpacity: Double {
+            switch self {
+            case .frosted: return 1.00   // .fill.tertiary baseline (current look)
+            case .soft:    return 0.80
+            case .sidebar: return 0.90
+            case .hud:     return 1.10
+            case .crystal: return 0.55   // deep, very translucent
+            case .ultra:   return 0.40
+            }
+        }
+    }
+
+    enum Accent: Int {
+        case monochrome = 0, indigo, blue, teal, green, orange, pink, purple, custom
+        /// nil = monochrome (use `.primary`); otherwise a fixed sRGB color.
+        var color: Color? {
+            switch self {
+            case .monochrome: return nil
+            case .indigo: return Color(.sRGB, red: 0.40, green: 0.36, blue: 0.95)
+            case .blue:   return Color(.sRGB, red: 0.20, green: 0.52, blue: 1.00)
+            case .teal:   return Color(.sRGB, red: 0.13, green: 0.70, blue: 0.74)
+            case .green:  return Color(.sRGB, red: 0.18, green: 0.72, blue: 0.40)
+            case .orange: return Color(.sRGB, red: 1.00, green: 0.52, blue: 0.13)
+            case .pink:   return Color(.sRGB, red: 0.95, green: 0.30, blue: 0.55)
+            case .purple: return Color(.sRGB, red: 0.66, green: 0.34, blue: 0.92)
+            case .custom: return nil   // resolved from the stored hex by `resolvedAccent`
+            }
+        }
+    }
+
+    enum ColorMode: Int {
+        case auto = 0, light, dark
+        var colorScheme: ColorScheme? {
+            switch self {
+            case .auto:  return nil
+            case .light: return .light
+            case .dark:  return .dark
+            }
+        }
+    }
+
+    private static let cornerScaleRange: ClosedRange<Double> = 0.7...1.4
+    private static func clamp(_ v: Double, _ r: ClosedRange<Double>) -> Double {
+        Swift.min(r.upperBound, Swift.max(r.lowerBound, v))
+    }
+    private static var suite: UserDefaults? { UserDefaults(suiteName: kAppGroup) }
+
+    // Live reads from the shared suite (graceful defaults if unprovisioned).
+    static var material: Material {
+        Material(rawValue: suite?.integer(forKey: "widget.appr.material") ?? 0) ?? .frosted
+    }
+    static var accent: Accent {
+        Accent(rawValue: suite?.integer(forKey: "widget.appr.accent") ?? 0) ?? .monochrome
+    }
+    static var accentHex: String {
+        suite?.string(forKey: "widget.appr.accenthex") ?? "5b5bd6"
+    }
+    static var colorMode: ColorMode {
+        ColorMode(rawValue: suite?.integer(forKey: "widget.appr.colormode") ?? 0) ?? .auto
+    }
+    static var cornerScale: Double {
+        clamp(suite?.object(forKey: "widget.appr.cornerscale") as? Double ?? 1.0, cornerScaleRange)
+    }
+
+    /// Resolved accent as a SwiftUI Color. Monochrome (and a bad custom hex) →
+    /// nil, which callers render as `.primary` — the monochrome default look.
+    static var resolvedAccent: Color? {
+        if accent == .custom { return Color(vWidgetHex: accentHex) }
+        return accent.color
+    }
+
+    /// A base corner radius scaled by the user's preference.
+    static func corner(_ base: CGFloat) -> CGFloat { CGFloat(cornerScale) * base }
+}
+
+private extension Color {
+    /// Parse "RRGGBB" / "#RRGGBB" into an sRGB Color (nil on bad input).
+    init?(vWidgetHex hex: String) {
+        var s = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        if s.hasPrefix("#") { s.removeFirst() }
+        guard s.count == 6, let v = UInt32(s, radix: 16) else { return nil }
+        self.init(.sRGB,
+                  red: Double((v >> 16) & 0xff) / 255,
+                  green: Double((v >> 8) & 0xff) / 255,
+                  blue: Double(v & 0xff) / 255)
+    }
+}
+
 enum WidgetData {
     /// Read today's tasks from the shared App-Group defaults. Returns a static
     /// placeholder list if the app hasn't written a snapshot yet (fresh install,
@@ -156,6 +263,10 @@ private struct TodoRow: View {
     var showProject: Bool = false
     var showTime: Bool = false
     var compact: Bool = false
+    /// User accent (nil = monochrome → `.secondary` open checkbox, the default).
+    var accent: Color? = nil
+    /// Corner radius for the time chip capsule (already accent/scale-resolved).
+    var chipRadius: CGFloat = 8
 
     private var titleSize: CGFloat { compact ? 12 : 13 }
 

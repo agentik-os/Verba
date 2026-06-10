@@ -157,13 +157,16 @@ struct ModesView: View {
             VStack(alignment: .leading, spacing: 10) {
                 TextEditor(text: $genDescription)
                     .font(.system(.body, design: .default)).scrollContentBackground(.hidden)
-                    .frame(minHeight: 130).padding(12)
+                    .frame(minHeight: 130)
+                    .padding(.horizontal, 8).padding(.vertical, 10)
                     .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay(alignment: .topLeading) {
                         if genDescription.isEmpty {
+                            // Aligned to the text cursor: 8 outer pad + ~5 NSTextView lineFragmentPadding
+                            // horizontally; 10 outer pad vertically. Sits exactly on the first line.
                             Text("e.g. \u{201C}A mode for short, friendly customer-support replies that keep every detail I mention and stay polite.\u{201D}")
                                 .font(.body).foregroundStyle(.tertiary)
-                                .padding(.horizontal, 17).padding(.vertical, 20).allowsHitTesting(false)
+                                .padding(.horizontal, 13).padding(.vertical, 10).allowsHitTesting(false)
                         }
                     }
                     .disabled(genBusy)

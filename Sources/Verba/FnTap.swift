@@ -22,6 +22,16 @@ final class FnTap {
     var onEnter: (() -> Bool)?        // return / enter while menuActive
     var onControl: (() -> Void)?      // plain ⌃ tapped → pause/resume the current recording
     var onOptionTap: (() -> Void)?    // lone ⌥ tapped (no ⌃, no Fn) → switch mode while hands-free recording
+    // Esc → cancel whatever is in flight (recording OR processing/polishing). Routed through the
+    // HID tap, not only ChordMonitor's NSEvent global monitor: a global keyDown monitor is best-
+    // effort and is unreliable once another app reclaims key focus during the processing phase
+    // (the focused editor swallows Esc before the observe-only monitor sees it), which is exactly
+    // why Esc failed to cancel an in-flight dictation while Verba was polishing. The HID tap sees
+    // every key at head-insert, so this path always reaches cancel. We DON'T consume Esc (the
+    // event passes through), and `escapeShouldCancel` gates it so an Esc that has nothing to cancel
+    // is ignored — we never fire cancel on every system-wide Esc.
+    var onEscape: (() -> Void)?
+    var escapeShouldCancel: (() -> Bool)?   // true only while a recording/dictation is in flight
     var menuActive = false
 
     private var tap: CFMachPort?
@@ -153,6 +163,14 @@ final class FnTap {
         case .keyDown:
             let code = Int(event.getIntegerValueField(.keyboardEventKeycode))
             if code == 63 { return nil }                          // bare globe key
+            // Esc → cancel an in-flight dictation, reliably, INCLUDING the processing/polishing
+            // phase (the HID tap sees Esc before the focused app can swallow it). Only fires when
+            // there's actually something to cancel; never consumes the event, so Esc still works
+            // normally everywhere else.
+            if code == kVK_Escape, escapeShouldCancel?() == true {
+                if let cb = onEscape { DispatchQueue.main.async(execute: cb) }
+                return Unmanaged.passUnretained(event)
+            }
             // Fn + T → voice "add to-do" capture (Fn + § still works on ISO keyboards — the §
             // key, keycode 10, doesn't exist on ANSI/US layouts, so T is the universal default);
             // Fn + Z → record a new note (anywhere).
