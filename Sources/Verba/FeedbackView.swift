@@ -2,6 +2,25 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 
+/// Soft capsule chip label for the footer actions (exemplar chip grammar);
+/// dims itself when the wrapping Button is disabled.
+private struct ActionChip: View {
+    let title: String
+    let icon: String
+    @Environment(\.isEnabled) private var isEnabled
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon).font(.system(size: 10, weight: .semibold))
+            Text(title).font(.system(size: 12, weight: .medium))
+        }
+        .padding(.horizontal, 12).padding(.vertical, 6.5)
+        .foregroundStyle(.primary.opacity(isEnabled ? 0.75 : 0.35))
+        .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
+        .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+        .contentShape(Capsule())
+    }
+}
+
 struct FeedbackView: View {
     @State private var draft = ""
     @State private var submitting = false
@@ -51,10 +70,18 @@ struct FeedbackView: View {
                 .font(.callout).foregroundStyle(.secondary)
                 .padding(.horizontal, 28).padding(.bottom, 16)
 
+            // Quiet confirmation row (the toast is the headline feedback): doesn't
+            // push the editor around the way a full EmptyState block did.
             if sent {
-                EmptyState(icon: "checkmark.circle",
-                           title: "Thanks for the feedback",
-                           message: "We read every message. Want to send another? Just start typing below.")
+                HStack(spacing: 10) {
+                    Image(systemName: "checkmark.circle").foregroundStyle(.secondary)
+                    Text("Thanks for the feedback — we read every message. Want to send another? Just start typing below.")
+                        .font(.callout).foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 14).padding(.vertical, 11)
+                .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.04)))
+                .padding(.horizontal, 28).padding(.bottom, 12)
             }
 
             VStack(alignment: .leading, spacing: 10) {
@@ -114,7 +141,7 @@ struct FeedbackView: View {
                                 .resizable().aspectRatio(contentMode: .fill)
                                 .frame(width: 96, height: 60)
                                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(.white.opacity(0.12)))
+                                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Color.primary.opacity(0.1)))
                             Button {
                                 screenshot = nil; screenshotThumb = nil
                             } label: {
@@ -129,9 +156,9 @@ struct FeedbackView: View {
                         Text("Screenshot attached").font(.callout).foregroundStyle(.secondary)
                     } else {
                         Button { attachScreenshot() } label: {
-                            Label("Attach screenshot", systemImage: "camera.viewfinder")
+                            ActionChip(title: "Attach screenshot", icon: "camera.viewfinder")
                         }
-                        .buttonStyle(.borderless)
+                        .buttonStyle(.plain)
                         .disabled(submitting)
                         .help("Capture the current screen, or drag an image onto the editor, to attach it")
                     }
@@ -141,13 +168,14 @@ struct FeedbackView: View {
                         if improving {
                             HStack(spacing: 6) {
                                 ProgressView().controlSize(.small)
-                                Text("Improving…")
+                                Text("Improving…").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
                             }
+                            .padding(.horizontal, 12).padding(.vertical, 4.5)
                         } else {
-                            Label("Improve with AI", systemImage: "sparkles")
+                            ActionChip(title: "Improve with AI", icon: "sparkles")
                         }
                     }
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.plain)
                     .disabled(!canImprove)
                     .help("Clean up and format your feedback with AI")
                 }
@@ -192,7 +220,7 @@ struct FeedbackView: View {
                     .font(.callout.weight(.medium))
                     .padding(.horizontal, 16).padding(.vertical, 10)
                     .glass(in: Capsule())
-                    .overlay(Capsule().strokeBorder(.white.opacity(0.12)))
+                    .overlay(Capsule().strokeBorder(Color.primary.opacity(0.1)))
                     .shadow(color: .black.opacity(0.25), radius: 12, y: 4)
                     .padding(.top, 18)
                     .transition(.move(edge: .top).combined(with: .opacity))

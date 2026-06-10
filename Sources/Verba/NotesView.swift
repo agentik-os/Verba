@@ -117,16 +117,21 @@ struct NotesView: View {
 
             if entries.isEmpty {
                 Spacer()
-                VStack(spacing: 6) {
-                    Image(systemName: "note.text").font(.system(size: 24)).foregroundStyle(.tertiary)
-                    Text(filterTag == nil ? "No notes yet" : "No notes with #\(filterTag!)")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
+                EmptyState(icon: "note.text",
+                           title: filterTag == nil ? "No notes yet" : "No notes with #\(filterTag!)",
+                           message: filterTag == nil
+                               ? "Record a voice memo and Verba turns it into a clean note."
+                               : "Pick another tag, or All to see every note.")
+                    .padding(.horizontal, 14)
                 Spacer()
             } else {
                 List(selection: $selectedID) {
                     ForEach(entries) { e in
-                        noteRow(e).tag(e.id)
+                        noteRow(e)
+                            .tag(e.id)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                            .listRowInsets(EdgeInsets(top: 2, leading: 8, bottom: 2, trailing: 8))
                     }
                 }
                 .listStyle(.inset)
@@ -136,10 +141,11 @@ struct NotesView: View {
     }
 
     private func noteRow(_ e: NotesEntry) -> some View {
-        HStack(alignment: .top, spacing: 9) {
+        let selected = selectedID == e.id
+        return HStack(alignment: .top, spacing: 9) {
             Image(systemName: iconFor(e.formatName)).font(.system(size: 13))
                 .foregroundStyle(.secondary).frame(width: 16).padding(.top, 2)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(snippet(e)).font(.system(size: 13, weight: .medium)).lineLimit(1)
                 HStack(spacing: 5) {
                     Text(e.formatName).font(.caption2).foregroundStyle(.secondary)
@@ -147,13 +153,27 @@ struct NotesView: View {
                     Text(e.date.formatted(date: .abbreviated, time: .omitted)).font(.caption2).foregroundStyle(.tertiary)
                 }
                 if !e.tags.isEmpty {
-                    Text(e.tags.prefix(3).map { "#\($0)" }.joined(separator: " "))
-                        .font(.caption2).foregroundStyle(.tint).lineLimit(1)
+                    HStack(spacing: 4) {
+                        ForEach(e.tags.prefix(3), id: \.self) { t in
+                            Text("#\(t)")
+                                .font(.system(size: 9.5, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 6).padding(.vertical, 2)
+                                .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
+                                .lineLimit(1)
+                        }
+                    }
                 }
             }
             Spacer(minLength: 0)
         }
-        .padding(.vertical, 3)
+        .padding(.horizontal, 12).padding(.vertical, 9)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
+        )
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
+        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .contextMenu {
             Button(role: .destructive) { remove(e) } label: { Label("Delete", systemImage: "trash") }
         }
@@ -178,7 +198,7 @@ struct NotesView: View {
                 }
                 .frame(maxWidth: 640, alignment: .leading)
                 .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.horizontal, 36).padding(.vertical, 32)
+                .padding(.horizontal, 28).padding(.vertical, 32)
             }
         } else {
             // Full-bleed editor: header + toolbar pinned, the note fills all remaining space.
@@ -193,7 +213,7 @@ struct NotesView: View {
 
     private var intro: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("New note").font(.system(size: 26, weight: .bold))
+            Text("New note").font(.system(size: 28, weight: .bold))
             Text("Speak freely, even for an hour. Verba transcribes it and turns it into a clean, formatted document.")
                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
@@ -209,7 +229,8 @@ struct NotesView: View {
             }
             .foregroundStyle(.secondary)
             .padding(.horizontal, 9).padding(.vertical, 4)
-            .background(Capsule().fill(Color.primary.opacity(0.08)))
+            .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
+            .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
             .transition(.opacity)
         }
     }
@@ -223,7 +244,9 @@ struct NotesView: View {
                 Text(isPaused ? "Resume" : "Pause").font(.callout.weight(.medium))
             }
             .padding(.horizontal, 16).padding(.vertical, 8)
-            .background(Capsule().fill(Color.primary.opacity(0.08)))
+            .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
+            .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .help(isPaused ? "Resume recording (Control)" : "Pause recording (Control)")
@@ -247,7 +270,7 @@ struct NotesView: View {
             formatChips
         }
         .frame(maxWidth: .infinity).padding(.vertical, 32).padding(.horizontal, 24)
-        .background(card(22))
+        .glass(in: RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 
     /// A legible, persistent error when a note recording can't start (the old gray sub-flash was
@@ -261,8 +284,8 @@ struct NotesView: View {
             }
             .foregroundStyle(Color.red)
             HStack(spacing: 10) {
-                Button("Retry") { recordError = ""; toggleRecord() }.buttonStyle(.borderedProminent).tint(.red)
-                Button("Dismiss") { recordError = "" }.buttonStyle(.bordered)
+                Button("Retry") { recordError = ""; toggleRecord() }.glassProminentButton().tint(.red)
+                Button("Dismiss") { recordError = "" }.glassButton()
             }
             .controlSize(.small)
         }
@@ -295,13 +318,14 @@ struct NotesView: View {
     /// Free-form instruction for the Intent note mode: a one-off directive shaping THIS note.
     private var intentField: some View {
         HStack(spacing: 8) {
-            Image(systemName: "wand.and.rays").foregroundStyle(.secondary)
+            Image(systemName: "wand.and.rays").font(.system(size: 12)).foregroundStyle(.secondary)
+            Divider().frame(height: 12)
             TextField("How should this note be shaped? (e.g. \u{201C}as a bug report\u{201D})", text: $intentText)
                 .textFieldStyle(.plain)
                 .onSubmit { if !transcript.isEmpty { applyFormat() } }
         }
         .padding(.horizontal, 12).padding(.vertical, 9)
-        .background(card(10))
+        .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
         .frame(maxWidth: 460)
     }
 
@@ -310,6 +334,9 @@ struct NotesView: View {
             ProgressView().controlSize(.small)
             Text(status.isEmpty ? "Working…" : status).font(.callout).foregroundStyle(.secondary)
         }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.04)))
     }
 
     private var noteEditor: some View {
@@ -325,9 +352,17 @@ struct NotesView: View {
                     Divider()
                     Button { showModeManager = true } label: { Label("Manage modes…", systemImage: "slider.horizontal.3") }
                 } label: {
-                    Label(format.name, systemImage: format.icon).font(.headline)
+                    HStack(spacing: 6) {
+                        Image(systemName: format.icon).font(.system(size: 11, weight: .semibold))
+                        Text(format.name).font(.system(size: 13, weight: .semibold))
+                        Image(systemName: "chevron.up.chevron.down").font(.system(size: 9, weight: .semibold)).foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 11).padding(.vertical, 5.5)
+                    .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
+                    .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                    .contentShape(Capsule())
                 }
-                .menuStyle(.borderlessButton).fixedSize()
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
                 .help("Change format (re-organizes from your words)")
 
                 Spacer(minLength: 8)
@@ -350,7 +385,7 @@ struct NotesView: View {
                 HStack(spacing: 10) {
                     Circle().fill(isPaused ? .orange : .red).frame(width: 8, height: 8)
                     Text(isPaused ? "Paused… \(timeString(elapsed))" : "Recording more… \(timeString(elapsed)) · tap the mic to stop")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.caption).monospacedDigit().foregroundStyle(.secondary)
                     Button { togglePauseNote() } label: {
                         Image(systemName: isPaused ? "play.fill" : "pause.fill").font(.system(size: 11))
                     }.buttonStyle(.borderless).help(isPaused ? "Resume (Control)" : "Pause (Control)")
@@ -417,12 +452,14 @@ struct NotesView: View {
                                 .buttonStyle(.plain).foregroundStyle(.secondary)
                         }
                         .padding(.horizontal, 9).padding(.vertical, 4)
-                        .background(Capsule().fill(Color.primary.opacity(0.08)))
+                        .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
+                        .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
                     }
                 }
             }
             HStack(spacing: 8) {
-                Image(systemName: "number").foregroundStyle(.secondary)
+                Image(systemName: "number").font(.system(size: 12)).foregroundStyle(.secondary)
+                Divider().frame(height: 12)
                 TextField("Add tags (press Enter)", text: $tagInput)
                     .textFieldStyle(.plain)
                     .onSubmit {
@@ -431,7 +468,7 @@ struct NotesView: View {
                     }
             }
             .padding(.horizontal, 12).padding(.vertical, 8)
-            .background(card(10))
+            .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
     }
 
@@ -442,15 +479,21 @@ struct NotesView: View {
     }
 
     @ViewBuilder private func chip(label: String, icon: String?, on: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { action() }
+        } label: {
             HStack(spacing: 5) {
-                if let icon { Image(systemName: icon) }
-                Text(label)
+                if let icon { Image(systemName: icon).font(.system(size: 10, weight: .semibold)) }
+                Text(label).font(.system(size: 12, weight: on ? .semibold : .medium))
             }
-            .font(.system(size: 12.5, weight: on ? .semibold : .regular))
-            .padding(.horizontal, 12).padding(.vertical, 7)
-            .background(Capsule().fill(on ? Color.primary : Color.primary.opacity(0.07)))
-            .foregroundStyle(on ? AnyShapeStyle(Color(nsColor: .windowBackgroundColor)) : AnyShapeStyle(.primary))
+            .padding(.horizontal, 12).padding(.vertical, 6.5)
+            .foregroundStyle(on ? AnyShapeStyle(.background) : AnyShapeStyle(.primary.opacity(0.75)))
+            .background(
+                Capsule(style: .continuous)
+                    .fill(on ? AnyShapeStyle(Color.primary) : AnyShapeStyle(Color.primary.opacity(0.055)))
+            )
+            .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(on ? 0 : 0.09), lineWidth: 1))
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
     }

@@ -14,39 +14,29 @@ struct ModesView: View {
     var body: some View {
         HStack(spacing: 0) {
             VStack(spacing: 0) {
-                List(selection: $selectedID) {
-                    ForEach(settings.profiles) { p in
-                        HStack(spacing: 8) {
-                            Image(systemName: p.raw ? "waveform" : "wand.and.stars")
-                                .foregroundStyle(.secondary).frame(width: 16)
-                            Text(p.name).lineLimit(1)
-                            Spacer(minLength: 6)
-                            if p.id == settings.activeProfileID {
-                                Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint).font(.caption)
-                            }
-                            if let c = p.hotkeyCode, let m = p.hotkeyMods {
-                                keycap(shortcutLabel(keyCode: c, modifiers: m))
-                            }
-                        }
-                        .padding(.vertical, 3)
-                        .tag(p.id)
-                    }
-                    .onMove { from, to in settings.profiles.move(fromOffsets: from, toOffset: to) }
-                }
-                .listStyle(.inset)
-                .scrollContentBackground(.hidden)
-                HStack(spacing: 14) {
-                    Button { genError = nil; genDescription = ""; showGenerator = true } label: { Label("New", systemImage: "plus") }
+                // Management lives at the top of the pane, as quiet borderless icons.
+                HStack(spacing: 12) {
+                    Spacer()
+                    Button { genError = nil; genDescription = ""; showGenerator = true } label: { Image(systemName: "plus") }
                         .disabled(!settings.isPro)
                         .help(settings.isPro ? "Describe a mode and let Verba build it" : "Custom modes are a Pro feature")
-                    Spacer()
                     Button { settings.resetProfilesToDefaults(); selectedID = settings.activeProfileID } label: {
-                        Label("Reset defaults", systemImage: "arrow.counterclockwise")
+                        Image(systemName: "arrow.counterclockwise")
                     }.help("Restore Flow / Intent / Context / Coding / Translate / Custom")
                 }
                 .buttonStyle(.borderless)
-                .font(.callout)
-                .padding(.horizontal, 14).padding(.vertical, 9).padding(.bottom, 4)
+                .padding(.horizontal, 14).padding(.top, 10).padding(.bottom, 4)
+                List {
+                    ForEach(settings.profiles) { p in
+                        modeRow(p)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                            .listRowInsets(EdgeInsets(top: 2, leading: 6, bottom: 2, trailing: 6))
+                    }
+                    .onMove { from, to in settings.profiles.move(fromOffsets: from, toOffset: to) }
+                }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
             }
             .frame(width: 232)
 
@@ -54,14 +44,72 @@ struct ModesView: View {
                 if let id = selectedID, settings.profiles.contains(where: { $0.id == id }) {
                     editor(id: id)
                 } else {
-                    ContentUnavailableView("Select a mode", systemImage: "wand.and.stars",
-                                           description: Text("Each mode is a different way Claude reorders and improves your dictation."))
+                    EmptyState(icon: "wand.and.stars", title: "Select a mode",
+                               message: "Each mode is a different way Claude reorders and improves your dictation.")
+                        .frame(maxHeight: .infinity)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear { if selectedID == nil { selectedID = settings.activeProfileID } }
         .sheet(isPresented: $showGenerator) { generatorSheet }
+    }
+
+    // MARK: Sidebar rows — exemplar cards (0.04 fill, selected 0.12 + 0.4 stroke), spring select.
+    private func modeRow(_ p: Profile) -> some View {
+        let selected = p.id == selectedID
+        return HStack(spacing: 8) {
+            Image(systemName: p.raw ? "waveform" : "wand.and.stars")
+                .foregroundStyle(.secondary).frame(width: 16)
+            Text(p.name).fontWeight(selected ? .semibold : .regular).lineLimit(1)
+            Spacer(minLength: 6)
+            if p.id == settings.activeProfileID {
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint).font(.caption)
+            }
+            modelPill(p)
+            if let c = p.hotkeyCode, let m = p.hotkeyMods {
+                keycap(shortcutLabel(keyCode: c, modifiers: m))
+            }
+        }
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
+        )
+        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
+        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .onTapGesture {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { selectedID = p.id }
+        }
+    }
+
+    /// The model that actually rewrites this mode, as a quiet mono pill (backend-aware,
+    /// mirrors the editor's Model field logic).
+    private func modelPill(_ p: Profile) -> some View {
+        Text(modelPillLabel(p))
+            .font(.system(size: 10, design: .monospaced))
+            .lineLimit(1)
+            .padding(.horizontal, 6).padding(.vertical, 2)
+            .background(.softFill, in: Capsule())
+            .foregroundStyle(.secondary)
+    }
+
+    private func modelPillLabel(_ p: Profile) -> String {
+        if p.raw { return "raw" }
+        switch settings.repromptBackend {
+        case .localLLM:
+            return shortModelName(settings.localLLMModel)
+        case .openRouter:
+            return settings.openRouterModel.isEmpty ? "openrouter" : shortModelName(settings.openRouterModel)
+        default:
+            let m = p.model ?? ""
+            return shortModelName(m.isEmpty ? settings.claudeModel : m)
+        }
+    }
+
+    private func shortModelName(_ m: String) -> String {
+        m.hasPrefix("claude-") ? String(m.dropFirst("claude-".count)) : m
     }
 
     // MARK: New mode assistant — describe a need (typed or dictated), Verba builds the mode.
@@ -160,10 +208,10 @@ struct ModesView: View {
                 // Name + actions (delete right next to the name; any mode is deletable).
                 HStack(spacing: 10) {
                     TextField("Name", text: nameB).cleanField().frame(maxWidth: 240)
-                    Button { settings.activeProfileID = id } label: {
-                        Label(isActive ? "Active" : "Make active", systemImage: isActive ? "checkmark.circle.fill" : "circle")
-                    }
-                    .buttonStyle(.borderless).disabled(isActive)
+                    TagChip(icon: isActive ? "checkmark.circle.fill" : "circle",
+                            label: isActive ? "Active" : "Make active",
+                            selected: isActive) { settings.activeProfileID = id }
+                        .disabled(isActive)
                     Spacer()
                     Button(role: .destructive) { deleteProfile(id) } label: {
                         Image(systemName: "trash")
@@ -212,13 +260,16 @@ struct ModesView: View {
                         }
                     default:
                         field("Model", hint: "which Claude model rewrites this mode (Anthropic / Claude Code)") {
-                            Picker("", selection: modelB) {
-                                Text("Default (\(settings.claudeModel))").tag("")
-                                Text("Haiku 4.5, fastest, cheapest").tag("claude-haiku-4-5")
-                                Text("Sonnet 4.6, balanced").tag("claude-sonnet-4-6")
-                                Text("Opus 4.8, most capable").tag("claude-opus-4-8")
+                            HStack(spacing: 8) {
+                                TagChip(label: "Default", selected: modelB.wrappedValue == "") { modelB.wrappedValue = "" }
+                                    .help("App-wide default (\(settings.claudeModel))")
+                                TagChip(label: "Haiku 4.5", selected: modelB.wrappedValue == "claude-haiku-4-5") { modelB.wrappedValue = "claude-haiku-4-5" }
+                                    .help("Fastest, cheapest")
+                                TagChip(label: "Sonnet 4.6", selected: modelB.wrappedValue == "claude-sonnet-4-6") { modelB.wrappedValue = "claude-sonnet-4-6" }
+                                    .help("Balanced")
+                                TagChip(label: "Opus 4.8", selected: modelB.wrappedValue == "claude-opus-4-8") { modelB.wrappedValue = "claude-opus-4-8" }
+                                    .help("Most capable")
                             }
-                            .labelsHidden().pickerStyle(.menu).frame(maxWidth: 320, alignment: .leading)
                         }
                     }
                 }

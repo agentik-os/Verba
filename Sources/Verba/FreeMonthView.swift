@@ -20,9 +20,16 @@ struct FreeMonthView: View {
                     HStack {
                         Text(settings.referralLink).font(.system(.callout, design: .monospaced)).lineLimit(1).truncationMode(.middle)
                         Spacer()
-                        Button(copied ? "Copied ✓" : "Copy link") {
-                            let pb = NSPasteboard.general; pb.clearContents(); pb.setString(settings.referralLink, forType: .string); copied = true
-                        }.glassProminentButton().tint(.accentColor)
+                        Button {
+                            let pb = NSPasteboard.general; pb.clearContents(); pb.setString(settings.referralLink, forType: .string)
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.55)) { copied = true }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
+                                withAnimation(.easeOut(duration: 0.2)) { copied = false }
+                            }
+                        } label: {
+                            Label(copied ? "Copied" : "Copy link", systemImage: copied ? "checkmark" : "doc.on.doc")
+                        }
+                        .glassProminentButton().tint(.accentColor)
                     }
                     .padding(12).frame(maxWidth: .infinity)
                     .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -33,7 +40,7 @@ struct FreeMonthView: View {
                     }
                 }
                 .padding(18).frame(maxWidth: .infinity, alignment: .leading)
-                .background(.softFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
                 // How it works
                 VStack(alignment: .leading, spacing: 12) {

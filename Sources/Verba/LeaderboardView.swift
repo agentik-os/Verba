@@ -123,20 +123,30 @@ struct LeaderboardView: View {
         HStack(spacing: 12) {
             Image(systemName: "person.crop.circle.fill")
                 .font(.system(size: 22)).foregroundStyle(.secondary)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text("Your public alias").font(.caption).foregroundStyle(.secondary)
-                HStack(spacing: 6) {
+                HStack(spacing: 8) {
                     TextField("Alias", text: $settings.username)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 13, weight: .semibold))
                         .focused($aliasFocused)
                         .onSubmit { aliasFocused = false; model.reloadSoon() }
+                    Divider().frame(height: 12)
                     Button {
                         settings.username = Settings.randomAlias()
                         model.reloadSoon()
-                    } label: { Image(systemName: "shuffle").font(.system(size: 11)) }
-                        .buttonStyle(.borderless).help("Shuffle a new alias")
+                    } label: {
+                        Image(systemName: "shuffle")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 18, height: 18)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.borderless).help("Shuffle a new alias")
                 }
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(.softFill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .frame(maxWidth: 260)
             }
             Spacer()
             Toggle(isOn: $settings.showOnLeaderboard) {

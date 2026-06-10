@@ -50,15 +50,20 @@ struct FileTranscribeView: View {
 
             if entries.isEmpty {
                 Spacer()
-                VStack(spacing: 6) {
-                    Image(systemName: "waveform").font(.system(size: 24)).foregroundStyle(.tertiary)
+                VStack(spacing: 8) {
+                    Image(systemName: "waveform").font(.system(size: 26)).foregroundStyle(.tertiary)
                     Text(filterTag == nil ? "No transcripts yet" : "No transcripts with #\(filterTag!)")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.callout.weight(.medium)).foregroundStyle(.secondary)
+                    Text(filterTag == nil ? "Files you transcribe are saved here."
+                                          : "Pick another tag, or clear the filter.")
+                        .font(.caption).foregroundStyle(.tertiary)
+                        .multilineTextAlignment(.center)
                 }
+                .padding(.horizontal, 16)
                 Spacer()
             } else {
                 List(selection: $selectedID) {
-                    ForEach(entries) { e in row(e).tag(e.id) }
+                    ForEach(entries) { e in row(e).tag(e.id).listRowSeparator(.hidden) }
                 }
                 .listStyle(.inset)
                 .scrollContentBackground(.hidden)
@@ -124,6 +129,17 @@ struct FileTranscribeView: View {
                 dropZone
 
                 if state == "error" { Text(error).font(.callout).foregroundStyle(.red) }
+
+                // Explicit loading state: while a file is being transcribed the body
+                // shows a centered progress block instead of going blank.
+                if state == "working" {
+                    VStack(spacing: 10) {
+                        ProgressView()
+                        Text(fileName.isEmpty ? "Transcribing…" : "Transcribing \(fileName)…")
+                            .font(.callout).foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity).padding(.top, 40)
+                }
 
                 if result.isEmpty && state != "working" {
                     EmptyState(icon: "waveform.badge.plus", title: "No file transcribed yet",
@@ -242,12 +258,19 @@ struct FileTranscribeView: View {
     }
 
     private func tagChip(label: String, on: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { action() }
+        } label: {
             Text(label)
-                .font(.system(size: 12.5, weight: on ? .semibold : .regular))
-                .padding(.horizontal, 12).padding(.vertical, 7)
-                .background(Capsule().fill(on ? Color.primary : Color.primary.opacity(0.07)))
-                .foregroundStyle(on ? AnyShapeStyle(Color(nsColor: .windowBackgroundColor)) : AnyShapeStyle(.primary))
+                .font(.system(size: 12.5, weight: on ? .semibold : .medium))
+                .padding(.horizontal, 12).padding(.vertical, 6.5)
+                .foregroundStyle(on ? AnyShapeStyle(.background) : AnyShapeStyle(.primary.opacity(0.75)))
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(on ? AnyShapeStyle(Color.primary) : AnyShapeStyle(Color.primary.opacity(0.055)))
+                )
+                .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(on ? 0 : 0.09), lineWidth: 1))
+                .contentShape(Capsule())
         }
         .buttonStyle(.plain)
     }

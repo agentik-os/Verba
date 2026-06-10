@@ -6,12 +6,26 @@ final class WishlistModel: ObservableObject {
     func load() { loading = true; Wishlist.list { [weak self] in self?.items = $0; self?.loading = false } }
 }
 
+private enum WishFilter: String, CaseIterable, Identifiable {
+    case all = "All", shipped = "Shipped"
+    var id: String { rawValue }
+    var icon: String {
+        switch self { case .all: "lightbulb"; case .shipped: "checkmark.seal" }
+    }
+}
+
 struct WishlistView: View {
     @StateObject private var model = WishlistModel()
     @State private var draft = ""
     @State private var expanded: Set<String> = []
     @State private var commentDrafts: [String: String] = [:]
     @State private var posting: Set<String> = []
+    @State private var filter: WishFilter = .all
+
+    // Pure presentation filter over the loaded items — no store calls.
+    private var visibleItems: [WishItem] {
+        filter == .all ? model.items : model.items.filter { $0.shipped }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -31,27 +45,61 @@ struct WishlistView: View {
                     .background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .onSubmit(submit)
                 Button("Add", action: submit)
-                    .buttonStyle(.borderedProminent).tint(.primary)
+                    .glassProminentButton().tint(.primary)
                     .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
             }
             .padding(.horizontal, 28).padding(.bottom, 12)
+
+            filterChips
+                .padding(.horizontal, 28).padding(.bottom, 12)
 
             if model.loading {
                 ProgressView().frame(maxWidth: .infinity).padding(.top, 30)
             } else if model.items.isEmpty {
                 EmptyState(icon: "lightbulb", title: "No suggestions yet",
                            message: "Tell us what Verba should do next. Post a feature idea, others can upvote it, and the most-wanted ones get built. Be the first to suggest one above.")
+            } else if visibleItems.isEmpty {
+                Text("Nothing shipped yet — the most upvoted ideas get built first.")
+                    .font(.callout).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity).padding(.top, 30)
             }
 
             ScrollView {
                 LazyVStack(spacing: 8) {
-                    ForEach(model.items) { item in row(item) }
+                    ForEach(visibleItems) { item in row(item) }
                 }
                 .padding(.horizontal, 28).padding(.bottom, 18)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear { model.load() }
+    }
+
+    // Capsule tag chips (exemplar grammar) — client-side All / Shipped switch.
+    private var filterChips: some View {
+        HStack(spacing: 8) {
+            ForEach(WishFilter.allCases) { f in
+                let selected = filter == f
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { filter = f }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: f.icon).font(.system(size: 10, weight: .semibold))
+                        Text(f.rawValue).font(.system(size: 12, weight: selected ? .semibold : .medium))
+                    }
+                    .padding(.horizontal, 12).padding(.vertical, 6.5)
+                    .foregroundStyle(selected ? AnyShapeStyle(.background) : AnyShapeStyle(.primary.opacity(0.75)))
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(selected ? AnyShapeStyle(Color.primary) : AnyShapeStyle(Color.primary.opacity(0.055)))
+                    )
+                    .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(selected ? 0 : 0.09), lineWidth: 1))
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer()
+        }
     }
 
     private func submit() {
@@ -72,7 +120,7 @@ struct WishlistView: View {
                     VStack(spacing: 1) {
                         Image(systemName: shipped ? "checkmark.circle.fill"
                               : (voted ? "arrowtriangle.up.fill" : "arrowtriangle.up"))
-                        Text("\(Int(item.votes))").font(.caption.weight(.semibold))
+                        Text("\(Int(item.votes))").font(.caption.weight(.semibold)).monospacedDigit()
                     }
                     .frame(width: 46)
                     .foregroundStyle(shipped ? AnyShapeStyle(.green)
@@ -117,7 +165,7 @@ struct WishlistView: View {
     private func commentBadge(_ item: WishItem, open: Bool) -> some View {
         HStack(spacing: 4) {
             Image(systemName: "bubble.left").font(.caption)
-            Text("\(item.commentCount)").font(.caption.weight(.medium))
+            Text("\(item.commentCount)").font(.caption.weight(.medium)).monospacedDigit()
             Image(systemName: "chevron.down")
                 .font(.system(size: 9, weight: .semibold))
                 .rotationEffect(.degrees(open ? 180 : 0))
@@ -149,6 +197,8 @@ struct WishlistView: View {
                         Text(c.text).font(.callout).fixedSize(horizontal: false, vertical: true)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 10).padding(.vertical, 8)
+                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.primary.opacity(0.04)))
                 }
             }
 
@@ -158,8 +208,11 @@ struct WishlistView: View {
                     .padding(.horizontal, 10).padding(.vertical, 7)
                     .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                     .onSubmit { postComment(item.id) }
+                if posting.contains(item.id) {
+                    ProgressView().controlSize(.small)
+                }
                 Button("Post") { postComment(item.id) }
-                    .buttonStyle(.bordered)
+                    .glassButton()
                     .disabled(
                         posting.contains(item.id) ||
                         (commentDrafts[item.id]?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)

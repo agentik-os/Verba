@@ -130,7 +130,7 @@ struct TodoGlanceView: View {
             if let d = row.deadline {
                 HStack(spacing: 3) {
                     Image(systemName: "clock").font(.system(size: 9))
-                    Text(deadlineLabel(d)).font(.system(size: 10, weight: .medium))
+                    Text(deadlineLabel(d)).font(.system(size: 10, weight: .medium)).monospacedDigit()
                 }
                 .foregroundStyle(row.overdue ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
                 .padding(.horizontal, 7).padding(.vertical, 3)
@@ -151,18 +151,20 @@ struct TodoGlanceView: View {
         return order.map { ($0, map[$0] ?? []) }
     }
 
-    /// Compact deadline: "Today HH:mm" for today, "EEE HH:mm" within ~6 days, else "MMM d, HH:mm".
+    /// Compact deadline: "Today 15:00" for today, "Fri 15:00" within ~6 days, else "Jun 12, 15:00".
+    /// Locale-aware: 12/24-hour follows the user's locale via the localized format template.
     private func deadlineLabel(_ d: Date) -> String {
         let cal = Calendar.current
         let f = DateFormatter()
         f.locale = Locale.current
         if cal.isDateInToday(d) {
-            f.dateFormat = "'Today' HH:mm"
+            f.setLocalizedDateFormatFromTemplate("jmm")
+            return "Today " + f.string(from: d)
         } else if let days = cal.dateComponents([.day], from: cal.startOfDay(for: Date()), to: cal.startOfDay(for: d)).day,
                   days >= 0, days <= 6 {
-            f.dateFormat = "EEE HH:mm"
+            f.setLocalizedDateFormatFromTemplate("EEE jmm")
         } else {
-            f.dateFormat = "MMM d, HH:mm"
+            f.setLocalizedDateFormatFromTemplate("MMM d jmm")
         }
         return f.string(from: d)
     }

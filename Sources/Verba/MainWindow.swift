@@ -38,6 +38,37 @@ struct VerbaMark: View {
     }
 }
 
+/// One sidebar nav row: selected = primary pill with inverted label (adapts to
+/// light/dark), idle rows get a quiet soft-fill on hover. Same Button, same action.
+private struct SidebarRow: View {
+    let item: NavItem
+    let isSelected: Bool
+    let action: () -> Void
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: item.icon).frame(width: 18)
+                Text(item.title)
+                Spacer(minLength: 0)
+            }
+            .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+            .foregroundStyle(isSelected ? AnyShapeStyle(.background) : AnyShapeStyle(Color.primary))
+            .padding(.horizontal, 11).padding(.vertical, 9)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isSelected ? AnyShapeStyle(Color.primary)
+                          : (hovered ? AnyShapeStyle(Color.primary.opacity(0.055)) : AnyShapeStyle(Color.clear)))
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .onHover { hovered = $0 }
+        .animation(.easeOut(duration: 0.12), value: hovered)
+    }
+}
+
 /// The main, dockable window: a fixed left sidebar (always visible) + detail.
 /// The sidebar is flush to the window edge and the traffic lights sit over its
 /// top. No collapse control. Solid white backgrounds.
@@ -176,7 +207,7 @@ struct MainWindow: View {
                 }
             }
             .padding(10)
-            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.accentColor.opacity(0.12)))
+            .glass(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .padding(.horizontal, 8).padding(.bottom, 6)
         }
     }
@@ -203,21 +234,20 @@ struct MainWindow: View {
         }
     }
 
-    /// A nav row. Selected = solid black pill with white text so it clearly stands out.
     /// A collapsible group header ("Library", "Community") with a rotating chevron.
     private func groupHeader(_ title: String, collapsed: Bool, toggle: @escaping () -> Void) -> some View {
         Button(action: toggle) {
             HStack(spacing: 4) {
                 Text(title).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 8, weight: .bold)).foregroundStyle(.tertiary)
+                    .font(.system(size: 9, weight: .semibold)).foregroundStyle(.tertiary)
                     .rotationEffect(.degrees(collapsed ? 0 : 90))
                 Spacer(minLength: 0)
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 4)
+        .padding(.horizontal, 11).padding(.top, 14).padding(.bottom, 4)
     }
 
     /// Telegram community link, styled like a sidebar row.
@@ -238,25 +268,12 @@ struct MainWindow: View {
         .help("Join the Verba community on Telegram (@verba_run)")
     }
 
+    /// A nav row. Selected = solid primary pill with inverted label, so it stands
+    /// out in light AND dark mode (primary/background flip with the appearance).
     private func row(_ item: NavItem) -> some View {
-        let isSel = selection == item
-        return Button { selection = item } label: {
-            HStack(spacing: 10) {
-                Image(systemName: item.icon).frame(width: 18)
-                Text(item.title)
-                Spacer(minLength: 0)
-            }
-            .font(.system(size: 13, weight: isSel ? .semibold : .regular))
-            .foregroundStyle(isSel ? Color.white : Color.primary)
-            .padding(.horizontal, 11).padding(.vertical, 9)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(isSel ? Color.black : Color.clear)
-                    .shadow(color: .black.opacity(isSel ? 0.18 : 0), radius: 3, y: 1)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        SidebarRow(item: item, isSelected: selection == item) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { selection = item }
         }
-        .buttonStyle(.plain)
     }
 
     private var sidebarFooter: some View {
@@ -286,7 +303,7 @@ struct MainWindow: View {
         }
         .padding(.horizontal, 10).padding(.vertical, 8)
         .frame(maxWidth: .infinity)
-        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(.quaternary.opacity(0.4)))
+        .background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .padding(.horizontal, 10).padding(.vertical, 10)
         .onAppear { if !settings.proEmail.isEmpty { Task { _ = await settings.verifyPro() } } }
     }

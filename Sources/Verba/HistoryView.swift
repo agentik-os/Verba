@@ -34,6 +34,7 @@ struct HistoryView: View {
 
     // List card showing full text (the detail "Adapt" panel manages its own state).
     @State private var expandedCard: HistoryEntry.ID?
+    @State private var hoveredCard: HistoryEntry.ID?   // hover-revealed card actions
 
     private var filtered: [HistoryEntry] {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -49,13 +50,18 @@ struct HistoryView: View {
         HStack(spacing: 0) {
             // List column, block cards, no separator lines.
             VStack(spacing: 0) {
+                // 20px inset (not the 28px grammar): the 340pt sidebar would starve the cards.
                 HStack {
-                    Text("History").font(.system(size: 26, weight: .bold))
+                    Text("History").font(.system(size: 28, weight: .bold))
                     Spacer()
                     Button(role: .destructive) { audio.stop(); history.clear() } label: { Image(systemName: "trash") }
                         .buttonStyle(.borderless).help("Clear all")
                 }
-                .padding(.horizontal, 18).padding(.top, 24).padding(.bottom, 10)
+                .padding(.horizontal, 20).padding(.top, 26).padding(.bottom, 2)
+                Text("Search, replay, and re-adapt past dictations.")
+                    .font(.callout).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20).padding(.bottom, 12)
 
                 // Search field.
                 HStack(spacing: 7) {
@@ -69,22 +75,27 @@ struct HistoryView: View {
                 }
                 .padding(.horizontal, 10).padding(.vertical, 7)
                 .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                .padding(.horizontal, 14).padding(.bottom, 10)
+                .padding(.horizontal, 20).padding(.bottom, 10)
 
                 ScrollView {
                     LazyVStack(spacing: 8) {
                         let items = filtered
                         if items.isEmpty {
-                            Text(query.isEmpty ? "No dictations yet." : "No matches for “\(query)”.")
-                                .font(.callout).foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity).padding(.top, 30)
+                            if query.isEmpty {
+                                EmptyState(icon: "clock.arrow.circlepath", title: "No dictations yet",
+                                           message: "Every dictation you make lands here, searchable, replayable, and re-adaptable.")
+                            } else {
+                                Text("No matches for “\(query)”.")
+                                    .font(.callout).foregroundStyle(.secondary)
+                                    .frame(maxWidth: .infinity).padding(.top, 30)
+                            }
                         }
                         ForEach(items) { e in
                             Button { selection = e.id } label: { card(e, selected: e.id == selection) }
                                 .buttonStyle(.plain)
                         }
                     }
-                    .padding(.horizontal, 14).padding(.bottom, 16)
+                    .padding(.horizontal, 20).padding(.bottom, 16)
                 }
             }
             .frame(width: 340)
@@ -94,7 +105,9 @@ struct HistoryView: View {
                 if let e = history.entries.first(where: { $0.id == selection }) {
                     detail(e)
                 } else {
-                    ContentUnavailableView("Select a dictation", systemImage: "clock.arrow.circlepath")
+                    EmptyState(icon: "clock.arrow.circlepath", title: "Select a dictation",
+                               message: "Pick an entry on the left to read, replay, or re-adapt it.")
+                        .frame(maxHeight: .infinity)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -124,20 +137,51 @@ struct HistoryView: View {
                 }
                 .buttonStyle(.plain)
             }
-            Text("\(e.date.formatted(date: .abbreviated, time: .shortened)) · \(e.profileName)")
-                .font(.caption2).foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                Text(e.date.formatted(date: .abbreviated, time: .shortened))
+                    .font(.caption2).foregroundStyle(.secondary).monospacedDigit()
+                Text(e.profileName)
+                    .font(.caption2.weight(.medium))
+                    .padding(.horizontal, 6).padding(.vertical, 1.5)
+                    .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.08)))
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(selected ? Color.primary.opacity(0.12) : Color.primary.opacity(0.05))
+                .fill(selected ? Color.primary.opacity(0.12) : Color.primary.opacity(0.04))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Color.primary.opacity(selected ? 0.45 : 0), lineWidth: 1)
+                .strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1)
         )
-        .contentShape(RoundedRectangle(cornerRadius: 12))
+        // Hover-revealed quick actions: copy / delete without selecting the row first.
+        .overlay(alignment: .topTrailing) {
+            if hoveredCard == e.id {
+                HStack(spacing: 4) {
+                    CopyButton(text: full)
+                    Button {
+                        audio.stop(); history.delete(e)
+                        if selection == e.id { selection = nil }
+                    } label: { Image(systemName: "trash").font(.system(size: 11)) }
+                    .buttonStyle(.borderless).foregroundStyle(.secondary)
+                    .help("Delete this dictation")
+                }
+                .padding(.horizontal, 7).padding(.vertical, 4)
+                .background(.ultraThinMaterial, in: Capsule(style: .continuous))
+                .padding(6)
+                .transition(.opacity)
+            }
+        }
+        .onHover { inside in
+            withAnimation(.easeInOut(duration: 0.12)) {
+                if inside { hoveredCard = e.id }
+                else if hoveredCard == e.id { hoveredCard = nil }
+            }
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private func detail(_ e: HistoryEntry) -> some View {
@@ -145,26 +189,46 @@ struct HistoryView: View {
             VStack(alignment: .leading, spacing: 14) {
                 section("Restructured (Claude)", e.reprompted)
                 section("Raw transcript", e.original)
-                HStack {
+                // Action toolbar: borderless icons in one soft row, no stock bordered buttons.
+                HStack(spacing: 10) {
                     if let url = history.audioURL(for: e) {
                         let playing = audio.playingURL == url
                         Button { audio.toggle(url) } label: {
-                            Label(playing ? "Stop" : "Play audio", systemImage: playing ? "stop.circle" : "play.circle")
+                            Image(systemName: playing ? "stop.circle" : "play.circle")
+                                .font(.system(size: 14, weight: .medium))
                         }
+                        .buttonStyle(.borderless)
+                        .help(playing ? "Stop playback" : "Play audio")
                         Button { exportAudio(url) } label: {
-                            Label("Download audio", systemImage: "square.and.arrow.down")
+                            Image(systemName: "square.and.arrow.down")
+                                .font(.system(size: 13, weight: .medium))
                         }
+                        .buttonStyle(.borderless)
                         .help("Save this recording to your Mac so you can re-import it into Transcribe file")
+                        Divider().frame(height: 12)
                     }
                     if rerunning {
-                        ProgressView().controlSize(.small); Text("Re-running…").font(.caption).foregroundStyle(.secondary)
+                        ProgressView().controlSize(.small)
+                        Text("Re-running…").font(.caption).foregroundStyle(.secondary)
                     } else {
-                        Button { rerun(e) } label: { Label("Re-run with Claude", systemImage: "arrow.clockwise") }
-                            .help("Restructure the raw transcript again")
+                        Button { rerun(e) } label: {
+                            Image(systemName: "arrow.clockwise").font(.system(size: 13, weight: .medium))
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Re-run with Claude: restructure the raw transcript again")
                     }
                     Spacer()
-                    Button(role: .destructive) { audio.stop(); history.delete(e); selection = nil } label: { Label("Delete", systemImage: "trash") }
+                    Button(role: .destructive) { audio.stop(); history.delete(e); selection = nil } label: {
+                        Image(systemName: "trash").font(.system(size: 13, weight: .medium))
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Delete this dictation")
                 }
+                .padding(.horizontal, 14).padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.primary.opacity(0.04))
+                )
 
                 AdaptPanel(source: e.reprompted.isEmpty ? e.original : e.reprompted)
                     .id(e.id)   // reset the panel's state when switching entry
@@ -208,11 +272,16 @@ struct HistoryView: View {
                 Spacer()
                 CopyButton(text: body)
             }
-            Text(body.isEmpty ? ", " : body)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(14)
-                .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            Group {
+                if body.isEmpty {
+                    Text("Nothing here for this entry.").foregroundStyle(.secondary)
+                } else {
+                    Text(body).textSelection(.enabled)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
     }
 }

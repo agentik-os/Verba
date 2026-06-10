@@ -8,22 +8,82 @@ private struct Card<Content: View>: View {
     var body: some View { content().cleanCard(padding: padding) }
 }
 
-private struct SectionScaffold<Content: View>: View {
+private struct SectionScaffold<Content: View, Actions: View>: View {
     let title: String
     let subtitle: String?
     @ViewBuilder var content: () -> Content
+    @ViewBuilder var actions: () -> Actions
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(title).font(.system(size: 28, weight: .bold))
-                    if let subtitle { Text(subtitle).foregroundStyle(.secondary) }
+                    HStack {
+                        Text(title).font(.system(size: 28, weight: .bold))
+                        Spacer()
+                        actions()
+                    }
+                    if let subtitle { Text(subtitle).font(.callout).foregroundStyle(.secondary) }
                 }
                 content()
             }
-            .padding(32)
+            .padding(.horizontal, 28).padding(.vertical, 28)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+}
+
+extension SectionScaffold where Actions == EmptyView {
+    init(title: String, subtitle: String?, @ViewBuilder content: @escaping () -> Content) {
+        self.init(title: title, subtitle: subtitle, content: content, actions: { EmptyView() })
+    }
+}
+
+/// Capsule tag chip — the exemplar's metric-chip grammar (LeaderboardView): SF symbol + label,
+/// inverted fill when selected, soft 1px border otherwise. Internal so ModesView shares it.
+struct TagChip: View {
+    var icon: String? = nil
+    let label: String
+    let selected: Bool
+    let action: () -> Void
+    var body: some View {
+        Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { action() }
+        } label: {
+            HStack(spacing: 5) {
+                if let icon { Image(systemName: icon).font(.system(size: 10, weight: .semibold)) }
+                Text(label).font(.system(size: 12, weight: selected ? .semibold : .medium))
+            }
+            .padding(.horizontal, 12).padding(.vertical, 6.5)
+            .foregroundStyle(selected ? AnyShapeStyle(.background) : AnyShapeStyle(.primary.opacity(0.75)))
+            .background(
+                Capsule(style: .continuous)
+                    .fill(selected ? AnyShapeStyle(Color.primary) : AnyShapeStyle(Color.primary.opacity(0.055)))
+            )
+            .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(selected ? 0 : 0.09), lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Exemplar row card (Color.primary 0.04 fill, r12 continuous) whose trailing remove
+/// button only appears on hover — quiet by default, discoverable on intent.
+private struct HoverRowCard<Content: View>: View {
+    var alignment: VerticalAlignment = .center
+    let onRemove: () -> Void
+    @ViewBuilder var content: () -> Content
+    @State private var hovering = false
+    var body: some View {
+        HStack(alignment: alignment, spacing: 10) {
+            content()
+            Button(action: onRemove) { Image(systemName: "minus.circle.fill") }
+                .buttonStyle(.borderless).foregroundStyle(.tertiary)
+                .opacity(hovering ? 1 : 0)
+                .help("Remove")
+        }
+        .padding(.horizontal, 14).padding(.vertical, 11)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.04)))
+        .onHover { h in withAnimation(.easeOut(duration: 0.15)) { hovering = h } }
     }
 }
 
@@ -131,7 +191,7 @@ struct HomeView: View {
         Card {
             VStack(alignment: .leading, spacing: 8) {
                 Image(systemName: icon).font(.title3).foregroundStyle(.secondary)
-                Text(value).font(.system(size: 30, weight: .bold)).contentTransition(.numericText())
+                Text(value).font(.system(size: 30, weight: .bold)).monospacedDigit().contentTransition(.numericText())
                 Text(label).font(.caption).foregroundStyle(.secondary)
             }
         }
@@ -178,7 +238,7 @@ struct InsightsView: View {
     }
     private func metric(_ v: String, _ l: String) -> some View {
         Card { VStack(alignment: .leading, spacing: 4) {
-            Text(v).font(.title2.bold()); Text(l).font(.caption).foregroundStyle(.secondary) } }
+            Text(v).font(.title2.bold()).monospacedDigit(); Text(l).font(.caption).foregroundStyle(.secondary) } }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -276,7 +336,7 @@ struct DictionaryView: View {
     var body: some View {
         SectionScaffold(title: "Dictionary",
                         subtitle: "Teach Verba names and terms it should always spell right.") {
-            // Auto-add control, right where the terms live.
+            // Auto-add control, right where the terms live — in-place management glass card.
             HStack(spacing: 12) {
                 Image(systemName: "wand.and.sparkles").font(.system(size: 18)).foregroundStyle(.secondary)
                 VStack(alignment: .leading, spacing: 2) {
@@ -284,12 +344,16 @@ struct DictionaryView: View {
                     Text(autoCount > 0
                          ? "Verba learned \(autoCount) term\(autoCount == 1 ? "" : "s") from your corrections."
                          : "When you fix a word after pasting, Verba adds it here automatically.")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.caption).monospacedDigit().foregroundStyle(.secondary)
                 }
                 Spacer()
-                Toggle("", isOn: $settings.autoLearnDictionary).labelsHidden()
+                Toggle(isOn: $settings.autoLearnDictionary) {
+                    Text("Auto-add").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                }
+                .toggleStyle(.switch).controlSize(.small)
             }
-            .cleanCard(padding: 16)
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             // Clean up the existing terms with the AI.
             HStack(spacing: 12) {
@@ -302,10 +366,11 @@ struct DictionaryView: View {
                 Spacer()
                 if aiBusy { ProgressView().controlSize(.small) }
                 Button(action: improveWithAI) { Text("Improve with AI") }
-                    .buttonStyle(.borderedProminent)
+                    .glassProminentButton()
                     .disabled(aiBusy || !hasWritten)
             }
-            .cleanCard(padding: 16)
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             if store.terms.isEmpty {
                 EmptyState(icon: "character.book.closed", title: "No terms yet",
@@ -316,29 +381,29 @@ struct DictionaryView: View {
                     // A row with an empty spoken form is a pure vocabulary hint ("Add a word");
                     // one with a spoken form is a misspelling correction.
                     if isCorrection(t) {
-                        HStack(spacing: 10) {
+                        HoverRowCard(onRemove: { store.terms.removeAll { $0.id == t.id } }) {
                             TextField("Said", text: $t.spoken).cleanField()
                                 .help("The word as it gets mis-heard. Verba auto-replaces it with the written form.")
                             Image(systemName: "arrow.right").foregroundStyle(.tertiary)
                             TextField("Written", text: $t.written).cleanField()
                                 .help("The correct spelling Verba should write instead.")
                             rowBadges(t)
-                            removeButton { store.terms.removeAll { $0.id == t.id } }
                         }
                     } else {
-                        HStack(spacing: 10) {
+                        HoverRowCard(onRemove: { store.terms.removeAll { $0.id == t.id } }) {
                             Image(systemName: "text.book.closed").foregroundStyle(.tertiary)
                             TextField("Word — the transcriber should spell right", text: $t.written).cleanField()
                                 .help("A vocabulary hint sent to the transcriber so it recognizes and spells this word.")
                             rowBadges(t)
-                            removeButton { store.terms.removeAll { $0.id == t.id } }
                         }
                     }
                 }
-                HStack(spacing: 14) {
-                    addButton("Add a word") { store.terms.append(DictTerm(spoken: "", written: "")) }
+                HStack(spacing: 10) {
+                    primaryAddButton("Add a word") { store.terms.append(DictTerm(spoken: "", written: "")) }
                     addButton("Correct a misspelling") { store.terms.append(DictTerm(spoken: " ", written: "")) }
+                    Spacer()
                 }
+                .padding(.top, 2)
             }
             Text("“Add a word” teaches the transcriber a name or term so it spells it right — no correction needed. “Correct a misspelling” pairs a mis-heard spoken word with the written form so Verba swaps it automatically. Auto-added terms work the same, edit or remove any of them.")
                 .font(.caption).foregroundStyle(.secondary)
@@ -398,13 +463,16 @@ struct SnippetsView: View {
             }
             VStack(spacing: 10) {
                 ForEach($store.items) { $s in
-                    HStack(alignment: .top, spacing: 10) {
+                    HoverRowCard(alignment: .top, onRemove: { store.items.removeAll { $0.id == s.id } }) {
                         TextField("Trigger", text: $s.trigger).cleanField().frame(width: 160)
                         TextField("Expands to…", text: $s.expansion, axis: .vertical).cleanField()
-                        removeButton { store.items.removeAll { $0.id == s.id } }
                     }
                 }
-                addButton("Add snippet") { store.items.append(Snippet(trigger: "", expansion: "")) }
+                HStack {
+                    primaryAddButton("Add snippet") { store.items.append(Snippet(trigger: "", expansion: "")) }
+                    Spacer()
+                }
+                .padding(.top, 2)
             }
         }
     }
@@ -431,58 +499,64 @@ struct StyleView: View {
                 }
             }
 
-            Card(padding: 0) {
-                HStack(spacing: 0) {
-                    list
-                    Divider()
-                    Group {
-                        if let id = selectedID, settings.styles.contains(where: { $0.id == id }) {
-                            editor(id: id)
-                        } else {
-                            ContentUnavailableView("Select a style", systemImage: "paintbrush",
-                                                   description: Text("Each style is a reusable tone/format layer added on top of your mode."))
-                        }
+            HStack(spacing: 0) {
+                list
+                Divider()
+                Group {
+                    if let id = selectedID, settings.styles.contains(where: { $0.id == id }) {
+                        editor(id: id)
+                    } else {
+                        EmptyState(icon: "paintbrush", title: "Select a style",
+                                   message: "Each style is a reusable tone/format layer added on top of your mode.")
+                            .frame(maxHeight: .infinity)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(minHeight: 420)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .frame(minHeight: 420)
+        } actions: {
+            Button { let id = addStyle(); selectedID = id } label: { Image(systemName: "plus") }
+                .buttonStyle(.borderless).help("Add a new style")
+            Button { settings.resetStylesToDefaults(); selectedID = settings.activeStyleID } label: {
+                Image(systemName: "arrow.counterclockwise")
+            }
+            .buttonStyle(.borderless).help("Remove all custom styles, keep only Normal")
         }
         .onAppear { if selectedID == nil { selectedID = settings.activeStyleID } }
     }
 
     private var list: some View {
-        VStack(spacing: 0) {
-            List(selection: $selectedID) {
-                ForEach(settings.styles) { st in
-                    HStack(spacing: 8) {
-                        Image(systemName: "paintbrush")
-                            .foregroundStyle(.secondary).frame(width: 16)
-                        Text(st.name).lineLimit(1)
-                        Spacer(minLength: 6)
-                        if st.id == settings.activeStyleID {
-                            Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint).font(.caption)
-                        }
+        List {
+            ForEach(settings.styles) { st in
+                let selected = st.id == selectedID
+                HStack(spacing: 8) {
+                    Image(systemName: "paintbrush")
+                        .foregroundStyle(.secondary).frame(width: 16)
+                    Text(st.name).fontWeight(selected ? .semibold : .regular).lineLimit(1)
+                    Spacer(minLength: 6)
+                    if st.id == settings.activeStyleID {
+                        Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint).font(.caption)
                     }
-                    .padding(.vertical, 3)
-                    .tag(st.id)
                 }
-                .onMove { from, to in settings.styles.move(fromOffsets: from, toOffset: to) }
+                .padding(.horizontal, 10).padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color.primary.opacity(selected ? 0.12 : 0.04))
+                )
+                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(selected ? 0.4 : 0), lineWidth: 1))
+                .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .onTapGesture {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { selectedID = st.id }
+                }
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 2, leading: 6, bottom: 2, trailing: 6))
             }
-            .listStyle(.inset)
-            .scrollContentBackground(.hidden)
-            HStack(spacing: 14) {
-                Button { let id = addStyle(); selectedID = id } label: { Label("New", systemImage: "plus") }
-                    .help("Add a new style")
-                Spacer()
-                Button { settings.resetStylesToDefaults(); selectedID = settings.activeStyleID } label: {
-                    Label("Reset", systemImage: "arrow.counterclockwise")
-                }.help("Remove all custom styles, keep only Normal")
-            }
-            .buttonStyle(.borderless)
-            .font(.callout)
-            .padding(.horizontal, 14).padding(.vertical, 9)
+            .onMove { from, to in settings.styles.move(fromOffsets: from, toOffset: to) }
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
         .frame(width: 220)
     }
 
@@ -501,10 +575,10 @@ struct StyleView: View {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(spacing: 10) {
                     TextField("Name", text: nameB).cleanField().frame(maxWidth: 240).disabled(isNormal)
-                    Button { settings.activeStyleID = id } label: {
-                        Label(isActive ? "Active" : "Make active", systemImage: isActive ? "checkmark.circle.fill" : "circle")
-                    }
-                    .buttonStyle(.borderless).disabled(isActive)
+                    TagChip(icon: isActive ? "checkmark.circle.fill" : "circle",
+                            label: isActive ? "Active" : "Make active",
+                            selected: isActive) { settings.activeStyleID = id }
+                        .disabled(isActive)
                     Spacer()
                     if !isNormal {
                         Button(role: .destructive) { deleteStyle(id) } label: { Image(systemName: "trash") }
@@ -564,18 +638,13 @@ struct TransformsView: View {
             }
             VStack(spacing: 12) {
                 ForEach($store.items) { $t in
-                    Card {
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack {
-                                TextField("Verbal Shortcut", text: $t.name).cleanField().frame(width: 240)
-                                Spacer()
-                                removeButton { store.items.removeAll { $0.id == t.id } }
-                            }
-                            TextField("Prompt", text: $t.prompt, axis: .vertical).cleanField()
-                        }
-                    }
+                    TransformRow(t: $t) { store.items.removeAll { $0.id == t.id } }
                 }
-                addButton("Add transform") { store.items.append(Transform(name: "New shortcut", prompt: "Rewrite the text…")) }
+                HStack {
+                    primaryAddButton("Add transform") { store.items.append(Transform(name: "New shortcut", prompt: "Rewrite the text…")) }
+                    Spacer()
+                }
+                .padding(.top, 2)
                 if let errorMessage {
                     Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                         .font(.callout)
@@ -585,6 +654,30 @@ struct TransformsView: View {
                 }
             }
         }
+    }
+}
+
+/// One transform card: exemplar chrome, remove revealed on hover (top-right).
+private struct TransformRow: View {
+    @Binding var t: Transform
+    let onRemove: () -> Void
+    @State private var hovering = false
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                TextField("Verbal Shortcut", text: $t.name).cleanField().frame(width: 240)
+                Spacer()
+                Button(action: onRemove) { Image(systemName: "minus.circle.fill") }
+                    .buttonStyle(.borderless).foregroundStyle(.tertiary)
+                    .opacity(hovering ? 1 : 0)
+                    .help("Remove")
+            }
+            TextField("Prompt", text: $t.prompt, axis: .vertical).cleanField()
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.04)))
+        .onHover { h in withAnimation(.easeOut(duration: 0.15)) { hovering = h } }
     }
 }
 
@@ -601,7 +694,7 @@ struct ScratchpadView: View {
                 Button(role: .destructive) { pad.text = "" } label: { Label("Clear", systemImage: "trash") }
                     .buttonStyle(.borderless)
             }
-            .padding(32)
+            .padding(28)
             TextEditor(text: $pad.text)
                 .font(.system(size: 15)).scrollContentBackground(.hidden)
                 .padding(.horizontal, 24).padding(.vertical, 20)
@@ -613,7 +706,7 @@ struct ScratchpadView: View {
                             .allowsHitTesting(false)
                     }
                 }
-                .padding(.horizontal, 32).padding(.bottom, 32)
+                .padding(.horizontal, 28).padding(.bottom, 28)
         }
     }
 }
@@ -640,14 +733,24 @@ struct EmptyState: View {
 
 // MARK: - Small shared controls
 
-private func removeButton(_ action: @escaping () -> Void) -> some View {
-    Button(action: action) { Image(systemName: "minus.circle.fill") }
-        .buttonStyle(.borderless).foregroundStyle(.tertiary)
+/// Quiet secondary add affordance: soft-fill capsule with a plus.
+private func addButton(_ title: String, _ action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+        HStack(spacing: 5) {
+            Image(systemName: "plus").font(.system(size: 10, weight: .semibold))
+            Text(title).font(.system(size: 12, weight: .medium))
+        }
+        .padding(.horizontal, 12).padding(.vertical, 6.5)
+        .foregroundStyle(.primary.opacity(0.75))
+        .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
+        .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+        .contentShape(Capsule())
+    }
+    .buttonStyle(.plain)
 }
 
-private func addButton(_ title: String, _ action: @escaping () -> Void) -> some View {
+/// Primary add affordance: Liquid Glass prominent button.
+private func primaryAddButton(_ title: String, _ action: @escaping () -> Void) -> some View {
     Button(action: action) { Label(title, systemImage: "plus") }
-        .buttonStyle(.borderless)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 2)
+        .glassProminentButton()
 }

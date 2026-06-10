@@ -26,35 +26,52 @@ struct AdaptPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Adapt this dictation").font(.headline)
+            HStack(spacing: 7) {
+                Image(systemName: "wand.and.stars")
+                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
+                Text("Adapt this dictation").font(.headline)
+            }
 
             // One-click mode buttons.
             AdaptModeChips(modes: adaptModes) { mode in adapt(mode: mode) }
                 .disabled(adapting)
 
             // Custom "Intent" adapt: type how you want it transformed, or speak it.
+            // One soft-fill field with the mic + Adapt actions embedded (alias-field idiom).
             HStack(spacing: 8) {
                 TextField("Describe how to adapt it (e.g. make it a bug report)", text: $customIntent)
-                    .cleanField()
+                    .textFieldStyle(.plain)
                     .onSubmit { adaptCustom() }
                     .disabled(recording || transcribing)
+                Divider().frame(height: 12)
                 Button { toggleVoiceIntent() } label: {
                     if recording {
-                        Label("Listening…", systemImage: "stop.circle.fill").foregroundStyle(.red)
+                        Label("Listening…", systemImage: "stop.circle.fill")
+                            .font(.system(size: 11, weight: .medium)).foregroundStyle(.red)
                     } else if transcribing {
                         Label("Transcribing…", systemImage: "waveform")
+                            .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
                     } else {
                         Image(systemName: "mic.fill")
+                            .font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+                            .frame(width: 18, height: 18)
+                            .contentShape(Rectangle())
                     }
                 }
                 .buttonStyle(.borderless)
                 .disabled(adapting || transcribing)
                 .help("Speak how to adapt the text")
-                Button { adaptCustom() } label: { Label("Adapt", systemImage: "wand.and.stars") }
-                    .buttonStyle(.borderless)
-                    .disabled(adapting || recording || transcribing
-                              || customIntent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                Divider().frame(height: 12)
+                Button { adaptCustom() } label: {
+                    Label("Adapt", systemImage: "wand.and.stars")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .buttonStyle(.borderless)
+                .disabled(adapting || recording || transcribing
+                          || customIntent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
+            .padding(.horizontal, 10).padding(.vertical, 7)
+            .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
 
             // Result / progress / error.
             if adapting {
@@ -77,11 +94,15 @@ struct AdaptPanel: View {
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(14)
-                        .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color.primary.opacity(0.04))
+                        )
                 }
             }
         }
-        .padding(.top, 4)
+        .padding(.horizontal, 16).padding(.vertical, 14)
+        .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         // Clean teardown if the panel goes away mid-recording (switched entry / closed card).
         .onDisappear {
             if recording { _ = recorder.stop(); recorder.releaseArmed(); recording = false }
@@ -208,10 +229,12 @@ struct AdaptModeChips: View {
             ForEach(modes) { mode in
                 Button { action(mode) } label: {
                     Text(mode.name)
-                        .font(.caption.weight(.semibold))
+                        .font(.system(size: 12, weight: .medium))
                         .padding(.horizontal, 12).padding(.vertical, 6)
-                        .background(.softFill, in: Capsule())
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(.primary.opacity(0.75))
+                        .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
+                        .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                        .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
             }

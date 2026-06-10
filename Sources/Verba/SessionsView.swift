@@ -7,52 +7,81 @@ import SwiftUI
 /// updates as Sessions complete.
 struct SessionsView: View {
     @ObservedObject var store: SessionStore
+    @State private var query = ""
+
+    /// View-local search over completed results (text or mode name); in-flight rows always show.
+    private var filteredCompleted: [Session] {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !q.isEmpty else { return store.completed }
+        return store.completed.filter {
+            $0.resultText.lowercased().contains(q) || $0.modeName.lowercased().contains(q)
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // 20px inset (not the 28px grammar): compact 380pt-min window.
             HStack(spacing: 8) {
-                Text("Recent Results").font(.headline)
+                Text("Recent Results").font(.system(size: 28, weight: .bold))
                 if !store.inflight.isEmpty {
                     HStack(spacing: 4) {
                         ProgressView().controlSize(.small).scaleEffect(0.7)
                         Text("\(store.inflight.count) processing")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.system(size: 11, weight: .medium)).monospacedDigit()
                             .foregroundStyle(.secondary)
                     }
                     .padding(.horizontal, 7).padding(.vertical, 2)
-                    .background(Capsule().fill(Color.primary.opacity(0.06)))
+                    .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.06)))
                 }
                 Spacer()
                 if !store.completed.isEmpty {
-                    Button("Clear") { store.clearCompleted() }
-                        .buttonStyle(.plain).foregroundStyle(.secondary).font(.system(size: 12))
+                    Button { store.clearCompleted() } label: { Image(systemName: "trash") }
+                        .buttonStyle(.borderless).help("Clear all results")
                 }
             }
-            .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 10)
+            .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 2)
+            Text("Finished dictations land here so you can copy them later.")
+                .font(.callout).foregroundStyle(.secondary)
+                .padding(.horizontal, 20).padding(.bottom, 10)
 
             if store.completed.isEmpty && store.inflight.isEmpty {
                 Spacer()
-                VStack(spacing: 6) {
-                    Image(systemName: "tray").font(.system(size: 26)).foregroundStyle(.secondary)
-                    Text("No recent results yet").foregroundStyle(.secondary).font(.system(size: 13))
-                    Text("Finished dictations land here so you can copy them later.")
-                        .foregroundStyle(.tertiary).font(.system(size: 11)).multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
+                EmptyState(icon: "tray", title: "No recent results yet",
+                           message: "Run a dictation and the finished result will appear here, ready to copy.")
                 Spacer()
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 8) {
-                        // In-flight Sessions first (still processing), then completed (newest first),
-                        // so the user can watch a background dictation land and copy it the moment it's done.
-                        ForEach(store.inflight) { sess in
-                            InflightRow(session: sess)
-                        }
-                        ForEach(store.completed) { sess in
-                            SessionRow(session: sess) { store.remove(sess) }
-                        }
+                // Search field.
+                HStack(spacing: 7) {
+                    Image(systemName: "magnifyingglass").foregroundStyle(.secondary).font(.system(size: 12))
+                    TextField("Search results", text: $query).textFieldStyle(.plain)
+                    if !query.isEmpty {
+                        Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
+                            .buttonStyle(.plain).foregroundStyle(.tertiary)
                     }
-                    .padding(.horizontal, 14).padding(.bottom, 14)
+                }
+                .padding(.horizontal, 10).padding(.vertical, 7)
+                .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .padding(.horizontal, 20).padding(.bottom, 10)
+
+                if filteredCompleted.isEmpty && store.inflight.isEmpty {
+                    Text("No matches for “\(query)”.")
+                        .font(.callout).foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity).padding(.top, 30)
+                    Spacer()
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 8) {
+                            // In-flight Sessions first (still processing), then completed (newest first),
+                            // so the user can watch a background dictation land and copy it the moment it's done.
+                            ForEach(store.inflight) { sess in
+                                InflightRow(session: sess)
+                            }
+                            ForEach(filteredCompleted) { sess in
+                                SessionRow(session: sess) { store.remove(sess) }
+                            }
+                        }
+                        .padding(.horizontal, 20).padding(.bottom, 14)
+                    }
                 }
             }
         }
@@ -64,6 +93,7 @@ private struct SessionRow: View {
     @ObservedObject var session: Session
     let onRemove: () -> Void
     @State private var copied = false
+    @State private var hovering = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -71,7 +101,9 @@ private struct SessionRow: View {
                 Image(systemName: session.status == .failed ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
                     .font(.system(size: 11))
                     .foregroundStyle(session.status == .failed ? Color.red : Color.green)
-                Text(session.modeName).font(.system(size: 12, weight: .semibold))
+                Text(session.modeName).font(.system(size: 11, weight: .semibold))
+                    .padding(.horizontal, 7).padding(.vertical, 1.5)
+                    .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.08)))
                 if session.autoPasted {
                     Text("pasted").font(.system(size: 9, weight: .medium))
                         .padding(.horizontal, 5).padding(.vertical, 1)
@@ -79,7 +111,7 @@ private struct SessionRow: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Text(timeLabel).font(.system(size: 10)).foregroundStyle(.tertiary)
+                Text(timeLabel).font(.system(size: 10)).monospacedDigit().foregroundStyle(.tertiary)
             }
 
             if session.status == .failed {
@@ -93,6 +125,8 @@ private struct SessionRow: View {
             }
 
             if session.status != .failed {
+                // Hover-revealed actions: keep the row quiet until the pointer is over it.
+                // Fixed-height row stays in the layout (opacity only) so the list never reflows.
                 HStack(spacing: 8) {
                     Button {
                         Output.copyToClipboard(session.resultText, rich: session.rich)
@@ -111,10 +145,16 @@ private struct SessionRow: View {
                     .buttonStyle(.borderless).foregroundStyle(.secondary)
                     Spacer()
                 }
+                .opacity(hovering || copied ? 1 : 0)
             }
         }
         .padding(10)
-        .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.primary.opacity(0.04))
+        )
+        .onHover { hovering = $0 }
+        .animation(.easeInOut(duration: 0.12), value: hovering)
     }
 
     private var timeLabel: String {
@@ -141,7 +181,10 @@ private struct InflightRow: View {
             Spacer()
         }
         .padding(10)
-        .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.primary.opacity(0.04))
+        )
     }
 
     private var stageLabel: String {
