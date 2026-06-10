@@ -107,6 +107,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ChordMonitor.shared.onChordUp = { [weak self] in self?.chordUp() }
         ChordMonitor.shared.onEscape = { [weak self] in self?.escapePressed() }
         ChordMonitor.shared.onControl = { [weak self] in InputCoach.shared.note(.control); self?.togglePause() }   // ⌃ pauses/resumes
+        ChordMonitor.shared.onTransformKey = { [weak self] in self?.showTransformPicker() }   // ⌥/ on a selection
         FnTap.shared.onFnDown = { [weak self] in self?.fnDown() }
         FnTap.shared.onFnUp = { [weak self] in self?.fnUp() }
         FnTap.shared.onFnControl = { [weak self] in self?.fnControlPressed() }   // ⌥+Fn → today's to-do glance
@@ -781,6 +782,64 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func escapePressed() { cancelEverything() }
+
+    /// Bridges NSMenu item clicks (a target/action selector) back to a Swift closure.
+    final class TransformMenuRunner: NSObject {
+        private let onPick: (Transform) -> Void
+        init(onPick: @escaping (Transform) -> Void) { self.onPick = onPick }
+        @objc func pick(_ sender: NSMenuItem) {
+            guard let t = sender.representedObject as? Transform else { return }
+            onPick(t)
+        }
+    }
+
+    // MARK: ⌥/ — transform the current selection via a quick picker menu
+
+    private var transformMenuRunner: TransformMenuRunner?
+
+    /// ⌥/ pressed: if text is selected in the frontmost app, pop up a menu of the user's
+    /// transforms at the cursor; picking one runs it on the selection and replaces it.
+    private func showTransformPicker() {
+        guard state == .idle else { return }   // not while recording/processing
+        let sel = (Output.selectedText() ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !sel.isEmpty else { flashError("Select some text first, then press ⌥/ to transform it."); return }
+        let transforms = TransformsStore.shared.items
+        guard !transforms.isEmpty else { flashError("No transforms yet — add some in Verba ▸ Transforms."); return }
+        let target = Output.captureTarget()
+
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        let header = NSMenuItem(title: "Transform selection", action: nil, keyEquivalent: "")
+        header.isEnabled = false
+        menu.addItem(header)
+        menu.addItem(.separator())
+        let runner = TransformMenuRunner { [weak self] transform in
+            self?.runTransformOnSelection(transform, selection: sel, target: target)
+        }
+        for t in transforms {
+            let item = NSMenuItem(title: t.name, action: #selector(TransformMenuRunner.pick(_:)), keyEquivalent: "")
+            item.target = runner
+            item.representedObject = t
+            menu.addItem(item)
+        }
+        transformMenuRunner = runner   // keep alive while the menu is open
+        NSApp.activate(ignoringOtherApps: false)
+        // view == nil → location is in screen coordinates (at the mouse).
+        menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
+    }
+
+    private func runTransformOnSelection(_ transform: Transform, selection: String, target: PasteTarget?) {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let outcome = TransformsStore.runOnSelectionSync(transform, selection: selection)
+            DispatchQueue.main.async {
+                switch outcome {
+                case .success(let text): _ = Output.paste(text, rich: false, target: target)
+                case .failure(let msg):  self?.flashError(msg)
+                }
+                self?.transformMenuRunner = nil
+            }
+        }
+    }
 
     /// Esc / the × in the overlay: discard a recording, abort processing, or dismiss the picker.
     private func cancelEverything() {
