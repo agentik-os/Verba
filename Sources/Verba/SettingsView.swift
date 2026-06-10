@@ -273,10 +273,18 @@ struct SettingsView: View {
                            customHex: appearance.accentHex,
                            onPick: { appearance.accent = $0 },
                            onCustom: { appearance.setCustomAccent($0) })
-            sliderRow("Blur", value: $appearance.blur, range: 0...40, suffix: "pt")
+            sliderRow("Glass blur", value: $appearance.blur, range: 0...40, suffix: "pt")
             sliderRow("Corner radius", value: $appearance.cornerScale, range: 0.7...1.4, suffix: "×")
             toggleRow("Shadow on panels", $appearance.shadow)
             toggleRow("Reduce motion", $appearance.reduceMotion)
+        }
+
+        // MENUS — the glass behind popovers, dialogs and confirmations.
+        card("Menus & popovers", footer: "Style the glass behind menus, dialogs and confirmations, independently of the main window.") {
+            apprLabel("Menu glass material")
+            chips(VAppr.Material.allCases, selected: appearance.menuMaterial, label: { $0.label },
+                  help: materialHelp) { appearance.menuMaterial = $0 }
+            sliderRow("Menu glass blur", value: $appearance.menuBlur, range: 0...40, suffix: "pt")
         }
 
         // WIDGET
@@ -371,16 +379,31 @@ struct SettingsView: View {
                       ? "Mono — no tint, follows light/dark automatically (the default)."
                       : "\(a.label) — tints buttons, selections and the recording dot.")
             }
-            // Custom color well
+            // Custom color: a CLEAN circular swatch (rainbow when unset, the chosen color when set).
+            // The native ColorPicker well renders as an ugly wide pill, so it's kept invisible but
+            // clickable on top of the circle — the visible UI is always a tidy 22pt round swatch.
             let customSel = selected == .custom
             let customColor = Color(nsColor: VAppr.resolved(.custom, hex: customHex) ?? .systemIndigo)
-            ColorPicker("", selection: Binding(
-                get: { customColor },
-                set: { onCustom($0) }), supportsOpacity: false)
-                .labelsHidden().frame(width: 24, height: 24)
-                .overlay(Circle().strokeBorder(customSel ? customColor.opacity(0.9) : Color.hairlineTint, lineWidth: customSel ? 2 : 1).frame(width: 24, height: 24))
-                .softElevation(customSel)
-                .help("Custom")
+            ZStack {
+                if customSel {
+                    Circle().fill(customColor).frame(width: 22, height: 22)
+                } else {
+                    Circle().fill(AngularGradient(
+                        gradient: Gradient(colors: [.red, .orange, .yellow, .green, .blue, .purple, .red]),
+                        center: .center))
+                        .frame(width: 22, height: 22).opacity(0.9)
+                }
+                Circle().strokeBorder(customSel ? customColor.opacity(0.9) : Color.hairlineTint,
+                                      lineWidth: customSel ? 2 : 1)
+                    .frame(width: 24, height: 24)
+                ColorPicker("", selection: Binding(get: { customColor }, set: { onCustom($0) }),
+                            supportsOpacity: false)
+                    .labelsHidden().opacity(0.02)   // invisible but still opens the system picker
+                    .frame(width: 24, height: 24)
+            }
+            .frame(width: 24, height: 24)
+            .softElevation(customSel)
+            .help("Custom color")
             Spacer()
         }
     }

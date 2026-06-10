@@ -6,15 +6,53 @@ import AppKit
 /// material to override (e.g. a specific dialog that always wants one look).
 struct VisualEffectView: NSViewRepresentable {
     var material: NSVisualEffectView.Material? = nil   // nil → user's chosen glass material
+    var blurRadius: Double = 0                          // extra adjustable Gaussian blur (0 = off)
     private var resolved: NSVisualEffectView.Material { material ?? VAppr.material.nsMaterial }
     func makeNSView(context: Context) -> NSVisualEffectView {
         let v = NSVisualEffectView()
         v.material = resolved
         v.blendingMode = .behindWindow
         v.state = .active
+        let blur = GlassBlurView(frame: v.bounds)
+        blur.autoresizingMask = [.width, .height]
+        blur.blurRadius = blurRadius
+        v.addSubview(blur)
         return v
     }
-    func updateNSView(_ v: NSVisualEffectView, context: Context) { v.material = resolved }
+    func updateNSView(_ v: NSVisualEffectView, context: Context) {
+        v.material = resolved
+        (v.subviews.compactMap { $0 as? GlassBlurView }.first)?.blurRadius = blurRadius
+    }
+}
+
+/// An adjustable-blur glass layer (ported from LiquidPad). NSVisualEffectView's blur is fixed per
+/// material, so for a "more glass" feel we back this view with a `CABackdropLayer` (the same private
+/// layer macOS uses for its own glass) and apply a `CAFilter` Gaussian blur whose radius the user
+/// controls. This is GPU-composited — NOT a SwiftUI `.blur()`, which rasterizes into a muddy haze.
+/// Fully guarded: if the private classes aren't available, it degrades to a harmless clear view.
+final class GlassBlurView: NSView {
+    var blurRadius: Double = 0 { didSet { applyBlur() } }
+    override init(frame: NSRect) { super.init(frame: frame); wantsLayer = true }
+    required init?(coder: NSCoder) { fatalError() }
+    override func makeBackingLayer() -> CALayer {
+        if let cls = NSClassFromString("CABackdropLayer") as? CALayer.Type { return cls.init() }
+        return super.makeBackingLayer()
+    }
+    private func applyBlur() {
+        guard let layer else { return }
+        guard blurRadius > 0.5,
+              let filterClass = NSClassFromString("CAFilter") as? NSObject.Type else {
+            layer.setValue(nil, forKey: "filters"); return
+        }
+        let sel = NSSelectorFromString("filterWithType:")
+        guard filterClass.responds(to: sel),
+              let f = filterClass.perform(sel, with: "gaussianBlur")?.takeUnretainedValue() as? NSObject else {
+            layer.setValue(nil, forKey: "filters"); return
+        }
+        f.setValue(blurRadius, forKey: "inputRadius")
+        f.setValue(true, forKey: "inputNormalizeEdges")
+        layer.setValue([f], forKey: "filters")
+    }
 }
 
 // Clean, borderless design helpers (modern, no harsh stroke lines).
@@ -255,8 +293,14 @@ private struct GlassCardIf: ViewModifier {
     let enabled: Bool
     func body(content: Content) -> some View {
         if enabled {
+            let shape = RoundedRectangle(cornerRadius: 20, style: .continuous)
             content
-                .glass(in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                // Menus / dialogs honor the user's chosen MENU glass material + adjustable blur,
+                // clipped to the card shape (Customize ▸ Menus).
+                .background(VisualEffectView(material: VAppr.menuMaterial.nsMaterial,
+                                             blurRadius: VAppr.menuBlur).clipShape(shape))
+                .overlay(shape.strokeBorder(Color.primary.opacity(0.06), lineWidth: 1))
+                .clipShape(shape)
                 .shadow(color: .black.opacity(0.13), radius: 26, y: 10)
         } else { content }
     }

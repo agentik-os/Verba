@@ -155,6 +155,16 @@ enum VAppr {
         get { Material(rawValue: app.integer(forKey: "verba.appr.material")) ?? .frosted }
         set { app.set(newValue.rawValue, forKey: "verba.appr.material") }
     }
+    /// Glass material behind menus / popovers / dialogs (independent of the main window).
+    static var menuMaterial: Material {
+        get { Material(rawValue: app.integer(forKey: "verba.appr.menumaterial")) ?? .soft }
+        set { app.set(newValue.rawValue, forKey: "verba.appr.menumaterial") }
+    }
+    /// Extra adjustable blur for menus / popovers / dialogs (0 = off).
+    static var menuBlur: Double {
+        get { clamp(app.object(forKey: "verba.appr.menublur") as? Double ?? 0, blurRange) }
+        set { app.set(clamp(newValue, blurRange), forKey: "verba.appr.menublur") }
+    }
     static var blur: Double {
         get { clamp(app.object(forKey: "verba.appr.blur") as? Double ?? 0, blurRange) }
         set { app.set(clamp(newValue, blurRange), forKey: "verba.appr.blur") }
@@ -306,6 +316,14 @@ final class VerbaAppearance: ObservableObject {
     var material: VAppr.Material {
         get { VAppr.material }
         set { VAppr.material = newValue; changed() }
+    }
+    var menuMaterial: VAppr.Material {
+        get { VAppr.menuMaterial }
+        set { VAppr.menuMaterial = newValue; changed() }
+    }
+    var menuBlur: Double {
+        get { VAppr.menuBlur }
+        set { VAppr.menuBlur = newValue; changed() }
     }
     var blur: Double {
         get { VAppr.blur }
