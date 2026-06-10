@@ -20,6 +20,16 @@ const DAYS: Day[] = [
       "A privacy, security and craft day: history gets a real off switch and auto-delete, cloud data gets a delete-everything button, every sync request is authenticated per device, every dialog moves to the new glass design, and verba.run gets a full craft pass.",
     entries: [
       {
+        version: "0.2.5",
+        title: "Every screen, redesigned",
+        items: [
+          "Every page in the app now matches the new design language: big clear headers, glass cards, capsule filter chips instead of cramped segmented controls, and tidy aligned controls throughout (Notes, Task Manager, History, Modes, Insights, Home, and more).",
+          "Settings is reorganized into seven clear sections (Account & Plan, Dictation, AI rewriting, Output, Shortcuts, Privacy & history, Updates) with a sidebar, so everything is easy to find.",
+          "Manage your leaderboard identity right on the leaderboard: edit your alias and toggle your visibility without opening Settings.",
+          "Fixed a handful of visual glitches from the redesign (a double-highlighted note row, overlapping controls in Settings) so every screen renders clean.",
+        ],
+      },
+      {
         version: "0.2.4",
         title: "Once Pro, always Pro",
         items: [
