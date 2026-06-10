@@ -30,6 +30,15 @@ struct BadgesView: View {
                 }
                 .padding(.horizontal, 28)
 
+                // Goals + next-up + records.
+                HStack(spacing: 14) {
+                    weeklyCard
+                    nextUpCard
+                }
+                .padding(.horizontal, 28)
+
+                recordsCard.padding(.horizontal, 28)
+
                 Text("Badges").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
                     .textCase(.uppercase).padding(.horizontal, 28)
 
@@ -39,6 +48,66 @@ struct BadgesView: View {
                 .padding(.horizontal, 28).padding(.bottom, 28)
             }
         }
+        .onAppear { Gamification.shared.evaluate() }
+    }
+
+    // MARK: extra cards
+
+    private var weeklyCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack { Image(systemName: "calendar"); Text("This week").font(.subheadline.weight(.semibold)); Spacer()
+                Text("\(Int(game.weeklyProgress * 100))%").font(.caption).foregroundStyle(.secondary).monospacedDigit() }
+            ProgressBar(progress: game.weeklyProgress, tint: .blue)
+            Text("\(stats.wordsThisWeek) / \(game.weeklyGoal) words this week")
+                .font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading).padding(16)
+        .glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var nextUpCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack { Image(systemName: "target"); Text("Next up").font(.subheadline.weight(.semibold)); Spacer() }
+            if let m = game.nextWordMilestone {
+                Text("\(m.remaining) words to \(compact(m.target))").font(.caption).foregroundStyle(.secondary).monospacedDigit()
+            }
+            if let st = game.nextStreakMilestone {
+                Text("\(st.remaining) day\(st.remaining == 1 ? "" : "s") to a \(st.target) day streak").font(.caption).foregroundStyle(.secondary).monospacedDigit()
+            }
+            let info = game.levelInfo
+            Text("\(max(0, info.xpForNext - info.xpInLevel)) XP to Level \(info.level + 1)").font(.caption).foregroundStyle(.secondary).monospacedDigit()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading).padding(16)
+        .glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var recordsCard: some View {
+        HStack(spacing: 0) {
+            record("\(compact(stats.totalWords))", "total words", "text.word.spacing")
+            Divider().frame(height: 38).opacity(0.3)
+            record("\(stats.bestDayWords)", "best day", "trophy")
+            Divider().frame(height: 38).opacity(0.3)
+            record("\(stats.avgWPM)", "avg wpm", "gauge.with.dots.needle.67percent")
+            Divider().frame(height: 38).opacity(0.3)
+            record("\(stats.totalCount)", "dictations", "waveform")
+        }
+        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity)
+        .glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func record(_ value: String, _ label: String, _ icon: String) -> some View {
+        VStack(spacing: 3) {
+            Image(systemName: icon).font(.system(size: 12)).foregroundStyle(.secondary)
+            Text(value).font(.system(size: 20, weight: .bold)).monospacedDigit()
+            Text(label).font(.caption2).foregroundStyle(.secondary)
+        }.frame(maxWidth: .infinity)
+    }
+
+    private func compact(_ n: Int) -> String {
+        if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
+        if n >= 1_000 { return String(format: "%.1fk", Double(n) / 1_000) }
+        return "\(n)"
     }
 
     // MARK: cards
@@ -119,6 +188,22 @@ struct BadgesView: View {
             .strokeBorder(earned ? a.tier.color.opacity(0.3) : Color.hairlineTint, lineWidth: 1))
         .opacity(earned ? 1 : 0.7)
         .help(earned ? "Unlocked" : "Locked")
+    }
+}
+
+/// A simple rounded progress bar.
+struct ProgressBar: View {
+    var progress: Double
+    var tint: Color
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.primary.opacity(0.08))
+                Capsule().fill(tint).frame(width: max(4, geo.size.width * max(0, min(1, progress))))
+                    .animation(.spring(response: 0.5, dampingFraction: 0.8), value: progress)
+            }
+        }
+        .frame(height: 8)
     }
 }
 

@@ -100,6 +100,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Stats.shared.syncFromCloud()     // restore Insights / Total Words for the account
             NotesStore.shared.syncFromCloud()// pull long-form notes for the account
             VerbaAppearance.shared.syncFromCloud()  // restore the Customize look (app + widget)
+            // Gamification: backfill achievements/level from existing stats (now), then re-evaluate
+            // after the cloud stats land so a returning user's profile reflects every Mac.
+            Gamification.shared.evaluate()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { Gamification.shared.evaluate() }
         }
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)

@@ -85,6 +85,7 @@ final class Gamification: ObservableObject {
     private let kGoal = "verba.game.dailyGoal"
     private let kLevel = "verba.game.seenLevel"
     private let kFlags = "verba.game.flags"
+    private let kBackfilled = "verba.game.backfilled"
 
     private var flags: Set<GameFlag>
 
@@ -134,6 +135,25 @@ final class Gamification: ObservableObject {
     }
     var dailyProgress: Double { dailyGoal > 0 ? min(1, Double(todayWords) / Double(dailyGoal)) : 0 }
 
+    /// Weekly goal = 5x the daily goal (a working week of dictation), progress from this week's words.
+    var weeklyGoal: Int { dailyGoal * 5 }
+    var weeklyProgress: Double { weeklyGoal > 0 ? min(1, Double(Stats.shared.wordsThisWeek) / Double(weeklyGoal)) : 0 }
+
+    /// The next word milestone above the user's total, and how far it is (for a "next up" card).
+    var nextWordMilestone: (target: Int, remaining: Int)? {
+        let marks = [1000, 5000, 10000, 50000, 100000, 250000, 500000, 1000000]
+        let total = Stats.shared.totalWords
+        guard let next = marks.first(where: { $0 > total }) else { return nil }
+        return (target: next, remaining: next - total)
+    }
+    /// The next streak milestone above the current streak.
+    var nextStreakMilestone: (target: Int, remaining: Int)? {
+        let marks = [3, 7, 14, 30, 100, 365]
+        let st = Stats.shared.streak
+        guard let next = marks.first(where: { $0 > st }) else { return nil }
+        return (target: next, remaining: next - st)
+    }
+
     // MARK: League
 
     var league: League { League.tier(forWeeklyWords: Stats.shared.wordsThisWeek) }
@@ -154,27 +174,46 @@ final class Gamification: ObservableObject {
     }
 
     /// Re-check every achievement + level-up against the current Stats; enqueue anything new.
+    /// FIRST run (backfill): existing users get every achievement they've ALREADY earned from
+    /// their accumulated stats, granted silently (no confetti flood), their level baseline set to
+    /// their real level, and a single welcome card summarizing what they walked in with.
     func evaluate() {
         let s = Stats.shared
         DispatchQueue.main.async {
-            // Achievements
+            let firstRun = !self.d.bool(forKey: self.kBackfilled)
+            var newlyEarned = 0
             for a in Gamification.all where !self.unlocked.contains(a.id) && a.earned(s, self.flags) {
                 self.unlocked.insert(a.id)
-                self.pending.append(Celebration(
-                    kind: .achievement(a.id), title: a.title, subtitle: a.blurb,
-                    icon: a.icon, tint: a.tier.color))
+                newlyEarned += 1
+                if !firstRun {
+                    self.pending.append(Celebration(
+                        kind: .achievement(a.id), title: a.title, subtitle: a.blurb,
+                        icon: a.icon, tint: a.tier.color))
+                }
             }
             self.d.set(Array(self.unlocked), forKey: self.kUnlocked)
-            // Level-up
             let lvl = self.levelInfo.level
+            if firstRun {
+                // Set the level baseline to the user's real level so we don't fire a fake level-up,
+                // then welcome them with one card that shows the profile they already built.
+                self.d.set(lvl, forKey: self.kLevel)
+                self.d.set(true, forKey: self.kBackfilled)
+                if newlyEarned > 0 {
+                    self.pending.append(Celebration(
+                        kind: .milestone("welcome"),
+                        title: "Welcome to Achievements",
+                        subtitle: "You walk in at Level \(lvl) with \(newlyEarned) badge\(newlyEarned == 1 ? "" : "s") already earned. Keep going.",
+                        icon: "rosette", tint: .yellow))
+                }
+                return
+            }
+            // Level-up (normal path)
             let seen = self.d.object(forKey: self.kLevel) as? Int ?? 1
             if lvl > seen {
                 self.d.set(lvl, forKey: self.kLevel)
-                if seen >= 1 {   // don't fire on first-ever launch baseline
-                    self.pending.append(Celebration(
-                        kind: .levelUp(lvl), title: "Level \(lvl)", subtitle: Gamification.title(for: lvl),
-                        icon: "sparkles", tint: .yellow))
-                }
+                self.pending.append(Celebration(
+                    kind: .levelUp(lvl), title: "Level \(lvl)", subtitle: Gamification.title(for: lvl),
+                    icon: "sparkles", tint: .yellow))
             }
         }
     }
@@ -199,7 +238,22 @@ final class Gamification: ObservableObject {
     // MARK: - The catalog
 
     // Split into sub-arrays so the Swift type-checker doesn't choke on one huge literal.
-    static let all: [Achievement] = volume + streaks + craft + modes + misc
+    static let all: [Achievement] = volume + streaks + craft + modes + misc + bonus
+
+    private static let bonus: [Achievement] = [
+        .init(id: "w5k", title: "Storyteller", blurb: "5,000 words spoken.", icon: "book.fill", tier: .bronze) { s,_ in s.totalWords >= 5000 },
+        .init(id: "w250k", title: "Mythmaker", blurb: "250,000 words spoken.", icon: "building.columns.fill", tier: .platinum) { s,_ in s.totalWords >= 250000 },
+        .init(id: "w500k", title: "Half a Million", blurb: "500,000 words spoken.", icon: "infinity", tier: .platinum) { s,_ in s.totalWords >= 500000 },
+        .init(id: "c100", title: "Century", blurb: "100 dictations.", icon: "100.circle.fill", tier: .silver) { s,_ in s.totalCount >= 100 },
+        .init(id: "c1000", title: "Thousand Voices", blurb: "1,000 dictations.", icon: "waveform.circle.fill", tier: .gold) { s,_ in s.totalCount >= 1000 },
+        .init(id: "s14", title: "Fortnight", blurb: "14 day streak.", icon: "flame.fill", tier: .silver) { s,_ in s.streak >= 14 },
+        .init(id: "s365", title: "Year One", blurb: "365 day streak.", icon: "calendar.circle.fill", tier: .platinum) { s,_ in s.streak >= 365 },
+        .init(id: "fast160", title: "Lightning", blurb: "160+ words per minute.", icon: "bolt.fill", tier: .gold) { s,_ in s.avgWPM >= 160 },
+        .init(id: "big10k", title: "Ultramarathon", blurb: "10,000 words in a day.", icon: "figure.run.circle.fill", tier: .platinum) { s,_ in s.bestDayWords >= 10000 },
+        .init(id: "save50h", title: "Time Wizard", blurb: "50 hours saved versus typing.", icon: "hourglass", tier: .platinum) { s,_ in s.timeSavedMinutes >= 3000 },
+        .init(id: "days60", title: "Devoted", blurb: "Dictated on 60 different days.", icon: "calendar.badge.checkmark", tier: .gold) { s,_ in s.days.values.filter { $0.count > 0 }.count >= 60 },
+        .init(id: "days7", title: "First Week", blurb: "Dictated on 7 different days.", icon: "7.circle.fill", tier: .bronze) { s,_ in s.days.values.filter { $0.count > 0 }.count >= 7 },
+    ]
 
     private static let volume: [Achievement] = [
         .init(id: "first", title: "First Words", blurb: "Your first dictation.", icon: "mic.fill", tier: .bronze) { s,_ in s.totalCount >= 1 },
