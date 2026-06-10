@@ -20,6 +20,15 @@ const DAYS: Day[] = [
       "A privacy, security and craft day: history gets a real off switch and auto-delete, cloud data gets a delete-everything button, every sync request is authenticated per device, every dialog moves to the new glass design, and verba.run gets a full craft pass.",
     entries: [
       {
+        version: "0.5.1 → 0.5.2",
+        title: "Know every mode, and where you rank",
+        items: [
+          "Every mode now has a plain-language description of what it is for and how to use it. The built-ins ship with one, and any mode you build gets a friendly summary with one tap on Explain with AI.",
+          "Your standing, live in Achievements: your leaderboard rank, the rival just ahead to catch, and the one just behind, alongside your level, weekly goal, league and records.",
+          "Level ups now land with a spinning ray burst on top of the confetti.",
+        ],
+      },
+      {
         version: "0.4.9 → 0.5.0",
         title: "Verba is now a game you can win",
         items: [
