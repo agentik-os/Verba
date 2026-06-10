@@ -1,5 +1,21 @@
 import Foundation
 
+extension Profile {
+    /// The Claude model ids a user (or the mode generator) may assign to a single mode,
+    /// as `(id, label, help)`. This is the SINGLE source of truth shared by the mode
+    /// editor's model chips (ModesView) and the mode generator's validation
+    /// (ModeGenerator.parse), so the two can never drift apart and reject/accept
+    /// different sets. Add a new selectable Claude model HERE and both inherit it.
+    static let selectableModels: [(id: String, label: String, help: String)] = [
+        ("claude-haiku-4-5", "Haiku 4.5", "Fastest, cheapest"),
+        ("claude-sonnet-4-6", "Sonnet 4.6", "Balanced"),
+        ("claude-opus-4-8", "Opus 4.8", "Most capable"),
+    ]
+
+    /// Just the ids, for membership checks.
+    static let selectableModelIDs: [String] = selectableModels.map(\.id)
+}
+
 /// Turns a plain-language description of a need ("I want a mode for writing
 /// technical bug reports", spoken or typed) into a complete Verba mode.
 ///
@@ -113,8 +129,7 @@ enum ModeGenerator {
 
         let rawMode = obj["raw"] as? Bool ?? false
         let modelRaw = (obj["model"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let allowed = ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-8"]
-        let model = (!rawMode && allowed.contains(modelRaw)) ? modelRaw : nil
+        let model = (!rawMode && Profile.selectableModelIDs.contains(modelRaw)) ? modelRaw : nil
         let bundles = (obj["matchBundleIDs"] as? [Any])?
             .compactMap { ($0 as? String)?.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty } ?? []

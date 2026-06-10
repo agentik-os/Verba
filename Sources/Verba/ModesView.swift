@@ -275,6 +275,12 @@ struct ModesView: View {
                             set: { v in if let i = index(of: id) { settings.profiles[i].targetLanguage = v } })
         let isActive = settings.activeProfileID == id
         let bundleIDs = p?.matchBundleIDs ?? []
+        // A non-raw, non-translate mode reprompts through Claude using systemPrompt. If that prompt
+        // is blanked, Claude runs with no instructions and may echo/summarize/mangle the transcript.
+        // Flag it so the editor can warn and refuse to make such a mode active.
+        let usesSystemPrompt = !isRaw && !isTranslate
+        let promptBlank = usesSystemPrompt
+            && (p?.systemPrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
 
         return ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -283,8 +289,9 @@ struct ModesView: View {
                     TextField("Name", text: nameB).cleanField().frame(maxWidth: 240)
                     TagChip(icon: isActive ? "checkmark.circle.fill" : "circle",
                             label: isActive ? "Active" : "Make active",
-                            selected: isActive) { settings.activeProfileID = id }
-                        .disabled(isActive)
+                            selected: isActive) { if !promptBlank { settings.activeProfileID = id } }
+                        .disabled(isActive || promptBlank)
+                        .help(promptBlank ? "Add a system prompt before making this mode active — an empty prompt gives Claude no instructions." : "")
                     Spacer()
                     Button(role: .destructive) { confirmOrDelete(id) } label: {
                         Image(systemName: "trash")
@@ -350,12 +357,10 @@ struct ModesView: View {
                             HStack(spacing: 8) {
                                 TagChip(label: "Default", selected: modelB.wrappedValue == "") { modelB.wrappedValue = "" }
                                     .help("App-wide default (\(settings.claudeModel))")
-                                TagChip(label: "Haiku 4.5", selected: modelB.wrappedValue == "claude-haiku-4-5") { modelB.wrappedValue = "claude-haiku-4-5" }
-                                    .help("Fastest, cheapest")
-                                TagChip(label: "Sonnet 4.6", selected: modelB.wrappedValue == "claude-sonnet-4-6") { modelB.wrappedValue = "claude-sonnet-4-6" }
-                                    .help("Balanced")
-                                TagChip(label: "Opus 4.8", selected: modelB.wrappedValue == "claude-opus-4-8") { modelB.wrappedValue = "claude-opus-4-8" }
-                                    .help("Most capable")
+                                ForEach(Profile.selectableModels, id: \.id) { m in
+                                    TagChip(label: m.label, selected: modelB.wrappedValue == m.id) { modelB.wrappedValue = m.id }
+                                        .help(m.help)
+                                }
                             }
                         }
                     }
@@ -372,6 +377,12 @@ struct ModesView: View {
                             .font(.system(.callout, design: .monospaced)).scrollContentBackground(.hidden)
                             .frame(minHeight: 220).padding(12)
                             .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        if promptBlank {
+                            Label("This mode has no system prompt. Claude would get no instructions and may echo or mangle your dictation. Add a prompt to make it active.",
+                                  systemImage: "exclamationmark.triangle.fill")
+                                .font(.caption).foregroundStyle(.orange)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                 }
 

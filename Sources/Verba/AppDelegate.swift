@@ -59,6 +59,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var transformInFlight = false   // a ⌥X transform is applying (background, network-bound): block any new
                                             // capture/transform so its paste can't collide with a concurrently-started one
+    private var transformTask: Task<Void, Never>?   // the in-flight ⌥X transform, so Esc/cancelEverything can abort it
+                                                    // before its (now-stale) paste lands in a since-changed frontmost field
     private var todoCaptureRecording = false   // a voice "add to-do" capture is recording
     private var todoCaptureTask: Task<Void, Never>?
     private var noteLevelTimer: Timer?         // drives the shared overlay's waveform while a note records (NotesView owns the recorder)
@@ -436,10 +438,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Don't collide with any OTHER in-flight capture (deliberate dictation / note / to-do).
         if state == .recording || todoCaptureRecording || NotesController.shared.isRecording { return }
         actionModeRecording = true
-        startRecording(forced: nil)
-        // Badge the pill as "Action" once recording is actually live (startRecording sets it to
-        // .dictation on the async permission callback, so re-stamp it on the next runloop hop).
-        DispatchQueue.main.async { [weak self] in
+        // Badge the pill as "Action" INSIDE the recording-started callback (startRecording sets it to
+        // .dictation there). Passing it as onStarted means it applies whether recording begins
+        // synchronously (mic already authorized) or asynchronously (first-run .notDetermined prompt) —
+        // a fire-once main-queue hop after startRecording would race the async permission callback and
+        // bail before recording is live, leaving a plain "Listening" pill with no Action badge/hint.
+        startRecording(forced: nil) { [weak self] in
             guard let self, self.state == .recording, self.actionModeRecording else { return }
             self.overlay.model.context = .action
             self.overlay.model.modeName = ""
@@ -889,7 +893,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if TransformPickerController.shared.isShowing { TransformPickerController.shared.hide(); return }
         let sel = (Output.selectedText() ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         guard !sel.isEmpty else { flashError("Select some text first, then press the transform key to transform it."); return }
-        let transforms = TransformsStore.shared.items
+        // Filter out the built-in "Add to dictionary" shortcut: it's an informational/no-output
+        // transform that the verbal-shortcut path (Pipeline.swift) and the Services provider
+        // (Services.swift) special-case. The ⌥X picker has no such special-case, so showing it here
+        // would send its prompt to Claude and paste the result OVER the user's selection.
+        let transforms = TransformsStore.shared.items.filter { !TransformsStore.isAddToDictionary($0) }
         guard !transforms.isEmpty else { flashError("No transforms yet — add some in Verba ▸ Transforms."); return }
         let target = Output.captureTarget()
         TransformPickerController.shared.present(transforms, at: NSEvent.mouseLocation) { [weak self] transform in
@@ -902,14 +910,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // start while it's applying (they would each eventually Output.paste into a now-wrong field,
         // colliding). Set on the main queue before dispatching; cleared in the main-queue completion.
         transformInFlight = true
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let outcome = TransformsStore.runOnSelectionSync(transform, selection: selection)
-            DispatchQueue.main.async {
-                self?.transformInFlight = false
+        // Run as a tracked Task (stored in transformTask) so Esc / cancelEverything can cancel it: the
+        // blocking network transform is offloaded to a detached child, but the completion is gated on
+        // `!Task.isCancelled` so an Esc'd transform NEVER pastes its (now-stale) result into whatever
+        // app became frontmost after the user pressed Esc "to stop everything".
+        transformTask = Task { [weak self] in
+            let outcome = await Task.detached(priority: .userInitiated) {
+                TransformsStore.runOnSelectionSync(transform, selection: selection)
+            }.value
+            await MainActor.run {
+                guard let self else { return }
+                self.transformInFlight = false
+                self.transformTask = nil
                 TransformPickerController.shared.hide()   // dismiss the "Transforming…" panel
+                guard !Task.isCancelled else { return }   // Esc'd mid-run → don't paste a stale result
                 switch outcome {
                 case .success(let text): _ = Output.paste(text, rich: false, target: target)
-                case .failure(let msg):  self?.flashError(msg)
+                case .failure(let msg):  self.flashError(msg)
                 }
             }
         }
@@ -927,6 +944,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // full-screen / foreign app that won't yield it). Tear it down via the SAME reliable global
         // Esc path so it's never stuck with click-away as the only dismiss.
         TransformPickerController.shared.hide()
+        // An in-flight ⌥X transform (seconds-long, network-bound) would otherwise complete AFTER this
+        // Esc and Output.paste() its stale result into whatever app is now frontmost — replacing a
+        // selection the user didn't intend. Cancel it and clear the busy flag here; its completion is
+        // guarded on !Task.isCancelled so the paste is skipped.
+        transformTask?.cancel(); transformTask = nil
+        transformInFlight = false
         // A note recording lives in NotesView's own recorder; ask it to discard (the pill is then
         // torn down by the isRecording→false observer).
         if NotesController.shared.isRecording {
@@ -1052,6 +1075,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// on top of the mode when reprompting). Shows a brief overlay flash of the new style name.
     private func styleCycleGesture(_ dir: Int) {
         if state == .processing { return }
+        // With 0 or 1 styles there's nothing to cycle to — cycleStyle no-ops, so suppress the
+        // sound + HUD flash that would otherwise imply a change happened (reads as a bug).
+        guard Settings.shared.styles.count > 1 else { return }
         let style = Settings.shared.cycleStyle(dir)
         SoundFX.mode()
         if state == .idle {
@@ -1269,7 +1295,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Dictation flow
 
-    private func startRecording(forced: Profile?) {
+    /// `onStarted` (optional) runs INSIDE the recording-started callback — after audio is actually
+    /// live and the pill is shown — so a caller that needs to re-stamp the pill (e.g. Action mode's
+    /// badge/instruction) applies it whether recording starts synchronously (permission already
+    /// granted) or asynchronously (first-run permission prompt). A fire-once main-queue hop after this
+    /// call would race the async permission callback and bail with the pill un-badged.
+    private func startRecording(forced: Profile?, onStarted: (() -> Void)? = nil) {
         // A voice to-do capture owns the shared `recorder` while it records (state stays .idle,
         // so every state==.idle caller — global shortcut, edit-last, etc. — would otherwise hijack
         // its mic and orphan the capture). Refuse to start a dictation over an in-flight capture.
@@ -1336,6 +1367,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             RunLoop.main.add(t, forMode: .common)
             self.levelTimer = t
+            onStarted?()   // re-stamp the pill (Action badge, etc.) now that recording is truly live
         }
     }
 
@@ -1657,7 +1689,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             } else {
                 overlay.hide(); state = .idle
             }
-            showReview(original: result.original, text: result.reprompted, onConfirm: deliver)
+            showReview(original: result.original, text: result.reprompted, session: session, onConfirm: deliver)
         } else {
             deliver(result.reprompted)
         }
@@ -2221,7 +2253,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         present(onboardingWC)
     }
 
-    private func showReview(original: String, text: String, onConfirm: @escaping (String) -> Void) {
+    private func showReview(original: String, text: String, session: Session, onConfirm: @escaping (String) -> Void) {
         let close: () -> Void = { [weak self] in
             self?.reviewWindow?.close(); self?.reviewWindow = nil
         }
@@ -2230,7 +2262,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                   if Settings.shared.autoLearnDictionary { DictionaryStore.shared.learn(from: text, edited: t) }
                                   onConfirm(t); close()
                               },
-                              onCancel: { close() })
+                              onCancel: { [weak self] in
+                                  // Cancel must NOT silently discard a finished transcript+reprompt: the user
+                                  // spent seconds producing it. endInflight() already pulled it from in-flight,
+                                  // so finalize it into the Sessions list (status .done + resultText) so it stays
+                                  // copyable, then flash so the discard reads as intentional, not data loss.
+                                  if let self {
+                                      session.resultText = text
+                                      session.original = original
+                                      session.status = .done
+                                      SessionStore.shared.complete(session)
+                                      self.flashInfo("Discarded — kept in Recent Results")
+                                  }
+                                  close()
+                              })
         let wc = makeWindow(title: "Review dictation", view: view, size: NSSize(width: 520, height: 420), glass: true, resizable: false)
         reviewWindow = wc.window
         // Also raised from a background pipeline Task → force focus for the accessory app.

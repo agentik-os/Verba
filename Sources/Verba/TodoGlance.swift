@@ -6,7 +6,7 @@ import Combine
 
 /// A single row in the glance: a task, the project it belongs to, and whether it's overdue.
 struct GlanceItem: Identifiable {
-    let id: UUID            // the task id (used for markDone)
+    let id: UUID            // the task id, or the sub-task id when isSubtask (used for markDone routing)
     let projectID: UUID
     let project: String
     let title: String
@@ -14,6 +14,7 @@ struct GlanceItem: Identifiable {
     let deadline: Date?
     let overdue: Bool
     let subtaskCount: Int   // >0 → checking off here cascades to this many sub-tasks
+    let isSubtask: Bool     // true → check-off routes to markSubtaskDone(subtaskID:)
 }
 
 /// Computes "today's" relevant to-dos across all projects:
@@ -34,7 +35,7 @@ enum TodoGlance {
                 let item: (Bool) -> GlanceItem = { overdue in
                     GlanceItem(id: t.id, projectID: p.id, project: p.name,
                                title: t.title, done: t.done, deadline: t.deadline, overdue: overdue,
-                               subtaskCount: t.subtasks.count)
+                               subtaskCount: t.subtasks.count, isSubtask: false)
                 }
                 if let d = t.deadline {
                     if d < todayStart {              // overdue
@@ -45,6 +46,24 @@ enum TodoGlance {
                     // due later than today → not relevant to the glance
                 } else {
                     undated.append(item(false))
+                }
+
+                // Sub-tasks carry their own deadlines (and fire their own reminders), so an
+                // overdue/due-today open sub-task must surface here too — otherwise it buzzes the
+                // user yet stays invisible. Only the dated branch: undated sub-tasks aren't glanced.
+                for s in t.subtasks where !s.done {
+                    guard let sd = s.deadline else { continue }
+                    let title = t.title.isEmpty ? s.title : "\(t.title) ▸ \(s.title)"
+                    let subItem: (Bool) -> GlanceItem = { overdue in
+                        GlanceItem(id: s.id, projectID: p.id, project: p.name,
+                                   title: title, done: s.done, deadline: sd, overdue: overdue,
+                                   subtaskCount: 0, isSubtask: true)
+                    }
+                    if sd < todayStart {             // overdue
+                        dated.append(subItem(true))
+                    } else if sd < todayEnd {        // due today
+                        dated.append(subItem(false))
+                    }
                 }
             }
         }
@@ -66,7 +85,24 @@ struct TodoGlanceView: View {
     @ObservedObject var store = TodoStore.shared
     var onClose: () -> Void
 
-    private var items: [GlanceItem] { TodoGlance.items(from: store.projects) }
+    /// IDs the user just checked off in this glance session. TodoGlance.items only emits OPEN
+    /// items, so a freshly-completed row would vanish before its checkmark could be un-tapped.
+    /// We keep those rows visible (rendered done) for the session so a mis-tap is undoable here.
+    @State private var justDone: [UUID: GlanceItem] = [:]
+
+    /// Open items from the store, plus this session's just-completed rows (shown done, in place),
+    /// so the filled checkmark stays tappable for an undo.
+    private var items: [GlanceItem] {
+        let open = TodoGlance.items(from: store.projects)
+        let openIDs = Set(open.map(\.id))
+        // Drop any remembered row that has come back to open on its own (e.g. undone elsewhere).
+        var merged = open
+        for (id, var row) in justDone where !openIDs.contains(id) {
+            row.done = true
+            merged.append(row)
+        }
+        return merged
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -112,7 +148,15 @@ struct TodoGlanceView: View {
     @ViewBuilder private func glanceRow(_ row: GlanceItem) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 9) {
             Button {
-                store.markDone(taskID: row.id, done: !row.done)
+                let nowDone = !row.done
+                if row.isSubtask {
+                    store.markSubtaskDone(subtaskID: row.id, done: nowDone)
+                } else {
+                    store.markDone(taskID: row.id, done: nowDone)
+                }
+                // Remember a just-completed row so it stays visible (and undoable) this session;
+                // un-checking removes it from the remembered set so it returns to its live state.
+                if nowDone { justDone[row.id] = row } else { justDone[row.id] = nil }
             } label: {
                 Image(systemName: row.done ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 15))

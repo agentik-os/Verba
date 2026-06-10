@@ -123,8 +123,29 @@ struct MarkdownEditor: NSViewRepresentable {
             guard let tv = notification.object as? NSTextView else { return }
             parent.text = tv.string
             let sel = tv.selectedRange()
-            restyle(tv, force: true)
+            restyleEdited(tv)                  // re-scan only the edited paragraph(s), not the whole doc
             tv.setSelectedRange(sel)          // restyle must not move the caret
+        }
+
+        // Incremental restyle for live typing: re-run `style()` over just the paragraph range that
+        // contains the caret/edit, and invalidate glyphs for that sub-range only. Restyling the
+        // whole NSTextStorage on every keystroke caused visible input lag in long (multi-KB) notes,
+        // because the per-line enumeration + full-range glyph invalidate/ensureLayout aren't guarded.
+        func restyleEdited(_ tv: NSTextView) {
+            guard let ts = tv.textStorage, let lm = tv.layoutManager else { return }
+            let editing = (tv.window?.firstResponder === tv)
+            let ns = ts.string as NSString
+            // Edited scope = the paragraph(s) touched by the current selection.
+            let scope = ns.lineRange(for: tv.selectedRange())
+            let active = editing ? scope : NSRange(location: -1, length: 0)
+            lastActive = active
+            // Drop any previously-hidden marker indexes inside the scope; the rescan re-adds the
+            // current ones. Indexes outside the scope are unaffected by a single-paragraph edit.
+            hidden = hidden.filter { !NSLocationInRange($0, scope) }
+            let scoped = MarkdownEditor.style(ts, activeLine: active, in: scope)
+            hidden.formUnion(scoped)
+            lm.invalidateGlyphs(forCharacterRange: scope, changeInLength: 0, actualCharacterRange: nil)
+            lm.ensureLayout(forCharacterRange: scope)
         }
 
         // Reveal markers on the line the caret is on (so you can edit the syntax), hide elsewhere.
@@ -172,8 +193,13 @@ struct MarkdownEditor: NSViewRepresentable {
     // MARK: - Live styling. Applies fonts/colors AND returns the marker character indexes to hide
     // (markers on the active line are NOT hidden, so they stay editable). Never mutates characters.
     @discardableResult
-    static func style(_ ts: NSTextStorage, activeLine: NSRange = NSRange(location: -1, length: 0)) -> Set<Int> {
+    static func style(_ ts: NSTextStorage, activeLine: NSRange = NSRange(location: -1, length: 0),
+                      in scope: NSRange? = nil) -> Set<Int> {
         let full = NSRange(location: 0, length: ts.length)
+        // `scope` limits the rescan to an edited paragraph range (clamped to the document) so live
+        // typing doesn't re-style/re-enumerate the whole note; nil means restyle the full document.
+        let range = scope.map { NSIntersectionRange($0, full) } ?? full
+        guard range.length > 0 || ts.length == 0 else { return Set<Int>() }
         let ns = ts.string as NSString
         let base = NSFont.systemFont(ofSize: 14)
         let dim = NSColor.tertiaryLabelColor
@@ -186,10 +212,10 @@ struct MarkdownEditor: NSViewRepresentable {
         }
 
         ts.beginEditing()
-        ts.setAttributes([.font: base, .foregroundColor: NSColor.labelColor], range: full)
+        ts.setAttributes([.font: base, .foregroundColor: NSColor.labelColor], range: range)
 
         // Per-line: headings, list/checkbox markers.
-        ns.enumerateSubstrings(in: full, options: .byLines) { sub, lineRange, _, _ in
+        ns.enumerateSubstrings(in: range, options: .byLines) { sub, lineRange, _, _ in
             guard let line = sub else { return }
             let hashes = line.prefix(while: { $0 == "#" }).count
             if hashes >= 1, hashes <= 6, line.count > hashes, line[line.index(line.startIndex, offsetBy: hashes)] == " " {
@@ -209,21 +235,23 @@ struct MarkdownEditor: NSViewRepresentable {
         }
 
         // Inline spans: style the content, HIDE the markers (revealed only on the active line).
-        guard ts.length < 20000 else { ts.endEditing(); return hide }
-        applyInline(ts, ns, pattern: "\\*\\*(.+?)\\*\\*", markerLen: 2, attrs: [.font: NSFont.boldSystemFont(ofSize: 14)], conceal: conceal)
-        applyInline(ts, ns, pattern: "~~(.+?)~~", markerLen: 2, attrs: [.strikethroughStyle: NSUnderlineStyle.single.rawValue], conceal: conceal)
-        applyInline(ts, ns, pattern: "(?<!\\*)\\*(?!\\*)([^*\\n]+?)\\*(?!\\*)", markerLen: 1, attrs: [.font: italicFont(14)], conceal: conceal)
-        applyInline(ts, ns, pattern: "`([^`\\n]+?)`", markerLen: 1, attrs: [.font: codeFont, .foregroundColor: NSColor.systemPink], conceal: conceal)
+        // The 20000-char guard applies to the *scanned* range, so a scoped paragraph edit in a huge
+        // note still gets inline styling (only a full-document rescan of a 20k+ note skips it).
+        guard range.length < 20000 else { ts.endEditing(); return hide }
+        applyInline(ts, ns, in: range, pattern: "\\*\\*(.+?)\\*\\*", markerLen: 2, attrs: [.font: NSFont.boldSystemFont(ofSize: 14)], conceal: conceal)
+        applyInline(ts, ns, in: range, pattern: "~~(.+?)~~", markerLen: 2, attrs: [.strikethroughStyle: NSUnderlineStyle.single.rawValue], conceal: conceal)
+        applyInline(ts, ns, in: range, pattern: "(?<!\\*)\\*(?!\\*)([^*\\n]+?)\\*(?!\\*)", markerLen: 1, attrs: [.font: italicFont(14)], conceal: conceal)
+        applyInline(ts, ns, in: range, pattern: "`([^`\\n]+?)`", markerLen: 1, attrs: [.font: codeFont, .foregroundColor: NSColor.systemPink], conceal: conceal)
 
         ts.endEditing()
         return hide
     }
 
-    private static func applyInline(_ ts: NSTextStorage, _ ns: NSString, pattern: String,
+    private static func applyInline(_ ts: NSTextStorage, _ ns: NSString, in range: NSRange, pattern: String,
                                     markerLen: Int, attrs: [NSAttributedString.Key: Any],
                                     conceal: (Int, Int) -> Void) {
         guard let re = try? NSRegularExpression(pattern: pattern) else { return }
-        for m in re.matches(in: ns as String, range: NSRange(location: 0, length: ns.length)) {
+        for m in re.matches(in: ns as String, range: range) {
             let whole = m.range
             for (k, v) in attrs { ts.addAttribute(k, value: v, range: whole) }
             conceal(whole.location, markerLen)                              // opening marker

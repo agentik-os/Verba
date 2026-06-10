@@ -36,6 +36,7 @@ struct HistoryView: View {
     @State private var rerunning = false
     @State private var rerunError: String?      // surfaced inline when a re-run fails
     @State private var confirmClear = false     // guard the destructive "clear all"
+    @State private var preRerunReprompted: (id: HistoryEntry.ID, text: String)?  // prior reprompted text, for one-tap Undo after a re-run
 
     // MARK: - Derived filter sets
     /// Distinct mode (profile) names present in history, in first-seen order.
@@ -103,7 +104,7 @@ struct HistoryView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onChange(of: selection) { _, _ in audio.stop(); rerunError = nil }   // stop + clear stale error when switching entry
+        .onChange(of: selection) { _, _ in audio.stop(); rerunError = nil; preRerunReprompted = nil }   // stop + clear stale error / undo-stash when switching entry
         .onDisappear { audio.stop() }
     }
 
@@ -303,6 +304,19 @@ struct HistoryView: View {
                         }
                         .buttonStyle(.borderless)
                         .help("Re-run Claude on the raw transcript using this dictation's own mode (\(rerunModeLabel(e))) and OVERWRITE the saved entry. To try a variation without changing this entry, use Adapt below.")
+                        // Undo appears only right after a re-run, restoring the previous restructured text.
+                        if let stash = preRerunReprompted, stash.id == e.id {
+                            Divider().frame(height: 12)
+                            Button {
+                                history.updateReprompted(e, text: stash.text)
+                                withAnimation(.easeInOut(duration: 0.18)) { preRerunReprompted = nil }
+                            } label: {
+                                Label("Undo", systemImage: "arrow.uturn.backward")
+                                    .font(.system(size: 12, weight: .medium))
+                            }
+                            .buttonStyle(.borderless)
+                            .help("Restore the restructured text from before the last re-run")
+                        }
                     }
                     Spacer()
                     Button(role: .destructive) { audio.stop(); history.delete(e); selection = nil } label: {
@@ -371,7 +385,13 @@ struct HistoryView: View {
                 let r = Reprompter(model: p.model ?? Settings.shared.claudeModel)
                 let out = try await r.reprompt(transcript: e.original, systemPrompt: sys)
                 await MainActor.run {
+                    // Stash the prior restructured text so this destructive overwrite is
+                    // reversible in one tap if the new Claude output turns out worse.
+                    let prior = e.reprompted
                     history.updateReprompted(e, text: out)
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        preRerunReprompted = (id: e.id, text: prior)
+                    }
                     rerunning = false
                 }
             } catch {

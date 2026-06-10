@@ -96,32 +96,36 @@ final class NotesStore: ObservableObject {
         entries.removeAll { $0.id == entry.id }
         save()
         if !Settings.shared.proEmail.isEmpty {
-            post("mutation", "notes:remove", ["uid": uid, "ts": entry.date.timeIntervalSince1970 * 1000]) {
+            // S16: route through ConvexClient so the required device `secret` is injected.
+            ConvexClient.call("mutation", "notes:remove",
+                              ConvexClient.authedArgs(["ts": entry.date.timeIntervalSince1970 * 1000])) {
                 if !convexOK($0) { VerbaLog.syncFailure("notes:remove") }   // R14
             }
         }
     }
 
     // MARK: - Cloud sync (Convex), text-only, mirrors History.
-    private static let convex = "https://fortunate-aardvark-443.convex.cloud"
-    private var uid: String { Settings.shared.uid }
+    // All calls go through the shared ConvexClient and carry the device secret (S16).
 
     private func push(_ e: NotesEntry) {
         guard !Settings.shared.proEmail.isEmpty else { return }
-        post("mutation", "notes:push", [
-            "uid": uid, "ts": e.date.timeIntervalSince1970 * 1000,
+        ConvexClient.call("mutation", "notes:push", ConvexClient.authedArgs([
+            "ts": e.date.timeIntervalSince1970 * 1000,
+            "title": e.title,
             "original": e.original, "formatted": e.formatted, "formatName": e.formatName, "tags": e.tags,
-        ]) { if !convexOK($0) { VerbaLog.syncFailure("notes:push") } }   // R14
+        ])) { if !convexOK($0) { VerbaLog.syncFailure("notes:push") } }   // R14
     }
 
     func pushAll() {
         guard !Settings.shared.proEmail.isEmpty else { return }
+        ConvexClient.registerDevice(token: AuthToken.current)   // S16: claim the account uid before pushing
         for e in entries { push(e) }
     }
 
     func syncFromCloud() {
         guard !Settings.shared.proEmail.isEmpty else { return }
-        post("query", "notes:pull", ["uid": uid]) { [weak self] data in
+        ConvexClient.registerDevice(token: AuthToken.current)   // S16: claim the account uid before pulling
+        ConvexClient.call("query", "notes:pull", ConvexClient.authedArgs()) { [weak self] data in
             guard let self, let data,
                   let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   obj["status"] as? String == "success",
@@ -130,33 +134,48 @@ final class NotesStore: ObservableObject {
                 return
             }
             DispatchQueue.main.async {
-                let known = Set(self.entries.map { ($0.date.timeIntervalSince1970 * 1000).rounded() })
+                // ts → index of the local entry with that timestamp (for in-place updates).
+                var indexByTs: [Double: Int] = [:]
+                for (i, e) in self.entries.enumerated() {
+                    indexByTs[(e.date.timeIntervalSince1970 * 1000).rounded()] = i
+                }
                 var merged = self.entries
+                var changed = false
                 for r in arr {
                     let ts = (r["ts"] as? Double) ?? 0
-                    guard ts > 0, !known.contains(ts.rounded()) else { continue }
-                    merged.append(NotesEntry(
-                        date: Date(timeIntervalSince1970: ts / 1000),
-                        original: r["original"] as? String ?? "",
-                        formatted: r["formatted"] as? String ?? "",
-                        formatName: r["formatName"] as? String ?? "Note",
-                        audioFile: nil,
-                        tags: (r["tags"] as? [String]) ?? []))
+                    guard ts > 0 else { continue }
+                    let title = r["title"] as? String ?? ""
+                    let formatted = r["formatted"] as? String ?? ""
+                    let formatName = r["formatName"] as? String ?? "Note"
+                    let tags = (r["tags"] as? [String]) ?? []
+                    if let i = indexByTs[ts.rounded()] {
+                        // Known note: pull remote edits (formatted/tags/title/formatName) in place.
+                        if merged[i].formatted != formatted || merged[i].tags != tags
+                            || merged[i].title != title || merged[i].formatName != formatName {
+                            merged[i].formatted = formatted
+                            merged[i].tags = tags
+                            merged[i].formatName = formatName
+                            if !title.isEmpty { merged[i].title = title }
+                            changed = true
+                        }
+                    } else {
+                        merged.append(NotesEntry(
+                            date: Date(timeIntervalSince1970: ts / 1000),
+                            title: title,
+                            original: r["original"] as? String ?? "",
+                            formatted: formatted,
+                            formatName: formatName,
+                            audioFile: nil,
+                            tags: tags))
+                        changed = true
+                    }
                 }
-                if merged.count != self.entries.count {
+                if changed {
                     self.entries = merged.sorted { $0.date > $1.date }
                     self.save()
                 }
             }
         }
-    }
-
-    private func post(_ kind: String, _ path: String, _ args: [String: Any], _ cb: @escaping (Data?) -> Void) {
-        guard let url = URL(string: "\(Self.convex)/api/\(kind)") else { cb(nil); return }
-        var req = URLRequest(url: url); req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "content-type")
-        req.httpBody = try? JSONSerialization.data(withJSONObject: ["path": path, "args": args, "format": "json"])
-        URLSession.shared.dataTask(with: req) { d, _, _ in cb(d) }.resume()
     }
 
     func audioURL(for entry: NotesEntry) -> URL? {

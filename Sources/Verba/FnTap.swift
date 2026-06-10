@@ -224,7 +224,10 @@ final class FnTap {
                     let handled = onDigit?(n) == true
                     if handled { return nil }                // mapped to a profile → consume
                     if fnDown { onDigitOutOfRange?(n); return nil }  // Fn held, no such mode → flash + consume
-                    // picker open but unhandled (out of range) → let the digit pass through
+                    // picker open (no Fn) but out of range → a digit against the open picker is a
+                    // mode-pick attempt, not literal text: flash feedback + consume so it never types
+                    // a stray digit into the app behind the picker.
+                    onDigitOutOfRange?(n); return nil
                 }
             }
             // Arrow navigation + Enter ONLY while the picker is open (no global conflict).

@@ -185,6 +185,8 @@ struct HomeView: View {
 final class InsightsStanding: ObservableObject {
     @Published var entries: [LeaderEntry] = []
     @Published var loading = true
+    /// Throttle: skip a reload if the last one landed under this many seconds ago.
+    private var lastLoaded: Date?
 
     /// Rows sorted by total words, descending — the canonical leaderboard ordering.
     private var ranked: [LeaderEntry] { entries.sorted { $0.words > $1.words } }
@@ -206,9 +208,15 @@ final class InsightsStanding: ObservableObject {
         return max(0, Int(top.words - m.entry.words))
     }
 
-    func load() {
-        loading = true
-        Leaderboard.fetch { [weak self] in self?.entries = $0; self?.loading = false }
+    /// Reload on each appearance, but throttle rapid re-appearances so tab-flipping
+    /// doesn't spam the network. Pushes the user's freshly-dictated stats first (like
+    /// LeaderboardModel.load) so a brand-new user appears on the board immediately.
+    func load(throttle: TimeInterval = 20) {
+        if let last = lastLoaded, Date().timeIntervalSince(last) < throttle, !entries.isEmpty { return }
+        loading = entries.isEmpty   // keep the card visible (no spinner flash) on a background refresh
+        Leaderboard.submit { [weak self] in
+            Leaderboard.fetch { self?.entries = $0; self?.loading = false; self?.lastLoaded = Date() }
+        }
     }
 }
 
@@ -282,7 +290,7 @@ struct InsightsView: View {
             // MILESTONE — the next round-number target, with a thin progress bar.
             milestoneCard
         }
-        .onAppear { if standing.entries.isEmpty { standing.load() } }
+        .onAppear { standing.load() }
     }
 
     // MARK: Standing hero
@@ -459,7 +467,8 @@ struct InsightsView: View {
 
     /// Today vs yesterday, as a signed percent (nil-safe: needs a yesterday baseline).
     private var dayDelta: Delta? {
-        guard wordsYesterday > 0 else { return wordsToday > 0 ? Delta(percent: 100) : nil }
+        // No prior-day baseline → no honest percent to show (a fabricated "+100%" misrepresents "first day").
+        guard wordsYesterday > 0 else { return nil }
         return Delta(percent: Int(((Double(wordsToday) - Double(wordsYesterday)) / Double(wordsYesterday) * 100).rounded()))
     }
 
@@ -467,7 +476,8 @@ struct InsightsView: View {
     private var weekDelta: Delta? {
         let last7 = recent.suffix(7).reduce(0) { $0 + $1.words }
         let prev7 = recent.prefix(max(0, recent.count - 7)).suffix(7).reduce(0) { $0 + $1.words }
-        guard prev7 > 0 else { return last7 > 0 ? Delta(percent: 100) : nil }
+        // No prior-week baseline → suppress the badge rather than show a fabricated "+100%".
+        guard prev7 > 0 else { return nil }
         return Delta(percent: Int(((Double(last7) - Double(prev7)) / Double(prev7) * 100).rounded()))
     }
 
@@ -476,9 +486,10 @@ struct InsightsView: View {
     /// Active days in the last 7 (days with any words).
     private var activeDays7: Int { recent.suffix(7).filter { $0.words > 0 }.count }
 
-    /// The best single day in the last 14 (label + words) — "most productive day".
+    /// The best single day in the last 7 (label + words) — "most productive day",
+    /// scoped to the same 7-day window as the "This week" group it lives in.
     private var mostProductiveDay: (label: String, words: Int) {
-        recent.max { $0.words < $1.words } ?? (label: "—", words: 0)
+        recent.suffix(7).max { $0.words < $1.words } ?? (label: "—", words: 0)
     }
 
     /// How many times faster dictation is than ~40 wpm typing.
@@ -606,6 +617,7 @@ struct DictionaryView: View {
     @State private var selectedID: UUID?    // entry being edited; nil = the "Add" form
     @State private var search = ""
     @State private var filterCorrections: Bool? = nil   // nil = all, true = corrections, false = words
+    @State private var autoOnly = false                 // when on, show only auto-learned terms
     // Rows the user explicitly created as a "Correct a misspelling" entry but hasn't typed the
     // spoken form into yet. Tracks the term KIND explicitly instead of inferring it from a fragile
     // space sentinel in `spoken`, so editing whitespace can't flip the row's type and no literal
@@ -625,14 +637,24 @@ struct DictionaryView: View {
         !t.spoken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || correctionDrafts.contains(t.id)
     }
 
-    /// Terms passing the search + correction/word filter, in store order.
+    /// Terms passing the search + correction/word filter (+ optional auto-only), in store order.
     private var filtered: [DictTerm] {
         let q = search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         return store.terms.filter { t in
+            if autoOnly, !t.auto { return false }
             if let want = filterCorrections, isCorrection(t) != want { return false }
             if q.isEmpty { return true }
             return t.written.lowercased().contains(q) || t.spoken.lowercased().contains(q)
         }
+    }
+
+    /// Delete every auto-learned term in one go, so a bad auto-learned swap is easy to undo.
+    private func clearAutoLearned() {
+        let removed = Set(store.terms.filter(\.auto).map(\.id))
+        store.terms.removeAll { $0.auto }
+        correctionDrafts.subtract(removed)
+        if let id = selectedID, removed.contains(id) { selectedID = nil }
+        if autoOnly { autoOnly = false }
     }
 
     // MARK: Layout
@@ -648,6 +670,24 @@ struct DictionaryView: View {
             // Drop draft flags for terms that no longer exist.
             let live = Set(store.terms.map(\.id))
             correctionDrafts.formIntersection(live)
+        }
+        .onChange(of: selectedID) { oldValue, _ in
+            // When selection leaves a row the user opened (via "Add a word" / "Correct a
+            // misspelling") but never filled, prune it so abandoned blank rows don't linger as
+            // "New term" forever and skew the list and filter counts.
+            pruneEmpty(oldValue)
+        }
+    }
+
+    /// Remove a term the user opened but left entirely empty (no written and no spoken form).
+    /// Only acts on the row the selection just left, so a genuinely-typed term is never touched.
+    private func pruneEmpty(_ id: UUID?) {
+        guard let id, let t = store.terms.first(where: { $0.id == id }) else { return }
+        let emptyWritten = t.written.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let emptySpoken = t.spoken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        if emptyWritten && emptySpoken {
+            store.terms.removeAll { $0.id == id }
+            correctionDrafts.remove(id)
         }
     }
 
@@ -675,6 +715,12 @@ struct DictionaryView: View {
                     paneChip(label: "All", icon: nil, on: filterCorrections == nil) { filterCorrections = nil }
                     paneChip(label: "Words", icon: "text.book.closed", on: filterCorrections == false) { filterCorrections = false }
                     paneChip(label: "Corrections", icon: "arrow.right", on: filterCorrections == true) { filterCorrections = true }
+                    // Auto is orthogonal to Words/Corrections — a toggle to review just the terms
+                    // Verba learned silently from your edits, so a bad auto-learned swap is findable.
+                    if autoCount > 0 {
+                        Divider().frame(height: 16).padding(.horizontal, 2)
+                        paneChip(label: "Auto", icon: "wand.and.sparkles", on: autoOnly) { autoOnly.toggle() }
+                    }
                 }
                 .padding(.horizontal, 14).padding(.bottom, 8)
             }
@@ -817,20 +863,40 @@ struct DictionaryView: View {
                     .font(.caption).foregroundStyle(.secondary)
 
                 // Auto-add control.
-                HStack(spacing: 12) {
-                    Image(systemName: "wand.and.sparkles").font(.system(size: 18)).foregroundStyle(.secondary)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Auto-add from your edits").font(.headline)
-                        Text(autoCount > 0
-                             ? "Verba learned \(autoCount) term\(autoCount == 1 ? "" : "s") from your corrections."
-                             : "When you fix a word after pasting, Verba adds it here automatically.")
-                            .font(.caption).monospacedDigit().foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "wand.and.sparkles").font(.system(size: 18)).foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Auto-add from your edits").font(.headline)
+                            Text(autoCount > 0
+                                 ? "Verba learned \(autoCount) term\(autoCount == 1 ? "" : "s") from your corrections."
+                                 : "When you fix a word after pasting, Verba adds it here automatically.")
+                                .font(.caption).monospacedDigit().foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Toggle(isOn: $settings.autoLearnDictionary) {
+                            Text("Auto-add").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                        }
+                        .toggleStyle(.switch).controlSize(.small)
                     }
-                    Spacer()
-                    Toggle(isOn: $settings.autoLearnDictionary) {
-                        Text("Auto-add").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                    // Review / bulk-clear the silently-learned terms — a bad auto-learned swap is
+                    // otherwise hard to find among many rows and corrupts every transcript.
+                    if autoCount > 0 {
+                        Divider().padding(.vertical, 10)
+                        HStack(spacing: 12) {
+                            Button { autoOnly = true; selectedID = nil } label: {
+                                Label("Review auto-learned", systemImage: "wand.and.sparkles")
+                                    .font(.system(size: 12, weight: .medium))
+                            }
+                            .buttonStyle(.borderless)
+                            Spacer()
+                            Button(role: .destructive) { clearAutoLearned() } label: {
+                                Text("Clear auto-learned").font(.system(size: 12, weight: .medium))
+                            }
+                            .buttonStyle(.borderless).foregroundStyle(.red)
+                            .help("Delete all \(autoCount) auto-learned term\(autoCount == 1 ? "" : "s"). Terms you added or corrected by hand are kept.")
+                        }
                     }
-                    .toggleStyle(.switch).controlSize(.small)
                 }
                 .padding(.horizontal, 16).padding(.vertical, 12)
                 .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -896,6 +962,16 @@ struct DictionaryView: View {
         let writtenIdx = store.terms.indices.filter {
             !store.terms[$0].written.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
+        // Positional mapping is only safe when the AI returned exactly one cleaned term per
+        // written-bearing row, in order. parse() drops any returned term with an empty written
+        // form, and the model is only *asked* to keep the same count/order — it can merge
+        // duplicates or omit one. When the counts diverge, zip() would silently pair a cleaned
+        // term with the wrong row and corrupt the user's dictionary, so refuse the whole merge
+        // and surface the mismatch instead of applying anything.
+        guard cleaned.count == writtenIdx.count else {
+            aiError = "AI returned a different number of terms — nothing was changed. Try again."
+            return
+        }
         for (cleanedTerm, idx) in zip(cleaned, writtenIdx) {
             store.terms[idx].written = cleanedTerm.written
             // Only an existing correction row may gain a proposed spoken form; a vocab-only row
@@ -924,6 +1000,22 @@ struct SnippetsView: View {
         }
         .onChange(of: store.items.count) { _, _ in
             if let id = selectedID, !store.items.contains(where: { $0.id == id }) { selectedID = nil }
+        }
+        .onChange(of: selectedID) { oldValue, _ in
+            // Prune a snippet the user opened via "Add snippet" but left entirely empty, so
+            // abandoned "New snippet" rows don't linger forever.
+            pruneEmpty(oldValue)
+        }
+    }
+
+    /// Remove a snippet the user opened but left entirely empty (no trigger and no expansion).
+    /// Only acts on the row the selection just left, so a genuinely-typed snippet is never touched.
+    private func pruneEmpty(_ id: UUID?) {
+        guard let id, let s = store.items.first(where: { $0.id == id }) else { return }
+        let emptyTrigger = s.trigger.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let emptyExpansion = s.expansion.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        if emptyTrigger && emptyExpansion {
+            store.items.removeAll { $0.id == id }
         }
     }
 
@@ -1196,6 +1288,18 @@ struct StyleView: View {
                             .font(.system(.callout, design: .monospaced)).scrollContentBackground(.hidden)
                             .frame(minHeight: 200).padding(12)
                             .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        // A non-Normal style with an empty prompt is skipped by the pipeline, so it
+                        // behaves exactly like Normal. Warn the user so an Active-but-empty style
+                        // doesn't silently do nothing to the output.
+                        if promptB.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            Label(isActive
+                                  ? "This style is Active but has no instructions yet — it behaves exactly like Normal. Add a prompt to make it do something."
+                                  : "This style has no instructions yet — it behaves like Normal until you add a prompt.",
+                                  systemImage: "exclamationmark.triangle.fill")
+                                .font(.caption)
+                                .foregroundStyle(isActive ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                         Text("e.g. “British English, no exclamation marks, sign off with ‘, G’.” Applies on top of every mode except Flow (raw dictation).")
                             .font(.caption).foregroundStyle(.secondary)
                     }

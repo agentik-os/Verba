@@ -11,6 +11,10 @@ enum Entitlement {
     /// Free plan = a full-Pro trial of this many dictations, then the paywall kicks in.
     static let freeTrialDictations = 33
 
+    /// How many trial dictations remain before we start warning the user, so the
+    /// dictation-33 paywall isn't a surprise. Surfaced by the trial card / a one-time nudge.
+    static let trialWarningThreshold = 5
+
     /// True when a non-Pro user has used up their free Pro-trial dictations.
     static func freeLimitReached() -> Bool {
         !Settings.shared.isPro && Stats.shared.totalCount >= freeTrialDictations
@@ -18,6 +22,12 @@ enum Entitlement {
 
     static func trialsRemaining() -> Int {
         max(0, freeTrialDictations - Stats.shared.totalCount)
+    }
+
+    /// True for a non-Pro user who is close to the wall (but not yet at it): the UI should
+    /// show a soft warning so the paywall at dictation \(freeTrialDictations) is expected.
+    static func trialWarningActive() -> Bool {
+        !Settings.shared.isPro && !freeLimitReached() && trialsRemaining() <= trialWarningThreshold
     }
 
     /// Token-authenticated subscription check. `.unreachable` (offline, server error, or a

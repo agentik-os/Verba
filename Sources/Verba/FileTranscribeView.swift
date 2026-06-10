@@ -283,6 +283,26 @@ private struct TranscriptDetailView: View {
     @State private var note = ""
     @State private var tags: [String] = []
     @State private var tagInput = ""
+    @State private var noteSaveTask: Task<Void, Never>?
+
+    /// Debounce note persistence: cancel any pending write and schedule a trailing
+    /// save 0.5s after the last keystroke, instead of re-encoding the whole library on every char.
+    private func scheduleNoteSave(_ value: String) {
+        noteSaveTask?.cancel()
+        noteSaveTask = Task {
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            if Task.isCancelled { return }
+            store.update(entry, note: value)
+        }
+    }
+
+    /// Flush a pending debounced note write immediately (on blur/disappear).
+    private func flushNoteSave() {
+        guard noteSaveTask != nil else { return }
+        noteSaveTask?.cancel()
+        noteSaveTask = nil
+        if note != entry.note { store.update(entry, note: note) }
+    }
 
     var body: some View {
         ScrollView {
@@ -311,7 +331,7 @@ private struct TranscriptDetailView: View {
                     TextEditor(text: $note)
                         .font(.body).frame(minHeight: 70)
                         .padding(6).background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .onChange(of: note) { _, v in store.update(entry, note: v) }
+                        .onChange(of: note) { _, v in scheduleNoteSave(v) }
                 }
 
                 // Per-transcript quick-actions / intent / mic — reuse the shared AdaptPanel.
@@ -320,6 +340,7 @@ private struct TranscriptDetailView: View {
             .padding(24)
         }
         .onAppear { note = entry.note; tags = entry.tags }
+        .onDisappear { flushNoteSave() }
     }
 
     private var tagEditor: some View {

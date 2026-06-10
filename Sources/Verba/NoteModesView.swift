@@ -81,8 +81,10 @@ struct NoteModesView: View {
                 HStack(spacing: 10) {
                     TextField("Name", text: nameB).cleanField().frame(maxWidth: 240)
                     Spacer()
-                    Button(role: .destructive) { delete(id) } label: { Image(systemName: "trash") }
-                        .buttonStyle(.borderless).foregroundStyle(.red).help("Delete this mode")
+                    if !isIntent {
+                        Button(role: .destructive) { delete(id) } label: { Image(systemName: "trash") }
+                            .buttonStyle(.borderless).foregroundStyle(.red).help("Delete this mode")
+                    }
                 }
 
                 field("Model", hint: "which Claude model turns the recording into this note") {
@@ -117,6 +119,9 @@ struct NoteModesView: View {
     }
 
     private func delete(_ id: UUID) {
+        // Never delete the unique Intent mode: it's the only source of one-off
+        // instructions and can't be re-created without a full Reset-to-defaults.
+        if store.modes.first(where: { $0.id == id })?.intent == true { return }
         selectedID = nil
         store.delete(id)
         selectedID = store.modes.first?.id

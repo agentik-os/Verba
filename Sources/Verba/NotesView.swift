@@ -39,6 +39,8 @@ struct NotesView: View {
     @State private var work: Task<Void, Never>?
     @State private var filterTag: String?
     @State private var appendMode = false   // next recording is appended to the current note
+    @State private var hasComposed = false  // true once a composition has produced content (title/tags/transcript/text); gates the recorder→editor flip so a transient empty edit doesn't yank the editor away
+    @State private var lastRecordedSeconds = 0   // duration snapshotted when the recording stops, used for Stats (live `elapsed` is reset before formatting finishes)
     @State private var autosaveTask: Task<Void, Never>?
     @State private var savedFlash = false   // brief "Saved ✓" after an autosave commit
     @State private var addedToTasksFlash = false   // brief confirmation after "Add to Tasks"
@@ -55,8 +57,8 @@ struct NotesView: View {
         }
         .onReceive(tick) { _ in if isRecording && !isPaused { elapsed = pausedAccum + Int(Date().timeIntervalSince(recordStart)) } }
         .onChange(of: selectedID) { _, id in loadSelection(id) }
-        .onChange(of: editorText) { _, _ in scheduleAutosave() }
-        .onChange(of: noteTags) { _, _ in scheduleAutosave() }
+        .onChange(of: editorText) { _, _ in markComposedIfNeeded(); scheduleAutosave() }
+        .onChange(of: noteTags) { _, _ in markComposedIfNeeded(); scheduleAutosave() }
         .onChange(of: notesCtl.pendingRecord) { _, v in if v { consumePending() } }
         // Mirror the recording state into the shared controller so a global bare-Fn tap knows a
         // note is recording (and must stop it rather than start a stray dictation), and so the
@@ -193,7 +195,7 @@ struct NotesView: View {
 
     // MARK: - Right: record a new note, or view/edit the selected one
     @ViewBuilder private var detail: some View {
-        if selectedID == nil && editorText.isEmpty && !busy {
+        if selectedID == nil && !hasComposed && !busy {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     intro
@@ -504,7 +506,7 @@ struct NotesView: View {
                 .font(.system(size: 20, weight: .bold))
                 .focused($titleFocused)
                 .padding(.horizontal, 4).padding(.top, 4).padding(.bottom, 2)
-                .onChange(of: noteTitle) { _, _ in scheduleAutosave() }
+                .onChange(of: noteTitle) { _, _ in markComposedIfNeeded(); scheduleAutosave() }
             // Single always-editable Markdown editor (Bear-style live styling), fills all space.
             MarkdownEditor(text: $editorText, controller: md)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -622,6 +624,21 @@ struct NotesView: View {
         selectedID = nil
         transcript = ""; editorText = ""; noteTitle = ""; noteTags = []; tagInput = ""; intentText = ""
         recordingURL = nil; appendMode = false
+        hasComposed = false; lastRecordedSeconds = 0
+    }
+
+    /// Latch `hasComposed` once any composition content exists. Drives the recorder→editor flip from
+    /// "has the user begun composing?" rather than from a live, user-clearable `editorText`, so a
+    /// transient empty body (select-all + delete) during a NEW note doesn't yank the editor (and the
+    /// in-progress title/tags) away and replace it with the empty recorder card.
+    private func markComposedIfNeeded() {
+        guard !hasComposed else { return }
+        if !editorText.isEmpty
+            || !transcript.isEmpty
+            || !noteTags.isEmpty
+            || !noteTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            hasComposed = true
+        }
     }
 
     /// Stop the recorder and clear all recording-related UI state + the overlay-feeding timer.
@@ -643,6 +660,7 @@ struct NotesView: View {
         format = modes.mode(named: e.formatName)
         recordingURL = store.audioURL(for: e)
         appendMode = false
+        hasComposed = true   // a loaded saved note is already a composition
     }
 
     private func remove(_ e: NotesEntry) {
@@ -687,7 +705,7 @@ struct NotesView: View {
             store.update(e, formatted: doc, formatName: format.name, tags: noteTags, title: titleTrim)
         } else {
             let e = store.add(original: transcript, formatted: doc, formatName: format.name, audioURL: recordingURL, tags: noteTags, title: titleTrim)
-            Stats.shared.record(words: wordCount(doc), seconds: Double(elapsed))
+            Stats.shared.record(words: wordCount(doc), seconds: Double(lastRecordedSeconds))
             selectedID = e.id          // keep editing the just-saved note
             noteTags = e.tags          // reflect auto-extracted #hashtags
             // First save with no title yet: focus the Title field so the (easy-to-miss) titling
@@ -703,6 +721,10 @@ struct NotesView: View {
         if isRecording {
             if isPaused { _ = recorder.resume() }   // a paused recorder won't flush a final file
             levelTimer?.invalidate(); levelTimer = nil
+            // Snapshot the true recorded duration NOW, before newNote()/beginNoteRecording() reset the
+            // live `elapsed` clock to 0. Stats.record (at autosave-commit) reads this stable value.
+            // Append keeps the running total across legs; a fresh recording replaces it.
+            lastRecordedSeconds = appendMode ? (lastRecordedSeconds + elapsed) : elapsed
             isRecording = false; isPaused = false; notesCtl.level = 0
             recordingURL = recorder.stop()
             // stop() re-arms this Notes recorder (prewarm), which keeps the prepared input

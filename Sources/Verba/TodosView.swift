@@ -139,10 +139,14 @@ enum TodoAgent {
         if let d = f.date(from: str) { return d }
         f.formatOptions = [.withInternetDateTime]
         if let d = f.date(from: str) { return d }
-        // Date-only ("2026-06-12") → treat as that day, local midnight.
+        // Date-only ("2026-06-12") → that day at 9am local, not midnight: a
+        // local-midnight deadline is already in the past for most of the day,
+        // so a day-granularity due date would be born overdue. Match
+        // defaultPickerDate()'s 9am intent.
         f.formatOptions = [.withFullDate]
         f.timeZone = .current
-        return f.date(from: str)
+        guard let parsed = f.date(from: str) else { return nil }
+        return Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: parsed) ?? parsed
     }
 
     // MARK: - Routing: understand the project▸task▸subtask model and place a spoken request

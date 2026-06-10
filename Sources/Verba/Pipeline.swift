@@ -129,6 +129,12 @@ enum Pipeline {
         // Context mode + Labs "Agentic actions": set when the vision model resolves the spoken
         // request into a structured, confirmable action instead of plain screen-grounded text.
         var detectedAction: VerbaAction? = nil
+        // True when an instruction-driven branch (verbal shortcut or selection instruction) produced
+        // `reprompted`, so its result is an LLM rewrite that may legitimately be bilingual on request.
+        // Edit-last is tracked separately via `editingLast`. The language-consistency guard below uses
+        // both to skip normalization, which must only fix engine code-switching of plain dictation —
+        // never undo a deliberately mixed-language result the user explicitly asked for.
+        var wasInstruction = false
         let sel = selection?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         // Edit-last is an EXPLICIT spoken instruction acting on the previous result, so it must
         // run the LLM in EVERY mode — including Flow/raw and when reprompting is globally off
@@ -305,6 +311,7 @@ enum Pipeline {
                         notice: added ? "Added “\(short)” to Dictionary" : "Already in Dictionary")
                 }
                 status("Working on your selection…")
+                wasInstruction = true
                 reprompted = try await r.reprompt(
                     transcript: sel,
                     systemPrompt: TransformsStore.selectionSystemPrompt(for: transform))
@@ -322,6 +329,7 @@ enum Pipeline {
                 should REPLACE the selection, no preamble, no quotes, no commentary. \
                 Keep the user's language unless they ask otherwise.
                 """
+                wasInstruction = true
                 let userText = "SELECTED TEXT:\n<<<\n\(sel)\n>>>\n\nSPOKEN INSTRUCTION:\n\(original)"
                 reprompted = try await r.reprompt(transcript: userText, systemPrompt: sys)
             } else {
@@ -340,8 +348,12 @@ enum Pipeline {
         // Language-consistency guard: transcription engines code-switch (mix French + English
         // mid-sentence). Detect a mixed result and normalize it to its single dominant language.
         // Applies to EVERY mode, including Flow/raw (which otherwise ships the engine output as-is).
-        // Skipped for Translate mode (its prompt already forces one target language).
-        if s.languageGuard, detectedAction == nil, profile.targetLanguage == nil, isMixedLanguage(reprompted) {
+        // Skipped for Translate mode (its prompt already forces one target language), and for
+        // instruction-driven results (edit-last / verbal-shortcut / selection-instruction): those are
+        // LLM rewrites that may be deliberately bilingual on request (e.g. "translate the second
+        // sentence to English", "add an English quote"), and normalizing would silently undo them.
+        if s.languageGuard, detectedAction == nil, !editingLast, !wasInstruction,
+           profile.targetLanguage == nil, isMixedLanguage(reprompted) {
             status("Cleaning up language…")
             if let fixed = try? await normalizeLanguage(reprompted, model: profile.model ?? s.claudeModel) {
                 reprompted = fixed

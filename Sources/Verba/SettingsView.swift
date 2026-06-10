@@ -63,10 +63,17 @@ struct SettingsView: View {
     @State private var keysSaved = false
     @State private var verifying = false
     @State private var verifyMsg = ""
+    // Restore-subscription field is detached from the live account identity (settings.proEmail):
+    // free-typing here must never overwrite/persist the signed-in account email. Only commit on a
+    // successful verify.
+    @State private var restoreEmail = ""
     @State private var signingIn = false
     @State private var confirmSignOut = false
     @State private var confirmCloudWipe = false
     @State private var cloudWiped = false
+    @State private var cloudWiping = false
+    @State private var cloudWipeError = false
+    @State private var cloudWipeAttempt = UUID()
     @State private var confirmUninstall = false
     @State private var engineTab: TranscriptionEngine = Settings.shared.engine
     @State private var installing = false
@@ -112,6 +119,9 @@ struct SettingsView: View {
         .onAppear {
             cacheBytes = History.shared.audioCacheBytes()
             autoCheck = updater.autoCheck; autoDownload = updater.autoDownload
+            // Seed the (detached) restore field from the current account email so it defaults to the
+            // signed-in identity without ever two-way-binding to it.
+            if restoreEmail.isEmpty { restoreEmail = settings.proEmail }
         }
     }
 
@@ -522,18 +532,24 @@ struct SettingsView: View {
              footer: settings.isPro
              ? "Thanks! Unlimited dictation, editable mode prompts and custom modes. Your subscription is active for this email."
              : "Already subscribed? Enter your checkout email and Verify to restore.") {
-            labeledField("Email used at checkout", $settings.proEmail, prompt: "you@example.com")
+            labeledField("Email used at checkout", $restoreEmail, prompt: "you@example.com")
             HStack {
                 Button {
                     verifying = true; verifyMsg = ""
                     Task {
                         let ok = await settings.verifyPro()
                         verifying = false
+                        if ok {
+                            // Only on a confirmed Pro result do we reconcile the displayed account
+                            // identity with the email the user just verified — never on free-typing.
+                            let typed = restoreEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+                            if !typed.isEmpty { settings.proEmail = typed }
+                        }
                         verifyMsg = ok ? "Pro unlocked ✓" : "No active subscription for this email."
                     }
                 } label: { Text(verifying ? "Checking…" : (settings.isPro ? "Re-check" : "Verify / restore")) }
                     .glassButton().controlSize(.regular)
-                    .disabled(verifying || settings.proEmail.isEmpty)
+                    .disabled(verifying || restoreEmail.isEmpty)
                 if !verifyMsg.isEmpty {
                     Text(verifyMsg).font(.caption).foregroundStyle(.secondary)
                 }
@@ -1160,26 +1176,27 @@ struct SettingsView: View {
             } label: { Label("Delete all history (text + audio)", systemImage: "trash.fill") }
                 .glassButton().controlSize(.small)
             if !settings.proEmail.isEmpty {
-                Button(role: .destructive) { confirmCloudWipe = true } label: {
-                    Label(cloudWiped ? "Cloud data deleted ✓" : "Delete all my cloud data", systemImage: "icloud.slash")
-                }
-                .glassButton().controlSize(.small)
-                .confirmationDialog("Delete all your cloud data?", isPresented: $confirmCloudWipe, titleVisibility: .visible) {
-                    Button("Delete cloud data", role: .destructive) {
-                        ConvexClient.call("mutation", "account:wipe", ConvexClient.authedArgs()) { _ in
-                            DispatchQueue.main.async {
-                                withAnimation(.spring(response: 0.28, dampingFraction: 0.6)) { cloudWiped = true }
-                                // Return the button to its actionable label after a short beat,
-                                // mirroring the keysSaved/copied confirmation patterns.
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
-                                    withAnimation(.easeOut(duration: 0.2)) { cloudWiped = false }
-                                }
-                            }
+                HStack(spacing: 8) {
+                    Button(role: .destructive) { confirmCloudWipe = true } label: {
+                        HStack(spacing: 6) {
+                            if cloudWiping { ProgressView().controlSize(.small) }
+                            Label(cloudWiped ? "Cloud data deleted ✓"
+                                  : (cloudWiping ? "Deleting…" : "Delete all my cloud data"),
+                                  systemImage: "icloud.slash")
                         }
                     }
-                    Button("Cancel", role: .cancel) { }
-                } message: {
-                    Text("Removes your synced history, notes, stats and leaderboard score from Verba's servers (with tombstones, so other Macs won't re-upload them). Local data on this Mac is untouched.")
+                    .glassButton().controlSize(.small)
+                    .disabled(cloudWiping)
+                    .confirmationDialog("Delete all your cloud data?", isPresented: $confirmCloudWipe, titleVisibility: .visible) {
+                        Button("Delete cloud data", role: .destructive) { wipeCloudData() }
+                        Button("Cancel", role: .cancel) { }
+                    } message: {
+                        Text("Removes your synced history, notes, stats and leaderboard score from Verba's servers (with tombstones, so other Macs won't re-upload them). Local data on this Mac is untouched.")
+                    }
+                    if cloudWipeError {
+                        statusLabel("Couldn't reach the server — cloud data may not have been deleted. Try again.",
+                                    system: "exclamationmark.triangle.fill", tint: .orange)
+                    }
                 }
             }
         }
@@ -1405,6 +1422,43 @@ struct SettingsView: View {
             pulling = false; ollamaHasModel = ok
         }
     }
+    private func wipeCloudData() {
+        guard !cloudWiping else { return }
+        cloudWiping = true; cloudWipeError = false; cloudWiped = false
+        // Track which attempt this is so a slow/never-returning call can't clobber a newer state,
+        // and so the timeout only fires for an attempt that is still in flight.
+        let attempt = UUID()
+        cloudWipeAttempt = attempt
+        ConvexClient.call("mutation", "account:wipe", ConvexClient.authedArgs()) { data in
+            DispatchQueue.main.async {
+                guard cloudWipeAttempt == attempt, cloudWiping else { return }
+                cloudWiping = false
+                // Convex success is an explicit {"status":"success"} envelope; nil data (network
+                // error / unreachable) or any non-success status is a failed wipe, surfaced explicitly.
+                let ok = data
+                    .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+                    .map { ($0["status"] as? String) == "success" } ?? false
+                if ok {
+                    cloudWipeError = false
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.6)) { cloudWiped = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+                        guard cloudWipeAttempt == attempt else { return }
+                        withAnimation(.easeOut(duration: 0.2)) { cloudWiped = false }
+                    }
+                } else {
+                    withAnimation(.easeOut(duration: 0.2)) { cloudWipeError = true }
+                }
+            }
+        }
+        // Safety net: if the completion never fires (server hang / dropped connection), don't leave the
+        // user stuck on an indistinguishable 'Deleting…' forever — surface an explicit failure.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15) {
+            guard cloudWipeAttempt == attempt, cloudWiping else { return }
+            cloudWiping = false
+            withAnimation(.easeOut(duration: 0.2)) { cloudWipeError = true }
+        }
+    }
+
     private func activate(_ e: TranscriptionEngine) {
         settings.engine = e
         activating = true

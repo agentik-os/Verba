@@ -229,6 +229,12 @@ struct AdaptPanel: View {
     /// as the reprompted output, tagged with the mode/intent that produced it.
     private func saveToHistory() {
         guard !adaptResult.isEmpty, !saved else { return }
+        guard Settings.shared.saveHistory else {
+            // History is off (S14) — History.add() would silently early-return, so don't
+            // claim a save that never reached disk. Surface why instead.
+            adaptError = "History saving is off — enable it in Settings to keep this."
+            return
+        }
         History.shared.add(original: source, reprompted: adaptResult,
                            profileName: adaptLabel.isEmpty ? "Adapt" : adaptLabel,
                            engine: "adapt", audioURL: nil)

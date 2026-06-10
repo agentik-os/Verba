@@ -25,13 +25,19 @@ enum Leaderboard {
         guard s.showOnLeaderboard else { DispatchQueue.main.async { done() }; return }   // opted out → never publish
         let alias = s.username.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !alias.isEmpty else { DispatchQueue.main.async { done() }; return }
-        ConvexClient.registerDevice(token: AuthToken.current)   // cheap + idempotent; the server dedups
         let args = ConvexClient.authedArgs([
             "alias": alias,
             "words": Stats.shared.totalWords, "wpm": Stats.shared.avgWPM,
             "streak": Stats.shared.streak, "saved": Stats.shared.timeSavedMinutes,
         ])
-        ConvexClient.call("mutation", "leaderboard:submit", args) { _ in DispatchQueue.main.async { done() } }
+        // Chain submit AFTER auth:register commits, so a fresh device's secret is keyed under
+        // its uid before the authed submit runs — otherwise the first submit can race ahead of
+        // registration and be rejected, silently dropping the device's first board appearance.
+        var registerArgs: [String: Any] = ["uid": s.uid, "secret": DeviceSecret.current]
+        if let token = AuthToken.current { registerArgs["token"] = token }
+        ConvexClient.call("mutation", "auth:register", registerArgs) { _ in
+            ConvexClient.call("mutation", "leaderboard:submit", args) { _ in DispatchQueue.main.async { done() } }
+        }
     }
 
     /// Delete a stale score row after sign-in/out re-keys the identity. You can only remove

@@ -192,7 +192,7 @@ struct OnboardingView: View {
                 if !settings.proEmail.isEmpty {
                     Label("Signed in as \(settings.proEmail)", systemImage: "checkmark.seal.fill")
                         .foregroundStyle(.green).font(.callout)
-                    Button("Use a different account") { settings.proEmail = "" }
+                    Button("Use a different account") { AuthSession.shared.signOut() }
                         .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
                 } else {
                     Text("Opens a secure window on verba.run. Sign up with Google or email, your account is created instantly.")

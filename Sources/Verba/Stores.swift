@@ -53,6 +53,15 @@ private func dayKey(_ date: Date = Date()) -> String {
     return f.string(from: date)
 }
 
+/// The calendar date `off` days before `from` (default today), DST/leap-second safe.
+/// Raw `addingTimeInterval(-86400)` lands on the wrong wall-clock date around DST
+/// boundaries (23h / 25h days), so day-bucket math must go through Calendar.
+private func dayOffset(_ off: Int, from: Date = Date()) -> Date {
+    let cal = Calendar.current
+    let start = cal.startOfDay(for: from)
+    return cal.date(byAdding: .day, value: -off, to: start) ?? start
+}
+
 // MARK: - Stats (words / wpm / streak)
 
 struct DayStat: Codable, Equatable { var words: Int = 0; var seconds: Double = 0; var count: Int = 0 }
@@ -88,18 +97,18 @@ final class Stats: ObservableObject {
     var bestDayWords: Int { days.values.map(\.words).max() ?? 0 }
     var wordsThisWeek: Int {
         (0..<7).reduce(0) { sum, off in
-            sum + (days[dayKey(Date().addingTimeInterval(Double(-off) * 86400))]?.words ?? 0)
+            sum + (days[dayKey(dayOffset(off))]?.words ?? 0)
         }
     }
 
     /// Consecutive days (ending today or yesterday) with at least one dictation.
     var streak: Int {
         var n = 0
-        var date = Date()
+        var off = 0
         // Allow the streak to still count if nothing yet today but yesterday had activity.
-        if (days[dayKey(date)]?.count ?? 0) == 0 { date = date.addingTimeInterval(-86400) }
-        while (days[dayKey(date)]?.count ?? 0) > 0 {
-            n += 1; date = date.addingTimeInterval(-86400)
+        if (days[dayKey(dayOffset(off))]?.count ?? 0) == 0 { off += 1 }
+        while (days[dayKey(dayOffset(off))]?.count ?? 0) > 0 {
+            n += 1; off += 1
         }
         return n
     }
@@ -108,7 +117,7 @@ final class Stats: ObservableObject {
     func recentDays(_ n: Int = 14) -> [(label: String, words: Int)] {
         let f = DateFormatter(); f.dateFormat = "MMM d"
         return (0..<n).reversed().map { offset in
-            let date = Date().addingTimeInterval(Double(-offset) * 86400)
+            let date = dayOffset(offset)
             return (f.string(from: date), days[dayKey(date)]?.words ?? 0)
         }
     }
@@ -151,10 +160,16 @@ final class Stats: ObservableObject {
                     let cw = (r["words"] as? Int) ?? 0
                     let cs = (r["seconds"] as? Double) ?? 0
                     let cc = (r["count"] as? Int) ?? 0
-                    let cur = merged[day] ?? DayStat()
-                    merged[day] = DayStat(words: max(cur.words, cw),
-                                          seconds: max(cur.seconds, cs),
-                                          count: max(cur.count, cc))
+                    let cloud = DayStat(words: cw, seconds: cs, count: cc)
+                    // Row-level merge: keep whichever device's full DayStat dictated more
+                    // words, so words/seconds/count stay internally consistent (a coherent
+                    // session) instead of mixing fields from different devices (which would
+                    // corrupt avgWPM / timeSavedMinutes).
+                    if let cur = merged[day] {
+                        merged[day] = cloud.words > cur.words ? cloud : cur
+                    } else {
+                        merged[day] = cloud
+                    }
                 }
                 if merged != self.days {
                     self.days = merged
@@ -231,16 +246,37 @@ final class DictionaryStore: ObservableObject {
         return true
     }
 
-    /// Replace spoken forms with the intended written form (case-insensitive).
-    /// Whitespace-only spoken forms (a freshly seeded correction row) never replace anything.
+    /// Replace spoken forms with the intended written form (case-insensitive), ON WORD
+    /// BOUNDARIES ONLY so a spoken term that is a substring of a larger word ("cat" inside
+    /// "category", "addr" inside "address") never corrupts that word. Whitespace-only spoken
+    /// forms (a freshly seeded correction row) never replace anything; single-character spoken
+    /// forms are skipped (too ambiguous to swap safely).
     func apply(to text: String) -> String {
         var out = text
         for t in terms {
             let spoken = t.spoken.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !spoken.isEmpty, !t.written.isEmpty else { continue }
-            out = out.replacingOccurrences(of: spoken, with: t.written, options: [.caseInsensitive])
+            guard spoken.count >= 2, !t.written.isEmpty,
+                  let re = Self.wordBoundaryRegex(for: spoken) else { continue }
+            let range = NSRange(out.startIndex..., in: out)
+            // Escape `$`/`\` in the replacement so written text with those chars is inserted literally.
+            let template = NSRegularExpression.escapedTemplate(for: t.written)
+            out = re.stringByReplacingMatches(in: out, range: range, withTemplate: template)
         }
         return out
+    }
+
+    /// Cache of compiled `\b<term>\b` case-insensitive regexes, keyed by the spoken form, so a
+    /// repeated apply() (every transcript, all modes) doesn't recompile the same patterns. apply()
+    /// can run off the main thread (pipeline / file transcribe / notes), so the cache is lock-guarded.
+    private static var regexCache: [String: NSRegularExpression] = [:]
+    private static let regexCacheLock = NSLock()
+    private static func wordBoundaryRegex(for spoken: String) -> NSRegularExpression? {
+        regexCacheLock.lock(); defer { regexCacheLock.unlock() }
+        if let cached = regexCache[spoken] { return cached }
+        let pattern = "\\b\(NSRegularExpression.escapedPattern(for: spoken))\\b"
+        guard let re = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return nil }
+        regexCache[spoken] = re
+        return re
     }
 
     /// Auto-learn from a MANUAL post-paste edit: `pasted` is what Verba inserted, `current` is
@@ -311,12 +347,62 @@ final class SnippetsStore: ObservableObject {
 
     /// Literal trigger→expansion replacement. Used only in raw/Flow mode (no AI to
     /// understand intent); AI modes use `promptContext()` instead.
+    ///
+    /// Single simultaneous pass: every trigger match is found against the ORIGINAL `text` and the
+    /// non-overlapping matches are spliced together, so an injected expansion can NEVER be re-scanned
+    /// (no cascade — a snippet whose expansion contains another trigger, or "addr" inside "address",
+    /// is no longer double-/over-expanded). Matches are on word boundaries when the trigger edge is a
+    /// word character; earliest start wins, then the longest trigger.
     func apply(to text: String) -> String {
-        var out = text
-        for s in items where !s.trigger.isEmpty {
-            out = out.replacingOccurrences(of: s.trigger, with: s.expansion, options: [.caseInsensitive])
+        let valid = items.filter { !$0.trigger.isEmpty }
+        guard !valid.isEmpty else { return text }
+        let ns = text as NSString
+        let full = NSRange(location: 0, length: ns.length)
+
+        // Collect candidate matches across the ORIGINAL text only.
+        var matches: [(range: NSRange, expansion: String, len: Int)] = []
+        for s in valid {
+            guard let re = Self.triggerRegex(for: s.trigger) else { continue }
+            re.enumerateMatches(in: text, range: full) { m, _, _ in
+                guard let r = m?.range, r.length > 0 else { return }
+                matches.append((r, s.expansion, s.trigger.count))
+            }
         }
+        guard !matches.isEmpty else { return text }
+
+        // Resolve overlaps: earliest start first, then longest trigger; skip anything that overlaps
+        // an already-accepted match so each source span expands exactly once.
+        matches.sort { a, b in
+            a.range.location != b.range.location ? a.range.location < b.range.location : a.len > b.len
+        }
+        var out = ""
+        var cursor = 0
+        for m in matches where m.range.location >= cursor {
+            if m.range.location > cursor {
+                out += ns.substring(with: NSRange(location: cursor, length: m.range.location - cursor))
+            }
+            out += m.expansion
+            cursor = m.range.location + m.range.length
+        }
+        if cursor < ns.length { out += ns.substring(from: cursor) }
         return out
+    }
+
+    /// Cache of compiled case-insensitive trigger regexes. `\b` boundaries are only added on the
+    /// sides where the trigger actually starts/ends with a word char, so punctuation-led triggers
+    /// ("/sig", ";addr") still match.
+    private static var triggerRegexCache: [String: NSRegularExpression] = [:]
+    private static let triggerRegexCacheLock = NSLock()
+    private static func triggerRegex(for trigger: String) -> NSRegularExpression? {
+        triggerRegexCacheLock.lock(); defer { triggerRegexCacheLock.unlock() }
+        if let cached = triggerRegexCache[trigger] { return cached }
+        let isWord: (Character) -> Bool = { $0.isLetter || $0.isNumber || $0 == "_" }
+        let lead = trigger.first.map(isWord) == true ? "\\b" : ""
+        let trail = trigger.last.map(isWord) == true ? "\\b" : ""
+        let pattern = lead + NSRegularExpression.escapedPattern(for: trigger) + trail
+        guard let re = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return nil }
+        triggerRegexCache[trigger] = re
+        return re
     }
 
     /// Snippet list to hand to Claude so it inserts a block ONLY when the user asks for
@@ -435,7 +521,7 @@ final class TransformsStore: ObservableObject {
         let sys = selectionSystemPrompt(for: transform)
         let sem = DispatchSemaphore(value: 0)
         var out: SelectionOutcome = .failure("Transform failed. Try again.")
-        Task {
+        let task = Task {
             do {
                 let text = try await Reprompter(model: model).reprompt(transcript: selection, systemPrompt: sys)
                 let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -446,7 +532,11 @@ final class TransformsStore: ObservableObject {
             sem.signal()
         }
         // 60s ceiling so a wedged backend can't hang the calling app's Services menu forever.
+        // On timeout, cancel the in-flight Task so the orphaned backend call is torn down
+        // (URLSession-based backends honor cancellation), making the timeout authoritative
+        // instead of leaking a late-arriving result the user never sees.
         if sem.wait(timeout: .now() + 60) == .timedOut {
+            task.cancel()
             return .failure("Timed out — the backend took too long. Try again.")
         }
         return out
@@ -493,7 +583,12 @@ struct TodoSubtask: Codable, Identifiable {
         deadline = try c.decodeIfPresent(Date.self, forKey: .deadline)
     }
 }
-struct TodoTask: Codable, Identifiable { var id = UUID(); var title: String; var done: Bool = false; var subtasks: [TodoSubtask] = []; var deadline: Date? = nil }
+struct TodoTask: Codable, Identifiable { var id = UUID(); var title: String; var done: Bool = false; var subtasks: [TodoSubtask] = []; var deadline: Date? = nil
+    /// Single source of truth for "is this task complete". A task is done iff its own flag is set,
+    /// OR it has sub-tasks and every one of them is done. Both the progress chip and the Done filter
+    /// use this so the chip, the filter, and the checkbox can never disagree.
+    var isComplete: Bool { done || (!subtasks.isEmpty && subtasks.allSatisfy(\.done)) }
+}
 struct TodoProject: Codable, Identifiable {
     var id = UUID()
     var name: String
@@ -605,7 +700,10 @@ final class TodoStore: ObservableObject {
             for ti in projects[pi].tasks.indices {
                 if let si = projects[pi].tasks[ti].subtasks.firstIndex(where: { $0.id == subtaskID }) {
                     projects[pi].tasks[ti].subtasks[si].done = done
-                    if done, projects[pi].tasks[ti].subtasks.allSatisfy(\.done) { projects[pi].tasks[ti].done = true }
+                    // Recompute the parent in both directions (matching TaskPanel): all sub-tasks
+                    // done → parent done; any sub-task reopened → parent not done. Never leave a
+                    // parent marked done with an open child, which would corrupt the progress chip.
+                    projects[pi].tasks[ti].done = projects[pi].tasks[ti].subtasks.allSatisfy(\.done)
                     return
                 }
             }
@@ -616,8 +714,13 @@ final class TodoStore: ObservableObject {
     func progress(_ p: TodoProject) -> (done: Int, total: Int) {
         var done = 0, total = 0
         for t in p.tasks {
-            if t.subtasks.isEmpty { total += 1; if t.done { done += 1 } }
-            else { for s in t.subtasks { total += 1; if s.done { done += 1 } } }
+            if t.subtasks.isEmpty { total += 1; if t.isComplete { done += 1 } }
+            else {
+                // Count sub-task leaves, but if the parent's own flag marks it complete, honour that
+                // (TodoTask.isComplete is the single source of truth) so the chip can't contradict the
+                // Done filter when parent/child fall out of sync.
+                for s in t.subtasks { total += 1; if s.done || t.isComplete { done += 1 } }
+            }
         }
         return (done, total)
     }
