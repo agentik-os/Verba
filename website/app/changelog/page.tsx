@@ -20,6 +20,14 @@ const DAYS: Day[] = [
       "A privacy, security and craft day: history gets a real off switch and auto-delete, cloud data gets a delete-everything button, every sync request is authenticated per device, every dialog moves to the new glass design, and verba.run gets a full craft pass.",
     entries: [
       {
+        version: "0.2.4",
+        title: "Once Pro, always Pro",
+        items: [
+          "Your subscription can no longer be downgraded by a wifi change, a flaky network, or a server hiccup: the only thing that ever revokes Pro is the server explicitly saying your subscription ended. Everything else keeps your current state and quietly re-checks later.",
+          "After this week's security upgrade, already-signed-in Macs get a single friendly “Reconnect your account” prompt (one click, nothing else changes) instead of being asked to subscribe again.",
+        ],
+      },
+      {
         version: "0.2.3",
         title: "Your leaderboard identity, managed on the leaderboard",
         items: [
