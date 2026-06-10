@@ -406,7 +406,7 @@ final class Settings: ObservableObject {
     private let d = UserDefaults.standard
 
     // Bump when the built-in profiles change so users get the new prompts/shortcuts.
-    static let profilesVersion = 17  // bumped: seed Polish + Casual (defined but missing from defaults); default new installs to Polish, not Flow
+    static let profilesVersion = 17  // seeds Polish + Casual into defaults; fresh installs default-active to Flow (verbatim, no AI)
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }
@@ -698,10 +698,11 @@ final class Settings: ObservableObject {
                 .map { p -> Profile in var c = p; c.builtin = false; return c }
             loaded = mergedBuiltins + retired + customs
         }
-        // Keep the saved active mode if it survived the merge; else Polish; else first.
+        // Keep the saved active mode if it survived the merge; else Flow (the default on a
+        // fresh install); else first.
         let savedActive = d.string(forKey: "activeProfileID").flatMap(UUID.init)
         activeProfileID = savedActive.flatMap { id in loaded.first { $0.id == id }?.id }
-            ?? loaded.first(where: { $0.name == "Polish" })?.id ?? loaded.first!.id
+            ?? loaded.first(where: { $0.name == "Flow" })?.id ?? loaded.first!.id
         profiles = loaded
         if !upToDate || saved.isEmpty {
             d.set(Self.profilesVersion, forKey: "profilesVersion")
