@@ -312,10 +312,8 @@ struct InsightsView: View {
                 } else if let m = standing.mine {
                     HStack(alignment: .top, spacing: 0) {
                         bigStat(rankText(m.rank), "global rank", "of \(standing.total.formatted()) people")
-                        Divider().frame(height: 56)
                         if let p = standing.percentile {
                             bigStat("top \(p)%", "percentile", p <= 1 ? "the very top" : "you're ahead of \(100 - p)%")
-                            Divider().frame(height: 56)
                         }
                         if let behind = standing.wordsBehindLeader {
                             bigStat(behind == 0 ? "—" : behind.formatted(), behind == 0 ? "you lead 🥇" : "words behind #1",
