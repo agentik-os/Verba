@@ -21,6 +21,12 @@ export const metadata: Metadata = {
     siteName: "Verba",
     type: "website",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Verba, speak it, send it clean",
+    description:
+      "Speak naturally; Verba writes it cleanly into any app on your Mac. Fast, private, hands-free.",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
