@@ -206,7 +206,7 @@ function Bento() {
             <div>
               <div className="t-anchor tnum">0&nbsp;bytes</div>
               <p className="mt-3 font-medium">of audio leave your Mac</p>
-              <p className="mt-1.5 max-w-sm text-sm text-white/55">On-device mode transcribes locally — your audio never leaves the Mac. Transcripts go to your local history, which you can switch off or auto-delete. Cloud tools upload every word; Verba doesn't have to.</p>
+              <p className="mt-1.5 max-w-sm text-sm text-white/55">On-device mode transcribes locally, so your audio never leaves the Mac. Transcripts go to your local history, which you can switch off or auto-delete. Cloud tools upload every word; Verba doesn't have to.</p>
             </div>
           </div>
         </Reveal>
@@ -273,7 +273,7 @@ function ContextMode() {
           />
           {/* weighted hero tile — the focal example, in product chrome */}
           <div>
-          <PanelCaption>01 — Context mode</PanelCaption>
+          <PanelCaption>01 · Context mode</PanelCaption>
           <div className="panel r-panel p-7">
             <div className="flex items-center gap-3 text-white/55">
               <Icon name={hero.icon} className="h-5 w-5" />
@@ -367,7 +367,7 @@ function NotesTab() {
 
       <Reveal delay={60}>
         <div className="mt-12">
-        <PanelCaption>02 — One hour of voice, one document</PanelCaption>
+        <PanelCaption>02 · One hour of voice, one document</PanelCaption>
         <div className="panel r-panel overflow-hidden">
           <div className="grid sm:grid-cols-2">
             <div className="p-8 sm:border-r sm:border-white/[0.06]">
@@ -490,7 +490,7 @@ function VoiceTodos() {
 
       <Reveal delay={60}>
         <div className="mt-12">
-        <PanelCaption>03 — Voice task manager</PanelCaption>
+        <PanelCaption>03 · Voice task manager</PanelCaption>
         <div className="panel r-panel overflow-hidden">
           <div className="grid sm:grid-cols-2">
             <div className="p-8 sm:border-r sm:border-white/[0.06]">
@@ -767,7 +767,7 @@ function Features() {
     ["Keeps your voice", "Switch between modes for coding, work, and personal writing. Verba matches the right tone instead of flattening everything."],
     ["Hands-free formatting", "Say \"new line\", \"bullet point\", or \"scratch that\" and watch real formatting appear. Bold, headings, and lists paste through, ready to go."],
     ["Three transcription engines", "Cloud (OpenAI gpt-4o-transcribe, fastest and most accurate), WhisperKit (local Whisper, all sizes including large-v3), and Parakeet (NVIDIA Parakeet TDT v3, multilingual, strong on EU languages). Parakeet ships inside the app, works offline instantly, and needs no API key."],
-    ["Private by default", "On-device mode runs entirely on your Mac and your audio never leaves the device. Transcripts are saved to your local history — turn it off entirely or auto-delete entries after 7, 30, or 90 days in Settings. API keys live in your macOS Keychain."],
+    ["Private by default", "On-device mode runs entirely on your Mac and your audio never leaves the device. Transcripts are saved to your local history. Turn it off entirely or auto-delete entries after 7, 30, or 90 days in Settings. API keys live in your macOS Keychain."],
     ["Flexible AI backends", "Use your Anthropic key, an OpenRouter key, your existing Claude Code subscription (no key needed), or a fully local Ollama model that runs offline. Verba can auto-install and start Ollama for you."],
     ["Recording indicator choices", "A floating glass pill (default), or Menu bar only (no overlay, the menu-bar icon turns into a red REC dot while recording). Pick the one that stays out of your way."],
     ["Auto-learn dictionary", "When you correct a word on the review screen, Verba remembers it and applies the fix automatically next time. Your vocabulary, learned silently."],
@@ -776,7 +776,7 @@ function Features() {
     ["Tone match per app", "Verba learns how you write in each app from your recent messages there and matches your personal tone automatically. Slack sounds like you in Slack. Mail sounds like you in Mail."],
     ["Smart formatting per app", "Rich text and markdown in apps that render it (Mail, Notion, Notes, Obsidian). Plain text in code editors and terminals. Verba detects the context and formats accordingly."],
     ["Custom sound cues", "Subtle audio cues signal recording start, paste, and errors. Adjust the volume or swap out sounds. Everything is customizable, or turn it off entirely."],
-    ["Synced to your account", "Sign in and your history, notes, and stats follow you to your other Macs. Signed out, everything stays on this device — nothing is uploaded."],
+    ["Synced to your account", "Sign in and your history, notes, and stats follow you to your other Macs. Signed out, everything stays on this device. Nothing is uploaded."],
     ["Automatic language detection", "Every transcription engine detects the language you are speaking and writes the result in that same language. No settings to change."],
   ];
   const [hero, ...rest] = items;
@@ -792,7 +792,7 @@ function Features() {
       <div className="mt-12 grid gap-3 lg:grid-cols-3">
         {/* hero feature — weighted, in product chrome, breaks the equal grid */}
         <div className="lg:row-span-2">
-        <PanelCaption>10 — The core move</PanelCaption>
+        <PanelCaption>10 · The core move</PanelCaption>
         <div className="panel r-card flex h-full flex-col justify-between p-7">
           <div className="flex items-center gap-3">
             <span className="mic-mark" style={{ width: 34, height: 34, borderRadius: 9 }}><MicGlyph size={16} /></span>
@@ -938,7 +938,7 @@ function FAQ() {
     ["Do I need an API key?", "No. Verba uses your Claude Code plan if it is installed (no API key needed). You can also bring your own Anthropic key, an OpenRouter key, or run a local Ollama model entirely offline. You never pay a markup on someone’s cloud."],
     ["What is Context mode?", "Context mode takes a screenshot of your screen, analyzes it with a vision model, and writes based on what you say and what it sees. Say \"reply to this email\" and it drafts a reply to the message on screen. It requires macOS Screen Recording permission and a vision-capable model (Anthropic API key or OpenRouter key)."],
     ["Can it handle long recordings?", "Yes, talk for twenty minutes and Verba turns the whole thing into clean, well-ordered text."],
-    ["Is my data private?", "In on-device mode your audio never leaves your Mac. Transcripts are saved to your local history by default — you can turn history off entirely (nothing written, nothing synced) or auto-delete entries after 7, 30, or 90 days. When you sign in, your history, notes, and stats sync to your account so they follow you across Macs; signed out, nothing is uploaded. API keys live in your macOS Keychain, and you can delete all your cloud data at any time."],
+    ["Is my data private?", "In on-device mode your audio never leaves your Mac. Transcripts are saved to your local history by default. You can turn history off entirely (nothing written, nothing synced) or auto-delete entries after 7, 30, or 90 days. When you sign in, your history, notes, and stats sync to your account so they follow you across Macs; signed out, nothing is uploaded. API keys live in your macOS Keychain, and you can delete all your cloud data at any time."],
     ["Can Verba take notes?", "Yes. The Notes tab lets you record up to a full hour of speech and Verba turns it into a clean, structured document. Pick a format before you start: Clean note, Brain dump to outline, Summary, Meeting notes, Journal, Email, Code task, To-do list, or Article outline. Markdown is rendered (headings, bold, checkboxes). You can tag notes with #hashtags to file and filter them, edit the result in place, and copy it anywhere."],
     ["Can it create calendar events or reminders?", "Yes, with the Labs toggle on in Context mode. Say \"create an event tomorrow at 3pm\", \"remind me to call the bank\", or \"draft a reply to this email\" and Verba creates the Calendar event, Reminder, or email draft for you. It always asks you to confirm before doing anything."],
     ["Do my notes sync across my Macs?", "Yes. Notes are tied to your Verba account, so they follow you when you sign in on another Mac. No iCloud setup needed."],
