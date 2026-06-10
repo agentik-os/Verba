@@ -100,21 +100,27 @@ struct MainWindow: View {
     @Environment(\.openURL) private var openURL
 
     var body: some View {
-        HStack(spacing: 0) {
-            sidebar
-                .frame(width: sidebarWidth)
-                // Glassy chrome: the sidebar uses the user's chosen Customize glass material.
-                .background(VisualEffectView().ignoresSafeArea())
+        // The WHOLE window is glass (the user's chosen Customize material), and the page content
+        // floats as an inset rounded CARD with padding on top/right/bottom — modern, not edge-to-edge.
+        ZStack {
+            VisualEffectView().ignoresSafeArea()   // whole-window glass
 
-            // No hard divider line — the two materials meet seamlessly (Apple-grade glass).
-            // A whisper-thin hairline keeps just enough separation without a visible black line.
-            Rectangle().fill(Color.primary.opacity(0.05)).frame(width: 1).ignoresSafeArea()
+            HStack(spacing: 0) {
+                sidebar
+                    .frame(width: sidebarWidth)   // transparent: the window glass shows through it
 
-            detail(selection ?? .home)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                // Content stays readable but modern: a vibrant content-background material
-                // (text stays crisp) over the now-translucent window.
-                .background(VisualEffectView(material: .contentBackground).ignoresSafeArea())
+                detail(selection ?? .home)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    // A readable content material, clipped to a rounded card so text stays crisp
+                    // while the glass window shows around the inset edges.
+                    .background(VisualEffectView(material: .contentBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1))
+                    .shadow(color: .black.opacity(0.12), radius: 16, y: 6)
+                    .padding(.top, 12).padding(.trailing, 12).padding(.bottom, 12)
+                    .padding(.leading, 4)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
