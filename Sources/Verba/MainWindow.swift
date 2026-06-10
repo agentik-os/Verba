@@ -105,9 +105,10 @@ struct MainWindow: View {
         // The floating card's corner radius honors the Customize 'Corner radius' slider.
         let r = VAppr.corner(16, scale: appearance.cornerScale)
         return ZStack {
+            // Whole-window glass. The material does its own blur of what's behind it — never add a
+            // SwiftUI .blur() on top, it double-blurs into a muddy gradient haze.
             VisualEffectView()
-                .blur(radius: appearance.blur * 0.25)   // App-interface Blur slider, live
-                .ignoresSafeArea()                       // whole-window glass
+                .ignoresSafeArea()
 
             HStack(spacing: 0) {
                 sidebar

@@ -143,21 +143,6 @@ struct FeedbackView: View {
                             .allowsHitTesting(false)
                     }
                 }
-                // VER-6: drag & drop an image file onto the editor to attach it as the screenshot.
-                // Active drop feedback reads through a soft accent wash + a gentle accent
-                // ring (the one allowed accent use), never a harsh full-opacity black border.
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(VerbaAppearance.shared.accentColor.opacity(dropTargeted ? 0.06 : 0))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(VerbaAppearance.shared.accentColor.opacity(dropTargeted ? 0.35 : 0),
-                                      lineWidth: 1.5)
-                )
-                .onDrop(of: [.fileURL, .image], isTargeted: $dropTargeted) { providers in
-                    handleDrop(providers)
-                }
 
                 // Screenshot + dictation affordances, then "Improve with AI".
                 HStack(spacing: 10) {
@@ -283,6 +268,26 @@ struct FeedbackView: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Drag & drop an image ANYWHERE in the Feedback view to attach it as the screenshot —
+        // not just over the editor. contentShape makes the whole (incl. empty) area a drop target.
+        .contentShape(Rectangle())
+        .onDrop(of: [.fileURL, .image], isTargeted: $dropTargeted) { providers in
+            handleDrop(providers)
+        }
+        // A gentle full-panel accent ring + wash while a drag hovers, so it's obvious the whole
+        // Feedback view accepts the drop.
+        .overlay {
+            if dropTargeted {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(VerbaAppearance.shared.accentColor.opacity(0.35), lineWidth: 2)
+                    .background(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(VerbaAppearance.shared.accentColor.opacity(0.05)))
+                    .padding(8)
+                    .allowsHitTesting(false)
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeOut(duration: 0.12), value: dropTargeted)
         // VER-7: graceful "sent" toast — appears, holds ~1s, fades out.
         .overlay(alignment: .top) {
             if showToast {
