@@ -104,7 +104,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ChordMonitor.shared.onChordUp = { [weak self] in self?.chordUp() }
         ChordMonitor.shared.onEscape = { [weak self] in self?.escapePressed() }
         ChordMonitor.shared.onControl = { [weak self] in InputCoach.shared.note(.control); self?.togglePause() }   // ⌃ pauses/resumes
-        ChordMonitor.shared.onTransformKey = { [weak self] in self?.showTransformPicker() }   // ⌥/ on a selection
+        FnTap.shared.onTransformKey = { [weak self] in self?.showTransformPicker() }      // ⌥X on a selection (HID tap consumes the key)
         // Dead-end guard: when Fn is the primary trigger but the HID event tap couldn't start
         // (Accessibility/Input-Monitoring not granted, or revoked after launch), pressing Fn does
         // NOTHING and the user gets no signal why. ChordMonitor's lighter NSEvent monitor still

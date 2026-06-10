@@ -14,7 +14,6 @@ final class ChordMonitor {
     var onFnDown: (() -> Void)?      // Fn (globe) pressed
     var onFnUp: (() -> Void)?        // Fn (globe) released
     var onControl: (() -> Void)?     // plain ⌃ tapped (used to pause/resume while recording)
-    var onTransformKey: (() -> Void)?  // ⌥/ pressed → transform picker for the current selection
 
     private var globalFlags: Any?
     private var localFlags: Any?
@@ -38,7 +37,6 @@ final class ChordMonitor {
         globalKeys = NSEvent.addGlobalMonitorForEvents(matching: .keyDown, handler: keys)
         localKeys = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
             if e.keyCode == UInt16(kVK_Escape), self?.onEscape != nil { self?.handleKey(e) }
-            else if e.keyCode == UInt16(kVK_ANSI_Slash), self?.onTransformKey != nil { self?.handleKey(e) }
             return e
         }
     }
@@ -103,14 +101,6 @@ final class ChordMonitor {
         if e.keyCode == UInt16(kVK_Escape) {
             DispatchQueue.main.async { self.onEscape?() }
             return
-        }
-        // ⌥/ (Option + slash) → open the transform picker on the current selection.
-        // Only Option may be held (no ⌘/⌃/Shift), so it never collides with system shortcuts.
-        if e.keyCode == UInt16(kVK_ANSI_Slash) {
-            let f = e.modifierFlags.intersection([.command, .control, .option, .shift])
-            if f == [.option], onTransformKey != nil {
-                DispatchQueue.main.async { self.onTransformKey?() }
-            }
         }
     }
 }

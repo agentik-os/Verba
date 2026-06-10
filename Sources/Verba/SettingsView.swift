@@ -893,6 +893,22 @@ struct SettingsView: View {
     @ViewBuilder private var shortcutsDetail: some View {
         let fnOn = settings.useFnAsPrimary
 
+        // SELECTION — the transform picker hotkey (Option + key).
+        card("Transform selection",
+             footer: "Select text in any app and press this to pick a transform to run on it. Option is always held; choose the key. Default is X (it's right under your fingers, unlike slash).") {
+            HStack(spacing: 10) {
+                Text("Transform picker").font(.system(size: 13))
+                Spacer()
+                Text("⌥ \(keyName(UInt32(settings.transformHotkeyCode)))")
+                    .font(.system(size: 13, weight: .semibold)).monospaced()
+                    .padding(.horizontal, 8).padding(.vertical, 3)
+                    .background(.softFill, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                ShortcutRecorder(label: "Change") { code, _ in
+                    settings.transformHotkeyCode = Int(code)
+                }
+            }
+        }
+
         // DICTATION — how you start, pause and cancel a dictation.
         card("Dictation") {
             toggleRow("Use the Fn (🌐 globe) key as the trigger", $settings.useFnAsPrimary)

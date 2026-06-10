@@ -426,6 +426,9 @@ final class Settings: ObservableObject {
     @Published var autoDetectProfile: Bool { didSet { d.set(autoDetectProfile, forKey: "autoDetectProfile") } }
     @Published var useSelectionContext: Bool { didSet { d.set(useSelectionContext, forKey: "useSelectionContext") } }
     @Published var voiceCommands: Bool { didSet { d.set(voiceCommands, forKey: "voiceCommands") } }
+    /// The key (with Option held) that opens the transform picker on the current selection.
+    /// Default ⌥X (keycode 7); the user can rebind it in Settings ▸ Shortcuts.
+    @Published var transformHotkeyCode: Int { didSet { d.set(transformHotkeyCode, forKey: "transformHotkeyCode") } }
     // Language-consistency guard: if the transcription engine code-switches (mixes French and
     // English mid-sentence), normalize the output to its single dominant language. Applies to
     // EVERY result, including Flow/raw mode. Default ON.
@@ -575,8 +578,12 @@ final class Settings: ObservableObject {
         richTextPaste = d.object(forKey: "richTextPaste") as? Bool ?? true
         reviewBeforeSend = d.object(forKey: "reviewBeforeSend") as? Bool ?? false
         autoDetectProfile = d.object(forKey: "autoDetectProfile") as? Bool ?? true
-        useSelectionContext = d.object(forKey: "useSelectionContext") as? Bool ?? true
+        // Default OFF: reading the frontmost app's selection on every dictation makes macOS 15
+        // re-prompt "access data from other apps". The ⌥X transform picker reads the selection
+        // on demand instead, so normal dictation never triggers the system prompt.
+        useSelectionContext = d.object(forKey: "useSelectionContext") as? Bool ?? false
         voiceCommands = d.object(forKey: "voiceCommands") as? Bool ?? true
+        transformHotkeyCode = d.object(forKey: "transformHotkeyCode") as? Int ?? 7 /* X */
         languageGuard = d.object(forKey: "languageGuard") as? Bool ?? true
         repromptEnabled = d.object(forKey: "repromptEnabled") as? Bool ?? true
         recordStyle = RecordStyle(rawValue: d.string(forKey: "recordStyle") ?? "") ?? .lock

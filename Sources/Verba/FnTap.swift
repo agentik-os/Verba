@@ -31,6 +31,7 @@ final class FnTap {
     // every key at head-insert, so this path always reaches cancel. We DON'T consume Esc (the
     // event passes through), and `escapeShouldCancel` gates it so an Esc that has nothing to cancel
     // is ignored — we never fire cancel on every system-wide Esc.
+    var onTransformKey: (() -> Void)?   // ⌥X → transform picker on the current selection
     var onEscape: (() -> Void)?
     var escapeShouldCancel: (() -> Bool)?   // true only while a recording/dictation is in flight
     var menuActive = false
@@ -182,6 +183,15 @@ final class FnTap {
             if code == kVK_Escape, escapeShouldCancel?() == true {
                 if let cb = onEscape { DispatchQueue.main.async(execute: cb) }
                 return nil
+            }
+            // ⌥<key> (default ⌥X) → transform the current selection. Option ONLY (no Fn/⌘/⌃/⇧) so it
+            // never collides with system shortcuts, and we CONSUME it (return nil) so the key never
+            // also types a character (e.g. ⌥X = ≈). Configurable via Settings.transformHotkeyCode.
+            if !fnDown, onTransformKey != nil, code == Settings.shared.transformHotkeyCode {
+                let f = event.flags
+                let optOnly = f.contains(.maskAlternate)
+                    && !f.contains(.maskCommand) && !f.contains(.maskControl) && !f.contains(.maskShift)
+                if optOnly { onTransformKey?(); return nil }
             }
             // Fn + T → voice "add to-do" capture (Fn + § still works on ISO keyboards — the §
             // key, keycode 10, doesn't exist on ANSI/US layouts, so T is the universal default);
