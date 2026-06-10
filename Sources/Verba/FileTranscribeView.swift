@@ -174,10 +174,10 @@ struct FileTranscribeView: View {
         VStack(spacing: 8) {
             Image(systemName: "square.and.arrow.down")
                 .font(.system(size: 26, weight: .regular))
-                .foregroundStyle(dropTargeted ? Color.accentColor : .secondary)
+                .foregroundStyle(dropTargeted ? Color.primary : .secondary)
             Text(dropTargeted ? "Release to transcribe" : "Drag & drop an audio or video file here")
                 .font(.callout)
-                .foregroundStyle(dropTargeted ? Color.accentColor : .secondary)
+                .foregroundStyle(dropTargeted ? Color.primary : .secondary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 28)
@@ -185,7 +185,7 @@ struct FileTranscribeView: View {
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(
-                    dropTargeted ? Color.accentColor : Color.secondary.opacity(0.3),
+                    dropTargeted ? Color.primary : Color.secondary.opacity(0.3),
                     style: StrokeStyle(lineWidth: dropTargeted ? 2 : 1, dash: [6, 4])
                 )
         )
@@ -264,12 +264,12 @@ struct FileTranscribeView: View {
             Text(label)
                 .font(.system(size: 12.5, weight: on ? .semibold : .medium))
                 .padding(.horizontal, 12).padding(.vertical, 6.5)
-                .foregroundStyle(on ? AnyShapeStyle(.background) : AnyShapeStyle(.primary.opacity(0.75)))
+                .foregroundStyle(on ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.primary.opacity(0.75)))
                 .background(
                     Capsule(style: .continuous)
-                        .fill(on ? AnyShapeStyle(Color.primary) : AnyShapeStyle(Color.primary.opacity(0.055)))
+                        .fill(on ? AnyShapeStyle(Color.primary.opacity(0.10)) : AnyShapeStyle(Color.primary.opacity(0.055)))
                 )
-                .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(on ? 0 : 0.09), lineWidth: 1))
+                .overlay(Capsule(style: .continuous).strokeBorder(on ? Color.primary.opacity(0.18) : Color.primary.opacity(0.09), lineWidth: 1))
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)

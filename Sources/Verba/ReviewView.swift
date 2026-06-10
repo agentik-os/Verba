@@ -110,9 +110,9 @@ struct ReviewView: View {
             HStack(spacing: 12) {
                 Image(systemName: "square.and.pencil")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.primary)
                     .frame(width: 38, height: 38)
-                    .background(Color.accentColor.opacity(0.13),
+                    .background(Color.primary.opacity(0.10),
                                 in: RoundedRectangle(cornerRadius: 11, style: .continuous))
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Review dictation").font(.title3.weight(.semibold))

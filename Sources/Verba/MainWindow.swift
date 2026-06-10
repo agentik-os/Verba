@@ -50,17 +50,29 @@ private struct SidebarRow: View {
         Button(action: action) {
             HStack(spacing: 10) {
                 Image(systemName: item.icon).frame(width: 18)
+                    .foregroundStyle(isSelected ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.secondary))
                 Text(item.title)
+                    .foregroundStyle(isSelected ? AnyShapeStyle(Color.primary) : AnyShapeStyle(Color.primary))
                 Spacer(minLength: 0)
             }
             .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-            .foregroundStyle(isSelected ? AnyShapeStyle(.background) : AnyShapeStyle(Color.primary))
             .padding(.horizontal, 11).padding(.vertical, 9)
             .background(
+                // macOS-26 source-list selection: a soft accent-tinted highlight, never a
+                // black inverted block. Hover is an even quieter neutral fill.
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(isSelected ? AnyShapeStyle(Color.primary)
-                          : (hovered ? AnyShapeStyle(Color.primary.opacity(0.055)) : AnyShapeStyle(Color.clear)))
+                    .fill(isSelected ? AnyShapeStyle(Color.primary.opacity(0.07))
+                          : (hovered ? AnyShapeStyle(Color.primary.opacity(0.05)) : AnyShapeStyle(Color.clear)))
             )
+            .overlay(alignment: .leading) {
+                // Thin accent bar marks the selected row (Linear/Things grammar).
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color.primary)
+                        .frame(width: 3, height: 16)
+                        .padding(.leading, 2)
+                }
+            }
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)

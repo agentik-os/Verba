@@ -124,7 +124,7 @@ struct DarkButton: ButtonStyle {
 /// a content slot, and a trailing button row. Use for every confirmation/sheet.
 struct GlassDialog<Content: View, Buttons: View>: View {
     var icon: String
-    var tint: Color = .accentColor
+    var tint: Color = .primary
     var title: String
     var subtitle: String? = nil
     var width: CGFloat = 460
@@ -180,7 +180,7 @@ private struct GlassCardIf: ViewModifier {
 
 extension View {
     /// Primary dialog action: glassProminent on 26, large tinted borderedProminent below.
-    func dialogPrimary(tint: Color = .accentColor) -> some View {
+    func dialogPrimary(tint: Color = .primary) -> some View {
         self.glassProminentButton().tint(tint).controlSize(.large)
     }
     /// Secondary dialog action: interactive glass capsule on 26, large bordered below.
@@ -224,7 +224,7 @@ struct GlassAlertView: View {
         var action: () -> Void
     }
     var icon: String = "exclamationmark.circle"
-    var tint: Color = .accentColor
+    var tint: Color = .primary
     var title: String
     var message: String? = nil
     var buttons: [AlertButton]

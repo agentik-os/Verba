@@ -70,7 +70,7 @@ struct OnboardingView: View {
         }
     }
 
-    private var accent: Color { .accentColor }
+    private var accent: Color { .primary }
 
     // MARK: chrome
     private var progressBar: some View {

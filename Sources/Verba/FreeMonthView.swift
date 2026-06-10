@@ -29,7 +29,7 @@ struct FreeMonthView: View {
                         } label: {
                             Label(copied ? "Copied" : "Copy link", systemImage: copied ? "checkmark" : "doc.on.doc")
                         }
-                        .glassProminentButton().tint(.accentColor)
+                        .glassProminentButton().tint(.primary)
                     }
                     .padding(12).frame(maxWidth: .infinity)
                     .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))

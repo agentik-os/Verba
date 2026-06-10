@@ -111,7 +111,7 @@ struct FeedbackView: View {
                 // VER-6: drag & drop an image file onto the editor to attach it as the screenshot.
                 .overlay(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(Color.accentColor, lineWidth: dropTargeted ? 2 : 0)
+                        .strokeBorder(Color.primary, lineWidth: dropTargeted ? 2 : 0)
                 )
                 .onDrop(of: [.fileURL, .image], isTargeted: $dropTargeted) { providers in
                     handleDrop(providers)

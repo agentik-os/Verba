@@ -138,17 +138,23 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(s.title).font(.system(size: 13, weight: selected ? .semibold : .medium))
                     Text(s.subtitle).font(.system(size: 10.5))
-                        .foregroundStyle(selected ? AnyShapeStyle(.background.opacity(0.7)) : AnyShapeStyle(.secondary))
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
                 Spacer(minLength: 0)
             }
-            .foregroundStyle(selected ? AnyShapeStyle(.background) : AnyShapeStyle(Color.primary))
+            .foregroundStyle(selected ? AnyShapeStyle(Color.primary) : AnyShapeStyle(Color.primary))
             .padding(.horizontal, 11).padding(.vertical, 9)
             .background(
+                // Tonal accent highlight (matches the main-window sidebar) — never a black block.
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(selected ? AnyShapeStyle(Color.primary) : AnyShapeStyle(Color.clear))
+                    .fill(selected ? AnyShapeStyle(Color.primary.opacity(0.07)) : AnyShapeStyle(Color.clear))
             )
+            .overlay(alignment: .leading) {
+                if selected {
+                    RoundedRectangle(cornerRadius: 2).fill(Color.primary).frame(width: 3, height: 18).padding(.leading, 2)
+                }
+            }
             .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
         .buttonStyle(.plain)
@@ -1167,11 +1173,11 @@ private struct SettingsChips<T: Hashable & Identifiable>: View {
                         Text(label(opt)).font(.system(size: 12, weight: isSel ? .semibold : .medium))
                     }
                     .padding(.horizontal, 12).padding(.vertical, 6.5)
-                    .foregroundStyle(isSel ? AnyShapeStyle(.background) : AnyShapeStyle(.primary.opacity(0.75)))
+                    .foregroundStyle(isSel ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.primary.opacity(0.75)))
                     .background(Capsule(style: .continuous)
-                        .fill(isSel ? AnyShapeStyle(Color.primary) : AnyShapeStyle(Color.primary.opacity(0.055))))
+                        .fill(isSel ? AnyShapeStyle(Color.primary.opacity(0.10)) : AnyShapeStyle(Color.primary.opacity(0.055))))
                     .overlay(Capsule(style: .continuous)
-                        .strokeBorder(Color.primary.opacity(isSel ? 0 : 0.09), lineWidth: 1))
+                        .strokeBorder(isSel ? Color.primary.opacity(0.18) : Color.primary.opacity(0.09), lineWidth: 1))
                     .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)

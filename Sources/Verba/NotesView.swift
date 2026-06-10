@@ -71,9 +71,9 @@ struct NotesView: View {
                 HStack(spacing: 12) {
                     Image(systemName: "note.text")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Color.primary)
                         .frame(width: 32, height: 32)
-                        .background(Color.accentColor.opacity(0.13),
+                        .background(Color.primary.opacity(0.10),
                                     in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                     Text("Note modes").font(.title3.weight(.semibold))
                     Spacer()
@@ -488,12 +488,12 @@ struct NotesView: View {
                 Text(label).font(.system(size: 12, weight: on ? .semibold : .medium))
             }
             .padding(.horizontal, 12).padding(.vertical, 6.5)
-            .foregroundStyle(on ? AnyShapeStyle(.background) : AnyShapeStyle(.primary.opacity(0.75)))
+            .foregroundStyle(on ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.primary.opacity(0.75)))
             .background(
                 Capsule(style: .continuous)
-                    .fill(on ? AnyShapeStyle(Color.primary) : AnyShapeStyle(Color.primary.opacity(0.055)))
+                    .fill(on ? AnyShapeStyle(Color.primary.opacity(0.10)) : AnyShapeStyle(Color.primary.opacity(0.055)))
             )
-            .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(on ? 0 : 0.09), lineWidth: 1))
+            .overlay(Capsule(style: .continuous).strokeBorder(on ? Color.primary.opacity(0.18) : Color.primary.opacity(0.09), lineWidth: 1))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)

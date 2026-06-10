@@ -2243,7 +2243,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// this LSUIElement app activates first and the panel actually gets key focus. Every
     /// button closes the panel before running its action; defaultAction (↩) and the
     /// cancel role (Esc) are wired through GlassAlertView itself.
-    func showGlassAlert(icon: String = "exclamationmark.circle", tint: Color = .accentColor,
+    func showGlassAlert(icon: String = "exclamationmark.circle", tint: Color = .primary,
                         title: String, message: String?,
                         buttons: [GlassAlertView.AlertButton],
                         size: NSSize = NSSize(width: 400, height: 210)) {
@@ -2275,7 +2275,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func showReauthPrompt() {
         let email = Settings.shared.proEmail
         showGlassAlert(
-            icon: "person.crop.circle.badge.checkmark", tint: .accentColor,
+            icon: "person.crop.circle.badge.checkmark", tint: .primary,
             title: "Reconnect your account",
             message: "You're signed in as \(email). After a security upgrade, this Mac just needs one click to reconnect — nothing else changes.",
             buttons: [
@@ -2299,7 +2299,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         showGlassAlert(
-            icon: "sparkles", tint: .accentColor,
+            icon: "sparkles", tint: .primary,
             title: "Your free trial is used up",
             message: "You've used your \(Entitlement.freeTrialDictations) free Pro dictations. Upgrade to Verba Pro for unlimited dictation, $9.99/month.",
             buttons: [

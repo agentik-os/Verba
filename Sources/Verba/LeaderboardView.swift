@@ -184,12 +184,12 @@ struct LeaderboardView: View {
                         Text(m.rawValue).font(.system(size: 12, weight: selected ? .semibold : .medium))
                     }
                     .padding(.horizontal, 12).padding(.vertical, 6.5)
-                    .foregroundStyle(selected ? AnyShapeStyle(.background) : AnyShapeStyle(.primary.opacity(0.75)))
+                    .foregroundStyle(selected ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.primary.opacity(0.75)))
                     .background(
                         Capsule(style: .continuous)
-                            .fill(selected ? AnyShapeStyle(Color.primary) : AnyShapeStyle(Color.primary.opacity(0.055)))
+                            .fill(selected ? AnyShapeStyle(Color.primary.opacity(0.10)) : AnyShapeStyle(Color.primary.opacity(0.055)))
                     )
-                    .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(selected ? 0 : 0.09), lineWidth: 1))
+                    .overlay(Capsule(style: .continuous).strokeBorder(selected ? Color.primary.opacity(0.18) : Color.primary.opacity(0.09), lineWidth: 1))
                     .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
