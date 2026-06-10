@@ -23,10 +23,10 @@ const DAYS: Day[] = [
         version: "0.2.9 → 0.3.3",
         title: "Make it yours, plus a wave of fixes",
         items: [
-          "New Customize settings: style the app and the macOS widget independently — glass material, blur, corner radius, accent color (monochrome by default, plus a palette or your own custom color), and one-tap presets. Liquid Glass, your way.",
+          "New Customize settings: style the app and the macOS widget independently: glass material, blur, corner radius, accent color (monochrome by default, plus a palette or your own custom color), and one-tap presets. Liquid Glass, your way.",
           "Modes are reordered (Flow, Intent, Translate, Context, Coding on ⌃⌥1-5); create your own with the AI mode generator instead of editing a placeholder.",
           "From your feedback: Escape now cancels even while Verba is polishing; attaching a screenshot sends the real image (not a file path); a clear notice appears if you prompt with AI rewriting turned off; the feedback Dictate button shows a live, mic-reactive waveform; and Improve-with-AI now structures your report into Section / Issue / Expected.",
-          "Send as much feedback as you want — the per-user limit is gone.",
+          "Send as much feedback as you want. The per-user limit is gone.",
         ],
       },
       {
