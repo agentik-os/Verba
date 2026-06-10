@@ -17,8 +17,20 @@ const DAYS: Day[] = [
     date: "June 10, 2026",
     tag: "Today",
     summary:
-      "A privacy and security day: your history gets a real off switch and auto-delete, your cloud data gets a delete-everything button, every sync request is now authenticated per device, and the site copy now says precisely what is stored where.",
+      "A privacy, security and craft day: history gets a real off switch and auto-delete, cloud data gets a delete-everything button, every sync request is authenticated per device, every dialog moves to the new glass design, and verba.run gets a full craft pass.",
     entries: [
+      {
+        version: "0.2.2",
+        title: "Glass everywhere, and an app that behaves",
+        items: [
+          "Every dialog is redesigned in the new frosted glass style: action confirmations, the review panel, update and permission prompts, the trial screen, plus the Settings and History windows. Return and Escape work everywhere.",
+          "Voice to-do capture finally works on US keyboards: the shortcut is now Fn+T (Fn+§ still works on European layouts), and Settings shows the right one for your keyboard.",
+          "Verba is much lighter at launch: the on-device model now loads when you start recording (hidden behind your speaking time) and unloads after 10 minutes of inactivity.",
+          "Edit-the-last-result by voice now works in Flow mode too, an update can no longer install itself in the middle of a dictation, errors stay visible in menu-bar-only mode, and temporary recordings are cleaned up automatically.",
+          "Your custom modes and edited prompts now survive app updates.",
+          "verba.run: a full design craft pass (motion, type, the works), and link previews you share now match the product.",
+        ],
+      },
       {
         version: "0.2.1",
         title: "Your data, under your control",
