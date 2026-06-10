@@ -46,21 +46,37 @@ enum ModeGenerator {
       "raw": false
     }
 
-    Rules for the systemPrompt you write:
-    - Build on Verba's house style below. Keep its guarantees unless the user explicitly wants \
-    a transformation (summarize, translate, extract, change tone): only then may you relax \
+    WRITE A SERIOUS, DETAILED PROMPT — not a one-liner. The systemPrompt you produce must be a \
+    thorough, production-grade instruction the model can follow precisely. Aim for 120-250 words \
+    of CONCRETE directives. A vague, tiny prompt is a failure. Specifically, your systemPrompt must:
+    - Open with a one-sentence ROLE for the model (who it is acting as for this mode).
+    - Spell out, as a numbered or bulleted list, the EXACT transformations to apply (tone, \
+    structure, formatting, what to keep verbatim, what to fix, length/format constraints) — \
+    specific to the user's described need, with real named behaviours, not platitudes.
+    - State clearly what must be PRESERVED (facts, names, numbers, intent, the speaker's meaning) \
+    and what may change.
+    - Include 1-2 short BEFORE→AFTER mini-examples illustrating the transformation when it helps \
+    the model lock the behaviour.
+    - End by telling the model to output ONLY the resulting text — no preamble, no quotes, no notes.
+
+    NON-NEGOTIABLE RULES baked into EVERY systemPrompt you write (unless the user's description \
+    explicitly overrides them):
+    - LANGUAGE: detect the language the speaker dictated in and ALWAYS reply in that SAME language \
+    (French in → French out, any language → same language). Never switch language unless the user \
+    asked for translation or a specific output language.
+    - Build on Verba's house style below and keep its guarantees, UNLESS the user explicitly wants \
+    a transformation (summarize, translate, extract, change tone) — only then may you relax \
     "preserve everything".
-    - It must end by telling the model to output ONLY the resulting text, no preamble, no quotes.
     - NEVER instruct the use of em dashes, en dashes, or spaced hyphens.
-    - Always detect and keep the speaker's language unless the user's description says otherwise.
 
     Verba's house style to build on:
     \"\"\"
     \(faithfulCoreForGenerator)
     \"\"\"
 
-    Picking "model": haiku for short/simple cleanups, sonnet for general writing, opus for \
-    complex reasoning or code. Use "" to inherit the user's default.
+    Picking "model": haiku ONLY for trivial cleanups, sonnet for general writing, opus for \
+    complex reasoning, code, or anything demanding nuance — when in doubt prefer sonnet or opus \
+    over haiku (quality matters more than cost). Use "" to inherit the user's default.
     Picking "raw": true ONLY if the user wants their words transcribed verbatim with NO rewriting; \
     then "systemPrompt" can be a one-line note and "model" must be "".
     Common bundle ids: VS Code com.microsoft.VSCode, Xcode com.apple.dt.Xcode, Slack \
@@ -72,9 +88,9 @@ enum ModeGenerator {
         let desc = description.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !desc.isEmpty else { throw GenError.emptyDescription }
 
-        // Sonnet is a good default designer; honor the cloud default if the user set one.
-        let designer = Settings.shared.claudeModel.hasPrefix("claude-") ? Settings.shared.claudeModel : "claude-sonnet-4-6"
-        let r = Reprompter(model: designer)
+        // Designing a precise mode prompt is a high-nuance task — use Opus so the generated
+        // prompt is genuinely thorough (the cheaper models produce thin, vague prompts).
+        let r = Reprompter(model: "claude-opus-4-8")
         let raw = try await r.reprompt(transcript: desc, systemPrompt: metaSystem)
         return try parse(raw)
     }

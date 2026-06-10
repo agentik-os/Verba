@@ -30,6 +30,7 @@ struct NotesView: View {
     @State private var showModeManager = false  // CRUD sheet for note modes
     @State private var transcript = ""        // raw source (for re-formatting)
     @State private var editorText = ""        // shown / edited / saved document
+    @State private var noteTitle = ""         // user-set note title (optional)
     @State private var noteTags: [String] = []
     @State private var tagInput = ""
     @State private var busy = false
@@ -182,8 +183,10 @@ struct NotesView: View {
         }
     }
 
-    /// First meaningful line of the note (heading text or first sentence) for the list title.
+    /// The list-row title: the user-set title if any, else the first meaningful line of the note.
     private func snippet(_ e: NotesEntry) -> String {
+        let t = e.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !t.isEmpty { return String(t.prefix(80)) }
         for raw in e.formatted.split(separator: "\n") {
             let line = raw.trimmingCharacters(in: CharacterSet(charactersIn: " #*->`"))
             if !line.isEmpty { return String(line.prefix(80)) }
@@ -427,6 +430,12 @@ struct NotesView: View {
                     }.buttonStyle(.borderless).help(isPaused ? "Resume (Control)" : "Pause (Control)")
                 }
             }
+            // Title field, then the content below.
+            TextField("Title", text: $noteTitle)
+                .textFieldStyle(.plain)
+                .font(.system(size: 20, weight: .bold))
+                .padding(.horizontal, 4).padding(.top, 4).padding(.bottom, 2)
+                .onChange(of: noteTitle) { _, _ in scheduleAutosave() }
             // Single always-editable Markdown editor (Bear-style live styling), fills all space.
             MarkdownEditor(text: $editorText, controller: md)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -541,7 +550,7 @@ struct NotesView: View {
         work?.cancel(); busy = false; status = ""
         if isRecording { stopRecorderHard() }
         selectedID = nil
-        transcript = ""; editorText = ""; noteTags = []; tagInput = ""; intentText = ""; intentApplied = false
+        transcript = ""; editorText = ""; noteTitle = ""; noteTags = []; tagInput = ""; intentText = ""; intentApplied = false
         recordingURL = nil; appendMode = false
     }
 
@@ -558,6 +567,7 @@ struct NotesView: View {
         if isRecording { stopRecorderHard() }
         transcript = e.original
         editorText = e.formatted
+        noteTitle = e.title
         noteTags = e.tags
         format = modes.mode(named: e.formatName)
         recordingURL = store.audioURL(for: e)
@@ -599,12 +609,13 @@ struct NotesView: View {
     private func autosaveCommit() {
         let doc = editorText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !doc.isEmpty, !busy else { return }
+        let titleTrim = noteTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         if let id = selectedID, let e = store.entries.first(where: { $0.id == id }) {
             let mergedTags = NotesStore.mergeTags(noteTags + NotesStore.hashtags(in: doc))
-            if e.formatted == doc, e.formatName == format.name, e.tags == mergedTags { return }   // unchanged → skip
-            store.update(e, formatted: doc, formatName: format.name, tags: noteTags)
+            if e.formatted == doc, e.formatName == format.name, e.tags == mergedTags, e.title == titleTrim { return }   // unchanged → skip
+            store.update(e, formatted: doc, formatName: format.name, tags: noteTags, title: titleTrim)
         } else {
-            let e = store.add(original: transcript, formatted: doc, formatName: format.name, audioURL: recordingURL, tags: noteTags)
+            let e = store.add(original: transcript, formatted: doc, formatName: format.name, audioURL: recordingURL, tags: noteTags, title: titleTrim)
             Stats.shared.record(words: wordCount(doc), seconds: Double(elapsed))
             selectedID = e.id          // keep editing the just-saved note
             noteTags = e.tags          // reflect auto-extracted #hashtags

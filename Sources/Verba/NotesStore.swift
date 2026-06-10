@@ -15,6 +15,7 @@ private func convexOK(_ data: Data?) -> Bool {
 struct NotesEntry: Codable, Identifiable {
     var id: UUID = UUID()
     var date: Date = Date()
+    var title: String = ""      // user-set note title (optional; falls back to a content snippet)
     var original: String        // raw transcription
     var formatted: String       // organized document
     var formatName: String
@@ -41,7 +42,7 @@ final class NotesStore: ObservableObject {
     }
 
     @discardableResult
-    func add(original: String, formatted: String, formatName: String, audioURL: URL?, tags: [String] = []) -> NotesEntry {
+    func add(original: String, formatted: String, formatName: String, audioURL: URL?, tags: [String] = [], title: String = "") -> NotesEntry {
         var stored: String?
         if let audioURL {
             let dest = dir.appendingPathComponent(audioURL.lastPathComponent)
@@ -49,17 +50,19 @@ final class NotesStore: ObservableObject {
             stored = dest.lastPathComponent
         }
         let allTags = NotesStore.mergeTags(tags + NotesStore.hashtags(in: formatted))
-        let entry = NotesEntry(original: original, formatted: formatted, formatName: formatName, audioFile: stored, tags: allTags)
+        let entry = NotesEntry(title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+                               original: original, formatted: formatted, formatName: formatName, audioFile: stored, tags: allTags)
         entries.insert(entry, at: 0)
         save()
         push(entry)   // sync text to the cloud (never the audio)
         return entry
     }
 
-    func update(_ entry: NotesEntry, formatted: String, formatName: String? = nil, tags: [String]? = nil) {
+    func update(_ entry: NotesEntry, formatted: String, formatName: String? = nil, tags: [String]? = nil, title: String? = nil) {
         guard let i = entries.firstIndex(where: { $0.id == entry.id }) else { return }
         entries[i].formatted = formatted
         if let formatName { entries[i].formatName = formatName }
+        if let title { entries[i].title = title.trimmingCharacters(in: .whitespacesAndNewlines) }
         if let tags { entries[i].tags = NotesStore.mergeTags(tags + NotesStore.hashtags(in: formatted)) }
         save()
         push(entries[i])   // re-sync the edited note
