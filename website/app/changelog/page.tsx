@@ -20,6 +20,15 @@ const DAYS: Day[] = [
       "A privacy, security and craft day: history gets a real off switch and auto-delete, cloud data gets a delete-everything button, every sync request is authenticated per device, every dialog moves to the new glass design, and verba.run gets a full craft pass.",
     entries: [
       {
+        version: "0.3.7 → 0.3.8",
+        title: "A window that feels like glass",
+        items: [
+          "The whole app window is now one piece of glass, and every page floats as an inset rounded card with breathing room on the edges , modern, not stuck to the window border.",
+          "Escape now belongs to Verba while recording: it cancels your dictation without also closing something in the app behind it.",
+          "And a sweep of smaller fixes across every screen, plus matching site copy.",
+        ],
+      },
+      {
         version: "0.2.9 → 0.3.4",
         title: "Make it yours, plus a wave of fixes",
         items: [
