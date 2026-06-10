@@ -97,6 +97,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             History.shared.syncFromCloud()   // pull dictation history from the user's other Macs
             Stats.shared.syncFromCloud()     // restore Insights / Total Words for the account
             NotesStore.shared.syncFromCloud()// pull long-form notes for the account
+            VerbaAppearance.shared.syncFromCloud()  // restore the Customize look (app + widget)
         }
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -300,6 +301,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Stats.shared.pushAll()        // push stats accrued while signed out
                 Stats.shared.syncFromCloud()  // merge in stats from the account's other Macs
                 NotesStore.shared.pushAll()
+                VerbaAppearance.shared.syncFromCloud()  // restore the saved Customize look on sign-in
                 NotesStore.shared.syncFromCloud()
             }
             .store(in: &cancellables)

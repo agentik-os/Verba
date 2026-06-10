@@ -302,6 +302,78 @@ final class VerbaAppearance: ObservableObject {
         objectWillChange.send()
         NotificationCenter.default.post(name: VerbaAppearance.didChange, object: nil)
         Self.applyToOpenWindows()
+        scheduleSyncPush()
+    }
+
+    // MARK: - Account sync (Convex): the Customize look (app + widget) follows the account,
+    // so a fresh sign-in or a new Mac restores the exact appearance the user had before.
+
+    private var syncTask: DispatchWorkItem?
+
+    /// Snapshot every appearance key (app + widget namespaces) into a JSON blob.
+    private func snapshotBlob() -> String {
+        var dict: [String: Any] = [:]
+        for (k, v) in UserDefaults.standard.dictionaryRepresentation() where k.hasPrefix("verba.appr.") {
+            dict[k] = v
+        }
+        for (k, v) in VAppr.widget.dictionaryRepresentation() where k.hasPrefix("widget.appr.") {
+            dict[k] = v
+        }
+        guard JSONSerialization.isValidJSONObject(dict),
+              let data = try? JSONSerialization.data(withJSONObject: dict),
+              let s = String(data: data, encoding: .utf8) else { return "{}" }
+        return s
+    }
+
+    /// Write a pulled blob back into both namespaces, then re-apply live.
+    private func applyBlob(_ json: String) {
+        guard let data = json.data(using: .utf8),
+              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+        for (k, v) in dict {
+            if k.hasPrefix("widget.appr.") { VAppr.widget.set(v, forKey: k) }
+            else if k.hasPrefix("verba.appr.") { UserDefaults.standard.set(v, forKey: k) }
+        }
+        // Re-apply everything live (window appearance, glass, widget).
+        objectWillChange.send()
+        Self.applyToOpenWindows()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// Debounced push of the current look to the account (signed-in only).
+    private func scheduleSyncPush() {
+        guard !Settings.shared.proEmail.isEmpty else { return }
+        syncTask?.cancel()
+        let work = DispatchWorkItem {
+            let blob = self.snapshotBlob()
+            let now = Date().timeIntervalSince1970 * 1000
+            UserDefaults.standard.set(now, forKey: "verba.appr.syncUpdated")
+            ConvexClient.registerDevice(token: AuthToken.current)
+            ConvexClient.call("mutation", "settings:push",
+                              ConvexClient.authedArgs(["appr": blob, "updated": now])) { _ in }
+        }
+        syncTask = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: work)
+    }
+
+    /// On sign-in / a new Mac: pull the account's saved look and apply it if it's newer
+    /// than what's on this device (last-write-wins). Restores the exact Customize state.
+    func syncFromCloud() {
+        guard !Settings.shared.proEmail.isEmpty else { return }
+        ConvexClient.registerDevice(token: AuthToken.current)
+        ConvexClient.call("query", "settings:pull", ConvexClient.authedArgs()) { [weak self] data in
+            guard let self, let data,
+                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  obj["status"] as? String == "success",
+                  let value = obj["value"] as? [String: Any],
+                  let appr = value["appr"] as? String else { return }
+            let remoteUpdated = (value["updated"] as? Double) ?? 0
+            let localUpdated = UserDefaults.standard.double(forKey: "verba.appr.syncUpdated")
+            guard remoteUpdated > localUpdated else { return }   // local is newer → keep it
+            DispatchQueue.main.async {
+                UserDefaults.standard.set(remoteUpdated, forKey: "verba.appr.syncUpdated")
+                self.applyBlob(appr)
+            }
+        }
     }
 
     /// Push the current color mode onto every live window.
@@ -334,6 +406,7 @@ final class VerbaAppearance: ObservableObject {
         // repaints with the new styling immediately, instead of waiting for the
         // next debounced todo-store write or the hourly timeline backstop.
         WidgetCenter.shared.reloadAllTimelines()
+        scheduleSyncPush()
     }
 
     // MARK: APP appearance (published surface)
