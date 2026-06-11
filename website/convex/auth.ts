@@ -46,6 +46,21 @@ export function verifyToken(token: string): { email: string; code: string } | nu
   }
 }
 
+/// Anon device uids are client-minted and self-claimed (no token), so they are the
+/// one griefable namespace. We only accept the two hex shapes our client ever mints:
+///   - legacy: "anon-" + 12 hex (48-bit; older builds still in the wild — must stay valid)
+///   - current: "anon-" + 32 hex (128-bit UUID; infeasible to guess/collide)
+/// Anything else claiming to be "anon-…" is rejected, so the namespace can't be sprayed
+/// with attacker-chosen strings. (New builds mint the 32-hex form — see Settings.swift.)
+const ANON_UID_RE = /^anon-(?:[0-9a-f]{12}|[0-9a-f]{32})$/;
+
+/// Soft global cap on brand-new anon claims per UTC day. The `register` mutation is hit
+/// device→Convex directly (no Next.js proxy in the path → no client IP available here), so
+/// a true per-IP limit isn't possible in this handler; this global counter still throttles
+/// mass-fabrication of leaderboard rows. Re-registering an already-claimed device (the
+/// idempotent path) and account/multi-device claims do NOT consume the budget.
+const ANON_CLAIMS_PER_DAY = 2000;
+
 /// Register this device's secret under a uid (idempotent).
 /// - Anon device uids ("anon-…") self-claim their FIRST device row.
 /// - Account uids (a Clerk referral code) need a valid app-session token proving ownership.
@@ -54,6 +69,8 @@ export const register = mutation({
   args: { uid: v.string(), secret: v.string(), token: v.optional(v.string()) },
   handler: async (ctx, a) => {
     if (!/^[0-9a-f]{64}$/.test(a.secret)) throw new Error("bad secret");
+    const isAnon = a.uid.startsWith("anon-");
+    if (isAnon && !ANON_UID_RE.test(a.uid)) throw new Error("bad uid");
     const secretHash = sha256(a.secret);
     const rows = await ctx.db
       .query("device_auth")
@@ -62,10 +79,21 @@ export const register = mutation({
     if (rows.some((r) => r.secretHash === secretHash)) return { ok: true }; // idempotent
     if (rows.length === 0) {
       // First claim. Account uids need a token proving ownership; anon device uids
-      // are self-claimed. Legacy uids: first caller claims (accepted, day-old base).
-      if (!a.uid.startsWith("anon-")) {
+      // are self-claimed (format already validated above). Legacy uids: first caller claims.
+      if (!isAnon) {
         const t = a.token ? verifyToken(a.token) : null;
         if (!t || t.code !== a.uid) throw new Error("unauthorized");
+      } else {
+        // Throttle mass anon-row fabrication via the shared daily counter.
+        const key = `anonreg:global:${new Date().toISOString().slice(0, 10)}`;
+        const rl = await ctx.db
+          .query("ratelimits")
+          .withIndex("by_key", (q) => q.eq("key", key))
+          .unique();
+        const n = (rl?.n ?? 0) + 1;
+        if (n > ANON_CLAIMS_PER_DAY) throw new Error("rate limited");
+        if (rl) await ctx.db.patch(rl._id, { n, updated: Date.now() });
+        else await ctx.db.insert("ratelimits", { key, n, updated: Date.now() });
       }
     } else {
       // Additional device on an existing uid: ONLY via a valid account token.

@@ -261,6 +261,25 @@ struct ModesView: View {
 
     private func index(of id: UUID) -> Int? { settings.profiles.firstIndex { $0.id == id } }
 
+    /// True when this profile would give Claude no instructions if made active:
+    /// a non-raw, non-translate mode whose system prompt is empty. Such a mode must
+    /// never be the active profile (it echoes/mangles the dictation).
+    private func hasUsablePrompt(_ p: Profile) -> Bool {
+        if p.raw || p.targetLanguage != nil { return true }
+        return !p.systemPrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// If `p` is the active profile and its prompt has just been blanked, demote it to the
+    /// first remaining mode with a usable prompt (falling back to the built-in .coding mode).
+    private func demoteIfActiveBlanked(_ p: Profile) {
+        guard settings.activeProfileID == p.id, !hasUsablePrompt(p) else { return }
+        if let replacement = settings.profiles.first(where: { $0.id != p.id && hasUsablePrompt($0) }) {
+            settings.activeProfileID = replacement.id
+        } else {
+            settings.activeProfileID = Profile.coding.id
+        }
+    }
+
     /// Generate (or regenerate) the friendly "what this mode does" blurb with AI, store it.
     private func explainMode(id: UUID) {
         guard !explaining, let p = settings.profiles.first(where: { $0.id == id }) else { return }
@@ -284,7 +303,15 @@ struct ModesView: View {
         let nameB = Binding(get: { settings.profiles.first { $0.id == id }?.name ?? "" },
                             set: { v in if let i = index(of: id) { settings.profiles[i].name = v } })
         let promptB = Binding(get: { settings.profiles.first { $0.id == id }?.systemPrompt ?? "" },
-                              set: { v in if let i = index(of: id) { settings.profiles[i].systemPrompt = v } })
+                              set: { v in
+                                  if let i = index(of: id) {
+                                      settings.profiles[i].systemPrompt = v
+                                      // If the user just blanked the system prompt of the CURRENTLY-ACTIVE
+                                      // non-raw/non-translate mode, demote it: an active mode with an empty
+                                      // prompt reprompts Claude with no instructions and mangles dictation.
+                                      // Promote the first mode that won't suffer the same fate.
+                                      demoteIfActiveBlanked(settings.profiles[i])
+                                  } })
         let bundlesB = Binding(get: { settings.profiles.first { $0.id == id }?.matchBundleIDs.joined(separator: ", ") ?? "" },
                                set: { v in if let i = index(of: id) {
                                    settings.profiles[i].matchBundleIDs = v.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty } } })
@@ -455,12 +482,18 @@ struct ModesView: View {
 
     private func deleteProfile(_ id: UUID) {
         settings.profiles.removeAll { $0.id == id }
+        guard let first = settings.profiles.first else {
+            // No modes left. Don't leave activeProfileID pointing at the deleted UUID; clear the
+            // selection so the UI lands on the empty state (the sidebar offers "restore built-in modes").
+            selectedID = nil
+            return
+        }
         // If we just removed the active mode, promote the first remaining one.
-        if settings.activeProfileID == id, let first = settings.profiles.first { settings.activeProfileID = first.id }
+        if settings.activeProfileID == id { settings.activeProfileID = first.id }
         // Land the selection on the (new) active mode rather than a dangling empty state.
         selectedID = settings.profiles.contains(where: { $0.id == settings.activeProfileID })
             ? settings.activeProfileID
-            : settings.profiles.first?.id
+            : first.id
     }
 
     /// Pick .app bundles in a Finder panel and add their bundle identifiers.

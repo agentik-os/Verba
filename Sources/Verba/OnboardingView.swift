@@ -54,9 +54,13 @@ struct OnboardingView: View {
         .frame(width: 620, height: 720)
         .onAppear {
             pulse = true; coach.reset()
-            // Resumed after signing in but before finishing → jump straight to the
-            // permissions slide so the user authorizes everything and finalizes onboarding.
-            if step == 0 && !settings.proEmail.isEmpty { step = 3 }
+            // Resumed after signing in but before finishing → skip the account step. If the
+            // user already chose a public handle, jump straight to permissions (step 3);
+            // otherwise land on the alias step (step 2) so they still see and confirm their
+            // public username instead of silently keeping the random default.
+            if step == 0 && !settings.proEmail.isEmpty {
+                step = settings.usernameCustomized ? 3 : 2
+            }
         }
         .onReceive(poll) { _ in
             micGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
@@ -72,7 +76,7 @@ struct OnboardingView: View {
             // reflects the CURRENT attempt rather than staying permanently green from
             // an earlier visit. Step 4 = trigger key (tap/hold/mode), step 5 = pause.
             switch newStep {
-            case 4: coach.singleFn = false; coach.holdFn = false; coach.doubleFn = false
+            case 4: coach.singleFn = false; coach.holdFn = false; coach.doubleFn = false; coach.changeMode = false
             case 5: coach.singleFn = false; coach.control = false
             default: break
             }
@@ -279,8 +283,8 @@ struct OnboardingView: View {
                 actionRow("hand.tap", "Single tap", "Tap Fn once to start recording your default mode. Tap again to send.", done: coach.singleFn)
                 actionRow("hand.tap.fill", "Press & hold", "Hold Fn while you speak, release to send (push-to-talk).", done: coach.holdFn)
                 actionRow("number.circle", "Fn + number", "Hold Fn and press 1 to 9 to dictate in a specific mode (1 Flow, 2 Intent, …).", done: coach.doubleFn)
-                actionRow("slider.horizontal.3", "Change mode", "Fn + Tab jumps to the next mode (Fn + ⇧ + Tab for the previous one) — even mid-sentence while you're holding Fn. ⌃ (Control) pauses & resumes.", done: coach.doubleFn)
-                if coach.singleFn && coach.holdFn && coach.doubleFn {
+                actionRow("slider.horizontal.3", "Change mode", "Fn + Tab jumps to the next mode (Fn + ⇧ + Tab for the previous one) — even mid-sentence while you're holding Fn. ⌃ (Control) pauses & resumes.", done: coach.changeMode)
+                if coach.singleFn && coach.holdFn && coach.doubleFn && coach.changeMode {
                     Label("Nice, you've got the trigger key down.", systemImage: "checkmark.seal.fill")
                         .font(.caption).foregroundStyle(.green)
                 }

@@ -511,15 +511,21 @@ final class Settings: ObservableObject {
     // Pro entitlement (editing system prompts / custom modes is Pro-only).
     @Published var isPro: Bool { didSet { d.set(isPro, forKey: "verba.pro") } }
 
-    /// Lifetime Pro earned by completing every achievement (the Grand Slam reward). Stored locally;
-    /// a server-validated lifetime entitlement is a follow-up, but this immediately unlocks Pro.
+    /// Lifetime Pro earned by completing every achievement (the Grand Slam reward).
+    /// SECURITY: this is a PURELY LOCAL achievement state (derived from local Stats counters that a
+    /// user can trivially forge), so it must NEVER, by itself, unlock paid features. It is recorded
+    /// only as a "claim pending server validation" marker. The real unlock has to come from a
+    /// server-issued, token-authenticated entitlement via `verifyPro()`. (Follow-up: a verba.run
+    /// endpoint that validates the cloud-synced achievement state and returns a signed grant — wire
+    /// `grantLifetimePro()` to call it and only then set `isPro`.)
     @Published var lifetimePro: Bool = UserDefaults.standard.bool(forKey: "verba.lifetimePro") {
         didSet { d.set(lifetimePro, forKey: "verba.lifetimePro") }
     }
     func grantLifetimePro() {
         guard !lifetimePro else { return }
+        // Record the local claim, but do NOT flip `isPro` — a local achievement counter must not
+        // grant paid features. Pro stays gated on a server-verified entitlement (`verifyPro()`).
         lifetimePro = true
-        isPro = true
     }
     @Published var proEmail: String { didSet { d.set(proEmail, forKey: "verba.email") } }
     @Published var referralCode: String { didSet { d.set(referralCode, forKey: "verba.referral") } }
@@ -612,6 +618,8 @@ final class Settings: ObservableObject {
             d.set(Date().timeIntervalSince1970, forKey: "verba.proVerifiedAt")
         case .inactive:
             isPro = false                                  // explicit server "no" = the one real revoke
+            lifetimePro = false                            // an explicit server revoke also wins over a local lifetime claim
+            d.removeObject(forKey: "verba.proVerifiedAt")  // drop the cached server-grant proof so the bool can't re-assert Pro
             needsReauth = false
         case .unreachable:
             // Migration: a signed-in user with no app-session token yet must re-auth (the
@@ -692,7 +700,22 @@ final class Settings: ObservableObject {
         stylePrevMods = UInt32(d.object(forKey: "stylePrevMods") as? Int ?? 0)
         todoGlanceKeyCode = UInt32(d.object(forKey: "todoGlanceKeyCode") as? Int ?? 0)
         todoGlanceMods = UInt32(d.object(forKey: "todoGlanceMods") as? Int ?? 0)
-        isPro = (ProcessInfo.processInfo.environment["VERBA_PRO"] != nil) || d.bool(forKey: "verba.pro")
+        // SECURITY: the cached `verba.pro` bool is NOT trusted on its own — a raw
+        // `defaults write … verba.pro -bool true` must NOT unlock Pro. A cached grant is honored
+        // only if BOTH (a) the user has actually signed in (an email is stored) AND (b) a prior
+        // token-authenticated server check returned `.active` (the ONLY thing that stamps
+        // `verba.proVerifiedAt`). Without that server proof the cached flag is ignored, and
+        // `verifyPro()` re-grants legitimately on the next reachable token-authenticated check.
+        let signedIn = !(d.string(forKey: "verba.email") ?? "").isEmpty
+        let hadServerGrant = d.object(forKey: "verba.proVerifiedAt") != nil
+        let cachedPro = d.bool(forKey: "verba.pro") && signedIn && hadServerGrant
+        #if DEBUG
+        // Dev-only override for local testing; compiled out of release builds.
+        let envPro = ProcessInfo.processInfo.environment["VERBA_PRO"] != nil
+        #else
+        let envPro = false
+        #endif
+        isPro = envPro || cachedPro
         proEmail = d.string(forKey: "verba.email") ?? ""
         showOnLeaderboard = d.object(forKey: "verba.showOnLeaderboard") as? Bool ?? true
         saveHistory = d.object(forKey: "verba.saveHistory") as? Bool ?? true

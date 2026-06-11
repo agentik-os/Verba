@@ -91,7 +91,7 @@ final class Gamification: ObservableObject {
     private var flags: Set<GameFlag>
 
     private init() {
-        unlocked = Set(d.stringArray(forKey: kUnlocked) ?? [])
+        unlocked = Set(d.stringArray(forKey: kUnlocked) ?? []).intersection(Set(Gamification.all.map(\.id)))
         dailyGoal = d.object(forKey: kGoal) as? Int ?? 400
         flags = Set((d.stringArray(forKey: kFlags) ?? []).compactMap(GameFlag.init))
     }
@@ -184,7 +184,9 @@ final class Gamification: ObservableObject {
     /// Note the current time-of-day bucket (call on each dictation) then evaluate.
     func noteDictationTime(_ date: Date = Date()) {
         let h = Calendar.current.component(.hour, from: date)
-        if h < 4 { flag(.nightOwl) } else if (5...7).contains(h) { flag(.earlyBird) } else { evaluate() }
+        let newFlag: GameFlag? = h < 4 ? .nightOwl : (5...7).contains(h) ? .earlyBird : nil
+        if let f = newFlag { flag(f) }
+        evaluate()
     }
 
     /// Re-check every achievement + level-up against the current Stats; enqueue anything new.
@@ -208,7 +210,7 @@ final class Gamification: ObservableObject {
             self.d.set(Array(self.unlocked), forKey: self.kUnlocked)
 
             // GRAND SLAM: earning every badge unlocks Lifetime Pro. Granted once.
-            if self.unlocked.count >= Gamification.all.count, !self.d.bool(forKey: self.kGrandSlam) {
+            if Gamification.all.allSatisfy({ self.unlocked.contains($0.id) }), !self.d.bool(forKey: self.kGrandSlam) {
                 self.d.set(true, forKey: self.kGrandSlam)
                 Settings.shared.grantLifetimePro()
                 self.pending.append(Celebration(

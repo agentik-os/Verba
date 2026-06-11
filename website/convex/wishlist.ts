@@ -38,8 +38,9 @@ export const remove = internalMutation({
 });
 
 // Admin-only: set every wishlist item's author to one of the provided handles (round-robin),
-// so the seeded wishes match the real names visible on the leaderboard. Internal-only.
-export const reauthor = mutation({
+// so the seeded wishes match the real names visible on the leaderboard. internalMutation = NOT
+// publicly callable (a public mutation here would let anyone rewrite every author).
+export const reauthor = internalMutation({
   args: { authors: v.array(v.string()) },
   handler: async (ctx, a) => {
     if (a.authors.length === 0) return 0;

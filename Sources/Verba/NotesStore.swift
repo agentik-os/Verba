@@ -30,6 +30,12 @@ final class NotesStore: ObservableObject {
 
     private let dir: URL
     private let indexURL: URL
+    private let tombstoneURL: URL
+
+    /// Persisted set of deleted note timestamps (ms, rounded). Mirrors History's intent
+    /// but survives across pulls: a row the user deleted must never be re-appended by a
+    /// later cloud pull, even if the server still returns it (notes:remove failed transiently).
+    private var tombstones: Set<Double> = []
 
     private init() {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -37,8 +43,11 @@ final class NotesStore: ObservableObject {
         try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
         dir = base
         indexURL = base.appendingPathComponent("index.json")
+        tombstoneURL = base.appendingPathComponent("tombstones.json")
         if let data = try? Data(contentsOf: indexURL),
            let decoded = try? JSONDecoder().decode([NotesEntry].self, from: data) { entries = decoded }
+        if let data = try? Data(contentsOf: tombstoneURL),
+           let decoded = try? JSONDecoder().decode([Double].self, from: data) { tombstones = Set(decoded) }
     }
 
     @discardableResult
@@ -94,13 +103,38 @@ final class NotesStore: ObservableObject {
     func delete(_ entry: NotesEntry) {
         if let f = entry.audioFile { try? FileManager.default.removeItem(at: dir.appendingPathComponent(f)) }
         entries.removeAll { $0.id == entry.id }
+        let tsMs = entry.date.timeIntervalSince1970 * 1000
+        // Tombstone the deleted ts so a later pull can't resurrect it even if notes:remove
+        // fails transiently on the server side. Persisted across launches.
+        tombstones.insert(tsMs.rounded())
         save()
+        saveTombstones()
         if !Settings.shared.proEmail.isEmpty {
             // S16: route through ConvexClient so the required device `secret` is injected.
-            ConvexClient.call("mutation", "notes:remove",
-                              ConvexClient.authedArgs(["ts": entry.date.timeIntervalSince1970 * 1000])) {
-                if !convexOK($0) { VerbaLog.syncFailure("notes:remove") }   // R14
+            removeRemote(tsMs: tsMs, retry: true)
+        }
+    }
+
+    /// Send notes:remove and retry once on a transient failure instead of only logging it,
+    /// so a dropped delete doesn't strand the row server-side until the next manual delete.
+    private func removeRemote(tsMs: Double, retry: Bool) {
+        ConvexClient.call("mutation", "notes:remove",
+                          ConvexClient.authedArgs(["ts": tsMs])) { [weak self] data in
+            guard !convexOK(data) else { return }
+            if retry {
+                self?.removeRemote(tsMs: tsMs, retry: false)
+            } else {
+                VerbaLog.syncFailure("notes:remove")   // R14
             }
+        }
+    }
+
+    private func saveTombstones() {
+        let snapshot = Array(tombstones)
+        let url = tombstoneURL
+        DispatchQueue.global(qos: .utility).async {
+            do { try JSONEncoder().encode(snapshot).write(to: url) }
+            catch { VerbaLog.syncFailure("notes tombstone save", error: error) }
         }
     }
 
@@ -143,7 +177,9 @@ final class NotesStore: ObservableObject {
                 var changed = false
                 for r in arr {
                     let ts = (r["ts"] as? Double) ?? 0
-                    guard ts > 0 else { continue }
+                    // Skip rows the user deleted locally (tombstoned): never resurrect them,
+                    // even if notes:remove hasn't yet taken effect server-side.
+                    guard ts > 0, !self.tombstones.contains(ts.rounded()) else { continue }
                     let title = r["title"] as? String ?? ""
                     let formatted = r["formatted"] as? String ?? ""
                     let formatName = r["formatName"] as? String ?? "Note"

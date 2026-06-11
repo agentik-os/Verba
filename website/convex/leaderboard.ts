@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { deviceOk, requireDevice } from "./auth";
 
@@ -43,8 +43,10 @@ export const submit = mutation({
 });
 
 // Admin-only: replace every leaderboard alias with a fresh anonymous handle EXCEPT a small
-// whitelist, so no real name is ever exposed. Internal-only (run via `npx convex run`).
-export const realias = mutation({
+// whitelist, so no real name is ever exposed. internalMutation = NOT publicly callable; only
+// reachable via `npx convex run` with deploy creds (a public mutation here would let anyone
+// rewrite every handle).
+export const realias = internalMutation({
   args: { keep: v.array(v.string()) },
   handler: async (ctx, a) => {
     const adjectives = ["Swift","Clever","Bold","Lucid","Rapid","Sharp","Calm","Witty","Zen","Turbo","Brave","Mellow","Cosmic","Nimble","Vivid"];

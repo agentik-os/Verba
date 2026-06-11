@@ -441,6 +441,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         abortPhantomFnDictation()
         // Don't collide with any OTHER in-flight capture (deliberate dictation / note / to-do).
         if state == .recording || todoCaptureRecording || NotesController.shared.isRecording { return }
+        recorder.releaseArmed()   // discard the bare-Fn armed buffer so Action records clean (matches to-do/note paths)
         actionModeRecording = true
         // Badge the pill as "Action" INSIDE the recording-started callback (startRecording sets it to
         // .dictation there). Passing it as onStarted means it applies whether recording begins
@@ -1063,7 +1064,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Fn + Tab (next) / Fn + ⇧ + Tab (previous) → cycle the active mode, live while recording.
     private func modeCycleGesture(_ dir: Int) {
         if state == .processing { return }
-        InputCoach.shared.note(.doubleFn)   // mark the mode-switch gesture as learned
+        InputCoach.shared.note(.changeMode)   // onboarding: the Fn+Tab "change mode" gesture, tracked independently of Fn+number
         cycleMode(dir)
     }
 

@@ -302,6 +302,7 @@ final class VerbaAppearance: ObservableObject {
         objectWillChange.send()
         NotificationCenter.default.post(name: VerbaAppearance.didChange, object: nil)
         Self.applyToOpenWindows()
+        stampSyncEdit()
         scheduleSyncPush()
     }
 
@@ -309,6 +310,14 @@ final class VerbaAppearance: ObservableObject {
     // so a fresh sign-in or a new Mac restores the exact appearance the user had before.
 
     private var syncTask: DispatchWorkItem?
+
+    /// Stamp the local edit time immediately (last-write-wins). Done synchronously on
+    /// every appearance change so a concurrent cloud pull during the 1.5s push debounce
+    /// can't clobber a just-made local edit (`syncFromCloud` keeps the newer side).
+    private func stampSyncEdit() {
+        let now = Date().timeIntervalSince1970 * 1000
+        UserDefaults.standard.set(now, forKey: "verba.appr.syncUpdated")
+    }
 
     /// Snapshot every appearance key (app + widget namespaces) into a JSON blob.
     private func snapshotBlob() -> String {
@@ -406,6 +415,7 @@ final class VerbaAppearance: ObservableObject {
         // repaints with the new styling immediately, instead of waiting for the
         // next debounced todo-store write or the hourly timeline backstop.
         WidgetCenter.shared.reloadAllTimelines()
+        stampSyncEdit()
         scheduleSyncPush()
     }
 

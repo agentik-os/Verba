@@ -106,7 +106,7 @@ final class ChordMonitor {
             if FnTap.shared.active { return }
             // Otherwise gate on the same "is anything in flight" predicate FnTap uses, so a global
             // Esc pressed to dismiss a dialog in another app doesn't run the full idle-teardown.
-            if let gate = escapeShouldCancel, gate() == false { return }
+            if escapeShouldCancel?() != true { return }
             DispatchQueue.main.async { self.onEscape?() }
             return
         }

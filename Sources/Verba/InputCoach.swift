@@ -5,20 +5,22 @@ import Combine
 /// "you did it" live and guide them through single tap / hold / Fn+Control / Control.
 final class InputCoach: ObservableObject {
     static let shared = InputCoach()
-    enum Action { case singleFn, holdFn, doubleFn, control }
+    enum Action { case singleFn, holdFn, doubleFn, changeMode, control }
 
     @Published var singleFn = false
     @Published var holdFn = false
     @Published var doubleFn = false
+    @Published var changeMode = false
     @Published var control = false
 
     func note(_ a: Action) {
         switch a {
-        case .singleFn: singleFn = true
-        case .holdFn:   holdFn = true
-        case .doubleFn: doubleFn = true
-        case .control:  control = true
+        case .singleFn:   singleFn = true
+        case .holdFn:     holdFn = true
+        case .doubleFn:   doubleFn = true
+        case .changeMode: changeMode = true
+        case .control:    control = true
         }
     }
-    func reset() { singleFn = false; holdFn = false; doubleFn = false; control = false }
+    func reset() { singleFn = false; holdFn = false; doubleFn = false; changeMode = false; control = false }
 }

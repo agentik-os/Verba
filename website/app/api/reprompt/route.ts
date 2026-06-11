@@ -69,8 +69,10 @@ export async function POST(req: NextRequest) {
     const rec = freeHits.get(email);
     const n = rec && rec.day === day ? rec.n : 0;
     if (n >= FREE_DAILY) return limitMsg;
-    // Authoritative shared counter (fail open on Convex outage — the fast path still caps per instance).
-    const allowed = await convexBump(`reprompt:${email}:${day}`, FREE_DAILY, true);
+    // Authoritative shared counter. FAIL CLOSED on a Convex outage: serverless spins many instances
+    // so the per-instance fast path can't bound global spend, and a public free tier on the company
+    // Anthropic key must not become unlimited if the counter is unreachable.
+    const allowed = await convexBump(`reprompt:${email}:${day}`, FREE_DAILY, false);
     if (!allowed) {
       freeHits.set(email, { day, n: FREE_DAILY });
       return limitMsg;

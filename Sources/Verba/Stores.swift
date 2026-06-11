@@ -26,21 +26,78 @@ private func convexOK(_ data: Data?) -> Bool {
 // style examples so reprompts match how they actually write in that app.
 enum ToneStore {
     private static let maxPerApp = 3
-    private static func key(_ bundleID: String) -> String { "tone.\(bundleID)" }
+    /// Global cap on how many apps we keep tone samples for. The cache is a single keyed
+    /// dictionary with an LRU eviction so memory + the UserDefaults prefs plist stay bounded
+    /// no matter how many apps / helpers / transient processes the user ever dictates into.
+    private static let maxApps = 30
+
+    // Single keyed cache instead of one UserDefaults key per bundle id (which grew unbounded:
+    // every app the user ever dictated into left a permanent ~1.8KB key, bloating the prefs plist
+    // that UserDefaults loads wholesale into memory on every read / write).
+    private static let cacheKey = "tone.byApp"     // [bundleID: [String]]  (most-recent sample first)
+    private static let lruKey = "tone.lru"         // [bundleID]            (most-recently-used first)
+    private static let migrationKey = "tone.migratedToByApp"
+    private static let lock = NSLock()
+
+    /// One-time migration of legacy per-app keys ("tone.<bundleID>") into the keyed cache, then
+    /// remove them so the prefs plist shrinks. Must be called under `lock`.
+    private static func migrateIfNeeded() {
+        let d = UserDefaults.standard
+        guard !d.bool(forKey: migrationKey) else { return }
+        var cache = loadJSON(cacheKey, [String: [String]].self) ?? [:]
+        var lru = loadJSON(lruKey, [String].self) ?? []
+        for k in d.dictionaryRepresentation().keys where k.hasPrefix("tone.") {
+            // Skip the new structural keys; only legacy "tone.<bundleID>" arrays migrate.
+            if k == cacheKey || k == lruKey || k == migrationKey { continue }
+            let bundleID = String(k.dropFirst("tone.".count))
+            guard !bundleID.isEmpty, let arr = loadJSON(k, [String].self) else { continue }
+            if cache[bundleID] == nil { cache[bundleID] = Array(arr.prefix(maxPerApp)) }
+            if !lru.contains(bundleID) { lru.append(bundleID) }
+            d.removeObject(forKey: k)
+        }
+        enforceCap(&cache, &lru)
+        saveJSON(cacheKey, cache)
+        saveJSON(lruKey, lru)
+        d.set(true, forKey: migrationKey)
+    }
+
+    /// Drop the least-recently-used apps beyond `maxApps`, keeping both structures consistent.
+    private static func enforceCap(_ cache: inout [String: [String]], _ lru: inout [String]) {
+        // Prune LRU entries that lost their cache row, and append any cache rows missing from the LRU.
+        lru = lru.filter { cache[$0] != nil }
+        for id in cache.keys where !lru.contains(id) { lru.append(id) }
+        if lru.count > maxApps {
+            for id in lru[maxApps...] { cache.removeValue(forKey: id) }
+            lru = Array(lru.prefix(maxApps))
+        }
+    }
 
     static func record(bundleID: String?, text: String) {
         guard let bundleID, !bundleID.isEmpty else { return }
         let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard t.count >= 12, t.count <= 600 else { return }   // skip tiny/huge samples
-        var arr = (loadJSON(key(bundleID), [String].self) ?? []).filter { $0 != t }
+        lock.lock(); defer { lock.unlock() }
+        migrateIfNeeded()
+        var cache = loadJSON(cacheKey, [String: [String]].self) ?? [:]
+        var lru = loadJSON(lruKey, [String].self) ?? []
+        var arr = (cache[bundleID] ?? []).filter { $0 != t }
         arr.insert(t, at: 0)
         if arr.count > maxPerApp { arr = Array(arr.prefix(maxPerApp)) }
-        saveJSON(key(bundleID), arr)
+        cache[bundleID] = arr
+        // Touch recency: move this app to the front of the LRU list.
+        lru.removeAll { $0 == bundleID }
+        lru.insert(bundleID, at: 0)
+        enforceCap(&cache, &lru)
+        saveJSON(cacheKey, cache)
+        saveJSON(lruKey, lru)
     }
 
     static func examples(bundleID: String?) -> [String] {
         guard let bundleID, !bundleID.isEmpty else { return [] }
-        return loadJSON(key(bundleID), [String].self) ?? []
+        lock.lock(); defer { lock.unlock() }
+        migrateIfNeeded()
+        let cache = loadJSON(cacheKey, [String: [String]].self) ?? [:]
+        return cache[bundleID] ?? []
     }
 }
 
@@ -79,6 +136,13 @@ final class Stats: ObservableObject {
         days[k] = d
         saveJSON("stats.days", days)
         push(day: k)   // keep the cloud copy (Insights) in sync
+        // Re-evaluate gamification straight off the underlying stats so the derived
+        // streak / XP / level and streak-milestone achievements (s2/s3/…) can never lag
+        // behind a dictation. This is the robust path that doesn't depend on the
+        // AppDelegate per-dictation flag / noteDictationTime hook running (e.g. a new day's
+        // first dictation when a time-of-day flag is already owned). evaluate() dispatches
+        // to the main queue and reads Stats.shared (just updated above) itself.
+        Gamification.shared.evaluate()
     }
 
     /// Words dictated in the current calendar month (drives the free-tier limit).
@@ -141,7 +205,8 @@ final class Stats: ObservableObject {
         for k in days.keys { push(day: k) }
     }
 
-    /// Pull cloud stats and merge them in (max per day), so a new Mac / reinstall restores Insights.
+    /// Pull cloud stats and adopt cloud rows ONLY for days this device has never seen, so a new Mac
+    /// / reinstall restores Insights without ever discarding this device's own same-day work.
     func syncFromCloud() {
         guard !Settings.shared.proEmail.isEmpty else { return }
         ConvexClient.registerDevice(token: AuthToken.current)
@@ -161,13 +226,16 @@ final class Stats: ObservableObject {
                     let cs = (r["seconds"] as? Double) ?? 0
                     let cc = (r["count"] as? Int) ?? 0
                     let cloud = DayStat(words: cw, seconds: cs, count: cc)
-                    // Row-level merge: keep whichever device's full DayStat dictated more
-                    // words, so words/seconds/count stay internally consistent (a coherent
-                    // session) instead of mixing fields from different devices (which would
-                    // corrupt avgWPM / timeSavedMinutes).
-                    if let cur = merged[day] {
-                        merged[day] = cloud.words > cur.words ? cloud : cur
-                    } else {
+                    // Stats are append-only counters: a pull must NEVER discard a non-empty local
+                    // DayStat for a day this device itself contributed to. The old `max()` merge
+                    // REPLACED the whole local row with the cloud row whenever the cloud held more
+                    // words — so the device that wrote fewer words that day silently lost ALL its
+                    // same-day work (words / seconds / count), understating totalWords, streak,
+                    // the daily goal and the league. We now only adopt the cloud row for days this
+                    // device has NEVER seen (a new Mac / reinstall restoring Insights). Same-day
+                    // cross-device divergence must be reconciled on the SERVER by summing distinct
+                    // sessions (see convex/stats.ts note), not by a lossy client-side max().
+                    if merged[day] == nil {
                         merged[day] = cloud
                     }
                 }

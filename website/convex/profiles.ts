@@ -14,6 +14,10 @@ export const push = mutation({
   },
   handler: async (ctx, a) => {
     await requireDevice(ctx, a.uid, a.secret);
+    // Alias-ownership guard (IDOR): refuse to publish under an alias another uid already holds,
+    // so a user can't take over / overwrite someone else's public profile by spoofing their alias.
+    const sameAlias = await ctx.db.query("profiles").withIndex("by_alias", (q) => q.eq("alias", a.alias)).collect();
+    if (sameAlias.some((r: any) => r.uid !== a.uid)) throw new Error("alias taken");
     const doc = {
       uid: a.uid, alias: a.alias, level: a.level, xp: a.xp,
       league: a.league, badges: a.badges, updated: Date.now(),
