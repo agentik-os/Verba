@@ -11,6 +11,20 @@ export const metadata: Metadata = {
 
 const DOWNLOAD = "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg";
 
+// What each tool can DO by voice beyond producing text. Only Verba ships a true voice agent
+// (JARVIS) that acts on 1,000+ connected apps; the rest top out at editing the text itself.
+const VOICE_ACTIONS: Record<string, string> = {
+  "wispr-flow": "Text commands only",
+  "talktastic": "App-aware text actions",
+  "superwhisper": "No",
+  "macwhisper": "No",
+  "aqua-voice": "Text editing only",
+  "willow-voice": "No",
+  "voiceink": "No",
+  "apple-dictation": "No",
+  "otter-ai": "No",
+};
+
 export default function Compare() {
   return (
     <main className="mx-auto max-w-6xl px-6 pb-24">
@@ -33,19 +47,21 @@ export default function Compare() {
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-lg muted text-balance">
           Most dictation apps send your voice to the cloud and bake the AI cost into a $12-17/mo
-          bill. Verba runs on-device, lets you bring your own AI account, and costs $9.99.
+          bill. Verba runs on-device, lets you bring your own AI account, costs $9.99, and is the
+          only one with JARVIS, a voice agent that acts on 1,000+ apps.
         </p>
       </section>
 
       {/* Master matrix */}
       <div className="table-scrim glass rounded-2xl">
       <div className="overflow-x-auto">
-        <table className="table-pin w-full min-w-[760px] border-collapse text-left text-sm">
+        <table className="table-pin w-full min-w-[900px] border-collapse text-left text-sm">
           <thead>
             <tr className="muted">
               <th className="p-4 font-medium">App</th>
               <th className="p-4 font-medium">Price</th>
               <th className="p-4 font-medium">On-device</th>
+              <th className="p-4 font-medium">Voice actions</th>
               <th className="p-4 font-medium">Transcription</th>
               <th className="p-4 font-medium">Privacy default</th>
             </tr>
@@ -55,6 +71,7 @@ export default function Compare() {
               <td className="p-4 font-semibold">Verba</td>
               <td className="p-4">{VERBA.price}</td>
               <td className="p-4 tick">Yes</td>
+              <td className="p-4 tick font-medium">JARVIS · acts on 1,000+ apps</td>
               <td className="p-4">{VERBA.transcription}</td>
               <td className="p-4">On-device: audio stays on your Mac; local history, synced only when signed in</td>
             </tr>
@@ -65,6 +82,7 @@ export default function Compare() {
                 </td>
                 <td className="p-4 muted">{c.price}</td>
                 <td className={`p-4 ${c.onDevice === "yes" ? "tick" : "cross"}`}>{onDeviceLabel(c.onDevice)}</td>
+                <td className={`p-4 ${(VOICE_ACTIONS[c.slug] ?? "No") === "No" ? "cross" : "muted"}`}>{VOICE_ACTIONS[c.slug] ?? "No"}</td>
                 <td className="p-4 muted">{c.transcription}</td>
                 <td className="p-4 muted">{c.privacy.split(".")[0]}.</td>
               </tr>

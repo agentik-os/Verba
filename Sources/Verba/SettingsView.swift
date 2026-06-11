@@ -7,45 +7,48 @@ import EventKit
 // MARK: - Settings sections (the custom left rail)
 
 private enum SettingsSection: String, CaseIterable, Identifiable {
-    case account, dictation, rewriting, action, output, customize, shortcuts, privacy, updates
+    case account, dictation, rewriting, action, connectedApps, output, customize, shortcuts, privacy, updates
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .account:   return L("Account & Plan")
-        case .dictation: return L("Dictation")
-        case .rewriting: return L("AI rewriting")
-        case .action:    return L("Action mode")
-        case .output:    return L("Output & feedback")
-        case .customize: return L("Customize")
-        case .shortcuts: return L("Shortcuts")
-        case .privacy:   return L("Privacy & history")
-        case .updates:   return L("Updates & about")
+        case .account:       return L("Account & Plan")
+        case .dictation:     return L("Dictation")
+        case .rewriting:     return L("AI rewriting")
+        case .action:        return L("Action mode")
+        case .connectedApps: return L("Connected apps")
+        case .output:        return L("Output & feedback")
+        case .customize:     return L("Customize")
+        case .shortcuts:     return L("Shortcuts")
+        case .privacy:       return L("Privacy & history")
+        case .updates:       return L("Updates & about")
         }
     }
     var icon: String {
         switch self {
-        case .account:   return "person.crop.circle"
-        case .dictation: return "waveform"
-        case .rewriting: return "wand.and.stars"
-        case .action:    return "bolt.fill"
-        case .output:    return "arrow.down.doc"
-        case .customize: return "paintpalette"
-        case .shortcuts: return "keyboard"
-        case .privacy:   return "lock.shield"
-        case .updates:   return "arrow.triangle.2.circlepath"
+        case .account:       return "person.crop.circle"
+        case .dictation:     return "waveform"
+        case .rewriting:     return "wand.and.stars"
+        case .action:        return "bolt.fill"
+        case .connectedApps: return "app.connected.to.app.below.fill"
+        case .output:        return "arrow.down.doc"
+        case .customize:     return "paintpalette"
+        case .shortcuts:     return "keyboard"
+        case .privacy:       return "lock.shield"
+        case .updates:       return "arrow.triangle.2.circlepath"
         }
     }
     var subtitle: String {
         switch self {
-        case .account:   return L("Sign-in, plan, referrals")
-        case .dictation: return L("Engine, mic, language")
-        case .rewriting: return L("Backend, model, API keys")
-        case .action:    return L("Apps, destinations, search")
-        case .output:    return L("Paste, overlay, sounds")
-        case .customize: return L("Glass, accent, widget")
-        case .shortcuts: return L("Triggers & chords")
-        case .privacy:   return L("History, permissions")
-        case .updates:   return L("Version & releases")
+        case .account:       return L("Sign-in, plan, referrals")
+        case .dictation:     return L("Engine, mic, language")
+        case .rewriting:     return L("Backend, model, API keys")
+        case .action:        return L("Destinations, search, tools")
+        case .connectedApps: return L("Connect 1,000+ apps")
+        case .output:        return L("Paste, overlay, sounds")
+        case .customize:     return L("Glass, accent, widget")
+        case .shortcuts:     return L("Triggers & chords")
+        case .privacy:       return L("History, permissions")
+        case .updates:       return L("Version & releases")
         }
     }
 }
@@ -181,11 +184,12 @@ struct SettingsView: View {
 
     @ViewBuilder private var detail: some View {
         switch section {
-        case .account:   accountDetail
-        case .dictation: dictationDetail
-        case .rewriting: rewritingDetail
-        case .action:    actionDetail
-        case .output:    outputDetail
+        case .account:       accountDetail
+        case .dictation:     dictationDetail
+        case .rewriting:     rewritingDetail
+        case .action:        actionDetail
+        case .connectedApps: connectedAppsDetail
+        case .output:        outputDetail
         case .customize: customizeDetail
         case .shortcuts: shortcutsDetail
         case .privacy:   privacyDetail
@@ -689,6 +693,17 @@ struct SettingsView: View {
         .softElevation(!settings.isPro)
     }
 
+    // MARK: - Connected apps (dedicated panel)
+
+    @ViewBuilder private var connectedAppsDetail: some View {
+        cardCaption(L("Connect your favorite apps, then let JARVIS act on them by voice in Action mode — send an email, post to Slack, create a calendar event, add a Notion page, and hundreds more. Your connection keys stay on Verba's servers, never on your Mac."))
+        cardCaption(L("Tip: name the app you want JARVIS to use, like “send a Slack message to the team” or “add this to my Notion”. When several connected apps could do the same thing, naming one gets it right the first time. JARVIS only ever sees the apps you've connected, and knows every action each one supports."))
+        card(L("Connected apps"),
+             footer: L("Search the catalog, filter by category, and connect with one tap. Connecting opens a secure sign-in in your browser.")) {
+            ComposioConnectionsView(embedded: true)
+        }
+    }
+
     // MARK: - 2 · Dictation
 
     @ViewBuilder private var actionDetail: some View {
@@ -705,9 +720,12 @@ struct SettingsView: View {
                 .toggleStyle(.switch)
             }
         }
-        card(L("Connected apps"),
-             footer: L("Connect Gmail, Slack, Notion and more, then act on them by voice — e.g. “send a Slack message to the team that I'm running late”.")) {
-            ComposioConnectionsView(embedded: true)
+        selectCard(icon: "app.connected.to.app.below.fill",
+                   title: L("Connected apps"),
+                   subtitle: L("Connect 1,000+ apps (Gmail, Slack, Notion…) and act on them by voice."),
+                   selected: false,
+                   trailing: AnyView(Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary))) {
+            section = .connectedApps
         }
         card(L("Destinations"),
              footer: L("Calendar events and reminders are written here. Pick a specific calendar/list (e.g. a Google or Notion-synced one), or leave on the macOS default. Set up the account in Calendar.app / Reminders.app first.")) {
@@ -1373,6 +1391,7 @@ struct SettingsView: View {
                 }
                 Spacer()
             }
+            explainerRow(L("JARVIS & connected apps"), L("Action mode is powered by JARVIS, Verba's voice agent, with 1,000+ third-party app connections — connect your apps in the Connected apps section and act on them by voice."))
             explainerRow(L("Acknowledgements"), L("WhisperKit, NVIDIA Parakeet, Ollama, Sparkle, and the SwiftUI community. Thank you."))
         }
     }

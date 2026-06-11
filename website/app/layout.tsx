@@ -62,7 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             "min-h-[52px] text-base rounded-2xl font-semibold !bg-white !text-black hover:!bg-white/90",
           footerActionText: "!text-[rgba(244,245,248,0.6)]",
           footerActionLink: "!text-white font-medium",
-          // Account dropdown (UserButton popover) — on-brand dark, high-contrast text
+          // Account dropdown (UserButton popover), on-brand dark, high-contrast text
           userButtonPopoverCard:
             "rounded-2xl border border-white/10 bg-[#101014] shadow-2xl",
           userButtonPopoverMain: "bg-[#101014]",

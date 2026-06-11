@@ -26,11 +26,18 @@ enum CaptureContext {
     }
 }
 
+/// Mic level + animation phase, updated ~25×/s by the recording timer. Kept in their OWN observable
+/// (NOT on OverlayModel) so that high-frequency timer only re-renders the Waveform — not the whole
+/// pill chrome (glass, label, buttons, picker). Re-rendering everything 25×/s was the pill's jank.
+final class WaveLevels: ObservableObject {
+    @Published var level: Float = 0      // 0...1 mic level
+    @Published var phase: Double = 0     // advanced by our own timer → animation never stalls
+}
+
 final class OverlayModel: ObservableObject {
     @Published var context: CaptureContext = .dictation   // what this capture is for (badge)
     @Published var modeName: String = ""  // active reprompt mode for the badge ("" = none, e.g. Note/To-do)
-    @Published var level: Float = 0      // 0...1 mic level
-    @Published var phase: Double = 0     // advanced by our own timer → animation never stalls
+    let waves = WaveLevels()             // high-freq mic level + phase (isolated; see WaveLevels)
     @Published var title: String = ""    // "Listening…" / "Transcribing…" / etc.
     @Published var recording = false
     @Published var paused = false        // dictation paused
@@ -88,7 +95,7 @@ struct OverlayView: View {
                     // Live meter while recording; when paused, hide it (a level-0 waveform renders as a
                     // sad dashed line) — the orange dot + play button + "Paused" already read clearly.
                     if !model.paused {
-                        Waveform(level: model.level, phase: model.phase).frame(width: 64, height: 24)
+                        Waveform(waves: model.waves).frame(width: 64, height: 24)
                     }
                 }
                 label(size: 13)
@@ -139,7 +146,7 @@ struct OverlayView: View {
         VStack(spacing: 6) {
             HStack(spacing: 8) {
                 leading(big: false)
-                Waveform(level: model.paused ? 0 : model.level, phase: model.phase).frame(width: 54, height: 14)
+                Waveform(waves: model.waves, muted: model.paused).frame(width: 54, height: 14)
                 if !model.title.isEmpty { Text(model.title).font(.system(size: 11, weight: .medium)).lineLimit(1) }
             }
             if model.menu { picker(font: 10) }   // only surfaces when picking a mode
@@ -190,7 +197,7 @@ struct OverlayView: View {
             Circle()
                 .fill(model.paused ? Color.orange : VerbaAppearance.shared.accentOr(.red))
                 .frame(width: big ? 10 : 8, height: big ? 10 : 8)
-                .opacity(model.paused ? 1 : 0.6 + Double(model.level) * 0.4)
+                .opacity(model.paused ? 1 : 0.9)
         } else {
             ProgressView().controlSize(.small).scaleEffect(big ? 0.8 : 0.6)
         }
@@ -304,12 +311,14 @@ struct OverlayView: View {
 /// Lively meter. Motion is driven by `phase` (advanced by our own recording timer),
 /// so it never stalls, unlike TimelineView, which pauses while another app is active.
 private struct Waveform: View {
-    let level: Float
-    let phase: Double
+    @ObservedObject var waves: WaveLevels
+    var muted: Bool = false              // paused → render a flat, quiet meter
     private let bars = 11
     private let maxH: CGFloat = 24
 
     var body: some View {
+        let level = muted ? 0 : waves.level
+        let phase = waves.phase
         let lvl = CGFloat(max(0.05, min(1, level)))
         HStack(spacing: 2.5) {
             ForEach(0..<bars, id: \.self) { i in
@@ -370,7 +379,10 @@ final class OverlayController {
     private func recenterIfSizeChanged() {
         guard let panel, panel.isVisible else { return }
         panel.layoutIfNeeded()
-        guard let size = panel.contentView?.fittingSize, size != lastSize else { return }
+        guard let size = panel.contentView?.fittingSize else { return }
+        // Only re-center on a real (>1pt) size change — ignore sub-pixel fitting jitter that would
+        // otherwise fire the 0.22s reposition animation repeatedly and make the pill shimmer.
+        guard abs(size.width - lastSize.width) > 1 || abs(size.height - lastSize.height) > 1 else { return }
         lastSize = size
         reposition(animated: true)
     }

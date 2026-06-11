@@ -8,9 +8,22 @@ struct ComposioApp: Identifiable, Equatable {
     let slug: String
     let name: String
     let cat: String
+    /// Connection style: "oauth" → browser flow; "api_key"/"bearer"/"basic" → credential modal;
+    /// "none" → connect directly.
+    var auth: String = "oauth"
     var id: String { slug }
     /// Composio's hosted app logo (PNG), e.g. https://logos.composio.dev/api/gmail.
     var logoURL: URL? { URL(string: "https://logos.composio.dev/api/\(slug.lowercased())") }
+}
+
+/// One credential field a non-OAuth toolkit needs (rendered in the connect modal).
+struct ComposioField: Identifiable {
+    let name: String
+    let label: String
+    let description: String
+    let required: Bool
+    var value: String
+    var id: String { name }
 }
 
 /// A single executable tool (action) inside a connected toolkit.
@@ -22,6 +35,15 @@ struct ComposioTool: Identifiable, Equatable {
     var id: String { slug }
 }
 
+/// One browsable action of an app: what it does + example phrases the user can say to JARVIS.
+struct ComposioAction: Identifiable, Equatable {
+    let slug: String
+    let name: String
+    let description: String
+    let phrases: [String]
+    var id: String { slug }
+}
+
 enum ComposioError: LocalizedError {
     case http(Int, String)
     case badResponse
@@ -29,9 +51,9 @@ enum ComposioError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .http(let code, let msg):
-            return msg.isEmpty ? "Composio request failed (HTTP \(code))." : msg
+            return msg.isEmpty ? "Connected apps request failed (HTTP \(code))." : msg
         case .badResponse:
-            return "Composio returned an unexpected response."
+            return "Connected apps returned an unexpected response."
         }
     }
 }
@@ -47,8 +69,13 @@ final class ComposioStore: ObservableObject {
 
     /// Catalog of connectable apps (from GET /apps).
     @Published var apps: [ComposioApp] = []
-    /// toolkit slug -> connection status ("ACTIVE", "INITIATED", …) from GET /connections.
+    /// toolkit slug (lowercased) -> connection status ("ACTIVE", "INITIALIZING", …). A toolkit can
+    /// have several accounts; we fold them with ACTIVE winning (see `foldConnections`).
     @Published var connections: [String: String] = [:]
+    /// Toolkits with an OAuth flow in flight (lowercased). The card shows "Connecting…" while a
+    /// slug is here; it's cleared on success, on a terminal failure (denied/expired), on timeout,
+    /// or on Cancel — so the Connect button always comes back.
+    @Published var pending: Set<String> = []
     /// Cached executable tools of the user's ACTIVE toolkits, refreshed alongside
     /// `refresh()`. Read synchronously by the dictation pipeline to inject connected-app
     /// tools into the Action-mode prompt — never fetched on the dictation hot path.
@@ -71,6 +98,44 @@ final class ComposioStore: ObservableObject {
         (connections[toolkitSlug.lowercased()] ?? "").uppercased() == "ACTIVE"
     }
 
+    /// True while an OAuth flow for the toolkit is in flight (drives the "Connecting…" card state).
+    func isConnecting(_ toolkitSlug: String) -> Bool { pending.contains(toolkitSlug.lowercased()) }
+
+    /// Abandon an in-flight connection (user hit Cancel) → the Connect button comes back.
+    func cancelConnect(_ toolkitSlug: String) {
+        let key = toolkitSlug.lowercased()
+        pending.remove(key)
+        if (connections[key] ?? "").uppercased() != "ACTIVE" { connections[key] = nil }
+    }
+
+    /// Statuses that mean an account exists and is usable.
+    private static func rank(_ s: String) -> Int {
+        switch s.uppercased() {
+        case "ACTIVE": return 3
+        case "INITIALIZING", "INITIATED": return 1
+        default: return 0   // EXPIRED / FAILED / INACTIVE / DELETED / …
+        }
+    }
+
+    /// Fold the /connections payload (which may list SEVERAL accounts per toolkit) into one
+    /// status per toolkit, with ACTIVE winning over INITIALIZING/EXPIRED — so a stale EXPIRED row
+    /// never masks a live ACTIVE one. Accepts either {connections:{slug:status}} or a row list.
+    private static func foldConnections(_ obj: [String: Any]) -> [String: String] {
+        var map: [String: String] = [:]
+        func put(_ key: String, _ status: String) {
+            let k = key.lowercased()
+            if map[k] == nil || rank(status) > rank(map[k]!) { map[k] = status }
+        }
+        if let dict = obj["connections"] as? [String: String] {
+            for (k, v) in dict { put(k, v) }
+        } else if let rows = obj["connections"] as? [[String: Any]] {
+            for row in rows {
+                if let t = row["toolkit"] as? String { put(t, row["status"] as? String ?? "ACTIVE") }
+            }
+        }
+        return map
+    }
+
     // MARK: Refresh (apps + connections)
 
     /// Reloads the app catalog and the user's connection statuses.
@@ -90,23 +155,16 @@ final class ComposioStore: ObservableObject {
                     return ComposioApp(
                         slug: slug,
                         name: d["name"] as? String ?? slug.capitalized,
-                        cat: d["cat"] as? String ?? d["category"] as? String ?? ""
+                        cat: d["cat"] as? String ?? d["category"] as? String ?? "",
+                        auth: d["auth"] as? String ?? "oauth"
                     )
                 }
 
-                // Accept either {connections:{slack:"ACTIVE"}} or a list of
-                // {toolkit,status} rows — keyed lowercased for stable lookups.
-                var map: [String: String] = [:]
-                if let dict = c["connections"] as? [String: String] {
-                    for (k, v) in dict { map[k.lowercased()] = v }
-                } else if let rows = c["connections"] as? [[String: Any]] {
-                    for row in rows {
-                        if let t = row["toolkit"] as? String {
-                            map[t.lowercased()] = row["status"] as? String ?? "ACTIVE"
-                        }
-                    }
-                }
+                // Fold the (possibly multi-account) payload with ACTIVE winning, and clear any
+                // pending OAuth that has since gone ACTIVE.
+                let map = Self.foldConnections(c)
                 self.connections = map
+                self.pending = self.pending.filter { (map[$0] ?? "").uppercased() != "ACTIVE" }
                 self.lastError = nil
 
                 // Warm the tools cache for ACTIVE toolkits (for the Action-mode prompt).
@@ -123,31 +181,88 @@ final class ComposioStore: ObservableObject {
     /// Starts an OAuth connection for the toolkit: POST /connect returns Composio's
     /// hosted redirectUrl, which we open in the default browser. The user finishes the
     /// consent there; `refresh()` later picks up the ACTIVE status.
-    func connect(toolkitSlug: String) {
+    /// Connect a toolkit. OAuth → opens the browser; "none" → links directly. Credential auth
+    /// (api_key/bearer/basic) goes through `connectWithCredentials` after the modal collects fields.
+    func connect(toolkitSlug: String, auth: String = "oauth") {
+        let key = toolkitSlug.lowercased()
         Task { @MainActor in
+            pending.insert(key)   // card shows "Connecting…" immediately
             do {
-                let obj = try await Self.request("POST", "/connect", body: ["toolkit": toolkitSlug])
-                guard let raw = obj["redirectUrl"] as? String ?? obj["redirect_url"] as? String,
-                      let url = URL(string: raw) else { throw ComposioError.badResponse }
-                NSWorkspace.shared.open(url)
-                connections[toolkitSlug.lowercased()] = "INITIATED"
-                lastError = nil
-                // The OAuth completes out-of-process in the browser; poll until it's ACTIVE so the
-                // UI flips to "Connected" without the user having to hit Refresh.
-                pollUntilConnected(toolkitSlug)
+                let obj = try await Self.request("POST", "/connect", body: ["toolkit": toolkitSlug, "auth": auth])
+                if let raw = obj["redirectUrl"] as? String ?? obj["redirect_url"] as? String, let url = URL(string: raw) {
+                    NSWorkspace.shared.open(url)
+                    lastError = nil
+                    pollUntilConnected(key)   // OAuth completes in the browser
+                } else {
+                    // No-auth link: active immediately.
+                    lastError = nil
+                    await reloadConnections()
+                    pending.remove(key)
+                }
             } catch {
+                pending.remove(key)
                 lastError = error.localizedDescription
             }
         }
     }
 
-    /// Poll /connections (~90s) after starting an OAuth, stopping as soon as the toolkit is ACTIVE.
-    private func pollUntilConnected(_ slug: String) {
+    /// The credential fields a non-OAuth toolkit needs (GET /connect-fields), for the connect modal.
+    func connectFields(toolkitSlug: String, auth: String) async -> [ComposioField] {
+        let tk = toolkitSlug.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? toolkitSlug
+        guard let obj = try? await Self.request("GET", "/connect-fields?toolkit=\(tk)&scheme=\(auth)"),
+              let raw = obj["fields"] as? [[String: Any]] else { return [] }
+        return raw.compactMap { d in
+            guard let name = d["name"] as? String, !name.isEmpty else { return nil }
+            return ComposioField(
+                name: name,
+                label: d["label"] as? String ?? name,
+                description: d["description"] as? String ?? "",
+                required: d["required"] as? Bool ?? true,
+                value: d["default"] as? String ?? ""
+            )
+        }
+    }
+
+    /// Submit the user's credentials for a non-OAuth toolkit (POST /connect with fields).
+    func connectWithCredentials(toolkitSlug: String, auth: String, fields: [String: String]) {
+        let key = toolkitSlug.lowercased()
+        Task { @MainActor in
+            pending.insert(key)
+            do {
+                let obj = try await Self.request("POST", "/connect",
+                                                 body: ["toolkit": toolkitSlug, "auth": auth, "fields": fields])
+                lastError = nil
+                if let raw = obj["redirectUrl"] as? String, let url = URL(string: raw) {
+                    NSWorkspace.shared.open(url); pollUntilConnected(key)
+                } else {
+                    await reloadConnections(); pending.remove(key)
+                }
+            } catch {
+                pending.remove(key)
+                lastError = error.localizedDescription
+            }
+        }
+    }
+
+    /// Poll /connections (~90s) after starting an OAuth. Resolves three ways so the card never
+    /// hangs: ACTIVE → Connected; a terminal status (denied/expired/failed) → back to Connect;
+    /// timeout (user abandoned or denied silently) → back to Connect.
+    private func pollUntilConnected(_ key: String) {
         Task { @MainActor in
             for _ in 0..<45 {
                 try? await Task.sleep(nanoseconds: 2_000_000_000)
+                guard pending.contains(key) else { return }   // user hit Cancel
                 await reloadConnections()
-                if isConnected(slug) { return }
+                let status = (connections[key] ?? "").uppercased()
+                if status == "ACTIVE" { pending.remove(key); return }
+                if ["FAILED", "EXPIRED", "INACTIVE", "DELETED", "ERROR"].contains(status) {
+                    pending.remove(key); connections[key] = nil; return   // access denied / failed
+                }
+            }
+            // Timed out without going ACTIVE → assume abandoned/denied; restore the Connect button.
+            if (connections[key] ?? "").uppercased() != "ACTIVE" {
+                pending.remove(key)
+                if (connections[key] ?? "").uppercased() != "ACTIVE" { connections[key] = nil }
             }
         }
     }
@@ -157,27 +272,41 @@ final class ComposioStore: ObservableObject {
 
     private func reloadConnections() async {
         guard let c = try? await Self.request("GET", "/connections") else { return }
-        var map: [String: String] = [:]
-        if let dict = c["connections"] as? [String: String] {
-            for (k, v) in dict { map[k.lowercased()] = v }
-        } else if let rows = c["connections"] as? [[String: Any]] {
-            for row in rows where (row["toolkit"] as? String) != nil {
-                map[(row["toolkit"] as! String).lowercased()] = row["status"] as? String ?? "ACTIVE"
-            }
-        }
+        let map = Self.foldConnections(c)
         connections = map
+        // A pending OAuth that's now ACTIVE has succeeded — stop showing "Connecting…". Failures
+        // and timeouts are handled by the poll; focus-refresh only promotes successes here.
+        pending = pending.filter { (map[$0] ?? "").uppercased() != "ACTIVE" }
     }
 
     /// Disconnect a connected app (deletes its connected account on Composio).
     func disconnect(toolkitSlug: String) {
+        let key = toolkitSlug.lowercased()
         Task { @MainActor in
-            connections[toolkitSlug.lowercased()] = nil   // optimistic
+            pending.remove(key)
+            connections[key] = nil   // optimistic
             _ = try? await Self.request("POST", "/disconnect", body: ["toolkit": toolkitSlug])
             await reloadConnections()
         }
     }
 
     // MARK: Tools
+
+    /// Lists an app's actions with example phrases (GET /actions?toolkit=X) — for the app detail view.
+    func actions(for toolkit: String) async -> [ComposioAction] {
+        let tk = toolkit.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? toolkit
+        guard let obj = try? await Self.request("GET", "/actions?toolkit=\(tk)"),
+              let raw = obj["actions"] as? [[String: Any]] else { return [] }
+        return raw.compactMap { d in
+            guard let slug = d["slug"] as? String else { return nil }
+            return ComposioAction(
+                slug: slug,
+                name: d["name"] as? String ?? slug,
+                description: d["description"] as? String ?? "",
+                phrases: (d["phrases"] as? [String]) ?? []
+            )
+        }
+    }
 
     /// Lists the executable tools for the given toolkits (GET /tools?toolkits=a,b).
     func tools(for toolkits: [String]) async -> [ComposioTool] {

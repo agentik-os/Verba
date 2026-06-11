@@ -29,10 +29,28 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await composio.tools.execute(tool, {
+    // Composio's manual execution requires a CONCRETE toolkit version (it rejects "latest" with
+    // "Toolkit version not specified"). Resolve the tool's own version by slug, then execute.
+    let version: string | undefined;
+    try {
+      const raw = (await composio.tools.getRawComposioTools({ tools: [tool], limit: 1 } as never)) as {
+        slug: string;
+        version?: string;
+      }[];
+      version = raw.find((t) => t.slug === tool)?.version ?? raw[0]?.version;
+    } catch {
+      /* best effort: some no-auth tools execute without an explicit version */
+    }
+
+    const execArgs = {
       userId: auth.uid,
       arguments: body.arguments ?? {},
-    });
+      ...(version ? { version } : {}),
+    };
+    const result = await composio.tools.execute(
+      tool,
+      execArgs as Parameters<typeof composio.tools.execute>[1]
+    );
     return NextResponse.json({ ok: true, result }, { headers: cors });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Tool execution failed.";

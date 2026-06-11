@@ -28,6 +28,7 @@ export default function Home() {
       <SpeedProof />
       <LogosStrip />
       <Personas />
+      <JarvisAction />
       <TryNow />
       <ContextMode />
       <NotesTab />
@@ -51,11 +52,84 @@ export default function Home() {
   );
 }
 
+const JARVIS_APPS = [
+  "gmail", "slack", "notion", "googlecalendar", "github", "googlesheets", "googledocs",
+  "googledrive", "outlook", "linear", "jira", "asana", "trello", "hubspot", "salesforce",
+  "stripe", "shopify", "figma", "discord", "zoom", "dropbox", "airtable", "todoist",
+  "calendly", "intercom", "zendesk", "mailchimp", "twitter", "linkedin", "reddit",
+  "youtube", "spotify", "telegram", "clickup", "gitlab", "sentry", "supabase", "posthog",
+  "docusign", "webflow", "canva", "hubspot",
+];
+
+function JarvisAction() {
+  return (
+    <section id="jarvis" className="py-28">
+      <Reveal>
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center">
+          <HeadLeft
+            eyebrow="New · JARVIS"
+            index="00"
+            anchor
+            title={<>Speak it.<br />JARVIS does it.</>}
+            lead="Action mode is now JARVIS, a voice agent that understands what you mean, however you phrase it. It plans the steps, asks a quick question when something is ambiguous or missing, shows you exactly what it will do, and only acts once you confirm, on your Mac and across 1,000+ connected apps."
+          />
+          <div>
+            <PanelCaption>00 · JARVIS, Action feed</PanelCaption>
+            <div className="panel r-panel p-6">
+              <div className="flex items-center gap-2 pf-55">
+                <span aria-hidden>✦</span>
+                <span className="mono-meta">JARVIS</span>
+              </div>
+              <div className="ptint mt-4 rounded-xl border pborder p-4">
+                <div className="text-[13px] font-medium pf-90">Email the team I&apos;m running late</div>
+                <div className="mt-1 text-[12px] pf-55">&ldquo;send an email to the team that I&apos;m running 10 minutes late&rdquo;</div>
+                <div className="mt-3 flex gap-2">
+                  <span className="rounded-full border pborder px-3 py-1 text-[11px] pf-55">Cancel</span>
+                  <span className="rounded-full bg-[var(--fg)] px-3 py-1 text-[11px] font-semibold text-[var(--bg)]">✓ Confirm · Gmail</span>
+                </div>
+              </div>
+              <ul className="mt-5 space-y-2 text-[13px] pf-70">
+                <li>Interprets any phrasing, it recovers the real intent.</li>
+                <li>Asks when it is unsure, a Google Meet, or just a calendar block?</li>
+                <li>Missing a detail? It shows editable fields to fill in.</li>
+                <li>It never writes anything without your confirmation.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-14">
+          <div className="flex items-baseline justify-between">
+            <h3 className="text-lg font-semibold">Connect 1,000+ apps</h3>
+            <span className="muted text-sm">one secure tap to connect</span>
+          </div>
+          <div className="mt-5 grid grid-cols-6 gap-3 sm:grid-cols-9 lg:grid-cols-11">
+            {JARVIS_APPS.map((s, i) => (
+              <div
+                key={`${s}-${i}`}
+                className="flex aspect-square items-center justify-center rounded-xl glass p-2 transition-transform duration-150 hover:scale-110"
+                title={s}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`https://logos.composio.dev/api/${s}`} alt={s} className="h-7 w-7 object-contain" loading="lazy" />
+              </div>
+            ))}
+            <div className="flex aspect-square items-center justify-center rounded-xl glass p-2 text-center text-[12px] font-semibold muted">
+              +1000
+            </div>
+          </div>
+        </div>
+      </Reveal>
+    </section>
+  );
+}
+
 function Nav() {
   return (
     <nav className="anim-nav sticky top-3 z-50 mt-3 flex items-center justify-between rounded-full glass px-5 py-2.5">
       <Logo />
       <div className="hidden items-center gap-7 text-sm muted sm:flex">
+        <a href="#jarvis" className="transition-colors duration-150 hover:text-[var(--fg)]">JARVIS</a>
         <a href="#why" className="transition-colors duration-150 hover:text-[var(--fg)]">Why Verba</a>
         <a href="#notes" className="transition-colors duration-150 hover:text-[var(--fg)]">Notes</a>
         <a href="#translate" className="transition-colors duration-150 hover:text-[var(--fg)]">Translate</a>
@@ -133,7 +207,7 @@ function Hero() {
         </div>
       </div>
 
-      {/* Right: THE focal artifact — the live talk → clean text demonstration,
+      {/* Right: THE focal artifact, the live talk → clean text demonstration,
           layered above the flux backdrop. */}
       <div className="anim-demo relative z-10 lg:pl-2">
         <div className="glow-rec" />
@@ -143,7 +217,7 @@ function Hero() {
   );
 }
 
-/* SPEED-PROOF — your mouth is faster than your hands. The SpeedRace canvas makes
+/* SPEED-PROOF, your mouth is faster than your hands. The SpeedRace canvas makes
    the 150 vs 40 wpm gap visceral, sitting inside product chrome near the top. */
 function SpeedProof() {
   return (
@@ -179,7 +253,7 @@ function SpeedProof() {
   );
 }
 
-/* PERSONAS — who it's for, in one line each. Benefit-led, talk once and move on. */
+/* PERSONAS, who it's for, in one line each. Benefit-led, talk once and move on. */
 function Personas() {
   const personas: { name: string; line: string }[] = [
     { name: "Founders", line: "Clear the inbox, the doc, and the standup notes between meetings. Talk once, send clean, move on." },
@@ -296,7 +370,7 @@ function Bento() {
       </Reveal>
 
       <div className="mt-12 grid auto-rows-[150px] grid-cols-2 gap-3 lg:grid-cols-4">
-        {/* hero bento tile — solid product chrome, carries the headline number */}
+        {/* hero bento tile, solid product chrome, carries the headline number */}
         <Reveal className="col-span-2 row-span-2">
           <div className="panel r-panel flex h-full flex-col justify-between p-7">
             <span className="rec-dot" />
@@ -368,7 +442,7 @@ function ContextMode() {
             title={<>Your voice meets<br />your screen</>}
             lead="Press your shortcut, glance at the screen, and talk. Verba captures what you are looking at and writes from it. Reply to the email in front of you, summarize a document, comment on a photo, without touching the clipboard."
           />
-          {/* weighted hero tile — the focal example, in product chrome */}
+          {/* weighted hero tile, the focal example, in product chrome */}
           <div>
           <PanelCaption>01 · Context mode</PanelCaption>
           <div className="panel r-panel p-7">
@@ -529,7 +603,7 @@ function NotesTab() {
 
 function LanguageDetection() {
   // Spoken = raw speech (filler, no caps/punctuation); written = the same language,
-  // cleaned. The mode tag shows this is Flow (verbatim) — that's why it stays in your
+  // cleaned. The mode tag shows this is Flow (verbatim), that's why it stays in your
   // language word-for-word, just tidied up.
   const pairs = [
     { mode: "Flow · FR", spoken: "euh bonjour j'aurais besoin d'aide avec mon compte", written: "Bonjour, j'ai besoin d'aide avec mon compte." },
@@ -718,7 +792,7 @@ function WhyBest() {
         />
       </Reveal>
 
-      {/* Social-proof bar — truthful, verifiable signals of a serious, live product. */}
+      {/* Social-proof bar, truthful, verifiable signals of a serious, live product. */}
       <Reveal delay={40}>
         <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
@@ -797,7 +871,7 @@ function CompareTeaser() {
   return (
     <section className="py-28">
       <Reveal>
-        {/* THE INVERSION — the page's single light surface [G7] */}
+        {/* THE INVERSION, the page's single light surface [G7] */}
         <div className="r-panel relative overflow-hidden border border-black/10 bg-[#f4f2ee] px-8 py-16 text-center text-[#0a0a0c] sm:px-12 sm:py-20" style={{ boxShadow: "var(--panel-shadow)" }}>
           <div className="mx-auto mb-7 w-fit"><MicMark size={40} glyph={20} /></div>
           <h2 className="t-statement mx-auto max-w-3xl text-balance">Cloud tools upload your voice. Verba doesn't.</h2>
@@ -886,7 +960,7 @@ function Features() {
         lead="Sixteen more things Verba does once your cursor is in the box. The headline move is dictation anywhere; these are why people stay."
       />
       <div className="mt-12 grid gap-3 lg:grid-cols-3">
-        {/* hero feature — weighted, in product chrome, breaks the equal grid */}
+        {/* hero feature, weighted, in product chrome, breaks the equal grid */}
         <div className="lg:row-span-2">
         <PanelCaption>10 · The core move</PanelCaption>
         <div className="panel r-card flex h-full flex-col justify-between p-7">
@@ -979,7 +1053,7 @@ function Shortcuts() {
       blurb: "Rewrite any selection, or speak a command that runs your Mac.",
       rows: [
         { keys: ["⌥", "X"], desc: "Transform picker on selected text", use: "Select a clumsy paragraph anywhere, press it, pick a numbered transform, and it rewrites in place." },
-        { keys: ["fn", "X"], desc: "Action mode, control your Mac by voice", use: "\"Set a timer for 10 minutes\" or \"play my focus playlist.\" Your voice runs your Mac, confirmed before it acts." },
+        { keys: ["fn", "X"], desc: "JARVIS, an assistant that acts for you", use: "Speak any request, however it comes out. Verba works out what you mean, plans the steps, and acts, on your Mac or your connected apps (Gmail, Slack, Notion, Calendar…), always confirmed before it does anything." },
       ],
     },
   ];
@@ -1122,7 +1196,7 @@ function Pricing() {
       </div>
 
       <div className="mx-auto mt-10 grid max-w-3xl gap-4 sm:grid-cols-2">
-        {/* Free — flat supporting card */}
+        {/* Free, flat supporting card */}
         <div className="card r-panel p-8">
           <h3 className="text-lg font-medium">Free</h3>
           <div className="mt-3 font-mono text-4xl font-semibold tnum">$0</div>
@@ -1138,7 +1212,7 @@ function Pricing() {
           <p className="mt-3 text-center font-mono text-[11px] tracking-wide faint tnum">Requires Apple Silicon · macOS 14+</p>
         </div>
 
-        {/* Pro — the ONE glass-budget moment among pricing: solid panel chrome */}
+        {/* Pro, the ONE glass-budget moment among pricing: solid panel chrome */}
         <div ref={proRef} className="panel r-panel p-8" style={{ borderColor: "var(--border-warm)" }}>
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium text-white">Pro</h3>
@@ -1268,7 +1342,7 @@ function Footer() {
           </div>
         </div>
       </div>
-      {/* Bottom row: status + meta, all mono [C4 — the trust surface] */}
+      {/* Bottom row: status + meta, all mono [C4, the trust surface] */}
       <div className="mt-14 flex flex-wrap items-center justify-between gap-4 border-t hairline pt-6">
         <span className="mono-meta flex items-center gap-2">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#6ee7a8]" />

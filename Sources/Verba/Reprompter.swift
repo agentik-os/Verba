@@ -115,19 +115,29 @@ struct Reprompter {
         let userText = "Here is what I said. Use the screenshot to do it:\n\n<request>\n\(transcript)\n</request>"
         let b64 = imagePNG.base64EncodedString()
 
-        // Prefer the configured backend if it can do vision; else fall back to any key we have.
+        // Context mode must use the SAME engine as the user's other modes — never silently fall to a
+        // stray Anthropic API key. Route by the selected backend; only the apiKey/openRouter backends
+        // use their own keys (the user's explicit choice). Backends that can't see images (Claude
+        // Code's CLI, a local model) go through the user's SIGNED-IN ACCOUNT (verbaHosted) — i.e. their
+        // own Claude subscription, the same one powering every other mode — not the Anthropic key.
         let backend = Settings.shared.repromptBackend.resolved
-        // The Verba hosted backend handles vision (no key). Claude Code's CLI can't take
-        // images, so for vision we route Claude Code → Verba hosted as well.
-        if backend == .verba || backend == .claudeCode {
-            return try await verbaHosted(transcript: transcript, systemPrompt: systemPrompt, imageBase64: b64)
-        }
         let hasAnthropic = !(Keychain.anthropicKey ?? "").isEmpty
         let hasOpenRouter = !(Keychain.openRouterKey ?? "").isEmpty
+        let signedIn = !Settings.shared.proEmail.trimmingCharacters(in: .whitespaces).isEmpty
 
-        if (backend == .openRouter && hasOpenRouter) || (!hasAnthropic && hasOpenRouter) {
+        switch backend {
+        case .apiKey where hasAnthropic:
+            return try await anthropicVision(systemPrompt: systemPrompt, userText: userText, base64PNG: b64)
+        case .openRouter where hasOpenRouter:
             return try await openRouterVision(systemPrompt: systemPrompt, userText: userText, base64PNG: b64)
+        default:
+            break   // verba / claudeCode / localLLM, or a chosen key that's missing → account below
         }
+        if backend == .verba || backend == .claudeCode || signedIn {
+            return try await verbaHosted(transcript: transcript, systemPrompt: systemPrompt, imageBase64: b64)
+        }
+        // Not signed in and no matching backend key — use whatever vision-capable key exists.
+        if hasOpenRouter { return try await openRouterVision(systemPrompt: systemPrompt, userText: userText, base64PNG: b64) }
         guard hasAnthropic else { throw RepromptError.missingKey }
         return try await anthropicVision(systemPrompt: systemPrompt, userText: userText, base64PNG: b64)
     }

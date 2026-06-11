@@ -345,13 +345,13 @@ struct MainWindow: View {
             }
             .buttonStyle(.plain)
 
-            // Quick output-language switcher (flag), then the mic-source picker, then the gear.
+            // Output-language switcher (flag), then the gear, then the mic-source picker last on the right.
             FooterLanguageButton()
-            FooterMicButton()
             Button { selection = .settings } label: {
                 Image(systemName: "gearshape").foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
+            FooterMicButton()
         }
         .padding(.horizontal, 10).padding(.vertical, 8)
         .frame(maxWidth: .infinity)
