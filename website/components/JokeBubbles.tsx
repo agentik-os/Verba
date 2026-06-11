@@ -20,10 +20,18 @@ export default function JokeBubbles() {
     const c = cv.getContext("2d");
     if (!c) return;
 
-    const css = getComputedStyle(document.documentElement);
-    const fg = css.getPropertyValue("--fg").trim() || "#f3f4f7";
-    const border = css.getPropertyValue("--border").trim() || "rgba(255,255,255,0.1)";
-    const tint = css.getPropertyValue("--tint-strong").trim() || "rgba(255,255,255,0.12)";
+    let fg = "#f3f4f7", border = "rgba(255,255,255,0.1)", tint = "rgba(255,255,255,0.12)";
+    const readColors = () => {
+      const css = getComputedStyle(document.documentElement);
+      fg = css.getPropertyValue("--fg").trim() || fg;
+      border = css.getPropertyValue("--border").trim() || border;
+      // A clearly-visible bubble fill in BOTH themes (tint-strong is too faint on white).
+      tint = (document.documentElement.getAttribute("data-theme") === "light")
+        ? "rgba(10,10,20,0.05)" : "rgba(255,255,255,0.085)";
+    };
+    readColors();
+    const themeObs = new MutationObserver(readColors);
+    themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
     let w = 0, h = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -103,7 +111,7 @@ export default function JokeBubbles() {
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
+    return () => { themeObs.disconnect(); cancelAnimationFrame(raf); ro.disconnect(); };
   }, []);
 
   return <canvas ref={ref} className="h-[340px] w-full" aria-hidden />;
