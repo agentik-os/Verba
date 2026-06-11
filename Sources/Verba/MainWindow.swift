@@ -345,7 +345,8 @@ struct MainWindow: View {
             }
             .buttonStyle(.plain)
 
-            // Mic-source picker, just left of the settings gear.
+            // Quick output-language switcher (flag), then the mic-source picker, then the gear.
+            FooterLanguageButton()
             FooterMicButton()
             Button { selection = .settings } label: {
                 Image(systemName: "gearshape").foregroundStyle(.secondary)

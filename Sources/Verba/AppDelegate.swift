@@ -2347,6 +2347,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let host = NSHostingController(rootView: root)
             host.sizingOptions = []
             win.contentViewController = host
+            // Round the glass: NSVisualEffectView paints square corners over the window's own
+            // rounding, so clip the content view to a continuous rounded rect (the window shadow,
+            // computed from the opaque content shape, then follows it). Fixes ActionConfirm & co.
+            host.view.wantsLayer = true
+            host.view.layer?.cornerRadius = 16
+            host.view.layer?.cornerCurve = .continuous
+            host.view.layer?.masksToBounds = true
         } else {
             let host = NSHostingController(rootView: view)
             host.sizingOptions = []

@@ -1,4 +1,5 @@
 import SwiftUI
+import EventKit
 
 /// Confirmation sheet shown when Context mode (with Labs "Agentic actions" ON) resolves a spoken
 /// request into a structured `VerbaAction`. Nothing is executed until the user taps Confirm; on
@@ -73,11 +74,13 @@ struct ActionConfirmView: View {
             var f: [(String, String)] = [("Title", title), ("Starts", Self.fmt(start))]
             if let end { f.append(("Ends", Self.fmt(end))) }
             if let notes, !notes.isEmpty { f.append(("Notes", notes)) }
+            f.append(("Calendar", Self.defaultEventCalendar))   // WHERE it lands (your macOS default calendar)
             return f
         case let .reminder(title, due, notes):
             var f: [(String, String)] = [("Title", title)]
             if let due { f.append(("Due", Self.fmt(due))) }
             if let notes, !notes.isEmpty { f.append(("Notes", notes)) }
+            f.append(("List", Self.defaultReminderList))
             return f
         case let .emailDraft(to, subject, body):
             var f: [(String, String)] = []
@@ -105,5 +108,15 @@ struct ActionConfirmView: View {
         let f = DateFormatter(); f.locale = .current
         f.dateStyle = .medium; f.timeStyle = .short
         return f.string(from: date)
+    }
+
+    // The macOS default calendar / reminders list the event or reminder will be created in, so the
+    // user can see WHERE it goes (set the default in Calendar.app / Reminders.app to change it).
+    private static let store = EKEventStore()
+    static var defaultEventCalendar: String {
+        store.defaultCalendarForNewEvents?.title ?? "Default calendar"
+    }
+    static var defaultReminderList: String {
+        store.defaultCalendarForNewReminders()?.title ?? "Default list"
     }
 }
