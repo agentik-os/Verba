@@ -3,7 +3,22 @@ import AppKit
 
 // MARK: - App UI language (relaunch to apply a bundled .lproj)
 
+/// Redirects Bundle.main string lookups to a chosen .lproj, so the UI language can be set reliably
+/// for a hand-bundled SwiftPM app (where Bundle.main's automatic localization selection is flaky).
+private var verbaBundleAssocKey: UInt8 = 0
+final class VerbaLocalizedBundle: Bundle, @unchecked Sendable {
+    override func localizedString(forKey key: String, value: String?, table tableName: String?) -> String {
+        if let path = objc_getAssociatedObject(self, &verbaBundleAssocKey) as? String,
+           let lb = Bundle(path: path) {
+            return lb.localizedString(forKey: key, value: value, table: tableName)
+        }
+        return super.localizedString(forKey: key, value: value, table: tableName)
+    }
+}
+
 enum LocaleManager {
+    private static let kUILang = "verba.uiLanguage"   // stored .lproj code, "" = system/English
+
     /// Language NAME → bundled .lproj code.
     static let lproj: [String: String] = [
         "English": "en", "French": "fr", "Spanish": "es", "German": "de", "Italian": "it",
@@ -11,10 +26,22 @@ enum LocaleManager {
         "Korean": "ko", "Arabic": "ar", "Hindi": "hi", "Turkish": "tr", "Polish": "pl",
     ]
 
-    /// Set the app's interface language and relaunch so SwiftUI loads the matching .lproj.
+    static var savedCode: String { UserDefaults.standard.string(forKey: kUILang) ?? "" }
+
+    /// Point Bundle.main at the given .lproj code (call at launch). nil/"" → default English.
+    static func applyAtLaunch() {
+        object_setClass(Bundle.main, VerbaLocalizedBundle.self)
+        redirect(savedCode)
+    }
+    private static func redirect(_ code: String) {
+        let path = code.isEmpty ? nil : Bundle.main.path(forResource: code, ofType: "lproj")
+        objc_setAssociatedObject(Bundle.main, &verbaBundleAssocKey, path, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+    }
+
+    /// Persist the chosen interface language and relaunch so every window/menu rebuilds translated.
     static func applyUILanguage(_ name: String) {
-        if name.isEmpty { UserDefaults.standard.removeObject(forKey: "AppleLanguages") }
-        else if let code = lproj[name] { UserDefaults.standard.set([code], forKey: "AppleLanguages") }
+        let code = name.isEmpty ? "" : (lproj[name] ?? "")
+        UserDefaults.standard.set(code, forKey: kUILang)
         UserDefaults.standard.synchronize()
         let p = Process(); p.launchPath = "/usr/bin/open"; p.arguments = ["-n", Bundle.main.bundlePath]
         try? p.run()
@@ -23,8 +50,10 @@ enum LocaleManager {
 
     /// Offer to switch the interface language (with a restart) after the user picks an output language.
     static func offerUISwitch(to name: String) {
+        let want = name.isEmpty ? "" : (lproj[name] ?? "")
+        guard want != savedCode else { return }   // already in this language
         let alert = NSAlert()
-        alert.messageText = name.isEmpty ? "Use the system language for Verba's interface?"
+        alert.messageText = name.isEmpty ? "Use English for Verba's interface?"
                                          : "Switch Verba's interface to \(name)?"
         alert.informativeText = "Verba will restart to apply the language."
         alert.addButton(withTitle: "Restart")

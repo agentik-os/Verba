@@ -81,6 +81,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var recordStartedAt: Date?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        LocaleManager.applyAtLaunch()   // redirect Bundle.main to the chosen UI language BEFORE any UI builds
         applyDockPolicy()
         installMainMenu()   // menu-bar apps have no main menu → no ⌘C/⌘V in text fields without this
         VerbaServiceProvider.register()   // VER-19: "Transform with Verba…" in the Services menu (right-click on any selection)
