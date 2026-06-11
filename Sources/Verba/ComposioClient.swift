@@ -9,6 +9,8 @@ struct ComposioApp: Identifiable, Equatable {
     let name: String
     let cat: String
     var id: String { slug }
+    /// Composio's hosted app logo (PNG), e.g. https://logos.composio.dev/api/gmail.
+    var logoURL: URL? { URL(string: "https://logos.composio.dev/api/\(slug.lowercased())") }
 }
 
 /// A single executable tool (action) inside a connected toolkit.
@@ -55,7 +57,14 @@ final class ComposioStore: ObservableObject {
     @Published var lastError: String?
 
     private static let base = "https://verba.run/api/composio"
-    private init() {}
+    private init() {
+        // Returning from an OAuth flow in the browser → re-check connection state.
+        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification,
+                                               object: nil, queue: .main) { [weak self] _ in
+            guard let self, !self.apps.isEmpty else { return }
+            self.refreshConnections()
+        }
+    }
 
     /// True when the toolkit has an active connected account.
     func isConnected(_ toolkitSlug: String) -> Bool {
@@ -123,10 +132,40 @@ final class ComposioStore: ObservableObject {
                 NSWorkspace.shared.open(url)
                 connections[toolkitSlug.lowercased()] = "INITIATED"
                 lastError = nil
+                // The OAuth completes out-of-process in the browser; poll until it's ACTIVE so the
+                // UI flips to "Connected" without the user having to hit Refresh.
+                pollUntilConnected(toolkitSlug)
             } catch {
                 lastError = error.localizedDescription
             }
         }
+    }
+
+    /// Poll /connections (~90s) after starting an OAuth, stopping as soon as the toolkit is ACTIVE.
+    private func pollUntilConnected(_ slug: String) {
+        Task { @MainActor in
+            for _ in 0..<45 {
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                await reloadConnections()
+                if isConnected(slug) { return }
+            }
+        }
+    }
+
+    /// Refresh ONLY the connection statuses (cheap; used on focus + while polling).
+    func refreshConnections() { Task { @MainActor in await reloadConnections() } }
+
+    private func reloadConnections() async {
+        guard let c = try? await Self.request("GET", "/connections") else { return }
+        var map: [String: String] = [:]
+        if let dict = c["connections"] as? [String: String] {
+            for (k, v) in dict { map[k.lowercased()] = v }
+        } else if let rows = c["connections"] as? [[String: Any]] {
+            for row in rows where (row["toolkit"] as? String) != nil {
+                map[(row["toolkit"] as! String).lowercased()] = row["status"] as? String ?? "ACTIVE"
+            }
+        }
+        connections = map
     }
 
     // MARK: Tools

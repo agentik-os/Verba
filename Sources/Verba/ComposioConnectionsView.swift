@@ -19,6 +19,7 @@ struct ComposioCatalogApp: Identifiable {
 }
 
 struct ComposioConnectionsView: View {
+    var embedded = false   // true → render inline (no window chrome) inside Settings ▸ Action
     @ObservedObject private var store = ComposioStore.shared
     @Environment(\.dismiss) private var dismiss
 
@@ -26,23 +27,31 @@ struct ComposioConnectionsView: View {
     /// next store refresh flips them ACTIVE (or the user retries).
     @State private var connecting: Set<String> = []
 
-    private let cols = [GridItem(.adaptive(minimum: 170), spacing: 12)]
+    private let cols = [GridItem(.adaptive(minimum: 150), spacing: 10)]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-            ScrollView {
-                LazyVGrid(columns: cols, spacing: 12) {
+        Group {
+            if embedded {
+                // Inline in the settings page (the page scrolls): just the grid, no window chrome.
+                LazyVGrid(columns: cols, spacing: 10) {
                     ForEach(Self.catalog) { app in card(app) }
                 }
-                .padding(.horizontal, 24).padding(.vertical, 18)
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    header
+                    ScrollView {
+                        LazyVGrid(columns: cols, spacing: 12) {
+                            ForEach(Self.catalog) { app in card(app) }
+                        }
+                        .padding(.horizontal, 24).padding(.vertical, 18)
+                    }
+                }
+                .frame(minWidth: 620, idealWidth: 720, minHeight: 460, idealHeight: 560)
+                .background(VisualEffectView().ignoresSafeArea())
             }
         }
-        .frame(minWidth: 620, idealWidth: 720, minHeight: 460, idealHeight: 560)
-        .background(VisualEffectView().ignoresSafeArea())
         .onAppear { store.refresh() }
         .onChange(of: store.connections) { _, new in
-            // A slug that became ACTIVE is no longer "connecting" (keys are lowercased).
             connecting = connecting.filter { (new[$0.lowercased()] ?? "").uppercased() != "ACTIVE" }
         }
     }
@@ -80,7 +89,8 @@ struct ComposioConnectionsView: View {
         let isActive = store.isConnected(app.slug)   // connections is keyed lowercased
         let isConnecting = !isActive && connecting.contains(app.slug)
         VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top) {
+            HStack(alignment: .center, spacing: 8) {
+                logo(app.slug)
                 Text(app.name)
                     .font(.system(size: 13, weight: .semibold))
                     .lineLimit(1).minimumScaleFactor(0.8)
@@ -112,6 +122,16 @@ struct ComposioConnectionsView: View {
         .frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
         .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .glassSelection(isActive, cornerRadius: 14)
+    }
+
+    /// The app's logo from Composio's hosted logo CDN (falls back to a tinted placeholder).
+    private func logo(_ slug: String) -> some View {
+        AsyncImage(url: URL(string: "https://logos.composio.dev/api/\(slug.lowercased())")) { phase in
+            if let img = phase.image { img.resizable().scaledToFit() }
+            else { RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Color.primary.opacity(0.06)) }
+        }
+        .frame(width: 22, height: 22)
+        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
     }
 
     /// Small colored category chip.

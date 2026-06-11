@@ -63,7 +63,6 @@ struct SettingsView: View {
 
     @State private var eventCalendars: [(String, String)] = []   // (identifier, title) for the Action destination picker
     @State private var reminderLists: [(String, String)] = []
-    @State private var showComposioConnections = false   // "Manage connections" sheet (Action mode ▸ Connected apps)
     @State private var openAIKey = Keychain.openAIKey ?? ""
     @State private var anthropicKey = Keychain.anthropicKey ?? ""
     @State private var openRouterKey = Keychain.openRouterKey ?? ""
@@ -708,14 +707,8 @@ struct SettingsView: View {
         }
         card(L("Connected apps"),
              footer: L("Connect Gmail, Slack, Notion and more, then act on them by voice — e.g. “send a Slack message to the team that I'm running late”.")) {
-            HStack {
-                Label(L("Third-party apps via secure OAuth"), systemImage: "app.connected.to.app.below.fill")
-                    .font(.system(size: 13))
-                Spacer(minLength: 12)
-                Button(L("Manage connections")) { showComposioConnections = true }
-            }
+            ComposioConnectionsView(embedded: true)
         }
-        .sheet(isPresented: $showComposioConnections) { ComposioConnectionsView() }
         card(L("Destinations"),
              footer: L("Calendar events and reminders are written here. Pick a specific calendar/list (e.g. a Google or Notion-synced one), or leave on the macOS default. Set up the account in Calendar.app / Reminders.app first.")) {
             Picker(L("Calendar"), selection: $settings.eventCalendarID) {
