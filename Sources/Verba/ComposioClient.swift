@@ -168,6 +168,15 @@ final class ComposioStore: ObservableObject {
         connections = map
     }
 
+    /// Disconnect a connected app (deletes its connected account on Composio).
+    func disconnect(toolkitSlug: String) {
+        Task { @MainActor in
+            connections[toolkitSlug.lowercased()] = nil   // optimistic
+            _ = try? await Self.request("POST", "/disconnect", body: ["toolkit": toolkitSlug])
+            await reloadConnections()
+        }
+    }
+
     // MARK: Tools
 
     /// Lists the executable tools for the given toolkits (GET /tools?toolkits=a,b).

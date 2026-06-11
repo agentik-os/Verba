@@ -26,22 +26,60 @@ struct ComposioConnectionsView: View {
     /// Slugs whose OAuth flow was just launched — shown as "Connecting…" until the
     /// next store refresh flips them ACTIVE (or the user retries).
     @State private var connecting: Set<String> = []
+    @State private var categoryFilter: String? = nil   // nil = All
 
     private let cols = [GridItem(.adaptive(minimum: 150), spacing: 10)]
+
+    /// The catalog filtered by the selected category.
+    private var filtered: [ComposioCatalogApp] {
+        guard let f = categoryFilter else { return Self.catalog }
+        return Self.catalog.filter { $0.cat == f }
+    }
+    /// Categories present in the catalog, in display order (for the filter bar).
+    private var presentCategories: [String] {
+        var seen = Set<String>(); var out: [String] = []
+        for a in Self.catalog where !seen.contains(a.cat) { seen.insert(a.cat); out.append(a.cat) }
+        return out
+    }
+
+    /// A horizontal category filter bar (All + each category chip).
+    private var filterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                filterPill(L("All"), active: categoryFilter == nil) { categoryFilter = nil }
+                ForEach(presentCategories, id: \.self) { cat in
+                    let (label, _) = Self.categories[cat] ?? (cat.capitalized, .gray)
+                    filterPill(L(label), active: categoryFilter == cat) { categoryFilter = cat }
+                }
+            }
+        }
+    }
+    private func filterPill(_ title: String, active: Bool, _ tap: @escaping () -> Void) -> some View {
+        Button(action: tap) {
+            Text(title).font(.system(size: 11, weight: active ? .semibold : .regular))
+                .padding(.horizontal, 11).padding(.vertical, 5)
+                .background(active ? AnyShapeStyle(.primary.opacity(0.9)) : AnyShapeStyle(.softFill), in: Capsule())
+                .foregroundStyle(active ? AnyShapeStyle(Color(nsColor: .windowBackgroundColor)) : AnyShapeStyle(.primary))
+        }.buttonStyle(.plain)
+    }
 
     var body: some View {
         Group {
             if embedded {
-                // Inline in the settings page (the page scrolls): just the grid, no window chrome.
-                LazyVGrid(columns: cols, spacing: 10) {
-                    ForEach(Self.catalog) { app in card(app) }
+                // Inline in the settings page (the page scrolls): filter bar + grid, no window chrome.
+                VStack(alignment: .leading, spacing: 12) {
+                    filterBar
+                    LazyVGrid(columns: cols, spacing: 10) {
+                        ForEach(filtered) { app in card(app) }
+                    }
                 }
             } else {
                 VStack(alignment: .leading, spacing: 0) {
                     header
+                    filterBar.padding(.horizontal, 24).padding(.bottom, 6)
                     ScrollView {
                         LazyVGrid(columns: cols, spacing: 12) {
-                            ForEach(Self.catalog) { app in card(app) }
+                            ForEach(filtered) { app in card(app) }
                         }
                         .padding(.horizontal, 24).padding(.vertical, 18)
                     }
@@ -88,20 +126,27 @@ struct ComposioConnectionsView: View {
     @ViewBuilder private func card(_ app: ComposioCatalogApp) -> some View {
         let isActive = store.isConnected(app.slug)   // connections is keyed lowercased
         let isConnecting = !isActive && connecting.contains(app.slug)
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .center, spacing: 8) {
+        VStack(alignment: .leading, spacing: 8) {
+            // Logo + full app name (wraps, never cut).
+            HStack(alignment: .top, spacing: 8) {
                 logo(app.slug)
                 Text(app.name)
                     .font(.system(size: 13, weight: .semibold))
-                    .lineLimit(1).minimumScaleFactor(0.8)
-                Spacer(minLength: 6)
-                chip(app.cat)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
+            // Category tag UNDER the name, full width.
+            chip(app.cat)
+            Spacer(minLength: 4)
+            // Action row.
             if isActive {
-                Label(L("Connected"), systemImage: "checkmark.circle.fill")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.green)
+                HStack(spacing: 6) {
+                    Label(L("Connected"), systemImage: "checkmark.circle.fill")
+                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(.green)
+                    Spacer(minLength: 4)
+                    Button(L("Disconnect")) { store.disconnect(toolkitSlug: app.slug) }
+                        .glassButton().controlSize(.small)
+                }
             } else if isConnecting {
                 HStack(spacing: 6) {
                     ProgressView().controlSize(.small)
@@ -113,13 +158,14 @@ struct ComposioConnectionsView: View {
                     store.connect(toolkitSlug: app.slug)
                 } label: {
                     Text(L("Connect")).font(.system(size: 12, weight: .semibold))
+                        .frame(maxWidth: .infinity)
                 }
                 .glassButton()
                 .controlSize(.small)
             }
         }
         .padding(14)
-        .frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 104, alignment: .topLeading)
         .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .glassSelection(isActive, cornerRadius: 14)
     }
@@ -139,6 +185,7 @@ struct ComposioConnectionsView: View {
         let (label, tint) = Self.categories[cat] ?? (cat.capitalized, .gray)
         return Text(L(label))
             .font(.system(size: 9.5, weight: .semibold))
+            .lineLimit(1).fixedSize()        // never truncate the category tag
             .padding(.horizontal, 7).padding(.vertical, 3)
             .background(tint.opacity(0.16), in: Capsule())
             .foregroundStyle(tint)
