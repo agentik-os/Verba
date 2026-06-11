@@ -15,6 +15,8 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks"
 cp ".build/release/Verba" "$APP/Contents/MacOS/Verba"
 [ -f AppIcon.icns ] && cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+# Localizations: <lang>.lproj/Localizable.strings → Resources, so the UI can switch language.
+[ -d Localizations ] && cp -R Localizations/*.lproj "$APP/Contents/Resources/" 2>/dev/null || true
 [ -f ACKNOWLEDGEMENTS.txt ] && cp ACKNOWLEDGEMENTS.txt "$APP/Contents/Resources/ACKNOWLEDGEMENTS.txt"
 
 # Bundle custom UI sounds (Sounds/<cue>.mp3 → Resources/Sounds). Optional; falls back to
@@ -91,6 +93,13 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundleName</key>            <string>Verba</string>
     <key>CFBundleDisplayName</key>     <string>Verba</string>
     <key>CFBundleExecutable</key>      <string>Verba</string>
+    <key>CFBundleDevelopmentRegion</key><string>en</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+      <string>en</string><string>fr</string><string>es</string><string>de</string><string>it</string>
+      <string>pt</string><string>nl</string><string>ru</string><string>zh-Hans</string><string>ja</string>
+      <string>ko</string><string>ar</string><string>hi</string><string>tr</string><string>pl</string>
+    </array>
     <key>CFBundleIdentifier</key>      <string>com.agentik.verba</string>
     <key>CFBundleVersion</key>         <string>${VERSION}</string>
     <key>CFBundleShortVersionString</key><string>${VERSION}</string>

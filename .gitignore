@@ -20,3 +20,4 @@ dist/
 .vercel
 .env*
 .env*.local
+composio-test/

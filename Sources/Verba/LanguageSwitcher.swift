@@ -1,4 +1,37 @@
 import SwiftUI
+import AppKit
+
+// MARK: - App UI language (relaunch to apply a bundled .lproj)
+
+enum LocaleManager {
+    /// Language NAME → bundled .lproj code.
+    static let lproj: [String: String] = [
+        "English": "en", "French": "fr", "Spanish": "es", "German": "de", "Italian": "it",
+        "Portuguese": "pt", "Dutch": "nl", "Russian": "ru", "Chinese": "zh-Hans", "Japanese": "ja",
+        "Korean": "ko", "Arabic": "ar", "Hindi": "hi", "Turkish": "tr", "Polish": "pl",
+    ]
+
+    /// Set the app's interface language and relaunch so SwiftUI loads the matching .lproj.
+    static func applyUILanguage(_ name: String) {
+        if name.isEmpty { UserDefaults.standard.removeObject(forKey: "AppleLanguages") }
+        else if let code = lproj[name] { UserDefaults.standard.set([code], forKey: "AppleLanguages") }
+        UserDefaults.standard.synchronize()
+        let p = Process(); p.launchPath = "/usr/bin/open"; p.arguments = ["-n", Bundle.main.bundlePath]
+        try? p.run()
+        NSApp.terminate(nil)
+    }
+
+    /// Offer to switch the interface language (with a restart) after the user picks an output language.
+    static func offerUISwitch(to name: String) {
+        let alert = NSAlert()
+        alert.messageText = name.isEmpty ? "Use the system language for Verba's interface?"
+                                         : "Switch Verba's interface to \(name)?"
+        alert.informativeText = "Verba will restart to apply the language."
+        alert.addButton(withTitle: "Restart")
+        alert.addButton(withTitle: "Not now")
+        if alert.runModal() == .alertFirstButtonReturn { applyUILanguage(name) }
+    }
+}
 
 // MARK: - Crisp vector flags (drawn in SwiftUI, no assets / no SVG dependency)
 
@@ -62,12 +95,12 @@ struct FooterLanguageButton: View {
 
     var body: some View {
         Menu {
-            Button { settings.mainLanguage = "" } label: {
+            Button { pick("") } label: {
                 Label("Auto-detect", systemImage: settings.mainLanguage.isEmpty ? "checkmark" : "globe")
             }
             Divider()
             ForEach(translateLanguages, id: \.self) { lang in
-                Button { settings.mainLanguage = lang } label: {
+                Button { pick(lang) } label: {
                     HStack {
                         Text(lang)
                         if settings.mainLanguage == lang { Spacer(); Image(systemName: "checkmark") }
@@ -78,6 +111,12 @@ struct FooterLanguageButton: View {
             FlagView(language: settings.mainLanguage, height: 14)
         }
         .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
-        .help("Default output language")
+        .help("Language — sets output language + offers to translate the interface")
+    }
+
+    /// Set the dictation OUTPUT language, then offer to also translate the interface (with a restart).
+    private func pick(_ lang: String) {
+        settings.mainLanguage = lang
+        LocaleManager.offerUISwitch(to: lang)
     }
 }
