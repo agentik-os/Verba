@@ -9,16 +9,16 @@ struct FooterMicButton: View {
 
     private var currentName: String {
         settings.micUID.isEmpty
-            ? "System default"
+            ? L("System default")
             : (devices.first { $0.uid == settings.micUID }?.name
-               ?? MicDevices.name(forUID: settings.micUID) ?? "Unavailable")
+               ?? MicDevices.name(forUID: settings.micUID) ?? L("Unavailable"))
     }
 
     var body: some View {
         Menu {
             Button { settings.micUID = "" } label: {
-                if settings.micUID.isEmpty { Label("System default", systemImage: "checkmark") }
-                else { Text("System default") }
+                if settings.micUID.isEmpty { Label(L("System default"), systemImage: "checkmark") }
+                else { Text(L("System default")) }
             }
             if !devices.isEmpty { Divider() }
             ForEach(devices) { d in
@@ -33,7 +33,7 @@ struct FooterMicButton: View {
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
         .fixedSize()
-        .help("Microphone: \(currentName)")
+        .help("\(L("Microphone")): \(currentName)")
         .onAppear { devices = MicDevices.inputs() }
         .onChange(of: settings.micUID) { _, _ in devices = MicDevices.inputs() }
     }

@@ -227,7 +227,7 @@ struct MainWindow: View {
         if needsLocalFallback {
             VStack(alignment: .leading, spacing: 6) {
                 if qwenInstalling {
-                    Text(qwenStatus.isEmpty ? "Downloading…" : qwenStatus)
+                    Text(qwenStatus.isEmpty ? L("Downloading…") : qwenStatus)
                         .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                     ProgressView(value: qwenProgress).controlSize(.small)
                 } else {
@@ -235,8 +235,8 @@ struct MainWindow: View {
                         HStack(spacing: 9) {
                             Image(systemName: "arrow.down.circle.fill").font(.system(size: 18))
                             VStack(alignment: .leading, spacing: 1) {
-                                Text("Set up AI rewriting").font(.caption.weight(.semibold))
-                                Text("Download a free local model").font(.caption2).foregroundStyle(.secondary)
+                                Text(L("Set up AI rewriting")).font(.caption.weight(.semibold))
+                                Text(L("Download a free local model")).font(.caption2).foregroundStyle(.secondary)
                             }
                             Spacer(minLength: 0)
                         }
@@ -251,24 +251,24 @@ struct MainWindow: View {
     }
 
     private func startQwenDownload() {
-        qwenInstalling = true; qwenProgress = 0; qwenStatus = "Starting local engine…"
+        qwenInstalling = true; qwenProgress = 0; qwenStatus = L("Starting local engine…")
         LocalLLM.ensureServer { up in
             if up { pullQwen() }
             else {
-                qwenStatus = "Installing engine…"
+                qwenStatus = L("Installing engine…")
                 LocalLLM.installBinary { ok in
-                    if ok { pullQwen() } else { qwenInstalling = false; qwenStatus = "Install failed" }
+                    if ok { pullQwen() } else { qwenInstalling = false; qwenStatus = L("Install failed") }
                 }
             }
         }
     }
 
     private func pullQwen() {
-        qwenStatus = "Downloading \(settings.localLLMModel)…"
+        qwenStatus = "\(L("Downloading")) \(settings.localLLMModel)…"
         LocalLLM.pull(settings.localLLMModel, progress: { qwenProgress = $0 }) { ok in
             qwenInstalling = false
             if ok { settings.repromptBackend = .localLLM; qwenStatus = "" }
-            else { qwenStatus = "Download failed, try Settings" }
+            else { qwenStatus = L("Download failed, try Settings") }
         }
     }
 
@@ -303,7 +303,7 @@ struct MainWindow: View {
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
-        .help("Join the Verba community on Telegram (@verba_run)")
+        .help(L("Join the Verba community on Telegram (@verba_run)"))
     }
 
     /// A nav row. Selected = solid primary pill with inverted label, so it stands

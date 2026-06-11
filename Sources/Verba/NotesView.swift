@@ -124,10 +124,10 @@ struct NotesView: View {
             if entries.isEmpty {
                 Spacer()
                 EmptyState(icon: "note.text",
-                           title: filterTag == nil ? L("No notes yet") : "No notes with #\(filterTag!)",
+                           title: filterTag == nil ? L("No notes yet") : "\(L("No notes with")) #\(filterTag!)",
                            message: filterTag == nil
-                               ? "Record a voice memo and Verba turns it into a clean note."
-                               : "Pick another tag, or All to see every note.")
+                               ? L("Record a voice memo and Verba turns it into a clean note.")
+                               : L("Pick another tag, or All to see every note."))
                     .padding(.horizontal, 14)
                 Spacer()
             } else {
@@ -219,9 +219,9 @@ struct NotesView: View {
     private var intro: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(L("New note")).font(.system(size: 17, weight: .bold))
-            Text("Speak freely, even for an hour — this is for long-form documents. Verba transcribes it and turns it into a clean, formatted note.")
+            Text(L("Speak freely, even for an hour — this is for long-form documents. Verba transcribes it and turns it into a clean, formatted note."))
                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            Label("Just capturing quick to-dos? Use the Tasks tab — short spoken commands become tasks.",
+            Label(L("Just capturing quick to-dos? Use the Tasks tab — short spoken commands become tasks."),
                   systemImage: "checklist")
                 .font(.caption).foregroundStyle(.tertiary).fixedSize(horizontal: false, vertical: true)
         }
@@ -257,7 +257,7 @@ struct NotesView: View {
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        .help(isPaused ? "Resume recording (Control)" : "Pause recording (Control)")
+        .help(isPaused ? L("Resume recording (Control)") : L("Pause recording (Control)"))
     }
 
     private var recorderCard: some View {
@@ -267,10 +267,10 @@ struct NotesView: View {
             VStack(spacing: 4) {
                 if isRecording {
                     Text(timeString(elapsed)).font(.system(size: 22, weight: .semibold, design: .monospaced)).monospacedDigit()
-                    Text(isPaused ? "Paused · tap the mic to stop" : "Tap to stop · Control pauses").font(.caption).foregroundStyle(.secondary)
+                    Text(isPaused ? L("Paused · tap the mic to stop") : L("Tap to stop · Control pauses")).font(.caption).foregroundStyle(.secondary)
                 } else {
-                    Text("Tap to record").font(.callout.weight(.medium))
-                    Text("Pick a mode below").font(.caption).foregroundStyle(.secondary)
+                    Text(L("Tap to record")).font(.callout.weight(.medium))
+                    Text(L("Pick a mode below")).font(.caption).foregroundStyle(.secondary)
                 }
             }
             if isRecording { pauseControl }
@@ -292,7 +292,7 @@ struct NotesView: View {
             }
             .foregroundStyle(Color.red)
             HStack(spacing: 10) {
-                Button("Retry") { recordError = ""; toggleRecord() }.glassProminentButton().tint(.red)
+                Button(L("Retry")) { recordError = ""; toggleRecord() }.glassProminentButton().tint(.red)
                 Button(L("Dismiss")) { recordError = "" }.glassButton()
             }
             .controlSize(.small)
@@ -332,7 +332,7 @@ struct NotesView: View {
                 Image(systemName: "wand.and.rays").font(.system(size: 12)).foregroundStyle(.secondary).padding(.top, 2)
                 Divider().frame(height: 16)
                 // axis:.vertical grows the field to fit a long instruction (1…6 visible lines).
-                TextField("How should this note be shaped? (e.g. \u{201C}as a bug report\u{201D})",
+                TextField(L("How should this note be shaped? (e.g. \u{201C}as a bug report\u{201D})"),
                           text: $intentText, axis: .vertical)
                     .textFieldStyle(.plain)
                     .lineLimit(1...6)
@@ -348,10 +348,10 @@ struct NotesView: View {
                 }
                 .buttonStyle(.borderless)
                 .disabled(busy || transcript.isEmpty || intentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .help("Re-format this note with the current instruction")
+                .help(L("Re-format this note with the current instruction"))
             }
             if !intentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                Label(transcript.isEmpty ? "This instruction will shape your note" : "This note follows your instruction",
+                Label(transcript.isEmpty ? L("This instruction will shape your note") : L("This note follows your instruction"),
                       systemImage: "checkmark.circle")
                     .font(.system(size: 10.5, weight: .medium))
                     .foregroundStyle(.secondary)
@@ -421,7 +421,7 @@ struct NotesView: View {
     private var processingRow: some View {
         HStack(spacing: 10) {
             ProgressView().controlSize(.small)
-            Text(status.isEmpty ? "Working…" : status).font(.callout).foregroundStyle(.secondary)
+            Text(status.isEmpty ? L("Working…") : status).font(.callout).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
@@ -439,7 +439,7 @@ struct NotesView: View {
                         }
                     }
                     Divider()
-                    Button { showModeManager = true } label: { Label("Manage modes…", systemImage: "slider.horizontal.3") }
+                    Button { showModeManager = true } label: { Label(L("Manage modes…"), systemImage: "slider.horizontal.3") }
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: format.icon).font(.system(size: 11, weight: .semibold))
@@ -452,7 +452,7 @@ struct NotesView: View {
                     .contentShape(Capsule())
                 }
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
-                .help("Change format (re-organizes from your words)")
+                .help(L("Change format (re-organizes from your words)"))
 
                 Spacer(minLength: 8)
 
@@ -462,11 +462,11 @@ struct NotesView: View {
                 Button { newNote() } label: {
                     Label(L("New note"), systemImage: "square.and.pencil").font(.system(size: 12, weight: .medium))
                 }
-                .buttonStyle(.borderless).help("Start a new note (record again)").disabled(busy && !isRecording)
+                .buttonStyle(.borderless).help(L("Start a new note (record again)")).disabled(busy && !isRecording)
                 Button { applyFormat() } label: { Image(systemName: "wand.and.stars") }
-                    .buttonStyle(.borderless).help("Re-apply format").disabled(busy || transcript.isEmpty)
+                    .buttonStyle(.borderless).help(L("Re-apply format")).disabled(busy || transcript.isEmpty)
                 Button { appendMode = true; toggleRecord() } label: { Image(systemName: isRecording ? "stop.circle.fill" : "mic.badge.plus") }
-                    .buttonStyle(.borderless).help("Record more and add it to this note").disabled(busy && !isRecording)
+                    .buttonStyle(.borderless).help(L("Record more and add it to this note")).disabled(busy && !isRecording)
                 // When this note is a checklist (- [ ] lines), offer to send it to the Task Manager so
                 // the markdown isn't a dead end. Parses every checklist line into a new project's tasks.
                 if !checklistItems.isEmpty {
@@ -474,7 +474,7 @@ struct NotesView: View {
                         Label(L("Add to Tasks"), systemImage: "checklist").font(.system(size: 12, weight: .medium))
                     }
                     .buttonStyle(.borderless)
-                    .help("Create a Tasks project from this checklist (\(checklistItems.count) item\(checklistItems.count == 1 ? "" : "s"))")
+                    .help("\(L("Create a Tasks project from this checklist")) (\(checklistItems.count) \(checklistItems.count == 1 ? L("item") : L("items")))")
                 }
                 CopyButton(text: editorText)
                 Button(role: .destructive) { if let id = selectedID, let e = store.entries.first(where: { $0.id == id }) { remove(e) } else { newNote() } } label: { Image(systemName: "trash") }
@@ -484,7 +484,7 @@ struct NotesView: View {
             formatToolbar
             if format.intent { intentField }
             if addedToTasksFlash {
-                Label("Added to Tasks — open the Tasks tab to see them", systemImage: "checkmark.circle.fill")
+                Label(L("Added to Tasks — open the Tasks tab to see them"), systemImage: "checkmark.circle.fill")
                     .font(.system(size: 11, weight: .medium)).foregroundStyle(.green)
                     .transition(.opacity)
             }
@@ -493,15 +493,15 @@ struct NotesView: View {
             if isRecording {
                 HStack(spacing: 10) {
                     Circle().fill(isPaused ? .orange : .red).frame(width: 8, height: 8)
-                    Text(isPaused ? "Paused… \(timeString(elapsed))" : "Recording more… \(timeString(elapsed)) · tap the mic to stop")
+                    Text(isPaused ? "\(L("Paused…")) \(timeString(elapsed))" : "\(L("Recording more…")) \(timeString(elapsed)) · \(L("tap the mic to stop"))")
                         .font(.caption).monospacedDigit().foregroundStyle(.secondary)
                     Button { togglePauseNote() } label: {
                         Image(systemName: isPaused ? "play.fill" : "pause.fill").font(.system(size: 11))
-                    }.buttonStyle(.borderless).help(isPaused ? "Resume (Control)" : "Pause (Control)")
+                    }.buttonStyle(.borderless).help(isPaused ? L("Resume (Control)") : L("Pause (Control)"))
                 }
             }
             // Title field, then the content below.
-            TextField("Add a title", text: $noteTitle)
+            TextField(L("Add a title"), text: $noteTitle)
                 .textFieldStyle(.plain)
                 .font(.system(size: 20, weight: .bold))
                 .focused($titleFocused)
@@ -518,10 +518,10 @@ struct NotesView: View {
     /// Bear-style formatting toolbar — wraps the selection or toggles a line prefix.
     private var formatToolbar: some View {
         HStack(spacing: 1) {
-            fmtBtn("bold", "Bold (**)") { md.wrap("**") }
-            fmtBtn("italic", "Italic (*)") { md.wrap("*") }
-            fmtBtn("strikethrough", "Strikethrough (~~)") { md.wrap("~~") }
-            fmtBtn("chevron.left.forwardslash.chevron.right", "Inline code (`)") { md.wrap("`") }
+            fmtBtn("bold", L("Bold (**)")) { md.wrap("**") }
+            fmtBtn("italic", L("Italic (*)")) { md.wrap("*") }
+            fmtBtn("strikethrough", L("Strikethrough (~~)")) { md.wrap("~~") }
+            fmtBtn("chevron.left.forwardslash.chevron.right", L("Inline code (`)")) { md.wrap("`") }
             Divider().frame(height: 16).padding(.horizontal, 4)
             Menu {
                 Button(L("Heading 1")) { md.toggleLinePrefix("# ") }
@@ -548,7 +548,7 @@ struct NotesView: View {
     /// NOT tied to `busy` (transcription/formatting), so the LLM wait is never mislabeled "Saving".
     @ViewBuilder private var autosaveBadge: some View {
         if autosaveTask != nil {
-            HStack(spacing: 5) { ProgressView().controlSize(.small); Text("Saving…").font(.caption) }
+            HStack(spacing: 5) { ProgressView().controlSize(.small); Text(L("Saving…")).font(.caption) }
                 .foregroundStyle(.secondary)
         } else if savedFlash {
             Label(L("Saved"), systemImage: "checkmark.circle.fill").font(.caption).foregroundStyle(.green)
@@ -576,7 +576,7 @@ struct NotesView: View {
             HStack(spacing: 8) {
                 Image(systemName: "number").font(.system(size: 12)).foregroundStyle(.secondary)
                 Divider().frame(height: 12)
-                TextField("Add tags (press Enter)", text: $tagInput)
+                TextField(L("Add tags (press Enter)"), text: $tagInput)
                     .textFieldStyle(.plain)
                     .onSubmit {
                         let new = NotesStore.mergeTags(tagInput.split(whereSeparator: { $0 == " " || $0 == "," }).map(String.init))
@@ -733,10 +733,10 @@ struct NotesView: View {
             // recording") with no retry. Free it now — symmetric to AppDelegate's releaseArmed().
             recorder.releaseArmed()
             if let url = recordingURL { transcribe(url) }
-            else { recordError = "Couldn't capture audio — try recording again."; appendMode = false }
+            else { recordError = L("Couldn't capture audio — try recording again."); appendMode = false }
         } else {
             recorder.requestPermission { ok in
-                guard ok else { recordError = "Microphone access denied. Allow Verba under System Settings ▸ Privacy & Security ▸ Microphone."; return }
+                guard ok else { recordError = L("Microphone access denied. Allow Verba under System Settings ▸ Privacy & Security ▸ Microphone."); return }
                 // Single deferred retry (NOT a loop): if the shared dictation recorder only just
                 // released the mic, the input can take a beat to free. Try once now; if it fails,
                 // retry once after a short delay before surfacing a readable error.
@@ -747,7 +747,7 @@ struct NotesView: View {
                         if recorder.start() {
                             beginNoteRecording()
                         } else {
-                            recordError = "Couldn't start recording. The microphone may be in use — wait a moment, then tap Retry."
+                            recordError = L("Couldn't start recording. The microphone may be in use — wait a moment, then tap Retry.")
                         }
                     }
                 }
@@ -801,7 +801,7 @@ struct NotesView: View {
     }
 
     private func transcribe(_ url: URL) {
-        busy = true; status = "Transcribing…"
+        busy = true; status = L("Transcribing…")
         work = Task {
             do {
                 let s = Settings.shared
@@ -821,7 +821,7 @@ struct NotesView: View {
                 guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                     await MainActor.run {
                         busy = false; status = ""; appendMode = false
-                        recordError = "Didn't catch anything — try recording again."
+                        recordError = L("Didn't catch anything — try recording again.")
                     }
                     return
                 }
@@ -833,14 +833,14 @@ struct NotesView: View {
                 applyFormat()
             } catch {
                 if Task.isCancelled { return }
-                await MainActor.run { busy = false; status = "Transcription failed: \(error.localizedDescription)" }
+                await MainActor.run { busy = false; status = "\(L("Transcription failed:")) \(error.localizedDescription)" }
             }
         }
     }
 
     private func applyFormat() {
         guard !transcript.isEmpty else { return }
-        busy = true; status = "Organizing into \(format.name)…"
+        busy = true; status = "\(L("Organizing into")) \(format.name)…"
         // Snapshot the intent on the main actor so the system prompt always reflects what the user
         // typed RIGHT NOW (the live text is the single source of truth — no separate applied flag).
         let intentSnapshot = intentText
@@ -860,7 +860,7 @@ struct NotesView: View {
                 }
             } catch {
                 if Task.isCancelled { return }
-                await MainActor.run { busy = false; status = "Couldn't organize: \(error.localizedDescription)" }
+                await MainActor.run { busy = false; status = "\(L("Couldn't organize:")) \(error.localizedDescription)" }
             }
         }
     }

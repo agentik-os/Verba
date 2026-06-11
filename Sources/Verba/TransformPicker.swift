@@ -27,13 +27,13 @@ struct TransformPickerView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Image(systemName: "wand.and.stars").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
-                Text("Transform selection").font(.system(size: 14, weight: .semibold))
+                Text(L("Transform selection")).font(.system(size: 14, weight: .semibold))
                 Spacer(minLength: 18)
                 Button(action: onClose) {
                     Image(systemName: "xmark").font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(.secondary).padding(6).contentShape(Rectangle())
                 }
-                .buttonStyle(.plain).help("Close (Esc)")
+                .buttonStyle(.plain).help(L("Close (Esc)"))
             }
 
             switch model.phase {
@@ -43,7 +43,7 @@ struct TransformPickerView: View {
                         row(index: i + 1, transform: t)
                     }
                 }
-                Text("Press 1-9 or click")
+                Text(L("Press 1-9 or click"))
                     .font(.system(size: 10)).foregroundStyle(.tertiary)
                     .padding(.top, 2)
             case .working(let name):
@@ -62,8 +62,8 @@ struct TransformPickerView: View {
         HStack(spacing: 10) {
             ProgressView().controlSize(.small).scaleEffect(0.85)
             VStack(alignment: .leading, spacing: 1) {
-                Text("Transforming…").font(.system(size: 13, weight: .medium))
-                Text(name.isEmpty ? "your selection" : name)
+                Text(L("Transforming…")).font(.system(size: 13, weight: .medium))
+                Text(name.isEmpty ? L("your selection") : name)
                     .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer(minLength: 4)
@@ -79,7 +79,7 @@ struct TransformPickerView: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 20, height: 20)
                     .background(.softFill, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                Text(t.name.isEmpty ? "(unnamed)" : t.name)
+                Text(t.name.isEmpty ? L("(unnamed)") : t.name)
                     .font(.system(size: 13))
                     .foregroundStyle(.primary)
                     .lineLimit(1)

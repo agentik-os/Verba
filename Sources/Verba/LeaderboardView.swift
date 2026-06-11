@@ -21,10 +21,10 @@ private enum Metric: String, CaseIterable, Identifiable {
     /// freshly-picked "Time saved" / "Words / min" column isn't an unexplained number.
     var caption: String {
         switch self {
-        case .words:  "Total words dictated across all your sessions."
-        case .wpm:    "Average words per minute while dictating."
-        case .streak: "Consecutive days you've dictated at least once."
-        case .saved:  "Estimated minutes saved versus typing by hand."
+        case .words:  L("Total words dictated across all your sessions.")
+        case .wpm:    L("Average words per minute while dictating.")
+        case .streak: L("Consecutive days you've dictated at least once.")
+        case .saved:  L("Estimated minutes saved versus typing by hand.")
         }
     }
 }
@@ -87,10 +87,10 @@ struct LeaderboardView: View {
             HStack {
                 Text(L("Leaderboard")).font(.system(size: 17, weight: .bold))
                 Spacer()
-                Button { model.load() } label: { Image(systemName: "arrow.clockwise") }.buttonStyle(.borderless).help("Refresh")
+                Button { model.load() } label: { Image(systemName: "arrow.clockwise") }.buttonStyle(.borderless).help(L("Refresh"))
             }
             .padding(.horizontal, 28).padding(.top, 28).padding(.bottom, 2)
-            Text("Where you rank against everyone using Verba. Aliases only, no names or emails.")
+            Text(L("Where you rank against everyone using Verba. Aliases only, no names or emails."))
                 .font(.callout).foregroundStyle(.secondary).padding(.horizontal, 28).padding(.bottom, 14)
 
             identityCard
@@ -123,14 +123,14 @@ struct LeaderboardView: View {
             if model.loading {
                 ProgressView().frame(maxWidth: .infinity).padding(.top, 30)
             } else if metricIsSparse, query.isEmpty {
-                EmptyState(icon: metric.icon, title: "Not enough data for this metric yet",
-                           message: "Nobody has enough “\(metric.rawValue.lowercased())” data to rank by yet. Pick another metric, or keep dictating, this fills in over time.")
+                EmptyState(icon: metric.icon, title: L("Not enough data for this metric yet"),
+                           message: L("Nobody has enough “\(metric.rawValue.lowercased())” data to rank by yet. Pick another metric, or keep dictating, this fills in over time."))
             } else if filtered.isEmpty {
                 if query.isEmpty {
-                    EmptyState(icon: "trophy", title: "Nobody on the board yet",
-                               message: "The leaderboard ranks Verba users by words dictated. Dictate anything to claim your spot, your public alias appears here (never your real name or email).")
+                    EmptyState(icon: "trophy", title: L("Nobody on the board yet"),
+                               message: L("The leaderboard ranks Verba users by words dictated. Dictate anything to claim your spot, your public alias appears here (never your real name or email)."))
                 } else {
-                    Text("No alias matches “\(query)”.")
+                    Text(L("No alias matches “\(query)”."))
                         .font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, 30)
                 }
             }
@@ -163,7 +163,7 @@ struct LeaderboardView: View {
             Image(systemName: "person.crop.circle.fill")
                 .font(.system(size: 22)).foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 4) {
-                Text("Your public alias").font(.caption).foregroundStyle(.secondary)
+                Text(L("Your public alias")).font(.caption).foregroundStyle(.secondary)
                 HStack(spacing: 8) {
                     TextField(L("Alias"), text: $settings.username)
                         .textFieldStyle(.plain)
@@ -184,7 +184,7 @@ struct LeaderboardView: View {
                                 .frame(width: 18, height: 18)
                                 .contentShape(Rectangle())
                         }
-                        .buttonStyle(.borderless).help("Undo shuffle (restore your previous alias)")
+                        .buttonStyle(.borderless).help(L("Undo shuffle (restore your previous alias)"))
                     }
                     Divider().frame(height: 12)
                     Button {
@@ -199,7 +199,7 @@ struct LeaderboardView: View {
                             .frame(width: 18, height: 18)
                             .contentShape(Rectangle())
                     }
-                    .buttonStyle(.borderless).help("Shuffle a new alias (you can undo it)")
+                    .buttonStyle(.borderless).help(L("Shuffle a new alias (you can undo it)"))
                 }
                 .padding(.horizontal, 10).padding(.vertical, 6)
                 .background(.softFill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -207,10 +207,10 @@ struct LeaderboardView: View {
             }
             Spacer()
             Toggle(isOn: $settings.showOnLeaderboard) {
-                Text("Show me").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                Text(L("Show me")).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
             }
             .toggleStyle(.switch).controlSize(.small)
-            .help("Show me on the public leaderboard")
+            .help(L("Show me on the public leaderboard"))
             .onChange(of: settings.showOnLeaderboard) { _, _ in model.reloadSoon(after: 0.8) }
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
@@ -220,7 +220,7 @@ struct LeaderboardView: View {
     private var hiddenNote: some View {
         HStack(spacing: 10) {
             Image(systemName: "eye.slash").foregroundStyle(.secondary)
-            Text("You're hidden from the public leaderboard. Flip “Show me” above to claim your spot.")
+            Text(L("You're hidden from the public leaderboard. Flip “Show me” above to claim your spot."))
                 .font(.callout).foregroundStyle(.secondary)
             Spacer()
         }
@@ -258,13 +258,13 @@ struct LeaderboardView: View {
     private func row(_ rank: Int, _ e: LeaderEntry, highlighted: Bool) -> some View {
         HStack(spacing: 12) {
             Text(medal(rank)).font(.system(size: 15, weight: .semibold)).frame(width: 36, alignment: .leading)
-            Text(e.alias + (highlighted ? "  (you)" : "")).fontWeight(highlighted ? .semibold : .regular).lineLimit(1)
+            Text(e.alias + (highlighted ? L("  (you)") : "")).fontWeight(highlighted ? .semibold : .regular).lineLimit(1)
             // Subtle "updating…" hint on the user's own row while a deferred reload is pending,
             // so an alias shuffle / visibility toggle visibly takes effect.
             if highlighted && model.refreshing {
                 HStack(spacing: 4) {
                     ProgressView().controlSize(.small).scaleEffect(0.6)
-                    Text("updating…").font(.caption2).foregroundStyle(.tertiary)
+                    Text(L("updating…")).font(.caption2).foregroundStyle(.tertiary)
                 }
             }
             Spacer()

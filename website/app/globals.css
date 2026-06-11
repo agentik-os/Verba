@@ -55,12 +55,14 @@
   --border-strong: rgba(10, 10, 20, 0.16);
   --hairline-top: rgba(255, 255, 255, 0.9);
 
-  --panel: #0c0c10;          /* the hero chrome stays dark in both modes — it IS the app */
-  --panel-2: #101015;
+  /* Light mode: demo panels are LIGHT too (a dark slab on a white page read badly).
+     Canvas content (SpeedRace / WaveLine / LiveDemo) is themed off --fg, so it adapts. */
+  --panel: #ffffff;
+  --panel-2: #f5f5f7;
   --panel-shadow:
-    0 40px 90px -34px rgba(20, 22, 40, 0.45),
-    0 8px 24px -14px rgba(20, 22, 40, 0.30),
-    0 1px 1px rgba(226, 59, 46, 0.05);
+    0 40px 90px -34px rgba(20, 22, 40, 0.14),
+    0 8px 24px -14px rgba(20, 22, 40, 0.10),
+    0 1px 1px rgba(20, 22, 40, 0.04);
 
   --card: rgba(255, 255, 255, 0.66);
   --card-hover: rgba(255, 255, 255, 0.92);

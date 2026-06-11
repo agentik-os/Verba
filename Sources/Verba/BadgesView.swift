@@ -21,7 +21,7 @@ struct BadgesView: View {
                     let n = game.unlocked.count
                     Text("\(n) / \(Gamification.all.count)").font(.callout).foregroundStyle(.secondary).monospacedDigit()
                     Button { shareStats() } label: { Label(L("Share"), systemImage: "square.and.arrow.up") }
-                        .buttonStyle(.borderless).help("Share a card of your stats")
+                        .buttonStyle(.borderless).help(L("Share a card of your stats"))
                 }
                 .padding(.horizontal, 28).padding(.top, 28)
 
@@ -96,17 +96,17 @@ struct BadgesView: View {
                     Image(systemName: "person.2.fill").foregroundStyle(.secondary)
                     Text(L("Your standing")).font(.subheadline.weight(.semibold))
                     Spacer()
-                    Text("#\(myIdx + 1) of \(rows.count)").font(.callout.weight(.bold)).monospacedDigit()
+                    Text("#\(myIdx + 1) \(L("of")) \(rows.count)").font(.callout.weight(.bold)).monospacedDigit()
                 }
                 if let a = ahead {
                     rivalRow(icon: "arrow.up.right", tint: .orange,
-                             text: "Catch \(a.alias)", detail: "\(Int(a.words - rows[myIdx].words)) words ahead")
+                             text: "\(L("Catch")) \(a.alias)", detail: "\(Int(a.words - rows[myIdx].words)) \(L("words ahead"))")
                 } else {
-                    rivalRow(icon: "crown.fill", tint: .yellow, text: "You're #1", detail: "everyone is chasing you")
+                    rivalRow(icon: "crown.fill", tint: .yellow, text: L("You're #1"), detail: L("everyone is chasing you"))
                 }
                 if let b = behind {
                     rivalRow(icon: "arrow.down.right", tint: .green,
-                             text: "\(b.alias) is behind", detail: "\(Int(rows[myIdx].words - b.words)) words back")
+                             text: "\(b.alias) \(L("is behind"))", detail: "\(Int(rows[myIdx].words - b.words)) \(L("words back"))")
                 }
             }
             .padding(16).frame(maxWidth: .infinity, alignment: .leading)
@@ -161,13 +161,13 @@ struct BadgesView: View {
             }
             VStack(alignment: .leading, spacing: 9) {
                 if let m = game.nextWordMilestone {
-                    nextRow("text.word.spacing", "\(m.remaining.formatted()) words to \(compact(m.target))")
+                    nextRow("text.word.spacing", "\(m.remaining.formatted()) \(L("words to")) \(compact(m.target))")
                 }
                 if let st = game.nextStreakMilestone {
-                    nextRow("flame.fill", "\(st.remaining) day\(st.remaining == 1 ? "" : "s") to a \(st.target) day streak")
+                    nextRow("flame.fill", "\(st.remaining) \(st.remaining == 1 ? L("day") : L("days")) \(L("to a")) \(st.target) \(L("day streak"))")
                 }
                 let info = game.levelInfo
-                nextRow("sparkles", "\(max(0, info.xpForNext - info.xpInLevel)) XP to Level \(info.level + 1)")
+                nextRow("sparkles", "\(max(0, info.xpForNext - info.xpInLevel)) \(L("XP to Level")) \(info.level + 1)")
             }
             Spacer(minLength: 0)
         }
@@ -185,13 +185,13 @@ struct BadgesView: View {
 
     private var recordsCard: some View {
         HStack(spacing: 0) {
-            record("\(compact(stats.totalWords))", "total words", "text.word.spacing")
+            record("\(compact(stats.totalWords))", L("total words"), "text.word.spacing")
             Divider().frame(height: 38).opacity(0.3)
-            record("\(stats.bestDayWords)", "best day", "trophy")
+            record("\(stats.bestDayWords)", L("best day"), "trophy")
             Divider().frame(height: 38).opacity(0.3)
-            record("\(stats.avgWPM)", "avg wpm", "gauge.with.dots.needle.67percent")
+            record("\(stats.avgWPM)", L("avg wpm"), "gauge.with.dots.needle.67percent")
             Divider().frame(height: 38).opacity(0.3)
-            record("\(stats.totalCount)", "dictations", "waveform")
+            record("\(stats.totalCount)", L("dictations"), "waveform")
         }
         .padding(.vertical, 16)
         .frame(maxWidth: .infinity)
@@ -219,12 +219,12 @@ struct BadgesView: View {
         return VStack(spacing: 10) {
             ProgressRing(progress: info.progress, tint: .primary, lineWidth: 7) {
                 VStack(spacing: 0) {
-                    Text("LVL").font(.system(size: 9, weight: .bold)).foregroundStyle(.secondary)
+                    Text(L("LVL")).font(.system(size: 9, weight: .bold)).foregroundStyle(.secondary)
                     Text("\(info.level)").font(.system(size: 26, weight: .bold)).monospacedDigit()
                 }
             }
             .frame(width: 78, height: 78)
-            Text("\(info.title) · Lvl \(info.level)/\(Gamification.maxLevel)").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            Text("\(info.title) · \(L("Lvl")) \(info.level)/\(Gamification.maxLevel)").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             Text("\(info.xpInLevel) / \(info.xpForNext) XP").font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
         }
         .frame(maxWidth: .infinity).padding(.top, 24).padding(.bottom, 16)
@@ -241,8 +241,8 @@ struct BadgesView: View {
                 }
             }
             .frame(width: 78, height: 78)
-            Text("Today's goal").font(.subheadline.weight(.semibold))
-            Text("\(game.todayWords) / \(game.dailyGoal) words").font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
+            Text(L("Today's goal")).font(.subheadline.weight(.semibold))
+            Text("\(game.todayWords) / \(game.dailyGoal) \(L("words"))").font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
         }
         .frame(maxWidth: .infinity).padding(.top, 24).padding(.bottom, 16)
         .glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -255,12 +255,12 @@ struct BadgesView: View {
                 Circle().fill(lg.color.opacity(0.16)).frame(width: 78, height: 78)
                 Image(systemName: lg.icon).font(.system(size: 30, weight: .semibold)).foregroundStyle(lg.color)
             }
-            Text("\(lg.name) league").font(.subheadline.weight(.semibold))
+            Text("\(lg.name) \(L("league"))").font(.subheadline.weight(.semibold))
             if let next = lg.next {
-                Text("\(max(0, next.floor - stats.wordsThisWeek)) words to \(next.name)")
+                Text("\(max(0, next.floor - stats.wordsThisWeek)) \(L("words to")) \(next.name)")
                     .font(.caption2).foregroundStyle(.tertiary).monospacedDigit().multilineTextAlignment(.center)
             } else {
-                Text("top tier").font(.caption2).foregroundStyle(.tertiary)
+                Text(L("top tier")).font(.caption2).foregroundStyle(.tertiary)
             }
         }
         .frame(maxWidth: .infinity).padding(.top, 24).padding(.bottom, 16)
@@ -289,7 +289,7 @@ struct BadgesView: View {
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
             .strokeBorder(earned ? a.tier.color.opacity(0.3) : Color.hairlineTint, lineWidth: 1))
         .opacity(earned ? 1 : 0.7)
-        .help(earned ? "Unlocked" : L("Locked"))
+        .help(earned ? L("Unlocked") : L("Locked"))
     }
 }
 

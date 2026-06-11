@@ -11,11 +11,11 @@ enum RecordStyle: String, Codable, CaseIterable, Identifiable {
     case lock      // press to start, press again to send (Esc cancels)
     case direct    // hold ⌃⌥ to talk, release to send (push-to-talk)
     var id: String { rawValue }
-    var label: String { self == .lock ? "Lock" : "Direct" }
+    var label: String { self == .lock ? L("Lock") : L("Direct") }
     var help: String {
         self == .lock
-            ? "Press a shortcut to start, press again to send. Esc cancels."
-            : "Hold ⌃⌥ while you talk, release to send. Esc cancels."
+            ? L("Press a shortcut to start, press again to send. Esc cancels.")
+            : L("Hold ⌃⌥ while you talk, release to send. Esc cancels.")
     }
 }
 
@@ -26,11 +26,11 @@ enum TriggerStyle: String, Codable, CaseIterable, Identifiable {
     case toggle    // tap to toggle: tap starts, tap again sends
     case hold      // hold to talk: press starts, release sends
     var id: String { rawValue }
-    var label: String { self == .toggle ? "Tap to toggle" : "Hold to talk" }
+    var label: String { self == .toggle ? L("Tap to toggle") : L("Hold to talk") }
     var help: String {
         self == .toggle
-            ? "Tap Fn to start, tap again to send. Esc cancels."
-            : "Hold Fn while you talk, release to send. Esc cancels."
+            ? L("Tap Fn to start, tap again to send. Esc cancels.")
+            : L("Hold Fn while you talk, release to send. Esc cancels.")
     }
 }
 
@@ -41,9 +41,9 @@ enum TranscriptionEngine: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .openAI:   return "OpenAI (cloud)"
-        case .whisper:  return "Whisper (local)"
-        case .parakeet: return "Parakeet (local · NVIDIA)"
+        case .openAI:   return L("OpenAI (cloud)")
+        case .whisper:  return L("Whisper (local)")
+        case .parakeet: return L("Parakeet (local · NVIDIA)")
         }
     }
     var isLocal: Bool { self != .openAI }
@@ -59,25 +59,25 @@ enum QuipTone: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .off: return "Off, just “Transmuting…”"
-        case .random: return "Random (surprise mix)"
-        case .geek: return "Geek / programmer"
-        case .dad: return "Dad jokes"
-        case .dry: return "Dry & deadpan"
-        case .absurdist: return "Absurdist"
-        case .sarcastic: return "Sarcastic"
-        case .wholesome: return "Wholesome"
-        case .corporate: return "Corporate buzzword"
-        case .noir: return "Film-noir detective"
-        case .pirate: return "Pirate"
-        case .shakespeare: return "Shakespearean"
-        case .zen: return "Zen koan"
-        case .scifi: return "Sci-fi space crew"
-        case .gamer: return "Gamer / RPG"
-        case .chef: return "Cooking show"
-        case .motivational: return "Over-the-top motivational"
-        case .conspiracy: return "Conspiracy theorist"
-        case .surreal: return "Surreal dream-logic"
+        case .off: return L("Off, just “Transmuting…”")
+        case .random: return L("Random (surprise mix)")
+        case .geek: return L("Geek / programmer")
+        case .dad: return L("Dad jokes")
+        case .dry: return L("Dry & deadpan")
+        case .absurdist: return L("Absurdist")
+        case .sarcastic: return L("Sarcastic")
+        case .wholesome: return L("Wholesome")
+        case .corporate: return L("Corporate buzzword")
+        case .noir: return L("Film-noir detective")
+        case .pirate: return L("Pirate")
+        case .shakespeare: return L("Shakespearean")
+        case .zen: return L("Zen koan")
+        case .scifi: return L("Sci-fi space crew")
+        case .gamer: return L("Gamer / RPG")
+        case .chef: return L("Cooking show")
+        case .motivational: return L("Over-the-top motivational")
+        case .conspiracy: return L("Conspiracy theorist")
+        case .surreal: return L("Surreal dream-logic")
         }
     }
     /// Instruction handed to Claude so the generated one-liners match the chosen humor.
@@ -117,8 +117,8 @@ enum OverlayStyle: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .floating: return "Floating glass (bottom)"
-        case .minimal:  return "Menu bar only (no overlay)"
+        case .floating: return L("Floating glass (bottom)")
+        case .minimal:  return L("Menu bar only (no overlay)")
         }
     }
 }
@@ -130,12 +130,12 @@ enum RepromptBackend: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .auto:       return "Automatic (Claude Code, else Verba)"
-        case .verba:      return "Verba (included, no key needed)"
-        case .claudeCode: return "Claude Code (Max/Pro plan)"
-        case .apiKey:     return "Anthropic API key"
-        case .openRouter: return "OpenRouter (any model)"
-        case .localLLM:   return "Local model (Ollama, offline)"
+        case .auto:       return L("Automatic (Claude Code, else Verba)")
+        case .verba:      return L("Verba (included, no key needed)")
+        case .claudeCode: return L("Claude Code (Max/Pro plan)")
+        case .apiKey:     return L("Anthropic API key")
+        case .openRouter: return L("OpenRouter (any model)")
+        case .localLLM:   return L("Local model (Ollama, offline)")
         }
     }
 

@@ -11,15 +11,15 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .account:   return "Account & Plan"
-        case .dictation: return "Dictation"
-        case .rewriting: return "AI rewriting"
-        case .action:    return "Action mode"
-        case .output:    return "Output & feedback"
-        case .customize: return "Customize"
-        case .shortcuts: return "Shortcuts"
-        case .privacy:   return "Privacy & history"
-        case .updates:   return "Updates & about"
+        case .account:   return L("Account & Plan")
+        case .dictation: return L("Dictation")
+        case .rewriting: return L("AI rewriting")
+        case .action:    return L("Action mode")
+        case .output:    return L("Output & feedback")
+        case .customize: return L("Customize")
+        case .shortcuts: return L("Shortcuts")
+        case .privacy:   return L("Privacy & history")
+        case .updates:   return L("Updates & about")
         }
     }
     var icon: String {
@@ -37,15 +37,15 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
     }
     var subtitle: String {
         switch self {
-        case .account:   return "Sign-in, plan, referrals"
-        case .dictation: return "Engine, mic, language"
-        case .rewriting: return "Backend, model, API keys"
-        case .action:    return "Apps, destinations, search"
-        case .output:    return "Paste, overlay, sounds"
-        case .customize: return "Glass, accent, widget"
-        case .shortcuts: return "Triggers & chords"
-        case .privacy:   return "History, permissions"
-        case .updates:   return "Version & releases"
+        case .account:   return L("Sign-in, plan, referrals")
+        case .dictation: return L("Engine, mic, language")
+        case .rewriting: return L("Backend, model, API keys")
+        case .action:    return L("Apps, destinations, search")
+        case .output:    return L("Paste, overlay, sounds")
+        case .customize: return L("Glass, accent, widget")
+        case .shortcuts: return L("Triggers & chords")
+        case .privacy:   return L("History, permissions")
+        case .updates:   return L("Version & releases")
         }
     }
 }
@@ -265,12 +265,12 @@ struct SettingsView: View {
     /// The scale runs Frosted (most opaque) → Ultra (most translucent).
     private func materialHelp(_ m: VAppr.Material) -> String {
         switch m {
-        case .frosted: return "Frosted — the most opaque, menu-like glass."
-        case .soft:    return "Soft — a light popover-style frost."
-        case .sidebar: return "Sidebar — the translucency macOS uses for sidebars."
-        case .hud:     return "HUD — a darker heads-up-display glass."
-        case .crystal: return "Crystal — deep, very translucent (Notification Center look)."
-        case .ultra:   return "Ultra — the most translucent, full-screen-style glass."
+        case .frosted: return L("Frosted — the most opaque, menu-like glass.")
+        case .soft:    return L("Soft — a light popover-style frost.")
+        case .sidebar: return L("Sidebar — the translucency macOS uses for sidebars.")
+        case .hud:     return L("HUD — a darker heads-up-display glass.")
+        case .crystal: return L("Crystal — deep, very translucent (Notification Center look).")
+        case .ultra:   return L("Ultra — the most translucent, full-screen-style glass.")
         }
     }
 
@@ -286,57 +286,57 @@ struct SettingsView: View {
 
     @ViewBuilder private var customizeDetail: some View {
         // INTERFACE
-        card("Interface", footer: "Make the app yours. Defaults are monochrome and macOS-native; everything here is optional.") {
-            apprLabel("Presets")
+        card(L("Interface"), footer: L("Make the app yours. Defaults are monochrome and macOS-native; everything here is optional.")) {
+            apprLabel(L("Presets"))
             presetChips(selected: appearance.activePreset) { appearance.applyPreset($0) }
             // Live preview — re-renders with the current material + blur + corner + accent.
             previewTile(material: appearance.material, blur: appearance.blur,
                         cornerScale: appearance.cornerScale, accent: appearance.accentColor,
-                        colorMode: appearance.colorMode, shadow: appearance.shadow, label: "App preview")
-            apprLabel("Appearance")
+                        colorMode: appearance.colorMode, shadow: appearance.shadow, label: L("App preview"))
+            apprLabel(L("Appearance"))
             chips(VAppr.ColorMode.allCases, selected: appearance.colorMode, label: { $0.label }) { appearance.colorMode = $0 }
-            apprLabel("Glass material")
+            apprLabel(L("Glass material"))
             chips(VAppr.Material.allCases, selected: appearance.material, label: { $0.label },
                   help: materialHelp) { appearance.material = $0 }
-            apprLabel("Accent")
+            apprLabel(L("Accent"))
             accentSwatches(selected: appearance.accent,
                            customHex: appearance.accentHex,
                            onPick: { appearance.accent = $0 },
                            onCustom: { appearance.setCustomAccent($0) })
-            sliderRow("Glass blur", value: $appearance.blur, range: 0...40, suffix: "pt")
-            sliderRow("Corner radius", value: $appearance.cornerScale, range: 0.7...1.4, suffix: "×")
-            toggleRow("Shadow on panels", $appearance.shadow)
-            toggleRow("Reduce motion", $appearance.reduceMotion)
+            sliderRow(L("Glass blur"), value: $appearance.blur, range: 0...40, suffix: "pt")
+            sliderRow(L("Corner radius"), value: $appearance.cornerScale, range: 0.7...1.4, suffix: "×")
+            toggleRow(L("Shadow on panels"), $appearance.shadow)
+            toggleRow(L("Reduce motion"), $appearance.reduceMotion)
         }
 
         // MENUS — the glass behind popovers, dialogs and confirmations.
-        card("Menus & popovers", footer: "Style the glass behind menus, dialogs and confirmations, independently of the main window.") {
-            apprLabel("Menu glass material")
+        card(L("Menus & popovers"), footer: L("Style the glass behind menus, dialogs and confirmations, independently of the main window.")) {
+            apprLabel(L("Menu glass material"))
             chips(VAppr.Material.allCases, selected: appearance.menuMaterial, label: { $0.label },
                   help: materialHelp) { appearance.menuMaterial = $0 }
-            sliderRow("Menu glass blur", value: $appearance.menuBlur, range: 0...40, suffix: "pt")
+            sliderRow(L("Menu glass blur"), value: $appearance.menuBlur, range: 0...40, suffix: "pt")
         }
 
         // WIDGET
-        card("Widget", footer: "Style the macOS Task Manager widget independently from the app.") {
-            apprLabel("Presets")
+        card(L("Widget"), footer: L("Style the macOS Task Manager widget independently from the app.")) {
+            apprLabel(L("Presets"))
             presetChips(selected: appearance.activeWidgetPreset) { appearance.applyWidgetPreset($0) }
             previewTile(material: appearance.widgetMaterial, blur: appearance.widgetBlur,
                         cornerScale: appearance.widgetCornerScale, accent: appearance.widgetAccentColor,
-                        colorMode: appearance.widgetColorMode, shadow: appearance.widgetShadow, label: "Widget preview")
-            apprLabel("Appearance")
+                        colorMode: appearance.widgetColorMode, shadow: appearance.widgetShadow, label: L("Widget preview"))
+            apprLabel(L("Appearance"))
             chips(VAppr.ColorMode.allCases, selected: appearance.widgetColorMode, label: { $0.label }) { appearance.widgetColorMode = $0 }
-            apprLabel("Glass material")
+            apprLabel(L("Glass material"))
             chips(VAppr.Material.allCases, selected: appearance.widgetMaterial, label: { $0.label },
                   help: materialHelp) { appearance.widgetMaterial = $0 }
-            apprLabel("Accent")
+            apprLabel(L("Accent"))
             accentSwatches(selected: appearance.widgetAccent,
                            customHex: appearance.widgetAccentHex,
                            onPick: { appearance.widgetAccent = $0 },
                            onCustom: { appearance.setWidgetCustomAccent($0) })
-            sliderRow("Blur", value: $appearance.widgetBlur, range: 0...40, suffix: "pt")
-            sliderRow("Corner radius", value: $appearance.widgetCornerScale, range: 0.7...1.4, suffix: "×")
-            toggleRow("Shadow", $appearance.widgetShadow)
+            sliderRow(L("Blur"), value: $appearance.widgetBlur, range: 0...40, suffix: "pt")
+            sliderRow(L("Corner radius"), value: $appearance.widgetCornerScale, range: 0.7...1.4, suffix: "×")
+            toggleRow(L("Shadow"), $appearance.widgetShadow)
         }
     }
 
@@ -427,8 +427,8 @@ struct SettingsView: View {
                     .softElevation(isSel)
                 }.buttonStyle(.plain)
                 .help(a == .monochrome
-                      ? "Mono — no tint, follows light/dark automatically (the default)."
-                      : "\(a.label) — tints buttons, selections and the recording dot.")
+                      ? L("Mono — no tint, follows light/dark automatically (the default).")
+                      : "\(a.label) — \(L("tints buttons, selections and the recording dot."))")
             }
             // Custom color: a CLEAN circular swatch (rainbow when unset, the chosen color when set).
             // The native ColorPicker well renders as an ugly wide pill, so it's kept invisible but
@@ -506,16 +506,16 @@ struct SettingsView: View {
         planHero
 
         // Sign in / out + reconnect
-        card("Account") {
+        card(L("Account")) {
             if settings.proEmail.isEmpty {
                 HStack {
                     Label(L("Not signed in"), systemImage: "person.crop.circle.badge.questionmark")
                         .foregroundStyle(.secondary).font(.system(size: 13))
                     Spacer()
-                    Button { startSignIn() } label: { Text(signingIn ? "Signing in…" : L("Sign in")) }
+                    Button { startSignIn() } label: { Text(signingIn ? L("Signing in…") : L("Sign in")) }
                         .glassProminentButton().controlSize(.regular).disabled(signingIn)
                 }
-                Text("Sign in to sync your plan, use the included AI rewriting (no key needed), and earn referral rewards.")
+                Text(L("Sign in to sync your plan, use the included AI rewriting (no key needed), and earn referral rewards."))
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             } else {
                 HStack {
@@ -524,35 +524,35 @@ struct SettingsView: View {
                     Spacer()
                     Button(role: .destructive) { confirmSignOut = true } label: { Text(L("Sign out")) }
                         .glassButton().controlSize(.regular)
-                        .confirmationDialog("Sign out of Verba?", isPresented: $confirmSignOut, titleVisibility: .visible) {
+                        .confirmationDialog(L("Sign out of Verba?"), isPresented: $confirmSignOut, titleVisibility: .visible) {
                             Button(L("Sign out"), role: .destructive) { AuthSession.shared.signOut() }
                             Button(L("Cancel"), role: .cancel) { }
                         } message: {
-                            Text("This detaches your account from this Mac. Your local notes, transcripts and to-dos stay on this device, you can sign back in anytime.")
+                            Text(L("This detaches your account from this Mac. Your local notes, transcripts and to-dos stay on this device, you can sign back in anytime."))
                         }
                 }
                 if settings.needsReauth {
                     HStack(alignment: .top, spacing: 10) {
-                        statusLabel("Please sign in again to keep Pro and sync secure.",
+                        statusLabel(L("Please sign in again to keep Pro and sync secure."),
                                     system: "exclamationmark.triangle.fill", tint: .orange)
                         Spacer()
-                        Button { startSignIn() } label: { Text(signingIn ? "Signing in…" : "Sign in again") }
+                        Button { startSignIn() } label: { Text(signingIn ? L("Signing in…") : L("Sign in again")) }
                             .glassButton().controlSize(.small).disabled(signingIn)
                     }
                     .padding(.horizontal, 11).padding(.vertical, 9)
                     .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.orange.opacity(0.1)))
                 }
-                Text("Signed in. Signing out keeps everything stored locally on this Mac, it only disconnects this device from your account.")
+                Text(L("Signed in. Signing out keeps everything stored locally on this Mac, it only disconnects this device from your account."))
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
         }
 
         // Restore / verify checkout email
-        card("Restore a subscription",
+        card(L("Restore a subscription"),
              footer: settings.isPro
-             ? "Thanks! Unlimited dictation, editable mode prompts and custom modes. Your subscription is active for this email."
-             : "Already subscribed? Enter your checkout email and Verify to restore.") {
-            labeledField("Email used at checkout", $restoreEmail, prompt: "you@example.com")
+             ? L("Thanks! Unlimited dictation, editable mode prompts and custom modes. Your subscription is active for this email.")
+             : L("Already subscribed? Enter your checkout email and Verify to restore.")) {
+            labeledField(L("Email used at checkout"), $restoreEmail, prompt: L("you@example.com"))
             HStack {
                 Button {
                     verifying = true; verifyMsg = ""
@@ -565,9 +565,9 @@ struct SettingsView: View {
                             let typed = restoreEmail.trimmingCharacters(in: .whitespacesAndNewlines)
                             if !typed.isEmpty { settings.proEmail = typed }
                         }
-                        verifyMsg = ok ? "Pro unlocked ✓" : "No active subscription for this email."
+                        verifyMsg = ok ? L("Pro unlocked ✓") : L("No active subscription for this email.")
                     }
-                } label: { Text(verifying ? "Checking…" : (settings.isPro ? "Re-check" : "Verify / restore")) }
+                } label: { Text(verifying ? L("Checking…") : (settings.isPro ? L("Re-check") : L("Verify / restore"))) }
                     .glassButton().controlSize(.regular)
                     .disabled(verifying || restoreEmail.isEmpty)
                 if !verifyMsg.isEmpty {
@@ -575,7 +575,7 @@ struct SettingsView: View {
                 }
                 Spacer()
                 if let u = URL(string: Entitlement.accountURL) {
-                    Link("Manage", destination: u).font(.caption)
+                    Link(L("Manage"), destination: u).font(.caption)
                 }
             }
         }
@@ -585,23 +585,23 @@ struct SettingsView: View {
             let used = Stats.shared.totalCount
             let limit = Entitlement.freeTrialDictations
             let exhausted = used >= limit
-            card("Free trial",
-                 footer: "Free is a full-Pro trial of \(limit) dictations. Pro ($9.99/mo) unlocks unlimited dictation, editable system prompts and custom modes.") {
+            card(L("Free trial"),
+                 footer: "\(L("Free is a full-Pro trial of")) \(limit) \(L("dictations. Pro ($9.99/mo) unlocks unlimited dictation, editable system prompts and custom modes."))") {
                 if exhausted {
                     // Trial used up: a clear upgrade state instead of a silently pinned bar.
                     HStack(spacing: 10) {
-                        statusLabel("Free trial used up. Upgrade for unlimited dictation.",
+                        statusLabel(L("Free trial used up. Upgrade for unlimited dictation."),
                                     system: "checkmark.circle.fill", tint: .secondary)
                         Spacer()
                         if let u = URL(string: Entitlement.pricingURL) {
-                            Link("Upgrade", destination: u).glassProminentButton().controlSize(.small)
+                            Link(L("Upgrade"), destination: u).glassProminentButton().controlSize(.small)
                         }
                     }
                 } else {
                     HStack {
-                        Text("\(used) / \(limit) dictations").font(.callout).monospacedDigit()
+                        Text("\(used) / \(limit) \(L("dictations"))").font(.callout).monospacedDigit()
                         Spacer()
-                        Text("\(limit - used) left").font(.callout).monospacedDigit().foregroundStyle(.secondary)
+                        Text("\(limit - used) \(L("left"))").font(.callout).monospacedDigit().foregroundStyle(.secondary)
                     }
                     ProgressView(value: Double(used), total: Double(limit))
                 }
@@ -609,8 +609,8 @@ struct SettingsView: View {
         }
 
         // Username + leaderboard visibility
-        card("Public alias",
-             footer: "Your username is PUBLIC on the leaderboard and synced to your account, so pick a nickname, never your real name or email.") {
+        card(L("Public alias"),
+             footer: L("Your username is PUBLIC on the leaderboard and synced to your account, so pick a nickname, never your real name or email.")) {
             HStack(spacing: 8) {
                 TextField(L("Username"), text: $settings.username)
                     .textFieldStyle(.plain)
@@ -623,15 +623,15 @@ struct SettingsView: View {
                         .frame(width: 30, height: 30)
                         .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                 }
-                .buttonStyle(.plain).help("Shuffle a new username")
+                .buttonStyle(.plain).help(L("Shuffle a new username"))
                 Spacer()
             }
-            toggleRow("Show me on the public leaderboard", $settings.showOnLeaderboard)
+            toggleRow(L("Show me on the public leaderboard"), $settings.showOnLeaderboard)
         }
 
         // Referral
-        card("Refer friends — give a month, get a month",
-             footer: "Every friend who subscribes through your link and dictates 15,000+ words earns you a free month, unlimited, no cap.") {
+        card(L("Refer friends — give a month, get a month"),
+             footer: L("Every friend who subscribes through your link and dictates 15,000+ words earns you a free month, unlimited, no cap.")) {
             HStack(spacing: 10) {
                 Text(settings.referralLink)
                     .font(.system(.callout, design: .monospaced)).lineLimit(1).truncationMode(.middle)
@@ -647,7 +647,7 @@ struct SettingsView: View {
                 }
                 .glassButton().controlSize(.small)
                 // Same Share affordance as the Free Month tab, so the referral surfaces match.
-                Button { shareReferral() } label: { Label("Share…", systemImage: "square.and.arrow.up") }
+                Button { shareReferral() } label: { Label(L("Share…"), systemImage: "square.and.arrow.up") }
                     .glassButton().controlSize(.small)
             }
             .padding(.horizontal, 11).padding(.vertical, 9)
@@ -671,13 +671,13 @@ struct SettingsView: View {
                 .background(.softFill, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
             VStack(alignment: .leading, spacing: 3) {
                 Text(settings.isPro ? "Verba Pro" : L("Free plan")).font(.system(size: 17, weight: .bold))
-                Text(settings.isPro ? "Unlimited dictation, custom modes, editable prompts."
-                                    : "A full-Pro trial. Upgrade for unlimited dictation.")
+                Text(settings.isPro ? L("Unlimited dictation, custom modes, editable prompts.")
+                                    : L("A full-Pro trial. Upgrade for unlimited dictation."))
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
             if !settings.isPro, let u = URL(string: Entitlement.pricingURL) {
-                Link(destination: u) { Text("Upgrade · 7-day trial") }
+                Link(destination: u) { Text(L("Upgrade · 7-day trial")) }
                     .glassProminentButton().controlSize(.large)
             } else if settings.isPro {
                 Label(L("Active"), systemImage: "checkmark.seal.fill").font(.caption).foregroundStyle(.green)
@@ -692,11 +692,11 @@ struct SettingsView: View {
     // MARK: - 2 · Dictation
 
     @ViewBuilder private var actionDetail: some View {
-        card(nil, footer: "Action mode turns a spoken command into a confirmed action on your Mac. Trigger it with Fn+X (or rebind it in Shortcuts), speak your command, review the confirmation, and press ⌘↩ to run it. Examples: “create an event tomorrow at 3pm, lunch with Marc”, “remind me to call the bank Friday morning”, “search the best ramen in Paris on Google”, “open Spotify”, “run my Morning Routine shortcut”.") {
+        card(nil, footer: L("Action mode turns a spoken command into a confirmed action on your Mac. Trigger it with Fn+X (or rebind it in Shortcuts), speak your command, review the confirmation, and press ⌘↩ to run it. Examples: “create an event tomorrow at 3pm, lunch with Marc”, “remind me to call the bank Friday morning”, “search the best ramen in Paris on Google”, “open Spotify”, “run my Morning Routine shortcut”.")) {
             EmptyView()
         }
-        card("Allowed actions",
-             footer: "Turn off any category you never want Verba to do.") {
+        card(L("Allowed actions"),
+             footer: L("Turn off any category you never want Verba to do.")) {
             ForEach(ActionKind.allCases, id: \.self) { k in
                 Toggle(isOn: Binding(
                     get: { settings.isActionEnabled(k) },
@@ -707,27 +707,27 @@ struct SettingsView: View {
                 .toggleStyle(.switch)
             }
         }
-        card("Destinations",
-             footer: "Calendar events and reminders are written here. Pick a specific calendar/list (e.g. a Google or Notion-synced one), or leave on the macOS default. Set up the account in Calendar.app / Reminders.app first.") {
+        card(L("Destinations"),
+             footer: L("Calendar events and reminders are written here. Pick a specific calendar/list (e.g. a Google or Notion-synced one), or leave on the macOS default. Set up the account in Calendar.app / Reminders.app first.")) {
             Picker(L("Calendar"), selection: $settings.eventCalendarID) {
-                Text("macOS default").tag("")
+                Text(L("macOS default")).tag("")
                 ForEach(eventCalendars, id: \.0) { Text($0.1).tag($0.0) }
             }
             Picker(L("Reminders list"), selection: $settings.reminderListID) {
-                Text("macOS default").tag("")
+                Text(L("macOS default")).tag("")
                 ForEach(reminderLists, id: \.0) { Text($0.1).tag($0.0) }
             }
         }
         .onAppear { loadActionCalendars() }
-        card("Web search targets",
-             footer: "Say “search … on Google / ChatGPT / Claude”. {q} is replaced by what you said; add any site.") {
+        card(L("Web search targets"),
+             footer: L("Say “search … on Google / ChatGPT / Claude”. {q} is replaced by what you said; add any site.")) {
             ForEach($settings.searchTargets) { $t in
                 HStack(spacing: 8) {
                     TextField(L("Name"), text: $t.name).frame(width: 110).textFieldStyle(.roundedBorder)
                     TextField("https://…/search?q={q}", text: $t.urlTemplate).textFieldStyle(.roundedBorder)
                     Button { settings.searchTargets.removeAll { $0.id == t.id } } label: {
                         Image(systemName: "minus.circle.fill").foregroundStyle(.secondary)
-                    }.buttonStyle(.borderless).help("Remove")
+                    }.buttonStyle(.borderless).help(L("Remove"))
                 }
             }
             HStack {
@@ -742,7 +742,7 @@ struct SettingsView: View {
     }
 
     @ViewBuilder private var dictationDetail: some View {
-        card("Transcription engine") {
+        card(L("Transcription engine")) {
             VStack(spacing: 9) {
                 ForEach(TranscriptionEngine.allCases) { e in
                     selectCard(
@@ -757,19 +757,19 @@ struct SettingsView: View {
             engineLifecycle
         }
 
-        card("Microphone",
-             footer: "Verba uses your default system microphone. Pick the input device in System Settings ▸ Sound.") {
-            permissionRow("mic.fill", "Microphone access", "Record your voice.", granted: micGranted) {
+        card(L("Microphone"),
+             footer: L("Verba uses your default system microphone. Pick the input device in System Settings ▸ Sound.")) {
+            permissionRow("mic.fill", L("Microphone access"), L("Record your voice."), granted: micGranted) {
                 AVCaptureDevice.requestAccess(for: .audio) { _ in }
                 openPane("Privacy_Microphone")
             }
         }
 
-        card("Language") {
+        card(L("Language")) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(L("Primary language")).font(.system(size: 13))
-                    Text("Your everyday language. Output defaults to it when the spoken language is ambiguous; a clearly-spoken other language is always kept.")
+                    Text(L("Your everyday language. Output defaults to it when the spoken language is ambiguous; a clearly-spoken other language is always kept."))
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 12)
@@ -780,33 +780,33 @@ struct SettingsView: View {
                 }
                 .labelsHidden().fixedSize()
             }
-            labeledField("Spoken language", $settings.language, prompt: "ISO code, blank = auto")
-            toggleRow("Single-language output", $settings.languageGuard,
-                      help: settings.languageGuard ? "If the engine mixes two languages mid-sentence, Verba rewrites the result fully in its dominant language. Applies to every mode, including Flow." : nil)
+            labeledField(L("Spoken language"), $settings.language, prompt: L("ISO code, blank = auto"))
+            toggleRow(L("Single-language output"), $settings.languageGuard,
+                      help: settings.languageGuard ? L("If the engine mixes two languages mid-sentence, Verba rewrites the result fully in its dominant language. Applies to every mode, including Flow.") : nil)
         }
 
-        card("Voice commands") {
-            toggleRow("Voice commands", $settings.voiceCommands,
-                      help: settings.voiceCommands ? "Say “new line / new paragraph”, “comma / period / question mark”, “bullet point”, or “scratch that” and Verba turns them into real formatting (any mode, incl. Flow). EN + FR." : nil)
+        card(L("Voice commands")) {
+            toggleRow(L("Voice commands"), $settings.voiceCommands,
+                      help: settings.voiceCommands ? L("Say “new line / new paragraph”, “comma / period / question mark”, “bullet point”, or “scratch that” and Verba turns them into real formatting (any mode, incl. Flow). EN + FR.") : nil)
         }
     }
 
     private func engineSubtitle(_ e: TranscriptionEngine) -> String {
         switch e {
-        case .openAI:   return "Remote, no download. Uses your OpenAI key."
-        case .whisper:  return "On-device WhisperKit. Fully offline & free."
-        case .parakeet: return "On-device NVIDIA Parakeet, multilingual. Offline & free."
+        case .openAI:   return L("Remote, no download. Uses your OpenAI key.")
+        case .whisper:  return L("On-device WhisperKit. Fully offline & free.")
+        case .parakeet: return L("On-device NVIDIA Parakeet, multilingual. Offline & free.")
         }
     }
 
     // MARK: - 3 · AI rewriting
 
     @ViewBuilder private var rewritingDetail: some View {
-        card("Reprompting") {
-            toggleRow("Restructure transcript with Claude", $settings.repromptEnabled)
+        card(L("Reprompting")) {
+            toggleRow(L("Restructure transcript with Claude"), $settings.repromptEnabled)
         }
 
-        card("Backend") {
+        card(L("Backend")) {
             VStack(spacing: 9) {
                 ForEach(RepromptBackend.allCases) { b in
                     selectCard(
@@ -823,33 +823,33 @@ struct SettingsView: View {
 
         // Per-backend model
         if settings.repromptBackend == .openRouter {
-            card("OpenRouter model",
-                 footer: "Any model on openrouter.ai (openai/gpt-4o, google/gemini-2.0-flash…). Add your key below.") {
-                labeledField("Model id", $settings.openRouterModel, prompt: "anthropic/claude-3.7-sonnet", width: 360)
+            card(L("OpenRouter model"),
+                 footer: L("Any model on openrouter.ai (openai/gpt-4o, google/gemini-2.0-flash…). Add your key below.")) {
+                labeledField(L("Model id"), $settings.openRouterModel, prompt: "anthropic/claude-3.7-sonnet", width: 360)
             }
         } else if settings.repromptBackend == .localLLM {
-            card("Local model (Ollama)") { localModelBlock }
+            card(L("Local model (Ollama)")) { localModelBlock }
         } else {
-            card("Claude model") {
+            card(L("Claude model")) {
                 chips(claudeModels.map { IdString($0) }, selected: IdString(settings.claudeModel),
                       label: { $0.id }, onPick: { settings.claudeModel = $0.id })
             }
         }
 
-        card("Context") {
-            toggleRow("Auto-pick profile from the active app", $settings.autoDetectProfile)
-            toggleRow("Use selected text as context", $settings.useSelectionContext,
-                      help: settings.useSelectionContext ? "If text is selected when you dictate, your words become an instruction on that selection, and the result replaces it." : nil)
+        card(L("Context")) {
+            toggleRow(L("Auto-pick profile from the active app"), $settings.autoDetectProfile)
+            toggleRow(L("Use selected text as context"), $settings.useSelectionContext,
+                      help: settings.useSelectionContext ? L("If text is selected when you dictate, your words become an instruction on that selection, and the result replaces it.") : nil)
         }
 
         // API keys (instant-save)
-        card("API keys",
-             footer: "Keys save automatically as you type, stored in your macOS Keychain.") {
-            apiKeyField("OpenAI (cloud transcription)", "sk-…", $openAIKey) { Keychain.openAIKey = $0 }
-            apiKeyField("Anthropic (Claude reprompting)", "sk-ant-…", $anthropicKey) { Keychain.anthropicKey = $0 }
-            apiKeyField("OpenRouter (any writing model)", "sk-or-…", $openRouterKey) { Keychain.openRouterKey = $0 }
+        card(L("API keys"),
+             footer: L("Keys save automatically as you type, stored in your macOS Keychain.")) {
+            apiKeyField(L("OpenAI (cloud transcription)"), "sk-…", $openAIKey) { Keychain.openAIKey = $0 }
+            apiKeyField(L("Anthropic (Claude reprompting)"), "sk-ant-…", $anthropicKey) { Keychain.anthropicKey = $0 }
+            apiKeyField(L("OpenRouter (any writing model)"), "sk-or-…", $openRouterKey) { Keychain.openRouterKey = $0 }
             HStack {
-                Button("Save keys") {
+                Button(L("Save keys")) {
                     Keychain.openAIKey = openAIKey.trimmingCharacters(in: .whitespacesAndNewlines)
                     Keychain.anthropicKey = anthropicKey.trimmingCharacters(in: .whitespacesAndNewlines)
                     Keychain.openRouterKey = openRouterKey.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -858,7 +858,7 @@ struct SettingsView: View {
                 }
                 .glassButton().controlSize(.small)
                 if keysSaved {
-                    Label("Saved", systemImage: "checkmark.circle.fill")
+                    Label(L("Saved"), systemImage: "checkmark.circle.fill")
                         .font(.caption).foregroundStyle(.green).transition(.opacity)
                 }
                 Spacer()
@@ -892,12 +892,12 @@ struct SettingsView: View {
     }
     private func backendSubtitle(_ b: RepromptBackend) -> String {
         switch b {
-        case .auto:       return "Claude Code if present, else Verba's included engine."
-        case .verba:      return "Included, no key. Runs on Verba's servers."
-        case .claudeCode: return "Runs on your Claude Max/Pro plan via the local CLI."
-        case .apiKey:     return "Pay-per-token with your Anthropic API key."
-        case .openRouter: return "Any model on openrouter.ai with your key."
-        case .localLLM:   return "Fully offline on your Mac via Ollama."
+        case .auto:       return L("Claude Code if present, else Verba's included engine.")
+        case .verba:      return L("Included, no key. Runs on Verba's servers.")
+        case .claudeCode: return L("Runs on your Claude Max/Pro plan via the local CLI.")
+        case .apiKey:     return L("Pay-per-token with your Anthropic API key.")
+        case .openRouter: return L("Any model on openrouter.ai with your key.")
+        case .localLLM:   return L("Fully offline on your Mac via Ollama.")
         }
     }
 
@@ -905,26 +905,26 @@ struct SettingsView: View {
         switch settings.repromptBackend {
         case .auto:
             statusLabel(ClaudeCode.isAvailable
-                        ? "Using Claude Code (runs on your Claude plan, no key)."
-                        : "Using Verba's included rewriting (no key, no setup).",
+                        ? L("Using Claude Code (runs on your Claude plan, no key).")
+                        : L("Using Verba's included rewriting (no key, no setup)."),
                         system: "wand.and.stars", tint: .secondary)
         case .verba:
             if settings.proEmail.isEmpty {
                 HStack(alignment: .top, spacing: 10) {
-                    statusLabel("Sign in to use the included rewriting, no API key needed.",
+                    statusLabel(L("Sign in to use the included rewriting, no API key needed."),
                                 system: "exclamationmark.triangle.fill", tint: .orange)
                     Spacer()
-                    Button { startSignIn() } label: { Text(signingIn ? "Signing in…" : "Sign in") }
+                    Button { startSignIn() } label: { Text(signingIn ? L("Signing in…") : L("Sign in")) }
                         .glassButton().controlSize(.small).disabled(signingIn)
                 }
             } else {
-                statusLabel("Included with Verba, no API key needed. Runs on Verba's servers.",
+                statusLabel(L("Included with Verba, no API key needed. Runs on Verba's servers."),
                             system: "checkmark.seal.fill", tint: .green)
             }
         case .claudeCode:
             statusLabel(ClaudeCode.isAvailable
-                        ? "Claude Code detected, uses your Claude plan, no API key."
-                        : "Claude Code not found. Install it and run `claude` once to sign in.",
+                        ? L("Claude Code detected, uses your Claude plan, no API key.")
+                        : L("Claude Code not found. Install it and run `claude` once to sign in."),
                         system: ClaudeCode.isAvailable ? "checkmark.seal.fill" : "exclamationmark.triangle.fill",
                         tint: ClaudeCode.isAvailable ? .green : .orange)
         default:
@@ -935,45 +935,45 @@ struct SettingsView: View {
     // MARK: - 4 · Output & feedback
 
     @ViewBuilder private var outputDetail: some View {
-        card("Paste & formatting",
-             footer: "Formatting pastes as real bold/headings/lists in apps that support it; plain fields get clean text.") {
-            toggleRow("Auto-paste into the active field", $settings.autoPaste)
-            toggleRow("Copy to clipboard", $settings.copyToClipboard)
-            toggleRow("Paste with formatting (render Markdown)", $settings.richTextPaste)
-            toggleRow("Review / edit before sending", $settings.reviewBeforeSend)
+        card(L("Paste & formatting"),
+             footer: L("Formatting pastes as real bold/headings/lists in apps that support it; plain fields get clean text.")) {
+            toggleRow(L("Auto-paste into the active field"), $settings.autoPaste)
+            toggleRow(L("Copy to clipboard"), $settings.copyToClipboard)
+            toggleRow(L("Paste with formatting (render Markdown)"), $settings.richTextPaste)
+            toggleRow(L("Review / edit before sending"), $settings.reviewBeforeSend)
             if !Output.accessibilityTrusted {
                 HStack {
-                    statusLabel("Auto-paste needs Accessibility access", system: "exclamationmark.triangle.fill", tint: .orange)
+                    statusLabel(L("Auto-paste needs Accessibility access"), system: "exclamationmark.triangle.fill", tint: .orange)
                     Spacer()
-                    Button("Enable…") { Output.promptAccessibility() }.glassButton().controlSize(.small)
+                    Button(L("Enable…")) { Output.promptAccessibility() }.glassButton().controlSize(.small)
                 }
             }
         }
 
-        card("Recording indicator") {
+        card(L("Recording indicator")) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Overlay style").font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                Text(L("Overlay style")).font(.caption.weight(.medium)).foregroundStyle(.secondary)
                 chips(OverlayStyle.allCases, selected: settings.overlayStyle,
                       label: { $0.label }, onPick: { settings.overlayStyle = $0 })
             }
             if settings.overlayStyle == .minimal {
-                Text("No floating window. The menu-bar icon turns red and pulses while recording.")
+                Text(L("No floating window. The menu-bar icon turns red and pulses while recording."))
                     .font(.caption).foregroundStyle(.secondary)
             }
             VStack(alignment: .leading, spacing: 6) {
-                Text("Recording style").font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                Text(L("Recording style")).font(.caption.weight(.medium)).foregroundStyle(.secondary)
                 chips(RecordStyle.allCases, selected: settings.recordStyle,
                       label: { $0.label }, onPick: { settings.recordStyle = $0 })
             }
             Text(settings.recordStyle.help).font(.caption).foregroundStyle(.secondary)
         }
 
-        card("Sounds",
-             footer: "Cues for recording start, paste, and errors. Only your custom mp3s play (no macOS system beeps). Drop more in the Sounds folder.") {
-            toggleRow("Sound effects", $settings.soundsEnabled)
+        card(L("Sounds"),
+             footer: L("Cues for recording start, paste, and errors. Only your custom mp3s play (no macOS system beeps). Drop more in the Sounds folder.")) {
+            toggleRow(L("Sound effects"), $settings.soundsEnabled)
             if settings.soundsEnabled {
                 HStack {
-                    Text("Volume").font(.system(size: 13))
+                    Text(L("Volume")).font(.system(size: 13))
                     Slider(value: $settings.soundVolume, in: 0...1)
                     Text("\(Int(settings.soundVolume * 100))%").monospacedDigit()
                         .foregroundStyle(.secondary).frame(width: 42, alignment: .trailing)
@@ -981,25 +981,25 @@ struct SettingsView: View {
             }
         }
 
-        card("Loading jokes",
+        card(L("Loading jokes"),
              footer: settings.quipTone == .off
-             ? "While Claude works, Verba shows a neutral “\(Quips.neutral)”."
-             : "While Claude works, Verba shows a short AI-generated joke in this style, never the same twice in a day.") {
+             ? "\(L("While Claude works, Verba shows a neutral")) “\(Quips.neutral)”."
+             : L("While Claude works, Verba shows a short AI-generated joke in this style, never the same twice in a day.")) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Joke style").font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                Text(L("Joke style")).font(.caption.weight(.medium)).foregroundStyle(.secondary)
                 chips(QuipTone.allCases, selected: settings.quipTone,
                       label: { $0.label }, onPick: { settings.quipTone = $0 })
             }
         }
 
-        card("App presence", footer: "Dock off = menu-bar only. The dictation hotkeys work either way. If you hide BOTH, reopen Verba from Applications to get back here.") {
-            toggleRow("Show in Dock (full window app)", $settings.showInDock)
-            toggleRow("Show the menu-bar icon", $settings.showMenuBarIcon)
+        card(L("App presence"), footer: L("Dock off = menu-bar only. The dictation hotkeys work either way. If you hide BOTH, reopen Verba from Applications to get back here.")) {
+            toggleRow(L("Show in Dock (full window app)"), $settings.showInDock)
+            toggleRow(L("Show the menu-bar icon"), $settings.showMenuBarIcon)
         }
 
-        card("Fn key behaviour", footer: "By default Verba takes over the globe (Fn) key so macOS doesn't pop the emoji/Fn HUD or switch your keyboard layout. Turn these off to get the standard macOS behaviour back.") {
-            toggleRow("Stop the macOS Fn / emoji popup", $settings.suppressFnPopup)
-            toggleRow("Disable the keyboard / input-source switcher", $settings.disableInputSwitcher)
+        card(L("Fn key behaviour"), footer: L("By default Verba takes over the globe (Fn) key so macOS doesn't pop the emoji/Fn HUD or switch your keyboard layout. Turn these off to get the standard macOS behaviour back.")) {
+            toggleRow(L("Stop the macOS Fn / emoji popup"), $settings.suppressFnPopup)
+            toggleRow(L("Disable the keyboard / input-source switcher"), $settings.disableInputSwitcher)
         }
 
         labsCard
@@ -1007,32 +1007,32 @@ struct SettingsView: View {
     }
 
     @ViewBuilder private var labsCard: some View {
-        card("Labs") {
-            toggleRow("Notes tab (long-form voice notes)", $settings.notesTabEnabled,
-                      help: "A Notes tab to record long voice memos (up to an hour) and reorganize them into a clean document.")
-            toggleRow("Task Manager tab (tasks by project)", $settings.todosTabEnabled,
-                      help: "Capture tasks and sub-tasks by voice, sorted into projects. Ask the agent to build a whole list from a spoken request.")
-            toggleRow("To-do reminders (30 min before a deadline)", $settings.todoReminders,
-                      help: "Posts a local notification 30 minutes before a to-do's deadline. Needs notification permission.")
-            toggleRow("Smart formatting per app", $settings.smartFormatting,
-                      help: "Rich text/markdown in apps that render it (Mail, Notion, Notes…), plain text in code editors and terminals.")
-            toggleRow("Redo last dictation in another mode", $settings.redoEnabled,
-                      help: "Adds “Redo last in…” to the menu, re-runs your last recording through any mode without speaking again.")
-            toggleRow("Auto-learn dictionary from your edits", $settings.autoLearnDictionary,
-                      help: "When you fix a word, Verba spots the correction on your next dictation and applies it automatically. Learned terms appear in Dictionary.")
-            toggleRow("Match my tone per app", $settings.toneMatch,
-                      help: "Verba learns how you write in each app and matches that tone automatically.")
-            toggleRow("Edit last result by voice", $settings.voiceEditLast,
-                      help: "Adds “Edit last by voice…” to the menu, speak a change (“make it shorter”, “more formal”…) and Verba rewrites your last result.")
-            toggleRow("Agentic actions in Context mode", $settings.agenticActions,
-                      help: "In Context mode, turn spoken commands into Calendar events, Reminders, or email drafts — it always asks you to confirm first.")
-            Text("Tip: hold Fn + X anytime for Action mode — speak a command (run a Shortcut, open an app, play music, message someone) and Verba confirms before it acts. No toggle needed.")
+        card(L("Labs")) {
+            toggleRow(L("Notes tab (long-form voice notes)"), $settings.notesTabEnabled,
+                      help: L("A Notes tab to record long voice memos (up to an hour) and reorganize them into a clean document."))
+            toggleRow(L("Task Manager tab (tasks by project)"), $settings.todosTabEnabled,
+                      help: L("Capture tasks and sub-tasks by voice, sorted into projects. Ask the agent to build a whole list from a spoken request."))
+            toggleRow(L("To-do reminders (30 min before a deadline)"), $settings.todoReminders,
+                      help: L("Posts a local notification 30 minutes before a to-do's deadline. Needs notification permission."))
+            toggleRow(L("Smart formatting per app"), $settings.smartFormatting,
+                      help: L("Rich text/markdown in apps that render it (Mail, Notion, Notes…), plain text in code editors and terminals."))
+            toggleRow(L("Redo last dictation in another mode"), $settings.redoEnabled,
+                      help: L("Adds “Redo last in…” to the menu, re-runs your last recording through any mode without speaking again."))
+            toggleRow(L("Auto-learn dictionary from your edits"), $settings.autoLearnDictionary,
+                      help: L("When you fix a word, Verba spots the correction on your next dictation and applies it automatically. Learned terms appear in Dictionary."))
+            toggleRow(L("Match my tone per app"), $settings.toneMatch,
+                      help: L("Verba learns how you write in each app and matches that tone automatically."))
+            toggleRow(L("Edit last result by voice"), $settings.voiceEditLast,
+                      help: L("Adds “Edit last by voice…” to the menu, speak a change (“make it shorter”, “more formal”…) and Verba rewrites your last result."))
+            toggleRow(L("Agentic actions in Context mode"), $settings.agenticActions,
+                      help: L("In Context mode, turn spoken commands into Calendar events, Reminders, or email drafts — it always asks you to confirm first."))
+            Text(L("Tip: hold Fn + X anytime for Action mode — speak a command (run a Shortcut, open an app, play music, message someone) and Verba confirms before it acts. No toggle needed."))
                 .font(.caption).foregroundStyle(.secondary)
         }
     }
 
     @ViewBuilder private var sidebarCard: some View {
-        card("Sidebar menu", footer: "Choose which sections show in the main window's sidebar. Home, Modes and Settings always stay.") {
+        card(L("Sidebar menu"), footer: L("Choose which sections show in the main window's sidebar. Home, Modes and Settings always stay.")) {
             ForEach(Self.sidebarItems) { item in
                 toggleRow(item.title, sidebarBinding(item))
             }
@@ -1045,121 +1045,121 @@ struct SettingsView: View {
         let fnOn = settings.useFnAsPrimary
 
         // SELECTION — the transform picker hotkey (Option + key).
-        card("Transform selection",
-             footer: "Select text in any app and press this to pick a transform to run on it. Option is always held; choose the key. Default is X (it's right under your fingers, unlike slash).") {
+        card(L("Transform selection"),
+             footer: L("Select text in any app and press this to pick a transform to run on it. Option is always held; choose the key. Default is X (it's right under your fingers, unlike slash).")) {
             HStack(spacing: 10) {
-                Text("Transform picker").font(.system(size: 13))
+                Text(L("Transform picker")).font(.system(size: 13))
                 Spacer()
                 Text("⌥ \(keyName(UInt32(settings.transformHotkeyCode)))")
                     .font(.system(size: 13, weight: .semibold)).monospaced()
                     .padding(.horizontal, 8).padding(.vertical, 3)
                     .background(.softFill, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                ShortcutRecorder(label: "Change") { code, _ in
+                ShortcutRecorder(label: L("Change")) { code, _ in
                     settings.transformHotkeyCode = Int(code)
                 }
             }
         }
 
         // DICTATION — how you start, pause and cancel a dictation.
-        card("Dictation") {
-            toggleRow("Use the Fn (🌐 globe) key as the trigger", $settings.useFnAsPrimary)
+        card(L("Dictation")) {
+            toggleRow(L("Use the Fn (🌐 globe) key as the trigger"), $settings.useFnAsPrimary)
             if fnOn {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("When you press Fn").font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                    Text(L("When you press Fn")).font(.caption.weight(.medium)).foregroundStyle(.secondary)
                     chips(TriggerStyle.allCases, selected: settings.triggerStyle,
                           label: { $0.label }, onPick: { settings.triggerStyle = $0 })
                 }
                 chordRow(settings.triggerStyle == .hold
-                         ? "Hold to talk, release to send" : "Tap to start, tap again to send",
+                         ? L("Hold to talk, release to send") : L("Tap to start, tap again to send"),
                          caps: ["Fn"])
             } else {
-                chordRecorderRow("Start / stop dictation",
+                chordRecorderRow(L("Start / stop dictation"),
                                  has: settings.primaryHasShortcut,
                                  code: settings.primaryKeyCode, mods: settings.primaryMods,
                                  target: .primary)
             }
-            chordRow("Pause / resume while recording", caps: ["⌃"])
-            chordRow("Cancel recording or processing", caps: ["⎋"])
+            chordRow(L("Pause / resume while recording"), caps: ["⌃"])
+            chordRow(L("Cancel recording or processing"), caps: ["⎋"])
             cardCaption(fnOn
-                ? "Your trigger is everything: tap or hold to dictate, then ⌃ to pause and ⎋ to cancel."
-                : "Pick the keystroke that starts and stops a dictation. ⌃ pauses, ⎋ cancels.")
+                ? L("Your trigger is everything: tap or hold to dictate, then ⌃ to pause and ⎋ to cancel.")
+                : L("Pick the keystroke that starts and stops a dictation. ⌃ pauses, ⎋ cancels."))
         }
 
         // MODES — choosing which rewriting mode the dictation runs through.
         if fnOn {
-            card("Modes") {
-                toggleRow("Change-mode jumps straight to the next mode (no list)", $settings.modeGestureCycles)
-                toggleRow("Remember the last mode you used", $settings.rememberLastMode,
-                          help: "After each dictation, the mode you just used becomes the default for the next one.")
-                chordRow("Next mode  (add ⇧ for previous)", caps: ["Fn", "⇥"])
-                chordRow("Pick a mode by number", caps: ["Fn", "1–9"])
-                chordRow("Next mode hands-free while recording", caps: ["⌥"])
-                chordRecorderRow("Custom change-mode shortcut",
+            card(L("Modes")) {
+                toggleRow(L("Change-mode jumps straight to the next mode (no list)"), $settings.modeGestureCycles)
+                toggleRow(L("Remember the last mode you used"), $settings.rememberLastMode,
+                          help: L("After each dictation, the mode you just used becomes the default for the next one."))
+                chordRow(L("Next mode  (add ⇧ for previous)"), caps: ["Fn", "⇥"])
+                chordRow(L("Pick a mode by number"), caps: ["Fn", "1–9"])
+                chordRow(L("Next mode hands-free while recording"), caps: ["⌥"])
+                chordRecorderRow(L("Custom change-mode shortcut"),
                                  has: settings.modePickerHasShortcut,
                                  code: settings.modePickerKeyCode, mods: settings.modePickerMods,
                                  target: .modePicker)
                 cardCaption(settings.modeGestureCycles
-                    ? "Fn + Tab cycles to the next mode even mid-dictation; turn the toggle off to open a numbered picker instead."
-                    : "Fn + Tab opens a numbered picker; turn the toggle on to cycle straight to the next mode instead.")
+                    ? L("Fn + Tab cycles to the next mode even mid-dictation; turn the toggle off to open a numbered picker instead.")
+                    : L("Fn + Tab opens a numbered picker; turn the toggle on to cycle straight to the next mode instead."))
             }
         }
 
         // STYLES — the tone/format layer on top of the active mode.
         if fnOn {
-            card("Styles") {
-                chordRow("Next style", caps: ["Fn", "]"])
-                chordRecorderRow("Custom next-style shortcut",
+            card(L("Styles")) {
+                chordRow(L("Next style"), caps: ["Fn", "]"])
+                chordRecorderRow(L("Custom next-style shortcut"),
                                  has: settings.styleNextHasShortcut,
                                  code: settings.styleNextKeyCode, mods: settings.styleNextMods,
                                  target: .styleNext)
-                chordRow("Previous style", caps: ["Fn", "["])
-                chordRecorderRow("Custom previous-style shortcut",
+                chordRow(L("Previous style"), caps: ["Fn", "["])
+                chordRecorderRow(L("Custom previous-style shortcut"),
                                  has: settings.stylePrevHasShortcut,
                                  code: settings.stylePrevKeyCode, mods: settings.stylePrevMods,
                                  target: .stylePrev)
-                cardCaption("Styles tweak the tone or format on top of whatever mode you're in — flick between them without leaving your dictation.")
+                cardCaption(L("Styles tweak the tone or format on top of whatever mode you're in — flick between them without leaving your dictation."))
             }
         }
 
         // CAPTURE — voice notes, to-dos and the Mac-controlling Action mode.
         if fnOn {
-            card("Capture") {
-                chordRow("Add a to-do by voice", caps: FnTap.todoChordLabel.components(separatedBy: " + "))
-                chordRecorderRow("Custom add-to-do shortcut",
+            card(L("Capture")) {
+                chordRow(L("Add a to-do by voice"), caps: FnTap.todoChordLabel.components(separatedBy: " + "))
+                chordRecorderRow(L("Custom add-to-do shortcut"),
                                  has: settings.todoCaptureHasShortcut,
                                  code: settings.todoCaptureKeyCode, mods: settings.todoCaptureMods,
                                  target: .todoCapture)
-                chordRow("Capture a note by voice", caps: ["Fn", "Z"])
-                chordRecorderRow("Custom record-note shortcut",
+                chordRow(L("Capture a note by voice"), caps: ["Fn", "Z"])
+                chordRecorderRow(L("Custom record-note shortcut"),
                                  has: settings.noteRecordHasShortcut,
                                  code: settings.noteRecordKeyCode, mods: settings.noteRecordMods,
                                  target: .noteRecord)
-                chordRow("Action mode — speak a command to control your Mac", caps: ["Fn", "X"])
-                chordRecorderRow("Custom Action-mode shortcut",
+                chordRow(L("Action mode — speak a command to control your Mac"), caps: ["Fn", "X"])
+                chordRecorderRow(L("Custom Action-mode shortcut"),
                                  has: settings.actionModeHasShortcut,
                                  code: settings.actionModeKeyCode, mods: settings.actionModeMods,
                                  target: .actionMode)
-                chordRow("Stop an in-progress note / to-do capture", caps: ["Fn"])
+                chordRow(L("Stop an in-progress note / to-do capture"), caps: ["Fn"])
                 Divider().opacity(0.4)
-                toggleRow("Show today's to-dos on ⌥ + Fn", $settings.todoGlanceEnabled,
-                          help: "Press ⌥ (Option) + Fn for a compact glance of today's tasks. Press it again or ⎋ to dismiss.")
-                chordRow("Today's to-dos  (quick glance)", caps: ["⌥", "Fn"])
-                chordRecorderRow("Custom to-do glance shortcut",
+                toggleRow(L("Show today's to-dos on ⌥ + Fn"), $settings.todoGlanceEnabled,
+                          help: L("Press ⌥ (Option) + Fn for a compact glance of today's tasks. Press it again or ⎋ to dismiss."))
+                chordRow(L("Today's to-dos  (quick glance)"), caps: ["⌥", "Fn"])
+                chordRecorderRow(L("Custom to-do glance shortcut"),
                                  has: settings.todoGlanceHasShortcut,
                                  code: settings.todoGlanceKeyCode, mods: settings.todoGlanceMods,
                                  target: .todoGlance)
-                cardCaption("Capture things hands-free: a note files into Notes, a to-do files into your projects, and Action mode turns speech into a command that runs on your Mac.")
+                cardCaption(L("Capture things hands-free: a note files into Notes, a to-do files into your projects, and Action mode turns speech into a command that runs on your Mac."))
             }
         }
 
         // EDITING — fixing or re-running the last dictation. Menu-bar actions (no chord).
         if fnOn {
-            card("Editing") {
-                menuActionRow("Edit the last result by voice",
-                              "Say a change (\u{201C}shorter\u{201D}, \u{201C}more formal\u{201D}\u{2026}) to rewrite what you just dictated.")
-                menuActionRow("Redo the last recording in another mode",
-                              "Re-run your last recording through a different mode \u{2014} no need to speak again.")
-                cardCaption("Both live in Verba's menu-bar icon, under your recent result.")
+            card(L("Editing")) {
+                menuActionRow(L("Edit the last result by voice"),
+                              L("Say a change (\u{201C}shorter\u{201D}, \u{201C}more formal\u{201D}\u{2026}) to rewrite what you just dictated."))
+                menuActionRow(L("Redo the last recording in another mode"),
+                              L("Re-run your last recording through a different mode \u{2014} no need to speak again."))
+                cardCaption(L("Both live in Verba's menu-bar icon, under your recent result."))
             }
         }
     }
@@ -1212,7 +1212,7 @@ struct SettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 8)
-            Label("Menu", systemImage: "menubar.arrow.up.rectangle")
+            Label(L("Menu"), systemImage: "menubar.arrow.up.rectangle")
                 .labelStyle(.titleAndIcon)
                 .font(.caption2.weight(.medium)).foregroundStyle(.secondary)
                 .padding(.horizontal, 7).padding(.vertical, 3)
@@ -1230,11 +1230,11 @@ struct SettingsView: View {
     // MARK: - 6 · Privacy & history
 
     @ViewBuilder private var privacyDetail: some View {
-        card("Dictation history") {
-            toggleRow("Save dictation history", $settings.saveHistory,
-                      help: settings.saveHistory ? nil : "Off: new dictations are pasted and forgotten — nothing is written to disk, no audio is kept, nothing is synced. Existing history stays until you delete it below.")
+        card(L("Dictation history")) {
+            toggleRow(L("Save dictation history"), $settings.saveHistory,
+                      help: settings.saveHistory ? nil : L("Off: new dictations are pasted and forgotten — nothing is written to disk, no audio is kept, nothing is synced. Existing history stays until you delete it below."))
             VStack(alignment: .leading, spacing: 6) {
-                Text("Keep history for").font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                Text(L("Keep history for")).font(.caption.weight(.medium)).foregroundStyle(.secondary)
                 chips(retentionOptions, selected: retentionOption(settings.historyRetentionDays),
                       label: { $0.label }, onPick: {
                           settings.historyRetentionDays = $0.days
@@ -1244,77 +1244,77 @@ struct SettingsView: View {
             }
         }
 
-        card("Disk & cloud",
-             footer: "Retention deletes dictations older than the chosen window (text + audio, locally and in your account's cloud sync). Clear audio cache frees disk while keeping your text history.") {
+        card(L("Disk & cloud"),
+             footer: L("Retention deletes dictations older than the chosen window (text + audio, locally and in your account's cloud sync). Clear audio cache frees disk while keeping your text history.")) {
             HStack {
-                Label("Saved audio & buffers", systemImage: "internaldrive").font(.system(size: 13))
+                Label(L("Saved audio & buffers"), systemImage: "internaldrive").font(.system(size: 13))
                 Spacer()
                 Text(byteString(cacheBytes)).monospacedDigit().foregroundStyle(.secondary)
             }
             Button(role: .destructive) {
                 History.shared.clearAudioCache(); cacheBytes = History.shared.audioCacheBytes()
-            } label: { Label("Clear audio cache (keep history text)", systemImage: "trash") }
+            } label: { Label(L("Clear audio cache (keep history text)"), systemImage: "trash") }
                 .glassButton().controlSize(.small)
             Button(role: .destructive) {
                 History.shared.clear(); cacheBytes = History.shared.audioCacheBytes()
-            } label: { Label("Delete all history (text + audio)", systemImage: "trash.fill") }
+            } label: { Label(L("Delete all history (text + audio)"), systemImage: "trash.fill") }
                 .glassButton().controlSize(.small)
             if !settings.proEmail.isEmpty {
                 HStack(spacing: 8) {
                     Button(role: .destructive) { confirmCloudWipe = true } label: {
                         HStack(spacing: 6) {
                             if cloudWiping { ProgressView().controlSize(.small) }
-                            Label(cloudWiped ? "Cloud data deleted ✓"
-                                  : (cloudWiping ? "Deleting…" : "Delete all my cloud data"),
+                            Label(cloudWiped ? L("Cloud data deleted ✓")
+                                  : (cloudWiping ? L("Deleting…") : L("Delete all my cloud data")),
                                   systemImage: "icloud.slash")
                         }
                     }
                     .glassButton().controlSize(.small)
                     .disabled(cloudWiping)
-                    .confirmationDialog("Delete all your cloud data?", isPresented: $confirmCloudWipe, titleVisibility: .visible) {
+                    .confirmationDialog(L("Delete all your cloud data?"), isPresented: $confirmCloudWipe, titleVisibility: .visible) {
                         Button(L("Delete cloud data"), role: .destructive) { wipeCloudData() }
                         Button(L("Cancel"), role: .cancel) { }
                     } message: {
-                        Text("Removes your synced history, notes, stats and leaderboard score from Verba's servers (with tombstones, so other Macs won't re-upload them). Local data on this Mac is untouched.")
+                        Text(L("Removes your synced history, notes, stats and leaderboard score from Verba's servers (with tombstones, so other Macs won't re-upload them). Local data on this Mac is untouched."))
                     }
                     if cloudWipeError {
-                        statusLabel("Couldn't reach the server — cloud data may not have been deleted. Try again.",
+                        statusLabel(L("Couldn't reach the server — cloud data may not have been deleted. Try again."),
                                     system: "exclamationmark.triangle.fill", tint: .orange)
                     }
                 }
             }
         }
 
-        card("Screen recording",
-             footer: "Only used in Context mode to read on-screen text you point at. It's entirely optional.") {
-            permissionRow("camera.viewfinder", "Screen Recording", "Context mode only (optional).", granted: screenGranted) {
+        card(L("Screen recording"),
+             footer: L("Only used in Context mode to read on-screen text you point at. It's entirely optional.")) {
+            permissionRow("camera.viewfinder", L("Screen Recording"), L("Context mode only (optional)."), granted: screenGranted) {
                 ScreenCapture.requestPermission()
                 ScreenCapture.openPrivacySettings()
             }
         }
 
-        card("Core permissions") {
-            permissionRow("mic.fill", "Microphone", "Record your voice.", granted: micGranted) {
+        card(L("Core permissions")) {
+            permissionRow("mic.fill", L("Microphone"), L("Record your voice."), granted: micGranted) {
                 AVCaptureDevice.requestAccess(for: .audio) { _ in }; openPane("Privacy_Microphone")
             }
-            permissionRow("hand.point.up.left.fill", "Accessibility", "Paste into the active app.", granted: axGranted) {
+            permissionRow("hand.point.up.left.fill", L("Accessibility"), L("Paste into the active app."), granted: axGranted) {
                 Output.promptAccessibility(); openPane("Privacy_Accessibility")
             }
-            permissionRow("keyboard", "Input Monitoring", "Use the Fn key as your trigger.", granted: imGranted) {
+            permissionRow("keyboard", L("Input Monitoring"), L("Use the Fn key as your trigger."), granted: imGranted) {
                 _ = IOHIDRequestAccess(kIOHIDRequestTypeListenEvent); openPane("Privacy_ListenEvent")
             }
             if micGranted && axGranted && imGranted {
-                statusLabel("All set. Verba has everything it needs to work.", system: "checkmark.seal.fill", tint: .green)
+                statusLabel(L("All set. Verba has everything it needs to work."), system: "checkmark.seal.fill", tint: .green)
             } else {
-                statusLabel("Some permissions are off. Verba can't fully work until the three core ones are on.", system: "exclamationmark.triangle.fill", tint: .orange)
+                statusLabel(L("Some permissions are off. Verba can't fully work until the three core ones are on."), system: "exclamationmark.triangle.fill", tint: .orange)
             }
         }
 
-        card("What goes where") {
-            explainerRow("Audio & transcripts", "Stay on this Mac. Synced to your account only if history is on.")
-            explainerRow("Cloud sync", "Encrypted in transit. Delete anytime with “Delete all my cloud data”.")
-            explainerRow("Local engines", "Whisper / Parakeet / Ollama run 100% offline — nothing leaves your Mac.")
-            explainerRow("Cloud engines", "OpenAI transcription and remote rewriting send your text to that provider.")
+        card(L("What goes where")) {
+            explainerRow(L("Audio & transcripts"), L("Stay on this Mac. Synced to your account only if history is on."))
+            explainerRow(L("Cloud sync"), L("Encrypted in transit. Delete anytime with “Delete all my cloud data”."))
+            explainerRow(L("Local engines"), L("Whisper / Parakeet / Ollama run 100% offline — nothing leaves your Mac."))
+            explainerRow(L("Cloud engines"), L("OpenAI transcription and remote rewriting send your text to that provider."))
         }
     }
 
@@ -1332,22 +1332,22 @@ struct SettingsView: View {
     // MARK: - 7 · Updates & about
 
     @ViewBuilder private var updatesDetail: some View {
-        card("Automatic updates",
-             footer: "Verba updates itself in the background via signed releases. Turn off automatic checks to update only when you press “Check now”.") {
-            toggleRow("Automatically check for updates",
+        card(L("Automatic updates"),
+             footer: L("Verba updates itself in the background via signed releases. Turn off automatic checks to update only when you press “Check now”.")) {
+            toggleRow(L("Automatically check for updates"),
                       Binding(get: { autoCheck }, set: { autoCheck = $0; updater.autoCheck = $0 }))
-            toggleRow("Automatically download & install updates",
+            toggleRow(L("Automatically download & install updates"),
                       Binding(get: { autoDownload }, set: { autoDownload = $0; updater.autoDownload = $0 }))
         }
 
-        card("Version") {
+        card(L("Version")) {
             HStack {
                 Label(L("Current version"), systemImage: "app.badge").font(.system(size: 13))
                 Spacer()
                 Text("v\(Updater.currentVersion)").monospacedDigit().foregroundStyle(.secondary)
             }
             if updater.updateAvailable, let v = updater.latestVersion {
-                statusLabel("Update available: v\(v)", system: "arrow.down.circle.fill", tint: .blue)
+                statusLabel("\(L("Update available:")) v\(v)", system: "arrow.down.circle.fill", tint: .blue)
             }
             if let when = updater.lastChecked {
                 HStack {
@@ -1362,16 +1362,16 @@ struct SettingsView: View {
             .glassButton().controlSize(.small)
         }
 
-        card("About") {
+        card(L("About")) {
             HStack {
                 VerbaMark(size: 34)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Verba").font(.system(size: 15, weight: .bold))
-                    Text("Voice to clean text, on your terms.").font(.caption).foregroundStyle(.secondary)
+                    Text(L("Voice to clean text, on your terms.")).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
             }
-            explainerRow("Acknowledgements", "WhisperKit, NVIDIA Parakeet, Ollama, Sparkle, and the SwiftUI community. Thank you.")
+            explainerRow(L("Acknowledgements"), L("WhisperKit, NVIDIA Parakeet, Ollama, Sparkle, and the SwiftUI community. Thank you."))
         }
     }
 
@@ -1382,12 +1382,12 @@ struct SettingsView: View {
         let active = settings.engine == engineTab
         if engineTab == .openAI {
             if active { activeLabel } else {
-                Button("Use OpenAI") { settings.engine = .openAI }.glassProminentButton().controlSize(.small)
+                Button(L("Use OpenAI")) { settings.engine = .openAI }.glassProminentButton().controlSize(.small)
             }
         } else {
             if engineTab == .whisper {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Whisper model").font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                    Text(L("Whisper model")).font(.caption.weight(.medium)).foregroundStyle(.secondary)
                     chips(localModels.map { IdString($0) }, selected: IdString(settings.localModel),
                           label: { $0.id }, onPick: { settings.localModel = $0.id; engineRefresh += 1 })
                 }
@@ -1401,37 +1401,37 @@ struct SettingsView: View {
                 let _ = engineRefresh
                 let ready = EngineManager.isReady(engineTab, model: settings.localModel)
                 HStack {
-                    Label("Downloaded · \(EngineManager.sizeGB(engineTab)) on disk", systemImage: "checkmark.circle.fill")
+                    Label("\(L("Downloaded ·")) \(EngineManager.sizeGB(engineTab)) \(L("on disk"))", systemImage: "checkmark.circle.fill")
                         .font(.caption).foregroundStyle(.green)
                     Spacer()
                     if activating && active {
-                        ProgressView().controlSize(.small); Text("Activating…").font(.caption).foregroundStyle(.secondary)
+                        ProgressView().controlSize(.small); Text(L("Activating…")).font(.caption).foregroundStyle(.secondary)
                     } else if active && ready {
                         activeLabel
-                        Button("Reload") { activate(engineTab) }.glassButton().controlSize(.small)
+                        Button(L("Reload")) { activate(engineTab) }.glassButton().controlSize(.small)
                     } else {
-                        Button(active ? "Activate" : "Use this model") { activate(engineTab) }.glassProminentButton().controlSize(.small)
+                        Button(active ? L("Activate") : L("Use this model")) { activate(engineTab) }.glassProminentButton().controlSize(.small)
                     }
-                    Button("Uninstall", role: .destructive) { confirmUninstall = true }.glassButton().controlSize(.small)
-                        .confirmationDialog("Uninstall this model?", isPresented: $confirmUninstall, titleVisibility: .visible) {
-                            Button("Uninstall", role: .destructive) { uninstallEngine(engineTab) }
-                            Button("Cancel", role: .cancel) { }
+                    Button(L("Uninstall"), role: .destructive) { confirmUninstall = true }.glassButton().controlSize(.small)
+                        .confirmationDialog(L("Uninstall this model?"), isPresented: $confirmUninstall, titleVisibility: .visible) {
+                            Button(L("Uninstall"), role: .destructive) { uninstallEngine(engineTab) }
+                            Button(L("Cancel"), role: .cancel) { }
                         } message: {
-                            Text("Deletes the \(EngineManager.sizeGB(engineTab)) model from this Mac. You can re-download it anytime.")
+                            Text("\(L("Deletes the")) \(EngineManager.sizeGB(engineTab)) \(L("model from this Mac. You can re-download it anytime."))")
                         }
                 }
                 if active && !ready && !activating, let err = EngineManager.lastInstallError {
-                    statusLabel("Couldn't load this model: \(err). Tap Activate to retry, or Uninstall + redownload.",
+                    statusLabel("\(L("Couldn't load this model:")) \(err). \(L("Tap Activate to retry, or Uninstall + redownload."))",
                                 system: "exclamationmark.triangle.fill", tint: .orange)
                 }
             } else {
                 HStack {
-                    Text("Not installed · download \(EngineManager.sizeGB(engineTab))").font(.system(size: 13)).foregroundStyle(.secondary)
+                    Text("\(L("Not installed · download")) \(EngineManager.sizeGB(engineTab))").font(.system(size: 13)).foregroundStyle(.secondary)
                     Spacer()
-                    Button("Download & install") { installEngine(engineTab) }.glassProminentButton().controlSize(.small)
+                    Button(L("Download & install")) { installEngine(engineTab) }.glassProminentButton().controlSize(.small)
                 }
             }
-            Text("Runs fully offline & free once installed, no API key needed.")
+            Text(L("Runs fully offline & free once installed, no API key needed."))
                 .font(.caption).foregroundStyle(.secondary)
         }
     }
@@ -1442,30 +1442,30 @@ struct SettingsView: View {
     // MARK: - Local LLM (Ollama)
 
     @ViewBuilder private var localModelBlock: some View {
-        labeledField("Model", $settings.localLLMModel, prompt: "qwen2.5:7b", width: 280)
+        labeledField(L("Model"), $settings.localLLMModel, prompt: "qwen2.5:7b", width: 280)
         if engineInstalling {
-            HStack { ProgressView().controlSize(.small); Text("Setting up the local engine…").font(.caption).foregroundStyle(.secondary) }
+            HStack { ProgressView().controlSize(.small); Text(L("Setting up the local engine…")).font(.caption).foregroundStyle(.secondary) }
         } else if !ollamaUp {
             HStack {
-                Text("Local engine not running.").font(.caption).foregroundStyle(.secondary)
+                Text(L("Local engine not running.")).font(.caption).foregroundStyle(.secondary)
                 Spacer()
-                Button("Set up & start") { setupEngine() }.glassProminentButton().controlSize(.small)
+                Button(L("Set up & start")) { setupEngine() }.glassProminentButton().controlSize(.small)
             }
         } else if pulling {
             VStack(alignment: .leading, spacing: 6) {
                 ProgressView(value: pullProgress).progressViewStyle(.linear)
-                Text("Downloading \(settings.localLLMModel)… \(Int(pullProgress * 100))%").font(.caption).foregroundStyle(.secondary)
+                Text("\(L("Downloading")) \(settings.localLLMModel)… \(Int(pullProgress * 100))%").font(.caption).foregroundStyle(.secondary)
             }
         } else if ollamaHasModel {
-            statusLabel("\(settings.localLLMModel) ready, runs 100% offline.", system: "checkmark.seal.fill", tint: .green)
+            statusLabel("\(settings.localLLMModel) \(L("ready, runs 100% offline."))", system: "checkmark.seal.fill", tint: .green)
         } else {
             HStack {
-                Text("Engine ready. Model not downloaded yet.").font(.caption).foregroundStyle(.secondary)
+                Text(L("Engine ready. Model not downloaded yet.")).font(.caption).foregroundStyle(.secondary)
                 Spacer()
                 Button(L("Download model")) { pullModel() }.glassProminentButton().controlSize(.small)
             }
         }
-        Text("Reformulation runs entirely on your Mac. Tap Set up to install the local engine (~30 MB) the first time. Qwen 2.5 7B recommended (~4.7 GB).")
+        Text(L("Reformulation runs entirely on your Mac. Tap Set up to install the local engine (~30 MB) the first time. Qwen 2.5 7B recommended (~4.7 GB)."))
             .font(.caption).foregroundStyle(.secondary)
             // Probe state non-intrusively. If the engine is already installed we start it,
             // but we never auto-DOWNLOAD the binary — that stays behind the explicit Set up button.
@@ -1558,12 +1558,12 @@ struct SettingsView: View {
     }
     private func installEngine(_ e: TranscriptionEngine) {
         installing = true; installProgress = 0
-        installMsg = "Downloading \(EngineManager.sizeGB(e))…"
+        installMsg = "\(L("Downloading")) \(EngineManager.sizeGB(e))…"
         Task {
             let ok = await EngineManager.install(e) { p in installProgress = p }
             await MainActor.run {
                 installing = false
-                installMsg = ok ? "" : "Install failed: \(EngineManager.lastInstallError ?? "check your connection.")"
+                installMsg = ok ? "" : "\(L("Install failed:")) \(EngineManager.lastInstallError ?? L("check your connection."))"
                 if ok { settings.engine = e }
                 engineRefresh += 1
             }
@@ -1631,8 +1631,8 @@ struct SettingsView: View {
     }
 
     private var retentionOptions: [RetentionOption] {
-        [.init(days: 0, label: "Forever"), .init(days: 7, label: "7 days"),
-         .init(days: 30, label: "30 days"), .init(days: 90, label: "90 days")]
+        [.init(days: 0, label: L("Forever")), .init(days: 7, label: L("7 days")),
+         .init(days: 30, label: L("30 days")), .init(days: 90, label: L("90 days"))]
     }
     private func retentionOption(_ days: Int) -> RetentionOption {
         retentionOptions.first { $0.days == days } ?? retentionOptions[0]

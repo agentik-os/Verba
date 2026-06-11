@@ -15,7 +15,7 @@ struct PlayerProfileSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text(alias + (isMe ? "  (you)" : "")).font(.title3.weight(.bold)).lineLimit(1)
+                Text(alias + (isMe ? L("  (you)") : "")).font(.title3.weight(.bold)).lineLimit(1)
                 Spacer()
                 Button(L("Done")) { dismiss() }.dialogPrimary()
             }
@@ -28,9 +28,9 @@ struct PlayerProfileSheet: View {
                     VStack(spacing: 16) {
                         // Header stats
                         HStack(spacing: 12) {
-                            headStat("Lvl \(p.level)", "of \(Gamification.maxLevel)", "rosette")
-                            headStat(p.league, "league", "shield.fill")
-                            headStat("\(p.badges.count)", "of \(Gamification.all.count) badges", "seal.fill")
+                            headStat(L("Lvl ") + "\(p.level)", L("of ") + "\(Gamification.maxLevel)", "rosette")
+                            headStat(p.league, L("league"), "shield.fill")
+                            headStat("\(p.badges.count)", L("of ") + "\(Gamification.all.count) " + L("badges"), "seal.fill")
                         }
                         // Their badges
                         Text(L("Badges earned")).font(.system(size: 12, weight: .semibold))
@@ -47,8 +47,8 @@ struct PlayerProfileSheet: View {
             } else {
                 VStack(spacing: 8) {
                     Image(systemName: "person.crop.circle.badge.questionmark").font(.system(size: 34)).foregroundStyle(.secondary)
-                    Text("\(alias) hasn't shared a profile yet.").font(.callout).foregroundStyle(.secondary)
-                    Text("Profiles appear once they dictate on the latest version.").font(.caption).foregroundStyle(.tertiary)
+                    Text("\(alias) " + L("hasn't shared a profile yet.")).font(.callout).foregroundStyle(.secondary)
+                    Text(L("Profiles appear once they dictate on the latest version.")).font(.caption).foregroundStyle(.tertiary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity).padding()
             }

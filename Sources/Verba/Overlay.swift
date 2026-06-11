@@ -11,7 +11,7 @@ enum CaptureContext {
         switch self {
         case .dictation: return L("Dictation")
         case .note:      return L("Note")
-        case .todo:      return "To-do"
+        case .todo:      return L("To-do")
         case .action:    return L("Action")
         }
     }
@@ -105,7 +105,7 @@ struct OverlayView: View {
                             // escape hatch but was only ever a tooltip. Surface it inline so users
                             // (esp. push-to-talk) can discover it during recording/processing.
                             if showEscHint {
-                                Text("esc").font(.system(size: 10, weight: .semibold))
+                                Text(L("esc")).font(.system(size: 10, weight: .semibold))
                                     .foregroundStyle(.secondary).opacity(0.7)
                                     .lineLimit(1).fixedSize()   // never wrap to "es / c"
                                     .padding(.trailing, 1)
@@ -114,7 +114,7 @@ struct OverlayView: View {
                         .padding(8).contentShape(Rectangle())   // big, always-hittable target
                     }
                     .buttonStyle(.plain)
-                    .help("Cancel (Esc)")
+                    .help(L("Cancel (Esc)"))
                     .allowsHitTesting(true)   // never let an overlaid ProgressView swallow the click
                 }
             }
@@ -170,7 +170,7 @@ struct OverlayView: View {
             .foregroundStyle(.secondary)
             .frame(minWidth: 16, minHeight: 16)
             .background(Color.primary.opacity(VGlass.fillSelected), in: Circle())
-            .help("\(n) earlier \(n == 1 ? "dictation is" : "dictations are") still processing")
+            .help("\(n) \(L("earlier")) \(n == 1 ? L("dictation is") : L("dictations are")) \(L("still processing"))")
             .transition(.opacity)
     }
 
@@ -211,7 +211,7 @@ struct OverlayView: View {
         } else if model.menu {
             Text(L("Choose a mode")).font(.system(size: size, weight: .medium)).lineLimit(1)
         } else if model.paused {
-            Text("Paused").font(.system(size: size, weight: .medium)).lineLimit(1)
+            Text(L("Paused")).font(.system(size: size, weight: .medium)).lineLimit(1)
         } else {
             // "Listening · Custom" → "Listening" + a black tag with the full mode name in white.
             // Both use fixedSize so the mode tag never gets compressed/truncated — it always
@@ -262,7 +262,7 @@ struct OverlayView: View {
             .buttonStyle(.plain)
             .menuIndicator(.hidden)
             .fixedSize()
-            .help("Switch mode — keeps recording")
+            .help(L("Switch mode — keeps recording"))
         } else {
             // Static (non-switchable) tag: no chevron AND a slightly muted fill so it reads as a
             // plain label, not a dead-looking copy of the interactive switcher (which carries the
