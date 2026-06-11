@@ -158,6 +158,12 @@ final class TransformPickerController {
             onClose: { [weak self] in self?.hide() }))
         host.sizingOptions = [.preferredContentSize]
         p.contentViewController = host
+        // Clip to the rounded shape at the window layer so the glass material / window shadow never
+        // bleed a square edge past the 18pt rounded corners.
+        host.view.wantsLayer = true
+        host.view.layer?.cornerRadius = 18
+        host.view.layer?.cornerCurve = .continuous
+        host.view.layer?.masksToBounds = true
         p.layoutIfNeeded()
     }
 
