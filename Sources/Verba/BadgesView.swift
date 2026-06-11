@@ -227,7 +227,7 @@ struct BadgesView: View {
             Text("\(info.title) · Lvl \(info.level)/\(Gamification.maxLevel)").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             Text("\(info.xpInLevel) / \(info.xpForNext) XP").font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
         }
-        .frame(maxWidth: .infinity).padding(.vertical, 16)
+        .frame(maxWidth: .infinity).padding(.top, 24).padding(.bottom, 16)
         .glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
@@ -244,7 +244,7 @@ struct BadgesView: View {
             Text("Today's goal").font(.subheadline.weight(.semibold))
             Text("\(game.todayWords) / \(game.dailyGoal) words").font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
         }
-        .frame(maxWidth: .infinity).padding(.vertical, 16)
+        .frame(maxWidth: .infinity).padding(.top, 24).padding(.bottom, 16)
         .glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
@@ -263,7 +263,7 @@ struct BadgesView: View {
                 Text("top tier").font(.caption2).foregroundStyle(.tertiary)
             }
         }
-        .frame(maxWidth: .infinity).padding(.vertical, 16)
+        .frame(maxWidth: .infinity).padding(.top, 24).padding(.bottom, 16)
         .glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
