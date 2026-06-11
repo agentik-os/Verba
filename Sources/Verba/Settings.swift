@@ -459,6 +459,15 @@ final class Settings: ObservableObject {
     @Published var searchTargets: [SearchTarget] {
         didSet { if let data = try? JSONEncoder().encode(searchTargets) { d.set(data, forKey: "searchTargets") } }
     }
+    /// Action categories the user has DISABLED (raw values of ActionKind). Empty = everything allowed.
+    @Published var disabledActions: Set<String> {
+        didSet { d.set(Array(disabledActions), forKey: "disabledActions") }
+    }
+    /// Optional explicit Calendar / Reminders destinations (EKCalendar identifiers). nil/"" = macOS default.
+    @Published var eventCalendarID: String { didSet { d.set(eventCalendarID, forKey: "eventCalendarID") } }
+    @Published var reminderListID: String { didSet { d.set(reminderListID, forKey: "reminderListID") } }
+
+    func isActionEnabled(_ k: ActionKind) -> Bool { !disabledActions.contains(k.rawValue) }
     /// The user's everyday language (a language NAME like "Italian", or "" = auto-detect only).
     /// Every reprompt mode writes in the language actually spoken, but DEFAULTS to this when the
     /// spoken language is ambiguous — so an Italian user never gets stray English/French output.
@@ -693,6 +702,9 @@ final class Settings: ObservableObject {
         mainLanguage = d.object(forKey: "mainLanguage") as? String ?? Settings.systemLanguageName()
         voiceCommands = d.object(forKey: "voiceCommands") as? Bool ?? true
         searchTargets = d.data(forKey: "searchTargets").flatMap { try? JSONDecoder().decode([SearchTarget].self, from: $0) } ?? SearchTarget.defaults
+        disabledActions = Set((d.object(forKey: "disabledActions") as? [String]) ?? [])
+        eventCalendarID = d.string(forKey: "eventCalendarID") ?? ""
+        reminderListID = d.string(forKey: "reminderListID") ?? ""
         transformHotkeyCode = d.object(forKey: "transformHotkeyCode") as? Int ?? 7 /* X */
         languageGuard = d.object(forKey: "languageGuard") as? Bool ?? true
         repromptEnabled = d.object(forKey: "repromptEnabled") as? Bool ?? true

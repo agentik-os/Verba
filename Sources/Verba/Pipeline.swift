@@ -282,7 +282,7 @@ enum Pipeline {
                     } else {
                         raw = try await r.reprompt(transcript: original, systemPrompt: agenticSys)
                     }
-                    if let action = parseAgenticAction(raw) {
+                    if let action = parseAgenticAction(raw), s.isActionEnabled(action.kind) {
                         detectedAction = action
                     } else {
                         reprompted = extractAgenticText(raw)
@@ -398,6 +398,10 @@ enum Pipeline {
         let searchBlock = targets.isEmpty ? "(No search targets configured.)" :
             "The user's web search targets (for a 'search' action, set \"target\" to one of these EXACT names " +
             "and put the spoken query in \"query\"):\n" + targets.map { "  • \($0.name)" }.joined(separator: "\n")
+        let disabled = Settings.shared.disabledActions.compactMap { ActionKind(rawValue: $0)?.label }
+        let disabledBlock = disabled.isEmpty ? "" :
+            "\n\nDISABLED actions (the user turned these OFF — NEVER emit them; fall back to text B instead): " +
+            disabled.joined(separator: ", ")
         let shortcutsBlock: String
         if shortcuts.isEmpty {
             shortcutsBlock = "(The user has no saved Shortcuts, so do not emit a run_shortcut action.)"
@@ -458,7 +462,7 @@ enum Pipeline {
 
         \(shortcutsBlock)
 
-        \(searchBlock)
+        \(searchBlock)\(disabledBlock)
 
         \(nowContext())
         """

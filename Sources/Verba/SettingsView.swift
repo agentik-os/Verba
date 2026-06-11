@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 import AVFoundation
 import IOKit.hid
+import EventKit
 
 // MARK: - Settings sections (the custom left rail)
 
@@ -57,6 +58,8 @@ struct SettingsView: View {
     @State private var screenGranted = ScreenCapture.hasPermission()
     private let permPoll = Timer.publish(every: 1.5, on: .main, in: .common).autoconnect()
 
+    @State private var eventCalendars: [(String, String)] = []   // (identifier, title) for the Action destination picker
+    @State private var reminderLists: [(String, String)] = []
     @State private var openAIKey = Keychain.openAIKey ?? ""
     @State private var anthropicKey = Keychain.anthropicKey ?? ""
     @State private var openRouterKey = Keychain.openRouterKey ?? ""
@@ -189,6 +192,19 @@ struct SettingsView: View {
     // MARK: - Shared building blocks
 
     /// A titled grouping card: caption header + a glass-fill card body.
+    /// Populate the Action-mode destination pickers with the user's calendars / reminder lists,
+    /// requesting access if needed. Empty lists fall back to "macOS default" only.
+    private func loadActionCalendars() {
+        let store = EKEventStore()
+        func load() {
+            eventCalendars = store.calendars(for: .event).map { ($0.calendarIdentifier, $0.title) }
+            reminderLists = store.calendars(for: .reminder).map { ($0.calendarIdentifier, $0.title) }
+        }
+        if #available(macOS 14.0, *) {
+            Task { _ = try? await store.requestFullAccessToEvents(); await MainActor.run { load() } }
+        } else { load() }
+    }
+
     private func card<Content: View>(_ title: String? = nil, footer: String? = nil,
                                      @ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -772,8 +788,34 @@ struct SettingsView: View {
                       help: settings.useSelectionContext ? "If text is selected when you dictate, your words become an instruction on that selection, and the result replaces it." : nil)
         }
 
-        card("Action mode",
-             footer: "Action mode (Fn+X) turns speech into a confirmed action. Calendar events and reminders go to your macOS DEFAULT Calendar / Reminders list (set the default in Calendar.app / Reminders.app, e.g. a Google or Notion-synced calendar). Web search targets below let you say “search … on Google / ChatGPT / Claude”; {q} is replaced by what you said.") {
+        card("Action mode — allowed actions",
+             footer: "Action mode (Fn+X) turns speech into a confirmed action. Turn off any category you never want Verba to do.") {
+            ForEach(ActionKind.allCases, id: \.self) { k in
+                Toggle(isOn: Binding(
+                    get: { settings.isActionEnabled(k) },
+                    set: { on in if on { settings.disabledActions.remove(k.rawValue) } else { settings.disabledActions.insert(k.rawValue) } }
+                )) {
+                    Label(k.label, systemImage: k.icon)
+                }
+                .toggleStyle(.switch)
+            }
+        }
+
+        card("Action mode — destinations",
+             footer: "Calendar events and reminders are written here. Pick a specific calendar/list (e.g. a Google or Notion-synced one), or leave on the macOS default. Set up the account in Calendar.app / Reminders.app first.") {
+            Picker("Calendar", selection: $settings.eventCalendarID) {
+                Text("macOS default").tag("")
+                ForEach(eventCalendars, id: \.0) { Text($0.1).tag($0.0) }
+            }
+            Picker("Reminders list", selection: $settings.reminderListID) {
+                Text("macOS default").tag("")
+                ForEach(reminderLists, id: \.0) { Text($0.1).tag($0.0) }
+            }
+        }
+        .onAppear { loadActionCalendars() }
+
+        card("Action mode — search targets",
+             footer: "Say “search … on Google / ChatGPT / Claude”. {q} is replaced by what you said; add any site.") {
             ForEach($settings.searchTargets) { $t in
                 HStack(spacing: 8) {
                     TextField("Name", text: $t.name).frame(width: 110).textFieldStyle(.roundedBorder)

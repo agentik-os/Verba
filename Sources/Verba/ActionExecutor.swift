@@ -10,6 +10,33 @@ import AppKit
 // performs it on macOS (Calendar / Reminders via EventKit, email via a mailto: draft).
 // Nothing is ever executed without the user confirming first (see ActionConfirmView).
 
+/// The categories of action the user can individually enable/disable in Settings ▸ Action mode.
+enum ActionKind: String, CaseIterable, Codable {
+    case calendar, reminder, email, shortcut, app, music, message, search, applescript
+    var label: String {
+        switch self {
+        case .calendar:    return "Calendar events"
+        case .reminder:    return "Reminders"
+        case .email:       return "Email drafts"
+        case .shortcut:    return "Run Shortcuts"
+        case .app:         return "Open apps"
+        case .music:       return "Play music"
+        case .message:     return "Send messages"
+        case .search:      return "Web search / open URL"
+        case .applescript: return "AppleScript (advanced)"
+        }
+    }
+    var icon: String {
+        switch self {
+        case .calendar: return "calendar"; case .reminder: return "checklist"
+        case .email: return "envelope"; case .shortcut: return "bolt.fill"
+        case .app: return "app.badge"; case .music: return "music.note"
+        case .message: return "message.fill"; case .search: return "safari"
+        case .applescript: return "applescript"
+        }
+    }
+}
+
 /// A user-configurable web search / quick-open target for Action mode. The model maps a spoken
 /// "search X on Google" (or "open Y") to one of these by NAME, and the query fills `{q}`.
 struct SearchTarget: Codable, Identifiable, Equatable {
@@ -150,6 +177,21 @@ enum VerbaAction: Codable, Equatable {
         }
     }
 
+    /// The user-facing category, for the enable/disable allow-list.
+    var kind: ActionKind {
+        switch self {
+        case .calendarEvent: return .calendar
+        case .reminder:      return .reminder
+        case .emailDraft:    return .email
+        case .runShortcut:   return .shortcut
+        case .openApp:       return .app
+        case .playMusic:     return .music
+        case .sendMessage:   return .message
+        case .appleScript:   return .applescript
+        case .openURL:       return .search
+        }
+    }
+
     // MARK: Presentation
 
     /// A short SF Symbol describing the action kind, for the confirmation UI.
@@ -286,9 +328,11 @@ struct ActionExecutor {
         let store = EKEventStore()
         try await requestCalendarAccess(store)
 
-        guard let calendar = store.defaultCalendarForNewEvents else {
-            throw ActionError.noCalendar("calendar")
-        }
+        // The user's chosen calendar (Settings ▸ Action mode) wins; else the macOS default.
+        let chosen = Settings.shared.eventCalendarID
+        let calendar = (!chosen.isEmpty ? store.calendar(withIdentifier: chosen) : nil)
+            ?? store.defaultCalendarForNewEvents
+        guard let calendar else { throw ActionError.noCalendar("calendar") }
         let event = EKEvent(eventStore: store)
         event.title = title
         event.startDate = start
@@ -300,7 +344,7 @@ struct ActionExecutor {
         } catch {
             throw ActionError.saveFailed(error.localizedDescription)
         }
-        return "Event “\(title)” added to your calendar."
+        return "Event “\(title)” added to \(calendar.title)."
     }
 
     /// Request Calendar access using the modern macOS 14 API, falling back to the legacy one.
@@ -323,9 +367,10 @@ struct ActionExecutor {
         let store = EKEventStore()
         try await requestRemindersAccess(store)
 
-        guard let calendar = store.defaultCalendarForNewReminders() else {
-            throw ActionError.noCalendar("reminders list")
-        }
+        let chosen = Settings.shared.reminderListID
+        let calendar = (!chosen.isEmpty ? store.calendar(withIdentifier: chosen) : nil)
+            ?? store.defaultCalendarForNewReminders()
+        guard let calendar else { throw ActionError.noCalendar("reminders list") }
         let reminder = EKReminder(eventStore: store)
         reminder.title = title
         reminder.calendar = calendar
