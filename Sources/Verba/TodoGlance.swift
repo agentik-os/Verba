@@ -85,30 +85,20 @@ struct TodoGlanceView: View {
     @ObservedObject var store = TodoStore.shared
     var onClose: () -> Void
 
-    /// IDs the user just checked off in this glance session. TodoGlance.items only emits OPEN
-    /// items, so a freshly-completed row would vanish before its checkmark could be un-tapped.
-    /// We keep those rows visible (rendered done) for the session so a mis-tap is undoable here.
-    @State private var justDone: [UUID: GlanceItem] = [:]
+    /// IDs currently animating out after being checked off (checkmark + strikethrough show briefly,
+    /// then the item is marked done in the store and slides away).
+    @State private var completing: Set<UUID> = []
 
-    /// Open items from the store, plus this session's just-completed rows (shown done, in place),
-    /// so the filled checkmark stays tappable for an undo.
-    private var items: [GlanceItem] {
-        let open = TodoGlance.items(from: store.projects)
-        let openIDs = Set(open.map(\.id))
-        // Drop any remembered row that has come back to open on its own (e.g. undone elsewhere).
-        var merged = open
-        for (id, var row) in justDone where !openIDs.contains(id) {
-            row.done = true
-            merged.append(row)
-        }
-        return merged
+    /// Projects with at least one open task to show (full hierarchy: project → tasks → subtasks).
+    private var visibleProjects: [TodoProject] {
+        store.projects.filter { p in p.tasks.contains { !$0.done } }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                Image(systemName: "checklist").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
-                Text("Today").font(.system(size: 14, weight: .semibold))
+                Image(systemName: "checklist").font(.system(size: 14, weight: .semibold)).foregroundStyle(.secondary)
+                Text("Tasks").font(.system(size: 15, weight: .semibold))
                 Spacer(minLength: 18)
                 Button(action: onClose) {
                     Image(systemName: "xmark").font(.system(size: 11, weight: .semibold))
@@ -117,92 +107,106 @@ struct TodoGlanceView: View {
                 .buttonStyle(.plain).help("Close (Esc)")
             }
 
-            if items.isEmpty {
+            if visibleProjects.isEmpty {
                 HStack(spacing: 8) {
-                    Image(systemName: "checkmark.circle").font(.system(size: 13)).foregroundStyle(.tertiary)
-                    Text("Nothing on for today — you're all clear.")
-                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                    Image(systemName: "checkmark.circle.fill").font(.system(size: 14)).foregroundStyle(.green)
+                    Text("All clear. Nothing left to do.")
+                        .font(.system(size: 13)).foregroundStyle(.secondary)
                 }
-                .padding(.vertical, 2)
+                .padding(.vertical, 6)
             } else {
-                // Group by project, preserving the order items first appear in.
-                let groups = grouped(items)
-                VStack(alignment: .leading, spacing: 12) {
-                    ForEach(groups, id: \.0) { projectID, rows in
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(rows.first?.project ?? "")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(.secondary)
-                                .textCase(.uppercase)
-                            ForEach(rows) { row in glanceRow(row) }
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        ForEach(visibleProjects) { project in
+                            VStack(alignment: .leading, spacing: 7) {
+                                HStack(spacing: 6) {
+                                    Text(project.name).font(.system(size: 11, weight: .bold))
+                                        .foregroundStyle(.secondary).textCase(.uppercase)
+                                    let open = project.tasks.filter { !$0.done }.count
+                                    Text("\(open)").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
+                                        .padding(.horizontal, 6).padding(.vertical, 1)
+                                        .background(.softFill, in: Capsule())
+                                }
+                                ForEach(project.tasks.filter { !$0.done }) { task in
+                                    taskBlock(task)
+                                }
+                            }
+                            .transition(.move(edge: .leading).combined(with: .opacity))
                         }
                     }
+                    .padding(.bottom, 4)
+                }
+                .frame(maxHeight: 460)
+            }
+        }
+        .padding(.horizontal, 18).padding(.vertical, 16)
+        .frame(width: 420, alignment: .leading)
+        .glass(in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .animation(.spring(response: 0.4, dampingFraction: 0.82), value: completing)
+    }
+
+    @ViewBuilder private func taskBlock(_ task: TodoTask) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            itemRow(id: task.id, title: task.title, deadline: task.deadline,
+                    indent: 0, bold: true) {
+                store.markDone(taskID: task.id, done: true)
+            }
+            // Open sub-tasks, indented under their task.
+            ForEach(task.subtasks.filter { !$0.done }) { sub in
+                itemRow(id: sub.id, title: sub.title, deadline: sub.deadline,
+                        indent: 1, bold: false) {
+                    store.markSubtaskDone(subtaskID: sub.id, done: true)
                 }
             }
         }
-        .padding(.horizontal, 16).padding(.vertical, 14)
-        .frame(width: 300, alignment: .leading)
-        .glass(in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .transition(.move(edge: .trailing).combined(with: .opacity))
     }
 
-    @ViewBuilder private func glanceRow(_ row: GlanceItem) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 9) {
+    /// One checkable row (task or sub-task). On tap: fill the check + strike through, then after a
+    /// beat mark it done in the store, which slides it out of the list.
+    @ViewBuilder private func itemRow(id: UUID, title: String, deadline: Date?, indent: CGFloat, bold: Bool, complete: @escaping () -> Void) -> some View {
+        let isDoing = completing.contains(id)
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            if indent > 0 { Spacer().frame(width: 22 * indent) }
             Button {
-                let nowDone = !row.done
-                if row.isSubtask {
-                    store.markSubtaskDone(subtaskID: row.id, done: nowDone)
-                } else {
-                    store.markDone(taskID: row.id, done: nowDone)
+                guard !isDoing else { return }
+                withAnimation(.easeOut(duration: 0.2)) { _ = completing.insert(id) }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
+                        complete()
+                        completing.remove(id)
+                    }
                 }
-                // Remember a just-completed row so it stays visible (and undoable) this session;
-                // un-checking removes it from the remembered set so it returns to its live state.
-                if nowDone { justDone[row.id] = row } else { justDone[row.id] = nil }
             } label: {
-                Image(systemName: row.done ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 15))
-                    .foregroundStyle(row.done ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
+                ZStack {
+                    Image(systemName: isDoing ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: indent > 0 ? 14 : 16))
+                        .foregroundStyle(isDoing ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
+                        .scaleEffect(isDoing ? 1.15 : 1)
+                }
             }
             .buttonStyle(.plain)
 
-            VStack(alignment: .leading, spacing: 1) {
-                Text(row.title.isEmpty ? "Untitled task" : row.title)
-                    .font(.system(size: 12))
-                    .foregroundStyle(row.done ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
-                    .strikethrough(row.done, color: .secondary)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-                // Checking off cascades to the sub-tasks; surface the count so the cascade is expected.
-                if row.subtaskCount > 0 {
-                    Text("\(row.subtaskCount) item\(row.subtaskCount == 1 ? "" : "s")")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
-                }
-            }
+            Text(title.isEmpty ? "Untitled" : title)
+                .font(.system(size: indent > 0 ? 12 : 13, weight: bold ? .medium : .regular))
+                .foregroundStyle(isDoing ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
+                .strikethrough(isDoing, color: .green)
+                .lineLimit(2).fixedSize(horizontal: false, vertical: true)
 
             Spacer(minLength: 4)
 
-            if let d = row.deadline {
+            if let d = deadline {
                 HStack(spacing: 3) {
                     Image(systemName: "clock").font(.system(size: 9))
                     Text(deadlineLabel(d)).font(.system(size: 10, weight: .medium)).monospacedDigit()
                 }
-                .foregroundStyle(row.overdue ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+                .foregroundStyle(d < Date() ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
                 .padding(.horizontal, 7).padding(.vertical, 3)
                 .background(.softFill, in: Capsule())
                 .fixedSize()
             }
         }
-    }
-
-    /// Preserve first-seen project order while grouping rows.
-    private func grouped(_ items: [GlanceItem]) -> [(UUID, [GlanceItem])] {
-        var order: [UUID] = []
-        var map: [UUID: [GlanceItem]] = [:]
-        for it in items {
-            if map[it.projectID] == nil { order.append(it.projectID) }
-            map[it.projectID, default: []].append(it)
-        }
-        return order.map { ($0, map[$0] ?? []) }
+        .opacity(isDoing ? 0.85 : 1)
     }
 
     /// Compact deadline: "Today 15:00" for today, "Fri 15:00" within ~6 days, else "Jun 12, 15:00".
@@ -264,6 +268,12 @@ final class TodoGlanceController {
         host.sizingOptions = [.preferredContentSize]   // window tracks SwiftUI's intrinsic size
         p.contentViewController = host
         p.alphaValue = 1
+        // Clip the whole panel to rounded corners at the window layer, so the glass material (and the
+        // window shadow) never bleed a square edge past the rounded card.
+        host.view.wantsLayer = true
+        host.view.layer?.cornerRadius = 20
+        host.view.layer?.cornerCurve = .continuous
+        host.view.layer?.masksToBounds = true
         panel = p
         p.layoutIfNeeded()
     }
