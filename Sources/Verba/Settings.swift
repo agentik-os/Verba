@@ -455,6 +455,32 @@ final class Settings: ObservableObject {
     @Published var autoDetectProfile: Bool { didSet { d.set(autoDetectProfile, forKey: "autoDetectProfile") } }
     @Published var useSelectionContext: Bool { didSet { d.set(useSelectionContext, forKey: "useSelectionContext") } }
     @Published var voiceCommands: Bool { didSet { d.set(voiceCommands, forKey: "voiceCommands") } }
+    /// The user's everyday language (a language NAME like "Italian", or "" = auto-detect only).
+    /// Every reprompt mode writes in the language actually spoken, but DEFAULTS to this when the
+    /// spoken language is ambiguous — so an Italian user never gets stray English/French output.
+    @Published var mainLanguage: String { didSet { d.set(mainLanguage, forKey: "mainLanguage") } }
+
+    /// The Mac's own language as an English name, if it's one Verba lists; else "" (auto-detect).
+    static func systemLanguageName() -> String {
+        guard let code = Locale.current.language.languageCode?.identifier,
+              let name = Locale(identifier: "en_US").localizedString(forLanguageCode: code) else { return "" }
+        return translateLanguages.contains(name) ? name : ""
+    }
+
+    /// A directive injected into every reprompt mode so output defaults to the user's main language
+    /// when the spoken language is ambiguous, WITHOUT overriding a clearly-spoken other language or an
+    /// explicit request. nil when set to auto-detect. Never applied to Translate (it has its own target).
+    var languageDirective: String? {
+        let lang = mainLanguage.trimmingCharacters(in: .whitespaces)
+        guard !lang.isEmpty else { return nil }
+        return """
+        PRIMARY LANGUAGE: the user's everyday language is \(lang). Write the output in the language the \
+        user ACTUALLY spoke in this dictation. Only when the spoken language is genuinely ambiguous or \
+        the transcript is too short to tell, default to \(lang). If the user clearly spoke another \
+        language, or explicitly asked for a specific output language, honor THAT. Never silently switch \
+        a clearly-\(lang) dictation to another language because these instructions are in English.
+        """
+    }
     /// The key (with Option held) that opens the transform picker on the current selection.
     /// Default ⌥X (keycode 7); the user can rebind it in Settings ▸ Shortcuts.
     @Published var transformHotkeyCode: Int { didSet { d.set(transformHotkeyCode, forKey: "transformHotkeyCode") } }
@@ -658,6 +684,9 @@ final class Settings: ObservableObject {
         // depends on this being on — so it defaults ON (a brief default-false regression killed the
         // feature for everyone who never toggled it). Users who don't want it can switch it off.
         useSelectionContext = d.object(forKey: "useSelectionContext") as? Bool ?? true
+        // Default the primary language to the Mac's own language (so an Italian user gets Italian out
+        // of the box); falls back to auto-detect only if the system language isn't a known one.
+        mainLanguage = d.object(forKey: "mainLanguage") as? String ?? Settings.systemLanguageName()
         voiceCommands = d.object(forKey: "voiceCommands") as? Bool ?? true
         transformHotkeyCode = d.object(forKey: "transformHotkeyCode") as? Int ?? 7 /* X */
         languageGuard = d.object(forKey: "languageGuard") as? Bool ?? true

@@ -1464,6 +1464,7 @@ struct TransformsView: View {
 
 struct ScratchpadView: View {
     @ObservedObject var pad = Scratchpad.shared
+    @AppStorage("scratchpad.preview") private var preview = false
     var body: some View {
         // Single full-bleed text area (not split): header + toolbar pinned, the pad fills the rest —
         // aligned to the exemplar's detail-pane header/padding grammar.
@@ -1471,27 +1472,49 @@ struct ScratchpadView: View {
             HStack(spacing: 10) {
                 Text("Scratchpad").font(.system(size: 17, weight: .bold))
                 Spacer(minLength: 8)
+                // Edit ⇄ Preview: Preview renders markdown (titles, bold, italic, underline, lists,
+                // code, quotes) so dictated/pasted formatting reads correctly instead of showing raw
+                // **stars** and # hashes.
+                Picker("", selection: $preview) {
+                    Image(systemName: "pencil").tag(false)
+                    Image(systemName: "eye").tag(true)
+                }
+                .pickerStyle(.segmented).labelsHidden().fixedSize()
+                .help(preview ? "Editing" : "Preview formatting")
                 CopyButton(text: pad.text, title: "Copy")
                 Button(role: .destructive) { pad.text = "" } label: { Label("Clear", systemImage: "trash") }
                     .buttonStyle(.borderless)
             }
-            TextEditor(text: $pad.text)
-                .font(.system(size: 15)).scrollContentBackground(.hidden)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(.horizontal, 24).padding(.vertical, 20)
-                .background(.softFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay {
-                    if pad.text.isEmpty {
-                        EmptyState(icon: "note.text", title: "Empty scratchpad",
-                                   message: "A free-form space for text. Dictate into it, paste notes, edit, and copy the result.")
-                            .allowsHitTesting(false)
+            Group {
+                if preview {
+                    ScrollView {
+                        MarkdownView(text: pad.text)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 24).padding(.vertical, 20)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(.softFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                } else {
+                    TextEditor(text: $pad.text)
+                        .font(.system(size: 15)).scrollContentBackground(.hidden)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding(.horizontal, 24).padding(.vertical, 20)
+                        .background(.softFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
+            }
+            .overlay {
+                if pad.text.isEmpty {
+                    EmptyState(icon: "note.text", title: "Empty scratchpad",
+                               message: "A free-form space for text. Dictate into it, paste notes, edit, and copy the result. Toggle the eye to preview markdown formatting.")
+                        .allowsHitTesting(false)
+                }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 14)
     }
 }
+
 
 // MARK: - Empty state (icon + title + explanation), shown when a section has no content yet.
 

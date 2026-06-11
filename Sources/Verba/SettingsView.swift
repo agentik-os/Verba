@@ -696,6 +696,20 @@ struct SettingsView: View {
         }
 
         card("Language") {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Primary language").font(.system(size: 13))
+                    Text("Your everyday language. Output defaults to it when the spoken language is ambiguous; a clearly-spoken other language is always kept.")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 12)
+                Picker("", selection: $settings.mainLanguage) {
+                    Text("Auto-detect").tag("")
+                    Divider()
+                    ForEach(translateLanguages, id: \.self) { Text($0).tag($0) }
+                }
+                .labelsHidden().fixedSize()
+            }
             labeledField("Spoken language", $settings.language, prompt: "ISO code, blank = auto")
             toggleRow("Single-language output", $settings.languageGuard,
                       help: settings.languageGuard ? "If the engine mixes two languages mid-sentence, Verba rewrites the result fully in its dominant language. Applies to every mode, including Flow." : nil)

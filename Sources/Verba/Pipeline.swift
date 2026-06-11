@@ -160,6 +160,11 @@ enum Pipeline {
         // EXCEPT for an explicit edit-last instruction, which always reprompts (see above).
         if (s.repromptEnabled && !profile.raw) || editingLast {
             var sys = profile.effectiveSystemPrompt   // Translate mode injects its target language
+            // Primary-language default: bias ambiguous output to the user's everyday language without
+            // overriding a clearly-spoken other language. Never on Translate (it owns the target).
+            if profile.targetLanguage == nil, let dir = s.languageDirective {
+                sys += "\n\n\(dir)"
+            }
             // Active STYLE layer: a tone/format nudge applied on top of the mode. The built-in
             // "Normal" style has an empty prompt, so it changes nothing (default behaviour).
             let style = s.activeStyle.prompt.trimmingCharacters(in: .whitespacesAndNewlines)
