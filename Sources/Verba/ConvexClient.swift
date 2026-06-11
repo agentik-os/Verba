@@ -20,7 +20,7 @@ enum DeviceSecret {
 /// Single home for the Convex deployment URL + the HTTP plumbing that used to be
 /// copy-pasted in History.swift, NotesStore.swift, Stores.swift and Leaderboard.swift.
 enum ConvexClient {
-    static let base = "https://fortunate-aardvark-443.convex.cloud"
+    static let base = "https://prestigious-wolf-290.eu-west-1.convex.cloud"
 
     /// uid + device secret, merged into every private call's args.
     static func authedArgs(_ extra: [String: Any] = [:]) -> [String: Any] {

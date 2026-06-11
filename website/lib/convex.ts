@@ -1,6 +1,6 @@
 // Single home for the Convex deployment URL + the HTTP plumbing previously
 // copy-pasted into individual API routes. Server-side only.
-export const CONVEX_BASE = "https://fortunate-aardvark-443.convex.cloud";
+export const CONVEX_BASE = "https://prestigious-wolf-290.eu-west-1.convex.cloud";
 
 /** Call a Convex function over its HTTP API. Returns the function's `value`, or throws. */
 export async function convexCall<T>(
