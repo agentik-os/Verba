@@ -14,6 +14,7 @@ import type * as feedback from "../feedback.js";
 import type * as history from "../history.js";
 import type * as leaderboard from "../leaderboard.js";
 import type * as notes from "../notes.js";
+import type * as profiles from "../profiles.js";
 import type * as ratelimit from "../ratelimit.js";
 import type * as settings from "../settings.js";
 import type * as stats from "../stats.js";
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   history: typeof history;
   leaderboard: typeof leaderboard;
   notes: typeof notes;
+  profiles: typeof profiles;
   ratelimit: typeof ratelimit;
   settings: typeof settings;
   stats: typeof stats;

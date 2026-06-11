@@ -62,4 +62,15 @@ export default defineSchema({
     n: v.number(),
     updated: v.number(),
   }).index("by_key", ["key"]),
+
+  profiles: defineTable({      // public gamification profile, so others can see your level + badges
+    uid: v.string(),
+    alias: v.string(),
+    level: v.number(),
+    xp: v.number(),
+    league: v.string(),
+    badges: v.array(v.string()),   // earned achievement ids
+    referrals: v.optional(v.number()),  // people who joined via this user's code
+    updated: v.number(),
+  }).index("by_uid", ["uid"]).index("by_alias", ["alias"]),
 });

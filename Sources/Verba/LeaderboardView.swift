@@ -56,7 +56,10 @@ struct LeaderboardView: View {
     @State private var metric: Metric = .words
     @State private var query = ""
     @State private var preShuffleAlias: String?   // the alias before the last shuffle, for one-tap Undo
+    @State private var viewing: AliasRef?         // a tapped row → view that player's achievements
     @FocusState private var aliasFocused: Bool
+
+    struct AliasRef: Identifiable { let id = UUID(); let alias: String }
 
     private var ranked: [(rank: Int, entry: LeaderEntry)] {
         model.entries
@@ -147,6 +150,9 @@ struct LeaderboardView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear { model.load() }
+        .sheet(item: $viewing) { ref in
+            PlayerProfileSheet(alias: ref.alias, isMe: ref.alias == settings.username)
+        }
     }
 
     // MARK: Identity — edit the public alias + the visibility switch, right where they matter.
@@ -263,9 +269,12 @@ struct LeaderboardView: View {
             }
             Spacer()
             Text(metric.format(metric.value(e))).font(.callout.weight(.medium)).monospacedDigit().foregroundStyle(highlighted ? .primary : .secondary)
+            Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
         }
         .padding(.horizontal, 14).padding(.vertical, 11)
         .glassCard(selected: highlighted, cornerRadius: 12)
+        .contentShape(Rectangle())
+        .onTapGesture { viewing = AliasRef(alias: e.alias) }   // open their achievements
     }
 
     private func medal(_ r: Int) -> String {

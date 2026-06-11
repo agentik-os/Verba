@@ -231,8 +231,10 @@ final class Gamification: ObservableObject {
                         subtitle: "You walk in at Level \(lvl) with \(newlyEarned) badge\(newlyEarned == 1 ? "" : "s") already earned. Keep going.",
                         icon: "rosette", tint: .yellow))
                 }
+                self.pushProfile()   // publish the backfilled profile too
                 return
             }
+            self.pushProfile()   // publish my updated profile for others to see
             // Level-up (normal path)
             let seen = self.d.object(forKey: self.kLevel) as? Int ?? 1
             if lvl > seen {
@@ -247,6 +249,46 @@ final class Gamification: ObservableObject {
     func consume() -> Celebration? {
         guard !pending.isEmpty else { return nil }
         return pending.removeFirst()
+    }
+
+    // MARK: - Social: publish my profile + read others'
+
+    private var profilePushTask: DispatchWorkItem?
+
+    /// Publish my level / XP / league / badges so others can see them on the leaderboard.
+    func pushProfile() {
+        guard !Settings.shared.proEmail.isEmpty else { return }   // signed-in only
+        profilePushTask?.cancel()
+        let work = DispatchWorkItem {
+            ConvexClient.registerDevice(token: AuthToken.current)
+            ConvexClient.call("mutation", "profiles:push", ConvexClient.authedArgs([
+                "alias": Settings.shared.username,
+                "level": self.levelInfo.level,
+                "xp": self.xp,
+                "league": self.league.name,
+                "badges": Array(self.unlocked),
+            ])) { _ in }
+        }
+        profilePushTask = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: work)
+    }
+
+    /// Another player's public profile, fetched by their leaderboard alias.
+    struct OtherProfile { let alias: String; let level: Int; let league: String; let badges: Set<String> }
+
+    func fetchProfile(alias: String, _ done: @escaping (OtherProfile?) -> Void) {
+        ConvexClient.call("query", "profiles:byAlias", ["alias": alias]) { data in
+            guard let data,
+                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  obj["status"] as? String == "success",
+                  let v = obj["value"] as? [String: Any] else { DispatchQueue.main.async { done(nil) }; return }
+            let p = OtherProfile(
+                alias: v["alias"] as? String ?? alias,
+                level: (v["level"] as? Int) ?? Int((v["level"] as? Double) ?? 0),
+                league: v["league"] as? String ?? "Bronze",
+                badges: Set((v["badges"] as? [String]) ?? []))
+            DispatchQueue.main.async { done(p) }
+        }
     }
 
     /// Map a built-in mode name to its usage flag (defaults to Flow for custom/unknown).
