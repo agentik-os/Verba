@@ -54,7 +54,7 @@ function Bars({ active }: { active: boolean }) {
             key={i}
             className="w-[3px] rounded-full"
             style={{
-              background: "rgba(255,255,255,0.55)",
+              background: "var(--fg)",
               animation: active ? `bar ${720 + (i % 5) * 90}ms ease-in-out ${i * 32}ms infinite` : "none",
               height: active ? undefined : `${4 + center * 5}px`,
               opacity: active ? 0.45 + center * 0.55 : 0.22,
@@ -128,17 +128,17 @@ export default function LiveDemo() {
             <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
             <span className="h-3 w-3 rounded-full bg-[#28c840]" />
           </div>
-          <div className="flex items-center gap-2 text-[12px] text-white/45">
+          <div className="flex items-center gap-2 text-[12px] pf-45">
             <span className={`rec-dot ${listening ? "pulse" : ""}`} style={{ opacity: listening ? 1 : 0.3 }} />
             {listening ? "Listening" : `Pasting into ${m.app}`}
           </div>
-          <span className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 font-mono text-[11px] text-white/70 tnum">
+          <span className="rounded-md border pborder ptint px-2 py-1 font-mono text-[11px] pf-70 tnum">
             {m.name} · {m.model}
           </span>
         </div>
 
         {/* body */}
-        <div className="px-6 py-7 sm:px-8" style={{ color: "#f4f4f6" }}>
+        <div className="px-6 py-7 sm:px-8" style={{ color: "var(--fg)" }}>
           {/* waveform sourced from the mic mark */}
           <div className="mb-6 flex items-center gap-4">
             <span className="mic-mark shrink-0" style={{ width: 38, height: 38, borderRadius: 10 }}>
@@ -147,16 +147,16 @@ export default function LiveDemo() {
             <Bars active={listening} />
           </div>
 
-          <p className="text-[11px] uppercase tracking-[0.16em] text-white/40">You say</p>
-          <p className="mt-1.5 min-h-[3em] text-[15px] leading-relaxed text-white/55">"{m.said}"</p>
+          <p className="text-[11px] uppercase tracking-[0.16em] pf-40">You say</p>
+          <p className="mt-1.5 min-h-[3em] text-[15px] leading-relaxed pf-55">"{m.said}"</p>
 
-          <div className="my-5 h-px bg-white/[0.07]" />
+          <div className="my-5 h-px bg-[var(--border)]" />
 
-          <p className="text-[11px] uppercase tracking-[0.16em] text-white/40">Verba writes</p>
+          <p className="text-[11px] uppercase tracking-[0.16em] pf-40">Verba writes</p>
           <p className="mt-1.5 min-h-[6.5em] whitespace-pre-line text-[15px] leading-relaxed">
             {typed}
             {phase === "writing" && typed.length < m.wrote.length && (
-              <span className="ml-0.5 inline-block h-[1.05em] w-[2px] caret bg-white align-text-bottom" />
+              <span className="ml-0.5 inline-block h-[1.05em] w-[2px] caret bg-[var(--fg)] align-text-bottom" />
             )}
           </p>
         </div>
