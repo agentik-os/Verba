@@ -28,7 +28,11 @@ enum ScreenCapture {
         do {
             let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
             guard let display = content.displays.first(where: { $0.displayID == wantID }) ?? content.displays.first else { return nil }
-            let filter = SCContentFilter(display: display, excludingWindows: [])
+            // Exclude Verba's OWN windows (the floating pill / overlays) so the model never sees our
+            // processing pill on top of the screen it's meant to act on.
+            let myPID = ProcessInfo.processInfo.processIdentifier
+            let mine = content.windows.filter { $0.owningApplication?.processID == myPID }
+            let filter = SCContentFilter(display: display, excludingWindows: mine)
             let cfg = SCStreamConfiguration()
             cfg.width = display.width
             cfg.height = display.height

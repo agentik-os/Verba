@@ -14,8 +14,51 @@ type Day = { date: string; tag?: string; window?: string; summary: string; entri
 
 const DAYS: Day[] = [
   {
-    date: "June 10, 2026",
+    date: "June 11, 2026",
     tag: "Today",
+    summary:
+      "A big craft and reliability day: the recording pill is calmer and always centered, your task glance shows your whole project tree, gamification reaches 100 levels with a lifetime reward, profiles go social, and the whole app, sync and website get a security-hardening pass.",
+    entries: [
+      {
+        version: "0.6.2 → 0.6.4",
+        title: "A recording pill that stays out of your way",
+        items: [
+          "Every state of the recording pill was reviewed and cleaned up: recording, paused, processing and done now read clearly, the pill is always centered on screen, and the paused state no longer looks broken.",
+          "Your theme accent now flows everywhere it should: the recording dot, the done checkmark, the selected item in the main menu, and every to-do checkbox in the app and the glance.",
+          "The progress bars in Achievements are now always visible, and the cards breathe with a little more room.",
+        ],
+      },
+      {
+        version: "0.5.8 → 0.6.1",
+        title: "Your whole task tree, at a glance",
+        items: [
+          "The quick task glance now shows your projects, their tasks and their sub-tasks. Fold any project or task to focus.",
+          "Add a task by voice straight from the glance with the new mic button, and check one off with a satisfying slide-out, with a one-tap undo if you ticked the wrong thing.",
+          "A wider, calmer panel that always lands centered.",
+        ],
+      },
+      {
+        version: "0.5.3 → 0.5.7",
+        title: "100 levels, more badges, and friends",
+        items: [
+          "Progression now runs to 100 levels with new titles all the way up to Voice Immortal, plus dozens of new badges to chase.",
+          "Earn every badge and Verba Pro is yours for life: the Grand Slam.",
+          "Profiles go social: tap anyone on the leaderboard to see their level, league and the badges they have earned, and share your own stats as a card.",
+          "Reminders now appear even while Verba is the active app, and numbers you speak are written as digits.",
+        ],
+      },
+      {
+        version: "Under the hood",
+        title: "Faster sync and a security pass",
+        items: [
+          "Cloud sync moved to a faster, EU-based backend.",
+          "A thorough security and reliability hardening pass across the app, the sync layer and the website.",
+        ],
+      },
+    ],
+  },
+  {
+    date: "June 10, 2026",
     summary:
       "A privacy, security and craft day: history gets a real off switch and auto-delete, cloud data gets a delete-everything button, every sync request is authenticated per device, every dialog moves to the new glass design, and verba.run gets a full craft pass.",
     entries: [

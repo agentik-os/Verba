@@ -85,7 +85,11 @@ struct OverlayView: View {
                         Image(systemName: model.paused ? "play.fill" : "pause.fill").font(.system(size: 11))
                             .foregroundStyle(.secondary)
                     }.buttonStyle(.plain).help(model.paused ? "Resume" : "Pause")
-                    Waveform(level: model.paused ? 0 : model.level, phase: model.phase).frame(width: 64, height: 24)
+                    // Live meter while recording; when paused, hide it (a level-0 waveform renders as a
+                    // sad dashed line) — the orange dot + play button + "Paused" already read clearly.
+                    if !model.paused {
+                        Waveform(level: model.level, phase: model.phase).frame(width: 64, height: 24)
+                    }
                 }
                 label(size: 13)
                 // The cancel/X is shown whenever something is in flight (recording OR
@@ -103,6 +107,7 @@ struct OverlayView: View {
                             if showEscHint {
                                 Text("esc").font(.system(size: 10, weight: .semibold))
                                     .foregroundStyle(.secondary).opacity(0.7)
+                                    .lineLimit(1).fixedSize()   // never wrap to "es / c"
                                     .padding(.trailing, 1)
                             }
                         }
@@ -347,6 +352,12 @@ final class OverlayController {
         host.sizingOptions = [.preferredContentSize]   // window tracks SwiftUI's intrinsic size → no truncation
         p.contentViewController = host
         p.alphaValue = 1
+        // Clip the content to the pill's rounded shape at the window layer so the glass material /
+        // window shadow never bleed a square edge past the 22pt rounded corners across states.
+        host.view.wantsLayer = true
+        host.view.layer?.cornerRadius = 22
+        host.view.layer?.cornerCurve = .continuous
+        host.view.layer?.masksToBounds = true
         panel = p
         p.layoutIfNeeded()             // warm the SwiftUI render
         // Keep the pill centered when its content size changes (recording → transcribing →

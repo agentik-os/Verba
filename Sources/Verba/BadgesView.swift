@@ -298,14 +298,18 @@ struct ProgressBar: View {
     var progress: Double
     var tint: Color
     var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Color.primary.opacity(0.08))
-                Capsule().fill(tint).frame(width: max(4, geo.size.width * max(0, min(1, progress))))
+        // No GeometryReader: the fill is the full-width track scaled horizontally to `progress`.
+        // (A GeometryReader could resolve to width 0 in some card layouts, leaving the bar invisible.)
+        let p = max(0.04, min(1.0, progress))   // always show a sliver so the bar never reads as empty
+        Capsule().fill(Color.primary.opacity(0.14))
+            .frame(height: 9)
+            .overlay(alignment: .leading) {
+                Capsule().fill(tint)
+                    .frame(height: 9)
+                    .scaleEffect(x: p, anchor: .leading)
                     .animation(.spring(response: 0.5, dampingFraction: 0.8), value: progress)
             }
-        }
-        .frame(height: 8)
+            .clipShape(Capsule())
     }
 }
 
