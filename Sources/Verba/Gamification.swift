@@ -86,6 +86,7 @@ final class Gamification: ObservableObject {
     private let kLevel = "verba.game.seenLevel"
     private let kFlags = "verba.game.flags"
     private let kBackfilled = "verba.game.backfilled"
+    private let kGrandSlam = "verba.game.grandslam"
 
     private var flags: Set<GameFlag>
 
@@ -103,12 +104,20 @@ final class Gamification: ObservableObject {
         return s.totalWords / 4 + s.totalCount * 3 + s.streak * 40
     }
 
-    /// Level curve: each level costs more (quadratic), so leveling stays meaningful.
+    /// There are 100 levels. Reaching 100 is the ultimate, aspirational goal.
+    static let maxLevel = 100
+
+    /// Level curve: each level costs more (quadratic), capped at 100.
     func level(for xp: Int) -> LevelInfo {
-        // xp needed to REACH level n (n>=1) = 100 * (n-1)^2
-        func threshold(_ n: Int) -> Int { 100 * (n - 1) * (n - 1) }
+        // xp needed to REACH level n (n>=1) = 90 * (n-1)^2
+        func threshold(_ n: Int) -> Int { 90 * (n - 1) * (n - 1) }
         var n = 1
-        while threshold(n + 1) <= xp { n += 1 }
+        while n < Gamification.maxLevel && threshold(n + 1) <= xp { n += 1 }
+        if n >= Gamification.maxLevel {
+            let base = threshold(Gamification.maxLevel)
+            return LevelInfo(level: Gamification.maxLevel, title: Gamification.title(for: Gamification.maxLevel),
+                             xpInLevel: xp - base, xpForNext: xp - base)   // maxed
+        }
         let base = threshold(n), next = threshold(n + 1)
         return LevelInfo(level: n, title: Gamification.title(for: n),
                          xpInLevel: xp - base, xpForNext: next - base)
@@ -117,13 +126,18 @@ final class Gamification: ObservableObject {
 
     static func title(for level: Int) -> String {
         switch level {
-        case ..<3: return "Newcomer"
-        case 3..<6: return "Speaker"
-        case 6..<10: return "Orator"
+        case ..<3:    return "Newcomer"
+        case 3..<6:   return "Speaker"
+        case 6..<10:  return "Orator"
         case 10..<15: return "Wordsmith"
         case 15..<22: return "Virtuoso"
         case 22..<30: return "Maestro"
-        default: return "Legend"
+        case 30..<40: return "Luminary"
+        case 40..<52: return "Sage"
+        case 52..<65: return "Oracle"
+        case 65..<80: return "Mythic"
+        case 80..<100: return "Legend"
+        default:      return "Voice Immortal"
         }
     }
 
@@ -192,6 +206,18 @@ final class Gamification: ObservableObject {
                 }
             }
             self.d.set(Array(self.unlocked), forKey: self.kUnlocked)
+
+            // GRAND SLAM: earning every badge unlocks Lifetime Pro. Granted once.
+            if self.unlocked.count >= Gamification.all.count, !self.d.bool(forKey: self.kGrandSlam) {
+                self.d.set(true, forKey: self.kGrandSlam)
+                Settings.shared.grantLifetimePro()
+                self.pending.append(Celebration(
+                    kind: .milestone("grandslam"),
+                    title: "Grand Slam",
+                    subtitle: "You earned every single badge. Verba Pro is now yours for life. Legendary.",
+                    icon: "trophy.fill", tint: .yellow))
+            }
+
             let lvl = self.levelInfo.level
             if firstRun {
                 // Set the level baseline to the user's real level so we don't fire a fake level-up,

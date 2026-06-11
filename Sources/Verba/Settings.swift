@@ -510,6 +510,17 @@ final class Settings: ObservableObject {
 
     // Pro entitlement (editing system prompts / custom modes is Pro-only).
     @Published var isPro: Bool { didSet { d.set(isPro, forKey: "verba.pro") } }
+
+    /// Lifetime Pro earned by completing every achievement (the Grand Slam reward). Stored locally;
+    /// a server-validated lifetime entitlement is a follow-up, but this immediately unlocks Pro.
+    @Published var lifetimePro: Bool = UserDefaults.standard.bool(forKey: "verba.lifetimePro") {
+        didSet { d.set(lifetimePro, forKey: "verba.lifetimePro") }
+    }
+    func grantLifetimePro() {
+        guard !lifetimePro else { return }
+        lifetimePro = true
+        isPro = true
+    }
     @Published var proEmail: String { didSet { d.set(proEmail, forKey: "verba.email") } }
     @Published var referralCode: String { didSet { d.set(referralCode, forKey: "verba.referral") } }
     var referralLink: String { referralCode.isEmpty ? "https://verba.run/" : "https://verba.run/?ref=\(referralCode)" }

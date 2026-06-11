@@ -129,19 +129,27 @@ struct BadgesView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 6) {
                 Image(systemName: "calendar").font(.system(size: 13)).foregroundStyle(.secondary)
-                Text("This week").font(.subheadline.weight(.semibold))
+                Text("Your goals").font(.subheadline.weight(.semibold))
                 Spacer()
-                Text("\(Int(game.weeklyProgress * 100))%").font(.caption.weight(.semibold)).foregroundStyle(.secondary).monospacedDigit()
             }
-            VStack(alignment: .leading, spacing: 7) {
-                ProgressBar(progress: game.weeklyProgress, tint: .blue)
-                Text("\(stats.wordsThisWeek) / \(game.weeklyGoal) words")
-                    .font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
-            }
+            barRow("Today", value: game.todayWords, goal: game.dailyGoal, progress: game.dailyProgress)
+            barRow("This week", value: stats.wordsThisWeek, goal: game.weeklyGoal, progress: game.weeklyProgress)
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).padding(16)
         .glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    /// A labelled monochrome progress row (matches the B&W design; the bar fills with .primary).
+    private func barRow(_ label: String, value: Int, goal: Int, progress: Double) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Text(label).font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                Spacer()
+                Text("\(value) / \(goal)").font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
+            }
+            ProgressBar(progress: progress, tint: progress >= 1 ? .primary : Color.primary.opacity(0.55))
+        }
     }
 
     private var nextUpCard: some View {
@@ -216,7 +224,7 @@ struct BadgesView: View {
                 }
             }
             .frame(width: 78, height: 78)
-            Text(info.title).font(.subheadline.weight(.semibold))
+            Text("\(info.title) · Lvl \(info.level)/\(Gamification.maxLevel)").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             Text("\(info.xpInLevel) / \(info.xpForNext) XP").font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
         }
         .frame(maxWidth: .infinity).padding(.vertical, 16)
@@ -225,11 +233,11 @@ struct BadgesView: View {
 
     private var goalCard: some View {
         VStack(spacing: 10) {
-            ProgressRing(progress: game.dailyProgress, tint: .orange, lineWidth: 7) {
+            ProgressRing(progress: game.dailyProgress, tint: .primary, lineWidth: 7) {
                 VStack(spacing: 0) {
                     Image(systemName: game.dailyProgress >= 1 ? "checkmark" : "sun.max.fill")
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(game.dailyProgress >= 1 ? AnyShapeStyle(.green) : AnyShapeStyle(.orange))
+                        .foregroundStyle(game.dailyProgress >= 1 ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
                 }
             }
             .frame(width: 78, height: 78)
