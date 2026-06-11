@@ -119,14 +119,14 @@ struct OnboardingView: View {
     private var nav: some View {
         HStack {
             if step > 0 {
-                Button("Back") { withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { step -= 1 } }
+                Button(L("Back")) { withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { step -= 1 } }
                     .buttonStyle(.plain).foregroundStyle(.secondary)
             }
             Spacer()
             if step < total - 1 {
                 Button {
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { step += 1 }
-                } label: { Text("Continue").frame(minWidth: 110) }
+                } label: { Text(L("Continue")).frame(minWidth: 110) }
                     .buttonStyle(DarkButton())
                     .opacity(canAdvance ? 1 : 0.35)
                     .disabled(!canAdvance)
@@ -544,8 +544,8 @@ struct OnboardingView: View {
                 Text(d).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
-            if granted { Label("Granted", systemImage: "checkmark.seal.fill").labelStyle(.iconOnly).foregroundStyle(.green) }
-            else { Button("Enable", action: action).glassButton() }
+            if granted { Label(L("Granted"), systemImage: "checkmark.seal.fill").labelStyle(.iconOnly).foregroundStyle(.green) }
+            else { Button(L("Enable"), action: action).glassButton() }
         }
     }
 }

@@ -1,6 +1,12 @@
 import SwiftUI
 import AppKit
 
+/// Translate a UI string to the user's chosen interface language (resolves against the selected
+/// .lproj). Returns the original string if there's no translation. Used app-wide as `L("…")`.
+func L(_ key: String) -> String {
+    LocaleManager.bundle.localizedString(forKey: key, value: key, table: nil)
+}
+
 // MARK: - App UI language (relaunch to apply a bundled .lproj)
 
 /// Redirects Bundle.main string lookups to a chosen .lproj, so the UI language can be set reliably
@@ -27,6 +33,16 @@ enum LocaleManager {
     ]
 
     static var savedCode: String { UserDefaults.standard.string(forKey: kUILang) ?? "" }
+
+    /// The bundle for the chosen UI language (its .lproj), or the main bundle for English/default.
+    /// SwiftUI's automatic Text localization is unreliable for a hand-bundled SwiftPM app, so we
+    /// resolve strings explicitly against this bundle via L(_:).
+    static var bundle: Bundle {
+        guard !savedCode.isEmpty,
+              let p = Bundle.main.path(forResource: savedCode, ofType: "lproj"),
+              let b = Bundle(path: p) else { return .main }
+        return b
+    }
 
     /// Point Bundle.main at the given .lproj code (call at launch). nil/"" → default English.
     static func applyAtLaunch() {

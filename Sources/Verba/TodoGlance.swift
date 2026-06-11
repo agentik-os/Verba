@@ -110,7 +110,7 @@ struct TodoGlanceView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 Image(systemName: "checklist").font(.system(size: 14, weight: .semibold)).foregroundStyle(.secondary)
-                Text("Tasks").font(.system(size: 15, weight: .semibold))
+                Text(L("Tasks")).font(.system(size: 15, weight: .semibold))
                 Spacer(minLength: 18)
                 Button(action: onAddTodo) {
                     HStack(spacing: 5) {
@@ -128,13 +128,13 @@ struct TodoGlanceView: View {
                     Image(systemName: "xmark").font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(.secondary).padding(6).contentShape(Rectangle())
                 }
-                .buttonStyle(.plain).help("Close (Esc)")
+                .buttonStyle(.plain).help(L("Close (Esc)"))
             }
 
             if visibleProjects.isEmpty {
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill").font(.system(size: 14)).foregroundStyle(.green)
-                    Text("All clear. Nothing left to do.")
+                    Text(L("All clear. Nothing left to do."))
                         .font(.system(size: 13)).foregroundStyle(.secondary)
                 }
                 .padding(.vertical, 6)
@@ -203,7 +203,7 @@ struct TodoGlanceView: View {
                                 Image(systemName: "arrow.uturn.backward").font(.system(size: 11, weight: .semibold))
                                     .foregroundStyle(.secondary).padding(5).contentShape(Rectangle())
                             }
-                            .buttonStyle(.plain).help("Undo")
+                            .buttonStyle(.plain).help(L("Undo"))
                         }
                     }
                 }

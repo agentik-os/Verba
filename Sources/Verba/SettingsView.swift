@@ -136,7 +136,7 @@ struct SettingsView: View {
     private var rail: some View {
         VStack(alignment: .leading, spacing: 4) {
             // Header matches the Notes sidebar exactly (17pt bold, same padding rhythm).
-            Text("Settings").font(.system(size: 17, weight: .bold))
+            Text(L("Settings")).font(.system(size: 17, weight: .bold))
                 .padding(.horizontal, 4).padding(.top, 14).padding(.bottom, 8)
             ForEach(SettingsSection.allCases) { s in
                 railRow(s)
@@ -461,7 +461,7 @@ struct SettingsView: View {
             }
             .frame(width: 24, height: 24)
             .softElevation(customSel)
-            .help("Custom color")
+            .help(L("Custom color"))
             Spacer()
         }
     }
@@ -509,10 +509,10 @@ struct SettingsView: View {
         card("Account") {
             if settings.proEmail.isEmpty {
                 HStack {
-                    Label("Not signed in", systemImage: "person.crop.circle.badge.questionmark")
+                    Label(L("Not signed in"), systemImage: "person.crop.circle.badge.questionmark")
                         .foregroundStyle(.secondary).font(.system(size: 13))
                     Spacer()
-                    Button { startSignIn() } label: { Text(signingIn ? "Signing in…" : "Sign in") }
+                    Button { startSignIn() } label: { Text(signingIn ? "Signing in…" : L("Sign in")) }
                         .glassProminentButton().controlSize(.regular).disabled(signingIn)
                 }
                 Text("Sign in to sync your plan, use the included AI rewriting (no key needed), and earn referral rewards.")
@@ -522,11 +522,11 @@ struct SettingsView: View {
                     Label(settings.proEmail, systemImage: "person.crop.circle.fill")
                         .font(.system(size: 13)).lineLimit(1).truncationMode(.middle)
                     Spacer()
-                    Button(role: .destructive) { confirmSignOut = true } label: { Text("Sign out") }
+                    Button(role: .destructive) { confirmSignOut = true } label: { Text(L("Sign out")) }
                         .glassButton().controlSize(.regular)
                         .confirmationDialog("Sign out of Verba?", isPresented: $confirmSignOut, titleVisibility: .visible) {
-                            Button("Sign out", role: .destructive) { AuthSession.shared.signOut() }
-                            Button("Cancel", role: .cancel) { }
+                            Button(L("Sign out"), role: .destructive) { AuthSession.shared.signOut() }
+                            Button(L("Cancel"), role: .cancel) { }
                         } message: {
                             Text("This detaches your account from this Mac. Your local notes, transcripts and to-dos stay on this device, you can sign back in anytime.")
                         }
@@ -612,7 +612,7 @@ struct SettingsView: View {
         card("Public alias",
              footer: "Your username is PUBLIC on the leaderboard and synced to your account, so pick a nickname, never your real name or email.") {
             HStack(spacing: 8) {
-                TextField("Username", text: $settings.username)
+                TextField(L("Username"), text: $settings.username)
                     .textFieldStyle(.plain)
                     .font(.system(size: 13, weight: .semibold))
                     .padding(.horizontal, 11).padding(.vertical, 8)
@@ -643,7 +643,7 @@ struct SettingsView: View {
                         withAnimation(.easeOut(duration: 0.2)) { copiedReferral = false }
                     }
                 } label: {
-                    Label(copiedReferral ? "Copied" : "Copy", systemImage: copiedReferral ? "checkmark" : "doc.on.doc")
+                    Label(copiedReferral ? L("Copied") : L("Copy"), systemImage: copiedReferral ? "checkmark" : "doc.on.doc")
                 }
                 .glassButton().controlSize(.small)
                 // Same Share affordance as the Free Month tab, so the referral surfaces match.
@@ -670,7 +670,7 @@ struct SettingsView: View {
                 .frame(width: 46, height: 46)
                 .background(.softFill, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
             VStack(alignment: .leading, spacing: 3) {
-                Text(settings.isPro ? "Verba Pro" : "Free plan").font(.system(size: 17, weight: .bold))
+                Text(settings.isPro ? "Verba Pro" : L("Free plan")).font(.system(size: 17, weight: .bold))
                 Text(settings.isPro ? "Unlimited dictation, custom modes, editable prompts."
                                     : "A full-Pro trial. Upgrade for unlimited dictation.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
@@ -680,7 +680,7 @@ struct SettingsView: View {
                 Link(destination: u) { Text("Upgrade · 7-day trial") }
                     .glassProminentButton().controlSize(.large)
             } else if settings.isPro {
-                Label("Active", systemImage: "checkmark.seal.fill").font(.caption).foregroundStyle(.green)
+                Label(L("Active"), systemImage: "checkmark.seal.fill").font(.caption).foregroundStyle(.green)
             }
         }
         .padding(18)
@@ -709,11 +709,11 @@ struct SettingsView: View {
         }
         card("Destinations",
              footer: "Calendar events and reminders are written here. Pick a specific calendar/list (e.g. a Google or Notion-synced one), or leave on the macOS default. Set up the account in Calendar.app / Reminders.app first.") {
-            Picker("Calendar", selection: $settings.eventCalendarID) {
+            Picker(L("Calendar"), selection: $settings.eventCalendarID) {
                 Text("macOS default").tag("")
                 ForEach(eventCalendars, id: \.0) { Text($0.1).tag($0.0) }
             }
-            Picker("Reminders list", selection: $settings.reminderListID) {
+            Picker(L("Reminders list"), selection: $settings.reminderListID) {
                 Text("macOS default").tag("")
                 ForEach(reminderLists, id: \.0) { Text($0.1).tag($0.0) }
             }
@@ -723,7 +723,7 @@ struct SettingsView: View {
              footer: "Say “search … on Google / ChatGPT / Claude”. {q} is replaced by what you said; add any site.") {
             ForEach($settings.searchTargets) { $t in
                 HStack(spacing: 8) {
-                    TextField("Name", text: $t.name).frame(width: 110).textFieldStyle(.roundedBorder)
+                    TextField(L("Name"), text: $t.name).frame(width: 110).textFieldStyle(.roundedBorder)
                     TextField("https://…/search?q={q}", text: $t.urlTemplate).textFieldStyle(.roundedBorder)
                     Button { settings.searchTargets.removeAll { $0.id == t.id } } label: {
                         Image(systemName: "minus.circle.fill").foregroundStyle(.secondary)
@@ -732,10 +732,10 @@ struct SettingsView: View {
             }
             HStack {
                 Button { settings.searchTargets.append(SearchTarget(name: "New", urlTemplate: "https://example.com/search?q={q}")) } label: {
-                    Label("Add search target", systemImage: "plus")
+                    Label(L("Add search target"), systemImage: "plus")
                 }.buttonStyle(.borderless)
                 Spacer()
-                Button("Reset to defaults") { settings.searchTargets = SearchTarget.defaults }
+                Button(L("Reset to defaults")) { settings.searchTargets = SearchTarget.defaults }
                     .buttonStyle(.borderless).foregroundStyle(.secondary)
             }
         }
@@ -768,13 +768,13 @@ struct SettingsView: View {
         card("Language") {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Primary language").font(.system(size: 13))
+                    Text(L("Primary language")).font(.system(size: 13))
                     Text("Your everyday language. Output defaults to it when the spoken language is ambiguous; a clearly-spoken other language is always kept.")
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 12)
                 Picker("", selection: $settings.mainLanguage) {
-                    Text("Auto-detect").tag("")
+                    Text(L("Auto-detect")).tag("")
                     Divider()
                     ForEach(translateLanguages, id: \.self) { Text($0).tag($0) }
                 }
@@ -1272,8 +1272,8 @@ struct SettingsView: View {
                     .glassButton().controlSize(.small)
                     .disabled(cloudWiping)
                     .confirmationDialog("Delete all your cloud data?", isPresented: $confirmCloudWipe, titleVisibility: .visible) {
-                        Button("Delete cloud data", role: .destructive) { wipeCloudData() }
-                        Button("Cancel", role: .cancel) { }
+                        Button(L("Delete cloud data"), role: .destructive) { wipeCloudData() }
+                        Button(L("Cancel"), role: .cancel) { }
                     } message: {
                         Text("Removes your synced history, notes, stats and leaderboard score from Verba's servers (with tombstones, so other Macs won't re-upload them). Local data on this Mac is untouched.")
                     }
@@ -1342,7 +1342,7 @@ struct SettingsView: View {
 
         card("Version") {
             HStack {
-                Label("Current version", systemImage: "app.badge").font(.system(size: 13))
+                Label(L("Current version"), systemImage: "app.badge").font(.system(size: 13))
                 Spacer()
                 Text("v\(Updater.currentVersion)").monospacedDigit().foregroundStyle(.secondary)
             }
@@ -1351,13 +1351,13 @@ struct SettingsView: View {
             }
             if let when = updater.lastChecked {
                 HStack {
-                    Text("Last checked").font(.caption).foregroundStyle(.secondary)
+                    Text(L("Last checked")).font(.caption).foregroundStyle(.secondary)
                     Spacer()
                     Text(when.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
                 }
             }
             Button { Updater.shared.checkForUpdates() } label: {
-                Label("Check now", systemImage: "arrow.triangle.2.circlepath")
+                Label(L("Check now"), systemImage: "arrow.triangle.2.circlepath")
             }
             .glassButton().controlSize(.small)
         }
@@ -1436,7 +1436,7 @@ struct SettingsView: View {
         }
     }
     private var activeLabel: some View {
-        Label("Active & ready", systemImage: "checkmark.seal.fill").foregroundStyle(.green).font(.caption)
+        Label(L("Active & ready"), systemImage: "checkmark.seal.fill").foregroundStyle(.green).font(.caption)
     }
 
     // MARK: - Local LLM (Ollama)
@@ -1462,7 +1462,7 @@ struct SettingsView: View {
             HStack {
                 Text("Engine ready. Model not downloaded yet.").font(.caption).foregroundStyle(.secondary)
                 Spacer()
-                Button("Download model") { pullModel() }.glassProminentButton().controlSize(.small)
+                Button(L("Download model")) { pullModel() }.glassProminentButton().controlSize(.small)
             }
         }
         Text("Reformulation runs entirely on your Mac. Tap Set up to install the local engine (~30 MB) the first time. Qwen 2.5 7B recommended (~4.7 GB).")
@@ -1606,9 +1606,9 @@ struct SettingsView: View {
             }
             Spacer()
             if granted {
-                Label("Authorized", systemImage: "checkmark.seal.fill").font(.caption).foregroundStyle(.green)
+                Label(L("Authorized"), systemImage: "checkmark.seal.fill").font(.caption).foregroundStyle(.green)
             } else {
-                Button("Enable", action: action).glassButton().controlSize(.small)
+                Button(L("Enable"), action: action).glassButton().controlSize(.small)
             }
         }
     }

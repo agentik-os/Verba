@@ -51,7 +51,7 @@ private struct SidebarRow: View {
             HStack(spacing: 10) {
                 Image(systemName: item.icon).frame(width: 18)
                     .foregroundStyle(isSelected ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.secondary))
-                Text(item.title)
+                Text(L(item.title))
                     .foregroundStyle(isSelected ? AnyShapeStyle(Color.primary) : AnyShapeStyle(Color.primary))
                 Spacer(minLength: 0)
             }
@@ -168,7 +168,7 @@ struct MainWindow: View {
                     if settings.navVisible(.history) { row(.history) }
 
                     // Collapsible "Tools" group (Task Manager + Notes + Scratchpad).
-                    groupHeader("Tools", collapsed: toolsCollapsed) {
+                    groupHeader(L("Tools"), collapsed: toolsCollapsed) {
                         withAnimation(appearance.reduceMotion ? nil : .easeInOut(duration: 0.18)) { toolsCollapsed.toggle() }
                     }
                     if !toolsCollapsed {
@@ -177,7 +177,7 @@ struct MainWindow: View {
                         if settings.navVisible(.scratchpad) { row(.scratchpad) }
                     }
 
-                    groupHeader("Library", collapsed: libraryCollapsed) {
+                    groupHeader(L("Library"), collapsed: libraryCollapsed) {
                         withAnimation(appearance.reduceMotion ? nil : .easeInOut(duration: 0.18)) { libraryCollapsed.toggle() }
                     }
                     if !libraryCollapsed {
@@ -190,7 +190,7 @@ struct MainWindow: View {
                     }
 
                     // Collapsible "Community" group (leaderboard / wishlist / free month + Telegram).
-                    groupHeader("Community", collapsed: communityCollapsed) {
+                    groupHeader(L("Community"), collapsed: communityCollapsed) {
                         withAnimation(appearance.reduceMotion ? nil : .easeInOut(duration: 0.18)) { communityCollapsed.toggle() }
                     }
                     if !communityCollapsed {
@@ -293,7 +293,7 @@ struct MainWindow: View {
         Button { if let u = URL(string: "https://t.me/verba_run") { openURL(u) } } label: {
             HStack(spacing: 10) {
                 Image(systemName: "paperplane.fill").frame(width: 18)
-                Text("Telegram")
+                Text(L("Telegram"))
                 Spacer(minLength: 0)
                 Image(systemName: "arrow.up.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
             }
@@ -333,9 +333,9 @@ struct MainWindow: View {
                 HStack(spacing: 9) {
                     VerbaMark(size: 26)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(settings.username.isEmpty ? "Not signed in" : settings.username)
+                        Text(settings.username.isEmpty ? L("Not signed in") : settings.username)
                             .font(.caption.weight(.medium)).lineLimit(1).truncationMode(.middle)
-                        Text(settings.isPro ? "Pro plan" : "Free trial")
+                        Text(settings.isPro ? L("Pro plan") : L("Free trial"))
                             .font(.caption2)
                             .foregroundStyle(settings.isPro ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
                     }

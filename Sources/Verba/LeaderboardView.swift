@@ -85,7 +85,7 @@ struct LeaderboardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Leaderboard").font(.system(size: 17, weight: .bold))
+                Text(L("Leaderboard")).font(.system(size: 17, weight: .bold))
                 Spacer()
                 Button { model.load() } label: { Image(systemName: "arrow.clockwise") }.buttonStyle(.borderless).help("Refresh")
             }
@@ -106,7 +106,7 @@ struct LeaderboardView: View {
 
             HStack(spacing: 7) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary).font(.system(size: 12))
-                TextField("Search aliases", text: $query).textFieldStyle(.plain)
+                TextField(L("Search aliases"), text: $query).textFieldStyle(.plain)
             }
             .padding(.horizontal, 10).padding(.vertical, 7)
             .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
@@ -165,7 +165,7 @@ struct LeaderboardView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Your public alias").font(.caption).foregroundStyle(.secondary)
                 HStack(spacing: 8) {
-                    TextField("Alias", text: $settings.username)
+                    TextField(L("Alias"), text: $settings.username)
                         .textFieldStyle(.plain)
                         .font(.system(size: 13, weight: .semibold))
                         .focused($aliasFocused)

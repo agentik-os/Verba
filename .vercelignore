@@ -1,0 +1,11 @@
+Sources
+Tests
+.build
+*.app
+*.dmg
+Models
+Sounds
+Localizations
+composio-test
+*.swift
+Package.swift

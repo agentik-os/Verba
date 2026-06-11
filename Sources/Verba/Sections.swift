@@ -78,7 +78,7 @@ struct HomeView: View {
     @State private var expandedAdapt: HistoryEntry.ID?    // card with its Adapt panel open
 
     var body: some View {
-        SectionScaffold(title: "Home", subtitle: "Talk, and Claude cleans it up.") {
+        SectionScaffold(title: "Home", subtitle: "Speak it. Send it clean.") {
             HStack(spacing: 14) {
                 stat("\(stats.totalWords.formatted())", "total words", "text.word.spacing")
                 stat("\(stats.avgWPM)", "words / min", "gauge.with.dots.needle.67percent")
@@ -300,11 +300,11 @@ struct InsightsView: View {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 8) {
                     Image(systemName: "trophy.fill").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
-                    Text("Your standing").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
+                    Text(L("Your standing")).font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
                     Spacer()
                     Button { notesCtl.leaderboardNavSignal &+= 1 } label: {
                         HStack(spacing: 4) {
-                            Text("Leaderboard").font(.system(size: 12, weight: .medium))
+                            Text(L("Leaderboard")).font(.system(size: 12, weight: .medium))
                             Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
                         }
                         .foregroundStyle(.secondary)
@@ -695,10 +695,10 @@ struct DictionaryView: View {
     private var sidebar: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Dictionary").font(.system(size: 17, weight: .bold))
+                Text(L("Dictionary")).font(.system(size: 17, weight: .bold))
                 Spacer()
                 Button { newWord() } label: { Image(systemName: "plus") }
-                    .buttonStyle(.borderless).help("Add a word")
+                    .buttonStyle(.borderless).help(L("Add a word"))
             }
             .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
 
@@ -755,7 +755,7 @@ struct DictionaryView: View {
             Image(systemName: correction ? "arrow.right" : "text.book.closed").font(.system(size: 13))
                 .foregroundStyle(.secondary).frame(width: 16).padding(.top, 2)
             VStack(alignment: .leading, spacing: 3) {
-                Text(t.written.isEmpty ? "New term" : t.written)
+                Text(t.written.isEmpty ? L("New term") : t.written)
                     .font(.system(size: 13, weight: .medium)).lineLimit(1)
                     .foregroundStyle(t.written.isEmpty ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
                 HStack(spacing: 5) {
@@ -776,7 +776,7 @@ struct DictionaryView: View {
         .glassCard(selected: selected, cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .contextMenu {
-            Button(role: .destructive) { remove(t) } label: { Label("Delete", systemImage: "trash") }
+            Button(role: .destructive) { remove(t) } label: { Label(L("Delete"), systemImage: "trash") }
         }
     }
 
@@ -843,7 +843,7 @@ struct DictionaryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Add to dictionary").font(.system(size: 17, weight: .bold))
+                    Text(L("Add to dictionary")).font(.system(size: 17, weight: .bold))
                     Text("Teach Verba names and terms it should always spell right.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
@@ -1009,10 +1009,10 @@ struct SnippetsView: View {
     private var sidebar: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Snippets").font(.system(size: 17, weight: .bold))
+                Text(L("Snippets")).font(.system(size: 17, weight: .bold))
                 Spacer()
                 Button { newSnippet() } label: { Image(systemName: "plus") }
-                    .buttonStyle(.borderless).help("Add snippet")
+                    .buttonStyle(.borderless).help(L("Add snippet"))
             }
             .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
 
@@ -1042,7 +1042,7 @@ struct SnippetsView: View {
             Image(systemName: "text.badge.plus").font(.system(size: 13))
                 .foregroundStyle(.secondary).frame(width: 16).padding(.top, 2)
             VStack(alignment: .leading, spacing: 3) {
-                Text(s.trigger.isEmpty ? "New snippet" : s.trigger)
+                Text(s.trigger.isEmpty ? L("New snippet") : s.trigger)
                     .font(.system(size: 13, weight: .medium)).lineLimit(1)
                     .foregroundStyle(s.trigger.isEmpty ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
                 if !s.expansion.isEmpty {
@@ -1055,7 +1055,7 @@ struct SnippetsView: View {
         .glassCard(selected: selected, cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .contextMenu {
-            Button(role: .destructive) { remove(s) } label: { Label("Delete", systemImage: "trash") }
+            Button(role: .destructive) { remove(s) } label: { Label(L("Delete"), systemImage: "trash") }
         }
     }
 
@@ -1067,7 +1067,7 @@ struct SnippetsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("New snippet").font(.system(size: 17, weight: .bold))
+                        Text(L("New snippet")).font(.system(size: 17, weight: .bold))
                         Text("Create shortcuts: say a short trigger and Verba expands it into longer text, like your address, an email signature, or a boilerplate reply.")
                             .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     }
@@ -1093,8 +1093,8 @@ struct SnippetsView: View {
                         .buttonStyle(.borderless).foregroundStyle(.red).help("Delete this snippet")
                 }
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Trigger").font(.subheadline.weight(.semibold))
-                    TextField("Trigger", text: $store.items[idx].trigger).cleanField()
+                    Text(L("Trigger")).font(.subheadline.weight(.semibold))
+                    TextField(L("Trigger"), text: $store.items[idx].trigger).cleanField()
                 }
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Expands to").font(.subheadline.weight(.semibold))
@@ -1144,7 +1144,7 @@ struct StyleView: View {
                 selectedID = settings.activeStyleID
                 pendingReset = false
             }
-            Button("Cancel", role: .cancel) { pendingReset = false }
+            Button(L("Cancel"), role: .cancel) { pendingReset = false }
         } message: {
             Text("This removes any custom styles you’ve created and restores the built-in ones.")
         }
@@ -1155,7 +1155,7 @@ struct StyleView: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text("Styles").font(.system(size: 17, weight: .bold))
+                    Text(L("Styles")).font(.system(size: 17, weight: .bold))
                     Spacer()
                     Button { pendingReset = true } label: {
                         Image(systemName: "arrow.counterclockwise")
@@ -1198,7 +1198,7 @@ struct StyleView: View {
             if active {
                 HStack(spacing: 3) {
                     Image(systemName: "checkmark.circle.fill").font(.system(size: 11))
-                    Text("Active").font(.system(size: 10, weight: .semibold))
+                    Text(L("Active")).font(.system(size: 10, weight: .semibold))
                 }
                 .foregroundStyle(.secondary)
             }
@@ -1249,7 +1249,7 @@ struct StyleView: View {
         return ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(spacing: 10) {
-                    TextField("Name", text: nameB).cleanField().frame(maxWidth: 240).disabled(isNormal)
+                    TextField(L("Name"), text: nameB).cleanField().frame(maxWidth: 240).disabled(isNormal)
                     TagChip(icon: isActive ? "checkmark.circle.fill" : "circle",
                             label: isActive ? "Active" : "Make active",
                             selected: isActive) { settings.activeStyleID = id }
@@ -1333,10 +1333,10 @@ struct TransformsView: View {
     private var sidebar: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Transforms").font(.system(size: 17, weight: .bold))
+                Text(L("Transforms")).font(.system(size: 17, weight: .bold))
                 Spacer()
                 Button { newTransform() } label: { Image(systemName: "plus") }
-                    .buttonStyle(.borderless).help("Add transform")
+                    .buttonStyle(.borderless).help(L("Add transform"))
             }
             .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
 
@@ -1379,7 +1379,7 @@ struct TransformsView: View {
         .glassCard(selected: selected, cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .contextMenu {
-            Button(role: .destructive) { remove(t) } label: { Label("Delete", systemImage: "trash") }
+            Button(role: .destructive) { remove(t) } label: { Label(L("Delete"), systemImage: "trash") }
         }
     }
 
@@ -1470,7 +1470,7 @@ struct ScratchpadView: View {
         // aligned to the exemplar's detail-pane header/padding grammar.
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
-                Text("Scratchpad").font(.system(size: 17, weight: .bold))
+                Text(L("Scratchpad")).font(.system(size: 17, weight: .bold))
                 Spacer(minLength: 8)
                 // Edit ⇄ Preview: Preview renders markdown (titles, bold, italic, underline, lists,
                 // code, quotes) so dictated/pasted formatting reads correctly instead of showing raw
@@ -1480,9 +1480,9 @@ struct ScratchpadView: View {
                     Image(systemName: "eye").tag(true)
                 }
                 .pickerStyle(.segmented).labelsHidden().fixedSize()
-                .help(preview ? "Editing" : "Preview formatting")
+                .help(preview ? L("Editing") : "Preview formatting")
                 CopyButton(text: pad.text, title: "Copy")
-                Button(role: .destructive) { pad.text = "" } label: { Label("Clear", systemImage: "trash") }
+                Button(role: .destructive) { pad.text = "" } label: { Label(L("Clear"), systemImage: "trash") }
                     .buttonStyle(.borderless)
             }
             Group {

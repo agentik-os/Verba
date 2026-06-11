@@ -81,9 +81,9 @@ struct NotesView: View {
                         .frame(width: 32, height: 32)
                         .background(Color.primary.opacity(0.10),
                                     in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                    Text("Note modes").font(.title3.weight(.semibold))
+                    Text(L("Note modes")).font(.title3.weight(.semibold))
                     Spacer()
-                    Button("Done") { showModeManager = false }
+                    Button(L("Done")) { showModeManager = false }
                         .dialogPrimary()
                         .keyboardShortcut(.defaultAction)
                 }
@@ -102,17 +102,17 @@ struct NotesView: View {
         let entries = filterTag == nil ? store.entries : store.entries.filter { $0.tags.contains(filterTag!) }
         return VStack(spacing: 0) {
             HStack {
-                Text("Notes").font(.system(size: 17, weight: .bold))
+                Text(L("Notes")).font(.system(size: 17, weight: .bold))
                 Spacer()
                 Button { newNote() } label: { Image(systemName: "square.and.pencil") }
-                    .buttonStyle(.borderless).help("New note")
+                    .buttonStyle(.borderless).help(L("New note"))
             }
             .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
 
             if !store.allTags.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
-                        chip(label: "All", icon: nil, on: filterTag == nil) { filterTag = nil }
+                        chip(label: L("All"), icon: nil, on: filterTag == nil) { filterTag = nil }
                         ForEach(store.allTags, id: \.self) { t in
                             chip(label: "#\(t)", icon: nil, on: filterTag == t) { filterTag = (filterTag == t ? nil : t) }
                         }
@@ -124,7 +124,7 @@ struct NotesView: View {
             if entries.isEmpty {
                 Spacer()
                 EmptyState(icon: "note.text",
-                           title: filterTag == nil ? "No notes yet" : "No notes with #\(filterTag!)",
+                           title: filterTag == nil ? L("No notes yet") : "No notes with #\(filterTag!)",
                            message: filterTag == nil
                                ? "Record a voice memo and Verba turns it into a clean note."
                                : "Pick another tag, or All to see every note.")
@@ -178,7 +178,7 @@ struct NotesView: View {
         .glassCard(selected: selected, cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .contextMenu {
-            Button(role: .destructive) { remove(e) } label: { Label("Delete", systemImage: "trash") }
+            Button(role: .destructive) { remove(e) } label: { Label(L("Delete"), systemImage: "trash") }
         }
     }
 
@@ -218,7 +218,7 @@ struct NotesView: View {
 
     private var intro: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("New note").font(.system(size: 17, weight: .bold))
+            Text(L("New note")).font(.system(size: 17, weight: .bold))
             Text("Speak freely, even for an hour — this is for long-form documents. Verba transcribes it and turns it into a clean, formatted note.")
                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Label("Just capturing quick to-dos? Use the Tasks tab — short spoken commands become tasks.",
@@ -249,7 +249,7 @@ struct NotesView: View {
         Button { togglePauseNote() } label: {
             HStack(spacing: 7) {
                 Image(systemName: isPaused ? "play.fill" : "pause.fill").font(.system(size: 12, weight: .semibold))
-                Text(isPaused ? "Resume" : "Pause").font(.callout.weight(.medium))
+                Text(isPaused ? L("Resume") : L("Pause")).font(.callout.weight(.medium))
             }
             .padding(.horizontal, 16).padding(.vertical, 8)
             .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
@@ -293,7 +293,7 @@ struct NotesView: View {
             .foregroundStyle(Color.red)
             HStack(spacing: 10) {
                 Button("Retry") { recordError = ""; toggleRecord() }.glassProminentButton().tint(.red)
-                Button("Dismiss") { recordError = "" }.glassButton()
+                Button(L("Dismiss")) { recordError = "" }.glassButton()
             }
             .controlSize(.small)
         }
@@ -317,7 +317,7 @@ struct NotesView: View {
             }
             if format.intent { intentField }
             Button { showModeManager = true } label: {
-                Label("Manage modes", systemImage: "slider.horizontal.3").font(.caption)
+                Label(L("Manage modes"), systemImage: "slider.horizontal.3").font(.caption)
             }
             .buttonStyle(.borderless).foregroundStyle(.secondary)
         }
@@ -460,7 +460,7 @@ struct NotesView: View {
                 // Always-visible way back to "record a new note" — the recorder card only shows for an
                 // empty, unsaved composition, so without this a saved note has no path to a fresh one.
                 Button { newNote() } label: {
-                    Label("New note", systemImage: "square.and.pencil").font(.system(size: 12, weight: .medium))
+                    Label(L("New note"), systemImage: "square.and.pencil").font(.system(size: 12, weight: .medium))
                 }
                 .buttonStyle(.borderless).help("Start a new note (record again)").disabled(busy && !isRecording)
                 Button { applyFormat() } label: { Image(systemName: "wand.and.stars") }
@@ -471,7 +471,7 @@ struct NotesView: View {
                 // the markdown isn't a dead end. Parses every checklist line into a new project's tasks.
                 if !checklistItems.isEmpty {
                     Button { sendChecklistToTasks() } label: {
-                        Label("Add to Tasks", systemImage: "checklist").font(.system(size: 12, weight: .medium))
+                        Label(L("Add to Tasks"), systemImage: "checklist").font(.system(size: 12, weight: .medium))
                     }
                     .buttonStyle(.borderless)
                     .help("Create a Tasks project from this checklist (\(checklistItems.count) item\(checklistItems.count == 1 ? "" : "s"))")
@@ -479,7 +479,7 @@ struct NotesView: View {
                 CopyButton(text: editorText)
                 Button(role: .destructive) { if let id = selectedID, let e = store.entries.first(where: { $0.id == id }) { remove(e) } else { newNote() } } label: { Image(systemName: "trash") }
                     .buttonStyle(.borderless).foregroundStyle(.secondary)
-                    .help(selectedID == nil ? "Discard" : "Delete note")
+                    .help(selectedID == nil ? L("Discard") : L("Delete note"))
             }
             formatToolbar
             if format.intent { intentField }
@@ -524,14 +524,14 @@ struct NotesView: View {
             fmtBtn("chevron.left.forwardslash.chevron.right", "Inline code (`)") { md.wrap("`") }
             Divider().frame(height: 16).padding(.horizontal, 4)
             Menu {
-                Button("Heading 1") { md.toggleLinePrefix("# ") }
-                Button("Heading 2") { md.toggleLinePrefix("## ") }
-                Button("Heading 3") { md.toggleLinePrefix("### ") }
+                Button(L("Heading 1")) { md.toggleLinePrefix("# ") }
+                Button(L("Heading 2")) { md.toggleLinePrefix("## ") }
+                Button(L("Heading 3")) { md.toggleLinePrefix("### ") }
             } label: { Image(systemName: "textformat.size") }
-                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().frame(width: 30).help("Heading")
-            fmtBtn("list.bullet", "Bullet list") { md.toggleLinePrefix("- ") }
-            fmtBtn("list.number", "Numbered list") { md.toggleLinePrefix("1. ") }
-            fmtBtn("checklist", "Checklist") { md.toggleLinePrefix("- [ ] ") }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().frame(width: 30).help(L("Heading"))
+            fmtBtn("list.bullet", L("Bullet list")) { md.toggleLinePrefix("- ") }
+            fmtBtn("list.number", L("Numbered list")) { md.toggleLinePrefix("1. ") }
+            fmtBtn("checklist", L("Checklist")) { md.toggleLinePrefix("- [ ] ") }
             Spacer()
         }
         .disabled(busy)
@@ -551,9 +551,9 @@ struct NotesView: View {
             HStack(spacing: 5) { ProgressView().controlSize(.small); Text("Saving…").font(.caption) }
                 .foregroundStyle(.secondary)
         } else if savedFlash {
-            Label("Saved", systemImage: "checkmark.circle.fill").font(.caption).foregroundStyle(.green)
+            Label(L("Saved"), systemImage: "checkmark.circle.fill").font(.caption).foregroundStyle(.green)
         } else {
-            Label("Auto-saved", systemImage: "checkmark.circle").font(.caption).foregroundStyle(.secondary)
+            Label(L("Auto-saved"), systemImage: "checkmark.circle").font(.caption).foregroundStyle(.secondary)
         }
     }
 

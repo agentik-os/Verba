@@ -9,7 +9,7 @@ struct FreeMonthView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Free Month").font(.system(size: 17, weight: .bold))
+                    Text(L("Free Month")).font(.system(size: 17, weight: .bold))
                     Text("Give a month, get a month. Share Verba and earn free Pro, no limit.")
                         .font(.callout).foregroundStyle(.secondary)
                 }

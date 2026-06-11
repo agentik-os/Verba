@@ -17,7 +17,7 @@ struct PlayerProfileSheet: View {
             HStack {
                 Text(alias + (isMe ? "  (you)" : "")).font(.title3.weight(.bold)).lineLimit(1)
                 Spacer()
-                Button("Done") { dismiss() }.dialogPrimary()
+                Button(L("Done")) { dismiss() }.dialogPrimary()
             }
             .padding(.horizontal, 20).padding(.vertical, 14)
 
@@ -33,7 +33,7 @@ struct PlayerProfileSheet: View {
                             headStat("\(p.badges.count)", "of \(Gamification.all.count) badges", "seal.fill")
                         }
                         // Their badges
-                        Text("Badges earned").font(.system(size: 12, weight: .semibold))
+                        Text(L("Badges earned")).font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(.secondary).textCase(.uppercase)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         LazyVGrid(columns: cols, spacing: 10) {

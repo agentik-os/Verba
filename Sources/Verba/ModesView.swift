@@ -21,7 +21,7 @@ struct ModesView: View {
                 // Header (Notes grammar): title + primary "new mode" action; reset-defaults is a
                 // quiet secondary borderless icon beside it.
                 HStack(spacing: 10) {
-                    Text("Modes").font(.system(size: 17, weight: .bold))
+                    Text(L("Modes")).font(.system(size: 17, weight: .bold))
                     Spacer()
                     Button { pendingReset = true } label: {
                         Image(systemName: "arrow.counterclockwise")
@@ -64,7 +64,7 @@ struct ModesView: View {
                                        : "Each mode is a different way Claude reorders and improves your dictation.")
                         HStack(spacing: 10) {
                             Button { genError = nil; genDescription = ""; showGenerator = true } label: {
-                                Label("New mode", systemImage: "plus")
+                                Label(L("New mode"), systemImage: "plus")
                             }
                             .glassProminentButton()
                             Button { pendingReset = true } label: {
@@ -84,23 +84,23 @@ struct ModesView: View {
                             isPresented: Binding(get: { pendingDeleteID != nil },
                                                  set: { if !$0 { pendingDeleteID = nil } }),
                             titleVisibility: .visible) {
-            Button("Delete mode", role: .destructive) {
+            Button(L("Delete mode"), role: .destructive) {
                 if let id = pendingDeleteID { deleteProfile(id) }
                 pendingDeleteID = nil
             }
-            Button("Cancel", role: .cancel) { pendingDeleteID = nil }
+            Button(L("Cancel"), role: .cancel) { pendingDeleteID = nil }
         } message: {
             Text("You can bring the built-in modes back anytime with Restore.")
         }
         .confirmationDialog("Restore the built-in modes?",
                             isPresented: $pendingReset,
                             titleVisibility: .visible) {
-            Button("Restore defaults", role: .destructive) {
+            Button(L("Restore defaults"), role: .destructive) {
                 settings.resetProfilesToDefaults()
                 selectedID = settings.activeProfileID
                 pendingReset = false
             }
-            Button("Cancel", role: .cancel) { pendingReset = false }
+            Button(L("Cancel"), role: .cancel) { pendingReset = false }
         } message: {
             Text("This removes any custom modes you’ve created and restores the built-in ones.")
         }
@@ -152,9 +152,9 @@ struct ModesView: View {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { selectedID = p.id }
         }
         .contextMenu {
-            Button { move(index, by: -1) } label: { Label("Move up", systemImage: "arrow.up") }
+            Button { move(index, by: -1) } label: { Label(L("Move up"), systemImage: "arrow.up") }
                 .disabled(index == 0)
-            Button { move(index, by: 1) } label: { Label("Move down", systemImage: "arrow.down") }
+            Button { move(index, by: 1) } label: { Label(L("Move down"), systemImage: "arrow.down") }
                 .disabled(index >= settings.profiles.count - 1)
         }
     }
@@ -217,14 +217,14 @@ struct ModesView: View {
             Button("Create blank instead") { let p = addBlankProfile(); showGenerator = false; selectedID = p }
                 .buttonStyle(.borderless).disabled(genBusy)
             Spacer()
-            Button("Cancel") { showGenerator = false }
+            Button(L("Cancel")) { showGenerator = false }
                 .dialogSecondary()
                 .keyboardShortcut(.cancelAction)
                 .disabled(genBusy)
             Button {
                 runGenerate()
             } label: {
-                if genBusy { HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Building…") } }
+                if genBusy { HStack(spacing: 8) { ProgressView().controlSize(.small); Text(L("Building…")) } }
                 else { Text("Build mode") }
             }
             .dialogPrimary()
@@ -334,7 +334,7 @@ struct ModesView: View {
             VStack(alignment: .leading, spacing: 20) {
                 // Name + actions (delete right next to the name; any mode is deletable).
                 HStack(spacing: 10) {
-                    TextField("Name", text: nameB).cleanField().frame(maxWidth: 240)
+                    TextField(L("Name"), text: nameB).cleanField().frame(maxWidth: 240)
                     TagChip(icon: isActive ? "checkmark.circle.fill" : "circle",
                             label: isActive ? "Active" : "Make active",
                             selected: isActive) { if !promptBlank { settings.activeProfileID = id } }
@@ -423,7 +423,7 @@ struct ModesView: View {
                         Button {
                             explainMode(id: id)
                         } label: {
-                            Label(p?.explainer?.isEmpty == false ? "Regenerate" : "Explain with AI",
+                            Label(p?.explainer?.isEmpty == false ? "Regenerate" : L("Explain with AI"),
                                   systemImage: "sparkles")
                         }
                         .buttonStyle(.borderless).disabled(explaining)
@@ -468,7 +468,7 @@ struct ModesView: View {
                             }
                         }
                         HStack {
-                            Button { chooseApps(for: id) } label: { Label("Choose apps…", systemImage: "app.badge") }
+                            Button { chooseApps(for: id) } label: { Label(L("Choose apps…"), systemImage: "app.badge") }
                             Spacer()
                         }
                         TextField("…or paste bundle IDs (comma-separated)", text: bundlesB).cleanField()

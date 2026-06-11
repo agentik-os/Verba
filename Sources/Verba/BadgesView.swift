@@ -16,11 +16,11 @@ struct BadgesView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(spacing: 12) {
-                    Text("Achievements").font(.system(size: 17, weight: .bold))
+                    Text(L("Achievements")).font(.system(size: 17, weight: .bold))
                     Spacer()
                     let n = game.unlocked.count
                     Text("\(n) / \(Gamification.all.count)").font(.callout).foregroundStyle(.secondary).monospacedDigit()
-                    Button { shareStats() } label: { Label("Share", systemImage: "square.and.arrow.up") }
+                    Button { shareStats() } label: { Label(L("Share"), systemImage: "square.and.arrow.up") }
                         .buttonStyle(.borderless).help("Share a card of your stats")
                 }
                 .padding(.horizontal, 28).padding(.top, 28)
@@ -45,7 +45,7 @@ struct BadgesView: View {
 
                 standingCard.padding(.horizontal, 28)
 
-                Text("Badges").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
+                Text(L("Badges")).font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
                     .textCase(.uppercase).padding(.horizontal, 28)
 
                 LazyVGrid(columns: cols, spacing: 12) {
@@ -94,7 +94,7 @@ struct BadgesView: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Image(systemName: "person.2.fill").foregroundStyle(.secondary)
-                    Text("Your standing").font(.subheadline.weight(.semibold))
+                    Text(L("Your standing")).font(.subheadline.weight(.semibold))
                     Spacer()
                     Text("#\(myIdx + 1) of \(rows.count)").font(.callout.weight(.bold)).monospacedDigit()
                 }
@@ -129,11 +129,11 @@ struct BadgesView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 6) {
                 Image(systemName: "calendar").font(.system(size: 13)).foregroundStyle(.secondary)
-                Text("Your goals").font(.subheadline.weight(.semibold))
+                Text(L("Your goals")).font(.subheadline.weight(.semibold))
                 Spacer()
             }
-            barRow("Today", value: game.todayWords, goal: game.dailyGoal, progress: game.dailyProgress)
-            barRow("This week", value: stats.wordsThisWeek, goal: game.weeklyGoal, progress: game.weeklyProgress)
+            barRow(L("Today"), value: game.todayWords, goal: game.dailyGoal, progress: game.dailyProgress)
+            barRow(L("This week"), value: stats.wordsThisWeek, goal: game.weeklyGoal, progress: game.weeklyProgress)
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).padding(16)
@@ -156,7 +156,7 @@ struct BadgesView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 6) {
                 Image(systemName: "target").font(.system(size: 13)).foregroundStyle(.secondary)
-                Text("Next up").font(.subheadline.weight(.semibold))
+                Text(L("Next up")).font(.subheadline.weight(.semibold))
                 Spacer()
             }
             VStack(alignment: .leading, spacing: 9) {
@@ -289,7 +289,7 @@ struct BadgesView: View {
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
             .strokeBorder(earned ? a.tier.color.opacity(0.3) : Color.hairlineTint, lineWidth: 1))
         .opacity(earned ? 1 : 0.7)
-        .help(earned ? "Unlocked" : "Locked")
+        .help(earned ? "Unlocked" : L("Locked"))
     }
 }
 

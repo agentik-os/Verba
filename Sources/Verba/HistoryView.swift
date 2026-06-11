@@ -113,7 +113,7 @@ struct HistoryView: View {
         let items = filtered
         return VStack(spacing: 0) {
             HStack {
-                Text("History").font(.system(size: 17, weight: .bold))
+                Text(L("History")).font(.system(size: 17, weight: .bold))
                 Spacer()
                 Button { withAnimation(.easeInOut(duration: 0.18)) { showSearch.toggle(); if !showSearch { query = "" } } } label: {
                     Image(systemName: showSearch ? "magnifyingglass.circle.fill" : "magnifyingglass")
@@ -121,10 +121,10 @@ struct HistoryView: View {
                 .buttonStyle(.borderless).help("Search dictations")
                 if !history.entries.isEmpty {
                     Button(role: .destructive) { confirmClear = true } label: { Image(systemName: "trash") }
-                        .buttonStyle(.borderless).help("Clear all")
+                        .buttonStyle(.borderless).help(L("Clear all"))
                         .confirmationDialog("Clear all dictations?", isPresented: $confirmClear, titleVisibility: .visible) {
-                            Button("Clear all", role: .destructive) { audio.stop(); history.clear(); selection = nil }
-                            Button("Cancel", role: .cancel) { }
+                            Button(L("Clear all"), role: .destructive) { audio.stop(); history.clear(); selection = nil }
+                            Button(L("Cancel"), role: .cancel) { }
                         } message: {
                             Text("This permanently deletes every dictation in your history, including their transcripts and recordings. This can't be undone.")
                         }
@@ -137,9 +137,9 @@ struct HistoryView: View {
             if !modeNames.isEmpty || !engineFamilies.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
-                        chip(label: "All", icon: nil, on: !hasFilters) { filterMode = nil; filterEngine = nil }
+                        chip(label: L("All"), icon: nil, on: !hasFilters) { filterMode = nil; filterEngine = nil }
                         if !modeNames.isEmpty {
-                            filterDimensionLabel("Mode")
+                            filterDimensionLabel(L("Mode"))
                             ForEach(modeNames, id: \.self) { m in
                                 chip(label: m, icon: "text.bubble", on: filterMode == m) { filterMode = (filterMode == m ? nil : m) }
                             }
@@ -148,7 +148,7 @@ struct HistoryView: View {
                             if !modeNames.isEmpty {
                                 Divider().frame(height: 16).padding(.horizontal, 2)
                             }
-                            filterDimensionLabel("Engine")
+                            filterDimensionLabel(L("Engine"))
                             ForEach(engineFamilies, id: \.self) { f in
                                 chip(label: Self.engineLabel(f), icon: "waveform", on: filterEngine == f) { filterEngine = (filterEngine == f ? nil : f) }
                             }
@@ -182,7 +182,7 @@ struct HistoryView: View {
                                message: "Every dictation you make lands here, searchable, replayable, and re-adaptable.")
                         .padding(.horizontal, 14)
                 } else {
-                    EmptyState(icon: "magnifyingglass", title: "No matches",
+                    EmptyState(icon: "magnifyingglass", title: L("No matches"),
                                message: "No dictation matches the current search or filters. Clear them to see everything.")
                         .padding(.horizontal, 14)
                 }
@@ -210,7 +210,7 @@ struct HistoryView: View {
             Text(snippet(full)).font(.system(size: 13, weight: .medium)).lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
             HStack(spacing: 5) {
-                Text(e.profileName.isEmpty ? "Flow" : e.profileName)
+                Text(e.profileName.isEmpty ? L("Flow") : e.profileName)
                     .font(.system(size: 9.5, weight: .medium, design: .monospaced))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 6).padding(.vertical, 1.5)
@@ -226,11 +226,11 @@ struct HistoryView: View {
         .glassCard(selected: selected, cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .contextMenu {
-            Button { Output.copyToClipboard(full) } label: { Label("Copy", systemImage: "doc.on.doc") }
+            Button { Output.copyToClipboard(full) } label: { Label(L("Copy"), systemImage: "doc.on.doc") }
             Button(role: .destructive) {
                 audio.stop(); history.delete(e)
                 if selection == e.id { selection = nil }
-            } label: { Label("Delete", systemImage: "trash") }
+            } label: { Label(L("Delete"), systemImage: "trash") }
         }
     }
 
@@ -240,7 +240,7 @@ struct HistoryView: View {
             let line = raw.trimmingCharacters(in: .whitespaces)
             if !line.isEmpty { return String(line.prefix(120)) }
         }
-        return "Empty dictation"
+        return L("Empty dictation")
     }
 
     /// A small dimension sub-label ("Mode" / "Engine") that prefixes a group of filter chips.
@@ -311,7 +311,7 @@ struct HistoryView: View {
                                 history.updateReprompted(e, text: stash.text)
                                 withAnimation(.easeInOut(duration: 0.18)) { preRerunReprompted = nil }
                             } label: {
-                                Label("Undo", systemImage: "arrow.uturn.backward")
+                                Label(L("Undo"), systemImage: "arrow.uturn.backward")
                                     .font(.system(size: 12, weight: .medium))
                             }
                             .buttonStyle(.borderless)

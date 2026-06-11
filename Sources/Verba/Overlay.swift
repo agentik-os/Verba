@@ -9,10 +9,10 @@ enum CaptureContext {
 
     var label: String {
         switch self {
-        case .dictation: return "Dictation"
-        case .note:      return "Note"
+        case .dictation: return L("Dictation")
+        case .note:      return L("Note")
         case .todo:      return "To-do"
-        case .action:    return "Action"
+        case .action:    return L("Action")
         }
     }
 
@@ -84,7 +84,7 @@ struct OverlayView: View {
                     Button { model.onPauseToggle?() } label: {
                         Image(systemName: model.paused ? "play.fill" : "pause.fill").font(.system(size: 11))
                             .foregroundStyle(.secondary)
-                    }.buttonStyle(.plain).help(model.paused ? "Resume" : "Pause")
+                    }.buttonStyle(.plain).help(model.paused ? L("Resume") : L("Pause"))
                     // Live meter while recording; when paused, hide it (a level-0 waveform renders as a
                     // sad dashed line) — the orange dot + play button + "Paused" already read clearly.
                     if !model.paused {
@@ -202,14 +202,14 @@ struct OverlayView: View {
             // this Text's horizontal ideal to the FULL unwrapped string width — so lineLimit(2)
             // never wraps and a long error stretches the pill past the screen. Cap the width and
             // fix only the vertical axis so the text wraps to ≤2 lines within that bound.
-            Text(model.title.isEmpty ? "Error" : model.title)
+            Text(model.title.isEmpty ? L("Error") : model.title)
                 .font(.system(size: size, weight: .medium)).foregroundStyle(.red).lineLimit(2)
                 .frame(maxWidth: 280, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
         } else if model.done {
-            Text(model.title.isEmpty ? "Done" : model.title).font(.system(size: size, weight: .medium)).lineLimit(1)
+            Text(model.title.isEmpty ? L("Done") : model.title).font(.system(size: size, weight: .medium)).lineLimit(1)
         } else if model.menu {
-            Text("Choose a mode").font(.system(size: size, weight: .medium)).lineLimit(1)
+            Text(L("Choose a mode")).font(.system(size: size, weight: .medium)).lineLimit(1)
         } else if model.paused {
             Text("Paused").font(.system(size: size, weight: .medium)).lineLimit(1)
         } else {

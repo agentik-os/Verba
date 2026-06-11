@@ -30,7 +30,7 @@ struct ActionConfirmView: View {
             .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         } buttons: {
             Spacer()
-            Button("Cancel", role: .cancel) { onCancel() }
+            Button(L("Cancel"), role: .cancel) { onCancel() }
                 .dialogSecondary()
                 .keyboardShortcut(.cancelAction)
             Button(confirmLabel) { onConfirm() }
@@ -57,15 +57,15 @@ struct ActionConfirmView: View {
 
     private var confirmLabel: String {
         switch action {
-        case .calendarEvent: return "Create event"
-        case .reminder:      return "Create reminder"
+        case .calendarEvent: return L("Create event")
+        case .reminder:      return L("Create reminder")
         case .emailDraft:    return "Open draft"
-        case .runShortcut:   return "Run shortcut"
+        case .runShortcut:   return L("Run shortcut")
         case .openApp:       return "Open app"
-        case .playMusic:     return "Play"
-        case .sendMessage:   return "Send message"
-        case .appleScript:   return "Run"
-        case .openURL:       return "Open"
+        case .playMusic:     return L("Play")
+        case .sendMessage:   return L("Send message")
+        case .appleScript:   return L("Run")
+        case .openURL:       return L("Open")
         }
     }
 
@@ -73,38 +73,38 @@ struct ActionConfirmView: View {
     private var fields: [(String, String)] {
         switch action {
         case let .calendarEvent(title, start, end, notes):
-            var f: [(String, String)] = [("Title", title), ("Starts", Self.fmt(start))]
-            if let end { f.append(("Ends", Self.fmt(end))) }
-            if let notes, !notes.isEmpty { f.append(("Notes", notes)) }
-            f.append(("Calendar", Self.defaultEventCalendar))   // WHERE it lands (your macOS default calendar)
+            var f: [(String, String)] = [(L("Title"), title), (L("Starts"), Self.fmt(start))]
+            if let end { f.append((L("Ends"), Self.fmt(end))) }
+            if let notes, !notes.isEmpty { f.append((L("Notes"), notes)) }
+            f.append((L("Calendar"), Self.defaultEventCalendar))   // WHERE it lands (your macOS default calendar)
             return f
         case let .reminder(title, due, notes):
-            var f: [(String, String)] = [("Title", title)]
-            if let due { f.append(("Due", Self.fmt(due))) }
-            if let notes, !notes.isEmpty { f.append(("Notes", notes)) }
-            f.append(("List", Self.defaultReminderList))
+            var f: [(String, String)] = [(L("Title"), title)]
+            if let due { f.append((L("Due"), Self.fmt(due))) }
+            if let notes, !notes.isEmpty { f.append((L("Notes"), notes)) }
+            f.append((L("List"), Self.defaultReminderList))
             return f
         case let .emailDraft(to, subject, body):
             var f: [(String, String)] = []
             if let to, !to.isEmpty { f.append(("To", to)) }
-            if let subject, !subject.isEmpty { f.append(("Subject", subject)) }
-            if !body.isEmpty { f.append(("Body", body)) }
-            if f.isEmpty { f.append(("Email", "New message")) }
+            if let subject, !subject.isEmpty { f.append((L("Subject"), subject)) }
+            if !body.isEmpty { f.append((L("Body"), body)) }
+            if f.isEmpty { f.append((L("Email"), L("New message"))) }
             return f
         case let .runShortcut(name, input):
-            var f: [(String, String)] = [("Shortcut", name)]
-            if let input, !input.isEmpty { f.append(("Input", input)) }
+            var f: [(String, String)] = [(L("Shortcut"), name)]
+            if let input, !input.isEmpty { f.append((L("Input"), input)) }
             return f
         case let .openApp(name):
-            return [("App", name)]
+            return [(L("App"), name)]
         case let .playMusic(query):
-            return [("Music", (query?.isEmpty == false) ? query! : "Resume playback")]
+            return [(L("Music"), (query?.isEmpty == false) ? query! : "Resume playback")]
         case let .sendMessage(to, body):
-            return [("To", to), ("Message", body)]
+            return [("To", to), (L("Message"), body)]
         case let .appleScript(label, script):
-            return [("Action", label), ("Script", script)]
+            return [(L("Action"), label), ("Script", script)]
         case let .openURL(label, url):
-            return [("Open", label), ("URL", url.absoluteString)]
+            return [(L("Open"), label), ("URL", url.absoluteString)]
         }
     }
 
@@ -118,9 +118,9 @@ struct ActionConfirmView: View {
     // user can see WHERE it goes (set the default in Calendar.app / Reminders.app to change it).
     private static let store = EKEventStore()
     static var defaultEventCalendar: String {
-        store.defaultCalendarForNewEvents?.title ?? "Default calendar"
+        store.defaultCalendarForNewEvents?.title ?? L("Default calendar")
     }
     static var defaultReminderList: String {
-        store.defaultCalendarForNewReminders()?.title ?? "Default list"
+        store.defaultCalendarForNewReminders()?.title ?? L("Default list")
     }
 }

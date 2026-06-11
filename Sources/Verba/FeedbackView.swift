@@ -103,7 +103,7 @@ struct FeedbackView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Feedback").font(.system(size: 17, weight: .bold))
+                Text(L("Feedback")).font(.system(size: 17, weight: .bold))
                 Spacer()
             }
             .padding(.horizontal, 28).padding(.top, 28).padding(.bottom, 2)
@@ -154,7 +154,7 @@ struct FeedbackView: View {
                             // Live, level-driven meter so the chip visibly reacts to the voice.
                             HStack(spacing: 7) {
                                 Image(systemName: "stop.circle.fill").font(.system(size: 10, weight: .semibold))
-                                Text("Listening…").font(.system(size: 12, weight: .medium))
+                                Text(L("Listening…")).font(.system(size: 12, weight: .medium))
                                 FeedbackWaveform(level: level, phase: phase)
                             }
                             .padding(.horizontal, 12).padding(.vertical, 5)
@@ -165,7 +165,7 @@ struct FeedbackView: View {
                         } else if transcribing {
                             HStack(spacing: 6) {
                                 ProgressView().controlSize(.small)
-                                Text("Transcribing…").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                                Text(L("Transcribing…")).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
                             }
                             .padding(.horizontal, 12).padding(.vertical, 4.5)
                         } else {
@@ -199,7 +199,7 @@ struct FeedbackView: View {
                         Text("Screenshot attached").font(.callout).foregroundStyle(.secondary)
                     } else {
                         Button { attachScreenshot() } label: {
-                            ActionChip(title: "Attach screenshot", icon: "camera.viewfinder")
+                            ActionChip(title: L("Attach screenshot"), icon: "camera.viewfinder")
                         }
                         .buttonStyle(.plain)
                         // Disabled while improving too: parity with Dictate/Send so an in-flight
@@ -224,11 +224,11 @@ struct FeedbackView: View {
                         if improving {
                             HStack(spacing: 6) {
                                 ProgressView().controlSize(.small)
-                                Text("Improving…").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                                Text(L("Improving…")).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
                             }
                             .padding(.horizontal, 12).padding(.vertical, 4.5)
                         } else {
-                            ActionChip(title: "Improve with AI", icon: "sparkles")
+                            ActionChip(title: L("Improve with AI"), icon: "sparkles")
                         }
                     }
                     .buttonStyle(.plain)
@@ -244,12 +244,12 @@ struct FeedbackView: View {
 
                 HStack {
                     if recording {
-                        Label("Listening…", systemImage: "waveform")
+                        Label(L("Listening…"), systemImage: "waveform")
                             .font(.callout).foregroundStyle(.red)
                     } else if transcribing {
                         HStack(spacing: 8) {
                             ProgressView().controlSize(.small)
-                            Text("Transcribing…").font(.callout).foregroundStyle(.secondary)
+                            Text(L("Transcribing…")).font(.callout).foregroundStyle(.secondary)
                         }
                     }
                     Spacer()
@@ -292,7 +292,7 @@ struct FeedbackView: View {
         // VER-7: graceful "sent" toast — appears, holds ~1s, fades out.
         .overlay(alignment: .top) {
             if showToast {
-                Label("Feedback sent", systemImage: "checkmark.circle.fill")
+                Label(L("Feedback sent"), systemImage: "checkmark.circle.fill")
                     .font(.callout.weight(.medium))
                     .padding(.horizontal, 16).padding(.vertical, 10)
                     .glass(in: Capsule())

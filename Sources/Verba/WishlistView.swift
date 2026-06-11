@@ -30,7 +30,7 @@ struct WishlistView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Wishlist").font(.system(size: 17, weight: .bold))
+                Text(L("Wishlist")).font(.system(size: 17, weight: .bold))
                 Spacer()
                 Button { model.load() } label: { Image(systemName: "arrow.clockwise") }.buttonStyle(.borderless).help("Refresh")
             }
@@ -44,7 +44,7 @@ struct WishlistView: View {
                     .padding(.horizontal, 12).padding(.vertical, 9)
                     .background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .onSubmit(submit)
-                Button("Add", action: submit)
+                Button(L("Add"), action: submit)
                     .glassProminentButton().tint(.primary)
                     .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
             }
@@ -171,7 +171,7 @@ struct WishlistView: View {
                 .rotationEffect(.degrees(open ? 180 : 0))
         }
         .foregroundStyle(.secondary)
-        .help(open ? "Hide comments" : "Show comments")
+        .help(open ? L("Hide comments") : L("Show comments"))
     }
 
     private func toggle(_ id: String) {

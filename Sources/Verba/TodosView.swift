@@ -428,10 +428,10 @@ struct TodosView: View {
         let visible = store.projects.filter(matchesFilter)
         return VStack(spacing: 0) {
             HStack {
-                Text("Tasks").font(.system(size: 17, weight: .bold))
+                Text(L("Tasks")).font(.system(size: 17, weight: .bold))
                 Spacer()
                 Button { newProject() } label: { Image(systemName: "plus") }
-                    .buttonStyle(.borderless).help("New project")
+                    .buttonStyle(.borderless).help(L("New project"))
             }
             .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 10)
 
@@ -448,7 +448,7 @@ struct TodosView: View {
 
             if store.projects.isEmpty {
                 Spacer()
-                EmptyState(icon: "checklist", title: "No projects yet",
+                EmptyState(icon: "checklist", title: L("No projects yet"),
                            message: "Make a project for anything you track (Groceries, Launch, Trip…), or describe a list above and the agent builds it. Speak short commands here; for a long-form document, use the Notes tab.")
                     .padding(.horizontal, 14)
                 Spacer()
@@ -484,7 +484,7 @@ struct TodosView: View {
             Image(systemName: "folder").font(.system(size: 13))
                 .foregroundStyle(.secondary).frame(width: 16).padding(.top, 2)
             VStack(alignment: .leading, spacing: 3) {
-                Text(p.name.trimmingCharacters(in: .whitespaces).isEmpty ? "New project" : p.name)
+                Text(p.name.trimmingCharacters(in: .whitespaces).isEmpty ? L("New project") : p.name)
                     .font(.system(size: 13, weight: .medium)).lineLimit(1)
                 HStack(spacing: 5) {
                     Text("\(p.tasks.count) task\(p.tasks.count == 1 ? "" : "s")")
@@ -513,7 +513,7 @@ struct TodosView: View {
         .glassCard(selected: selected, cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .contextMenu {
-            Button(role: .destructive) { removeProject(p.id) } label: { Label("Delete", systemImage: "trash") }
+            Button(role: .destructive) { removeProject(p.id) } label: { Label(L("Delete"), systemImage: "trash") }
         }
     }
 
@@ -596,7 +596,7 @@ struct TodosView: View {
         let tags = store.allTags
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
-                chip(label: "All tags", icon: "tag", on: activeTags.isEmpty) { activeTags.removeAll() }
+                chip(label: L("All tags"), icon: "tag", on: activeTags.isEmpty) { activeTags.removeAll() }
                 ForEach(tags, id: \.self) { tag in
                     chip(label: tag, icon: "tag", on: activeTags.contains(tag)) {
                         if activeTags.contains(tag) { activeTags.remove(tag) } else { activeTags.insert(tag) }
@@ -652,9 +652,9 @@ struct TodosView: View {
         let visible = store.projects.filter(matchesFilter)
         return VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("All tasks").font(.system(size: 20, weight: .bold))
+                Text(L("All tasks")).font(.system(size: 20, weight: .bold))
                 Spacer()
-                Button { newProject() } label: { Label("New project", systemImage: "plus") }
+                Button { newProject() } label: { Label(L("New project"), systemImage: "plus") }
                     .glassButton().controlSize(.small)
             }
             .padding(.horizontal, 22).padding(.top, 18).padding(.bottom, 12)
@@ -681,7 +681,7 @@ struct TodosView: View {
                                     Button { selectedProjectID = project.id } label: {
                                         HStack(spacing: 8) {
                                             Image(systemName: "folder").font(.system(size: 12)).foregroundStyle(.secondary)
-                                            Text(project.name.trimmingCharacters(in: .whitespaces).isEmpty ? "New project" : project.name)
+                                            Text(project.name.trimmingCharacters(in: .whitespaces).isEmpty ? L("New project") : project.name)
                                                 .font(.system(size: 14, weight: .semibold))
                                             let prog = store.progress(project)
                                             if prog.total > 0 {
@@ -806,7 +806,7 @@ private struct ProjectDetail: View {
                             onAddSubtask: { onAddSubtask(task.id) }
                         )
                     }
-                    Button(action: onAddTask) { Label("Add task", systemImage: "plus") }
+                    Button(action: onAddTask) { Label(L("Add task"), systemImage: "plus") }
                         .buttonStyle(.borderless).font(.callout)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 2)
@@ -821,7 +821,7 @@ private struct ProjectDetail: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
                 Image(systemName: "folder").foregroundStyle(.secondary)
-                TextField("Project", text: $project.name).textFieldStyle(.plain)
+                TextField(L("Project"), text: $project.name).textFieldStyle(.plain)
                     .font(.system(size: 20, weight: .bold))
                 Spacer(minLength: 8)
                 if prog.total > 0 {
@@ -833,7 +833,7 @@ private struct ProjectDetail: View {
                 }
                 Button(role: .destructive, action: onDelete) { Image(systemName: "trash") }
                     .buttonStyle(.borderless).foregroundStyle(.secondary)
-                    .help("Delete project")
+                    .help(L("Delete project"))
             }
             tagsRow
         }
@@ -865,7 +865,7 @@ private struct ProjectDetail: View {
                 .background(.softFill, in: Capsule())
             } else {
                 Button { addingTag = true } label: {
-                    Label("Add tag", systemImage: "plus").font(.caption)
+                    Label(L("Add tag"), systemImage: "plus").font(.caption)
                 }
                 .buttonStyle(.plain).foregroundStyle(.secondary)
                 .padding(.horizontal, 9).padding(.vertical, 5)
@@ -959,14 +959,14 @@ private struct DeadlinePicker: View {
                 .padding(.horizontal, 7).padding(.vertical, 3)
                 .background(.softFill, in: Capsule())
             } else {
-                Label(compact ? "Due" : "Deadline", systemImage: "plus")
+                Label(compact ? L("Due") : "Deadline", systemImage: "plus")
                     .font(.caption2).foregroundStyle(.tertiary)
                     .padding(.horizontal, 7).padding(.vertical, 3)
                     .background(.softFill, in: Capsule())
             }
         }
         .buttonStyle(.plain)
-        .help(deadline == nil ? "Set a deadline" : "Edit deadline")
+        .help(deadline == nil ? "Set a deadline" : L("Edit deadline"))
         .popover(isPresented: $show, arrowEdge: .bottom) { popover }
     }
 
@@ -995,7 +995,7 @@ private struct DeadlinePicker: View {
             ("Today 6pm", today6),
             ("Tomorrow 9am", tomorrow9),
             ("This weekend", weekend),
-            ("Next week", nextWeek)
+            (L("Next week"), nextWeek)
         ]
     }
 
@@ -1024,11 +1024,11 @@ private struct DeadlinePicker: View {
             TimeSelector(selection: working)
 
             HStack {
-                Button("Clear") { deadline = nil; show = false }
+                Button(L("Clear")) { deadline = nil; show = false }
                     .dialogSecondary()
                     .disabled(deadline == nil)
                 Spacer()
-                Button("Done") { show = false }
+                Button(L("Done")) { show = false }
                     .controlSize(.regular).dialogPrimary()
             }
         }
@@ -1289,8 +1289,8 @@ private struct TimeSelector: View {
 
             // Fine adjustment: hour and minute steppers.
             HStack(spacing: 8) {
-                stepper(label: "Hour", onMinus: { add(hours: -1) }, onPlus: { add(hours: 1) })
-                stepper(label: "Min", onMinus: { add(minutes: -5) }, onPlus: { add(minutes: 5) })
+                stepper(label: L("Hour"), onMinus: { add(hours: -1) }, onPlus: { add(hours: 1) })
+                stepper(label: L("Min"), onMinus: { add(minutes: -5) }, onPlus: { add(minutes: 5) })
             }
 
             // Quick time chips.
@@ -1410,7 +1410,7 @@ private struct TaskPanel: View {
                         Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
                             .foregroundStyle(.tertiary).rotationEffect(.degrees(expanded ? 90 : 0))
                     }
-                }.buttonStyle(.plain).help("Sub-tasks")
+                }.buttonStyle(.plain).help(L("Sub-tasks"))
                 Button(role: .destructive, action: onDelete) { Image(systemName: "minus.circle.fill") }
                     .buttonStyle(.borderless).foregroundStyle(.tertiary)
             }
@@ -1460,7 +1460,7 @@ private struct TaskPanel: View {
                                 .buttonStyle(.borderless).foregroundStyle(.tertiary).font(.caption)
                         }
                     }
-                    Button(action: onAddSubtask) { Label("Add sub-task", systemImage: "plus") }
+                    Button(action: onAddSubtask) { Label(L("Add sub-task"), systemImage: "plus") }
                         .buttonStyle(.borderless).font(.caption)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
