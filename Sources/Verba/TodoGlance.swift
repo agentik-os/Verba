@@ -84,6 +84,7 @@ enum TodoGlance {
 struct TodoGlanceView: View {
     @ObservedObject var store = TodoStore.shared
     var onClose: () -> Void
+    var onAddTodo: () -> Void = {}   // mic + button: start a voice "add a to-do" capture
 
     /// IDs currently animating out after being checked off (checkmark + strikethrough show briefly,
     /// then the item is marked done in the store and slides away).
@@ -100,6 +101,18 @@ struct TodoGlanceView: View {
                 Image(systemName: "checklist").font(.system(size: 14, weight: .semibold)).foregroundStyle(.secondary)
                 Text("Tasks").font(.system(size: 15, weight: .semibold))
                 Spacer(minLength: 18)
+                Button(action: onAddTodo) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "mic.fill").font(.system(size: 11, weight: .semibold))
+                        Image(systemName: "plus").font(.system(size: 9, weight: .bold))
+                    }
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 9).padding(.vertical, 5)
+                    .background(.softFill, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Color.hairlineTint, lineWidth: 1))
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain).help("Add a to-do by voice")
                 Button(action: onClose) {
                     Image(systemName: "xmark").font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(.secondary).padding(6).contentShape(Rectangle())
@@ -264,7 +277,12 @@ final class TodoGlanceController {
         p.isOpaque = false
         p.hasShadow = true
         p.ignoresMouseEvents = false   // checkboxes must be clickable
-        let host = NSHostingController(rootView: TodoGlanceView(onClose: { [weak self] in self?.hide() }))
+        let host = NSHostingController(rootView: TodoGlanceView(
+            onClose: { [weak self] in self?.hide() },
+            onAddTodo: { [weak self] in
+                self?.hide()   // close the glance so the recording overlay is clear
+                (NSApp.delegate as? AppDelegate)?.startTodoCapture()
+            }))
         host.sizingOptions = [.preferredContentSize]   // window tracks SwiftUI's intrinsic size
         p.contentViewController = host
         p.alphaValue = 1
