@@ -15,11 +15,13 @@ struct BadgesView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                HStack {
+                HStack(spacing: 12) {
                     Text("Achievements").font(.system(size: 17, weight: .bold))
                     Spacer()
                     let n = game.unlocked.count
                     Text("\(n) / \(Gamification.all.count)").font(.callout).foregroundStyle(.secondary).monospacedDigit()
+                    Button { shareStats() } label: { Label("Share", systemImage: "square.and.arrow.up") }
+                        .buttonStyle(.borderless).help("Share a card of your stats")
                 }
                 .padding(.horizontal, 28).padding(.top, 28)
 
@@ -32,10 +34,11 @@ struct BadgesView: View {
                 .padding(.horizontal, 28)
 
                 // Goals + next-up + records.
-                HStack(spacing: 14) {
+                HStack(alignment: .top, spacing: 14) {
                     weeklyCard
                     nextUpCard
                 }
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 28)
 
                 recordsCard.padding(.horizontal, 28)
@@ -52,6 +55,31 @@ struct BadgesView: View {
             }
         }
         .onAppear { Gamification.shared.evaluate(); board.load() }
+    }
+
+    // MARK: Share card
+
+    @MainActor private func shareStats() {
+        let myRank = ranked.firstIndex(where: { $0.me == true }).map { $0 + 1 }
+        let icons = Gamification.all.filter { game.unlocked.contains($0.id) }
+            .sorted { $0.tier.rawValue > $1.tier.rawValue }.map { $0.icon }
+        let card = ShareStatsCard(
+            level: game.levelInfo.level, title: game.levelInfo.title,
+            words: stats.totalWords, streak: stats.streak, avgWPM: stats.avgWPM,
+            rank: myRank, totalPlayers: ranked.count,
+            badges: game.unlocked.count, totalBadges: Gamification.all.count,
+            topIcons: icons, accent: VerbaAppearance.shared.accentColor == .primary ? .yellow : VerbaAppearance.shared.accentColor)
+        let renderer = ImageRenderer(content: card)
+        renderer.scale = 2
+        guard let nsImage = renderer.nsImage,
+              let tiff = nsImage.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),
+              let png = rep.representation(using: .png, properties: [:]) else { return }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("verba-stats.png")
+        try? png.write(to: url)
+        let picker = NSSharingServicePicker(items: [url])
+        if let view = NSApp.keyWindow?.contentView {
+            picker.show(relativeTo: .zero, of: view, preferredEdge: .minY)
+        }
     }
 
     // MARK: Wave 3 — social standing (rank + rivals) from the leaderboard
@@ -98,31 +126,53 @@ struct BadgesView: View {
     // MARK: extra cards
 
     private var weeklyCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack { Image(systemName: "calendar"); Text("This week").font(.subheadline.weight(.semibold)); Spacer()
-                Text("\(Int(game.weeklyProgress * 100))%").font(.caption).foregroundStyle(.secondary).monospacedDigit() }
-            ProgressBar(progress: game.weeklyProgress, tint: .blue)
-            Text("\(stats.wordsThisWeek) / \(game.weeklyGoal) words this week")
-                .font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 6) {
+                Image(systemName: "calendar").font(.system(size: 13)).foregroundStyle(.secondary)
+                Text("This week").font(.subheadline.weight(.semibold))
+                Spacer()
+                Text("\(Int(game.weeklyProgress * 100))%").font(.caption.weight(.semibold)).foregroundStyle(.secondary).monospacedDigit()
+            }
+            VStack(alignment: .leading, spacing: 7) {
+                ProgressBar(progress: game.weeklyProgress, tint: .blue)
+                Text("\(stats.wordsThisWeek) / \(game.weeklyGoal) words")
+                    .font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
+            }
+            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, alignment: .leading).padding(16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).padding(16)
         .glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private var nextUpCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack { Image(systemName: "target"); Text("Next up").font(.subheadline.weight(.semibold)); Spacer() }
-            if let m = game.nextWordMilestone {
-                Text("\(m.remaining) words to \(compact(m.target))").font(.caption).foregroundStyle(.secondary).monospacedDigit()
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 6) {
+                Image(systemName: "target").font(.system(size: 13)).foregroundStyle(.secondary)
+                Text("Next up").font(.subheadline.weight(.semibold))
+                Spacer()
             }
-            if let st = game.nextStreakMilestone {
-                Text("\(st.remaining) day\(st.remaining == 1 ? "" : "s") to a \(st.target) day streak").font(.caption).foregroundStyle(.secondary).monospacedDigit()
+            VStack(alignment: .leading, spacing: 9) {
+                if let m = game.nextWordMilestone {
+                    nextRow("text.word.spacing", "\(m.remaining.formatted()) words to \(compact(m.target))")
+                }
+                if let st = game.nextStreakMilestone {
+                    nextRow("flame.fill", "\(st.remaining) day\(st.remaining == 1 ? "" : "s") to a \(st.target) day streak")
+                }
+                let info = game.levelInfo
+                nextRow("sparkles", "\(max(0, info.xpForNext - info.xpInLevel)) XP to Level \(info.level + 1)")
             }
-            let info = game.levelInfo
-            Text("\(max(0, info.xpForNext - info.xpInLevel)) XP to Level \(info.level + 1)").font(.caption).foregroundStyle(.secondary).monospacedDigit()
+            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, alignment: .leading).padding(16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).padding(16)
         .glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func nextRow(_ icon: String, _ text: String) -> some View {
+        HStack(spacing: 9) {
+            Image(systemName: icon).font(.system(size: 11)).foregroundStyle(.secondary).frame(width: 16)
+            Text(text).font(.caption).foregroundStyle(.secondary).monospacedDigit()
+            Spacer(minLength: 0)
+        }
     }
 
     private var recordsCard: some View {

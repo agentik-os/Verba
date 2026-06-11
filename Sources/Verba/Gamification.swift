@@ -238,7 +238,70 @@ final class Gamification: ObservableObject {
     // MARK: - The catalog
 
     // Split into sub-arrays so the Swift type-checker doesn't choke on one huge literal.
-    static let all: [Achievement] = volume + streaks + craft + modes + misc + bonus
+    static let all: [Achievement] = volume + streaks + craft + modes + misc + bonus + words2 + streaks2 + counts2 + craft2 + days2
+
+    private static let words2: [Achievement] = [
+        .init(id: "w2k", title: "Getting Wordy", blurb: "2,000 words spoken.", icon: "text.bubble.fill", tier: .bronze) { s,_ in s.totalWords >= 2000 },
+        .init(id: "w3k", title: "Chatterbox", blurb: "3,000 words spoken.", icon: "bubble.left.and.bubble.right.fill", tier: .bronze) { s,_ in s.totalWords >= 3000 },
+        .init(id: "w7k", title: "Wordfall", blurb: "7,500 words spoken.", icon: "text.append", tier: .bronze) { s,_ in s.totalWords >= 7500 },
+        .init(id: "w15k", title: "Verbose", blurb: "15,000 words spoken.", icon: "doc.plaintext.fill", tier: .silver) { s,_ in s.totalWords >= 15000 },
+        .init(id: "w20k", title: "Essayist", blurb: "20,000 words spoken.", icon: "doc.richtext.fill", tier: .silver) { s,_ in s.totalWords >= 20000 },
+        .init(id: "w25k", title: "Chronicler", blurb: "25,000 words spoken.", icon: "scroll.fill", tier: .silver) { s,_ in s.totalWords >= 25000 },
+        .init(id: "w30k", title: "Author", blurb: "30,000 words spoken.", icon: "pencil.and.scribble", tier: .silver) { s,_ in s.totalWords >= 30000 },
+        .init(id: "w40k", title: "Wordmonger", blurb: "40,000 words spoken.", icon: "character.book.closed.fill", tier: .silver) { s,_ in s.totalWords >= 40000 },
+        .init(id: "w75k", title: "Bestseller", blurb: "75,000 words spoken.", icon: "star.square.fill", tier: .gold) { s,_ in s.totalWords >= 75000 },
+        .init(id: "w150k", title: "Epic", blurb: "150,000 words spoken.", icon: "books.vertical.circle.fill", tier: .gold) { s,_ in s.totalWords >= 150000 },
+        .init(id: "w200k", title: "Saga", blurb: "200,000 words spoken.", icon: "text.book.closed.fill", tier: .gold) { s,_ in s.totalWords >= 200000 },
+        .init(id: "w300k", title: "Library", blurb: "300,000 words spoken.", icon: "building.columns.circle.fill", tier: .platinum) { s,_ in s.totalWords >= 300000 },
+        .init(id: "w400k", title: "Canon", blurb: "400,000 words spoken.", icon: "seal.fill", tier: .platinum) { s,_ in s.totalWords >= 400000 },
+        .init(id: "w750k", title: "Tome Lord", blurb: "750,000 words spoken.", icon: "books.vertical.fill", tier: .platinum) { s,_ in s.totalWords >= 750000 },
+        .init(id: "w1m", title: "One in a Million", blurb: "1,000,000 words spoken.", icon: "crown.fill", tier: .platinum) { s,_ in s.totalWords >= 1000000 },
+    ]
+    private static let streaks2: [Achievement] = [
+        .init(id: "s2", title: "Back Again", blurb: "2 day streak.", icon: "arrow.clockwise", tier: .bronze) { s,_ in s.streak >= 2 },
+        .init(id: "s5", title: "Habit Forming", blurb: "5 day streak.", icon: "flame", tier: .bronze) { s,_ in s.streak >= 5 },
+        .init(id: "s10", title: "Double Digits", blurb: "10 day streak.", icon: "flame.fill", tier: .silver) { s,_ in s.streak >= 10 },
+        .init(id: "s21", title: "Three Weeks", blurb: "21 day streak.", icon: "flame.fill", tier: .silver) { s,_ in s.streak >= 21 },
+        .init(id: "s50", title: "Half Century", blurb: "50 day streak.", icon: "flame.circle.fill", tier: .gold) { s,_ in s.streak >= 50 },
+        .init(id: "s60", title: "Two Months", blurb: "60 day streak.", icon: "flame.circle.fill", tier: .gold) { s,_ in s.streak >= 60 },
+        .init(id: "s90", title: "A Season", blurb: "90 day streak.", icon: "flame.circle.fill", tier: .gold) { s,_ in s.streak >= 90 },
+        .init(id: "s180", title: "Half a Year", blurb: "180 day streak.", icon: "calendar.circle.fill", tier: .platinum) { s,_ in s.streak >= 180 },
+        .init(id: "s250", title: "Iron Will", blurb: "250 day streak.", icon: "shield.fill", tier: .platinum) { s,_ in s.streak >= 250 },
+    ]
+    private static let counts2: [Achievement] = [
+        .init(id: "c25", title: "Two Dozen", blurb: "25 dictations.", icon: "25.circle.fill", tier: .bronze) { s,_ in s.totalCount >= 25 },
+        .init(id: "c50", title: "Fifty Up", blurb: "50 dictations.", icon: "50.circle.fill", tier: .bronze) { s,_ in s.totalCount >= 50 },
+        .init(id: "c250", title: "Regular Caller", blurb: "250 dictations.", icon: "phone.circle.fill", tier: .silver) { s,_ in s.totalCount >= 250 },
+        .init(id: "c500", title: "Five Hundred", blurb: "500 dictations.", icon: "circle.grid.cross.fill", tier: .gold) { s,_ in s.totalCount >= 500 },
+        .init(id: "c2500", title: "Voice Machine", blurb: "2,500 dictations.", icon: "waveform.path.ecg", tier: .platinum) { s,_ in s.totalCount >= 2500 },
+        .init(id: "c5000", title: "Unmuted", blurb: "5,000 dictations.", icon: "infinity.circle.fill", tier: .platinum) { s,_ in s.totalCount >= 5000 },
+    ]
+    private static let craft2: [Achievement] = [
+        .init(id: "wpm80", title: "Conversational", blurb: "80+ words per minute.", icon: "speedometer", tier: .bronze) { s,_ in s.avgWPM >= 80 },
+        .init(id: "wpm100", title: "Quick Tongue", blurb: "100+ words per minute.", icon: "gauge.with.needle", tier: .silver) { s,_ in s.avgWPM >= 100 },
+        .init(id: "wpm140", title: "Rapid Fire", blurb: "140+ words per minute.", icon: "bolt.horizontal.fill", tier: .gold) { s,_ in s.avgWPM >= 140 },
+        .init(id: "wpm200", title: "Auctioneer", blurb: "200+ words per minute.", icon: "bolt.fill", tier: .platinum) { s,_ in s.avgWPM >= 200 },
+        .init(id: "bd1k", title: "Productive Day", blurb: "1,000 words in a day.", icon: "sun.max.fill", tier: .bronze) { s,_ in s.bestDayWords >= 1000 },
+        .init(id: "bd2k", title: "Big Day", blurb: "2,000 words in a day.", icon: "calendar.badge.clock", tier: .silver) { s,_ in s.bestDayWords >= 2000 },
+        .init(id: "bd3k", title: "On a Tear", blurb: "3,000 words in a day.", icon: "flame.fill", tier: .silver) { s,_ in s.bestDayWords >= 3000 },
+        .init(id: "bd7k", title: "Locked In", blurb: "7,500 words in a day.", icon: "scope", tier: .gold) { s,_ in s.bestDayWords >= 7500 },
+        .init(id: "bd15k", title: "Unstoppable Day", blurb: "15,000 words in a day.", icon: "hare.fill", tier: .platinum) { s,_ in s.bestDayWords >= 15000 },
+        .init(id: "sv1h", title: "An Hour Back", blurb: "1 hour saved versus typing.", icon: "clock.fill", tier: .bronze) { s,_ in s.timeSavedMinutes >= 60 },
+        .init(id: "sv5h", title: "Half a Day", blurb: "5 hours saved versus typing.", icon: "clock.badge.checkmark", tier: .silver) { s,_ in s.timeSavedMinutes >= 300 },
+        .init(id: "sv25h", title: "A Full Day", blurb: "25 hours saved versus typing.", icon: "calendar.day.timeline.left", tier: .gold) { s,_ in s.timeSavedMinutes >= 1500 },
+        .init(id: "sv100h", title: "Time Bank", blurb: "100 hours saved versus typing.", icon: "banknote.fill", tier: .platinum) { s,_ in s.timeSavedMinutes >= 6000 },
+        .init(id: "sv250h", title: "Time Bender", blurb: "250 hours saved versus typing.", icon: "hourglass.bottomhalf.filled", tier: .platinum) { s,_ in s.timeSavedMinutes >= 15000 },
+    ]
+    private static let days2: [Achievement] = [
+        .init(id: "d3", title: "Three Times", blurb: "Dictated on 3 different days.", icon: "3.circle.fill", tier: .bronze) { s,_ in s.days.values.filter { $0.count > 0 }.count >= 3 },
+        .init(id: "d14", title: "Two Weeks In", blurb: "Dictated on 14 different days.", icon: "14.circle.fill", tier: .silver) { s,_ in s.days.values.filter { $0.count > 0 }.count >= 14 },
+        .init(id: "d21", title: "Three Weeks In", blurb: "Dictated on 21 different days.", icon: "21.circle.fill", tier: .silver) { s,_ in s.days.values.filter { $0.count > 0 }.count >= 21 },
+        .init(id: "d45", title: "Six Weeks", blurb: "Dictated on 45 different days.", icon: "calendar.circle", tier: .gold) { s,_ in s.days.values.filter { $0.count > 0 }.count >= 45 },
+        .init(id: "d90", title: "Quarter", blurb: "Dictated on 90 different days.", icon: "calendar.badge.plus", tier: .gold) { s,_ in s.days.values.filter { $0.count > 0 }.count >= 90 },
+        .init(id: "d100", title: "Hundred Days", blurb: "Dictated on 100 different days.", icon: "100.circle.fill", tier: .platinum) { s,_ in s.days.values.filter { $0.count > 0 }.count >= 100 },
+        .init(id: "d180", title: "Half-Year Habit", blurb: "Dictated on 180 different days.", icon: "calendar.circle.fill", tier: .platinum) { s,_ in s.days.values.filter { $0.count > 0 }.count >= 180 },
+        .init(id: "d365", title: "All Year", blurb: "Dictated on 365 different days.", icon: "star.circle.fill", tier: .platinum) { s,_ in s.days.values.filter { $0.count > 0 }.count >= 365 },
+    ]
 
     private static let bonus: [Achievement] = [
         .init(id: "w5k", title: "Storyteller", blurb: "5,000 words spoken.", icon: "book.fill", tier: .bronze) { s,_ in s.totalWords >= 5000 },
