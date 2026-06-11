@@ -1395,7 +1395,7 @@ private struct TaskPanel: View {
                     for i in task.subtasks.indices { task.subtasks[i].done = next }
                 } label: {
                     Image(systemName: task.done ? "checkmark.circle.fill" : "circle")
-                        .foregroundStyle(task.done ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
+                        .foregroundStyle(task.done ? AnyShapeStyle(VerbaAppearance.shared.accentOr(.green)) : AnyShapeStyle(.secondary))
                 }.buttonStyle(.plain)
                 TextField("Task", text: $task.title).textFieldStyle(.plain)
                     .strikethrough(task.done, color: .secondary)
@@ -1449,7 +1449,7 @@ private struct TaskPanel: View {
                             } label: {
                                 Image(systemName: sub.done ? "checkmark.circle.fill" : "circle")
                                     .font(.system(size: 12))
-                                    .foregroundStyle(sub.done ? AnyShapeStyle(.green) : AnyShapeStyle(.tertiary))
+                                    .foregroundStyle(sub.done ? AnyShapeStyle(VerbaAppearance.shared.accentOr(.green)) : AnyShapeStyle(.tertiary))
                             }.buttonStyle(.plain)
                             TextField("Sub-task", text: $sub.title).textFieldStyle(.plain).font(.callout)
                                 .strikethrough(sub.done, color: .secondary)

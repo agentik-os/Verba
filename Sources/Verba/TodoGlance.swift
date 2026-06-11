@@ -81,8 +81,12 @@ enum TodoGlance {
 
 /// A compact, on-brand floating list of today's to-dos. Each row has a checkbox (tap → done)
 /// and, when dated, a deadline chip. Empty → a friendly line.
+/// Lets the controller tell the view to reset its per-session undo list on each fresh open.
+final class GlanceSession: ObservableObject { static let shared = GlanceSession(); @Published var openSeq = 0 }
+
 struct TodoGlanceView: View {
     @ObservedObject var store = TodoStore.shared
+    @ObservedObject private var session = GlanceSession.shared
     var onClose: () -> Void
     var onAddTodo: () -> Void = {}   // mic + button: start a voice "add a to-do" capture
 
@@ -92,6 +96,10 @@ struct TodoGlanceView: View {
     /// Collapsed projects (tasks hidden) and collapsed tasks (their sub-tasks hidden).
     @State private var collapsedProjects: Set<UUID> = []
     @State private var collapsedTasks: Set<UUID> = []
+    /// Things checked off THIS glance session, kept so a mis-tap can be undone. Cleared on the next
+    /// open (the controller bumps GlanceSession.openSeq).
+    struct DoneItem: Identifiable { let id: UUID; let isSubtask: Bool; let title: String }
+    @State private var recentlyDone: [DoneItem] = []
 
     /// Projects with at least one open task to show (full hierarchy: project → tasks → subtasks).
     private var visibleProjects: [TodoProject] {
@@ -170,11 +178,43 @@ struct TodoGlanceView: View {
                 }
                 .frame(maxHeight: 460)
             }
+
+            // Undo footer: rows checked off this session stay here with a ↩ so a mis-tap is reversible
+            // until the next time the glance opens.
+            if !recentlyDone.isEmpty {
+                Divider().opacity(0.4)
+                VStack(alignment: .leading, spacing: 5) {
+                    ForEach(recentlyDone.reversed()) { item in
+                        HStack(spacing: 9) {
+                            Image(systemName: "checkmark.circle.fill").font(.system(size: 13))
+                                .foregroundStyle(VerbaAppearance.shared.accentOr(.green))
+                            Text(item.title.isEmpty ? "Untitled" : item.title)
+                                .font(.system(size: 12)).foregroundStyle(.tertiary)
+                                .strikethrough(true, color: .secondary).lineLimit(1)
+                            Spacer(minLength: 4)
+                            Button {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                                    if item.isSubtask { store.markSubtaskDone(subtaskID: item.id, done: false) }
+                                    else { store.markDone(taskID: item.id, done: false) }
+                                    completing.remove(item.id)
+                                    recentlyDone.removeAll { $0.id == item.id }
+                                }
+                            } label: {
+                                Image(systemName: "arrow.uturn.backward").font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(.secondary).padding(5).contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain).help("Undo")
+                        }
+                    }
+                }
+            }
         }
         .padding(.horizontal, 18).padding(.vertical, 16)
         .frame(minWidth: 470, maxWidth: 470, minHeight: 84, alignment: .topLeading)
         .glass(in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .onChange(of: session.openSeq) { _, _ in recentlyDone = []; completing = [] }   // fresh each open
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: completing)
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: recentlyDone.count)
         // Ease the empty ⇄ populated branch swap (a large height delta) so the card resizes smoothly
         // and the controller's resize observer re-centers it, instead of snapping to a tiny off-center box.
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: visibleProjects.isEmpty)
@@ -195,6 +235,7 @@ struct TodoGlanceView: View {
                         }
                     }) {
                 store.markDone(taskID: task.id, done: true)
+                recentlyDone.append(DoneItem(id: task.id, isSubtask: false, title: task.title))
             }
             // Open sub-tasks, indented under their task (hidden when the task is collapsed).
             if !taskCollapsed {
@@ -202,6 +243,7 @@ struct TodoGlanceView: View {
                     itemRow(id: sub.id, title: sub.title, deadline: sub.deadline,
                             indent: 1, bold: false) {
                         store.markSubtaskDone(subtaskID: sub.id, done: true)
+                        recentlyDone.append(DoneItem(id: sub.id, isSubtask: true, title: sub.title))
                     }
                 }
             }
@@ -238,7 +280,7 @@ struct TodoGlanceView: View {
                 ZStack {
                     Image(systemName: isDoing ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: indent > 0 ? 14 : 16))
-                        .foregroundStyle(isDoing ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
+                        .foregroundStyle(isDoing ? AnyShapeStyle(VerbaAppearance.shared.accentOr(.green)) : AnyShapeStyle(.secondary))
                         .scaleEffect(isDoing ? 1.15 : 1)
                 }
             }
@@ -247,7 +289,7 @@ struct TodoGlanceView: View {
             Text(title.isEmpty ? "Untitled" : title)
                 .font(.system(size: indent > 0 ? 12 : 13, weight: bold ? .medium : .regular))
                 .foregroundStyle(isDoing ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
-                .strikethrough(isDoing, color: .green)
+                .strikethrough(isDoing, color: VerbaAppearance.shared.accentOr(.green))
                 .lineLimit(2).fixedSize(horizontal: false, vertical: true)
 
             Spacer(minLength: 4)
@@ -348,6 +390,7 @@ final class TodoGlanceController {
 
     func show() {
         build()
+        GlanceSession.shared.openSeq += 1   // reset the per-session undo list on each fresh open
         guard let panel, let screen = NSScreen.main else { return }
         panel.layoutIfNeeded()
         let size = panel.contentView?.fittingSize ?? NSSize(width: 300, height: 160)

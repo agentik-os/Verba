@@ -61,14 +61,14 @@ private struct SidebarRow: View {
                 // macOS-26 source-list selection: a soft accent-tinted highlight, never a
                 // black inverted block. Hover is an even quieter neutral fill.
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(isSelected ? AnyShapeStyle(Color.primary.opacity(0.07))
+                    .fill(isSelected ? AnyShapeStyle(VerbaAppearance.shared.accentColor.opacity(0.10))
                           : (hovered ? AnyShapeStyle(Color.primary.opacity(0.05)) : AnyShapeStyle(Color.clear)))
             )
             .overlay(alignment: .leading) {
                 // Thin accent bar marks the selected row (Linear/Things grammar).
                 if isSelected {
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(Color.primary)
+                        .fill(VerbaAppearance.shared.accentColor)
                         .frame(width: 3, height: 16)
                         .padding(.leading, 2)
                 }

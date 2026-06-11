@@ -174,7 +174,7 @@ struct OverlayView: View {
         if model.error {
             Image(systemName: "exclamationmark.triangle.fill").font(.system(size: big ? 14 : 12)).foregroundStyle(.red)
         } else if model.done {
-            Image(systemName: "checkmark.circle.fill").font(.system(size: big ? 14 : 12)).foregroundStyle(.green)
+            Image(systemName: "checkmark.circle.fill").font(.system(size: big ? 14 : 12)).foregroundStyle(VerbaAppearance.shared.accentOr(.green))
         } else if model.modeHint {
             Image(systemName: "slider.horizontal.3").font(.system(size: big ? 13 : 12)).foregroundStyle(.secondary)
         } else if model.info {
@@ -183,7 +183,7 @@ struct OverlayView: View {
             Image(systemName: "mic").font(.system(size: big ? 13 : 12)).foregroundStyle(.secondary)
         } else if model.recording {
             Circle()
-                .fill(model.paused ? Color.orange : Color.red)
+                .fill(model.paused ? Color.orange : VerbaAppearance.shared.accentOr(.red))
                 .frame(width: big ? 10 : 8, height: big ? 10 : 8)
                 .opacity(model.paused ? 1 : 0.6 + Double(model.level) * 0.4)
         } else {

@@ -547,6 +547,12 @@ final class VerbaAppearance: ObservableObject {
         return .primary
     }
 
+    /// The chosen accent if the user picked one, otherwise a sensible default for that element
+    /// (e.g. red for the recording dot, green for a done check) when they're on monochrome.
+    func accentOr(_ fallback: Color) -> Color {
+        accent == .monochrome ? fallback : accentColor
+    }
+
     /// The widget accent as a SwiftUI Color. Monochrome → `.primary`.
     var widgetAccentColor: Color {
         if let ns = VAppr.resolved(widgetAccent, hex: widgetAccentHex) { return Color(nsColor: ns) }
