@@ -686,7 +686,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if mainWC == nil {
             // Clear any stale saved frame so the window always opens centered.
             UserDefaults.standard.removeObject(forKey: "NSWindow Frame VerbaMain")
-            let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1040, height: 860),
+            let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1180, height: 920),
                                styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                                backing: .buffered, defer: false)
             win.title = "Verba"
@@ -698,11 +698,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             host.sizingOptions = []   // don't let SwiftUI content shrink the window
             win.contentViewController = host
             win.isReleasedWhenClosed = false
-            win.contentMinSize = NSSize(width: 900, height: 600)
-            win.setContentSize(NSSize(width: 1040, height: 860))
-            win.center()
+            win.contentMinSize = NSSize(width: 1000, height: 680)
+            win.setContentSize(NSSize(width: 1180, height: 920))
             mainWC = NSWindowController(window: win)
         }
+        // Always reopen centered on the active screen (a bigger default so the sidebar breathes).
+        mainWC?.window?.center()
         present(mainWC)
     }
 
