@@ -303,7 +303,7 @@ function Bento() {
             <div>
               <div className="t-anchor tnum">0&nbsp;bytes</div>
               <p className="mt-3 font-medium">of audio leave your Mac</p>
-              <p className="mt-1.5 max-w-sm text-sm text-white/55">On-device mode transcribes locally, so your audio never leaves the Mac. Transcripts go to your local history, which you can switch off or auto-delete. Cloud tools upload every word; Verba doesn't have to.</p>
+              <p className="mt-1.5 max-w-sm text-sm pf-55">On-device mode transcribes locally, so your audio never leaves the Mac. Transcripts go to your local history, which you can switch off or auto-delete. Cloud tools upload every word; Verba doesn't have to.</p>
             </div>
           </div>
         </Reveal>
@@ -372,12 +372,12 @@ function ContextMode() {
           <div>
           <PanelCaption>01 · Context mode</PanelCaption>
           <div className="panel r-panel p-7">
-            <div className="flex items-center gap-3 text-white/55">
+            <div className="flex items-center gap-3 pf-55">
               <Icon name={hero.icon} className="h-5 w-5" />
               <span className="mono-meta">{hero.label}</span>
             </div>
-            <p className="mt-5 text-lg leading-relaxed text-white/90">"{hero.prompt}"</p>
-            <div className="mt-6 flex items-center gap-2 text-[12px] text-white/40">
+            <p className="mt-5 text-lg leading-relaxed pf-90">"{hero.prompt}"</p>
+            <div className="mt-6 flex items-center gap-2 text-[12px] pf-40">
               <span className="rec-dot" /> Reads your screen, then writes the reply in place.
             </div>
           </div>
@@ -467,24 +467,24 @@ function NotesTab() {
         <PanelCaption>02 · One hour of voice, one document</PanelCaption>
         <div className="panel r-panel overflow-hidden">
           <div className="grid sm:grid-cols-2">
-            <div className="p-8 sm:border-r sm:border-white/[0.06]">
+            <div className="p-8 sm:border-r sm:pborder">
               <p className="mono-meta">Example</p>
-              <p className="mt-3 text-[17px] font-medium leading-snug text-white/90">
+              <p className="mt-3 text-[17px] font-medium leading-snug pf-90">
                 "So the standup ran long today, we decided to push the API milestone to next Friday,
                 the auth bug is now Alex's, and I need to follow up with design about the onboarding
                 flow by Thursday..."
               </p>
-              <p className="mt-3 flex items-center gap-2 text-sm text-white/45"><span className="rec-dot" /> 40 seconds of voice · Meeting notes format</p>
+              <p className="mt-3 flex items-center gap-2 text-sm pf-45"><span className="rec-dot" /> 40 seconds of voice · Meeting notes format</p>
             </div>
             <div className="p-8">
               <p className="mono-meta">Verba produces</p>
-              <div className="mt-3 rounded-lg border border-white/[0.07] bg-black/40 p-4 font-mono text-sm leading-relaxed">
-                <p className="font-semibold text-white/90">## Standup notes</p>
-                <p className="mt-1 text-white/55">**API milestone** pushed to next Friday</p>
-                <p className="text-white/55">**Auth bug** assigned to Alex</p>
-                <p className="text-white/55">**Action:** follow up with design on onboarding flow by Thursday</p>
+              <div className="mt-3 rounded-lg border pborder pbg p-4 font-mono text-sm leading-relaxed">
+                <p className="font-semibold pf-90">## Standup notes</p>
+                <p className="mt-1 pf-55">**API milestone** pushed to next Friday</p>
+                <p className="pf-55">**Auth bug** assigned to Alex</p>
+                <p className="pf-55">**Action:** follow up with design on onboarding flow by Thursday</p>
               </div>
-              <p className="mt-3 text-xs text-white/40">Rendered markdown · editable · copyable · tagged and synced.</p>
+              <p className="mt-3 text-xs pf-40">Rendered markdown · editable · copyable · tagged and synced.</p>
             </div>
           </div>
         </div>
@@ -553,7 +553,7 @@ function LanguageDetection() {
             <div className="card lift r-card p-5">
               <div className="flex items-center justify-between">
                 <p className="eyebrow">You say</p>
-                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/55">{mode}</span>
+                <span className="rounded-full border pborder ptint px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide pf-55">{mode}</span>
               </div>
               <p className="mt-1.5 text-sm muted italic">"{spoken}"</p>
               <p className="mt-3 eyebrow">Verba writes</p>
@@ -596,26 +596,26 @@ function VoiceTodos() {
         <PanelCaption>03 · Voice task manager</PanelCaption>
         <div className="panel r-panel overflow-hidden">
           <div className="grid sm:grid-cols-2">
-            <div className="p-8 sm:border-r sm:border-white/[0.06]">
+            <div className="p-8 sm:border-r sm:pborder">
               <p className="mono-meta">You say</p>
-              <p className="mt-3 text-[17px] font-medium leading-snug text-white/90">
+              <p className="mt-3 text-[17px] font-medium leading-snug pf-90">
                 "Add to my groceries: tomatoes, pasta and parmesan. Oh and I already bought the bread.
                 Pay the electricity bill Friday at 6pm."
               </p>
-              <p className="mt-3 flex items-center gap-2 text-sm text-white/45"><span className="rec-dot" /> One press, one sentence.</p>
+              <p className="mt-3 flex items-center gap-2 text-sm pf-45"><span className="rec-dot" /> One press, one sentence.</p>
             </div>
             <div className="p-8">
               <p className="mono-meta">Verba does</p>
-              <div className="mt-3 space-y-2 rounded-lg border border-white/[0.07] bg-black/40 p-4 text-sm text-white/85">
+              <div className="mt-3 space-y-2 rounded-lg border pborder pbg p-4 text-sm pf-85">
                 <p className="font-semibold text-white">Groceries</p>
-                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/30" /> Tomatoes</p>
-                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/30" /> Pasta</p>
-                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/30" /> Parmesan</p>
-                <p className="flex items-center gap-2 text-white/40 line-through"><Icon name="check" className="h-4 w-4 text-[#6ee7a8]" /> Bread</p>
+                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border pborder30" /> Tomatoes</p>
+                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border pborder30" /> Pasta</p>
+                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border pborder30" /> Parmesan</p>
+                <p className="flex items-center gap-2 pf-40 line-through"><Icon name="check" className="h-4 w-4 text-[#6ee7a8]" /> Bread</p>
                 <p className="mt-2 font-semibold text-white">Bills</p>
-                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/30" /> Pay electricity <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-xs tnum">Fri 18:00</span></p>
+                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border pborder30" /> Pay electricity <span className="rounded ptint10 px-1.5 py-0.5 font-mono text-xs tnum">Fri 18:00</span></p>
               </div>
-              <p className="mt-3 text-xs text-white/40">Filed, dated, and one already checked, automatically.</p>
+              <p className="mt-3 text-xs pf-40">Filed, dated, and one already checked, automatically.</p>
             </div>
           </div>
         </div>
@@ -781,9 +781,9 @@ function ModesModels() {
             <div className={`${isContext ? "panel" : "card lift"} r-card flex h-full flex-col p-6 ${isContext ? "col-span-full sm:col-span-2 lg:col-span-3" : ""}`}>
               <div className="flex items-center justify-between">
                 <h3 className={`font-medium ${isContext ? "text-white" : ""}`}>{mode}</h3>
-                <span className={`rounded-full px-2.5 py-1 font-mono text-[11px] tnum ${isContext ? "border border-white/10 bg-white/[0.05] text-white/70" : "border border-[var(--border)] bg-[var(--tint)]"}`}>{model}</span>
+                <span className={`rounded-full px-2.5 py-1 font-mono text-[11px] tnum ${isContext ? "border pborder ptint pf-70" : "border border-[var(--border)] bg-[var(--tint)]"}`}>{model}</span>
               </div>
-              <p className={`mt-2 text-sm ${isContext ? "text-white/60" : "muted"}`}>{desc}</p>
+              <p className={`mt-2 text-sm ${isContext ? "pf-60" : "muted"}`}>{desc}</p>
             </div>
           </Reveal>
           );
@@ -895,7 +895,7 @@ function Features() {
           </div>
           <div className="mt-10">
             <h3 className="text-xl font-semibold text-white">{hero[0]}</h3>
-            <p className="mt-2.5 text-[15px] leading-relaxed text-white/60">{hero[1]}</p>
+            <p className="mt-2.5 text-[15px] leading-relaxed pf-60">{hero[1]}</p>
           </div>
         </div>
         </div>
@@ -1142,16 +1142,16 @@ function Pricing() {
         <div ref={proRef} className="panel r-panel p-8" style={{ borderColor: "var(--border-warm)" }}>
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium text-white">Pro</h3>
-            <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs text-white/70">
+            <span className="flex items-center gap-1.5 rounded-full border pborder ptint px-2.5 py-1 text-xs pf-70">
               <span className="rec-dot" /> Most popular
             </span>
           </div>
           <div className="mt-3 flex items-end gap-1 text-white">
             <span className="font-mono text-4xl font-semibold tnum">{PRICE[plan].amount}</span>
-            <span className="mb-1 text-sm text-white/50">{PRICE[plan].sub}</span>
+            <span className="mb-1 text-sm pf-50">{PRICE[plan].sub}</span>
           </div>
-          <p className="mt-1 text-sm text-white/50 tnum">{PRICE[plan].note} · 7-day trial, card required</p>
-          <ul className="mt-6 space-y-2.5 text-sm text-white/85">
+          <p className="mt-1 text-sm pf-50 tnum">{PRICE[plan].note} · 7-day trial, card required</p>
+          <ul className="mt-6 space-y-2.5 text-sm pf-85">
             {["Unlimited dictation", "All modes + custom modes", "Voice-command formatting", "Sync across your Macs", "Priority support"].map((b) => (
               <li key={b} className="flex items-center gap-2.5"><span className="inline-flex h-4 w-4 items-center justify-center rounded-[4px] bg-white text-black"><MicGlyph size={8} /></span>{b}</li>
             ))}
@@ -1159,7 +1159,7 @@ function Pricing() {
           {isSignedIn ? (
             <>
               {justSignedIn && (
-                <p className="mt-6 flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-white/75">
+                <p className="mt-6 flex items-center gap-2 rounded-lg border pborder ptint px-3 py-2 text-xs pf-75">
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#6ee7a8]" />
                   You&rsquo;re signed in. Start your 7-day trial below.
                 </p>
