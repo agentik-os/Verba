@@ -89,6 +89,9 @@ struct TodoGlanceView: View {
     /// IDs currently animating out after being checked off (checkmark + strikethrough show briefly,
     /// then the item is marked done in the store and slides away).
     @State private var completing: Set<UUID> = []
+    /// Collapsed projects (tasks hidden) and collapsed tasks (their sub-tasks hidden).
+    @State private var collapsedProjects: Set<UUID> = []
+    @State private var collapsedTasks: Set<UUID> = []
 
     /// Projects with at least one open task to show (full hierarchy: project → tasks → subtasks).
     private var visibleProjects: [TodoProject] {
@@ -131,17 +134,33 @@ struct TodoGlanceView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         ForEach(visibleProjects) { project in
+                            let projectCollapsed = collapsedProjects.contains(project.id)
                             VStack(alignment: .leading, spacing: 7) {
-                                HStack(spacing: 6) {
-                                    Text(project.name).font(.system(size: 11, weight: .bold))
-                                        .foregroundStyle(.secondary).textCase(.uppercase)
-                                    let open = project.tasks.filter { !$0.done }.count
-                                    Text("\(open)").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
-                                        .padding(.horizontal, 6).padding(.vertical, 1)
-                                        .background(.softFill, in: Capsule())
+                                Button {
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                                        if projectCollapsed { collapsedProjects.remove(project.id) }
+                                        else { collapsedProjects.insert(project.id) }
+                                    }
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 9, weight: .bold)).foregroundStyle(.tertiary)
+                                            .rotationEffect(.degrees(projectCollapsed ? 0 : 90))
+                                        Text(project.name).font(.system(size: 11, weight: .bold))
+                                            .foregroundStyle(.secondary).textCase(.uppercase)
+                                        let open = project.tasks.filter { !$0.done }.count
+                                        Text("\(open)").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
+                                            .padding(.horizontal, 6).padding(.vertical, 1)
+                                            .background(.softFill, in: Capsule())
+                                        Spacer()
+                                    }
+                                    .contentShape(Rectangle())
                                 }
-                                ForEach(project.tasks.filter { !$0.done }) { task in
-                                    taskBlock(task)
+                                .buttonStyle(.plain)
+                                if !projectCollapsed {
+                                    ForEach(project.tasks.filter { !$0.done }) { task in
+                                        taskBlock(task)
+                                    }
                                 }
                             }
                             .transition(.move(edge: .leading).combined(with: .opacity))
@@ -153,22 +172,37 @@ struct TodoGlanceView: View {
             }
         }
         .padding(.horizontal, 18).padding(.vertical, 16)
-        .frame(width: 420, alignment: .leading)
+        .frame(minWidth: 470, maxWidth: 470, minHeight: 84, alignment: .topLeading)
         .glass(in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: completing)
+        // Ease the empty ⇄ populated branch swap (a large height delta) so the card resizes smoothly
+        // and the controller's resize observer re-centers it, instead of snapping to a tiny off-center box.
+        .animation(.spring(response: 0.42, dampingFraction: 0.85), value: visibleProjects.isEmpty)
     }
 
     @ViewBuilder private func taskBlock(_ task: TodoTask) -> some View {
+        let openSubs = task.subtasks.filter { !$0.done }
+        let taskCollapsed = collapsedTasks.contains(task.id)
         VStack(alignment: .leading, spacing: 5) {
             itemRow(id: task.id, title: task.title, deadline: task.deadline,
-                    indent: 0, bold: true) {
+                    indent: 0, bold: true,
+                    // A disclosure chevron only when the task has open sub-tasks.
+                    disclosure: openSubs.isEmpty ? nil : taskCollapsed,
+                    onDisclosure: {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                            if taskCollapsed { collapsedTasks.remove(task.id) }
+                            else { collapsedTasks.insert(task.id) }
+                        }
+                    }) {
                 store.markDone(taskID: task.id, done: true)
             }
-            // Open sub-tasks, indented under their task.
-            ForEach(task.subtasks.filter { !$0.done }) { sub in
-                itemRow(id: sub.id, title: sub.title, deadline: sub.deadline,
-                        indent: 1, bold: false) {
-                    store.markSubtaskDone(subtaskID: sub.id, done: true)
+            // Open sub-tasks, indented under their task (hidden when the task is collapsed).
+            if !taskCollapsed {
+                ForEach(openSubs) { sub in
+                    itemRow(id: sub.id, title: sub.title, deadline: sub.deadline,
+                            indent: 1, bold: false) {
+                        store.markSubtaskDone(subtaskID: sub.id, done: true)
+                    }
                 }
             }
         }
@@ -177,10 +211,20 @@ struct TodoGlanceView: View {
 
     /// One checkable row (task or sub-task). On tap: fill the check + strike through, then after a
     /// beat mark it done in the store, which slides it out of the list.
-    @ViewBuilder private func itemRow(id: UUID, title: String, deadline: Date?, indent: CGFloat, bold: Bool, complete: @escaping () -> Void) -> some View {
+    @ViewBuilder private func itemRow(id: UUID, title: String, deadline: Date?, indent: CGFloat, bold: Bool,
+                                      disclosure: Bool? = nil, onDisclosure: @escaping () -> Void = {},
+                                      complete: @escaping () -> Void) -> some View {
         let isDoing = completing.contains(id)
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             if indent > 0 { Spacer().frame(width: 22 * indent) }
+            // Collapse/expand chevron for a task that has open sub-tasks.
+            if let collapsed = disclosure {
+                Button(action: onDisclosure) {
+                    Image(systemName: "chevron.right").font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.tertiary).rotationEffect(.degrees(collapsed ? 0 : 90))
+                        .frame(width: 12).contentShape(Rectangle())
+                }.buttonStyle(.plain)
+            }
             Button {
                 guard !isDoing else { return }
                 withAnimation(.easeOut(duration: 0.2)) { _ = completing.insert(id) }
@@ -257,6 +301,12 @@ final class TodoGlanceController {
     private var panel: NSPanel?
     private var clickMonitor: Any?
     private var keyMonitor: Any?
+    /// Observes live window resizes (driven by host.sizingOptions=[.preferredContentSize] as tasks
+    /// are checked off) so we can re-center the card instead of letting AppKit shrink it upward from
+    /// the fixed bottom-left origin (which drops the visible top edge off-center). Removed in hide().
+    private var resizeObserver: NSObjectProtocol?
+    /// The screen visibleFrame the panel was centered within; used to re-center on every resize.
+    private var centeringFrame: NSRect = .zero
 
     var isShowing: Bool { panel?.isVisible ?? false }
 
@@ -302,11 +352,13 @@ final class TodoGlanceController {
         panel.layoutIfNeeded()
         let size = panel.contentView?.fittingSize ?? NSSize(width: 300, height: 160)
         let vf = screen.visibleFrame
-        let x = vf.midX - size.width / 2
-        let y = vf.midY - size.height / 2   // centered glance, distinct from the bottom dictation pill
-        let frame = NSRect(origin: NSPoint(x: x, y: y),
-                           size: panel.frameRect(forContentRect: NSRect(origin: .zero, size: size)).size)
+        centeringFrame = vf
+        let frameSize = panel.frameRect(forContentRect: NSRect(origin: .zero, size: size)).size
+        let x = vf.midX - frameSize.width / 2
+        let y = vf.midY - frameSize.height / 2   // centered glance, distinct from the bottom dictation pill
+        let frame = NSRect(origin: NSPoint(x: x, y: y), size: frameSize)
         panel.setFrame(frame, display: true)
+        installResizeObserver(on: panel)
         // .nonactivatingPanel can become key WITHOUT activating Verba (no app switch), so the
         // local Esc monitor receives keystrokes immediately — not only after the panel is clicked.
         panel.makeKeyAndOrderFront(nil)
@@ -315,8 +367,34 @@ final class TodoGlanceController {
     }
 
     func hide() {
+        removeResizeObserver()
         panel?.orderOut(nil)
         removeDismissMonitors()
+    }
+
+    /// When SwiftUI's intrinsic content height changes (a task checked off, the empty/populated
+    /// branch swap), host.sizingOptions resizes the NSWindow keeping its bottom-left origin fixed —
+    /// so the card drifts off-center and its top edge drops. Re-center on every resize using the NEW
+    /// frame size against the stored screen visibleFrame, so the glass card stays put as it grows or
+    /// shrinks through every state.
+    private func installResizeObserver(on panel: NSPanel) {
+        removeResizeObserver()
+        resizeObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didResizeNotification, object: panel, queue: .main
+        ) { [weak self, weak panel] _ in
+            guard let self, let panel else { return }
+            let s = panel.frame.size
+            let origin = NSPoint(x: self.centeringFrame.midX - s.width / 2,
+                                 y: self.centeringFrame.midY - s.height / 2)
+            // Only move if it actually drifted, to avoid a feedback loop / needless redraws.
+            if abs(panel.frame.origin.x - origin.x) > 0.5 || abs(panel.frame.origin.y - origin.y) > 0.5 {
+                panel.setFrameOrigin(origin)
+            }
+        }
+    }
+
+    private func removeResizeObserver() {
+        if let o = resizeObserver { NotificationCenter.default.removeObserver(o); resizeObserver = nil }
     }
 
     // Esc dismisses; a click outside the panel dismisses (click-away).

@@ -41,6 +41,22 @@ final class WidgetBridge {
     private var cancellable: AnyCancellable?
     private var defaults: UserDefaults? { UserDefaults(suiteName: kAppGroup) }
 
+    /// How long a just-completed row keeps lingering in the snapshot as a checked,
+    /// struck-through "done" row before it's dropped. Long enough for the satisfying
+    /// "completed" resting state (and to outlast the in-app glance slide-out), short
+    /// enough that the next manual glance is clean.
+    private let lingerWindow: TimeInterval = 6
+
+    /// Rows the user just completed, kept briefly so the widget shows a checked
+    /// resting state instead of the row vanishing (a layout jump). Keyed by row id;
+    /// each carries the row as it should render (done = true) plus when it completed.
+    /// Built in-process from snapshot diffs — no model/timestamp change required.
+    private var lingering: [String: (row: WidgetTodo, at: Date)] = [:]
+
+    /// The open-row ids in the last snapshot we wrote, so the next write can detect
+    /// which rows transitioned open → gone (i.e. were just completed) and linger them.
+    private var lastOpenRows: [String: WidgetTodo] = [:]
+
     private init() {}
 
     /// Call once at launch. Drains any widget check-offs queued while we were
@@ -60,17 +76,68 @@ final class WidgetBridge {
     // MARK: writing
 
     /// Serialise today's glance items into the shared defaults + reload the widget.
+    ///
+    /// `TodoGlance.items()` only ever emits OPEN tasks, so a task the user just
+    /// checked off vanishes from the very next snapshot — the widget row would pop
+    /// out and every row below it would jump up, with no satisfying "completed"
+    /// resting state. To match the in-app glance's slide-out, we keep a just-
+    /// completed row in the snapshot as `done = true` for a short linger window:
+    /// the widget's openFirst sort sinks it to the bottom (struck-through, green
+    /// check) and its own `open` filter keeps it out of the count, then it drops in
+    /// one clean reflow when the window passes. Recently-completed rows are inferred
+    /// purely from snapshot diffs here — no TodoTask timestamp/field is needed.
     private func write(_ projects: [TodoProject]) {
         guard let defaults else { return }
-        let items = TodoGlance.items(from: projects)
-        let rows = items.map {
+        let now = Date()
+
+        // Live open rows from the glance (these are always `done = false`).
+        let openRows = TodoGlance.items(from: projects).map {
             WidgetTodo(id: $0.id.uuidString, title: $0.title, project: $0.project,
                        done: $0.done, overdue: $0.overdue, deadline: $0.deadline)
         }
+        let openIDs = Set(openRows.map(\.id))
+
+        // Any row that was open in the last snapshot but is gone now was just
+        // completed (or deleted) — capture it as a checked row so it can linger.
+        for (id, prev) in lastOpenRows where !openIDs.contains(id) {
+            var checked = prev
+            checked.done = true
+            lingering[id] = (row: checked, at: now)
+        }
+
+        // Expire stale lingerers, and never linger a row that's open again (e.g. the
+        // user re-opened it from the widget) — the live open row wins.
+        lingering = lingering.filter { _, v in now.timeIntervalSince(v.at) < lingerWindow }
+        for id in openIDs { lingering.removeValue(forKey: id) }
+
+        let rows = openRows + lingering.values.map(\.row)
+
         if let data = try? JSONEncoder().encode(rows) {
             defaults.set(data, forKey: kTodayKey)
             WidgetCenter.shared.reloadAllTimelines()
         }
+
+        // Remember this snapshot's open rows for the next diff.
+        lastOpenRows = Dictionary(openRows.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+
+        // Schedule a follow-up write so the lingering rows actually drop (and the
+        // widget reflows once cleanly) even if no further store change arrives.
+        scheduleLingerSweep()
+    }
+
+    /// One pending timer that re-writes the snapshot after the linger window so the
+    /// just-completed rows fall away on their own. Coalesced: only the latest matters.
+    private var lingerSweep: DispatchWorkItem?
+    private func scheduleLingerSweep() {
+        lingerSweep?.cancel()
+        guard !lingering.isEmpty else { lingerSweep = nil; return }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.lingerSweep = nil
+            self.write(TodoStore.shared.projects)
+        }
+        lingerSweep = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + lingerWindow + 0.1, execute: work)
     }
 
     // MARK: draining widget toggles

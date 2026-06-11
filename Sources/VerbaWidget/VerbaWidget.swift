@@ -66,15 +66,28 @@ enum WidgetAppearance {
     /// material maps to an opacity over `.fill`, approximating its depth.
     enum Material: Int {
         case frosted = 0, soft, sidebar, hud, crystal, ultra
-        /// Opacity of the `.fill` glass overlay behind the content.
+        /// Opacity of the `.fill` glass overlay behind the content. SwiftUI clamps
+        /// `.opacity()` to [0,1], so values are kept ≤ 1.0 — `.hud`'s extra depth is
+        /// rendered via `tintOverlay` instead of an out-of-range (no-op) opacity.
         var fillOpacity: Double {
             switch self {
             case .frosted: return 1.00   // .fill.tertiary baseline (current look)
             case .soft:    return 0.80
             case .sidebar: return 0.90
-            case .hud:     return 1.10
+            case .hud:     return 1.00   // heaviest base; extra depth via tintOverlay
             case .crystal: return 0.55   // deep, very translucent
             case .ultra:   return 0.40
+            }
+        }
+
+        /// An additional tint layered over the glass fill so materials at the same
+        /// (clamped) opacity still read as distinct depths. `.hud` gets a darker
+        /// primary wash that `.frosted` (same fillOpacity 1.0) does not — making the
+        /// 'hud' selection a visible change rather than a silent no-op.
+        var tintOverlay: Color? {
+            switch self {
+            case .hud: return Color.primary.opacity(0.06)
+            default:   return nil
             }
         }
     }
@@ -377,12 +390,20 @@ struct VerbaWidgetEntryView: View {
     private var rowLimit: Int {
         switch family {
         case .systemSmall: return 3
-        case .systemMedium: return 4
-        default: return 9
+        case .systemMedium: return 3
+        // Large rows are two-line (title + project), so 9 + header + "+N more"
+        // overflowed the frame and clipped the last rows. 6 two-line rows fit the
+        // large widget's content height with the header and the overflow line.
+        default: return 6
         }
     }
 
-    private var openCount: Int { entry.todos.filter { !$0.done }.count }
+    /// Open items only, sorted — the SINGLE base for the header count, the visible
+    /// rows, and the "+N more" overflow so they can never disagree (e.g. during the
+    /// optimistic toggle window when a checked item is still present in the snapshot).
+    private var open: [WidgetTodo] { openFirst.filter { !$0.done } }
+
+    private var openCount: Int { open.count }
 
     var body: some View {
         VStack(alignment: .leading, spacing: family == .systemLarge ? 8 : 6) {
@@ -390,23 +411,28 @@ struct VerbaWidgetEntryView: View {
 
             if entry.notConnected {
                 connectState
-            } else if entry.todos.isEmpty {
+            } else if open.isEmpty {
+                // No OPEN items (snapshot empty, or only checked-off rows linger
+                // during the toggle window) → the honest "all clear" state.
                 emptyState
             } else {
-                let rows = Array(openFirst.prefix(rowLimit))
+                let rows = Array(open.prefix(rowLimit))
                 VStack(alignment: .leading, spacing: family == .systemSmall ? 6 : 8) {
                     ForEach(rows) { todo in
+                        // showProject only on large: medium rows stay single-line so
+                        // rowLimit rows + header + "+N more" never overflow the frame.
                         TodoRow(todo: todo,
-                                showProject: family != .systemSmall,
+                                showProject: family == .systemLarge,
                                 showTime: family != .systemSmall,
                                 compact: family == .systemSmall,
                                 accent: WidgetAppearance.resolvedAccent,
                                 chipRadius: WidgetAppearance.corner(8))
                     }
                 }
-                if openFirst.count > rows.count {
+                if open.count > rows.count {
                     // Tapping "+N more" opens the full Task Manager (no dead-end).
-                    Text("+\(openFirst.count - rows.count) more")
+                    // Counted off `open` (same base as the header) so they agree.
+                    Text("+\(open.count - rows.count) more")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
@@ -427,6 +453,10 @@ struct VerbaWidgetEntryView: View {
             ZStack {
                 Color.clear.background(.fill.tertiary)
                     .opacity(WidgetAppearance.material.fillOpacity)
+                // Per-material depth tint (e.g. .hud) so same-opacity materials differ.
+                if let tint = WidgetAppearance.material.tintOverlay {
+                    tint
+                }
                 if let accent = WidgetAppearance.resolvedAccent {
                     accent.opacity(0.06)
                 }
@@ -457,8 +487,9 @@ struct VerbaWidgetEntryView: View {
     }
 
     private var emptyState: some View {
+        // Top-anchored (no leading Spacer) so the message sits directly under the
+        // header, matching the populated list's top-leading anchor across families.
         VStack(alignment: .leading, spacing: 6) {
-            Spacer(minLength: 0)
             HStack(spacing: 7) {
                 Image(systemName: "checkmark.circle")
                     .font(.system(size: 15))
@@ -474,15 +505,16 @@ struct VerbaWidgetEntryView: View {
             }
             Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     /// Shown when no real snapshot exists yet — instead of fake tasks or a
     /// misleading "all clear", we invite the user to open Verba (the whole
     /// widget deep-links there) so today's tasks start syncing.
     private var connectState: some View {
+        // Top-anchored like the list/empty states so the header+first-content
+        // baseline stays at the same Y across connect / empty / populated.
         VStack(alignment: .leading, spacing: 6) {
-            Spacer(minLength: 0)
             HStack(spacing: 7) {
                 Image(systemName: "arrow.up.forward.app")
                     .font(.system(size: 15))
@@ -498,7 +530,7 @@ struct VerbaWidgetEntryView: View {
             }
             Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 
