@@ -40,30 +40,16 @@ enum Flag {
     case vertical([Color]), horizontal([Color]), japan(bg: Color, dot: Color), code(String, bg: Color, fg: Color), globe
     var isGlobe: Bool { if case .globe = self { return true }; return false }
 
+    /// Every language is a black chip with its 2-letter country/lang code in white (consistent, crisp).
     static func of(_ language: String) -> Flag {
-        let r = Color(red: 0.84, green: 0.16, blue: 0.16)
-        let b = Color(red: 0.0,  green: 0.22, blue: 0.66)
-        let g = Color(red: 0.0,  green: 0.55, blue: 0.27)
-        let y = Color(red: 0.98, green: 0.82, blue: 0.18)
         let blk = Color.black, w = Color.white
-        switch language {
-        case "French":     return .vertical([b, w, r])
-        case "Italian":    return .vertical([g, w, r])
-        case "German":     return .horizontal([blk, r, y])
-        case "Dutch":      return .horizontal([r, w, b])
-        case "Russian":    return .horizontal([w, b, r])
-        case "Polish":     return .horizontal([w, r])
-        case "Spanish":    return .horizontal([r, y, y, r])     // approx: yellow band wider
-        case "Portuguese": return .vertical([g, g, r, r, r])
-        case "Japanese":   return .japan(bg: w, dot: r)
-        case "English":    return .code("EN", bg: b, fg: w)
-        case "Chinese":    return .code("中", bg: r, fg: y)
-        case "Korean":     return .code("한", bg: w, fg: b)
-        case "Arabic":     return .code("ع", bg: g, fg: w)
-        case "Hindi":      return .code("हि", bg: Color(red: 1, green: 0.6, blue: 0.2), fg: w)
-        case "Turkish":    return .code("TR", bg: r, fg: w)
-        default:           return .globe
-        }
+        let codes: [String: String] = [
+            "English": "EN", "French": "FR", "Spanish": "ES", "German": "DE", "Italian": "IT",
+            "Portuguese": "PT", "Dutch": "NL", "Russian": "RU", "Chinese": "ZH", "Japanese": "JA",
+            "Korean": "KO", "Arabic": "AR", "Hindi": "HI", "Turkish": "TR", "Polish": "PL",
+        ]
+        guard let c = codes[language] else { return .globe }
+        return .code(c, bg: blk, fg: w)
     }
 }
 

@@ -7,13 +7,14 @@ import EventKit
 // MARK: - Settings sections (the custom left rail)
 
 private enum SettingsSection: String, CaseIterable, Identifiable {
-    case account, dictation, rewriting, output, customize, shortcuts, privacy, updates
+    case account, dictation, rewriting, action, output, customize, shortcuts, privacy, updates
     var id: String { rawValue }
     var title: String {
         switch self {
         case .account:   return "Account & Plan"
         case .dictation: return "Dictation"
         case .rewriting: return "AI rewriting"
+        case .action:    return "Action mode"
         case .output:    return "Output & feedback"
         case .customize: return "Customize"
         case .shortcuts: return "Shortcuts"
@@ -26,6 +27,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .account:   return "person.crop.circle"
         case .dictation: return "waveform"
         case .rewriting: return "wand.and.stars"
+        case .action:    return "bolt.fill"
         case .output:    return "arrow.down.doc"
         case .customize: return "paintpalette"
         case .shortcuts: return "keyboard"
@@ -38,6 +40,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .account:   return "Sign-in, plan, referrals"
         case .dictation: return "Engine, mic, language"
         case .rewriting: return "Backend, model, API keys"
+        case .action:    return "Apps, destinations, search"
         case .output:    return "Paste, overlay, sounds"
         case .customize: return "Glass, accent, widget"
         case .shortcuts: return "Triggers & chords"
@@ -181,6 +184,7 @@ struct SettingsView: View {
         case .account:   accountDetail
         case .dictation: dictationDetail
         case .rewriting: rewritingDetail
+        case .action:    actionDetail
         case .output:    outputDetail
         case .customize: customizeDetail
         case .shortcuts: shortcutsDetail
@@ -687,6 +691,56 @@ struct SettingsView: View {
 
     // MARK: - 2 · Dictation
 
+    @ViewBuilder private var actionDetail: some View {
+        card(nil, footer: "Action mode turns a spoken command into a confirmed action on your Mac. Trigger it with Fn+X (or rebind it in Shortcuts), speak your command, review the confirmation, and press ⌘↩ to run it. Examples: “create an event tomorrow at 3pm, lunch with Marc”, “remind me to call the bank Friday morning”, “search the best ramen in Paris on Google”, “open Spotify”, “run my Morning Routine shortcut”.") {
+            EmptyView()
+        }
+        card("Allowed actions",
+             footer: "Turn off any category you never want Verba to do.") {
+            ForEach(ActionKind.allCases, id: \.self) { k in
+                Toggle(isOn: Binding(
+                    get: { settings.isActionEnabled(k) },
+                    set: { on in if on { settings.disabledActions.remove(k.rawValue) } else { settings.disabledActions.insert(k.rawValue) } }
+                )) {
+                    Label(k.label, systemImage: k.icon)
+                }
+                .toggleStyle(.switch)
+            }
+        }
+        card("Destinations",
+             footer: "Calendar events and reminders are written here. Pick a specific calendar/list (e.g. a Google or Notion-synced one), or leave on the macOS default. Set up the account in Calendar.app / Reminders.app first.") {
+            Picker("Calendar", selection: $settings.eventCalendarID) {
+                Text("macOS default").tag("")
+                ForEach(eventCalendars, id: \.0) { Text($0.1).tag($0.0) }
+            }
+            Picker("Reminders list", selection: $settings.reminderListID) {
+                Text("macOS default").tag("")
+                ForEach(reminderLists, id: \.0) { Text($0.1).tag($0.0) }
+            }
+        }
+        .onAppear { loadActionCalendars() }
+        card("Web search targets",
+             footer: "Say “search … on Google / ChatGPT / Claude”. {q} is replaced by what you said; add any site.") {
+            ForEach($settings.searchTargets) { $t in
+                HStack(spacing: 8) {
+                    TextField("Name", text: $t.name).frame(width: 110).textFieldStyle(.roundedBorder)
+                    TextField("https://…/search?q={q}", text: $t.urlTemplate).textFieldStyle(.roundedBorder)
+                    Button { settings.searchTargets.removeAll { $0.id == t.id } } label: {
+                        Image(systemName: "minus.circle.fill").foregroundStyle(.secondary)
+                    }.buttonStyle(.borderless).help("Remove")
+                }
+            }
+            HStack {
+                Button { settings.searchTargets.append(SearchTarget(name: "New", urlTemplate: "https://example.com/search?q={q}")) } label: {
+                    Label("Add search target", systemImage: "plus")
+                }.buttonStyle(.borderless)
+                Spacer()
+                Button("Reset to defaults") { settings.searchTargets = SearchTarget.defaults }
+                    .buttonStyle(.borderless).foregroundStyle(.secondary)
+            }
+        }
+    }
+
     @ViewBuilder private var dictationDetail: some View {
         card("Transcription engine") {
             VStack(spacing: 9) {
@@ -786,53 +840,6 @@ struct SettingsView: View {
             toggleRow("Auto-pick profile from the active app", $settings.autoDetectProfile)
             toggleRow("Use selected text as context", $settings.useSelectionContext,
                       help: settings.useSelectionContext ? "If text is selected when you dictate, your words become an instruction on that selection, and the result replaces it." : nil)
-        }
-
-        card("Action mode — allowed actions",
-             footer: "Action mode (Fn+X) turns speech into a confirmed action. Turn off any category you never want Verba to do.") {
-            ForEach(ActionKind.allCases, id: \.self) { k in
-                Toggle(isOn: Binding(
-                    get: { settings.isActionEnabled(k) },
-                    set: { on in if on { settings.disabledActions.remove(k.rawValue) } else { settings.disabledActions.insert(k.rawValue) } }
-                )) {
-                    Label(k.label, systemImage: k.icon)
-                }
-                .toggleStyle(.switch)
-            }
-        }
-
-        card("Action mode — destinations",
-             footer: "Calendar events and reminders are written here. Pick a specific calendar/list (e.g. a Google or Notion-synced one), or leave on the macOS default. Set up the account in Calendar.app / Reminders.app first.") {
-            Picker("Calendar", selection: $settings.eventCalendarID) {
-                Text("macOS default").tag("")
-                ForEach(eventCalendars, id: \.0) { Text($0.1).tag($0.0) }
-            }
-            Picker("Reminders list", selection: $settings.reminderListID) {
-                Text("macOS default").tag("")
-                ForEach(reminderLists, id: \.0) { Text($0.1).tag($0.0) }
-            }
-        }
-        .onAppear { loadActionCalendars() }
-
-        card("Action mode — search targets",
-             footer: "Say “search … on Google / ChatGPT / Claude”. {q} is replaced by what you said; add any site.") {
-            ForEach($settings.searchTargets) { $t in
-                HStack(spacing: 8) {
-                    TextField("Name", text: $t.name).frame(width: 110).textFieldStyle(.roundedBorder)
-                    TextField("https://…/search?q={q}", text: $t.urlTemplate).textFieldStyle(.roundedBorder)
-                    Button { settings.searchTargets.removeAll { $0.id == t.id } } label: {
-                        Image(systemName: "minus.circle.fill").foregroundStyle(.secondary)
-                    }.buttonStyle(.borderless).help("Remove")
-                }
-            }
-            HStack {
-                Button { settings.searchTargets.append(SearchTarget(name: "New", urlTemplate: "https://example.com/search?q={q}")) } label: {
-                    Label("Add search target", systemImage: "plus")
-                }.buttonStyle(.borderless)
-                Spacer()
-                Button("Reset to defaults") { settings.searchTargets = SearchTarget.defaults }
-                    .buttonStyle(.borderless).foregroundStyle(.secondary)
-            }
         }
 
         // API keys (instant-save)
