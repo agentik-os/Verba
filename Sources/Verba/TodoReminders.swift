@@ -10,6 +10,15 @@ import UserNotifications
 /// one). Tasks that are done, deleted, had the deadline cleared, or whose 30-min mark is
 /// already past get no notification (cleared by the full re-sync). Gated by
 /// `Settings.todoReminders`.
+/// Lets local notifications show as a banner + sound even while Verba is frontmost.
+final class NotifPresenter: NSObject, UNUserNotificationCenterDelegate {
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .sound, .badge])
+    }
+}
+
 final class TodoReminders: ObservableObject {
     static let shared = TodoReminders()
 
@@ -28,8 +37,13 @@ final class TodoReminders: ObservableObject {
 
     private init() {}
 
+    /// Presents notifications even when Verba is the frontmost app (a menu-bar app often is),
+    /// so reminders actually appear instead of being silently suppressed.
+    private let presenter = NotifPresenter()
+
     /// Call once at launch. Subscribes to store changes and does an initial reconcile.
     func start() {
+        UNUserNotificationCenter.current().delegate = presenter
         cancellable = TodoStore.shared.$projects
             .debounce(for: .seconds(0.5), scheduler: RunLoop.main)
             .sink { [weak self] _ in self?.reconcile() }
