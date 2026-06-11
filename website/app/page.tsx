@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import LiveDemo from "@/components/LiveDemo";
-import HeroFlux from "@/components/HeroFlux";
+import WaveLine from "@/components/WaveLine";
 import SpeedRace from "@/components/SpeedRace";
 import Reveal from "@/components/Reveal";
 import TryIt from "@/components/TryIt";
@@ -87,22 +87,18 @@ function Nav() {
 function Hero() {
   return (
     <section className="relative grid gap-12 pb-16 pt-20 sm:pt-32 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.82fr)] lg:items-center lg:gap-16">
-      {/* GPU particle flux: voice becoming text, as a premium full-bleed backdrop.
-          Full-bleed via negative margins; masked at the edges so it never fights
-          the copy; sits below everything (LiveDemo stays the focal artifact). */}
+      {/* Discreet full-bleed sound wave: light, simple, spans the WHOLE viewport width
+          (left-1/2 + w-screen breaks out of the max-w container), edge-faded so it never
+          fights the copy. No particles, no dots. Sits below everything. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -z-10 hidden sm:block"
+        className="pointer-events-none absolute -z-10 left-1/2 top-1/2 hidden h-[26rem] w-screen -translate-x-1/2 -translate-y-1/2 sm:block"
         style={{
-          inset: "-6rem max(-50vw + 50%, -8rem)",
-          maskImage:
-            "radial-gradient(120% 90% at 62% 45%, #000 35%, transparent 78%)",
-          WebkitMaskImage:
-            "radial-gradient(120% 90% at 62% 45%, #000 35%, transparent 78%)",
-          opacity: 0.9,
+          maskImage: "linear-gradient(to right, transparent, #000 16%, #000 84%, transparent)",
+          WebkitMaskImage: "linear-gradient(to right, transparent, #000 16%, #000 84%, transparent)",
         }}
       >
-        <HeroFlux className="absolute inset-0" />
+        <WaveLine className="h-full w-full" />
       </div>
 
       {/* Left: opinionated, tight copy column */}
