@@ -692,9 +692,7 @@ struct SettingsView: View {
     // MARK: - 2 · Dictation
 
     @ViewBuilder private var actionDetail: some View {
-        card(nil, footer: L("Action mode turns a spoken command into a confirmed action on your Mac. Trigger it with Fn+X (or rebind it in Shortcuts), speak your command, review the confirmation, and press ⌘↩ to run it. Examples: “create an event tomorrow at 3pm, lunch with Marc”, “remind me to call the bank Friday morning”, “search the best ramen in Paris on Google”, “open Spotify”, “run my Morning Routine shortcut”.")) {
-            EmptyView()
-        }
+        cardCaption(L("Action mode turns a spoken command into a confirmed action on your Mac. Trigger it with Fn+X (or rebind it in Shortcuts), speak your command, review the confirmation, and press ⌘↩ to run it. Examples: “create an event tomorrow at 3pm, lunch with Marc”, “remind me to call the bank Friday morning”, “search the best ramen in Paris on Google”, “open Spotify”, “run my Morning Routine shortcut”."))
         card(L("Allowed actions"),
              footer: L("Turn off any category you never want Verba to do.")) {
             ForEach(ActionKind.allCases, id: \.self) { k in
