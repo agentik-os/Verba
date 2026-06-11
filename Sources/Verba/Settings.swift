@@ -455,6 +455,10 @@ final class Settings: ObservableObject {
     @Published var autoDetectProfile: Bool { didSet { d.set(autoDetectProfile, forKey: "autoDetectProfile") } }
     @Published var useSelectionContext: Bool { didSet { d.set(useSelectionContext, forKey: "useSelectionContext") } }
     @Published var voiceCommands: Bool { didSet { d.set(voiceCommands, forKey: "voiceCommands") } }
+    /// User-configurable Action-mode web search / quick-open targets ("search X on Google/ChatGPT/Claude").
+    @Published var searchTargets: [SearchTarget] {
+        didSet { if let data = try? JSONEncoder().encode(searchTargets) { d.set(data, forKey: "searchTargets") } }
+    }
     /// The user's everyday language (a language NAME like "Italian", or "" = auto-detect only).
     /// Every reprompt mode writes in the language actually spoken, but DEFAULTS to this when the
     /// spoken language is ambiguous — so an Italian user never gets stray English/French output.
@@ -688,6 +692,7 @@ final class Settings: ObservableObject {
         // of the box); falls back to auto-detect only if the system language isn't a known one.
         mainLanguage = d.object(forKey: "mainLanguage") as? String ?? Settings.systemLanguageName()
         voiceCommands = d.object(forKey: "voiceCommands") as? Bool ?? true
+        searchTargets = d.data(forKey: "searchTargets").flatMap { try? JSONDecoder().decode([SearchTarget].self, from: $0) } ?? SearchTarget.defaults
         transformHotkeyCode = d.object(forKey: "transformHotkeyCode") as? Int ?? 7 /* X */
         languageGuard = d.object(forKey: "languageGuard") as? Bool ?? true
         repromptEnabled = d.object(forKey: "repromptEnabled") as? Bool ?? true

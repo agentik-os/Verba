@@ -51,6 +51,7 @@ struct ActionConfirmView: View {
         case .playMusic:                return "Play music?"
         case let .sendMessage(to, _):   return "Send a message to \(to)?"
         case let .appleScript(label, _): return "\(label)?"
+        case let .openURL(label, _): return "Open \(label)?"
         }
     }
 
@@ -64,6 +65,7 @@ struct ActionConfirmView: View {
         case .playMusic:     return "Play"
         case .sendMessage:   return "Send message"
         case .appleScript:   return "Run"
+        case .openURL:       return "Open"
         }
     }
 
@@ -101,6 +103,8 @@ struct ActionConfirmView: View {
             return [("To", to), ("Message", body)]
         case let .appleScript(label, script):
             return [("Action", label), ("Script", script)]
+        case let .openURL(label, url):
+            return [("Open", label), ("URL", url.absoluteString)]
         }
     }
 

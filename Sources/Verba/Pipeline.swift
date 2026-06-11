@@ -394,6 +394,10 @@ enum Pipeline {
     /// in the dedicated Action mode: it tells the model the user EXPECTS a command, so it should strongly
     /// prefer emitting an action (falling back to text only when the request truly isn't actionable).
     static func agenticActionsAddendum(shortcuts: [String] = [], actionFirst: Bool = false) -> String {
+        let targets = Settings.shared.searchTargets
+        let searchBlock = targets.isEmpty ? "(No search targets configured.)" :
+            "The user's web search targets (for a 'search' action, set \"target\" to one of these EXACT names " +
+            "and put the spoken query in \"query\"):\n" + targets.map { "  • \($0.name)" }.joined(separator: "\n")
         let shortcutsBlock: String
         if shortcuts.isEmpty {
             shortcutsBlock = "(The user has no saved Shortcuts, so do not emit a run_shortcut action.)"
@@ -431,6 +435,9 @@ enum Pipeline {
             {"action":{"type":"play_music","query":"..."(optional)}}
           send_message — compose a Messages.app message (the user CONFIRMS before it sends):
             {"action":{"type":"send_message","to":"<name, phone, or email>","body":"..."}}
+          search — run a web search or open a site in the browser:
+            {"action":{"type":"search","target":"<one of the search targets below>","query":"<the spoken query>"}}
+            or open a specific URL directly: {"action":{"type":"open_url","url":"https://..."}}
           apple_script — a last-resort escape hatch for an action none of the above cover:
             {"action":{"type":"apple_script","label":"<short human description>","script":"<AppleScript source>"}}
 
@@ -450,6 +457,8 @@ enum Pipeline {
         - Use the user's language for titles, bodies and notes.
 
         \(shortcutsBlock)
+
+        \(searchBlock)
 
         \(nowContext())
         """
@@ -567,6 +576,22 @@ enum Pipeline {
             let label = ((a["label"] as? String) ?? (a["title"] as? String) ?? "Action")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             return .appleScript(label: label.isEmpty ? "Action" : label, script: script)
+        case "search", "web_search", "websearch", "open_url", "openurl", "url":
+            // A direct URL the model produced ("open github.com").
+            if let urlStr = (a["url"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !urlStr.isEmpty, let url = URL(string: urlStr.contains("://") ? urlStr : "https://\(urlStr)") {
+                let label = (a["target"] as? String) ?? url.host ?? "link"
+                return .openURL(label: label, url: url)
+            }
+            // Otherwise resolve one of the user's configured search targets by name + fill the query.
+            let query = ((a["query"] as? String) ?? (a["q"] as? String) ?? (a["title"] as? String) ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let targetName = ((a["target"] as? String) ?? (a["engine"] as? String) ?? (a["name"] as? String) ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let targets = Settings.shared.searchTargets
+            let match = targets.first { $0.name.caseInsensitiveCompare(targetName) == .orderedSame } ?? targets.first
+            guard let target = match, !query.isEmpty, let url = target.url(for: query) else { return nil }
+            return .openURL(label: "\(target.name): \(query)", url: url)
         default:
             return nil
         }

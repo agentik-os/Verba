@@ -10,6 +10,28 @@ import AppKit
 // performs it on macOS (Calendar / Reminders via EventKit, email via a mailto: draft).
 // Nothing is ever executed without the user confirming first (see ActionConfirmView).
 
+/// A user-configurable web search / quick-open target for Action mode. The model maps a spoken
+/// "search X on Google" (or "open Y") to one of these by NAME, and the query fills `{q}`.
+struct SearchTarget: Codable, Identifiable, Equatable {
+    var id = UUID()
+    var name: String          // e.g. "Google", "ChatGPT", "Claude", "YouTube"
+    var urlTemplate: String   // e.g. "https://www.google.com/search?q={q}" ({q} = the spoken query)
+
+    func url(for query: String) -> URL? {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        return URL(string: urlTemplate.replacingOccurrences(of: "{q}", with: q))
+    }
+
+    static let defaults: [SearchTarget] = [
+        SearchTarget(name: "Google",     urlTemplate: "https://www.google.com/search?q={q}"),
+        SearchTarget(name: "ChatGPT",    urlTemplate: "https://chatgpt.com/?q={q}"),
+        SearchTarget(name: "Claude",     urlTemplate: "https://claude.ai/new?q={q}"),
+        SearchTarget(name: "Perplexity", urlTemplate: "https://www.perplexity.ai/search?q={q}"),
+        SearchTarget(name: "YouTube",    urlTemplate: "https://www.youtube.com/results?search_query={q}"),
+    ]
+}
+
 /// A structured, confirmable action the user dictated in Context mode.
 enum VerbaAction: Codable, Equatable {
     /// Create a Calendar event. `end` defaults to start + 1h when nil.
@@ -28,16 +50,18 @@ enum VerbaAction: Codable, Equatable {
     case sendMessage(to: String, body: String)
     /// A generic AppleScript escape hatch the intent model can fill.
     case appleScript(label: String, script: String)
+    /// Open a web URL (web searches, "open this site"), usually resolved from a search target.
+    case openURL(label: String, url: URL)
 
     // MARK: Codable (tagged by "kind" so it round-trips cleanly)
 
     private enum CodingKeys: String, CodingKey {
         case kind, title, start, end, notes, due, to, subject, body
-        case name, input, query, script, label
+        case name, input, query, script, label, url
     }
     private enum Kind: String, Codable {
         case calendarEvent, reminder, emailDraft
-        case runShortcut, openApp, playMusic, sendMessage, appleScript
+        case runShortcut, openApp, playMusic, sendMessage, appleScript, openURL
     }
 
     init(from decoder: Decoder) throws {
@@ -75,6 +99,10 @@ enum VerbaAction: Codable, Equatable {
             self = .appleScript(
                 label: try c.decode(String.self, forKey: .label),
                 script: try c.decode(String.self, forKey: .script))
+        case .openURL:
+            self = .openURL(
+                label: try c.decode(String.self, forKey: .label),
+                url: try c.decode(URL.self, forKey: .url))
         }
     }
 
@@ -115,6 +143,10 @@ enum VerbaAction: Codable, Equatable {
             try c.encode(Kind.appleScript, forKey: .kind)
             try c.encode(label, forKey: .label)
             try c.encode(script, forKey: .script)
+        case let .openURL(label, url):
+            try c.encode(Kind.openURL, forKey: .kind)
+            try c.encode(label, forKey: .label)
+            try c.encode(url, forKey: .url)
         }
     }
 
@@ -131,6 +163,7 @@ enum VerbaAction: Codable, Equatable {
         case .playMusic:     return "music.note"
         case .sendMessage:   return "message.fill"
         case .appleScript:   return "applescript"
+        case .openURL:       return "safari"
         }
     }
 
@@ -158,6 +191,8 @@ enum VerbaAction: Codable, Equatable {
             return "Send message · \(to) · “\(Self.clip(body))”"
         case let .appleScript(label, _):
             return "Run · \(label)"
+        case let .openURL(label, _):
+            return "Open · \(label)"
         }
     }
 
@@ -238,6 +273,9 @@ struct ActionExecutor {
             return try sendMessage(to: to, body: body)
         case let .appleScript(label, script):
             return try runAppleScript(label: label, script: script)
+        case let .openURL(label, url):
+            NSWorkspace.shared.open(url)
+            return "Opened \(label)"
         }
     }
 

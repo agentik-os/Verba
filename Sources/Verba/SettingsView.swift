@@ -772,6 +772,27 @@ struct SettingsView: View {
                       help: settings.useSelectionContext ? "If text is selected when you dictate, your words become an instruction on that selection, and the result replaces it." : nil)
         }
 
+        card("Action mode",
+             footer: "Action mode (Fn+X) turns speech into a confirmed action. Calendar events and reminders go to your macOS DEFAULT Calendar / Reminders list (set the default in Calendar.app / Reminders.app, e.g. a Google or Notion-synced calendar). Web search targets below let you say “search … on Google / ChatGPT / Claude”; {q} is replaced by what you said.") {
+            ForEach($settings.searchTargets) { $t in
+                HStack(spacing: 8) {
+                    TextField("Name", text: $t.name).frame(width: 110).textFieldStyle(.roundedBorder)
+                    TextField("https://…/search?q={q}", text: $t.urlTemplate).textFieldStyle(.roundedBorder)
+                    Button { settings.searchTargets.removeAll { $0.id == t.id } } label: {
+                        Image(systemName: "minus.circle.fill").foregroundStyle(.secondary)
+                    }.buttonStyle(.borderless).help("Remove")
+                }
+            }
+            HStack {
+                Button { settings.searchTargets.append(SearchTarget(name: "New", urlTemplate: "https://example.com/search?q={q}")) } label: {
+                    Label("Add search target", systemImage: "plus")
+                }.buttonStyle(.borderless)
+                Spacer()
+                Button("Reset to defaults") { settings.searchTargets = SearchTarget.defaults }
+                    .buttonStyle(.borderless).foregroundStyle(.secondary)
+            }
+        }
+
         // API keys (instant-save)
         card("API keys",
              footer: "Keys save automatically as you type, stored in your macOS Keychain.") {
