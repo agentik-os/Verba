@@ -65,6 +65,7 @@
 "All time" = "Aller tijden";
 "Allowed actions" = "Toegestane acties";
 "Already subscribed? Enter your checkout email and Verify to restore." = "Al geabonneerd? Voer je afreken-e-mailadres in en klik op Verifiëren om te herstellen.";
+"Analytics" = "Analytics";
 "Anthropic (Claude reprompting)" = "Anthropic (Claude-herprompting)";
 "Anthropic API key" = "Anthropic API-sleutel";
 "Any model on openrouter.ai (openai/gpt-4o, google/gemini-2.0-flash…). Add your key below." = "Elk model op openrouter.ai (openai/gpt-4o, google/gemini-2.0-flash…). Voeg hieronder je sleutel toe.";
@@ -107,6 +108,7 @@
 "Building…" = "Bezig met bouwen…";
 "Bullet list" = "Opsommingslijst";
 "By default Verba takes over the globe (Fn) key so macOS doesn't pop the emoji/Fn HUD or switch your keyboard layout. Turn these off to get the standard macOS behaviour back." = "Standaard neemt Verba de wereldbol-toets (Fn) over zodat macOS niet de emoji/Fn-HUD toont of je toetsenbordindeling wisselt. Schakel dit uit om het standaardgedrag van macOS terug te krijgen.";
+"CRM" = "CRM";
 "Calendar" = "Agenda";
 "Cancel" = "Annuleren";
 "Cancel (Esc)" = "Annuleren (Esc)";
@@ -121,6 +123,7 @@
 "Change format (re-organizes from your words)" = "Format wijzigen (herschikt op basis van je woorden)";
 "Change mode" = "Modus wijzigen";
 "Change-mode jumps straight to the next mode (no list)" = "Modus wijzigen springt direct naar de volgende modus (geen lijst)";
+"Chat" = "Chat";
 "Check now" = "Nu controleren";
 "Checklist" = "Checklist";
 "Choose a mode" = "Kies een modus";
@@ -146,6 +149,13 @@
 "Coding, writing, casual, intent, each routed to the right model." = "Coding, schrijven, informeel, intent — elk naar het juiste model gestuurd.";
 "Community" = "Community";
 "Conditions: the invited person must be a paying subscriber (not just signed up) and have dictated 15,000+ words. Self-referrals don't count." = "Voorwaarden: de uitgenodigde persoon moet een betalende abonnee zijn (niet alleen aangemeld) en 15.000+ woorden hebben gedicteerd. Zelfverwijzingen tellen niet mee.";
+"Connect" = "Verbinden";
+"Connect Gmail, Slack, Notion and more, then act on them by voice — e.g. “send a Slack message to the team that I'm running late”." = "Verbind Gmail, Slack, Notion en meer, en bedien ze met je stem — bijv. “stuur het team een Slack-bericht dat ik later kom”.";
+"Connect your apps" = "Verbind je apps";
+"Connect your apps so Action mode can act on them by voice." = "Verbind je apps zodat de Actiemodus ze met je stem kan bedienen.";
+"Connected" = "Verbonden";
+"Connected apps" = "Verbonden apps";
+"Connecting…" = "Verbinden…";
 "Consecutive days you've dictated at least once." = "Opeenvolgende dagen waarop je minstens één keer hebt gedicteerd.";
 "Conspiracy theorist" = "Complotdenker";
 "Context" = "Context";
@@ -223,7 +233,9 @@
 "Describe what the mode should do first." = "Beschrijf eerst wat de modus moet doen.";
 "Describe what this mode should do, in plain words. You can type it or dictate it with Verba. It uses your configured AI, no extra setup." = "Beschrijf in gewone woorden wat deze modus moet doen. Je kunt het typen of dicteren met Verba. Het gebruikt je ingestelde AI, zonder extra installatie.";
 "Description" = "Beschrijving";
+"Design" = "Design";
 "Destinations" = "Bestemmingen";
+"Developer" = "Ontwikkelaar";
 "Dictate" = "Dicteren";
 "Dictate your feedback" = "Dicteer je feedback";
 "Dictation" = "Dictaat";
@@ -237,6 +249,7 @@
 "Disk & cloud" = "Schijf & cloud";
 "Dismiss" = "Sluiten";
 "Dock off = menu-bar only. The dictation hotkeys work either way. If you hide BOTH, reopen Verba from Applications to get back here." = "Dock uit = alleen menubalk. De dicteersneltoetsen werken hoe dan ook. Als je BEIDE verbergt, open je Verba opnieuw vanuit Programma's om hier terug te komen.";
+"Documents" = "Documenten";
 "Done" = "Klaar";
 "Download & install" = "Downloaden & installeren";
 "Download a free local model" = "Download een gratis lokaal model";
@@ -246,6 +259,7 @@
 "Downloading…" = "Bezig met downloaden…";
 "Dry & deadpan" = "Droog & uitgestreken";
 "Due" = "Deadline";
+"E-commerce" = "E-commerce";
 "Each mode is a different way Claude reorders and improves your dictation." = "Elke modus is een andere manier waarop Claude je dictaat herordent en verbetert.";
 "Each style is a reusable tone/format layer added on top of your mode. Switch styles anytime with Fn + [ and Fn + ], or from the menu bar." = "Elke stijl is een herbruikbare toon-/opmaaklaag bovenop je modus. Wissel altijd van stijl met Fn + [ en Fn + ], of via de menubalk.";
 "Edit deadline" = "Deadline bewerken";
@@ -373,9 +387,13 @@
 "Make active" = "Activeren";
 "Make the app yours. Defaults are monochrome and macOS-native; everything here is optional." = "Maak de app van jezelf. De standaardinstellingen zijn monochroom en macOS-eigen; alles hier is optioneel.";
 "Manage" = "Beheren";
+"Manage connections" = "Verbindingen beheren";
 "Manage modes" = "Modi beheren";
 "Manage modes…" = "Modi beheren…";
+"Maps" = "Kaarten";
+"Marketing" = "Marketing";
 "Match my tone per app" = "Mijn toon per app afstemmen";
+"Meetings" = "Vergaderingen";
 "Menu" = "Menu";
 "Menu bar only (no overlay)" = "Alleen menubalk (geen overlay)";
 "Menu glass blur" = "Menu-glasvervaging";
@@ -497,6 +515,7 @@
 "Paused · tap the mic to stop" = "Gepauzeerd · tik op de microfoon om te stoppen";
 "Paused…" = "Gepauzeerd…";
 "Pay-per-token with your Anthropic API key." = "Betalen per token met je Anthropic API-sleutel.";
+"Payments" = "Betalingen";
 "Pick a mode below" = "Kies hieronder een modus";
 "Pick a mode by number" = "Kies een modus op nummer";
 "Pick a project" = "Kies een project";
@@ -526,6 +545,7 @@
 "Private by default" = "Standaard privé";
 "Pro plan" = "Pro-abonnement";
 "Pro unlocked ✓" = "Pro ontgrendeld ✓";
+"Productivity" = "Productiviteit";
 "Profiles appear once they dictate on the latest version." = "Profielen verschijnen zodra ze op de nieuwste versie dicteren.";
 "Project" = "Project";
 "Prompt" = "Prompt";
@@ -557,6 +577,7 @@
 "Refer friends — give a month, get a month" = "Verwijs vrienden — geef een maand, krijg een maand";
 "Reformulation runs entirely on your Mac. Tap Set up to install the local engine (~30 MB) the first time. Qwen 2.5 7B recommended (~4.7 GB)." = "Herformulering draait volledig op je Mac. Tik op Instellen om de eerste keer de lokale engine (~30 MB) te installeren. Qwen 2.5 7B aanbevolen (~4,7 GB).";
 "Refresh" = "Vernieuwen";
+"Refresh connection status" = "Verbindingsstatus vernieuwen";
 "Regenerate" = "Opnieuw genereren";
 "Reload" = "Opnieuw laden";
 "Remember the last mode you used" = "Onthoud de laatste modus die je gebruikte";
@@ -590,6 +611,8 @@
 "Review auto-learned" = "Automatisch geleerde controleren";
 "Rich text/markdown in apps that render it (Mail, Notion, Notes…), plain text in code editors and terminals." = "Opgemaakte tekst/markdown in apps die het weergeven (Mail, Notion, Notes…), platte tekst in code-editors en terminals.";
 "Run" = "Uitvoeren";
+"Run \\(label.isEmpty ? tool : label) in your connected app?" = "\\(label.isEmpty ? tool : label) uitvoeren in je verbonden app?";
+"Run action" = "Actie uitvoeren";
 "Run shortcut" = "Snelkoppeling uitvoeren";
 "Run the “\\(name)” shortcut?" = "De snelkoppeling “\\(name)” uitvoeren?";
 "Runs fully offline & free once installed, no API key needed." = "Draait volledig offline & gratis na installatie, geen API-sleutel nodig.";
@@ -613,6 +636,7 @@
 "Say what the list is for first." = "Zeg eerst waar de lijst voor is.";
 "Say “new line / new paragraph”, “comma / period / question mark”, “bullet point”, or “scratch that” and Verba turns them into real formatting (any mode, incl. Flow). EN + FR." = "Zeg “new line / new paragraph”, “comma / period / question mark”, “bullet point” of “scratch that” en Verba zet ze om in echte opmaak (elke modus, incl. Flow). EN + FR.";
 "Say “search … on Google / ChatGPT / Claude”. {q} is replaced by what you said; add any site." = "Zeg “search … on Google / ChatGPT / Claude”. {q} wordt vervangen door wat je zei; voeg een willekeurige site toe.";
+"Scheduling" = "Planning";
 "Sci-fi space crew" = "Sci-fi ruimtebemanning";
 "Scratchpad" = "Kladblok";
 "Screen Recording" = "Schermopname";
@@ -672,6 +696,7 @@
 "Sign out" = "Uitloggen";
 "Sign out of Verba?" = "Uitloggen bij Verba?";
 "Sign-in, plan, referrals" = "Inloggen, abonnement, verwijzingen";
+"Signatures" = "Handtekeningen";
 "Signed in" = "Ingelogd";
 "Signed in as" = "Ingelogd als";
 "Signed in as \\(settings.proEmail)" = "Ingelogd als \\(settings.proEmail)";
@@ -681,6 +706,7 @@
 "Smart formatting per app" = "Slimme opmaak per app";
 "Snippet" = "Fragment";
 "Snippets" = "Fragmenten";
+"Social" = "Sociaal";
 "Soft — a light popover-style frost." = "Zacht — een lichte popover-achtige matglans.";
 "Some permissions are off. Verba can't fully work until the three core ones are on." = "Sommige machtigingen staan uit. Verba werkt pas volledig als de drie kernmachtigingen aanstaan.";
 "Sonnet" = "Sonnet";
@@ -691,6 +717,7 @@
 "Speak how to adapt the text" = "Spreek in hoe de tekst aangepast moet worden";
 "Speak it. Send it clean." = "Spreek het in. Verstuur het netjes.";
 "Spoken language" = "Gesproken taal";
+"Spreadsheets" = "Spreadsheets";
 "Start / stop dictation" = "Dictaat starten / stoppen";
 "Start a new note (record again)" = "Begin een nieuwe notitie (opnieuw opnemen)";
 "Start a recording with Fn, then press Control to try it." = "Start een opname met Fn en druk dan op Control om het te proberen.";
@@ -702,6 +729,7 @@
 "Stop an in-progress note / to-do capture" = "Stop een lopende notitie- / to-do-opname";
 "Stop playback" = "Afspelen stoppen";
 "Stop the macOS Fn / emoji popup" = "Stop de macOS Fn- / emoji-pop-up";
+"Storage" = "Opslag";
 "Strikethrough (~~)" = "Doorhalen (~~)";
 "Style" = "Stijl";
 "Style prompt" = "Stijlprompt";
@@ -714,6 +742,7 @@
 "Subject" = "Onderwerp";
 "Suggest a feature and upvote the ones you want most. We build what rises to the top." = "Stel een functie voor en stem op de functies die je het liefst wilt. Wij bouwen wat bovenaan eindigt.";
 "Suggest a feature…" = "Stel een functie voor…";
+"Support" = "Support";
 "Surreal dream-logic" = "Surrealistische droomlogica";
 "Switch mode — keeps recording" = "Wissel van modus — opname blijft doorlopen";
 "System default" = "Systeemstandaard";
@@ -758,6 +787,7 @@
 "They count once they're a paying subscriber and have dictated 15,000+ words." = "Ze tellen mee zodra ze een betalende abonnee zijn en meer dan 15.000 woorden hebben gedicteerd.";
 "They sign up through your link and start a paid Verba Pro plan." = "Ze melden zich aan via jouw link en starten een betaald Verba Pro-abonnement.";
 "They subscribe to Pro" = "Ze nemen een Pro-abonnement";
+"Third-party apps via secure OAuth" = "Apps van derden via veilige OAuth";
 "This detaches your account from this Mac. Your local notes, transcripts and to-dos stay on this device, you can sign back in anytime." = "Hiermee koppel je je account los van deze Mac. Je lokale notities, transcripties en taken blijven op dit apparaat; je kunt je altijd weer aanmelden.";
 "This instruction will shape your note" = "Deze instructie bepaalt de vorm van je notitie";
 "This is your PUBLIC name on the Verba leaderboard. It is never your real name or email, so pick something you're happy for anyone to see." = "Dit is je PUBLIEKE naam op het Verba-scorebord. Het is nooit je echte naam of e-mailadres, dus kies iets waarvan je het prima vindt als iedereen het ziet.";
@@ -791,6 +821,7 @@
 "Today's goal" = "Doel van vandaag";
 "Today's to-dos  (quick glance)" = "Taken van vandaag  (snelle blik)";
 "Tomorrow 9am" = "Morgen 09:00";
+"Tool" = "Tool";
 "Tools" = "Hulpmiddelen";
 "Total words" = "Totaal woorden";
 "Total words dictated across all your sessions." = "Totaal aantal gedicteerde woorden over al je sessies.";
@@ -856,6 +887,7 @@
 "Verify / restore" = "Verifiëren / herstellen";
 "Version" = "Versie";
 "Version & releases" = "Versie & releases";
+"Video" = "Video";
 "Vocabulary word" = "Woordenschatwoord";
 "Voice commands" = "Spraakopdrachten";
 "Voice to clean text, on your terms." = "Van stem naar nette tekst, op jouw voorwaarden.";

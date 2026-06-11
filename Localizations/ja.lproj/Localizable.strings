@@ -65,6 +65,7 @@
 "All time" = "全期間";
 "Allowed actions" = "許可された操作";
 "Already subscribed? Enter your checkout email and Verify to restore." = "すでにご契約済みですか?購入時のメールアドレスを入力してVerifyすると復元できます。";
+"Analytics" = "分析";
 "Anthropic (Claude reprompting)" = "Anthropic(Claudeによる再プロンプト)";
 "Anthropic API key" = "Anthropic APIキー";
 "Any model on openrouter.ai (openai/gpt-4o, google/gemini-2.0-flash…). Add your key below." = "openrouter.ai上の任意のモデル(openai/gpt-4o、google/gemini-2.0-flashなど)。下にキーを追加してください。";
@@ -107,6 +108,7 @@
 "Building…" = "作成中…";
 "Bullet list" = "箇条書きリスト";
 "By default Verba takes over the globe (Fn) key so macOS doesn't pop the emoji/Fn HUD or switch your keyboard layout. Turn these off to get the standard macOS behaviour back." = "デフォルトではVerbaが地球儀(Fn)キーを引き継ぎ、macOSが絵文字/Fnの表示を出したりキーボードレイアウトを切り替えたりしないようにします。これらをオフにすると、標準のmacOSの動作に戻ります。";
+"CRM" = "CRM";
 "Calendar" = "カレンダー";
 "Cancel" = "キャンセル";
 "Cancel (Esc)" = "キャンセル(Esc)";
@@ -121,6 +123,7 @@
 "Change format (re-organizes from your words)" = "形式を変更（あなたの言葉から再構成します）";
 "Change mode" = "モードを変更";
 "Change-mode jumps straight to the next mode (no list)" = "モード変更で次のモードへ直接切り替えます（リストなし）";
+"Chat" = "チャット";
 "Check now" = "今すぐ確認";
 "Checklist" = "チェックリスト";
 "Choose a mode" = "モードを選択";
@@ -146,6 +149,13 @@
 "Coding, writing, casual, intent, each routed to the right model." = "Coding、writing、casual、intentをそれぞれ最適なモデルに振り分けます。";
 "Community" = "コミュニティ";
 "Conditions: the invited person must be a paying subscriber (not just signed up) and have dictated 15,000+ words. Self-referrals don't count." = "条件：招待された人が（登録だけでなく）有料サブスクライバーであり、15,000語以上を口述している必要があります。自己紹介は対象外です。";
+"Connect" = "連携";
+"Connect Gmail, Slack, Notion and more, then act on them by voice — e.g. “send a Slack message to the team that I'm running late”." = "Gmail、Slack、Notion などを連携して音声で操作できます。例：「チームに遅れると Slack でメッセージを送って」。";
+"Connect your apps" = "アプリを連携";
+"Connect your apps so Action mode can act on them by voice." = "アプリを連携すると、アクションモードが音声でそれらを操作できます。";
+"Connected" = "連携済み";
+"Connected apps" = "連携済みアプリ";
+"Connecting…" = "連携中…";
 "Consecutive days you've dictated at least once." = "少なくとも1回口述した連続日数。";
 "Conspiracy theorist" = "陰謀論者";
 "Context" = "Context";
@@ -223,7 +233,9 @@
 "Describe what the mode should do first." = "まずモードの動作を説明してください。";
 "Describe what this mode should do, in plain words. You can type it or dictate it with Verba. It uses your configured AI, no extra setup." = "このモードに何をさせたいか、平易な言葉で説明してください。入力するか Verba で音声入力できます。設定済みの AI を使うので追加設定は不要です。";
 "Description" = "説明";
+"Design" = "デザイン";
 "Destinations" = "送信先";
+"Developer" = "開発";
 "Dictate" = "音声入力";
 "Dictate your feedback" = "フィードバックを音声入力";
 "Dictation" = "音声入力";
@@ -237,6 +249,7 @@
 "Disk & cloud" = "ディスクとクラウド";
 "Dismiss" = "閉じる";
 "Dock off = menu-bar only. The dictation hotkeys work either way. If you hide BOTH, reopen Verba from Applications to get back here." = "Dock オフ＝メニューバーのみ。音声入力のホットキーはどちらでも動作します。両方を非表示にした場合は、アプリケーションから Verba を再度開いてここに戻ってください。";
+"Documents" = "ドキュメント";
 "Done" = "完了";
 "Download & install" = "ダウンロードしてインストール";
 "Download a free local model" = "無料のローカルモデルをダウンロード";
@@ -246,6 +259,7 @@
 "Downloading…" = "ダウンロード中…";
 "Dry & deadpan" = "ドライで淡々";
 "Due" = "期限";
+"E-commerce" = "Eコマース";
 "Each mode is a different way Claude reorders and improves your dictation." = "各モードは、Claude があなたの音声入力を並べ替えて改善する異なる方法です。";
 "Each style is a reusable tone/format layer added on top of your mode. Switch styles anytime with Fn + [ and Fn + ], or from the menu bar." = "各スタイルは、モードの上に追加される再利用可能なトーン／書式のレイヤーです。Fn + [ と Fn + ]、またはメニューバーからいつでもスタイルを切り替えられます。";
 "Edit deadline" = "期限を編集";
@@ -373,9 +387,13 @@
 "Make active" = "有効にする";
 "Make the app yours. Defaults are monochrome and macOS-native; everything here is optional." = "アプリを自分好みに。デフォルトはモノクロでmacOSネイティブです。ここの設定はすべて任意です。";
 "Manage" = "管理";
+"Manage connections" = "連携を管理";
 "Manage modes" = "モードを管理";
 "Manage modes…" = "モードを管理…";
+"Maps" = "マップ";
+"Marketing" = "マーケティング";
 "Match my tone per app" = "アプリごとに自分のトーンに合わせる";
+"Meetings" = "会議";
 "Menu" = "メニュー";
 "Menu bar only (no overlay)" = "メニューバーのみ(オーバーレイなし)";
 "Menu glass blur" = "メニューのガラスぼかし";
@@ -497,6 +515,7 @@
 "Paused · tap the mic to stop" = "一時停止中 · マイクをタップして停止";
 "Paused…" = "一時停止中…";
 "Pay-per-token with your Anthropic API key." = "Anthropic API キーを使ったトークン課金制。";
+"Payments" = "決済";
 "Pick a mode below" = "下からモードを選択";
 "Pick a mode by number" = "番号でモードを選択";
 "Pick a project" = "プロジェクトを選択";
@@ -526,6 +545,7 @@
 "Private by default" = "デフォルトでプライベート";
 "Pro plan" = "Pro プラン";
 "Pro unlocked ✓" = "Pro 解除済み ✓";
+"Productivity" = "生産性";
 "Profiles appear once they dictate on the latest version." = "最新バージョンで音声入力すると、プロフィールが表示されます。";
 "Project" = "プロジェクト";
 "Prompt" = "プロンプト";
@@ -557,6 +577,7 @@
 "Refer friends — give a month, get a month" = "友達を紹介 — 1か月プレゼント、1か月ゲット";
 "Reformulation runs entirely on your Mac. Tap Set up to install the local engine (~30 MB) the first time. Qwen 2.5 7B recommended (~4.7 GB)." = "言い換えはすべてお使いの Mac 上で実行されます。初回は「セットアップ」をタップしてローカルエンジン（約 30 MB）をインストールしてください。Qwen 2.5 7B を推奨（約 4.7 GB）。";
 "Refresh" = "更新";
+"Refresh connection status" = "接続状況を更新";
 "Regenerate" = "再生成";
 "Reload" = "再読み込み";
 "Remember the last mode you used" = "前回使ったモードを記憶する";
@@ -590,6 +611,8 @@
 "Review auto-learned" = "自動学習を確認";
 "Rich text/markdown in apps that render it (Mail, Notion, Notes…), plain text in code editors and terminals." = "対応アプリ（メール、Notion、メモ…）ではリッチテキスト/マークダウン、コードエディタやターミナルではプレーンテキストになります。";
 "Run" = "実行";
+"Run \\(label.isEmpty ? tool : label) in your connected app?" = "連携済みアプリで \\(label.isEmpty ? tool : label) を実行しますか？";
+"Run action" = "アクションを実行";
 "Run shortcut" = "ショートカットを実行";
 "Run the “\\(name)” shortcut?" = "「\\(name)」ショートカットを実行しますか？";
 "Runs fully offline & free once installed, no API key needed." = "インストール後は完全オフラインで無料で動作し、API キーは不要です。";
@@ -613,6 +636,7 @@
 "Say what the list is for first." = "まずリストの用途を話してください。";
 "Say “new line / new paragraph”, “comma / period / question mark”, “bullet point”, or “scratch that” and Verba turns them into real formatting (any mode, incl. Flow). EN + FR." = "「改行 / 改段落」「カンマ / ピリオド / 疑問符」「箇条書き」「今のなし」と話すと、Verba が実際の書式に変換します（Flow を含む全モード）。英語 + フランス語対応。";
 "Say “search … on Google / ChatGPT / Claude”. {q} is replaced by what you said; add any site." = "「Google / ChatGPT / Claude で … を検索」と話してください。{q} は話した内容に置き換えられます。任意のサイトを追加できます。";
+"Scheduling" = "スケジュール";
 "Sci-fi space crew" = "SF宇宙クルー";
 "Scratchpad" = "スクラッチパッド";
 "Screen Recording" = "画面収録";
@@ -672,6 +696,7 @@
 "Sign out" = "サインアウト";
 "Sign out of Verba?" = "Verbaからサインアウトしますか？";
 "Sign-in, plan, referrals" = "サインイン、プラン、紹介";
+"Signatures" = "署名";
 "Signed in" = "サインイン済み";
 "Signed in as" = "サインイン中のアカウント";
 "Signed in as \\(settings.proEmail)" = "\\(settings.proEmail) としてサインイン中";
@@ -681,6 +706,7 @@
 "Smart formatting per app" = "アプリごとのスマート整形";
 "Snippet" = "スニペット";
 "Snippets" = "スニペット";
+"Social" = "ソーシャル";
 "Soft — a light popover-style frost." = "ソフト — 軽いポップオーバー風のすりガラス。";
 "Some permissions are off. Verba can't fully work until the three core ones are on." = "一部の権限がオフです。3つのコア権限をオンにするまで、Verbaは完全には動作しません。";
 "Sonnet" = "Sonnet";
@@ -691,6 +717,7 @@
 "Speak how to adapt the text" = "テキストの調整方法を話す";
 "Speak it. Send it clean." = "話すだけ。きれいに送信。";
 "Spoken language" = "話す言語";
+"Spreadsheets" = "スプレッドシート";
 "Start / stop dictation" = "ディクテーションを開始 / 停止";
 "Start a new note (record again)" = "新しいメモを開始（もう一度録音）";
 "Start a recording with Fn, then press Control to try it." = "Fnで録音を開始し、Controlを押して試してください。";
@@ -702,6 +729,7 @@
 "Stop an in-progress note / to-do capture" = "進行中のメモ / ToDoの取り込みを停止";
 "Stop playback" = "再生を停止";
 "Stop the macOS Fn / emoji popup" = "macOSのFn / 絵文字ポップアップを無効化";
+"Storage" = "ストレージ";
 "Strikethrough (~~)" = "取り消し線（~~）";
 "Style" = "スタイル";
 "Style prompt" = "スタイルプロンプト";
@@ -714,6 +742,7 @@
 "Subject" = "件名";
 "Suggest a feature and upvote the ones you want most. We build what rises to the top." = "機能を提案して、欲しいものに投票しましょう。上位に上がったものを開発します。";
 "Suggest a feature…" = "機能を提案…";
+"Support" = "サポート";
 "Surreal dream-logic" = "シュールな夢の論理";
 "Switch mode — keeps recording" = "モードを切り替え — 録音は継続";
 "System default" = "システムのデフォルト";
@@ -758,6 +787,7 @@
 "They count once they're a paying subscriber and have dictated 15,000+ words." = "有料サブスクリプションに加入し、15,000語以上ディクテーションするとカウントされます。";
 "They sign up through your link and start a paid Verba Pro plan." = "あなたのリンク経由でサインアップし、有料のVerba Proプランを開始します。";
 "They subscribe to Pro" = "Proに加入する";
+"Third-party apps via secure OAuth" = "安全な OAuth 経由のサードパーティアプリ";
 "This detaches your account from this Mac. Your local notes, transcripts and to-dos stay on this device, you can sign back in anytime." = "これによりアカウントがこのMacから切り離されます。ローカルのメモ、文字起こし、To-doはこのデバイスに残り、いつでも再度サインインできます。";
 "This instruction will shape your note" = "この指示がメモを形作ります";
 "This is your PUBLIC name on the Verba leaderboard. It is never your real name or email, so pick something you're happy for anyone to see." = "これはVerbaリーダーボード上の公開名です。本名やメールが表示されることはないので、誰に見られても良いものを選んでください。";
@@ -791,6 +821,7 @@
 "Today's goal" = "今日の目標";
 "Today's to-dos  (quick glance)" = "今日のTo-do（ひと目で確認）";
 "Tomorrow 9am" = "明日 午前9時";
+"Tool" = "ツール";
 "Tools" = "ツール";
 "Total words" = "総単語数";
 "Total words dictated across all your sessions." = "すべてのセッションでディクテーションした総単語数。";
@@ -856,6 +887,7 @@
 "Verify / restore" = "確認 / 復元";
 "Version" = "バージョン";
 "Version & releases" = "バージョンとリリース";
+"Video" = "動画";
 "Vocabulary word" = "語彙の単語";
 "Voice commands" = "音声コマンド";
 "Voice to clean text, on your terms." = "音声を整ったテキストに、あなたの思いどおりに。";

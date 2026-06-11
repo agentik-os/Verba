@@ -65,6 +65,7 @@
 "All time" = "Tüm zamanlar";
 "Allowed actions" = "İzin verilen eylemler";
 "Already subscribed? Enter your checkout email and Verify to restore." = "Zaten abone misiniz? Geri yüklemek için ödeme e-postanızı girin ve Doğrula'ya tıklayın.";
+"Analytics" = "Analitik";
 "Anthropic (Claude reprompting)" = "Anthropic (Claude ile yeniden komutlama)";
 "Anthropic API key" = "Anthropic API anahtarı";
 "Any model on openrouter.ai (openai/gpt-4o, google/gemini-2.0-flash…). Add your key below." = "openrouter.ai üzerindeki herhangi bir model (openai/gpt-4o, google/gemini-2.0-flash…). Anahtarınızı aşağıya ekleyin.";
@@ -107,6 +108,7 @@
 "Building…" = "Oluşturuluyor…";
 "Bullet list" = "Madde işaretli liste";
 "By default Verba takes over the globe (Fn) key so macOS doesn't pop the emoji/Fn HUD or switch your keyboard layout. Turn these off to get the standard macOS behaviour back." = "Verba, macOS'in emoji/Fn HUD'unu açmaması veya klavye düzeninizi değiştirmemesi için varsayılan olarak küre (Fn) tuşunu devralır. Standart macOS davranışına geri dönmek için bunları kapatın.";
+"CRM" = "CRM";
 "Calendar" = "Takvim";
 "Cancel" = "İptal";
 "Cancel (Esc)" = "İptal (Esc)";
@@ -121,6 +123,7 @@
 "Change format (re-organizes from your words)" = "Biçimi değiştir (sözlerinden yeniden düzenler)";
 "Change mode" = "Modu değiştir";
 "Change-mode jumps straight to the next mode (no list)" = "Mod değiştir doğrudan sonraki moda geçer (liste yok)";
+"Chat" = "Sohbet";
 "Check now" = "Şimdi kontrol et";
 "Checklist" = "Kontrol listesi";
 "Choose a mode" = "Bir mod seçin";
@@ -146,6 +149,13 @@
 "Coding, writing, casual, intent, each routed to the right model." = "Coding, yazma, gündelik, intent; her biri doğru modele yönlendirilir.";
 "Community" = "Topluluk";
 "Conditions: the invited person must be a paying subscriber (not just signed up) and have dictated 15,000+ words. Self-referrals don't count." = "Koşullar: davet edilen kişi (yalnızca kayıtlı değil) ücretli abone olmalı ve 15.000+ kelime dikte etmiş olmalı. Kendine yönlendirmeler sayılmaz.";
+"Connect" = "Bağlan";
+"Connect Gmail, Slack, Notion and more, then act on them by voice — e.g. “send a Slack message to the team that I'm running late”." = "Gmail, Slack, Notion ve daha fazlasını bağla, sonra sesle işlem yap — örn. “ekibe geç kalacağımı söyleyen bir Slack mesajı gönder”.";
+"Connect your apps" = "Uygulamalarını bağla";
+"Connect your apps so Action mode can act on them by voice." = "Eylem modunun sesle işlem yapabilmesi için uygulamalarını bağla.";
+"Connected" = "Bağlı";
+"Connected apps" = "Bağlı uygulamalar";
+"Connecting…" = "Bağlanıyor…";
 "Consecutive days you've dictated at least once." = "En az bir kez dikte ettiğin ardışık günler.";
 "Conspiracy theorist" = "Komplo teorisyeni";
 "Context" = "Context";
@@ -223,7 +233,9 @@
 "Describe what the mode should do first." = "Önce modun ne yapması gerektiğini açıklayın.";
 "Describe what this mode should do, in plain words. You can type it or dictate it with Verba. It uses your configured AI, no extra setup." = "Bu modun ne yapması gerektiğini sade sözcüklerle anlat. Yazabilir ya da Verba ile dikte edebilirsin. Yapılandırdığın yapay zekâyı kullanır, ek kurulum gerekmez.";
 "Description" = "Açıklama";
+"Design" = "Tasarım";
 "Destinations" = "Hedefler";
+"Developer" = "Geliştirici";
 "Dictate" = "Dikte et";
 "Dictate your feedback" = "Geri bildirimini dikte et";
 "Dictation" = "Dikte";
@@ -237,6 +249,7 @@
 "Disk & cloud" = "Disk ve bulut";
 "Dismiss" = "Kapat";
 "Dock off = menu-bar only. The dictation hotkeys work either way. If you hide BOTH, reopen Verba from Applications to get back here." = "Dock kapalı = yalnızca menü çubuğu. Dikte kısayolları her durumda çalışır. İKİSİNİ birden gizlersen, buraya dönmek için Verba'yı Uygulamalar'dan yeniden aç.";
+"Documents" = "Belgeler";
 "Done" = "Tamam";
 "Download & install" = "İndir ve kur";
 "Download a free local model" = "Ücretsiz bir yerel model indir";
@@ -246,6 +259,7 @@
 "Downloading…" = "İndiriliyor…";
 "Dry & deadpan" = "Kuru ve ifadesiz";
 "Due" = "Son tarih";
+"E-commerce" = "E-ticaret";
 "Each mode is a different way Claude reorders and improves your dictation." = "Her mod, Claude'un dikteni yeniden düzenleyip iyileştirmesinin farklı bir yoludur.";
 "Each style is a reusable tone/format layer added on top of your mode. Switch styles anytime with Fn + [ and Fn + ], or from the menu bar." = "Her stil, modunun üzerine eklenen yeniden kullanılabilir bir ton/biçim katmanıdır. Stilleri istediğin zaman Fn + [ ve Fn + ] ile ya da menü çubuğundan değiştir.";
 "Edit deadline" = "Son tarihi düzenle";
@@ -373,9 +387,13 @@
 "Make active" = "Etkinleştir";
 "Make the app yours. Defaults are monochrome and macOS-native; everything here is optional." = "Uygulamayı kendinize göre yapın. Varsayılanlar tek renk ve macOS'a özgüdür; buradaki her şey isteğe bağlıdır.";
 "Manage" = "Yönet";
+"Manage connections" = "Bağlantıları yönet";
 "Manage modes" = "Modları yönet";
 "Manage modes…" = "Modları yönet…";
+"Maps" = "Haritalar";
+"Marketing" = "Pazarlama";
 "Match my tone per app" = "Uygulama başına tonumu eşle";
+"Meetings" = "Toplantılar";
 "Menu" = "Menü";
 "Menu bar only (no overlay)" = "Yalnızca menü çubuğu (yer paylaşımı yok)";
 "Menu glass blur" = "Menü cam bulanıklığı";
@@ -497,6 +515,7 @@
 "Paused · tap the mic to stop" = "Duraklatıldı · durdurmak için mikrofona dokun";
 "Paused…" = "Duraklatıldı…";
 "Pay-per-token with your Anthropic API key." = "Anthropic API anahtarınla token başına ödeme.";
+"Payments" = "Ödemeler";
 "Pick a mode below" = "Aşağıdan bir mod seç";
 "Pick a mode by number" = "Numarayla bir mod seç";
 "Pick a project" = "Bir proje seç";
@@ -526,6 +545,7 @@
 "Private by default" = "Varsayılan olarak özel";
 "Pro plan" = "Pro plan";
 "Pro unlocked ✓" = "Pro kilidi açıldı ✓";
+"Productivity" = "Üretkenlik";
 "Profiles appear once they dictate on the latest version." = "Profiller, en son sürümde dikte ettiklerinde görünür.";
 "Project" = "Proje";
 "Prompt" = "Prompt";
@@ -557,6 +577,7 @@
 "Refer friends — give a month, get a month" = "Arkadaşlarınızı davet edin — bir ay verin, bir ay kazanın";
 "Reformulation runs entirely on your Mac. Tap Set up to install the local engine (~30 MB) the first time. Qwen 2.5 7B recommended (~4.7 GB)." = "Yeniden ifade tamamen Mac'inizde çalışır. İlk seferinde yerel motoru (~30 MB) yüklemek için Kur'a dokunun. Qwen 2.5 7B önerilir (~4,7 GB).";
 "Refresh" = "Yenile";
+"Refresh connection status" = "Bağlantı durumunu yenile";
 "Regenerate" = "Yeniden oluştur";
 "Reload" = "Yeniden yükle";
 "Remember the last mode you used" = "Kullandığınız son modu hatırla";
@@ -590,6 +611,8 @@
 "Review auto-learned" = "Otomatik öğrenilenleri gözden geçir";
 "Rich text/markdown in apps that render it (Mail, Notion, Notes…), plain text in code editors and terminals." = "Bunu işleyen uygulamalarda zengin metin/markdown (Mail, Notion, Notlar…), kod düzenleyicilerde ve terminallerde düz metin.";
 "Run" = "Çalıştır";
+"Run \\(label.isEmpty ? tool : label) in your connected app?" = "\\(label.isEmpty ? tool : label) bağlı uygulamanda çalıştırılsın mı?";
+"Run action" = "Eylemi çalıştır";
 "Run shortcut" = "Kısayolu çalıştır";
 "Run the “\\(name)” shortcut?" = "“\\(name)” kısayolu çalıştırılsın mı?";
 "Runs fully offline & free once installed, no API key needed." = "Yüklendikten sonra tamamen çevrimdışı ve ücretsiz çalışır, API anahtarı gerekmez.";
@@ -613,6 +636,7 @@
 "Say what the list is for first." = "Önce listenin ne için olduğunu söyleyin.";
 "Say “new line / new paragraph”, “comma / period / question mark”, “bullet point”, or “scratch that” and Verba turns them into real formatting (any mode, incl. Flow). EN + FR." = "“yeni satır / yeni paragraf”, “virgül / nokta / soru işareti”, “madde işareti” veya “onu sil” deyin, Verba bunları gerçek biçimlendirmeye dönüştürsün (Flow dahil her mod). EN + FR.";
 "Say “search … on Google / ChatGPT / Claude”. {q} is replaced by what you said; add any site." = "“Google / ChatGPT / Claude'da … ara” deyin. {q}, söylediğinizle değiştirilir; istediğiniz siteyi ekleyin.";
+"Scheduling" = "Planlama";
 "Sci-fi space crew" = "Bilim kurgu uzay ekibi";
 "Scratchpad" = "Not defteri";
 "Screen Recording" = "Ekran Kaydı";
@@ -672,6 +696,7 @@
 "Sign out" = "Oturumu kapat";
 "Sign out of Verba?" = "Verba'dan çıkış yapılsın mı?";
 "Sign-in, plan, referrals" = "Oturum açma, plan, davetler";
+"Signatures" = "İmzalar";
 "Signed in" = "Oturum açıldı";
 "Signed in as" = "Şu hesapla oturum açıldı";
 "Signed in as \\(settings.proEmail)" = "\\(settings.proEmail) olarak oturum açıldı";
@@ -681,6 +706,7 @@
 "Smart formatting per app" = "Uygulamaya göre akıllı biçimlendirme";
 "Snippet" = "Kod parçası";
 "Snippets" = "Kod parçaları";
+"Social" = "Sosyal";
 "Soft — a light popover-style frost." = "Yumuşak — hafif, açılır pencere tarzı buzlanma.";
 "Some permissions are off. Verba can't fully work until the three core ones are on." = "Bazı izinler kapalı. Üç temel izin açılana kadar Verba tam olarak çalışamaz.";
 "Sonnet" = "Sonnet";
@@ -691,6 +717,7 @@
 "Speak how to adapt the text" = "Metnin nasıl uyarlanacağını söyleyin";
 "Speak it. Send it clean." = "Konuşun. Tertemiz gönderin.";
 "Spoken language" = "Konuşma dili";
+"Spreadsheets" = "Tablolar";
 "Start / stop dictation" = "Dikteyi başlat / durdur";
 "Start a new note (record again)" = "Yeni bir not başlat (tekrar kaydet)";
 "Start a recording with Fn, then press Control to try it." = "Fn ile bir kayda başlayın, ardından denemek için Control'e basın.";
@@ -702,6 +729,7 @@
 "Stop an in-progress note / to-do capture" = "Devam eden bir not / yapılacak yakalamasını durdur";
 "Stop playback" = "Oynatmayı durdur";
 "Stop the macOS Fn / emoji popup" = "macOS Fn / emoji açılır penceresini engelle";
+"Storage" = "Depolama";
 "Strikethrough (~~)" = "Üstü çizili (~~)";
 "Style" = "Stil";
 "Style prompt" = "Stil istemi";
@@ -714,6 +742,7 @@
 "Subject" = "Konu";
 "Suggest a feature and upvote the ones you want most. We build what rises to the top." = "Bir özellik önerin ve en çok istediklerinizi oylayın. En çok öne çıkanları geliştiriyoruz.";
 "Suggest a feature…" = "Bir özellik önerin…";
+"Support" = "Destek";
 "Surreal dream-logic" = "Gerçeküstü rüya mantığı";
 "Switch mode — keeps recording" = "Modu değiştir — kayda devam eder";
 "System default" = "Sistem varsayılanı";
@@ -758,6 +787,7 @@
 "They count once they're a paying subscriber and have dictated 15,000+ words." = "Ücretli abone oldukları ve 15.000'den fazla kelime dikte ettikleri zaman sayılırlar.";
 "They sign up through your link and start a paid Verba Pro plan." = "Bağlantınız üzerinden kaydolup ücretli bir Verba Pro planı başlatırlar.";
 "They subscribe to Pro" = "Pro'ya abone olurlar";
+"Third-party apps via secure OAuth" = "Güvenli OAuth ile üçüncü taraf uygulamalar";
 "This detaches your account from this Mac. Your local notes, transcripts and to-dos stay on this device, you can sign back in anytime." = "Bu, hesabınızı bu Mac'ten ayırır. Yerel notlarınız, dökümleriniz ve yapılacaklarınız bu cihazda kalır; istediğiniz zaman tekrar giriş yapabilirsiniz.";
 "This instruction will shape your note" = "Bu yönerge notunuza şekil verecek";
 "This is your PUBLIC name on the Verba leaderboard. It is never your real name or email, so pick something you're happy for anyone to see." = "Bu, Verba lider tablosundaki HERKESE AÇIK adınızdır. Asla gerçek adınız veya e-postanız değildir; bu yüzden herkesin görmesinden memnun olacağınız bir şey seçin.";
@@ -791,6 +821,7 @@
 "Today's goal" = "Bugünün hedefi";
 "Today's to-dos  (quick glance)" = "Bugünün yapılacakları  (hızlı bakış)";
 "Tomorrow 9am" = "Yarın 09:00";
+"Tool" = "Araç";
 "Tools" = "Araçlar";
 "Total words" = "Toplam kelime";
 "Total words dictated across all your sessions." = "Tüm oturumlarınızda dikte edilen toplam kelime sayısı.";
@@ -856,6 +887,7 @@
 "Verify / restore" = "Doğrula / geri yükle";
 "Version" = "Sürüm";
 "Version & releases" = "Sürüm ve yayınlar";
+"Video" = "Video";
 "Vocabulary word" = "Sözlük kelimesi";
 "Voice commands" = "Sesli komutlar";
 "Voice to clean text, on your terms." = "Sesten temiz metne, sizin kurallarınızla.";

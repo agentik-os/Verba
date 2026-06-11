@@ -65,6 +65,7 @@
 "All time" = "كل الأوقات";
 "Allowed actions" = "الإجراءات المسموح بها";
 "Already subscribed? Enter your checkout email and Verify to restore." = "مشترك بالفعل؟ أدخل بريد الدفع الإلكتروني واضغط تحقّق للاستعادة.";
+"Analytics" = "تحليلات";
 "Anthropic (Claude reprompting)" = "Anthropic (إعادة التوجيه عبر Claude)";
 "Anthropic API key" = "مفتاح Anthropic API";
 "Any model on openrouter.ai (openai/gpt-4o, google/gemini-2.0-flash…). Add your key below." = "أي نموذج على openrouter.ai (openai/gpt-4o، google/gemini-2.0-flash…). أضف مفتاحك أدناه.";
@@ -107,6 +108,7 @@
 "Building…" = "جارٍ البناء…";
 "Bullet list" = "قائمة نقطية";
 "By default Verba takes over the globe (Fn) key so macOS doesn't pop the emoji/Fn HUD or switch your keyboard layout. Turn these off to get the standard macOS behaviour back." = "افتراضيًا يتحكّم Verba في مفتاح الكرة الأرضية (Fn) كي لا يُظهر macOS واجهة الرموز التعبيرية/Fn أو يبدّل تخطيط لوحة المفاتيح. أوقف هذه الخيارات لاستعادة سلوك macOS القياسي.";
+"CRM" = "CRM";
 "Calendar" = "التقويم";
 "Cancel" = "إلغاء";
 "Cancel (Esc)" = "إلغاء (Esc)";
@@ -121,6 +123,7 @@
 "Change format (re-organizes from your words)" = "تغيير التنسيق (يُعيد التنظيم من كلماتك)";
 "Change mode" = "تغيير الوضع";
 "Change-mode jumps straight to the next mode (no list)" = "يقفز تغيير الوضع مباشرةً إلى الوضع التالي (دون قائمة)";
+"Chat" = "دردشة";
 "Check now" = "تحقق الآن";
 "Checklist" = "قائمة تحقق";
 "Choose a mode" = "اختر وضعًا";
@@ -146,6 +149,13 @@
 "Coding, writing, casual, intent, each routed to the right model." = "Coding وWriting وCasual وIntent، كلٌّ مُوجَّه إلى النموذج المناسب.";
 "Community" = "المجتمع";
 "Conditions: the invited person must be a paying subscriber (not just signed up) and have dictated 15,000+ words. Self-referrals don't count." = "الشروط: يجب أن يكون الشخص المدعوّ مشتركًا مدفوعًا (وليس مجرد مُسجَّل) وأن يكون قد أملى أكثر من 15,000 كلمة. الإحالات الذاتية لا تُحتسب.";
+"Connect" = "ربط";
+"Connect Gmail, Slack, Notion and more, then act on them by voice — e.g. “send a Slack message to the team that I'm running late”." = "اربط Gmail وSlack وNotion وغيرها، ثم تحكّم فيها بالصوت — مثلًا: «أرسل رسالة على Slack للفريق بأنني سأتأخر».";
+"Connect your apps" = "اربط تطبيقاتك";
+"Connect your apps so Action mode can act on them by voice." = "اربط تطبيقاتك ليتمكّن وضع الإجراء من التحكّم فيها بالصوت.";
+"Connected" = "متصل";
+"Connected apps" = "التطبيقات المتصلة";
+"Connecting…" = "جارٍ الاتصال…";
 "Consecutive days you've dictated at least once." = "الأيام المتتالية التي أمليت فيها مرة واحدة على الأقل.";
 "Conspiracy theorist" = "مُنظّر مؤامرة";
 "Context" = "Context";
@@ -223,7 +233,9 @@
 "Describe what the mode should do first." = "صِف ما يجب أن يفعله الوضع أولاً.";
 "Describe what this mode should do, in plain words. You can type it or dictate it with Verba. It uses your configured AI, no extra setup." = "صِف ما ينبغي أن يفعله هذا الوضع، بكلمات بسيطة. يمكنك كتابته أو إملاؤه باستخدام Verba. يستخدم الذكاء الاصطناعي المُهيّأ لديك، دون إعداد إضافي.";
 "Description" = "الوصف";
+"Design" = "تصميم";
 "Destinations" = "الوجهات";
+"Developer" = "تطوير";
 "Dictate" = "إملاء";
 "Dictate your feedback" = "أملِ ملاحظاتك";
 "Dictation" = "الإملاء";
@@ -237,6 +249,7 @@
 "Disk & cloud" = "القرص والسحابة";
 "Dismiss" = "إغلاق";
 "Dock off = menu-bar only. The dictation hotkeys work either way. If you hide BOTH, reopen Verba from Applications to get back here." = "إيقاف شريط Dock = شريط القوائم فقط. تعمل مفاتيح الإملاء في كلتا الحالتين. إذا أخفيت الاثنين معًا، أعد فتح Verba من التطبيقات للعودة إلى هنا.";
+"Documents" = "مستندات";
 "Done" = "تم";
 "Download & install" = "تنزيل وتثبيت";
 "Download a free local model" = "تنزيل نموذج محلي مجاني";
@@ -246,6 +259,7 @@
 "Downloading…" = "جارٍ التنزيل…";
 "Dry & deadpan" = "جاف ومتجهّم";
 "Due" = "الموعد النهائي";
+"E-commerce" = "تجارة إلكترونية";
 "Each mode is a different way Claude reorders and improves your dictation." = "كل وضع هو طريقة مختلفة يعيد بها Claude ترتيب إملائك وتحسينه.";
 "Each style is a reusable tone/format layer added on top of your mode. Switch styles anytime with Fn + [ and Fn + ], or from the menu bar." = "كل أسلوب هو طبقة نبرة/تنسيق قابلة لإعادة الاستخدام تُضاف فوق وضعك. بدّل الأساليب في أي وقت باستخدام Fn + [ و Fn + ]، أو من شريط القوائم.";
 "Edit deadline" = "تعديل الموعد النهائي";
@@ -373,9 +387,13 @@
 "Make active" = "تفعيل";
 "Make the app yours. Defaults are monochrome and macOS-native; everything here is optional." = "اجعل التطبيق على ذوقك. الإعدادات الافتراضية أحادية اللون ومتوافقة مع macOS؛ وكل ما هنا اختياري.";
 "Manage" = "إدارة";
+"Manage connections" = "إدارة الاتصالات";
 "Manage modes" = "إدارة الأوضاع";
 "Manage modes…" = "إدارة الأوضاع…";
+"Maps" = "خرائط";
+"Marketing" = "تسويق";
 "Match my tone per app" = "طابِق نبرتي حسب كل تطبيق";
+"Meetings" = "اجتماعات";
 "Menu" = "القائمة";
 "Menu bar only (no overlay)" = "شريط القوائم فقط (بلا نافذة عائمة)";
 "Menu glass blur" = "ضبابية زجاج القائمة";
@@ -497,6 +515,7 @@
 "Paused · tap the mic to stop" = "متوقّف مؤقتاً · انقر على الميكروفون للإيقاف";
 "Paused…" = "متوقّف مؤقتاً…";
 "Pay-per-token with your Anthropic API key." = "الدفع لكل رمز باستخدام مفتاح Anthropic API الخاص بك.";
+"Payments" = "مدفوعات";
 "Pick a mode below" = "اختر وضعاً أدناه";
 "Pick a mode by number" = "اختر وضعاً بالرقم";
 "Pick a project" = "اختر مشروعاً";
@@ -526,6 +545,7 @@
 "Private by default" = "خاص افتراضياً";
 "Pro plan" = "خطة Pro";
 "Pro unlocked ✓" = "تم تفعيل Pro ✓";
+"Productivity" = "إنتاجية";
 "Profiles appear once they dictate on the latest version." = "تظهر الملفات الشخصية بمجرد أن يبدأ أصحابها الإملاء على أحدث إصدار.";
 "Project" = "مشروع";
 "Prompt" = "موجّه";
@@ -557,6 +577,7 @@
 "Refer friends — give a month, get a month" = "ادعُ أصدقاءك — امنح شهرًا، واحصل على شهر";
 "Reformulation runs entirely on your Mac. Tap Set up to install the local engine (~30 MB) the first time. Qwen 2.5 7B recommended (~4.7 GB)." = "تجري إعادة الصياغة بالكامل على جهاز Mac الخاص بك. اضغط على إعداد لتثبيت المحرّك المحلي (~30 ميجابايت) في المرة الأولى. يُنصح بـ Qwen 2.5 7B (~4.7 جيجابايت).";
 "Refresh" = "تحديث";
+"Refresh connection status" = "تحديث حالة الاتصال";
 "Regenerate" = "إعادة التوليد";
 "Reload" = "إعادة التحميل";
 "Remember the last mode you used" = "تذكّر آخر وضع استخدمته";
@@ -590,6 +611,8 @@
 "Review auto-learned" = "مراجعة المتعلَّم تلقائيًا";
 "Rich text/markdown in apps that render it (Mail, Notion, Notes…), plain text in code editors and terminals." = "نص منسّق/Markdown في التطبيقات التي تعرضه (Mail وNotion وNotes…)، ونص عادي في محرّرات الأكواد والطرفيات.";
 "Run" = "تشغيل";
+"Run \\(label.isEmpty ? tool : label) in your connected app?" = "تشغيل \\(label.isEmpty ? tool : label) في تطبيقك المتصل؟";
+"Run action" = "تنفيذ الإجراء";
 "Run shortcut" = "تشغيل الاختصار";
 "Run the “\\(name)” shortcut?" = "تشغيل اختصار ”\\(name)“؟";
 "Runs fully offline & free once installed, no API key needed." = "يعمل دون اتصال بالكامل ومجانًا بعد التثبيت، دون الحاجة إلى مفتاح API.";
@@ -613,6 +636,7 @@
 "Say what the list is for first." = "قُل أولًا ما الغرض من القائمة.";
 "Say “new line / new paragraph”, “comma / period / question mark”, “bullet point”, or “scratch that” and Verba turns them into real formatting (any mode, incl. Flow). EN + FR." = "قُل ”سطر جديد / فقرة جديدة“، ”فاصلة / نقطة / علامة استفهام“، ”نقطة تعداد“، أو ”تجاهل ذلك“ ويحوّلها Verba إلى تنسيق حقيقي (أي وضع، بما في ذلك Flow). الإنجليزية + الفرنسية.";
 "Say “search … on Google / ChatGPT / Claude”. {q} is replaced by what you said; add any site." = "قُل ”ابحث عن … في Google / ChatGPT / Claude“. يُستبدل {q} بما قلته؛ أضف أي موقع.";
+"Scheduling" = "جدولة";
 "Sci-fi space crew" = "طاقم فضائي خيال علمي";
 "Scratchpad" = "مسوّدة";
 "Screen Recording" = "تسجيل الشاشة";
@@ -672,6 +696,7 @@
 "Sign out" = "تسجيل الخروج";
 "Sign out of Verba?" = "تسجيل الخروج من Verba؟";
 "Sign-in, plan, referrals" = "تسجيل الدخول، الخطة، الإحالات";
+"Signatures" = "توقيعات";
 "Signed in" = "تم تسجيل الدخول";
 "Signed in as" = "تم تسجيل الدخول باسم";
 "Signed in as \\(settings.proEmail)" = "مسجّل الدخول باسم \\(settings.proEmail)";
@@ -681,6 +706,7 @@
 "Smart formatting per app" = "تنسيق ذكي لكل تطبيق";
 "Snippet" = "مقتطف";
 "Snippets" = "مقتطفات";
+"Social" = "تواصل";
 "Soft — a light popover-style frost." = "ناعم — صقيع خفيف بأسلوب النافذة المنبثقة.";
 "Some permissions are off. Verba can't fully work until the three core ones are on." = "بعض الأذونات معطّلة. لا يمكن لـ Verba العمل بكامل قدرته حتى تُفعّل الأذونات الأساسية الثلاثة.";
 "Sonnet" = "Sonnet";
@@ -691,6 +717,7 @@
 "Speak how to adapt the text" = "انطق كيف تريد تكييف النص";
 "Speak it. Send it clean." = "انطقها. وأرسلها نظيفة.";
 "Spoken language" = "اللغة المنطوقة";
+"Spreadsheets" = "جداول بيانات";
 "Start / stop dictation" = "بدء / إيقاف الإملاء";
 "Start a new note (record again)" = "بدء ملاحظة جديدة (سجّل مجددًا)";
 "Start a recording with Fn, then press Control to try it." = "ابدأ تسجيلًا بمفتاح Fn، ثم اضغط Control لتجربته.";
@@ -702,6 +729,7 @@
 "Stop an in-progress note / to-do capture" = "إيقاف تسجيل ملاحظة / مهمة قيد التنفيذ";
 "Stop playback" = "إيقاف التشغيل";
 "Stop the macOS Fn / emoji popup" = "إيقاف نافذة Fn / الرموز التعبيرية المنبثقة في macOS";
+"Storage" = "تخزين";
 "Strikethrough (~~)" = "يتوسطه خط (~~)";
 "Style" = "النمط";
 "Style prompt" = "موجّه النمط";
@@ -714,6 +742,7 @@
 "Subject" = "الموضوع";
 "Suggest a feature and upvote the ones you want most. We build what rises to the top." = "اقترح ميزة وصوّت للميزات التي تريدها أكثر. نحن نبني ما يتصدّر القائمة.";
 "Suggest a feature…" = "اقترح ميزة…";
+"Support" = "دعم";
 "Surreal dream-logic" = "منطق حلمي سريالي";
 "Switch mode — keeps recording" = "تبديل الوضع — يستمر التسجيل";
 "System default" = "الافتراضي للنظام";
@@ -758,6 +787,7 @@
 "They count once they're a paying subscriber and have dictated 15,000+ words." = "يُحتسبون بمجرد أن يصبحوا مشتركين مدفوعين ويملوا أكثر من 15,000 كلمة.";
 "They sign up through your link and start a paid Verba Pro plan." = "يسجّلون عبر رابطك ويبدأون خطة Verba Pro مدفوعة.";
 "They subscribe to Pro" = "يشتركون في Pro";
+"Third-party apps via secure OAuth" = "تطبيقات خارجية عبر OAuth آمن";
 "This detaches your account from this Mac. Your local notes, transcripts and to-dos stay on this device, you can sign back in anytime." = "يفصل هذا حسابك عن هذا الـMac. تبقى ملاحظاتك المحلية والنصوص ومهامك على هذا الجهاز، ويمكنك تسجيل الدخول مجددًا في أي وقت.";
 "This instruction will shape your note" = "ستشكّل هذه التعليمات ملاحظتك";
 "This is your PUBLIC name on the Verba leaderboard. It is never your real name or email, so pick something you're happy for anyone to see." = "هذا اسمك العام على لوحة صدارة Verba. لن يكون أبدًا اسمك الحقيقي أو بريدك الإلكتروني، لذا اختر شيئًا تسعد بأن يراه أي شخص.";
@@ -791,6 +821,7 @@
 "Today's goal" = "هدف اليوم";
 "Today's to-dos  (quick glance)" = "مهام اليوم  (نظرة سريعة)";
 "Tomorrow 9am" = "غدًا 9 صباحًا";
+"Tool" = "أداة";
 "Tools" = "الأدوات";
 "Total words" = "إجمالي الكلمات";
 "Total words dictated across all your sessions." = "إجمالي الكلمات المُملاة عبر كل جلساتك.";
@@ -856,6 +887,7 @@
 "Verify / restore" = "تحقّق / استعادة";
 "Version" = "الإصدار";
 "Version & releases" = "الإصدار والإصدارات";
+"Video" = "فيديو";
 "Vocabulary word" = "كلمة من المفردات";
 "Voice commands" = "الأوامر الصوتية";
 "Voice to clean text, on your terms." = "من الصوت إلى نص نظيف، وفق شروطك.";

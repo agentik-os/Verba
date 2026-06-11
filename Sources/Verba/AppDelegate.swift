@@ -98,6 +98,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             Task { await Username.reconcileOnSignIn() }  // adopt the Clerk username so the handle syncs across Macs
             History.shared.syncFromCloud()   // pull dictation history from the user's other Macs
+            ComposioStore.shared.refresh()   // warm the connected-app (Composio) tool cache for Action mode
             Stats.shared.syncFromCloud()     // restore Insights / Total Words for the account
             NotesStore.shared.syncFromCloud()// pull long-form notes for the account
             VerbaAppearance.shared.syncFromCloud()  // restore the Customize look (app + widget)

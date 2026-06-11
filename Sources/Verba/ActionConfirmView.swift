@@ -52,6 +52,8 @@ struct ActionConfirmView: View {
         case let .sendMessage(to, _):   return L("Send a message to \(to)?")
         case let .appleScript(label, _): return "\(label)?"
         case let .openURL(label, _): return L("Open \(label)?")
+        case let .composio(tool, label, _):
+            return L("Run \(label.isEmpty ? tool : label) in your connected app?")
         }
     }
 
@@ -66,6 +68,7 @@ struct ActionConfirmView: View {
         case .sendMessage:   return L("Send message")
         case .appleScript:   return L("Run")
         case .openURL:       return L("Open")
+        case .composio:      return L("Run action")
         }
     }
 
@@ -105,6 +108,14 @@ struct ActionConfirmView: View {
             return [(L("Action"), label), ("Script", script)]
         case let .openURL(label, url):
             return [(L("Open"), label), ("URL", url.absoluteString)]
+        case let .composio(tool, _, arguments):
+            // Tool slug first, then every argument the model filled, so the user sees
+            // EXACTLY what will be sent to the connected app before confirming.
+            var f: [(String, String)] = [(L("Tool"), tool)]
+            for (k, v) in arguments.sorted(by: { $0.key < $1.key }) where !v.isEmpty {
+                f.append((k.replacingOccurrences(of: "_", with: " ").capitalized, v))
+            }
+            return f
         }
     }
 

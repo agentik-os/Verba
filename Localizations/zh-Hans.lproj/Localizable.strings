@@ -65,6 +65,7 @@
 "All time" = "全部时间";
 "Allowed actions" = "允许的操作";
 "Already subscribed? Enter your checkout email and Verify to restore." = "已订阅？输入你的结账邮箱并验证即可恢复。";
+"Analytics" = "分析";
 "Anthropic (Claude reprompting)" = "Anthropic（Claude 重新提示）";
 "Anthropic API key" = "Anthropic API 密钥";
 "Any model on openrouter.ai (openai/gpt-4o, google/gemini-2.0-flash…). Add your key below." = "openrouter.ai 上的任意模型（openai/gpt-4o、google/gemini-2.0-flash…）。在下方添加你的密钥。";
@@ -107,6 +108,7 @@
 "Building…" = "生成中…";
 "Bullet list" = "项目符号列表";
 "By default Verba takes over the globe (Fn) key so macOS doesn't pop the emoji/Fn HUD or switch your keyboard layout. Turn these off to get the standard macOS behaviour back." = "默认情况下，Verba 会接管地球键（Fn），以免 macOS 弹出表情/Fn 浮层或切换键盘布局。关闭这些选项即可恢复 macOS 的标准行为。";
+"CRM" = "CRM";
 "Calendar" = "日历";
 "Cancel" = "取消";
 "Cancel (Esc)" = "取消（Esc）";
@@ -121,6 +123,7 @@
 "Change format (re-organizes from your words)" = "更改格式（根据你的措辞重新整理）";
 "Change mode" = "切换模式";
 "Change-mode jumps straight to the next mode (no list)" = "切换模式会直接跳到下一个模式（不显示列表）";
+"Chat" = "聊天";
 "Check now" = "立即检查";
 "Checklist" = "清单";
 "Choose a mode" = "选择一种模式";
@@ -146,6 +149,13 @@
 "Coding, writing, casual, intent, each routed to the right model." = "编程、写作、随意、意图，各自路由到合适的模型。";
 "Community" = "社区";
 "Conditions: the invited person must be a paying subscriber (not just signed up) and have dictated 15,000+ words. Self-referrals don't count." = "条件：受邀者必须是付费订阅用户（不只是注册），且已听写 15,000 字以上。自我推荐无效。";
+"Connect" = "连接";
+"Connect Gmail, Slack, Notion and more, then act on them by voice — e.g. “send a Slack message to the team that I'm running late”." = "连接 Gmail、Slack、Notion 等应用，然后用语音对其操作——例如“给团队发一条 Slack 消息说我要迟到了”。";
+"Connect your apps" = "连接你的应用";
+"Connect your apps so Action mode can act on them by voice." = "连接你的应用，让 Action 模式可以通过语音对它们执行操作。";
+"Connected" = "已连接";
+"Connected apps" = "已连接的应用";
+"Connecting…" = "连接中…";
 "Consecutive days you've dictated at least once." = "你连续每天至少听写一次的天数。";
 "Conspiracy theorist" = "阴谋论者";
 "Context" = "Context";
@@ -223,7 +233,9 @@
 "Describe what the mode should do first." = "请先描述该模式应该做什么。";
 "Describe what this mode should do, in plain words. You can type it or dictate it with Verba. It uses your configured AI, no extra setup." = "用简单的话描述这个模式该做什么。你可以打字输入，也可以用 Verba 口述。它会使用你配置的 AI，无需额外设置。";
 "Description" = "描述";
+"Design" = "设计";
 "Destinations" = "目标位置";
+"Developer" = "开发";
 "Dictate" = "口述";
 "Dictate your feedback" = "口述你的反馈";
 "Dictation" = "听写";
@@ -237,6 +249,7 @@
 "Disk & cloud" = "磁盘与云端";
 "Dismiss" = "关闭";
 "Dock off = menu-bar only. The dictation hotkeys work either way. If you hide BOTH, reopen Verba from Applications to get back here." = "关闭程序坞 = 仅显示在菜单栏。无论哪种方式，口述快捷键都可用。如果两者都隐藏，请从“应用程序”重新打开 Verba 回到这里。";
+"Documents" = "文档";
 "Done" = "完成";
 "Download & install" = "下载并安装";
 "Download a free local model" = "下载一个免费的本地模型";
@@ -246,6 +259,7 @@
 "Downloading…" = "下载中…";
 "Dry & deadpan" = "冷峻而面无表情";
 "Due" = "截止";
+"E-commerce" = "电商";
 "Each mode is a different way Claude reorders and improves your dictation." = "每个模式都是 Claude 重组和优化你口述内容的不同方式。";
 "Each style is a reusable tone/format layer added on top of your mode. Switch styles anytime with Fn + [ and Fn + ], or from the menu bar." = "每个样式都是叠加在模式之上、可复用的语气／格式层。随时可用 Fn + [ 和 Fn + ] 切换样式，或从菜单栏切换。";
 "Edit deadline" = "编辑截止日期";
@@ -373,9 +387,13 @@
 "Make active" = "设为活跃";
 "Make the app yours. Defaults are monochrome and macOS-native; everything here is optional." = "打造专属于你的应用。默认采用单色、macOS 原生风格；此处的一切均为可选项。";
 "Manage" = "管理";
+"Manage connections" = "管理连接";
 "Manage modes" = "管理模式";
 "Manage modes…" = "管理模式…";
+"Maps" = "地图";
+"Marketing" = "营销";
 "Match my tone per app" = "按应用匹配我的语气";
+"Meetings" = "会议";
 "Menu" = "菜单";
 "Menu bar only (no overlay)" = "仅菜单栏（无悬浮窗）";
 "Menu glass blur" = "菜单玻璃模糊";
@@ -497,6 +515,7 @@
 "Paused · tap the mic to stop" = "已暂停 · 点按麦克风以停止";
 "Paused…" = "已暂停…";
 "Pay-per-token with your Anthropic API key." = "使用你的 Anthropic API 密钥按 token 付费。";
+"Payments" = "支付";
 "Pick a mode below" = "在下方选择一个模式";
 "Pick a mode by number" = "按数字选择模式";
 "Pick a project" = "选择一个项目";
@@ -526,6 +545,7 @@
 "Private by default" = "默认私密";
 "Pro plan" = "Pro 套餐";
 "Pro unlocked ✓" = "Pro 已解锁 ✓";
+"Productivity" = "效率";
 "Profiles appear once they dictate on the latest version." = "用户在最新版本上口述后，其资料才会显示。";
 "Project" = "项目";
 "Prompt" = "Prompt";
@@ -557,6 +577,7 @@
 "Refer friends — give a month, get a month" = "推荐好友 — 送一个月，得一个月";
 "Reformulation runs entirely on your Mac. Tap Set up to install the local engine (~30 MB) the first time. Qwen 2.5 7B recommended (~4.7 GB)." = "改写完全在你的 Mac 上运行。首次使用请点击「设置」安装本地引擎（约 30 MB）。推荐 Qwen 2.5 7B（约 4.7 GB）。";
 "Refresh" = "刷新";
+"Refresh connection status" = "刷新连接状态";
 "Regenerate" = "重新生成";
 "Reload" = "重新加载";
 "Remember the last mode you used" = "记住你上次使用的模式";
@@ -590,6 +611,8 @@
 "Review auto-learned" = "查看自动学习的内容";
 "Rich text/markdown in apps that render it (Mail, Notion, Notes…), plain text in code editors and terminals." = "在支持渲染的应用中使用富文本／markdown（Mail、Notion、备忘录…），在代码编辑器和终端中使用纯文本。";
 "Run" = "运行";
+"Run \\(label.isEmpty ? tool : label) in your connected app?" = "在已连接的应用中运行 \\(label.isEmpty ? tool : label)？";
+"Run action" = "运行操作";
 "Run shortcut" = "运行快捷指令";
 "Run the “\\(name)” shortcut?" = "运行「\\(name)」快捷指令？";
 "Runs fully offline & free once installed, no API key needed." = "安装后完全离线运行且免费，无需 API 密钥。";
@@ -613,6 +636,7 @@
 "Say what the list is for first." = "先说明这个列表的用途。";
 "Say “new line / new paragraph”, “comma / period / question mark”, “bullet point”, or “scratch that” and Verba turns them into real formatting (any mode, incl. Flow). EN + FR." = "说「换行／换段」「逗号／句号／问号」「项目符号」或「删掉刚才那句」，Verba 会将它们转为真实的格式（任意模式，包括 Flow）。支持英文 + 法文。";
 "Say “search … on Google / ChatGPT / Claude”. {q} is replaced by what you said; add any site." = "说「在 Google / ChatGPT / Claude 上搜索…」。{q} 会被替换为你说的内容；可添加任意网站。";
+"Scheduling" = "日程";
 "Sci-fi space crew" = "科幻太空船员";
 "Scratchpad" = "草稿本";
 "Screen Recording" = "屏幕录制";
@@ -672,6 +696,7 @@
 "Sign out" = "退出登录";
 "Sign out of Verba?" = "退出 Verba 登录？";
 "Sign-in, plan, referrals" = "登录、订阅、推荐";
+"Signatures" = "签名";
 "Signed in" = "已登录";
 "Signed in as" = "已登录为";
 "Signed in as \\(settings.proEmail)" = "已登录为 \\(settings.proEmail)";
@@ -681,6 +706,7 @@
 "Smart formatting per app" = "按应用智能排版";
 "Snippet" = "片段";
 "Snippets" = "片段";
+"Social" = "社交";
 "Soft — a light popover-style frost." = "柔和 — 轻盈的弹出框式磨砂效果。";
 "Some permissions are off. Verba can't fully work until the three core ones are on." = "部分权限已关闭。在三项核心权限开启之前，Verba 无法完全正常工作。";
 "Sonnet" = "Sonnet";
@@ -691,6 +717,7 @@
 "Speak how to adapt the text" = "说出如何调整文本";
 "Speak it. Send it clean." = "说出来，发出去就干净利落。";
 "Spoken language" = "口语语言";
+"Spreadsheets" = "表格";
 "Start / stop dictation" = "开始 / 停止听写";
 "Start a new note (record again)" = "开始一条新笔记（重新录制）";
 "Start a recording with Fn, then press Control to try it." = "用 Fn 开始录制，然后按 Control 试一试。";
@@ -702,6 +729,7 @@
 "Stop an in-progress note / to-do capture" = "停止正在进行的笔记 / 待办捕捉";
 "Stop playback" = "停止播放";
 "Stop the macOS Fn / emoji popup" = "阻止 macOS 的 Fn / 表情符号弹窗";
+"Storage" = "存储";
 "Strikethrough (~~)" = "删除线（~~）";
 "Style" = "风格";
 "Style prompt" = "风格提示词";
@@ -714,6 +742,7 @@
 "Subject" = "主题";
 "Suggest a feature and upvote the ones you want most. We build what rises to the top." = "提出功能建议，并为你最想要的投票。我们会优先开发呼声最高的功能。";
 "Suggest a feature…" = "提出功能建议…";
+"Support" = "客服";
 "Surreal dream-logic" = "超现实梦境逻辑";
 "Switch mode — keeps recording" = "切换模式 — 保持录音";
 "System default" = "系统默认";
@@ -758,6 +787,7 @@
 "They count once they're a paying subscriber and have dictated 15,000+ words." = "当他们成为付费订阅者并听写超过 15,000 字后才会计入。";
 "They sign up through your link and start a paid Verba Pro plan." = "他们通过你的链接注册并开通付费的 Verba Pro 套餐。";
 "They subscribe to Pro" = "他们订阅 Pro";
+"Third-party apps via secure OAuth" = "通过安全 OAuth 连接第三方应用";
 "This detaches your account from this Mac. Your local notes, transcripts and to-dos stay on this device, you can sign back in anytime." = "这会将你的账户与这台 Mac 解绑。你的本地笔记、转录和待办事项仍保留在本设备上，你可以随时重新登录。";
 "This instruction will shape your note" = "此指令将塑造你的笔记";
 "This is your PUBLIC name on the Verba leaderboard. It is never your real name or email, so pick something you're happy for anyone to see." = "这是你在 Verba 排行榜上的公开名称。它绝不会是你的真实姓名或邮箱，所以请选一个你乐意让任何人看到的名字。";
@@ -791,6 +821,7 @@
 "Today's goal" = "今日目标";
 "Today's to-dos  (quick glance)" = "今日待办（快速一览）";
 "Tomorrow 9am" = "明天上午 9 点";
+"Tool" = "工具";
 "Tools" = "工具";
 "Total words" = "总字数";
 "Total words dictated across all your sessions." = "你所有会话中听写的总字数。";
@@ -856,6 +887,7 @@
 "Verify / restore" = "验证 / 恢复";
 "Version" = "版本";
 "Version & releases" = "版本与发布";
+"Video" = "视频";
 "Vocabulary word" = "词汇词条";
 "Voice commands" = "语音命令";
 "Voice to clean text, on your terms." = "语音变为整洁文本，由你掌控。";

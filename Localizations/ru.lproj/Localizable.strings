@@ -65,6 +65,7 @@
 "All time" = "За всё время";
 "Allowed actions" = "Разрешённые действия";
 "Already subscribed? Enter your checkout email and Verify to restore." = "Уже оформили подписку? Введите email из оплаты и нажмите «Проверить» для восстановления.";
+"Analytics" = "Аналитика";
 "Anthropic (Claude reprompting)" = "Anthropic (повторные запросы Claude)";
 "Anthropic API key" = "Ключ API Anthropic";
 "Any model on openrouter.ai (openai/gpt-4o, google/gemini-2.0-flash…). Add your key below." = "Любая модель на openrouter.ai (openai/gpt-4o, google/gemini-2.0-flash…). Добавьте свой ключ ниже.";
@@ -107,6 +108,7 @@
 "Building…" = "Сборка…";
 "Bullet list" = "Маркированный список";
 "By default Verba takes over the globe (Fn) key so macOS doesn't pop the emoji/Fn HUD or switch your keyboard layout. Turn these off to get the standard macOS behaviour back." = "По умолчанию Verba перехватывает клавишу глобуса (Fn), чтобы macOS не показывал панель эмодзи/Fn и не переключал раскладку. Отключите это, чтобы вернуть стандартное поведение macOS.";
+"CRM" = "CRM";
 "Calendar" = "Календарь";
 "Cancel" = "Отмена";
 "Cancel (Esc)" = "Отмена (Esc)";
@@ -121,6 +123,7 @@
 "Change format (re-organizes from your words)" = "Изменить формат (переупорядочивает по вашим словам)";
 "Change mode" = "Сменить режим";
 "Change-mode jumps straight to the next mode (no list)" = "Смена режима сразу переходит к следующему режиму (без списка)";
+"Chat" = "Чат";
 "Check now" = "Проверить сейчас";
 "Checklist" = "Контрольный список";
 "Choose a mode" = "Выберите режим";
@@ -146,6 +149,13 @@
 "Coding, writing, casual, intent, each routed to the right model." = "Coding, writing, casual, intent — каждый направляется к нужной модели.";
 "Community" = "Сообщество";
 "Conditions: the invited person must be a paying subscriber (not just signed up) and have dictated 15,000+ words. Self-referrals don't count." = "Условия: приглашённый должен быть платящим подписчиком (а не просто зарегистрироваться) и надиктовать 15 000+ слов. Самоприглашения не засчитываются.";
+"Connect" = "Подключить";
+"Connect Gmail, Slack, Notion and more, then act on them by voice — e.g. “send a Slack message to the team that I'm running late”." = "Подключите Gmail, Slack, Notion и другие сервисы и управляйте ими голосом — например: «отправь в Slack сообщение команде, что я опаздываю».";
+"Connect your apps" = "Подключите свои приложения";
+"Connect your apps so Action mode can act on them by voice." = "Подключите приложения, чтобы режим Action мог управлять ими голосом.";
+"Connected" = "Подключено";
+"Connected apps" = "Подключённые приложения";
+"Connecting…" = "Подключение…";
 "Consecutive days you've dictated at least once." = "Дней подряд, когда вы диктовали хотя бы раз.";
 "Conspiracy theorist" = "Конспиролог";
 "Context" = "Context";
@@ -223,7 +233,9 @@
 "Describe what the mode should do first." = "Сначала опишите, что должен делать режим.";
 "Describe what this mode should do, in plain words. You can type it or dictate it with Verba. It uses your configured AI, no extra setup." = "Опишите простыми словами, что должен делать этот режим. Можно ввести текст или надиктовать его через Verba. Используется настроенный вами ИИ, без дополнительной настройки.";
 "Description" = "Описание";
+"Design" = "Дизайн";
 "Destinations" = "Назначения";
+"Developer" = "Разработка";
 "Dictate" = "Диктовать";
 "Dictate your feedback" = "Надиктуйте свой отзыв";
 "Dictation" = "Диктовка";
@@ -237,6 +249,7 @@
 "Disk & cloud" = "Диск и облако";
 "Dismiss" = "Закрыть";
 "Dock off = menu-bar only. The dictation hotkeys work either way. If you hide BOTH, reopen Verba from Applications to get back here." = "Dock выключен = только строка меню. Горячие клавиши диктовки работают в любом случае. Если скрыть ОБА, откройте Verba заново из Программ, чтобы вернуться сюда.";
+"Documents" = "Документы";
 "Done" = "Готово";
 "Download & install" = "Скачать и установить";
 "Download a free local model" = "Скачать бесплатную локальную модель";
@@ -246,6 +259,7 @@
 "Downloading…" = "Загрузка…";
 "Dry & deadpan" = "Сухой и невозмутимый";
 "Due" = "Срок";
+"E-commerce" = "E-commerce";
 "Each mode is a different way Claude reorders and improves your dictation." = "Каждый режим — это свой способ, которым Claude переупорядочивает и улучшает вашу диктовку.";
 "Each style is a reusable tone/format layer added on top of your mode. Switch styles anytime with Fn + [ and Fn + ], or from the menu bar." = "Каждый стиль — это многоразовый слой тона/формата поверх вашего режима. Переключайте стили в любой момент через Fn + [ и Fn + ] или из строки меню.";
 "Edit deadline" = "Изменить срок";
@@ -373,9 +387,13 @@
 "Make active" = "Сделать активным";
 "Make the app yours. Defaults are monochrome and macOS-native; everything here is optional." = "Настройте приложение под себя. По умолчанию всё монохромное и в стиле macOS; здесь всё опционально.";
 "Manage" = "Управление";
+"Manage connections" = "Управлять подключениями";
 "Manage modes" = "Управление режимами";
 "Manage modes…" = "Управление режимами…";
+"Maps" = "Карты";
+"Marketing" = "Маркетинг";
 "Match my tone per app" = "Подстраивать тон под приложение";
+"Meetings" = "Встречи";
 "Menu" = "Меню";
 "Menu bar only (no overlay)" = "Только строка меню (без оверлея)";
 "Menu glass blur" = "Размытие стекла меню";
@@ -497,6 +515,7 @@
 "Paused · tap the mic to stop" = "Приостановлено · нажмите микрофон, чтобы остановить";
 "Paused…" = "Приостановлено…";
 "Pay-per-token with your Anthropic API key." = "Оплата за токены с вашим API-ключом Anthropic.";
+"Payments" = "Платежи";
 "Pick a mode below" = "Выберите режим ниже";
 "Pick a mode by number" = "Выберите режим по номеру";
 "Pick a project" = "Выберите проект";
@@ -526,6 +545,7 @@
 "Private by default" = "Приватно по умолчанию";
 "Pro plan" = "План Pro";
 "Pro unlocked ✓" = "Pro активирован ✓";
+"Productivity" = "Продуктивность";
 "Profiles appear once they dictate on the latest version." = "Профили появляются, как только начинают диктовать в последней версии.";
 "Project" = "Проект";
 "Prompt" = "Промпт";
@@ -557,6 +577,7 @@
 "Refer friends — give a month, get a month" = "Пригласите друзей — подарите месяц, получите месяц";
 "Reformulation runs entirely on your Mac. Tap Set up to install the local engine (~30 MB) the first time. Qwen 2.5 7B recommended (~4.7 GB)." = "Переформулирование работает полностью на вашем Mac. Нажмите «Настроить», чтобы установить локальный движок (~30 МБ) в первый раз. Рекомендуется Qwen 2.5 7B (~4,7 ГБ).";
 "Refresh" = "Обновить";
+"Refresh connection status" = "Обновить статус подключений";
 "Regenerate" = "Сгенерировать заново";
 "Reload" = "Перезагрузить";
 "Remember the last mode you used" = "Запоминать последний использованный режим";
@@ -590,6 +611,8 @@
 "Review auto-learned" = "Просмотреть выученное автоматически";
 "Rich text/markdown in apps that render it (Mail, Notion, Notes…), plain text in code editors and terminals." = "Форматированный текст/markdown в приложениях, которые его отображают (Mail, Notion, Notes…), обычный текст в редакторах кода и терминалах.";
 "Run" = "Запустить";
+"Run \\(label.isEmpty ? tool : label) in your connected app?" = "Выполнить \\(label.isEmpty ? tool : label) в подключённом приложении?";
+"Run action" = "Выполнить действие";
 "Run shortcut" = "Запустить быструю команду";
 "Run the “\\(name)” shortcut?" = "Запустить команду «\\(name)»?";
 "Runs fully offline & free once installed, no API key needed." = "Работает полностью офлайн и бесплатно после установки, ключ API не нужен.";
@@ -613,6 +636,7 @@
 "Say what the list is for first." = "Сначала скажите, для чего этот список.";
 "Say “new line / new paragraph”, “comma / period / question mark”, “bullet point”, or “scratch that” and Verba turns them into real formatting (any mode, incl. Flow). EN + FR." = "Скажите «новая строка / новый абзац», «запятая / точка / вопросительный знак», «маркер списка» или «зачеркни это», и Verba превратит их в настоящее форматирование (любой режим, включая Flow). EN + FR.";
 "Say “search … on Google / ChatGPT / Claude”. {q} is replaced by what you said; add any site." = "Скажите «найди … в Google / ChatGPT / Claude». {q} заменяется на сказанное вами; добавьте любой сайт.";
+"Scheduling" = "Планирование";
 "Sci-fi space crew" = "Космический экипаж из фантастики";
 "Scratchpad" = "Черновик";
 "Screen Recording" = "Запись экрана";
@@ -672,6 +696,7 @@
 "Sign out" = "Выйти";
 "Sign out of Verba?" = "Выйти из Verba?";
 "Sign-in, plan, referrals" = "Вход, тариф, рефералы";
+"Signatures" = "Подписи";
 "Signed in" = "Выполнен вход";
 "Signed in as" = "Выполнен вход как";
 "Signed in as \\(settings.proEmail)" = "Вы вошли как \\(settings.proEmail)";
@@ -681,6 +706,7 @@
 "Smart formatting per app" = "Умное форматирование для каждого приложения";
 "Snippet" = "Сниппет";
 "Snippets" = "Сниппеты";
+"Social" = "Соцсети";
 "Soft — a light popover-style frost." = "Мягкий — лёгкое матирование в стиле всплывающего окна.";
 "Some permissions are off. Verba can't fully work until the three core ones are on." = "Некоторые разрешения отключены. Verba не сможет работать в полной мере, пока не включены три основных.";
 "Sonnet" = "Sonnet";
@@ -691,6 +717,7 @@
 "Speak how to adapt the text" = "Произнесите, как адаптировать текст";
 "Speak it. Send it clean." = "Скажите. Отправьте начисто.";
 "Spoken language" = "Язык речи";
+"Spreadsheets" = "Таблицы";
 "Start / stop dictation" = "Начать / остановить диктовку";
 "Start a new note (record again)" = "Начать новую заметку (записать снова)";
 "Start a recording with Fn, then press Control to try it." = "Начните запись клавишей Fn, затем нажмите Control, чтобы попробовать.";
@@ -702,6 +729,7 @@
 "Stop an in-progress note / to-do capture" = "Остановить текущую запись заметки / задачи";
 "Stop playback" = "Остановить воспроизведение";
 "Stop the macOS Fn / emoji popup" = "Отключить всплывающее окно Fn / эмодзи в macOS";
+"Storage" = "Хранилище";
 "Strikethrough (~~)" = "Зачёркнутый (~~)";
 "Style" = "Стиль";
 "Style prompt" = "Промпт стиля";
@@ -714,6 +742,7 @@
 "Subject" = "Тема";
 "Suggest a feature and upvote the ones you want most. We build what rises to the top." = "Предложите функцию и голосуйте за те, что нужны вам больше всего. Мы создаём то, что выходит в топ.";
 "Suggest a feature…" = "Предложить функцию…";
+"Support" = "Поддержка";
 "Surreal dream-logic" = "Сюрреалистичная логика сна";
 "Switch mode — keeps recording" = "Сменить режим — запись продолжается";
 "System default" = "Системный по умолчанию";
@@ -758,6 +787,7 @@
 "They count once they're a paying subscriber and have dictated 15,000+ words." = "Они засчитываются, когда становятся платными подписчиками и продиктовали более 15 000 слов.";
 "They sign up through your link and start a paid Verba Pro plan." = "Они регистрируются по вашей ссылке и оформляют платный план Verba Pro.";
 "They subscribe to Pro" = "Они оформляют подписку Pro";
+"Third-party apps via secure OAuth" = "Сторонние приложения через защищённый OAuth";
 "This detaches your account from this Mac. Your local notes, transcripts and to-dos stay on this device, you can sign back in anytime." = "Это отвяжет вашу учётную запись от этого Mac. Локальные заметки, расшифровки и задачи останутся на этом устройстве, вы сможете войти снова в любой момент.";
 "This instruction will shape your note" = "Эта инструкция определит вашу заметку";
 "This is your PUBLIC name on the Verba leaderboard. It is never your real name or email, so pick something you're happy for anyone to see." = "Это ваше ПУБЛИЧНОЕ имя в таблице лидеров Verba. Это никогда не настоящее имя или email, поэтому выберите то, что не против показать любому.";
@@ -791,6 +821,7 @@
 "Today's goal" = "Цель на сегодня";
 "Today's to-dos  (quick glance)" = "Задачи на сегодня  (краткий обзор)";
 "Tomorrow 9am" = "Завтра в 9:00";
+"Tool" = "Инструмент";
 "Tools" = "Инструменты";
 "Total words" = "Всего слов";
 "Total words dictated across all your sessions." = "Всего слов продиктовано за все ваши сессии.";
@@ -856,6 +887,7 @@
 "Verify / restore" = "Проверить / восстановить";
 "Version" = "Версия";
 "Version & releases" = "Версия и релизы";
+"Video" = "Видео";
 "Vocabulary word" = "Слово из словаря";
 "Voice commands" = "Голосовые команды";
 "Voice to clean text, on your terms." = "Голос в чистый текст — на ваших условиях.";

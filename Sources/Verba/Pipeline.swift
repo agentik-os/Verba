@@ -275,7 +275,13 @@ enum Pipeline {
                 // model is given the user's actual Shortcuts so it can match a request to a real name.
                 if s.agenticActions || actionMode {
                     let shortcuts = ActionExecutor().availableShortcuts()
-                    let agenticSys = sys + agenticActionsAddendum(shortcuts: shortcuts, actionFirst: actionMode)
+                    // Connected apps (Composio): tools are cached by ComposioStore.refresh()
+                    // (warmed at launch / when managing connections) — never fetched here, so
+                    // an empty cache just means the block is omitted from the prompt.
+                    let connectedTools = ComposioStore.shared.connectedTools
+                    let agenticSys = sys + agenticActionsAddendum(shortcuts: shortcuts,
+                                                                  actionFirst: actionMode,
+                                                                  connectedTools: connectedTools)
                     let raw: String
                     if let png {
                         raw = try await r.repromptVision(transcript: original, systemPrompt: agenticSys, imagePNG: png)
@@ -393,7 +399,8 @@ enum Pipeline {
     /// the model can match a spoken request against the shortcuts they really have. `actionFirst` is set
     /// in the dedicated Action mode: it tells the model the user EXPECTS a command, so it should strongly
     /// prefer emitting an action (falling back to text only when the request truly isn't actionable).
-    static func agenticActionsAddendum(shortcuts: [String] = [], actionFirst: Bool = false) -> String {
+    static func agenticActionsAddendum(shortcuts: [String] = [], actionFirst: Bool = false,
+                                       connectedTools: [ComposioTool] = []) -> String {
         let targets = Settings.shared.searchTargets
         let searchBlock = targets.isEmpty ? "(No search targets configured.)" :
             "The user's web search targets (for a 'search' action, set \"target\" to one of these EXACT names " +
@@ -402,6 +409,39 @@ enum Pipeline {
         let disabledBlock = disabled.isEmpty ? "" :
             "\n\nDISABLED actions (the user turned these OFF — NEVER emit them; fall back to text B instead): " +
             disabled.joined(separator: ", ")
+        // Connected third-party apps (Composio): when the user has connected apps with cached
+        // tools, expose them as a `composio` action + a slug catalog. Empty = both omitted, so
+        // the prompt is unchanged for users without connections.
+        let composioDisabled = Settings.shared.disabledActions.contains(ActionKind.connectedApp.rawValue)
+        let hasComposio = !connectedTools.isEmpty && !composioDisabled
+        let composioShape = !hasComposio ? "" : """
+
+          composio — act in one of the user's CONNECTED APPS (Gmail, Slack, Notion, …) via its tool slug:
+            {"action":{"type":"composio","tool":"<exact tool slug from the CONNECTED-APP TOOLS list below>","arguments":{"<param>":"<value>",...}}}
+        """
+        let composioRule = !hasComposio ? "" :
+            "\n- When the request targets one of the user's CONNECTED APPS (send a Slack message, " +
+            "star a GitHub repo, add a Notion page, …), emit a composio action with the best-matching " +
+            "tool slug from the list below — match by MEANING, not by keywords."
+        let composioBlock: String
+        if !hasComposio {
+            composioBlock = ""
+        } else {
+            let list = connectedTools.prefix(150).map { t -> String in
+                let d = t.description.replacingOccurrences(of: "\n", with: " ")
+                let clipped = d.count > 140 ? String(d.prefix(140)) + "…" : d
+                return "  • \(t.slug)\(clipped.isEmpty ? "" : " — \(clipped)")"
+            }.joined(separator: "\n")
+            composioBlock = """
+
+
+            CONNECTED-APP TOOLS (the user connected these apps; for a composio action, set "tool" to one \
+            of these EXACT slugs and fill "arguments" with the parameters the request implies — MAP THE \
+            MEANING of the request to the best tool, semantically, not by keywords; never invent a slug \
+            that isn't listed):
+            \(list)
+            """
+        }
         let shortcutsBlock: String
         if shortcuts.isEmpty {
             shortcutsBlock = "(The user has no saved Shortcuts, so do not emit a run_shortcut action.)"
@@ -410,13 +450,19 @@ enum Pipeline {
             shortcutsBlock = "The user's macOS Shortcuts (match a spoken request to one of these EXACT names " +
                 "for a run_shortcut action — never invent a name that isn't listed):\n\(list)"
         }
+        // Genuinely SEMANTIC mapping: the model interprets the MEANING of the request and picks
+        // the single best action/tool — never keyword-matching the exact wording.
+        let semantic = " Interpret the user's INTENT semantically: map the MEANING of the request to the " +
+            "single best action or tool below, regardless of the exact words, phrasing, or language used " +
+            "(e.g. \"shoot Marc a note about lunch\" is an email/message, \"jot this down in my workspace\" " +
+            "may be a Notion tool). Never require keyword matches."
         let intro = actionFirst
             ? "ACTION MODE (OVERRIDE OF THE OUTPUT FORMAT ABOVE): The user is in a dedicated mode where " +
               "their speech CONTROLS THE MAC. They EXPECT their words to be a command. Resolve the spoken " +
               "request into the single best structured action below and emit it. Only fall back to text (B) " +
-              "when the request genuinely isn't an actionable command."
+              "when the request genuinely isn't an actionable command." + semantic
             : "AGENTIC ACTIONS MODE (OVERRIDE OF THE OUTPUT FORMAT ABOVE): The user may dictate a COMMAND to " +
-              "do something on their Mac. Decide:"
+              "do something on their Mac." + semantic + " Decide:"
         return """
 
 
@@ -441,7 +487,7 @@ enum Pipeline {
             {"action":{"type":"send_message","to":"<name, phone, or email>","body":"..."}}
           search — run a web search or open a site in the browser:
             {"action":{"type":"search","target":"<one of the search targets below>","query":"<the spoken query>"}}
-            or open a specific URL directly: {"action":{"type":"open_url","url":"https://..."}}
+            or open a specific URL directly: {"action":{"type":"open_url","url":"https://..."}}\(composioShape)
           apple_script — a last-resort escape hatch for an action none of the above cover:
             {"action":{"type":"apple_script","label":"<short human description>","script":"<AppleScript source>"}}
 
@@ -455,12 +501,12 @@ enum Pipeline {
         (and "to"/"subject" if visible); type is "email_draft".
         - For run_shortcut, the "name" MUST be one of the user's exact Shortcut names listed below.
         - Prefer a built-in type (calendar/reminder/email/shortcut/open_app/play_music/send_message) \
-        over apple_script; use apple_script ONLY when nothing else fits.
+        over apple_script; use apple_script ONLY when nothing else fits.\(composioRule)
         - Resolve all relative dates/times to concrete ISO8601 WITH timezone offset using the \
         context below. Never invent a date the user didn't imply.
         - Use the user's language for titles, bodies and notes.
 
-        \(shortcutsBlock)
+        \(shortcutsBlock)\(composioBlock)
 
         \(searchBlock)\(disabledBlock)
 
@@ -574,6 +620,31 @@ enum Pipeline {
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             guard !to.isEmpty, !body.isEmpty else { return nil }
             return .sendMessage(to: to, body: body)
+        case "composio", "connected_app", "connectedapp", "composio_tool":
+            // Connected app (Composio): "tool" is the exact tool slug; "arguments" is the
+            // tool's parameter object. Values are stringified (the relay re-types them) so
+            // the action stays Codable and renderable in the confirmation card.
+            let tool = ((a["tool"] as? String) ?? (a["slug"] as? String) ?? (a["name"] as? String) ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !tool.isEmpty else { return nil }
+            var args: [String: String] = [:]
+            if let rawArgs = (a["arguments"] as? [String: Any]) ?? (a["args"] as? [String: Any])
+                ?? (a["parameters"] as? [String: Any]) {
+                for (k, v) in rawArgs {
+                    switch v {
+                    case let s as String: args[k] = s
+                    case let n as NSNumber:
+                        // JSON booleans arrive as CFBoolean NSNumbers; keep them "true"/"false".
+                        if CFGetTypeID(n) == CFBooleanGetTypeID() { args[k] = n.boolValue ? "true" : "false" }
+                        else { args[k] = n.stringValue }
+                    case is NSNull: break
+                    default:
+                        if let d = try? JSONSerialization.data(withJSONObject: v, options: [.sortedKeys]),
+                           let s = String(data: d, encoding: .utf8) { args[k] = s }
+                    }
+                }
+            }
+            return .composio(tool: tool, label: tool, arguments: args)
         case "apple_script", "applescript", "script":
             let script = ((a["script"] as? String) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             guard !script.isEmpty else { return nil }

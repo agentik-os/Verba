@@ -65,6 +65,7 @@
 "All time" = "All time";
 "Allowed actions" = "Allowed actions";
 "Already subscribed? Enter your checkout email and Verify to restore." = "Already subscribed? Enter your checkout email and Verify to restore.";
+"Analytics" = "Analytics";
 "Anthropic (Claude reprompting)" = "Anthropic (Claude reprompting)";
 "Anthropic API key" = "Anthropic API key";
 "Any model on openrouter.ai (openai/gpt-4o, google/gemini-2.0-flash…). Add your key below." = "Any model on openrouter.ai (openai/gpt-4o, google/gemini-2.0-flash…). Add your key below.";
@@ -107,6 +108,7 @@
 "Building…" = "Building…";
 "Bullet list" = "Bullet list";
 "By default Verba takes over the globe (Fn) key so macOS doesn't pop the emoji/Fn HUD or switch your keyboard layout. Turn these off to get the standard macOS behaviour back." = "By default Verba takes over the globe (Fn) key so macOS doesn't pop the emoji/Fn HUD or switch your keyboard layout. Turn these off to get the standard macOS behaviour back.";
+"CRM" = "CRM";
 "Calendar" = "Calendar";
 "Cancel" = "Cancel";
 "Cancel (Esc)" = "Cancel (Esc)";
@@ -121,6 +123,7 @@
 "Change format (re-organizes from your words)" = "Change format (re-organizes from your words)";
 "Change mode" = "Change mode";
 "Change-mode jumps straight to the next mode (no list)" = "Change-mode jumps straight to the next mode (no list)";
+"Chat" = "Chat";
 "Check now" = "Check now";
 "Checklist" = "Checklist";
 "Choose a mode" = "Choose a mode";
@@ -146,6 +149,13 @@
 "Coding, writing, casual, intent, each routed to the right model." = "Coding, writing, casual, intent, each routed to the right model.";
 "Community" = "Community";
 "Conditions: the invited person must be a paying subscriber (not just signed up) and have dictated 15,000+ words. Self-referrals don't count." = "Conditions: the invited person must be a paying subscriber (not just signed up) and have dictated 15,000+ words. Self-referrals don't count.";
+"Connect" = "Connect";
+"Connect Gmail, Slack, Notion and more, then act on them by voice — e.g. “send a Slack message to the team that I'm running late”." = "Connect Gmail, Slack, Notion and more, then act on them by voice — e.g. “send a Slack message to the team that I'm running late”.";
+"Connect your apps" = "Connect your apps";
+"Connect your apps so Action mode can act on them by voice." = "Connect your apps so Action mode can act on them by voice.";
+"Connected" = "Connected";
+"Connected apps" = "Connected apps";
+"Connecting…" = "Connecting…";
 "Consecutive days you've dictated at least once." = "Consecutive days you've dictated at least once.";
 "Conspiracy theorist" = "Conspiracy theorist";
 "Context" = "Context";
@@ -223,7 +233,9 @@
 "Describe what the mode should do first." = "Describe what the mode should do first.";
 "Describe what this mode should do, in plain words. You can type it or dictate it with Verba. It uses your configured AI, no extra setup." = "Describe what this mode should do, in plain words. You can type it or dictate it with Verba. It uses your configured AI, no extra setup.";
 "Description" = "Description";
+"Design" = "Design";
 "Destinations" = "Destinations";
+"Developer" = "Developer";
 "Dictate" = "Dictate";
 "Dictate your feedback" = "Dictate your feedback";
 "Dictation" = "Dictation";
@@ -237,6 +249,7 @@
 "Disk & cloud" = "Disk & cloud";
 "Dismiss" = "Dismiss";
 "Dock off = menu-bar only. The dictation hotkeys work either way. If you hide BOTH, reopen Verba from Applications to get back here." = "Dock off = menu-bar only. The dictation hotkeys work either way. If you hide BOTH, reopen Verba from Applications to get back here.";
+"Documents" = "Documents";
 "Done" = "Done";
 "Download & install" = "Download & install";
 "Download a free local model" = "Download a free local model";
@@ -246,6 +259,7 @@
 "Downloading…" = "Downloading…";
 "Dry & deadpan" = "Dry & deadpan";
 "Due" = "Due";
+"E-commerce" = "E-commerce";
 "Each mode is a different way Claude reorders and improves your dictation." = "Each mode is a different way Claude reorders and improves your dictation.";
 "Each style is a reusable tone/format layer added on top of your mode. Switch styles anytime with Fn + [ and Fn + ], or from the menu bar." = "Each style is a reusable tone/format layer added on top of your mode. Switch styles anytime with Fn + [ and Fn + ], or from the menu bar.";
 "Edit deadline" = "Edit deadline";
@@ -373,9 +387,13 @@
 "Make active" = "Make active";
 "Make the app yours. Defaults are monochrome and macOS-native; everything here is optional." = "Make the app yours. Defaults are monochrome and macOS-native; everything here is optional.";
 "Manage" = "Manage";
+"Manage connections" = "Manage connections";
 "Manage modes" = "Manage modes";
 "Manage modes…" = "Manage modes…";
+"Maps" = "Maps";
+"Marketing" = "Marketing";
 "Match my tone per app" = "Match my tone per app";
+"Meetings" = "Meetings";
 "Menu" = "Menu";
 "Menu bar only (no overlay)" = "Menu bar only (no overlay)";
 "Menu glass blur" = "Menu glass blur";
@@ -497,6 +515,7 @@
 "Paused · tap the mic to stop" = "Paused · tap the mic to stop";
 "Paused…" = "Paused…";
 "Pay-per-token with your Anthropic API key." = "Pay-per-token with your Anthropic API key.";
+"Payments" = "Payments";
 "Pick a mode below" = "Pick a mode below";
 "Pick a mode by number" = "Pick a mode by number";
 "Pick a project" = "Pick a project";
@@ -526,6 +545,7 @@
 "Private by default" = "Private by default";
 "Pro plan" = "Pro plan";
 "Pro unlocked ✓" = "Pro unlocked ✓";
+"Productivity" = "Productivity";
 "Profiles appear once they dictate on the latest version." = "Profiles appear once they dictate on the latest version.";
 "Project" = "Project";
 "Prompt" = "Prompt";
@@ -557,6 +577,7 @@
 "Refer friends — give a month, get a month" = "Refer friends — give a month, get a month";
 "Reformulation runs entirely on your Mac. Tap Set up to install the local engine (~30 MB) the first time. Qwen 2.5 7B recommended (~4.7 GB)." = "Reformulation runs entirely on your Mac. Tap Set up to install the local engine (~30 MB) the first time. Qwen 2.5 7B recommended (~4.7 GB).";
 "Refresh" = "Refresh";
+"Refresh connection status" = "Refresh connection status";
 "Regenerate" = "Regenerate";
 "Reload" = "Reload";
 "Remember the last mode you used" = "Remember the last mode you used";
@@ -590,6 +611,8 @@
 "Review auto-learned" = "Review auto-learned";
 "Rich text/markdown in apps that render it (Mail, Notion, Notes…), plain text in code editors and terminals." = "Rich text/markdown in apps that render it (Mail, Notion, Notes…), plain text in code editors and terminals.";
 "Run" = "Run";
+"Run \\(label.isEmpty ? tool : label) in your connected app?" = "Run \\(label.isEmpty ? tool : label) in your connected app?";
+"Run action" = "Run action";
 "Run shortcut" = "Run shortcut";
 "Run the “\\(name)” shortcut?" = "Run the “\\(name)” shortcut?";
 "Runs fully offline & free once installed, no API key needed." = "Runs fully offline & free once installed, no API key needed.";
@@ -613,6 +636,7 @@
 "Say what the list is for first." = "Say what the list is for first.";
 "Say “new line / new paragraph”, “comma / period / question mark”, “bullet point”, or “scratch that” and Verba turns them into real formatting (any mode, incl. Flow). EN + FR." = "Say “new line / new paragraph”, “comma / period / question mark”, “bullet point”, or “scratch that” and Verba turns them into real formatting (any mode, incl. Flow). EN + FR.";
 "Say “search … on Google / ChatGPT / Claude”. {q} is replaced by what you said; add any site." = "Say “search … on Google / ChatGPT / Claude”. {q} is replaced by what you said; add any site.";
+"Scheduling" = "Scheduling";
 "Sci-fi space crew" = "Sci-fi space crew";
 "Scratchpad" = "Scratchpad";
 "Screen Recording" = "Screen Recording";
@@ -672,6 +696,7 @@
 "Sign out" = "Sign out";
 "Sign out of Verba?" = "Sign out of Verba?";
 "Sign-in, plan, referrals" = "Sign-in, plan, referrals";
+"Signatures" = "Signatures";
 "Signed in" = "Signed in";
 "Signed in as" = "Signed in as";
 "Signed in as \\(settings.proEmail)" = "Signed in as \\(settings.proEmail)";
@@ -681,6 +706,7 @@
 "Smart formatting per app" = "Smart formatting per app";
 "Snippet" = "Snippet";
 "Snippets" = "Snippets";
+"Social" = "Social";
 "Soft — a light popover-style frost." = "Soft — a light popover-style frost.";
 "Some permissions are off. Verba can't fully work until the three core ones are on." = "Some permissions are off. Verba can't fully work until the three core ones are on.";
 "Sonnet" = "Sonnet";
@@ -691,6 +717,7 @@
 "Speak how to adapt the text" = "Speak how to adapt the text";
 "Speak it. Send it clean." = "Speak it. Send it clean.";
 "Spoken language" = "Spoken language";
+"Spreadsheets" = "Spreadsheets";
 "Start / stop dictation" = "Start / stop dictation";
 "Start a new note (record again)" = "Start a new note (record again)";
 "Start a recording with Fn, then press Control to try it." = "Start a recording with Fn, then press Control to try it.";
@@ -702,6 +729,7 @@
 "Stop an in-progress note / to-do capture" = "Stop an in-progress note / to-do capture";
 "Stop playback" = "Stop playback";
 "Stop the macOS Fn / emoji popup" = "Stop the macOS Fn / emoji popup";
+"Storage" = "Storage";
 "Strikethrough (~~)" = "Strikethrough (~~)";
 "Style" = "Style";
 "Style prompt" = "Style prompt";
@@ -714,6 +742,7 @@
 "Subject" = "Subject";
 "Suggest a feature and upvote the ones you want most. We build what rises to the top." = "Suggest a feature and upvote the ones you want most. We build what rises to the top.";
 "Suggest a feature…" = "Suggest a feature…";
+"Support" = "Support";
 "Surreal dream-logic" = "Surreal dream-logic";
 "Switch mode — keeps recording" = "Switch mode — keeps recording";
 "System default" = "System default";
@@ -758,6 +787,7 @@
 "They count once they're a paying subscriber and have dictated 15,000+ words." = "They count once they're a paying subscriber and have dictated 15,000+ words.";
 "They sign up through your link and start a paid Verba Pro plan." = "They sign up through your link and start a paid Verba Pro plan.";
 "They subscribe to Pro" = "They subscribe to Pro";
+"Third-party apps via secure OAuth" = "Third-party apps via secure OAuth";
 "This detaches your account from this Mac. Your local notes, transcripts and to-dos stay on this device, you can sign back in anytime." = "This detaches your account from this Mac. Your local notes, transcripts and to-dos stay on this device, you can sign back in anytime.";
 "This instruction will shape your note" = "This instruction will shape your note";
 "This is your PUBLIC name on the Verba leaderboard. It is never your real name or email, so pick something you're happy for anyone to see." = "This is your PUBLIC name on the Verba leaderboard. It is never your real name or email, so pick something you're happy for anyone to see.";
@@ -791,6 +821,7 @@
 "Today's goal" = "Today's goal";
 "Today's to-dos  (quick glance)" = "Today's to-dos  (quick glance)";
 "Tomorrow 9am" = "Tomorrow 9am";
+"Tool" = "Tool";
 "Tools" = "Tools";
 "Total words" = "Total words";
 "Total words dictated across all your sessions." = "Total words dictated across all your sessions.";
@@ -856,6 +887,7 @@
 "Verify / restore" = "Verify / restore";
 "Version" = "Version";
 "Version & releases" = "Version & releases";
+"Video" = "Video";
 "Vocabulary word" = "Vocabulary word";
 "Voice commands" = "Voice commands";
 "Voice to clean text, on your terms." = "Voice to clean text, on your terms.";

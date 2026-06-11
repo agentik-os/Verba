@@ -65,6 +65,7 @@
 "All time" = "Depuis le début";
 "Allowed actions" = "Actions autorisées";
 "Already subscribed? Enter your checkout email and Verify to restore." = "Déjà abonné ? Saisissez l'e-mail de votre achat et cliquez sur Vérifier pour restaurer.";
+"Analytics" = "Analytique";
 "Anthropic (Claude reprompting)" = "Anthropic (reprompting Claude)";
 "Anthropic API key" = "Clé API Anthropic";
 "Any model on openrouter.ai (openai/gpt-4o, google/gemini-2.0-flash…). Add your key below." = "N'importe quel modèle sur openrouter.ai (openai/gpt-4o, google/gemini-2.0-flash…). Ajoutez votre clé ci-dessous.";
@@ -107,6 +108,7 @@
 "Building…" = "Construction…";
 "Bullet list" = "Liste à puces";
 "By default Verba takes over the globe (Fn) key so macOS doesn't pop the emoji/Fn HUD or switch your keyboard layout. Turn these off to get the standard macOS behaviour back." = "Par défaut, Verba prend le contrôle de la touche globe (Fn) afin que macOS n'affiche pas le HUD emoji/Fn ni ne change votre disposition de clavier. Désactivez ces options pour retrouver le comportement standard de macOS.";
+"CRM" = "CRM";
 "Calendar" = "Calendrier";
 "Cancel" = "Annuler";
 "Cancel (Esc)" = "Annuler (Échap)";
@@ -121,6 +123,7 @@
 "Change format (re-organizes from your words)" = "Changer le format (réorganise à partir de vos mots)";
 "Change mode" = "Changer de mode";
 "Change-mode jumps straight to the next mode (no list)" = "Changer de mode passe directement au mode suivant (sans liste)";
+"Chat" = "Chat";
 "Check now" = "Vérifier maintenant";
 "Checklist" = "Liste de contrôle";
 "Choose a mode" = "Choisir un mode";
@@ -146,6 +149,13 @@
 "Coding, writing, casual, intent, each routed to the right model." = "Coding, rédaction, informel, intention, chacun routé vers le bon modèle.";
 "Community" = "Communauté";
 "Conditions: the invited person must be a paying subscriber (not just signed up) and have dictated 15,000+ words. Self-referrals don't count." = "Conditions : la personne invitée doit être abonnée payante (pas seulement inscrite) et avoir dicté plus de 15 000 mots. Les auto-parrainages ne comptent pas.";
+"Connect" = "Connecter";
+"Connect Gmail, Slack, Notion and more, then act on them by voice — e.g. “send a Slack message to the team that I'm running late”." = "Connectez Gmail, Slack, Notion et plus encore, puis agissez dessus à la voix — p. ex. « envoie un message Slack à l'équipe pour dire que je suis en retard ».";
+"Connect your apps" = "Connectez vos apps";
+"Connect your apps so Action mode can act on them by voice." = "Connectez vos apps pour que le mode Action puisse agir dessus à la voix.";
+"Connected" = "Connecté";
+"Connected apps" = "Apps connectées";
+"Connecting…" = "Connexion…";
 "Consecutive days you've dictated at least once." = "Jours consécutifs où vous avez dicté au moins une fois.";
 "Conspiracy theorist" = "Complotiste";
 "Context" = "Context";
@@ -223,7 +233,9 @@
 "Describe what the mode should do first." = "Décrivez d'abord ce que le mode doit faire.";
 "Describe what this mode should do, in plain words. You can type it or dictate it with Verba. It uses your configured AI, no extra setup." = "Décrivez ce que ce mode doit faire, en mots simples. Vous pouvez le taper ou le dicter avec Verba. Il utilise votre IA configurée, sans réglage supplémentaire.";
 "Description" = "Description";
+"Design" = "Design";
 "Destinations" = "Destinations";
+"Developer" = "Développeur";
 "Dictate" = "Dicter";
 "Dictate your feedback" = "Dictez votre retour";
 "Dictation" = "Dictée";
@@ -237,6 +249,7 @@
 "Disk & cloud" = "Disque et cloud";
 "Dismiss" = "Ignorer";
 "Dock off = menu-bar only. The dictation hotkeys work either way. If you hide BOTH, reopen Verba from Applications to get back here." = "Dock désactivé = barre de menus uniquement. Les raccourcis de dictée fonctionnent dans les deux cas. Si vous masquez les DEUX, rouvrez Verba depuis Applications pour revenir ici.";
+"Documents" = "Documents";
 "Done" = "Terminé";
 "Download & install" = "Télécharger et installer";
 "Download a free local model" = "Télécharger un modèle local gratuit";
@@ -246,6 +259,7 @@
 "Downloading…" = "Téléchargement…";
 "Dry & deadpan" = "Pince-sans-rire";
 "Due" = "Échéance";
+"E-commerce" = "E-commerce";
 "Each mode is a different way Claude reorders and improves your dictation." = "Chaque mode est une façon différente dont Claude réorganise et améliore votre dictée.";
 "Each style is a reusable tone/format layer added on top of your mode. Switch styles anytime with Fn + [ and Fn + ], or from the menu bar." = "Chaque style est une couche de ton/format réutilisable ajoutée par-dessus votre mode. Changez de style à tout moment avec Fn + [ et Fn + ], ou depuis la barre de menus.";
 "Edit deadline" = "Modifier l'échéance";
@@ -373,9 +387,13 @@
 "Make active" = "Activer";
 "Make the app yours. Defaults are monochrome and macOS-native; everything here is optional." = "Faites de l'app la vôtre. Les réglages par défaut sont monochromes et natifs macOS ; tout ici est facultatif.";
 "Manage" = "Gérer";
+"Manage connections" = "Gérer les connexions";
 "Manage modes" = "Gérer les modes";
 "Manage modes…" = "Gérer les modes…";
+"Maps" = "Cartes";
+"Marketing" = "Marketing";
 "Match my tone per app" = "Adapter mon ton selon l'app";
+"Meetings" = "Réunions";
 "Menu" = "Menu";
 "Menu bar only (no overlay)" = "Barre de menus uniquement (sans superposition)";
 "Menu glass blur" = "Flou du verre des menus";
@@ -497,6 +515,7 @@
 "Paused · tap the mic to stop" = "En pause · touchez le micro pour arrêter";
 "Paused…" = "En pause…";
 "Pay-per-token with your Anthropic API key." = "Paiement au jeton avec votre clé API Anthropic.";
+"Payments" = "Paiements";
 "Pick a mode below" = "Choisissez un mode ci-dessous";
 "Pick a mode by number" = "Choisissez un mode par numéro";
 "Pick a project" = "Choisissez un projet";
@@ -526,6 +545,7 @@
 "Private by default" = "Privé par défaut";
 "Pro plan" = "Forfait Pro";
 "Pro unlocked ✓" = "Pro débloqué ✓";
+"Productivity" = "Productivité";
 "Profiles appear once they dictate on the latest version." = "Les profils apparaissent dès qu'ils dictent sur la dernière version.";
 "Project" = "Projet";
 "Prompt" = "Prompt";
@@ -557,6 +577,7 @@
 "Refer friends — give a month, get a month" = "Parrainez vos amis — offrez un mois, gagnez un mois";
 "Reformulation runs entirely on your Mac. Tap Set up to install the local engine (~30 MB) the first time. Qwen 2.5 7B recommended (~4.7 GB)." = "La reformulation s'exécute entièrement sur votre Mac. Touchez Configurer pour installer le moteur local (~30 Mo) la première fois. Qwen 2.5 7B recommandé (~4,7 Go).";
 "Refresh" = "Actualiser";
+"Refresh connection status" = "Actualiser l'état des connexions";
 "Regenerate" = "Régénérer";
 "Reload" = "Recharger";
 "Remember the last mode you used" = "Mémoriser le dernier mode utilisé";
@@ -590,6 +611,8 @@
 "Review auto-learned" = "Relire les apprentissages automatiques";
 "Rich text/markdown in apps that render it (Mail, Notion, Notes…), plain text in code editors and terminals." = "Texte enrichi/markdown dans les apps qui le rendent (Mail, Notion, Notes…), texte brut dans les éditeurs de code et les terminaux.";
 "Run" = "Exécuter";
+"Run \\(label.isEmpty ? tool : label) in your connected app?" = "Exécuter \\(label.isEmpty ? tool : label) dans votre app connectée ?";
+"Run action" = "Exécuter l'action";
 "Run shortcut" = "Exécuter le raccourci";
 "Run the “\\(name)” shortcut?" = "Exécuter le raccourci « \\(name) » ?";
 "Runs fully offline & free once installed, no API key needed." = "Fonctionne entièrement hors ligne et gratuitement une fois installé, sans clé API.";
@@ -613,6 +636,7 @@
 "Say what the list is for first." = "Dites d'abord à quoi sert la liste.";
 "Say “new line / new paragraph”, “comma / period / question mark”, “bullet point”, or “scratch that” and Verba turns them into real formatting (any mode, incl. Flow). EN + FR." = "Dites « à la ligne / nouveau paragraphe », « virgule / point / point d'interrogation », « puce » ou « oublie ça » et Verba les transforme en vraie mise en forme (tout mode, y compris Flow). EN + FR.";
 "Say “search … on Google / ChatGPT / Claude”. {q} is replaced by what you said; add any site." = "Dites « cherche … sur Google / ChatGPT / Claude ». {q} est remplacé par ce que vous avez dit ; ajoutez n'importe quel site.";
+"Scheduling" = "Planification";
 "Sci-fi space crew" = "Équipage spatial sci-fi";
 "Scratchpad" = "Bloc-notes";
 "Screen Recording" = "Enregistrement d'écran";
@@ -672,6 +696,7 @@
 "Sign out" = "Se déconnecter";
 "Sign out of Verba?" = "Se déconnecter de Verba ?";
 "Sign-in, plan, referrals" = "Connexion, forfait, parrainages";
+"Signatures" = "Signatures";
 "Signed in" = "Connecté";
 "Signed in as" = "Connecté en tant que";
 "Signed in as \\(settings.proEmail)" = "Connecté en tant que \\(settings.proEmail)";
@@ -681,6 +706,7 @@
 "Smart formatting per app" = "Mise en forme intelligente par app";
 "Snippet" = "Extrait";
 "Snippets" = "Extraits";
+"Social" = "Réseaux sociaux";
 "Soft — a light popover-style frost." = "Doux — un givrage léger façon popover.";
 "Some permissions are off. Verba can't fully work until the three core ones are on." = "Certaines autorisations sont désactivées. Verba ne peut pas fonctionner pleinement tant que les trois essentielles ne sont pas activées.";
 "Sonnet" = "Sonnet";
@@ -691,6 +717,7 @@
 "Speak how to adapt the text" = "Dictez comment adapter le texte";
 "Speak it. Send it clean." = "Dictez-le. Envoyez-le impeccable.";
 "Spoken language" = "Langue parlée";
+"Spreadsheets" = "Tableurs";
 "Start / stop dictation" = "Démarrer / arrêter la dictée";
 "Start a new note (record again)" = "Démarrer une nouvelle note (réenregistrer)";
 "Start a recording with Fn, then press Control to try it." = "Démarrez un enregistrement avec Fn, puis appuyez sur Contrôle pour l'essayer.";
@@ -702,6 +729,7 @@
 "Stop an in-progress note / to-do capture" = "Arrêter une capture de note / tâche en cours";
 "Stop playback" = "Arrêter la lecture";
 "Stop the macOS Fn / emoji popup" = "Bloquer le popup Fn / emoji de macOS";
+"Storage" = "Stockage";
 "Strikethrough (~~)" = "Barré (~~)";
 "Style" = "Style";
 "Style prompt" = "Invite de style";
@@ -714,6 +742,7 @@
 "Subject" = "Objet";
 "Suggest a feature and upvote the ones you want most. We build what rises to the top." = "Proposez une fonctionnalité et votez pour celles que vous voulez le plus. Nous construisons ce qui arrive en tête.";
 "Suggest a feature…" = "Proposer une fonctionnalité…";
+"Support" = "Support";
 "Surreal dream-logic" = "Logique onirique surréaliste";
 "Switch mode — keeps recording" = "Changer de mode — continue l'enregistrement";
 "System default" = "Par défaut du système";
@@ -758,6 +787,7 @@
 "They count once they're a paying subscriber and have dictated 15,000+ words." = "Ils comptent une fois qu'ils sont abonnés payants et ont dicté plus de 15 000 mots.";
 "They sign up through your link and start a paid Verba Pro plan." = "Ils s'inscrivent via votre lien et démarrent un forfait Verba Pro payant.";
 "They subscribe to Pro" = "Ils s'abonnent à Pro";
+"Third-party apps via secure OAuth" = "Apps tierces via OAuth sécurisé";
 "This detaches your account from this Mac. Your local notes, transcripts and to-dos stay on this device, you can sign back in anytime." = "Cela dissocie votre compte de ce Mac. Vos notes, transcriptions et tâches locales restent sur cet appareil ; vous pouvez vous reconnecter à tout moment.";
 "This instruction will shape your note" = "Cette instruction façonnera votre note";
 "This is your PUBLIC name on the Verba leaderboard. It is never your real name or email, so pick something you're happy for anyone to see." = "Voici votre nom PUBLIC dans le classement Verba. Ce n'est jamais votre vrai nom ni votre e-mail, alors choisissez quelque chose que vous acceptez que tout le monde voie.";
@@ -791,6 +821,7 @@
 "Today's goal" = "Objectif du jour";
 "Today's to-dos  (quick glance)" = "Tâches du jour  (aperçu rapide)";
 "Tomorrow 9am" = "Demain 9h";
+"Tool" = "Outil";
 "Tools" = "Outils";
 "Total words" = "Total des mots";
 "Total words dictated across all your sessions." = "Nombre total de mots dictés sur l'ensemble de vos sessions.";
@@ -856,6 +887,7 @@
 "Verify / restore" = "Vérifier / restaurer";
 "Version" = "Version";
 "Version & releases" = "Version et publications";
+"Video" = "Vidéo";
 "Vocabulary word" = "Mot de vocabulaire";
 "Voice commands" = "Commandes vocales";
 "Voice to clean text, on your terms." = "La voix en texte propre, selon vos règles.";
