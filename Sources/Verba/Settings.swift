@@ -400,7 +400,7 @@ extension Profile {
         builtin: true, hotkeyCode: 21 /* 4 */, hotkeyMods: kCtrlOpt,
         model: "claude-sonnet-4-6", vision: true)
 
-    static let defaults: [Profile] = [.flow, .polish, .intent, .translate, .context, .coding]
+    static let defaults: [Profile] = [.flow, .intent, .polish, .translate, .context, .coding]
     /// Built-in modes that were shipped once and then retired — dropped on migration so they
     /// disappear for existing users too (not kept as orphan custom modes).
     static let retiredBuiltinNames: Set<String> = ["Casual", "Custom"]
@@ -411,7 +411,7 @@ final class Settings: ObservableObject {
     private let d = UserDefaults.standard
 
     // Bump when the built-in profiles change so users get the new prompts/shortcuts.
-    static let profilesVersion = 20  // add Polish (intent + self-correction) as a default; numbers→digits in faithfulCore
+    static let profilesVersion = 21  // canonical order Flow, Intent, Polish, Translate, Context, Coding (re-sorts built-ins for existing users)
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }
@@ -653,9 +653,11 @@ final class Settings: ObservableObject {
         reviewBeforeSend = d.object(forKey: "reviewBeforeSend") as? Bool ?? false
         autoDetectProfile = d.object(forKey: "autoDetectProfile") as? Bool ?? true
         // Default OFF: reading the frontmost app's selection on every dictation makes macOS 15
-        // re-prompt "access data from other apps". The ⌥X transform picker reads the selection
-        // on demand instead, so normal dictation never triggers the system prompt.
-        useSelectionContext = d.object(forKey: "useSelectionContext") as? Bool ?? false
+        // re-prompt "access data from other apps". That prompt appears ONCE and is then remembered,
+        // and the flagship "select text + speak an instruction → it rewrites your selection" flow
+        // depends on this being on — so it defaults ON (a brief default-false regression killed the
+        // feature for everyone who never toggled it). Users who don't want it can switch it off.
+        useSelectionContext = d.object(forKey: "useSelectionContext") as? Bool ?? true
         voiceCommands = d.object(forKey: "voiceCommands") as? Bool ?? true
         transformHotkeyCode = d.object(forKey: "transformHotkeyCode") as? Int ?? 7 /* X */
         languageGuard = d.object(forKey: "languageGuard") as? Bool ?? true

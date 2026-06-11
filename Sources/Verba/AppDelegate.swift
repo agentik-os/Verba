@@ -441,7 +441,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         abortPhantomFnDictation()
         // Don't collide with any OTHER in-flight capture (deliberate dictation / note / to-do).
         if state == .recording || todoCaptureRecording || NotesController.shared.isRecording { return }
-        recorder.releaseArmed()   // discard the bare-Fn armed buffer so Action records clean (matches to-do/note paths)
+        // NOTE: do NOT releaseArmed() here — startRecording() relies on the pre-armed recorder
+        // (it calls recorder.start() expecting an instant, already-armed capture). Releasing it
+        // made Action mode record silence. abortPhantomFnDictation() above already re-arms cleanly.
         actionModeRecording = true
         // Badge the pill as "Action" INSIDE the recording-started callback (startRecording sets it to
         // .dictation there). Passing it as onStarted means it applies whether recording begins
