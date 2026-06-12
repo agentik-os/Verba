@@ -9,8 +9,8 @@ enum TodoAgent {
         case empty, unparseable
         var errorDescription: String? {
             switch self {
-            case .empty: return "Say what the list is for first."
-            case .unparseable: return "The agent didn't return a usable list."
+            case .empty: return L("Say what the list is for first.")
+            case .unparseable: return L("The agent didn't return a usable list.")
             }
         }
     }
@@ -449,14 +449,14 @@ struct TodosView: View {
             if store.projects.isEmpty {
                 Spacer()
                 EmptyState(icon: "checklist", title: L("No projects yet"),
-                           message: "Make a project for anything you track (Groceries, Launch, Trip…), or describe a list above and the agent builds it. Speak short commands here; for a long-form document, use the Notes tab.")
+                           message: L("Make a project for anything you track (Groceries, Launch, Trip…), or describe a list above and the agent builds it. Speak short commands here; for a long-form document, use the Notes tab."))
                     .padding(.horizontal, 14)
                 Spacer()
             } else if visible.isEmpty {
                 Spacer()
                 EmptyState(icon: "line.3.horizontal.decrease.circle",
-                           title: "Nothing matches",
-                           message: "No projects match this filter — clear it above to see everything.")
+                           title: L("Nothing matches"),
+                           message: L("No projects match this filter — clear it above to see everything."))
                     .padding(.horizontal, 14)
                 Spacer()
             } else {
@@ -487,7 +487,7 @@ struct TodosView: View {
                 Text(p.name.trimmingCharacters(in: .whitespaces).isEmpty ? L("New project") : p.name)
                     .font(.system(size: 13, weight: .medium)).lineLimit(1)
                 HStack(spacing: 5) {
-                    Text("\(p.tasks.count) task\(p.tasks.count == 1 ? "" : "s")")
+                    Text("\(p.tasks.count) \(p.tasks.count == 1 ? L("task") : L("tasks"))")
                         .font(.caption2).foregroundStyle(.secondary)
                     if prog.total > 0 {
                         Text("·").font(.caption2).foregroundStyle(.tertiary)
@@ -524,7 +524,7 @@ struct TodosView: View {
                 HStack(spacing: 6) {
                     Image(systemName: capture.capturing ? "stop.circle.fill" : "mic.fill")
                         .font(.system(size: 11, weight: .semibold))
-                    Text(capture.capturing ? "Listening — tap to add" : "Capture by voice")
+                    Text(capture.capturing ? L("Listening — tap to add") : L("Capture by voice"))
                         .font(.system(size: 12, weight: .semibold))
                     if capture.capturing { Spacer(minLength: 0); ProgressView().controlSize(.small) }
                 }
@@ -540,7 +540,7 @@ struct TodosView: View {
             }
             .buttonStyle(.plain)
             if !capture.capturing {
-                Text("Short spoken commands → tasks. For a long note, use the Notes tab.")
+                Text(L("Short spoken commands → tasks. For a long note, use the Notes tab."))
                     .font(.system(size: 10.5)).foregroundStyle(.tertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -548,7 +548,7 @@ struct TodosView: View {
 
             HStack(spacing: 7) {
                 Image(systemName: "wand.and.sparkles").foregroundStyle(.secondary).font(.system(size: 12))
-                TextField("Describe a list…", text: $genText)
+                TextField(L("Describe a list…"), text: $genText)
                     .textFieldStyle(.plain).font(.system(size: 12))
                     .onSubmit(generate)
                 if genBusy { ProgressView().controlSize(.small) }
@@ -556,7 +556,7 @@ struct TodosView: View {
                     Button(action: generate) { Image(systemName: "arrow.up.circle.fill").font(.system(size: 16)) }
                         .buttonStyle(.plain).foregroundStyle(.secondary)
                         .disabled(genText.trimmingCharacters(in: .whitespaces).isEmpty)
-                        .help("Build the list")
+                        .help(L("Build the list"))
                 }
             }
             .padding(.horizontal, 10).padding(.vertical, 7)
@@ -583,7 +583,7 @@ struct TodosView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
                 ForEach(StatusFilter.allCases) { s in
-                    chip(label: s.rawValue, icon: s.icon, on: statusFilter == s) {
+                    chip(label: L(s.rawValue), icon: s.icon, on: statusFilter == s) {
                         statusFilter = s
                     }
                 }
@@ -662,13 +662,13 @@ struct TodosView: View {
             if visible.isEmpty {
                 Spacer()
                 if store.projects.isEmpty {
-                    EmptyState(icon: "checklist", title: "Pick a project",
-                               message: "Select a project on the left to see and edit its tasks, or capture a task by voice and the agent files it for you.")
+                    EmptyState(icon: "checklist", title: L("Pick a project"),
+                               message: L("Select a project on the left to see and edit its tasks, or capture a task by voice and the agent files it for you."))
                         .padding(.horizontal, 22)
                 } else {
                     // Projects exist but the active filter hides them all — mirror the sidebar.
-                    EmptyState(icon: "line.3.horizontal.decrease.circle", title: "Nothing matches",
-                               message: "No projects match this filter — clear it above to see everything.")
+                    EmptyState(icon: "line.3.horizontal.decrease.circle", title: L("Nothing matches"),
+                               message: L("No projects match this filter — clear it above to see everything."))
                         .padding(.horizontal, 22)
                 }
                 Spacer()
@@ -855,7 +855,7 @@ private struct ProjectDetail: View {
             if addingTag {
                 HStack(spacing: 4) {
                     Image(systemName: "tag").font(.caption2).foregroundStyle(.secondary)
-                    TextField("Tag", text: $tagDraft)
+                    TextField(L("Tag"), text: $tagDraft)
                         .textFieldStyle(.plain).font(.caption).frame(width: 80)
                         .onSubmit(commitTag)
                     Button { commitTag() } label: { Image(systemName: "checkmark.circle.fill") }
@@ -959,14 +959,14 @@ private struct DeadlinePicker: View {
                 .padding(.horizontal, 7).padding(.vertical, 3)
                 .background(.softFill, in: Capsule())
             } else {
-                Label(compact ? L("Due") : "Deadline", systemImage: "plus")
+                Label(compact ? L("Due") : L("Deadline"), systemImage: "plus")
                     .font(.caption2).foregroundStyle(.tertiary)
                     .padding(.horizontal, 7).padding(.vertical, 3)
                     .background(.softFill, in: Capsule())
             }
         }
         .buttonStyle(.plain)
-        .help(deadline == nil ? "Set a deadline" : L("Edit deadline"))
+        .help(deadline == nil ? L("Set a deadline") : L("Edit deadline"))
         .popover(isPresented: $show, arrowEdge: .bottom) { popover }
     }
 
@@ -992,9 +992,9 @@ private struct DeadlinePicker: View {
         // No "Clear" chip here — clearing lives solely in the footer "Clear" button below,
         // so the popover has a single, unambiguous clear affordance.
         return [
-            ("Today 6pm", today6),
-            ("Tomorrow 9am", tomorrow9),
-            ("This weekend", weekend),
+            (L("Today 6pm"), today6),
+            (L("Tomorrow 9am"), tomorrow9),
+            (L("This weekend"), weekend),
             (L("Next week"), nextWeek)
         ]
     }
@@ -1007,7 +1007,7 @@ private struct DeadlinePicker: View {
             set: { deadline = $0 }
         )
         return VStack(alignment: .leading, spacing: 16) {
-            Text("Deadline").font(.headline)
+            Text(L("Deadline")).font(.headline)
 
             // Quick presets
             PresetChipRows(items: presets()) { title, date in
@@ -1279,7 +1279,7 @@ private struct TimeSelector: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Image(systemName: "clock").font(.system(size: 11)).foregroundStyle(.secondary)
-                Text("Time").font(.subheadline.weight(.semibold))
+                Text(L("Time")).font(.subheadline.weight(.semibold))
                 Spacer()
                 Text(readout)
                     .font(.system(.title3, design: .rounded).weight(.semibold))
@@ -1397,7 +1397,7 @@ private struct TaskPanel: View {
                     Image(systemName: task.done ? "checkmark.circle.fill" : "circle")
                         .foregroundStyle(task.done ? AnyShapeStyle(VerbaAppearance.shared.accentOr(.green)) : AnyShapeStyle(.secondary))
                 }.buttonStyle(.plain)
-                TextField("Task", text: $task.title).textFieldStyle(.plain)
+                TextField(L("Task"), text: $task.title).textFieldStyle(.plain)
                     .strikethrough(task.done, color: .secondary)
                     .foregroundStyle(task.done ? .secondary : .primary)
                 Spacer(minLength: 6)
@@ -1426,7 +1426,7 @@ private struct TaskPanel: View {
                 } label: {
                     HStack(spacing: 5) {
                         Image(systemName: "bell.slash").font(.system(size: 10))
-                        Text("Enable notifications to get reminded").font(.system(size: 11))
+                        Text(L("Enable notifications to get reminded")).font(.system(size: 11))
                         Image(systemName: "arrow.up.forward.app").font(.system(size: 9))
                     }
                     .foregroundStyle(.secondary)
@@ -1434,7 +1434,7 @@ private struct TaskPanel: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help("Open System Settings ▸ Notifications to allow Verba reminders")
+                .help(L("Open System Settings ▸ Notifications to allow Verba reminders"))
             }
 
             if expanded {
@@ -1451,7 +1451,7 @@ private struct TaskPanel: View {
                                     .font(.system(size: 12))
                                     .foregroundStyle(sub.done ? AnyShapeStyle(VerbaAppearance.shared.accentOr(.green)) : AnyShapeStyle(.tertiary))
                             }.buttonStyle(.plain)
-                            TextField("Sub-task", text: $sub.title).textFieldStyle(.plain).font(.callout)
+                            TextField(L("Sub-task"), text: $sub.title).textFieldStyle(.plain).font(.callout)
                                 .strikethrough(sub.done, color: .secondary)
                                 .foregroundStyle(sub.done ? .secondary : .primary)
                             Spacer(minLength: 6)

@@ -346,10 +346,13 @@ export const homeCompareRows: [string, Cmp[]][] = [
   ["Reads your screen (vision)", [true, false, false, false]],
   ["Hour-long structured notes", [true, false, false, false]],
   ["Voice Task Manager (projects, sub-tasks, generated lists)", [true, false, false, false]],
+  ["JARVIS voice agent — acts on 1,000+ apps", [true, false, false, false]],
+  ["Send email / Slack / create events by voice", [true, false, false, false]],
+  ["Asks to clarify & fills missing details", [true, false, false, false]],
   // 'limited': cloud-only command/editing modes can translate on request, but
   // there is no dedicated set-a-target-language Translate mode like Verba's.
   ["Live translation mode", [true, "limited", false, "limited"]],
-  ["Agentic actions (calendar, reminders)", [true, false, false, false]],
+  ["Agentic actions (email, Slack, calendar, 1,000+ apps)", [true, false, false, false]],
   ["Auto-learn your vocabulary & tone", [true, "partial", false, false]],
   ["Free trial", ["33 dictations, full Pro", "limited", "trial", "limited"]],
   // Prices come straight from the competitor records so the table can't drift.

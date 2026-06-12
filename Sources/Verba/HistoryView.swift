@@ -69,7 +69,7 @@ struct HistoryView: View {
         case "openai":   return "OpenAI"
         case "whisper":  return "Whisper"
         case "parakeet": return "Parakeet"
-        default:         return fam.isEmpty ? "Engine" : fam.capitalized
+        default:         return fam.isEmpty ? L("Engine") : fam.capitalized
         }
     }
 
@@ -96,8 +96,8 @@ struct HistoryView: View {
                 if let e = history.entries.first(where: { $0.id == selection }) {
                     detail(e)
                 } else {
-                    EmptyState(icon: "clock.arrow.circlepath", title: "Select a dictation",
-                               message: "Pick an entry on the left to read, replay, or re-adapt it.")
+                    EmptyState(icon: "clock.arrow.circlepath", title: L("Select a dictation"),
+                               message: L("Pick an entry on the left to read, replay, or re-adapt it."))
                         .frame(maxHeight: .infinity)
                 }
             }
@@ -118,15 +118,15 @@ struct HistoryView: View {
                 Button { withAnimation(.easeInOut(duration: 0.18)) { showSearch.toggle(); if !showSearch { query = "" } } } label: {
                     Image(systemName: showSearch ? "magnifyingglass.circle.fill" : "magnifyingglass")
                 }
-                .buttonStyle(.borderless).help("Search dictations")
+                .buttonStyle(.borderless).help(L("Search dictations"))
                 if !history.entries.isEmpty {
                     Button(role: .destructive) { confirmClear = true } label: { Image(systemName: "trash") }
                         .buttonStyle(.borderless).help(L("Clear all"))
-                        .confirmationDialog("Clear all dictations?", isPresented: $confirmClear, titleVisibility: .visible) {
+                        .confirmationDialog(L("Clear all dictations?"), isPresented: $confirmClear, titleVisibility: .visible) {
                             Button(L("Clear all"), role: .destructive) { audio.stop(); history.clear(); selection = nil }
                             Button(L("Cancel"), role: .cancel) { }
                         } message: {
-                            Text("This permanently deletes every dictation in your history, including their transcripts and recordings. This can't be undone.")
+                            Text(L("This permanently deletes every dictation in your history, including their transcripts and recordings. This can't be undone."))
                         }
                 }
             }
@@ -162,7 +162,7 @@ struct HistoryView: View {
             if showSearch {
                 HStack(spacing: 7) {
                     Image(systemName: "magnifyingglass").foregroundStyle(.secondary).font(.system(size: 12))
-                    TextField("Search your dictations", text: $query)
+                    TextField(L("Search your dictations"), text: $query)
                         .textFieldStyle(.plain)
                     if !query.isEmpty {
                         Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
@@ -178,12 +178,12 @@ struct HistoryView: View {
             if items.isEmpty {
                 Spacer()
                 if history.entries.isEmpty {
-                    EmptyState(icon: "clock.arrow.circlepath", title: "No dictations yet",
-                               message: "Every dictation you make lands here, searchable, replayable, and re-adaptable.")
+                    EmptyState(icon: "clock.arrow.circlepath", title: L("No dictations yet"),
+                               message: L("Every dictation you make lands here, searchable, replayable, and re-adaptable."))
                         .padding(.horizontal, 14)
                 } else {
                     EmptyState(icon: "magnifyingglass", title: L("No matches"),
-                               message: "No dictation matches the current search or filters. Clear them to see everything.")
+                               message: L("No dictation matches the current search or filters. Clear them to see everything."))
                         .padding(.horizontal, 14)
                 }
                 Spacer()
@@ -274,8 +274,8 @@ struct HistoryView: View {
     private func detail(_ e: HistoryEntry) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                section("Restructured (Claude)", e.reprompted)
-                section("Raw transcript", e.original)
+                section(L("Restructured (Claude)"), e.reprompted)
+                section(L("Raw transcript"), e.original)
                 // Action toolbar: borderless icons in one soft row, no stock bordered buttons.
                 HStack(spacing: 10) {
                     if let url = history.audioURL(for: e) {
@@ -285,25 +285,25 @@ struct HistoryView: View {
                                 .font(.system(size: 14, weight: .medium))
                         }
                         .buttonStyle(.borderless)
-                        .help(playing ? "Stop playback" : "Play audio")
+                        .help(playing ? L("Stop playback") : L("Play audio"))
                         Button { exportAudio(url) } label: {
                             Image(systemName: "square.and.arrow.down")
                                 .font(.system(size: 13, weight: .medium))
                         }
                         .buttonStyle(.borderless)
-                        .help("Save this recording to your Mac so you can re-import it into Transcribe file")
+                        .help(L("Save this recording to your Mac so you can re-import it into Transcribe file"))
                         Divider().frame(height: 12)
                     }
                     if rerunning {
                         ProgressView().controlSize(.small)
-                        Text("Re-running…").font(.caption).foregroundStyle(.secondary)
+                        Text(L("Re-running…")).font(.caption).foregroundStyle(.secondary)
                     } else {
                         Button { rerun(e) } label: {
-                            Label("Redo & save as \(rerunModeLabel(e))", systemImage: "arrow.clockwise")
+                            Label("\(L("Redo & save as")) \(rerunModeLabel(e))", systemImage: "arrow.clockwise")
                                 .font(.system(size: 12, weight: .medium))
                         }
                         .buttonStyle(.borderless)
-                        .help("Re-run Claude on the raw transcript using this dictation's own mode (\(rerunModeLabel(e))) and OVERWRITE the saved entry. To try a variation without changing this entry, use Adapt below.")
+                        .help("\(L("Re-run Claude on the raw transcript using this dictation's own mode")) (\(rerunModeLabel(e))) \(L("and OVERWRITE the saved entry. To try a variation without changing this entry, use Adapt below."))")
                         // Undo appears only right after a re-run, restoring the previous restructured text.
                         if let stash = preRerunReprompted, stash.id == e.id {
                             Divider().frame(height: 12)
@@ -315,7 +315,7 @@ struct HistoryView: View {
                                     .font(.system(size: 12, weight: .medium))
                             }
                             .buttonStyle(.borderless)
-                            .help("Restore the restructured text from before the last re-run")
+                            .help(L("Restore the restructured text from before the last re-run"))
                         }
                     }
                     Spacer()
@@ -323,7 +323,7 @@ struct HistoryView: View {
                         Image(systemName: "trash").font(.system(size: 13, weight: .medium))
                     }
                     .buttonStyle(.borderless)
-                    .help("Delete this dictation")
+                    .help(L("Delete this dictation"))
                 }
                 .padding(.horizontal, 14).padding(.vertical, 10)
                 .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -396,7 +396,7 @@ struct HistoryView: View {
                 }
             } catch {
                 await MainActor.run {
-                    rerunError = "Re-run failed: \(error.localizedDescription)"
+                    rerunError = "\(L("Re-run failed:")) \(error.localizedDescription)"
                     rerunning = false
                 }
             }
@@ -408,7 +408,7 @@ struct HistoryView: View {
         let panel = NSSavePanel()
         panel.nameFieldStringValue = url.lastPathComponent
         panel.canCreateDirectories = true
-        panel.message = "Save this dictation's audio"
+        panel.message = L("Save this dictation's audio")
         guard panel.runModal() == .OK, let dest = panel.url else { return }
         try? FileManager.default.removeItem(at: dest)   // overwrite if the user chose an existing name
         try? FileManager.default.copyItem(at: url, to: dest)
@@ -423,7 +423,7 @@ struct HistoryView: View {
             }
             Group {
                 if body.isEmpty {
-                    Text("Nothing here for this entry.").foregroundStyle(.secondary)
+                    Text(L("Nothing here for this entry.")).foregroundStyle(.secondary)
                 } else {
                     Text(body).textSelection(.enabled)
                 }

@@ -78,15 +78,15 @@ struct HomeView: View {
     @State private var expandedAdapt: HistoryEntry.ID?    // card with its Adapt panel open
 
     var body: some View {
-        SectionScaffold(title: "Home", subtitle: "Speak it. Send it clean.") {
+        SectionScaffold(title: L("Home"), subtitle: L("Speak it. Send it clean.")) {
             HStack(spacing: 14) {
-                stat("\(stats.totalWords.formatted())", "total words", "text.word.spacing")
-                stat("\(stats.avgWPM)", "words / min", "gauge.with.dots.needle.67percent")
-                stat("\(stats.streak)", "day streak", "flame.fill")
+                stat("\(stats.totalWords.formatted())", L("total words"), "text.word.spacing")
+                stat("\(stats.avgWPM)", L("words / min"), "gauge.with.dots.needle.67percent")
+                stat("\(stats.streak)", L("day streak"), "flame.fill")
             }
             Card {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Start dictating").font(.headline)
+                    Text(L("Start dictating")).font(.headline)
                     Text("Press \(triggerLabel) and talk. Fn + Tab jumps to the next mode (even mid-sentence), ⌃ pauses & resumes, or use ⌃⌥1-6 for a specific mode.")
                         .foregroundStyle(.secondary)
                     FlowLayout(spacing: 8) {
@@ -98,9 +98,9 @@ struct HomeView: View {
                     }
                 }
             }
-            Text("Recent").font(.headline)
+            Text(L("Recent")).font(.headline)
             if history.entries.isEmpty {
-                Card { Text("Your dictations will show up here.").foregroundStyle(.secondary) }
+                Card { Text(L("Your dictations will show up here.")).foregroundStyle(.secondary) }
             } else {
                 VStack(spacing: 10) {
                     ForEach(history.entries.prefix(6)) { e in
@@ -130,7 +130,7 @@ struct HomeView: View {
                             expandedText = textExpanded ? nil : e.id
                         }
                     } label: {
-                        Text(textExpanded ? "Show less" : "Show more")
+                        Text(textExpanded ? L("Show less") : L("Show more"))
                             .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
@@ -144,7 +144,7 @@ struct HomeView: View {
                             expandedAdapt = adaptOpen ? nil : e.id
                         }
                     } label: {
-                        Label("Adapt", systemImage: "wand.and.stars")
+                        Label(L("Adapt"), systemImage: "wand.and.stars")
                             .font(.caption2.weight(.semibold))
                             .labelStyle(.titleAndIcon)
                     }
@@ -227,7 +227,7 @@ struct InsightsView: View {
     private let notesCtl = NotesController.shared
 
     var body: some View {
-        SectionScaffold(title: "Insights", subtitle: "Your dictation, by the numbers.") {
+        SectionScaffold(title: L("Insights"), subtitle: L("Your dictation, by the numbers.")) {
             // The chart stays the hero, unchanged.
             Card {
                 Chart(stats.recentDays(14), id: \.label) { day in
@@ -245,45 +245,45 @@ struct InsightsView: View {
             standingCard
 
             // TODAY
-            group("Today", "sun.max") {
+            group(L("Today"), "sun.max") {
                 grid([
-                    kpi("\(wordsToday.formatted())", "words today", "text.word.spacing",
+                    kpi("\(wordsToday.formatted())", L("words today"), "text.word.spacing",
                         delta: dayDelta),
-                    kpi("\(wordsYesterday.formatted())", "words yesterday", "calendar"),
-                    kpi("\(stats.streak)", "day streak", "flame.fill",
-                        caption: stats.streak >= longestStreak && stats.streak > 0 ? "your best ever" : "best \(longestStreak)"),
+                    kpi("\(wordsYesterday.formatted())", L("words yesterday"), "calendar"),
+                    kpi("\(stats.streak)", L("day streak"), "flame.fill",
+                        caption: stats.streak >= longestStreak && stats.streak > 0 ? L("your best ever") : "best \(longestStreak)"),
                 ])
             }
 
             // THIS WEEK
-            group("This week", "calendar") {
+            group(L("This week"), "calendar") {
                 grid([
-                    kpi("\(stats.wordsThisWeek.formatted())", "words this week", "text.alignleft",
+                    kpi("\(stats.wordsThisWeek.formatted())", L("words this week"), "text.alignleft",
                         delta: weekDelta),
-                    kpi("\(sevenDayAvg.formatted())", "7-day average", "chart.bar",
-                        caption: "words / day"),
-                    kpi(mostProductiveDay.label, "most productive day", "star.fill",
+                    kpi("\(sevenDayAvg.formatted())", L("7-day average"), "chart.bar",
+                        caption: L("words / day")),
+                    kpi(mostProductiveDay.label, L("most productive day"), "star.fill",
                         caption: mostProductiveDay.words > 0 ? "\(mostProductiveDay.words.formatted()) words" : "—"),
-                    kpi("\(activeDays7)/7", "active days", "checkmark.circle"),
-                    kpi("\(stats.wordsThisMonth.formatted())", "words this month", "calendar.badge.clock"),
-                    kpi(speedMultiple, "faster than typing", "hare.fill",
-                        caption: "vs ~40 wpm by hand"),
+                    kpi("\(activeDays7)/7", L("active days"), "checkmark.circle"),
+                    kpi("\(stats.wordsThisMonth.formatted())", L("words this month"), "calendar.badge.clock"),
+                    kpi(speedMultiple, L("faster than typing"), "hare.fill",
+                        caption: L("vs ~40 wpm by hand")),
                 ])
             }
 
             // ALL TIME
-            group("All time", "infinity") {
+            group(L("All time"), "infinity") {
                 grid([
-                    kpi("\(stats.totalWords.formatted())", "total words", "text.word.spacing"),
-                    kpi("\(stats.totalCount.formatted())", "dictations", "mic.fill"),
-                    kpi("\(stats.avgWPM)", "words / min", "gauge.with.dots.needle.67percent"),
-                    kpi("\(stats.avgWordsPerDictation)", "avg / dictation", "number"),
-                    kpi("\(stats.bestDayWords.formatted())", "best day ever", "trophy.fill"),
-                    kpi(spokenTime, "time spoken", "waveform"),
-                    kpi(timeSaved, "time saved typing", "clock.arrow.circlepath",
-                        caption: "vs typing it by hand"),
-                    kpi("\(longestStreak)", "longest streak", "flame",
-                        caption: stats.streak == longestStreak && longestStreak > 0 ? "you're on it now" : "days in a row"),
+                    kpi("\(stats.totalWords.formatted())", L("total words"), "text.word.spacing"),
+                    kpi("\(stats.totalCount.formatted())", L("dictations"), "mic.fill"),
+                    kpi("\(stats.avgWPM)", L("words / min"), "gauge.with.dots.needle.67percent"),
+                    kpi("\(stats.avgWordsPerDictation)", L("avg / dictation"), "number"),
+                    kpi("\(stats.bestDayWords.formatted())", L("best day ever"), "trophy.fill"),
+                    kpi(spokenTime, L("time spoken"), "waveform"),
+                    kpi(timeSaved, L("time saved typing"), "clock.arrow.circlepath",
+                        caption: L("vs typing it by hand")),
+                    kpi("\(longestStreak)", L("longest streak"), "flame",
+                        caption: stats.streak == longestStreak && longestStreak > 0 ? L("you're on it now") : L("days in a row")),
                 ])
             }
 
@@ -309,27 +309,27 @@ struct InsightsView: View {
                         }
                         .foregroundStyle(.secondary)
                     }
-                    .buttonStyle(.plain).help("Open the full leaderboard")
+                    .buttonStyle(.plain).help(L("Open the full leaderboard"))
                 }
 
                 if standing.loading {
-                    HStack(spacing: 10) { ProgressView().controlSize(.small); Text("Ranking you…").font(.callout).foregroundStyle(.secondary) }
+                    HStack(spacing: 10) { ProgressView().controlSize(.small); Text(L("Ranking you…")).font(.callout).foregroundStyle(.secondary) }
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else if !settings.showOnLeaderboard {
-                    standingNote("eye.slash", "You're hidden from the leaderboard. Flip “Show me” there to claim your rank.")
+                    standingNote("eye.slash", L("You're hidden from the leaderboard. Flip “Show me” there to claim your rank."))
                 } else if let m = standing.mine {
                     HStack(alignment: .top, spacing: 0) {
-                        bigStat(rankText(m.rank), "global rank", "of \(standing.total.formatted()) people")
+                        bigStat(rankText(m.rank), L("global rank"), "of \(standing.total.formatted()) people")
                         if let p = standing.percentile {
-                            bigStat("top \(p)%", "percentile", p <= 1 ? "the very top" : "you're ahead of \(100 - p)%")
+                            bigStat("top \(p)%", L("percentile"), p <= 1 ? L("the very top") : "you're ahead of \(100 - p)%")
                         }
                         if let behind = standing.wordsBehindLeader {
-                            bigStat(behind == 0 ? "—" : behind.formatted(), behind == 0 ? "you lead 🥇" : "words behind #1",
-                                    behind == 0 ? "everyone's chasing you" : "keep dictating to close it")
+                            bigStat(behind == 0 ? "—" : behind.formatted(), behind == 0 ? L("you lead 🥇") : L("words behind #1"),
+                                    behind == 0 ? L("everyone's chasing you") : L("keep dictating to close it"))
                         }
                     }
                 } else {
-                    standingNote("flag.checkered", "You're not on the board yet — dictate anything to claim your spot.")
+                    standingNote("flag.checkered", L("You're not on the board yet — dictate anything to claim your spot."))
                 }
             }
         }
@@ -369,7 +369,7 @@ struct InsightsView: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
                     Image(systemName: "target").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
-                    Text("Next milestone").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
+                    Text(L("Next milestone")).font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
                     Spacer()
                     Text("\(done.formatted()) / \(target.formatted())").font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(.secondary)
                 }
@@ -440,7 +440,7 @@ struct InsightsView: View {
         var badge: some View {
             Group {
                 if percent == 0 {
-                    HStack(spacing: 3) { Image(systemName: "equal"); Text("flat") }
+                    HStack(spacing: 3) { Image(systemName: "equal"); Text(L("flat")) }
                         .foregroundStyle(.secondary)
                 } else {
                     HStack(spacing: 3) {
@@ -554,8 +554,8 @@ enum DictionaryAgent {
         case empty, unparseable
         var errorDescription: String? {
             switch self {
-            case .empty: return "Add a term first."
-            case .unparseable: return "The AI didn't return a usable result."
+            case .empty: return L("Add a term first.")
+            case .unparseable: return L("The AI didn't return a usable result.")
             }
         }
     }
@@ -704,7 +704,7 @@ struct DictionaryView: View {
 
             HStack(spacing: 7) {
                 Image(systemName: "magnifyingglass").font(.system(size: 11)).foregroundStyle(.secondary)
-                TextField("Search terms", text: $search).textFieldStyle(.plain)
+                TextField(L("Search terms"), text: $search).textFieldStyle(.plain)
             }
             .padding(.horizontal, 11).padding(.vertical, 7)
             .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
@@ -712,14 +712,14 @@ struct DictionaryView: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
-                    paneChip(label: "All", icon: nil, on: filterCorrections == nil) { filterCorrections = nil }
-                    paneChip(label: "Words", icon: "text.book.closed", on: filterCorrections == false) { filterCorrections = false }
-                    paneChip(label: "Corrections", icon: "arrow.right", on: filterCorrections == true) { filterCorrections = true }
+                    paneChip(label: L("All"), icon: nil, on: filterCorrections == nil) { filterCorrections = nil }
+                    paneChip(label: L("Words"), icon: "text.book.closed", on: filterCorrections == false) { filterCorrections = false }
+                    paneChip(label: L("Corrections"), icon: "arrow.right", on: filterCorrections == true) { filterCorrections = true }
                     // Auto is orthogonal to Words/Corrections — a toggle to review just the terms
                     // Verba learned silently from your edits, so a bad auto-learned swap is findable.
                     if autoCount > 0 {
                         Divider().frame(height: 16).padding(.horizontal, 2)
-                        paneChip(label: "Auto", icon: "wand.and.sparkles", on: autoOnly) { autoOnly.toggle() }
+                        paneChip(label: L("Auto"), icon: "wand.and.sparkles", on: autoOnly) { autoOnly.toggle() }
                     }
                 }
                 .padding(.horizontal, 14).padding(.bottom, 8)
@@ -728,10 +728,10 @@ struct DictionaryView: View {
             if filtered.isEmpty {
                 Spacer()
                 EmptyState(icon: "character.book.closed",
-                           title: store.terms.isEmpty ? "No terms yet" : "No matches",
+                           title: store.terms.isEmpty ? L("No terms yet") : L("No matches"),
                            message: store.terms.isEmpty
-                               ? "Teach Verba names, jargon, and acronyms it should always spell right."
-                               : "Try another search or filter, or All to see every term.")
+                               ? L("Teach Verba names, jargon, and acronyms it should always spell right.")
+                               : L("Try another search or filter, or All to see every term."))
                     .padding(.horizontal, 14)
                 Spacer()
             } else {
@@ -762,11 +762,11 @@ struct DictionaryView: View {
                     if correction, !t.spoken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         Text("said “\(t.spoken)”").font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                     } else {
-                        Text(correction ? "correction" : "vocabulary").font(.caption2).foregroundStyle(.secondary)
+                        Text(correction ? L("correction") : L("vocabulary")).font(.caption2).foregroundStyle(.secondary)
                     }
                     if t.auto {
                         Text("·").font(.caption2).foregroundStyle(.tertiary)
-                        Text("auto").font(.caption2).foregroundStyle(.tertiary)
+                        Text(L("auto")).font(.caption2).foregroundStyle(.tertiary)
                     }
                 }
             }
@@ -799,38 +799,38 @@ struct DictionaryView: View {
                 HStack(spacing: 10) {
                     Image(systemName: correction ? "arrow.right" : "text.book.closed")
                         .font(.system(size: 15)).foregroundStyle(.secondary)
-                    Text(correction ? "Misspelling correction" : "Vocabulary word")
+                    Text(correction ? L("Misspelling correction") : L("Vocabulary word"))
                         .font(.system(size: 17, weight: .bold))
                     if t.auto {
-                        Text("auto").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                        Text(L("auto")).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
                             .padding(.horizontal, 7).padding(.vertical, 3)
                             .background(.softFill, in: Capsule())
-                            .help("Auto-learned from one of your edits")
+                            .help(L("Auto-learned from one of your edits"))
                     }
                     Spacer()
                     Button(role: .destructive) { remove(t) } label: { Image(systemName: "trash") }
-                        .buttonStyle(.borderless).foregroundStyle(.red).help("Delete this term")
+                        .buttonStyle(.borderless).foregroundStyle(.red).help(L("Delete this term"))
                 }
 
                 if correction {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Said").font(.subheadline.weight(.semibold))
-                        TextField("The word as it gets mis-heard", text: $store.terms[idx].spoken).cleanField()
-                            .help("The word as it gets mis-heard. Verba auto-replaces it with the written form.")
+                        Text(L("Said")).font(.subheadline.weight(.semibold))
+                        TextField(L("The word as it gets mis-heard"), text: $store.terms[idx].spoken).cleanField()
+                            .help(L("The word as it gets mis-heard. Verba auto-replaces it with the written form."))
                     }
                 }
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Written").font(.subheadline.weight(.semibold))
-                    TextField(correction ? "The correct spelling Verba should write" : "Word the transcriber should spell right",
+                    Text(L("Written")).font(.subheadline.weight(.semibold))
+                    TextField(correction ? L("The correct spelling Verba should write") : L("Word the transcriber should spell right"),
                               text: $store.terms[idx].written).cleanField()
                         .help(correction
-                              ? "The correct spelling Verba should write instead."
-                              : "A vocabulary hint sent to the transcriber so it recognizes and spells this word.")
+                              ? L("The correct spelling Verba should write instead.")
+                              : L("A vocabulary hint sent to the transcriber so it recognizes and spells this word."))
                 }
 
                 Text(correction
-                     ? "When Verba hears the “Said” word, it writes the “Written” form instead."
-                     : "This teaches the transcriber a name or term so it always spells it right — no correction needed.")
+                     ? L("When Verba hears the “Said” word, it writes the “Written” form instead.")
+                     : L("This teaches the transcriber a name or term so it always spells it right — no correction needed."))
                     .font(.caption).foregroundStyle(.secondary)
             }
             .padding(28)
@@ -844,13 +844,13 @@ struct DictionaryView: View {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(L("Add to dictionary")).font(.system(size: 17, weight: .bold))
-                    Text("Teach Verba names and terms it should always spell right.")
+                    Text(L("Teach Verba names and terms it should always spell right."))
                         .font(.callout).foregroundStyle(.secondary)
                 }
 
                 HStack(spacing: 12) {
-                    primaryAddButton("Add a word") { newWord() }
-                    addButton("Correct a misspelling") {
+                    primaryAddButton(L("Add a word")) { newWord() }
+                    addButton(L("Correct a misspelling")) {
                         let t = DictTerm(spoken: "", written: "")
                         correctionDrafts.insert(t.id)
                         store.terms.append(t)
@@ -859,7 +859,7 @@ struct DictionaryView: View {
                     Spacer()
                 }
 
-                Text("“Add a word” teaches the transcriber a name or term so it spells it right — no correction needed. “Correct a misspelling” pairs a mis-heard spoken word with the written form so Verba swaps it automatically.")
+                Text(L("“Add a word” teaches the transcriber a name or term so it spells it right — no correction needed. “Correct a misspelling” pairs a mis-heard spoken word with the written form so Verba swaps it automatically."))
                     .font(.caption).foregroundStyle(.secondary)
 
                 // Auto-add control.
@@ -867,15 +867,15 @@ struct DictionaryView: View {
                     HStack(spacing: 12) {
                         Image(systemName: "wand.and.sparkles").font(.system(size: 18)).foregroundStyle(.secondary)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Auto-add from your edits").font(.headline)
+                            Text(L("Auto-add from your edits")).font(.headline)
                             Text(autoCount > 0
                                  ? "Verba learned \(autoCount) term\(autoCount == 1 ? "" : "s") from your corrections."
-                                 : "When you fix a word after pasting, Verba adds it here automatically.")
+                                 : L("When you fix a word after pasting, Verba adds it here automatically."))
                                 .font(.caption).monospacedDigit().foregroundStyle(.secondary)
                         }
                         Spacer()
                         Toggle(isOn: $settings.autoLearnDictionary) {
-                            Text("Auto-add").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                            Text(L("Auto-add")).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
                         }
                         .toggleStyle(.switch).controlSize(.small)
                     }
@@ -885,13 +885,13 @@ struct DictionaryView: View {
                         Divider().padding(.vertical, 10)
                         HStack(spacing: 12) {
                             Button { autoOnly = true; selectedID = nil } label: {
-                                Label("Review auto-learned", systemImage: "wand.and.sparkles")
+                                Label(L("Review auto-learned"), systemImage: "wand.and.sparkles")
                                     .font(.system(size: 12, weight: .medium))
                             }
                             .buttonStyle(.borderless)
                             Spacer()
                             Button(role: .destructive) { clearAutoLearned() } label: {
-                                Text("Clear auto-learned").font(.system(size: 12, weight: .medium))
+                                Text(L("Clear auto-learned")).font(.system(size: 12, weight: .medium))
                             }
                             .buttonStyle(.borderless).foregroundStyle(.red)
                             .help("Delete all \(autoCount) auto-learned term\(autoCount == 1 ? "" : "s"). Terms you added or corrected by hand are kept.")
@@ -955,7 +955,7 @@ struct DictionaryView: View {
         // term with the wrong row and corrupt the user's dictionary, so refuse the whole merge
         // and surface the mismatch instead of applying anything.
         guard cleaned.count == writtenIdx.count else {
-            aiError = "AI returned a different number of terms — nothing was changed. Try again."
+            aiError = L("AI returned a different number of terms — nothing was changed. Try again.")
             return
         }
         for (cleanedTerm, idx) in zip(cleaned, writtenIdx) {
@@ -1018,8 +1018,8 @@ struct SnippetsView: View {
 
             if store.items.isEmpty {
                 Spacer()
-                EmptyState(icon: "text.badge.plus", title: "No snippets yet",
-                           message: "Say a short trigger and Verba expands it into longer text, like your address or an email signature.")
+                EmptyState(icon: "text.badge.plus", title: L("No snippets yet"),
+                           message: L("Say a short trigger and Verba expands it into longer text, like your address or an email signature."))
                     .padding(.horizontal, 14)
                 Spacer()
             } else {
@@ -1068,11 +1068,11 @@ struct SnippetsView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(L("New snippet")).font(.system(size: 17, weight: .bold))
-                        Text("Create shortcuts: say a short trigger and Verba expands it into longer text, like your address, an email signature, or a boilerplate reply.")
+                        Text(L("Create shortcuts: say a short trigger and Verba expands it into longer text, like your address, an email signature, or a boilerplate reply."))
                             .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     }
                     HStack {
-                        primaryAddButton("Add snippet") { newSnippet() }
+                        primaryAddButton(L("Add snippet")) { newSnippet() }
                         Spacer()
                     }
                 }
@@ -1087,21 +1087,21 @@ struct SnippetsView: View {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(spacing: 10) {
                     Image(systemName: "text.badge.plus").font(.system(size: 15)).foregroundStyle(.secondary)
-                    Text("Snippet").font(.system(size: 17, weight: .bold))
+                    Text(L("Snippet")).font(.system(size: 17, weight: .bold))
                     Spacer()
                     Button(role: .destructive) { remove(store.items[idx]) } label: { Image(systemName: "trash") }
-                        .buttonStyle(.borderless).foregroundStyle(.red).help("Delete this snippet")
+                        .buttonStyle(.borderless).foregroundStyle(.red).help(L("Delete this snippet"))
                 }
                 VStack(alignment: .leading, spacing: 8) {
                     Text(L("Trigger")).font(.subheadline.weight(.semibold))
                     TextField(L("Trigger"), text: $store.items[idx].trigger).cleanField()
                 }
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Expands to").font(.subheadline.weight(.semibold))
-                    TextField("Expands to…", text: $store.items[idx].expansion, axis: .vertical)
+                    Text(L("Expands to")).font(.subheadline.weight(.semibold))
+                    TextField(L("Expands to…"), text: $store.items[idx].expansion, axis: .vertical)
                         .cleanField().lineLimit(4...12)
                 }
-                Text("Say the trigger and Verba inserts the expansion. In AI modes it inserts the block only when you ask for it by intent, for example “add my email signature” or “sign off with my address”.")
+                Text(L("Say the trigger and Verba inserts the expansion. In AI modes it inserts the block only when you ask for it by intent, for example “add my email signature” or “sign off with my address”."))
                     .font(.caption).foregroundStyle(.secondary)
             }
             .padding(28)
@@ -1136,17 +1136,17 @@ struct StyleView: View {
             detail.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear { if selectedID == nil { selectedID = settings.activeStyleID } }
-        .confirmationDialog("Restore the built-in styles?",
+        .confirmationDialog(L("Restore the built-in styles?"),
                             isPresented: $pendingReset,
                             titleVisibility: .visible) {
-            Button("Restore defaults", role: .destructive) {
+            Button(L("Restore defaults"), role: .destructive) {
                 settings.resetStylesToDefaults()
                 selectedID = settings.activeStyleID
                 pendingReset = false
             }
             Button(L("Cancel"), role: .cancel) { pendingReset = false }
         } message: {
-            Text("This removes any custom styles you’ve created and restores the built-in ones.")
+            Text(L("This removes any custom styles you’ve created and restores the built-in ones."))
         }
     }
 
@@ -1160,12 +1160,12 @@ struct StyleView: View {
                     Button { pendingReset = true } label: {
                         Image(systemName: "arrow.counterclockwise")
                     }
-                    .buttonStyle(.borderless).help("Restore the built-in styles; this removes your custom ones")
+                    .buttonStyle(.borderless).help(L("Restore the built-in styles; this removes your custom ones"))
                     Button { let id = addStyle(); selectedID = id } label: { Image(systemName: "plus") }
-                        .buttonStyle(.borderless).help("Add a new style")
+                        .buttonStyle(.borderless).help(L("Add a new style"))
                 }
                 // Persistent discoverability of the cycle shortcut (was only in the empty state).
-                Label("Cycle with Fn + [ and Fn + ]", systemImage: "command")
+                Label(L("Cycle with Fn + [ and Fn + ]"), systemImage: "command")
                     .labelStyle(.titleOnly)
                     .font(.caption2).foregroundStyle(.tertiary)
             }
@@ -1216,8 +1216,8 @@ struct StyleView: View {
         if let id = selectedID, settings.styles.contains(where: { $0.id == id }) {
             editor(id: id)
         } else {
-            EmptyState(icon: "paintbrush", title: "Select a style",
-                       message: "Each style is a reusable tone/format layer added on top of your mode. Switch styles anytime with Fn + [ and Fn + ], or from the menu bar.")
+            EmptyState(icon: "paintbrush", title: L("Select a style"),
+                       message: L("Each style is a reusable tone/format layer added on top of your mode. Switch styles anytime with Fn + [ and Fn + ], or from the menu bar."))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
@@ -1251,23 +1251,23 @@ struct StyleView: View {
                 HStack(spacing: 10) {
                     TextField(L("Name"), text: nameB).cleanField().frame(maxWidth: 240).disabled(isNormal)
                     TagChip(icon: isActive ? "checkmark.circle.fill" : "circle",
-                            label: isActive ? "Active" : "Make active",
+                            label: isActive ? L("Active") : L("Make active"),
                             selected: isActive) { settings.activeStyleID = id }
                         .disabled(isActive)
                     Spacer()
                     if !isNormal {
                         Button(role: .destructive) { deleteStyle(id) } label: { Image(systemName: "trash") }
-                            .buttonStyle(.borderless).foregroundStyle(.red).help("Delete this style")
+                            .buttonStyle(.borderless).foregroundStyle(.red).help(L("Delete this style"))
                     }
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 6) {
-                        Text("Style prompt").font(.subheadline.weight(.semibold))
-                        Text("layered on top of the mode when reprompting").font(.caption).foregroundStyle(.secondary)
+                        Text(L("Style prompt")).font(.subheadline.weight(.semibold))
+                        Text(L("layered on top of the mode when reprompting")).font(.caption).foregroundStyle(.secondary)
                     }
                     if isNormal {
-                        Text("“Normal” is neutral: it adds nothing, so your modes behave exactly as their own prompts define. Create a new style to add a tone or format layer.")
+                        Text(L("“Normal” is neutral: it adds nothing, so your modes behave exactly as their own prompts define. Create a new style to add a tone or format layer."))
                             .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     } else {
                         TextEditor(text: promptB)
@@ -1279,14 +1279,14 @@ struct StyleView: View {
                         // doesn't silently do nothing to the output.
                         if promptB.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                             Label(isActive
-                                  ? "This style is Active but has no instructions yet — it behaves exactly like Normal. Add a prompt to make it do something."
-                                  : "This style has no instructions yet — it behaves like Normal until you add a prompt.",
+                                  ? L("This style is Active but has no instructions yet — it behaves exactly like Normal. Add a prompt to make it do something.")
+                                  : L("This style has no instructions yet — it behaves like Normal until you add a prompt."),
                                   systemImage: "exclamationmark.triangle.fill")
                                 .font(.caption)
                                 .foregroundStyle(isActive ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary))
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        Text("e.g. “British English, no exclamation marks, sign off with ‘, G’.” Applies on top of every mode except Flow (raw dictation).")
+                        Text(L("e.g. “British English, no exclamation marks, sign off with ‘, G’.” Applies on top of every mode except Flow (raw dictation)."))
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -1342,8 +1342,8 @@ struct TransformsView: View {
 
             if store.items.isEmpty {
                 Spacer()
-                EmptyState(icon: "arrow.triangle.2.circlepath", title: "No transforms yet",
-                           message: "Reusable text actions like “Make it formal” or “Translate to English”. Select text anywhere, then either say the shortcut or right-click ▸ Services ▸ Transform with Verba, and Verba transforms the selection.")
+                EmptyState(icon: "arrow.triangle.2.circlepath", title: L("No transforms yet"),
+                           message: L("Reusable text actions like “Make it formal” or “Translate to English”. Select text anywhere, then either say the shortcut or right-click ▸ Services ▸ Transform with Verba, and Verba transforms the selection."))
                     .padding(.horizontal, 14)
                 Spacer()
             } else {
@@ -1366,7 +1366,7 @@ struct TransformsView: View {
             Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 13))
                 .foregroundStyle(.secondary).frame(width: 16).padding(.top, 2)
             VStack(alignment: .leading, spacing: 3) {
-                Text(t.name.isEmpty ? "New shortcut" : t.name)
+                Text(t.name.isEmpty ? L("New shortcut") : t.name)
                     .font(.system(size: 13, weight: .medium)).lineLimit(1)
                     .foregroundStyle(t.name.isEmpty ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
                 if !t.prompt.isEmpty {
@@ -1391,12 +1391,12 @@ struct TransformsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("New transform").font(.system(size: 17, weight: .bold))
-                        Text("Actions that run on text you’ve selected. Highlight text in any app, then speak the Verbal Shortcut (e.g. “fix grammar”) or right-click ▸ Services ▸ Transform with Verba, and Verba runs it on your selection and replaces it. Works in every mode.")
+                        Text(L("New transform")).font(.system(size: 17, weight: .bold))
+                        Text(L("Actions that run on text you’ve selected. Highlight text in any app, then speak the Verbal Shortcut (e.g. “fix grammar”) or right-click ▸ Services ▸ Transform with Verba, and Verba runs it on your selection and replaces it. Works in every mode."))
                             .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     }
                     HStack {
-                        primaryAddButton("Add transform") { newTransform() }
+                        primaryAddButton(L("Add transform")) { newTransform() }
                         Spacer()
                     }
                     if let errorMessage {
@@ -1416,21 +1416,21 @@ struct TransformsView: View {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(spacing: 10) {
                     Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 15)).foregroundStyle(.secondary)
-                    Text("Transform").font(.system(size: 17, weight: .bold))
+                    Text(L("Transform")).font(.system(size: 17, weight: .bold))
                     Spacer()
                     Button(role: .destructive) { remove(store.items[idx]) } label: { Image(systemName: "trash") }
-                        .buttonStyle(.borderless).foregroundStyle(.red).help("Delete this transform")
+                        .buttonStyle(.borderless).foregroundStyle(.red).help(L("Delete this transform"))
                 }
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Verbal Shortcut").font(.subheadline.weight(.semibold))
-                    TextField("Verbal Shortcut", text: $store.items[idx].name).cleanField()
+                    Text(L("Verbal Shortcut")).font(.subheadline.weight(.semibold))
+                    TextField(L("Verbal Shortcut"), text: $store.items[idx].name).cleanField()
                 }
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Instruction").font(.subheadline.weight(.semibold))
-                    TextField("Prompt", text: $store.items[idx].prompt, axis: .vertical)
+                    Text(L("Instruction")).font(.subheadline.weight(.semibold))
+                    TextField(L("Prompt"), text: $store.items[idx].prompt, axis: .vertical)
                         .cleanField().lineLimit(4...12)
                 }
-                Text("Select text anywhere, then say the Verbal Shortcut or right-click ▸ Services ▸ Transform with Verba, and Verba runs this instruction on your selection and replaces it.")
+                Text(L("Select text anywhere, then say the Verbal Shortcut or right-click ▸ Services ▸ Transform with Verba, and Verba runs this instruction on your selection and replaces it."))
                     .font(.caption).foregroundStyle(.secondary)
                 if let errorMessage {
                     Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
@@ -1480,8 +1480,8 @@ struct ScratchpadView: View {
                     Image(systemName: "eye").tag(true)
                 }
                 .pickerStyle(.segmented).labelsHidden().fixedSize()
-                .help(preview ? L("Editing") : "Preview formatting")
-                CopyButton(text: pad.text, title: "Copy")
+                .help(preview ? L("Editing") : L("Preview formatting"))
+                CopyButton(text: pad.text, title: L("Copy"))
                 Button(role: .destructive) { pad.text = "" } label: { Label(L("Clear"), systemImage: "trash") }
                     .buttonStyle(.borderless)
             }
@@ -1504,8 +1504,8 @@ struct ScratchpadView: View {
             }
             .overlay {
                 if pad.text.isEmpty {
-                    EmptyState(icon: "note.text", title: "Empty scratchpad",
-                               message: "A free-form space for text. Dictate into it, paste notes, edit, and copy the result. Toggle the eye to preview markdown formatting.")
+                    EmptyState(icon: "note.text", title: L("Empty scratchpad"),
+                               message: L("A free-form space for text. Dictate into it, paste notes, edit, and copy the result. Toggle the eye to preview markdown formatting."))
                         .allowsHitTesting(false)
                 }
             }

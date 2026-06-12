@@ -32,14 +32,14 @@ struct WishlistView: View {
             HStack {
                 Text(L("Wishlist")).font(.system(size: 17, weight: .bold))
                 Spacer()
-                Button { model.load() } label: { Image(systemName: "arrow.clockwise") }.buttonStyle(.borderless).help("Refresh")
+                Button { model.load() } label: { Image(systemName: "arrow.clockwise") }.buttonStyle(.borderless).help(L("Refresh"))
             }
             .padding(.horizontal, 28).padding(.top, 28).padding(.bottom, 2)
-            Text("Suggest a feature and upvote the ones you want most. We build what rises to the top.")
+            Text(L("Suggest a feature and upvote the ones you want most. We build what rises to the top."))
                 .font(.callout).foregroundStyle(.secondary).padding(.horizontal, 28).padding(.bottom, 12)
 
             HStack(spacing: 8) {
-                TextField("Suggest a feature…", text: $draft)
+                TextField(L("Suggest a feature…"), text: $draft)
                     .textFieldStyle(.plain)
                     .padding(.horizontal, 12).padding(.vertical, 9)
                     .background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -56,10 +56,10 @@ struct WishlistView: View {
             if model.loading {
                 ProgressView().frame(maxWidth: .infinity).padding(.top, 30)
             } else if model.items.isEmpty {
-                EmptyState(icon: "lightbulb", title: "No suggestions yet",
-                           message: "Tell us what Verba should do next. Post a feature idea, others can upvote it, and the most-wanted ones get built. Be the first to suggest one above.")
+                EmptyState(icon: "lightbulb", title: L("No suggestions yet"),
+                           message: L("Tell us what Verba should do next. Post a feature idea, others can upvote it, and the most-wanted ones get built. Be the first to suggest one above."))
             } else if visibleItems.isEmpty {
-                Text("Nothing shipped yet — the most upvoted ideas get built first.")
+                Text(L("Nothing shipped yet — the most upvoted ideas get built first."))
                     .font(.callout).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity).padding(.top, 30)
             }
@@ -128,16 +128,16 @@ struct WishlistView: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(shipped)
-                .help(shipped ? "Shipped — already built" : "Upvote")
+                .help(shipped ? L("Shipped — already built") : L("Upvote"))
                 .padding(.vertical, 8)
                 .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(voted && !shipped ? Color.primary.opacity(0.1) : Color.primary.opacity(0.04)))
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(item.text).fixedSize(horizontal: false, vertical: true)
                     HStack(spacing: 6) {
-                        Text("by \(item.author)").font(.caption2).foregroundStyle(.tertiary)
+                        Text("\(L("by")) \(item.author)").font(.caption2).foregroundStyle(.tertiary)
                         if shipped {
-                            Text("SHIPPED")
+                            Text(L("SHIPPED"))
                                 .font(.caption2.weight(.bold))
                                 .foregroundStyle(.green)
                                 .padding(.horizontal, 6).padding(.vertical, 1)
@@ -185,7 +185,7 @@ struct WishlistView: View {
         VStack(alignment: .leading, spacing: 10) {
             Divider().opacity(0.5)
             if item.comments.isEmpty {
-                Text("No comments yet. Start the conversation.")
+                Text(L("No comments yet. Start the conversation."))
                     .font(.caption).foregroundStyle(.tertiary)
             } else {
                 ForEach(item.comments) { c in
@@ -203,7 +203,7 @@ struct WishlistView: View {
             }
 
             HStack(spacing: 8) {
-                TextField("Add a comment…", text: commentBinding(item.id))
+                TextField(L("Add a comment…"), text: commentBinding(item.id))
                     .textFieldStyle(.plain)
                     .padding(.horizontal, 10).padding(.vertical, 7)
                     .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
@@ -211,7 +211,7 @@ struct WishlistView: View {
                 if posting.contains(item.id) {
                     ProgressView().controlSize(.small)
                 }
-                Button("Post") { postComment(item.id) }
+                Button(L("Post")) { postComment(item.id) }
                     .glassButton()
                     .disabled(
                         posting.contains(item.id) ||

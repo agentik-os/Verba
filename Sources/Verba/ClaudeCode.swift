@@ -36,9 +36,15 @@ enum ClaudeCode {
         let alias = model.contains("opus") ? "opus" : model.contains("haiku") ? "haiku" : "sonnet"
         // Run in a neutral dir so no project CLAUDE.md leaks into the session.
         let cwd = FileManager.default.temporaryDirectory
+        // --tools "" + --strict-mcp-config: the CLI must act as a PURE text model. Without these it
+        // inherits the machine's tools and MCP connectors and "helpfully" fetches data itself —
+        // which let the JARVIS planner bypass Verba's read→confirm gating (or hallucinate data)
+        // instead of emitting needReads. Reprompting is pure text too, so this is safe everywhere.
         let args = ["-p",
                     "--system-prompt", systemPrompt,
                     "--exclude-dynamic-system-prompt-sections",
+                    "--tools", "",
+                    "--strict-mcp-config",
                     "--model", alias,
                     "--output-format", "text",
                     userText]
@@ -61,6 +67,9 @@ enum ClaudeCode {
         let outPipe = Pipe(), errPipe = Pipe()
         task.standardOutput = outPipe
         task.standardError = errPipe
+        // Closed stdin: without it the CLI waits ~3s for piped input ("no stdin data received"),
+        // taxing every planner/reprompt call.
+        task.standardInput = FileHandle.nullDevice
 
         // withTaskCancellationHandler so cancel/timeout kills the CLI instead of leaking it
         // (waitUntilExit on a detached queue would otherwise keep a hung `claude` alive forever).

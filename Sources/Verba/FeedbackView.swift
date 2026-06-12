@@ -108,7 +108,7 @@ struct FeedbackView: View {
             }
             .padding(.horizontal, 28).padding(.top, 28).padding(.bottom, 2)
 
-            Text("Tell us what's working, what isn't, or anything on your mind. For specific feature ideas, use the Wishlist so others can upvote them.")
+            Text(L("Tell us what's working, what isn't, or anything on your mind. For specific feature ideas, use the Wishlist so others can upvote them."))
                 .font(.callout).foregroundStyle(.secondary)
                 .padding(.horizontal, 28).padding(.bottom, 16)
 
@@ -137,7 +137,7 @@ struct FeedbackView: View {
                         // Match the NSTextView's real text origin: +5pt horizontal for the
                         // text container's lineFragmentPadding (shifts text only, not this
                         // overlay), same vertical inset as the editor.
-                        Text("Write your feedback…")
+                        Text(L("Write your feedback…"))
                             .font(.body)
                             .foregroundStyle(.tertiary)
                             .padding(.horizontal, editorInset + 5).padding(.vertical, editorInset)
@@ -169,14 +169,14 @@ struct FeedbackView: View {
                             }
                             .padding(.horizontal, 12).padding(.vertical, 4.5)
                         } else {
-                            ActionChip(title: "Dictate", icon: "mic.fill")
+                            ActionChip(title: L("Dictate"), icon: "mic.fill")
                         }
                     }
                     .buttonStyle(.plain)
                     // Mirror canImprove/canSubmit: while an AI rewrite is in flight, the draft is
                     // about to be replaced, so block concurrent dictation that would be discarded.
                     .disabled(submitting || transcribing || improving)
-                    .help("Dictate your feedback")
+                    .help(L("Dictate your feedback"))
 
                     if let thumb = screenshotThumb {
                         ZStack(alignment: .topTrailing) {
@@ -193,10 +193,10 @@ struct FeedbackView: View {
                                     .foregroundStyle(.white, .black.opacity(0.55))
                             }
                             .buttonStyle(.borderless)
-                            .help("Remove screenshot")
+                            .help(L("Remove screenshot"))
                             .padding(4)
                         }
-                        Text("Screenshot attached").font(.callout).foregroundStyle(.secondary)
+                        Text(L("Screenshot attached")).font(.callout).foregroundStyle(.secondary)
                     } else {
                         Button { attachScreenshot() } label: {
                             ActionChip(title: L("Attach screenshot"), icon: "camera.viewfinder")
@@ -205,18 +205,18 @@ struct FeedbackView: View {
                         // Disabled while improving too: parity with Dictate/Send so an in-flight
                         // AI rewrite can't be raced by a concurrent draft/attachment mutation.
                         .disabled(submitting || improving)
-                        .help("Capture the current screen, or drag an image onto the editor, to attach it")
+                        .help(L("Capture the current screen, or drag an image onto the editor, to attach it"))
                     }
                     Spacer()
                     // VER-8: revert an AI rewrite back to the user's original words.
                     // Only present while the draft is still the pristine rewrite.
                     if canRevertImprove {
                         Button { revertImprove() } label: {
-                            ActionChip(title: "Revert", icon: "arrow.uturn.backward")
+                            ActionChip(title: L("Revert"), icon: "arrow.uturn.backward")
                         }
                         .buttonStyle(.plain)
                         .disabled(submitting || improving)
-                        .help("Restore your original feedback (undo the AI rewrite)")
+                        .help(L("Restore your original feedback (undo the AI rewrite)"))
                         .transition(.opacity)
                     }
                     // VER-8: reformat the current draft through the reprompt pipeline.
@@ -233,7 +233,7 @@ struct FeedbackView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(!canImprove)
-                    .help("Clean up and format your feedback with AI")
+                    .help(L("Clean up and format your feedback with AI"))
                 }
 
                 if let error {
@@ -257,7 +257,7 @@ struct FeedbackView: View {
                         if submitting {
                             ProgressView().controlSize(.small)
                         } else {
-                            Text("Send feedback")
+                            Text(L("Send feedback"))
                         }
                     }
                     .dialogPrimary(tint: .primary)
@@ -341,7 +341,7 @@ struct FeedbackView: View {
         error = nil
         recorder.requestPermission { ok in
             guard ok else {
-                error = "Microphone access denied. Allow Verba under System Settings ▸ Privacy & Security ▸ Microphone."
+                error = L("Microphone access denied. Allow Verba under System Settings ▸ Privacy & Security ▸ Microphone.")
                 return
             }
             if recorder.start() {
@@ -351,7 +351,7 @@ struct FeedbackView: View {
                 // Single deferred retry: the mic may take a beat to free if just released.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                     if recorder.start() { recording = true; startLevelMeter() }
-                    else { error = "Couldn't start recording. The microphone may be in use — wait a moment, then try again." }
+                    else { error = L("Couldn't start recording. The microphone may be in use — wait a moment, then try again.") }
                 }
             }
         }
@@ -384,7 +384,7 @@ struct FeedbackView: View {
         let url = recorder.stop()
         recorder.releaseArmed()   // free the mic; symmetric to AdaptPanel
         guard let url else {
-            error = "Couldn't capture audio — try again."
+            error = L("Couldn't capture audio — try again.")
             return
         }
         transcribeVoice(url)
@@ -407,7 +407,7 @@ struct FeedbackView: View {
                 await MainActor.run {
                     transcribing = false
                     guard !captured.isEmpty else {
-                        error = "Didn't catch anything — try again."
+                        error = L("Didn't catch anything — try again.")
                         return
                     }
                     if draft.isEmpty {
@@ -526,7 +526,7 @@ struct FeedbackView: View {
         if provider.canLoadObject(ofClass: NSImage.self) {
             _ = provider.loadObject(ofClass: NSImage.self) { obj, _ in
                 guard let img = obj as? NSImage else {
-                    DispatchQueue.main.async { self.error = "Couldn't read the dropped image. Try a PNG or JPEG." }
+                    DispatchQueue.main.async { self.error = L("Couldn't read the dropped image. Try a PNG or JPEG.") }
                     return
                 }
                 self.attach(image: img)
@@ -561,13 +561,13 @@ struct FeedbackView: View {
     private func attachFromFileURL(_ provider: NSItemProvider) {
         _ = provider.loadObject(ofClass: URL.self) { url, _ in
             guard let url else {
-                DispatchQueue.main.async { self.error = "That file isn't a readable image. Drop a PNG or JPEG." }
+                DispatchQueue.main.async { self.error = L("That file isn't a readable image. Drop a PNG or JPEG.") }
                 return
             }
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
             guard let data = try? Data(contentsOf: url), let img = NSImage(data: data) else {
-                DispatchQueue.main.async { self.error = "That file isn't a readable image. Drop a PNG or JPEG." }
+                DispatchQueue.main.async { self.error = L("That file isn't a readable image. Drop a PNG or JPEG.") }
                 return
             }
             self.attach(image: img)
@@ -579,7 +579,7 @@ struct FeedbackView: View {
         guard let tiff = image.tiffRepresentation,
               let rep = NSBitmapImageRep(data: tiff),
               let png = rep.representation(using: .png, properties: [:]), !png.isEmpty else {
-            DispatchQueue.main.async { self.error = "Couldn't process that image. Try a PNG or JPEG." }
+            DispatchQueue.main.async { self.error = L("Couldn't process that image. Try a PNG or JPEG.") }
             return
         }
         DispatchQueue.main.async {
@@ -598,12 +598,12 @@ struct FeedbackView: View {
         guard ScreenCapture.hasPermission() else {
             ScreenCapture.requestPermission()
             ScreenCapture.openPrivacySettings()
-            error = "Attaching a screenshot needs Screen Recording. Enable Verba in System Settings ▸ Privacy & Security ▸ Screen Recording, then try again."
+            error = L("Attaching a screenshot needs Screen Recording. Enable Verba in System Settings ▸ Privacy & Security ▸ Screen Recording, then try again.")
             return
         }
         Task { @MainActor in
             guard let png = await ScreenCapture.capturePNG(), !png.isEmpty else {
-                error = "Couldn't capture the screen. If Screen Recording was just enabled, quit and reopen Verba, then try again."
+                error = L("Couldn't capture the screen. If Screen Recording was just enabled, quit and reopen Verba, then try again.")
                 return
             }
             screenshot = png

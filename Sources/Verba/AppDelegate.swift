@@ -98,6 +98,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             Task { await Username.reconcileOnSignIn() }  // adopt the Clerk username so the handle syncs across Macs
             History.shared.syncFromCloud()   // pull dictation history from the user's other Macs
+            ComposioStore.shared.refresh()   // warm the connected-app (Composio) tool cache for Action mode
             Stats.shared.syncFromCloud()     // restore Insights / Total Words for the account
             NotesStore.shared.syncFromCloud()// pull long-form notes for the account
             VerbaAppearance.shared.syncFromCloud()  // restore the Customize look (app + widget)
@@ -110,6 +111,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         refreshUI()
 
+        wireActionFeed()   // JARVIS Action-mode feed: confirm a write / pick a clarification option
         ChordMonitor.shared.onChordDown = { [weak self] in self?.chordDown() }
         ChordMonitor.shared.onChordUp = { [weak self] in self?.chordUp() }
         ChordMonitor.shared.onEscape = { [weak self] in self?.escapePressed() }
@@ -151,6 +153,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 || NotesController.shared.isRecording
                 || self.overlay.model.menu
                 || TodoGlanceController.shared.isShowing
+                || ActionFeedController.shared.isShowing
                 || self.reviewWindow != nil
         }
         overlay.model.onCancel = { [weak self] in self?.cancelEverything() }
@@ -246,8 +249,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // the in-flight Sessions, so starting a NEW dictation over still-processing ones is never
         // silent. The dot only renders while model.recording is true (see OverlayView.floating).
         SessionStore.shared.$inflight
-            .map(\.count).removeDuplicates().receive(on: RunLoop.main)
-            .sink { [weak self] n in self?.overlay.model.inflightCount = n }
+            .map { $0.map { InflightChip(id: $0.id, modeName: $0.modeName) } }
+            .removeDuplicates().receive(on: RunLoop.main)
+            .sink { [weak self] items in self?.overlay.model.inflightItems = items }
             .store(in: &cancellables)
 
         // "Capture by voice" button (or a future shortcut) → start/stop a voice to-do capture.
@@ -482,14 +486,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         overlay.model.modeName = ""
         overlay.model.recording = true
         overlay.model.title = NotesController.shared.paused ? "Paused" : CaptureContext.note.label
-        overlay.model.level = 0
+        overlay.model.waves.level = 0
         overlay.show()
         noteLevelTimer?.invalidate()
         let t = Timer(timeInterval: 0.04, repeats: true) { [weak self] _ in
             guard let self, NotesController.shared.isRecording else { return }
             let lvl = NotesController.shared.paused ? 0 : NotesController.shared.level
-            self.overlay.model.level = lvl
-            self.overlay.model.phase += 0.025 + 0.18 * Double(lvl)
+            self.overlay.model.waves.level = lvl
+            self.overlay.model.waves.phase += 0.025 + 0.18 * Double(lvl)
         }
         RunLoop.main.add(t, forMode: .common)
         noteLevelTimer = t
@@ -548,15 +552,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.overlay.model.modeName = ""   // a to-do capture isn't reprompted through a mode
             self.overlay.model.recording = true
             self.overlay.model.title = "Listening · To-do"
-            self.overlay.model.level = 0
+            self.overlay.model.waves.level = 0
             self.overlay.show()
             // Drive the live meter ourselves (the focused app owns the run loop) so the user sees
             // it actually listening — the same timer the dictation flow uses.
             let t = Timer(timeInterval: 0.04, repeats: true) { [weak self] _ in
                 guard let self else { return }
                 let lvl = self.recorder.level()
-                self.overlay.model.level = lvl
-                self.overlay.model.phase += 0.025 + 0.18 * Double(lvl)
+                self.overlay.model.waves.level = lvl
+                self.overlay.model.waves.phase += 0.025 + 0.18 * Double(lvl)
             }
             RunLoop.main.add(t, forMode: .common)
             self.levelTimer = t
@@ -949,6 +953,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // The glance is a .nonactivatingPanel that may not own key focus, so its own local Esc
         // monitor can't be relied on — dismiss it here via the GLOBAL Esc path too.
         TodoGlanceController.shared.hide()
+        // The JARVIS Action-mode feed is a .nonactivatingPanel too — dismiss it on the global Esc path
+        // (its own local Esc monitor can't be relied on when it doesn't hold key focus).
+        ActionFeedController.shared.hide()
         // Same reasoning for the ⌥X transform picker: it is also a .nonactivatingPanel whose own
         // local keyMonitor never receives Esc/digits when it can't take key focus (e.g. over a
         // full-screen / foreign app that won't yield it). Tear it down via the SAME reliable global
@@ -1129,6 +1136,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             overlay.model.selectedID = p.id
             overlay.model.title = "Listening · \(p.name)"
             overlay.model.modeName = p.name
+            Settings.shared.activeProfileID = p.id   // sticky: keep this mode for the next dictations
             SoundFX.mode()
         case .idle:
             let p = step(from: Settings.shared.activeProfileID)
@@ -1194,9 +1202,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             overlay.model.modeName = p.name
         case .idle, .processing:
             // Fn + number from idle (or while a background Session processes) → record in that mode.
-            if overlay.model.menu { Settings.shared.activeProfileID = p.id; dismissMenu() }
+            if overlay.model.menu { dismissMenu() }
             startRecording(forced: p)
         }
+        // An explicit mode pick is STICKY: it becomes the active mode for every next dictation
+        // until the user changes it again (the launch default only seeds the first session).
+        Settings.shared.activeProfileID = p.id
+        // The Fn press that carried this digit was a CHORD, not a push-to-talk press — releasing
+        // Fn must not stop/send the recording it just started (it used to kill it instantly in
+        // hold style, or after the hold threshold in tap style). Hold style keeps push-to-talk
+        // semantics for a live mid-hold switch.
+        if Settings.shared.triggerStyle != .hold { fnPressAt = nil }
         return true
     }
     /// Arrows move the highlight in the OPEN mode picker (consumed only while it's up, so no
@@ -1343,6 +1359,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.forcedProfile = p
                 self?.overlay.model.title = "Listening · \(p.name)"
                 self?.overlay.model.modeName = p.name
+                Settings.shared.activeProfileID = p.id   // sticky: an explicit pick persists
             }
             self.overlay.model.menu = false   // hide the numbers once recording starts
             self.overlay.model.paused = false
@@ -1352,10 +1369,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.overlay.model.modeName = s.repromptEnabled ? initial.name : ""
             // Prime the background-capture count so the "N processing" dot is correct from the
             // first frame (the $inflight subscription only fires on subsequent changes).
-            self.overlay.model.inflightCount = SessionStore.shared.inflight.count
+            self.overlay.model.inflightItems = SessionStore.shared.inflight.map { InflightChip(id: $0.id, modeName: $0.modeName) }
             self.overlay.model.recording = true
             self.overlay.model.title = "Listening · \(initial.name)"
-            self.overlay.model.level = 0
+            self.overlay.model.waves.level = 0
             self.overlay.show()
             // Minimal style: show the mode name briefly, then leave just the moving bar.
             if Settings.shared.overlayStyle == .minimal {
@@ -1370,10 +1387,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let t = Timer(timeInterval: 0.04, repeats: true) { [weak self] _ in
                 guard let self else { return }
                 let lvl = self.recorder.level()
-                self.overlay.model.level = lvl
+                self.overlay.model.waves.level = lvl
                 // Animation speed follows how energetically you're speaking: quiet → slow,
                 // loud/fast speech → a bit faster, but kept gentle so it stays readable.
-                self.overlay.model.phase += 0.025 + 0.18 * Double(lvl)
+                self.overlay.model.waves.phase += 0.025 + 0.18 * Double(lvl)
             }
             RunLoop.main.add(t, forMode: .common)
             self.levelTimer = t
@@ -1604,9 +1621,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        // Context mode + Labs "Agentic actions": the result is a structured action, not text. Never
-        // auto-paste — take it out of in-flight and present a confirmation sheet. On Confirm, execute
-        // it; on Cancel, discard. Plain Context/other modes (action == nil) fall through unchanged.
+        // Action mode (Fn+X): route the transcript through the intermediate ACTION AGENT
+        // (ActionAgentClient → /api/composio/agent) and drive the JARVIS feed (ActionFeedView).
+        // The agent reads context (read-only Composio tools, server-side) and proposes WRITE actions
+        // the user confirms in the feed. The pipeline's one-shot parse (result.action) is kept ONLY as
+        // a graceful fallback for when the agent / connection is unavailable. Never auto-pastes —
+        // Action mode controls the Mac, it doesn't type. Finalize the session first, then act.
+        if ctx.actionMode {
+            session.original = result.original
+            session.status = .done
+            SessionStore.shared.endInflight(session)
+            SessionStore.shared.complete(session)
+            stopQuipsIfNoInflight()
+            if recordingLive {
+                refreshUI()   // R1: never clobber the live recording's state/overlay
+            } else if SessionStore.shared.hasInflight {
+                state = .processing; statusLine = "Transcribing…"; overlay.model.recording = false; showProcessingOverlay()
+            } else {
+                overlay.hide(); state = .idle
+            }
+            // The agent runs on the raw spoken request; the pipeline's one-shot action is the fallback.
+            let transcript = result.original.trimmingCharacters(in: .whitespacesAndNewlines)
+            let understood = result.reprompted.trimmingCharacters(in: .whitespacesAndNewlines)
+            runActionAgent(transcript: transcript,
+                           fallbackAction: result.action,
+                           fallbackText: understood)
+            return
+        }
+
+        // Context mode + Labs "Agentic actions" (NOT the dedicated Action mode): the result is a
+        // structured action, not text. Never auto-paste — present the confirmation sheet. On Confirm,
+        // execute it; on Cancel, discard. Plain Context/other modes (action == nil) fall through.
         if let action = result.action {
             session.original = result.original
             session.status = .done
@@ -1621,26 +1666,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 overlay.hide(); state = .idle
             }
             showActionConfirm(action)
-            return
-        }
-
-        // Action mode (Fn+X) but the request wasn't an actionable command (the model returned text):
-        // never paste that text into the user's app — Action mode controls the Mac, it doesn't type.
-        // Finalize the session and flash what we understood, then stop. (Normal Context/dictation
-        // modes fall through and paste as usual.)
-        if ctx.actionMode {
-            session.status = .done
-            SessionStore.shared.endInflight(session)
-            SessionStore.shared.complete(session)
-            stopQuipsIfNoInflight()
-            let note = result.reprompted.trimmingCharacters(in: .whitespacesAndNewlines)
-            if recordingLive {
-                refreshUI()   // R1: never clobber the live recording's state/overlay
-            } else if SessionStore.shared.hasInflight {
-                state = .processing; statusLine = "Transcribing…"; overlay.model.recording = false; showProcessingOverlay()
-            } else {
-                flashInfo(note.isEmpty ? "No action recognized" : "Not an action: \(note)")
-            }
             return
         }
 
@@ -2293,6 +2318,100 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         reviewWindow = wc.window
         // Also raised from a background pipeline Task → force focus for the accessory app.
         presentFocused(wc)
+    }
+
+    // MARK: - Action mode agent (JARVIS feed)
+
+    /// The spoken transcript that produced the current feed item, kept so a clarification pick can
+    /// re-plan the SAME request with the chosen option pinned. Keyed by feed-item id.
+    private var actionAgentTranscripts: [UUID: String] = [:]
+
+    /// Wire the JARVIS feed store's callbacks once: Confirm executes a proposed write, and picking a
+    /// clarification option re-plans the original request with that choice. Both run real work here;
+    /// the store/view stay pure UI. Mirrors how other shared controllers are wired at launch.
+    private func wireActionFeed() {
+        ActionFeedStore.shared.onConfirm = { [weak self] itemID, action in
+            self?.executeAgentAction(itemID: itemID, action: action)
+        }
+        ActionFeedStore.shared.onResolveChoice = { [weak self] itemID, optionID in
+            self?.resolveAgentClarification(itemID: itemID, optionID: optionID)
+        }
+        // Accepting a post-action follow-up re-plans its intent as a brand-new request.
+        ActionFeedStore.shared.onFollowup = { [weak self] intent in
+            self?.runActionAgent(transcript: intent, fallbackAction: nil, fallbackText: "")
+        }
+    }
+
+    /// Route an Action-mode transcript through the server-side ACTION AGENT and drive the feed.
+    /// Opens the JARVIS panel immediately (a "thinking" row), requests the plan, then lays it out.
+    /// On ANY agent failure (not signed in, relay down, network) it gracefully FALLS BACK to the
+    /// pipeline's one-shot action (the existing confirm sheet) when one exists, else flashes what we
+    /// understood — so Action mode keeps working without the agent / a connection.
+    private func runActionAgent(transcript: String, fallbackAction: VerbaAction?, fallbackText: String) {
+        // Nothing to act on: don't open an empty feed — just mirror the old "no action" feedback.
+        guard !transcript.isEmpty else {
+            if let fallbackAction { showActionConfirm(fallbackAction) }
+            else { flashInfo(fallbackText.isEmpty ? "No action recognized" : "Not an action: \(fallbackText)") }
+            return
+        }
+        let itemID = ActionFeedStore.shared.begin(title: transcript)
+        actionAgentTranscripts[itemID] = transcript
+        ActionFeedController.shared.show()
+
+        Task { @MainActor in
+            do {
+                let plan = try await ActionAgentClient.shared.plan(transcript: transcript)
+                ActionFeedStore.shared.apply(plan, to: itemID)
+                ActionFeedController.shared.show()   // re-fit to the plan's height
+            } catch {
+                VerbaLog.app.error("action agent failed: \(error.localizedDescription, privacy: .public)")   // R14
+                // Graceful fallback: drop the feed item and use the one-shot path the pipeline already
+                // produced, so a signed-out user (or a relay outage) still gets the simple action.
+                ActionFeedStore.shared.remove(itemID)
+                self.actionAgentTranscripts[itemID] = nil
+                if ActionFeedStore.shared.items.isEmpty { ActionFeedController.shared.hide() }
+                if let fallbackAction {
+                    self.showActionConfirm(fallbackAction)
+                } else {
+                    self.flashError(error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    /// Execute a confirmed proposed WRITE from the feed (local action via ActionExecutor, or a
+    /// connected-app tool via ComposioStore.execute inside ActionExecutor.perform). Reports the
+    /// conversational result back into the feed; the store already flipped the row to `.running`.
+    private func executeAgentAction(itemID: UUID, action: VerbaAction) {
+        Task { @MainActor in
+            do {
+                let message = try await ActionExecutor().perform(action)
+                ActionFeedStore.shared.succeeded(itemID, announce: message)
+            } catch {
+                VerbaLog.app.error("agent action execution failed: \(error.localizedDescription, privacy: .public)")   // R14
+                ActionFeedStore.shared.failed(itemID, error: error.localizedDescription)
+            }
+            self.actionAgentTranscripts[itemID] = nil
+        }
+    }
+
+    /// Re-plan the original request with a clarification option pinned (several connected apps fit
+    /// equally → the user picked one). The store already flipped the row back to `.thinking`.
+    private func resolveAgentClarification(itemID: UUID, optionID: String) {
+        guard let transcript = actionAgentTranscripts[itemID] else {
+            ActionFeedStore.shared.failed(itemID, error: L("That request expired — try again."))
+            return
+        }
+        Task { @MainActor in
+            do {
+                let plan = try await ActionAgentClient.shared.plan(transcript: transcript, resolveChoice: optionID)
+                ActionFeedStore.shared.apply(plan, to: itemID)
+                ActionFeedController.shared.show()
+            } catch {
+                VerbaLog.app.error("action agent re-plan failed: \(error.localizedDescription, privacy: .public)")   // R14
+                ActionFeedStore.shared.failed(itemID, error: error.localizedDescription)
+            }
+        }
     }
 
     /// Present the agentic-action confirmation sheet (Context mode + Labs). On Confirm, run the

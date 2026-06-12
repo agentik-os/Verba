@@ -131,7 +131,7 @@ struct OnboardingView: View {
                     .opacity(canAdvance ? 1 : 0.35)
                     .disabled(!canAdvance)
             } else {
-                Button(action: finish) { Text("Start using Verba").frame(minWidth: 140) }
+                Button(action: finish) { Text(L("Start using Verba")).frame(minWidth: 140) }
                     .buttonStyle(DarkButton())
                     .opacity(micGranted && axGranted && imGranted ? 1 : 0.35)
                     .disabled(!(micGranted && axGranted && imGranted))
@@ -168,25 +168,25 @@ struct OnboardingView: View {
 
     private var welcome: some View {
         VStack(alignment: .leading, spacing: 16) {
-            title("Welcome to Verba", "Talk, and it lands as clean, structured text, right where your cursor is.")
+            title(L("Welcome to Verba"), L("Talk, and it lands as clean, structured text, right where your cursor is."))
             grid([
-                ("lock.shield", "Private by default", "Transcription runs on your Mac. Your audio never has to leave the device."),
-                ("bolt.fill", "Instant, anywhere", "One key from any app. No window to open, no copy-paste."),
-                ("brain", "Your AI, your way", "Use your Claude plan or your own key, no markup on someone's cloud."),
-                ("slider.horizontal.3", "Modes that fit", "Coding, writing, casual, intent, each routed to the right model."),
+                ("lock.shield", L("Private by default"), L("Transcription runs on your Mac. Your audio never has to leave the device.")),
+                ("bolt.fill", L("Instant, anywhere"), L("One key from any app. No window to open, no copy-paste.")),
+                ("brain", L("Your AI, your way"), L("Use your Claude plan or your own key, no markup on someone's cloud.")),
+                ("slider.horizontal.3", L("Modes that fit"), L("Coding, writing, casual, intent, each routed to the right model.")),
             ])
         }
     }
 
     private var account: some View {
         VStack(alignment: .leading, spacing: 16) {
-            title("Create your account", "Sign in to unlock Verba, sync your plan, and earn referral rewards.")
+            title(L("Create your account"), L("Sign in to unlock Verba, sync your plan, and earn referral rewards."))
             VStack(alignment: .leading, spacing: 12) {
                 Button(action: doSignIn) {
                     HStack {
                         if signingIn { ProgressView().controlSize(.small) }
                         Image(systemName: "globe")
-                        Text(settings.proEmail.isEmpty ? "Continue with Google / email" : "Signed in")
+                        Text(settings.proEmail.isEmpty ? L("Continue with Google / email") : L("Signed in"))
                     }.frame(maxWidth: .infinity)
                 }
                 .buttonStyle(DarkButton())
@@ -194,12 +194,12 @@ struct OnboardingView: View {
                 .disabled(signingIn || !settings.proEmail.isEmpty)
 
                 if !settings.proEmail.isEmpty {
-                    Label("Signed in as \(settings.proEmail)", systemImage: "checkmark.seal.fill")
+                    Label(L("Signed in as") + " \(settings.proEmail)", systemImage: "checkmark.seal.fill")
                         .foregroundStyle(.green).font(.callout)
-                    Button("Use a different account") { AuthSession.shared.signOut() }
+                    Button(L("Use a different account")) { AuthSession.shared.signOut() }
                         .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
                 } else {
-                    Text("Opens a secure window on verba.run. Sign up with Google or email, your account is created instantly.")
+                    Text(L("Opens a secure window on verba.run. Sign up with Google or email, your account is created instantly."))
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -212,7 +212,7 @@ struct OnboardingView: View {
     // Synced to the account (Clerk) so the same handle follows them across Macs and the web.
     private var aliasStep: some View {
         VStack(alignment: .leading, spacing: 18) {
-            title("Pick your username", "This is your PUBLIC name on the Verba leaderboard. It is never your real name or email, so pick something you're happy for anyone to see.")
+            title(L("Pick your username"), L("This is your PUBLIC name on the Verba leaderboard. It is never your real name or email, so pick something you're happy for anyone to see."))
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 14) {
                     ZStack {
@@ -220,18 +220,18 @@ struct OnboardingView: View {
                         Text(aliasInitials).font(.title3.weight(.semibold)).foregroundStyle(.primary)
                     }
                     VStack(alignment: .leading, spacing: 4) {
-                        TextField("Your username", text: $settings.username)
+                        TextField(L("Your username"), text: $settings.username)
                             .textFieldStyle(.plain).font(.title2.weight(.semibold))
-                        Text("Public leaderboard name — not your real name").font(.caption).foregroundStyle(.secondary)
+                        Text(L("Public leaderboard name — not your real name")).font(.caption).foregroundStyle(.secondary)
                     }
                     Button { settings.username = Settings.randomAlias() } label: {
                         Image(systemName: "shuffle")
                     }
-                    .buttonStyle(.plain).foregroundStyle(.secondary).help("Shuffle a new username")
+                    .buttonStyle(.plain).foregroundStyle(.secondary).help(L("Shuffle a new username"))
                 }
                 .padding(16).frame(maxWidth: .infinity, alignment: .leading)
                 .glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                Label("Public on the leaderboard, synced to your account. You can change it anytime in Settings.", systemImage: "info.circle")
+                Label(L("Public on the leaderboard, synced to your account. You can change it anytime in Settings."), systemImage: "info.circle")
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
@@ -246,29 +246,29 @@ struct OnboardingView: View {
 
     private var triggerKey: some View {
         VStack(alignment: .leading, spacing: 16) {
-            title("Your trigger key", "The Fn (🌐 globe) key is the fastest way to dictate.")
+            title(L("Your trigger key"), L("The Fn (🌐 globe) key is the fastest way to dictate."))
             Toggle(isOn: $settings.useFnAsPrimary) {
                 VStack(alignment: .leading) {
-                    Text("Use the Fn (🌐 globe) key").font(.callout.weight(.medium))
-                    Text("Verba swallows the globe key so macOS won't show the keyboard/emoji popup.").font(.caption).foregroundStyle(.secondary)
+                    Text(L("Use the Fn (🌐 globe) key")).font(.callout.weight(.medium))
+                    Text(L("Verba swallows the globe key so macOS won't show the keyboard/emoji popup.")).font(.caption).foregroundStyle(.secondary)
                 }
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             if settings.useFnAsPrimary {
-                Toggle("Keep the macOS Fn / emoji popup", isOn: Binding(
+                Toggle(L("Keep the macOS Fn / emoji popup"), isOn: Binding(
                     get: { !settings.suppressFnPopup },
                     set: { settings.suppressFnPopup = !$0 }))
-                Toggle("Keep the keyboard / input-source switcher", isOn: Binding(
+                Toggle(L("Keep the keyboard / input-source switcher"), isOn: Binding(
                     get: { !settings.disableInputSwitcher },
                     set: { settings.disableInputSwitcher = !$0 }))
-                Text("Off (recommended) lets Verba use Fn cleanly. You can change these anytime in Settings ▸ Fn key behaviour.")
+                Text(L("Off (recommended) lets Verba use Fn cleanly. You can change these anytime in Settings ▸ Fn key behaviour."))
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
             if !settings.useFnAsPrimary {
                 HStack {
-                    Text("Or pick a shortcut:").font(.callout)
+                    Text(L("Or pick a shortcut:")).font(.callout)
                     ShortcutRecorder(label: shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods),
                                      onCapture: { c, m in settings.primaryKeyCode = c; settings.primaryMods = m })
                     Spacer()
@@ -276,16 +276,16 @@ struct OnboardingView: View {
             }
             if settings.useFnAsPrimary {
                 HStack {
-                    Text("Three ways to use it").font(.headline)
+                    Text(L("Three ways to use it")).font(.headline)
                     Spacer()
-                    Text("Try each one now 👇").font(.caption).foregroundStyle(.secondary)
+                    Text(L("Try each one now 👇")).font(.caption).foregroundStyle(.secondary)
                 }
-                actionRow("hand.tap", "Single tap", "Tap Fn once to start recording your default mode. Tap again to send.", done: coach.singleFn)
-                actionRow("hand.tap.fill", "Press & hold", "Hold Fn while you speak, release to send (push-to-talk).", done: coach.holdFn)
-                actionRow("number.circle", "Fn + number", "Hold Fn and press 1 to 9 to dictate in a specific mode (1 Flow, 2 Intent, …).", done: coach.doubleFn)
-                actionRow("slider.horizontal.3", "Change mode", "Fn + Tab jumps to the next mode (Fn + ⇧ + Tab for the previous one) — even mid-sentence while you're holding Fn. ⌃ (Control) pauses & resumes.", done: coach.changeMode)
+                actionRow("hand.tap", L("Single tap"), L("Tap Fn once to start recording your default mode. Tap again to send."), done: coach.singleFn)
+                actionRow("hand.tap.fill", L("Press & hold"), L("Hold Fn while you speak, release to send (push-to-talk)."), done: coach.holdFn)
+                actionRow("number.circle", L("Fn + number"), L("Hold Fn and press 1 to 9 to dictate in a specific mode (1 Flow, 2 Intent, …)."), done: coach.doubleFn)
+                actionRow("slider.horizontal.3", L("Change mode"), L("Fn + Tab jumps to the next mode (Fn + ⇧ + Tab for the previous one) — even mid-sentence while you're holding Fn. ⌃ (Control) pauses & resumes."), done: coach.changeMode)
                 if coach.singleFn && coach.holdFn && coach.doubleFn && coach.changeMode {
-                    Label("Nice, you've got the trigger key down.", systemImage: "checkmark.seal.fill")
+                    Label(L("Nice, you've got the trigger key down."), systemImage: "checkmark.seal.fill")
                         .font(.caption).foregroundStyle(.green)
                 }
             } else {
@@ -293,17 +293,17 @@ struct OnboardingView: View {
                 // ONE achievable action — pressing the chosen shortcut. `singleFn` fires from
                 // the shared startDictation path whether the trigger is Fn or a shortcut.
                 HStack {
-                    Text("Try your shortcut").font(.headline)
+                    Text(L("Try your shortcut")).font(.headline)
                     Spacer()
-                    Text("Press it now 👇").font(.caption).foregroundStyle(.secondary)
+                    Text(L("Press it now 👇")).font(.caption).foregroundStyle(.secondary)
                 }
-                actionRow("command", "Start / stop dictation",
-                          "Press your shortcut to start recording your default mode. Press it again to send.",
+                actionRow("command", L("Start / stop dictation"),
+                          L("Press your shortcut to start recording your default mode. Press it again to send."),
                           done: coach.singleFn)
-                Text("Tip: ⌃ (Control) pauses & resumes while recording, ⌥ (Option) switches mode mid-sentence, and Esc cancels — these work no matter which trigger you choose.")
+                Text(L("Tip: ⌃ (Control) pauses & resumes while recording, ⌥ (Option) switches mode mid-sentence, and Esc cancels — these work no matter which trigger you choose."))
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 if coach.singleFn {
-                    Label("Nice, your shortcut works.", systemImage: "checkmark.seal.fill")
+                    Label(L("Nice, your shortcut works."), systemImage: "checkmark.seal.fill")
                         .font(.caption).foregroundStyle(.green)
                 }
             }
@@ -333,43 +333,43 @@ struct OnboardingView: View {
 
     private var modes: some View {
         VStack(alignment: .leading, spacing: 14) {
-            title("A mode for every moment", "Verba cleans your speech differently per mode, and detects the language you speak automatically.")
+            title(L("A mode for every moment"), L("Verba cleans your speech differently per mode, and detects the language you speak automatically."))
             HStack(spacing: 12) {
                 Image(systemName: "wand.and.stars").font(.system(size: 17)).frame(width: 26)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Try it live right now").font(.callout.weight(.medium))
-                    Text("Press Fn (or your shortcut) and speak. The recording indicator appears and the result lands where your cursor is.").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    Text(L("Try it live right now")).font(.callout.weight(.medium))
+                    Text(L("Press Fn (or your shortcut) and speak. The recording indicator appears and the result lands where your cursor is.")).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
             }
             .padding(13).frame(maxWidth: .infinity, alignment: .leading)
             .glass(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            modeCard("Flow", "Haiku", "Raw dictation, your exact words, no AI.", nil)
-            modeCard("Intent", "Sonnet", "The power mode. Say what you want, then the content, Verba does exactly that.",
-                     "“Turn the following into three bullet points: we ship dark mode, postpone billing, hire a designer in Q3.”")
-            modeCard("Coding", "Opus", "Rambling feedback → a precise prompt for Cursor / Claude Code.",
-                     "“the login button doesn't work on mobile, the onclick is wrong, show the spinner while it loads”")
-            modeCard("Context", "Sonnet (vision)", "The new advanced mode. Verba takes a screenshot, reads your screen, and acts on what is there.",
-                     "“reply to this email and say I'm in”, “write a caption for this photo”, “answer the question on screen”")
-            Label("Context needs Screen Recording permission (you'll grant it on first use) and a vision model (Anthropic or OpenRouter key).", systemImage: "camera.viewfinder")
+            modeCard("Flow", "Haiku", L("Raw dictation, your exact words, no AI."), nil)
+            modeCard("Intent", "Sonnet", L("The power mode. Say what you want, then the content, Verba does exactly that."),
+                     L("“Turn the following into three bullet points: we ship dark mode, postpone billing, hire a designer in Q3.”"))
+            modeCard("Coding", "Opus", L("Rambling feedback → a precise prompt for Cursor / Claude Code."),
+                     L("“the login button doesn't work on mobile, the onclick is wrong, show the spinner while it loads”"))
+            modeCard("Context", L("Sonnet (vision)"), L("The new advanced mode. Verba takes a screenshot, reads your screen, and acts on what is there."),
+                     L("“reply to this email and say I'm in”, “write a caption for this photo”, “answer the question on screen”"))
+            Label(L("Context needs Screen Recording permission (you'll grant it on first use) and a vision model (Anthropic or OpenRouter key)."), systemImage: "camera.viewfinder")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            Label("You can also create your own Custom mode later in Settings ▸ Modes.", systemImage: "plus.circle")
+            Label(L("You can also create your own Custom mode later in Settings ▸ Modes."), systemImage: "plus.circle")
                 .font(.caption).foregroundStyle(.secondary)
         }
     }
 
     private var pauseAndFormatting: some View {
         VStack(alignment: .leading, spacing: 16) {
-            title("Pause without lifting a finger", "Start a recording with Fn, then press Control to try it.")
-            actionRow("hand.tap", "Single tap", "Tap Fn once to start recording your default mode. Tap again to send.", done: coach.singleFn)
+            title(L("Pause without lifting a finger"), L("Start a recording with Fn, then press Control to try it."))
+            actionRow("hand.tap", L("Single tap"), L("Tap Fn once to start recording your default mode. Tap again to send."), done: coach.singleFn)
             HStack(spacing: 12) {
                 Text(coach.control ? "✓" : "⌃").font(.system(size: 24, weight: .semibold))
                     .frame(width: 46, height: 46)
                     .foregroundStyle(coach.control ? AnyShapeStyle(.green) : AnyShapeStyle(.primary))
                     .glass(in: RoundedRectangle(cornerRadius: 12))
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(coach.control ? "You paused with Control" : "Tap Control to pause / resume").font(.callout.weight(.medium))
-                    Text("While recording, press ⌃ (Control) to pause listening, and again to resume. Tap ⌥ (Option) to switch mode mid-sentence. Esc cancels.").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    Text(coach.control ? L("You paused with Control") : L("Tap Control to pause / resume")).font(.callout.weight(.medium))
+                    Text(L("While recording, press ⌃ (Control) to pause listening, and again to resume. Tap ⌥ (Option) to switch mode mid-sentence. Esc cancels.")).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
             }
@@ -377,49 +377,50 @@ struct OnboardingView: View {
             .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(coach.control ? Color.green.opacity(0.12) : .clear))
             .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: coach.control)
-            title("Format with your voice", "")
+            title(L("Format with your voice"), "")
             grid([
-                ("text.append", "Say the punctuation", "“new line”, “new paragraph”, “comma”, “bullet point”."),
-                ("arrow.uturn.backward", "Fix on the fly", "“scratch that” deletes your last phrase, keep talking."),
+                ("text.append", L("Say the punctuation"), L("“new line”, “new paragraph”, “comma”, “bullet point”.")),
+                ("arrow.uturn.backward", L("Fix on the fly"), L("“scratch that” deletes your last phrase, keep talking.")),
+                ("square.stack.3d.up.fill", L("Chain recordings"), L("No need to wait: tap Fn and dictate the next one while the last is still processing. Every dictation still working stacks up above the pill, so you can fire off 10 in a row and watch them all land.")),
             ])
         }
     }
 
     private var insightsAndTools: some View {
         VStack(alignment: .leading, spacing: 16) {
-            title("Track your flow", "After you dictate, Verba shows a few simple KPIs.")
+            title(L("Track your flow"), L("After you dictate, Verba shows a few simple KPIs."))
             grid([
-                ("chart.bar.fill", "Insights", "Words dictated, words-per-minute, streak and a daily chart."),
-                ("clock.arrow.circlepath", "History", "Every dictation, searchable, with replayable audio."),
-                ("text.badge.plus", "Snippets", "Save blocks (signature, address) and insert them by intent."),
-                ("character.book.closed", "Dictionary", "Teach Verba names and jargon so they're always spelled right."),
+                ("chart.bar.fill", L("Insights"), L("Words dictated, words-per-minute, streak and a daily chart.")),
+                ("clock.arrow.circlepath", L("History"), L("Every dictation, searchable, with replayable audio.")),
+                ("text.badge.plus", L("Snippets"), L("Save blocks (signature, address) and insert them by intent.")),
+                ("character.book.closed", L("Dictionary"), L("Teach Verba names and jargon so they're always spelled right.")),
             ])
         }
     }
 
     private var referral: some View {
         VStack(alignment: .leading, spacing: 16) {
-            title("Give a month, get a month", "Share Verba, it pays you back.")
+            title(L("Give a month, get a month"), L("Share Verba, it pays you back."))
             VStack(alignment: .leading, spacing: 10) {
-                Text("Your referral link").font(.caption).foregroundStyle(.secondary)
+                Text(L("Your referral link")).font(.caption).foregroundStyle(.secondary)
                 HStack {
                     Text(settings.referralLink).font(.system(.callout, design: .monospaced)).lineLimit(1).truncationMode(.middle)
                     Spacer()
-                    Button(copied ? "Copied ✓" : "Copy") {
+                    Button(copied ? L("Copied ✓") : L("Copy")) {
                         let pb = NSPasteboard.general; pb.clearContents(); pb.setString(settings.referralLink, forType: .string); copied = true
                     }.glassButton()
                     // Same Share affordance as the Free Month tab + Account card.
-                    Button { shareReferral() } label: { Label("Share…", systemImage: "square.and.arrow.up") }
+                    Button { shareReferral() } label: { Label(L("Share…"), systemImage: "square.and.arrow.up") }
                         .glassButton()
                 }
                 .padding(12).frame(maxWidth: .infinity).glass(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
             .padding(16).frame(maxWidth: .infinity, alignment: .leading).glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             grid([
-                ("gift.fill", "1 free month per friend", "Every person who subscribes through your link earns you a free month, unlimited."),
-                ("checkmark.seal", "How it validates", "They count once they're a paying subscriber and have dictated 15,000+ words."),
+                ("gift.fill", L("1 free month per friend"), L("Every person who subscribes through your link earns you a free month, unlimited.")),
+                ("checkmark.seal", L("How it validates"), L("They count once they're a paying subscriber and have dictated 15,000+ words.")),
             ])
-            Label("AI rewriting works out of the box with your Verba plan, no API key needed. You can still add your own key later in Settings.", systemImage: "sparkles")
+            Label(L("AI rewriting works out of the box with your Verba plan, no API key needed. You can still add your own key later in Settings."), systemImage: "sparkles")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -429,34 +430,34 @@ struct OnboardingView: View {
     private var permissionsStep: some View {
         let core = micGranted && axGranted && imGranted
         return VStack(alignment: .leading, spacing: 16) {
-            title("Grant permissions", "Verba needs these to hear you, paste for you, and use the Fn key. Grant the three core ones to continue.")
+            title(L("Grant permissions"), L("Verba needs these to hear you, paste for you, and use the Fn key. Grant the three core ones to continue."))
             VStack(spacing: 12) {
-                permRow("mic.fill", "Microphone", "To record what you say.", granted: micGranted) {
+                permRow("mic.fill", L("Microphone"), L("To record what you say."), granted: micGranted) {
                     AVCaptureDevice.requestAccess(for: .audio) { _ in }
                     NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")!)
                 }
                 Divider()
-                permRow("hand.point.up.left.fill", "Accessibility", "To paste into the active app.", granted: axGranted) {
+                permRow("hand.point.up.left.fill", L("Accessibility"), L("To paste into the active app."), granted: axGranted) {
                     Output.promptAccessibility()
                     NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
                 }
                 Divider()
-                permRow("keyboard", "Input Monitoring", "To use the Fn key as your trigger.", granted: imGranted) {
+                permRow("keyboard", L("Input Monitoring"), L("To use the Fn key as your trigger."), granted: imGranted) {
                     _ = IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
                     NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent")!)
                 }
                 Divider()
-                permRow("camera.viewfinder", "Screen Recording (optional)", "Only for Context mode.", granted: screenGranted) {
+                permRow("camera.viewfinder", L("Screen Recording (optional)"), L("Only for Context mode."), granted: screenGranted) {
                     ScreenCapture.requestPermission()
                     ScreenCapture.openPrivacySettings()
                 }
             }
             .padding(16).frame(maxWidth: .infinity, alignment: .leading).glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             if core {
-                Label("All set, you can continue. Screen Recording is optional (Context mode).", systemImage: "checkmark.seal.fill")
+                Label(L("All set, you can continue. Screen Recording is optional (Context mode)."), systemImage: "checkmark.seal.fill")
                     .font(.caption).foregroundStyle(.green).fixedSize(horizontal: false, vertical: true)
             } else {
-                Label("Grant Microphone, Accessibility and Input Monitoring to continue. The Continue button unlocks once they're on.", systemImage: "lock.fill")
+                Label(L("Grant Microphone, Accessibility and Input Monitoring to continue. The Continue button unlocks once they're on."), systemImage: "lock.fill")
                     .font(.caption).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
             }
         }

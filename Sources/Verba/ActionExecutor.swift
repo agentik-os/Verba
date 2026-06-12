@@ -13,6 +13,7 @@ import AppKit
 /// The categories of action the user can individually enable/disable in Settings ▸ Action mode.
 enum ActionKind: String, CaseIterable, Codable {
     case calendar, reminder, email, shortcut, app, music, message, search, applescript
+    case connectedApp
     var label: String {
         switch self {
         case .calendar:    return "Calendar events"
@@ -24,6 +25,7 @@ enum ActionKind: String, CaseIterable, Codable {
         case .message:     return "Send messages"
         case .search:      return "Web search / open URL"
         case .applescript: return "AppleScript (advanced)"
+        case .connectedApp: return "Connected apps"
         }
     }
     var icon: String {
@@ -33,6 +35,7 @@ enum ActionKind: String, CaseIterable, Codable {
         case .app: return "app.badge"; case .music: return "music.note"
         case .message: return "message.fill"; case .search: return "safari"
         case .applescript: return "applescript"
+        case .connectedApp: return "app.connected.to.app.below.fill"
         }
     }
 }
@@ -79,16 +82,22 @@ enum VerbaAction: Codable, Equatable {
     case appleScript(label: String, script: String)
     /// Open a web URL (web searches, "open this site"), usually resolved from a search target.
     case openURL(label: String, url: URL)
+    /// Execute a tool of a CONNECTED third-party app (Gmail, Slack, Notion, …) through the
+    /// Composio relay on verba.run. `tool` is the exact Composio tool slug, `label` the
+    /// human-readable description shown in the confirmation card.
+    case composio(tool: String, label: String, arguments: [String: String])
 
     // MARK: Codable (tagged by "kind" so it round-trips cleanly)
 
     private enum CodingKeys: String, CodingKey {
         case kind, title, start, end, notes, due, to, subject, body
         case name, input, query, script, label, url
+        case tool, args
     }
     private enum Kind: String, Codable {
         case calendarEvent, reminder, emailDraft
         case runShortcut, openApp, playMusic, sendMessage, appleScript, openURL
+        case composio
     }
 
     init(from decoder: Decoder) throws {
@@ -130,6 +139,11 @@ enum VerbaAction: Codable, Equatable {
             self = .openURL(
                 label: try c.decode(String.self, forKey: .label),
                 url: try c.decode(URL.self, forKey: .url))
+        case .composio:
+            self = .composio(
+                tool: try c.decode(String.self, forKey: .tool),
+                label: try c.decode(String.self, forKey: .label),
+                arguments: try c.decodeIfPresent([String: String].self, forKey: .args) ?? [:])
         }
     }
 
@@ -174,6 +188,11 @@ enum VerbaAction: Codable, Equatable {
             try c.encode(Kind.openURL, forKey: .kind)
             try c.encode(label, forKey: .label)
             try c.encode(url, forKey: .url)
+        case let .composio(tool, label, arguments):
+            try c.encode(Kind.composio, forKey: .kind)
+            try c.encode(tool, forKey: .tool)
+            try c.encode(label, forKey: .label)
+            try c.encode(arguments, forKey: .args)
         }
     }
 
@@ -189,6 +208,7 @@ enum VerbaAction: Codable, Equatable {
         case .sendMessage:   return .message
         case .appleScript:   return .applescript
         case .openURL:       return .search
+        case .composio:      return .connectedApp
         }
     }
 
@@ -206,6 +226,7 @@ enum VerbaAction: Codable, Equatable {
         case .sendMessage:   return "message.fill"
         case .appleScript:   return "applescript"
         case .openURL:       return "safari"
+        case .composio:      return "app.connected.to.app.below.fill"
         }
     }
 
@@ -235,6 +256,8 @@ enum VerbaAction: Codable, Equatable {
             return "Run · \(label)"
         case let .openURL(label, _):
             return "Open · \(label)"
+        case let .composio(tool, label, _):
+            return "Connected app · \(label.isEmpty ? tool : label)"
         }
     }
 
@@ -318,6 +341,10 @@ struct ActionExecutor {
         case let .openURL(label, url):
             NSWorkspace.shared.open(url)
             return "Opened \(label)"
+        case let .composio(tool, _, arguments):
+            // Connected app: execute through the Composio relay on verba.run (the user
+            // already confirmed in ActionConfirmView; the relay enforces the signed-in session).
+            return try await ComposioStore.shared.execute(tool: tool, arguments: arguments)
         }
     }
 

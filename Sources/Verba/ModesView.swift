@@ -27,10 +27,10 @@ struct ModesView: View {
                         Image(systemName: "arrow.counterclockwise")
                     }
                     .buttonStyle(.borderless).foregroundStyle(.secondary)
-                    .help("Restore the built-in modes; this removes your custom ones")
+                    .help(L("Restore the built-in modes; this removes your custom ones"))
                     Button { genError = nil; genDescription = ""; showGenerator = true } label: { Image(systemName: "plus") }
                         .buttonStyle(.borderless)
-                        .help("Describe a mode and let Verba build it")
+                        .help(L("Describe a mode and let Verba build it"))
                 }
                 .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
 
@@ -58,17 +58,17 @@ struct ModesView: View {
                 } else {
                     VStack(spacing: 16) {
                         EmptyState(icon: "wand.and.stars",
-                                   title: settings.profiles.isEmpty ? "No modes yet" : "Select a mode",
+                                   title: settings.profiles.isEmpty ? L("No modes yet") : L("Select a mode"),
                                    message: settings.profiles.isEmpty
-                                       ? "Modes are the different ways Claude reorders and improves your dictation. Create one, or restore the built-in modes."
-                                       : "Each mode is a different way Claude reorders and improves your dictation.")
+                                       ? L("Modes are the different ways Claude reorders and improves your dictation. Create one, or restore the built-in modes.")
+                                       : L("Each mode is a different way Claude reorders and improves your dictation."))
                         HStack(spacing: 10) {
                             Button { genError = nil; genDescription = ""; showGenerator = true } label: {
                                 Label(L("New mode"), systemImage: "plus")
                             }
                             .glassProminentButton()
                             Button { pendingReset = true } label: {
-                                Label("Restore built-in modes", systemImage: "arrow.counterclockwise")
+                                Label(L("Restore built-in modes"), systemImage: "arrow.counterclockwise")
                             }
                             .glassButton()
                         }
@@ -80,7 +80,7 @@ struct ModesView: View {
         }
         .onAppear { if selectedID == nil { selectedID = settings.activeProfileID } }
         .sheet(isPresented: $showGenerator) { generatorSheet }
-        .confirmationDialog("Delete this built-in mode?",
+        .confirmationDialog(L("Delete this built-in mode?"),
                             isPresented: Binding(get: { pendingDeleteID != nil },
                                                  set: { if !$0 { pendingDeleteID = nil } }),
                             titleVisibility: .visible) {
@@ -90,9 +90,9 @@ struct ModesView: View {
             }
             Button(L("Cancel"), role: .cancel) { pendingDeleteID = nil }
         } message: {
-            Text("You can bring the built-in modes back anytime with Restore.")
+            Text(L("You can bring the built-in modes back anytime with Restore."))
         }
-        .confirmationDialog("Restore the built-in modes?",
+        .confirmationDialog(L("Restore the built-in modes?"),
                             isPresented: $pendingReset,
                             titleVisibility: .visible) {
             Button(L("Restore defaults"), role: .destructive) {
@@ -102,7 +102,7 @@ struct ModesView: View {
             }
             Button(L("Cancel"), role: .cancel) { pendingReset = false }
         } message: {
-            Text("This removes any custom modes you’ve created and restores the built-in ones.")
+            Text(L("This removes any custom modes you’ve created and restores the built-in ones."))
         }
     }
 
@@ -188,8 +188,8 @@ struct ModesView: View {
     // MARK: New mode assistant — describe a need (typed or dictated), Verba builds the mode.
     private var generatorSheet: some View {
         GlassDialog(icon: "wand.and.stars",
-                    title: "New mode",
-                    subtitle: "Describe what this mode should do, in plain words. You can type it or dictate it with Verba. It uses your configured AI, no extra setup.",
+                    title: L("New mode"),
+                    subtitle: L("Describe what this mode should do, in plain words. You can type it or dictate it with Verba. It uses your configured AI, no extra setup."),
                     width: 520,
                     drawsCard: true) {
             VStack(alignment: .leading, spacing: 10) {
@@ -202,7 +202,7 @@ struct ModesView: View {
                         if genDescription.isEmpty {
                             // Aligned to the text cursor: 8 outer pad + ~5 NSTextView lineFragmentPadding
                             // horizontally; 10 outer pad vertically. Sits exactly on the first line.
-                            Text("e.g. \u{201C}A mode for short, friendly customer-support replies that keep every detail I mention and stay polite.\u{201D}")
+                            Text(L("e.g. \u{201C}A mode for short, friendly customer-support replies that keep every detail I mention and stay polite.\u{201D}"))
                                 .font(.body).foregroundStyle(.tertiary)
                                 .padding(.horizontal, 13).padding(.vertical, 10).allowsHitTesting(false)
                         }
@@ -214,7 +214,7 @@ struct ModesView: View {
                 }
             }
         } buttons: {
-            Button("Create blank instead") { let p = addBlankProfile(); showGenerator = false; selectedID = p }
+            Button(L("Create blank instead")) { let p = addBlankProfile(); showGenerator = false; selectedID = p }
                 .buttonStyle(.borderless).disabled(genBusy)
             Spacer()
             Button(L("Cancel")) { showGenerator = false }
@@ -225,7 +225,7 @@ struct ModesView: View {
                 runGenerate()
             } label: {
                 if genBusy { HStack(spacing: 8) { ProgressView().controlSize(.small); Text(L("Building…")) } }
-                else { Text("Build mode") }
+                else { Text(L("Build mode")) }
             }
             .dialogPrimary()
             .disabled(genBusy || genDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -336,27 +336,27 @@ struct ModesView: View {
                 HStack(spacing: 10) {
                     TextField(L("Name"), text: nameB).cleanField().frame(maxWidth: 240)
                     TagChip(icon: isActive ? "checkmark.circle.fill" : "circle",
-                            label: isActive ? "Active" : "Make active",
+                            label: isActive ? L("Active") : L("Make active"),
                             selected: isActive) { if !promptBlank { settings.activeProfileID = id } }
                         .disabled(isActive || promptBlank)
-                        .help(promptBlank ? "Add a system prompt before making this mode active — an empty prompt gives Claude no instructions." : "")
+                        .help(promptBlank ? L("Add a system prompt before making this mode active — an empty prompt gives Claude no instructions.") : "")
                     Spacer()
                     Button(role: .destructive) { confirmOrDelete(id) } label: {
                         Image(systemName: "trash")
                     }
-                    .buttonStyle(.borderless).foregroundStyle(.red).help("Delete this mode")
+                    .buttonStyle(.borderless).foregroundStyle(.red).help(L("Delete this mode"))
                 }
 
                 if isVision {
-                    field("Screen capture") {
+                    field(L("Screen capture")) {
                         HStack(alignment: .top, spacing: 10) {
                             Image(systemName: "camera.viewfinder")
                                 .font(.system(size: 16)).foregroundStyle(.secondary)
                                 .frame(width: 20).padding(.top, 1)
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("This mode screenshots the frontmost window and sends it to Claude along with your spoken request, so it can act on what's on screen (reply to the visible email, comment on a photo, answer the question shown).")
+                                Text(L("This mode screenshots the frontmost window and sends it to Claude along with your spoken request, so it can act on what's on screen (reply to the visible email, comment on a photo, answer the question shown)."))
                                     .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                                Label("The screenshot is sent to your AI backend only for this request and is never stored.",
+                                Label(L("The screenshot is sent to your AI backend only for this request and is never stored."),
                                       systemImage: "lock.shield")
                                     .font(.caption).foregroundStyle(.tertiary)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -369,7 +369,7 @@ struct ModesView: View {
                 }
 
                 if isTranslate {
-                    field("Translate into", hint: "whatever language you speak, the result is written in this one") {
+                    field(L("Translate into"), hint: L("whatever language you speak, the result is written in this one")) {
                         Picker("", selection: langB) {
                             ForEach(translateLanguages, id: \.self) { Text($0).tag($0) }
                         }
@@ -378,8 +378,8 @@ struct ModesView: View {
                 }
 
                 if isRaw {
-                    field("Behaviour") {
-                        Text("Free-flow dictation, your words are transcribed exactly, with no AI reprompting.")
+                    field(L("Behaviour")) {
+                        Text(L("Free-flow dictation, your words are transcribed exactly, with no AI reprompting."))
                             .foregroundStyle(.secondary)
                     }
                 } else {
@@ -391,19 +391,19 @@ struct ModesView: View {
                     // use a single configured model, so we only show that one.
                     switch settings.repromptBackend {
                     case .localLLM:
-                        field("Model", hint: "your local open-source model (set in Settings ▸ AI rewriting) rewrites every mode") {
+                        field(L("Model"), hint: L("your local open-source model (set in Settings ▸ AI rewriting) rewrites every mode")) {
                             Text("Local: \(settings.localLLMModel)")
                                 .foregroundStyle(.secondary)
                         }
                     case .openRouter:
-                        field("Model", hint: "your OpenRouter model (set in Settings ▸ AI rewriting) rewrites every mode") {
-                            Text(settings.openRouterModel.isEmpty ? "OpenRouter default model" : "OpenRouter: \(settings.openRouterModel)")
+                        field(L("Model"), hint: L("your OpenRouter model (set in Settings ▸ AI rewriting) rewrites every mode")) {
+                            Text(settings.openRouterModel.isEmpty ? L("OpenRouter default model") : "OpenRouter: \(settings.openRouterModel)")
                                 .foregroundStyle(.secondary)
                         }
                     default:
-                        field("Model", hint: "which Claude model rewrites this mode (Anthropic / Claude Code)") {
+                        field(L("Model"), hint: L("which Claude model rewrites this mode (Anthropic / Claude Code)")) {
                             HStack(spacing: 8) {
-                                TagChip(label: "Default", selected: modelB.wrappedValue == "") { modelB.wrappedValue = "" }
+                                TagChip(label: L("Default"), selected: modelB.wrappedValue == "") { modelB.wrappedValue = "" }
                                     .help("App-wide default (\(settings.claudeModel))")
                                 ForEach(Profile.selectableModels, id: \.id) { m in
                                     TagChip(label: m.label, selected: modelB.wrappedValue == m.id) { modelB.wrappedValue = m.id }
@@ -416,14 +416,14 @@ struct ModesView: View {
                 // Friendly, AI-written "what this mode does + how to use it" for the user.
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 6) {
-                        Text("Description").font(.subheadline.weight(.semibold))
-                        Text("what it's for, in plain words").font(.caption).foregroundStyle(.secondary)
+                        Text(L("Description")).font(.subheadline.weight(.semibold))
+                        Text(L("what it's for, in plain words")).font(.caption).foregroundStyle(.secondary)
                         Spacer()
                         if explaining { ProgressView().controlSize(.small) }
                         Button {
                             explainMode(id: id)
                         } label: {
-                            Label(p?.explainer?.isEmpty == false ? "Regenerate" : L("Explain with AI"),
+                            Label(p?.explainer?.isEmpty == false ? L("Regenerate") : L("Explain with AI"),
                                   systemImage: "sparkles")
                         }
                         .buttonStyle(.borderless).disabled(explaining)
@@ -434,7 +434,7 @@ struct ModesView: View {
                             .padding(12).frame(maxWidth: .infinity, alignment: .leading)
                             .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     } else {
-                        Text(explainError ?? "Tap Explain with AI for a plain-language summary of what this mode does and how to use it.")
+                        Text(explainError ?? L("Tap Explain with AI for a plain-language summary of what this mode does and how to use it."))
                             .font(.caption).foregroundStyle(explainError == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
                     }
                 }
@@ -442,9 +442,9 @@ struct ModesView: View {
                 if !isRaw && !isTranslate {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 6) {
-                            Text("System prompt").font(.subheadline.weight(.semibold))
-                            Text(isVision ? "what Claude does with the screenshot + your spoken request"
-                                          : "how Claude reinterprets your audio")
+                            Text(L("System prompt")).font(.subheadline.weight(.semibold))
+                            Text(isVision ? L("what Claude does with the screenshot + your spoken request")
+                                          : L("how Claude reinterprets your audio"))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         TextEditor(text: promptB)
@@ -452,7 +452,7 @@ struct ModesView: View {
                             .frame(minHeight: 220).padding(12)
                             .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         if promptBlank {
-                            Label("This mode has no system prompt. Claude would get no instructions and may echo or mangle your dictation. Add a prompt to make it active.",
+                            Label(L("This mode has no system prompt. Claude would get no instructions and may echo or mangle your dictation. Add a prompt to make it active."),
                                   systemImage: "exclamationmark.triangle.fill")
                                 .font(.caption).foregroundStyle(.orange)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -460,7 +460,7 @@ struct ModesView: View {
                     }
                 }
 
-                field("Auto-match apps", hint: "dictate straight into this mode when these apps are frontmost") {
+                field(L("Auto-match apps"), hint: L("dictate straight into this mode when these apps are frontmost")) {
                     VStack(alignment: .leading, spacing: 8) {
                         if !bundleIDs.isEmpty {
                             FlowChips(items: bundleIDs) { bid in
@@ -471,7 +471,7 @@ struct ModesView: View {
                             Button { chooseApps(for: id) } label: { Label(L("Choose apps…"), systemImage: "app.badge") }
                             Spacer()
                         }
-                        TextField("…or paste bundle IDs (comma-separated)", text: bundlesB).cleanField()
+                        TextField(L("…or paste bundle IDs (comma-separated)"), text: bundlesB).cleanField()
                     }
                 }
             }
@@ -504,8 +504,8 @@ struct ModesView: View {
         panel.canChooseFiles = true
         panel.allowedContentTypes = [.application]
         panel.directoryURL = URL(fileURLWithPath: "/Applications")
-        panel.prompt = "Add"
-        panel.message = "Choose apps that should auto-select this mode"
+        panel.prompt = L("Add")
+        panel.message = L("Choose apps that should auto-select this mode")
         guard panel.runModal() == .OK, let i = index(of: id) else { return }
         for url in panel.urls {
             if let bid = Bundle(url: url)?.bundleIdentifier,

@@ -12,7 +12,7 @@ struct ActionConfirmView: View {
     var body: some View {
         GlassDialog(icon: action.icon,
                     title: heading,
-                    subtitle: "Verba wants to do this for you. Review and confirm.",
+                    subtitle: L("Verba wants to do this for you. Review and confirm."),
                     width: 460,
                     drawsCard: false) {
             VStack(alignment: .leading, spacing: 12) {
@@ -43,15 +43,17 @@ struct ActionConfirmView: View {
 
     private var heading: String {
         switch action {
-        case .calendarEvent: return "Create a Calendar event?"
-        case .reminder:      return "Create a Reminder?"
-        case .emailDraft:    return "Open an email draft?"
-        case let .runShortcut(name, _): return "Run the “\(name)” shortcut?"
-        case let .openApp(name):        return "Open \(name)?"
-        case .playMusic:                return "Play music?"
-        case let .sendMessage(to, _):   return "Send a message to \(to)?"
+        case .calendarEvent: return L("Create a Calendar event?")
+        case .reminder:      return L("Create a Reminder?")
+        case .emailDraft:    return L("Open an email draft?")
+        case let .runShortcut(name, _): return L("Run the “\(name)” shortcut?")
+        case let .openApp(name):        return L("Open \(name)?")
+        case .playMusic:                return L("Play music?")
+        case let .sendMessage(to, _):   return L("Send a message to \(to)?")
         case let .appleScript(label, _): return "\(label)?"
-        case let .openURL(label, _): return "Open \(label)?"
+        case let .openURL(label, _): return L("Open \(label)?")
+        case let .composio(tool, label, _):
+            return L("Run \(label.isEmpty ? tool : label) in your connected app?")
         }
     }
 
@@ -59,13 +61,14 @@ struct ActionConfirmView: View {
         switch action {
         case .calendarEvent: return L("Create event")
         case .reminder:      return L("Create reminder")
-        case .emailDraft:    return "Open draft"
+        case .emailDraft:    return L("Open draft")
         case .runShortcut:   return L("Run shortcut")
-        case .openApp:       return "Open app"
+        case .openApp:       return L("Open app")
         case .playMusic:     return L("Play")
         case .sendMessage:   return L("Send message")
         case .appleScript:   return L("Run")
         case .openURL:       return L("Open")
+        case .composio:      return L("Run action")
         }
     }
 
@@ -86,7 +89,7 @@ struct ActionConfirmView: View {
             return f
         case let .emailDraft(to, subject, body):
             var f: [(String, String)] = []
-            if let to, !to.isEmpty { f.append(("To", to)) }
+            if let to, !to.isEmpty { f.append((L("To"), to)) }
             if let subject, !subject.isEmpty { f.append((L("Subject"), subject)) }
             if !body.isEmpty { f.append((L("Body"), body)) }
             if f.isEmpty { f.append((L("Email"), L("New message"))) }
@@ -98,13 +101,21 @@ struct ActionConfirmView: View {
         case let .openApp(name):
             return [(L("App"), name)]
         case let .playMusic(query):
-            return [(L("Music"), (query?.isEmpty == false) ? query! : "Resume playback")]
+            return [(L("Music"), (query?.isEmpty == false) ? query! : L("Resume playback"))]
         case let .sendMessage(to, body):
-            return [("To", to), (L("Message"), body)]
+            return [(L("To"), to), (L("Message"), body)]
         case let .appleScript(label, script):
             return [(L("Action"), label), ("Script", script)]
         case let .openURL(label, url):
             return [(L("Open"), label), ("URL", url.absoluteString)]
+        case let .composio(tool, _, arguments):
+            // Tool slug first, then every argument the model filled, so the user sees
+            // EXACTLY what will be sent to the connected app before confirming.
+            var f: [(String, String)] = [(L("Tool"), tool)]
+            for (k, v) in arguments.sorted(by: { $0.key < $1.key }) where !v.isEmpty {
+                f.append((k.replacingOccurrences(of: "_", with: " ").capitalized, v))
+            }
+            return f
         }
     }
 

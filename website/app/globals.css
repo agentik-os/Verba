@@ -55,12 +55,14 @@
   --border-strong: rgba(10, 10, 20, 0.16);
   --hairline-top: rgba(255, 255, 255, 0.9);
 
-  --panel: #0c0c10;          /* the hero chrome stays dark in both modes — it IS the app */
-  --panel-2: #101015;
+  /* Light mode: demo panels are LIGHT too (a dark slab on a white page read badly).
+     Canvas content (SpeedRace / WaveLine / LiveDemo) is themed off --fg, so it adapts. */
+  --panel: #ffffff;
+  --panel-2: #f5f5f7;
   --panel-shadow:
-    0 40px 90px -34px rgba(20, 22, 40, 0.45),
-    0 8px 24px -14px rgba(20, 22, 40, 0.30),
-    0 1px 1px rgba(226, 59, 46, 0.05);
+    0 40px 90px -34px rgba(20, 22, 40, 0.14),
+    0 8px 24px -14px rgba(20, 22, 40, 0.10),
+    0 1px 1px rgba(20, 22, 40, 0.04);
 
   --card: rgba(255, 255, 255, 0.66);
   --card-hover: rgba(255, 255, 255, 0.92);
@@ -171,11 +173,13 @@ body::after {
   box-shadow: var(--panel-shadow);
   color: #f4f4f6;
 }
+[data-theme="light"] .panel { color: #0a0a0c; }   /* dark text on the now-light panel */
 .panel::before {                    /* crisp 1px specular highlight on the very top edge */
   content: ""; position: absolute; left: 12%; right: 12%; top: 0; height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
   pointer-events: none;
 }
+[data-theme="light"] .panel::before { background: linear-gradient(90deg, transparent, rgba(10,10,20,0.10), transparent); }
 
 /* (2) CARD — flat tinted surface, crisp 1px border, NO blur. The workhorse. */
 .card {
@@ -408,3 +412,19 @@ details[open] > .faq-body { animation: rise-in .25s var(--ease-out) both; }
 /* Text links: underline as state [C10] */
 .link-quiet { transition: color var(--dur-fast) var(--ease-out); }
 .link-quiet:hover { color: var(--fg); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--border-strong); }
+
+/* Theme-aware panel content: white-on-dark in dark mode, dark-on-light in light mode. */
+.pf-90{color:rgba(244,244,246,0.9);}[data-theme="light"] .pf-90{color:rgba(10,10,12,0.9);}
+.pf-85{color:rgba(244,244,246,0.85);}[data-theme="light"] .pf-85{color:rgba(10,10,12,0.85);}
+.pf-75{color:rgba(244,244,246,0.75);}[data-theme="light"] .pf-75{color:rgba(10,10,12,0.75);}
+.pf-70{color:rgba(244,244,246,0.7);}[data-theme="light"] .pf-70{color:rgba(10,10,12,0.7);}
+.pf-60{color:rgba(244,244,246,0.6);}[data-theme="light"] .pf-60{color:rgba(10,10,12,0.6);}
+.pf-55{color:rgba(244,244,246,0.55);}[data-theme="light"] .pf-55{color:rgba(10,10,12,0.55);}
+.pf-50{color:rgba(244,244,246,0.5);}[data-theme="light"] .pf-50{color:rgba(10,10,12,0.5);}
+.pf-45{color:rgba(244,244,246,0.45);}[data-theme="light"] .pf-45{color:rgba(10,10,12,0.45);}
+.pf-40{color:rgba(244,244,246,0.4);}[data-theme="light"] .pf-40{color:rgba(10,10,12,0.4);}
+.pbg{background:rgba(0,0,0,0.40);}[data-theme="light"] .pbg{background:rgba(10,10,20,0.05);}
+.ptint{background:rgba(255,255,255,0.05);}[data-theme="light"] .ptint{background:rgba(10,10,20,0.04);}
+.ptint10{background:rgba(255,255,255,0.10);}[data-theme="light"] .ptint10{background:rgba(10,10,20,0.06);}
+.pborder{border-color:rgba(255,255,255,0.10);}[data-theme="light"] .pborder{border-color:rgba(10,10,20,0.10);}
+.pborder30{border-color:rgba(255,255,255,0.30);}[data-theme="light"] .pborder30{border-color:rgba(10,10,20,0.22);}

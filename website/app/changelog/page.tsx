@@ -17,8 +17,47 @@ const DAYS: Day[] = [
     date: "June 11, 2026",
     tag: "Today",
     summary:
-      "A big craft and reliability day: the recording pill is calmer and always centered, your task glance shows your whole project tree, gamification reaches 100 levels with a lifetime reward, profiles go social, and the whole app, sync and website get a security-hardening pass.",
+      "The day Action mode became a real assistant: speak any request, however you phrase it, and Verba works out what you mean, plans the steps and acts, always with your confirmation, in a calm, JARVIS-style feed. Connect 1,000+ apps to act on by voice, and the whole app now speaks 15 languages. Plus a calmer recording pill, your whole task tree at a glance, 100 levels with a lifetime reward, social profiles, and a security-hardening pass.",
     entries: [
+      {
+        version: "0.7.8 → 0.9.4",
+        title: "Meet JARVIS, your voice agent for 1,000+ apps",
+        items: [
+          "Action mode is now a real assistant. Say what you want however it comes out, “remind me in 10 to grab the cake” or “I’m hungry, cake in ten minutes” land the same way, and Verba recovers the true intent, resolves the time, and shows exactly what it will do before doing it.",
+          "It goes multi-step when a goal needs context: ask it to find a free hour tomorrow and it reads your calendar, finds the slot, and proposes the event, you just confirm. It reads to understand, but never makes a change without your okay.",
+          "Everything plays out in a calm, JARVIS-style Action feed: a one-line summary, the proposed step, and a spoken confirmation when it’s done.",
+          "The Connect-your-apps screen got a lighter, more minimal redesign, real app logos, a category filter, and one-tap disconnect.",
+          "Connecting an app is now rock-solid: real logos load reliably, the status always reflects reality, and if you cancel or deny the sign-in the Connect button comes right back instead of hanging.",
+          "Polish on the Action feed: the headline stays clean while the assistant thinks (your words are quoted underneath), it never spins forever on a request that stalls, and the app cards lay out cleanly at every width.",
+          "Missing a detail? The assistant now asks for it. Say “send an email saying hello” without a recipient and it shows fill-in fields, recipient, subject, body, with what it already drafted pre-filled. Type the rest and send, straight from the feed.",
+          "The assistant is now named JARVIS, and connects to 1,000+ apps. A new Connected apps section in Settings lets you search the full catalog, filter by category, and connect any of them with one tap.",
+          "JARVIS asks a quick question when your request is ambiguous (a Google Meet, or just a calendar block?), and rebuilds spoken email addresses (“simono dot gareth at gmail dot com”) into the real thing, with an editable field to confirm when it's unsure.",
+          "Time is now exact: “add an event in 10 minutes” lands at the right minute in your computer's own timezone, instead of drifting by hours.",
+          "Tap any app to see everything you can do with it, every action, each with example phrases you can say to JARVIS (“Send an email to Marc about the demo”, “Post in the team channel that the demo is ready”). And JARVIS now knows the full action set of every app you've connected.",
+          "The catalog now spans 1,000+ apps, and the comparison shows what's unique: Verba is the only dictation app with a voice agent that acts on your connected apps, not just edits text.",
+          "The recording pill is smoother: the live waveform no longer re-renders the whole pill every frame, so it stays rock-steady while you talk. And a tip in Settings: name the app you want (“send a Slack message…”) and JARVIS picks the right one first try.",
+          "The recording indicator stays put: the Done, info and mode-change flashes now sit at the exact same centered spot as the live Listening pill, instead of drifting as the width changes.",
+          "Mode switches now stick: jump to a mode with Fn+1…9 (or the picker) and Verba stays on it for every next dictation until you change it. And the Fn+number chord no longer cuts the recording when you release Fn. JARVIS's on-device planner now runs fully sandboxed (no tools), so it always fetches your real data through Verba instead of improvising.",
+          "Dictations now stack: start the next recording while the last is still processing — every in-flight dictation shows as its own little chip above the pill, so you can fire off 10 in a row and watch them all land. Onboarding now teaches this too.",
+          "JARVIS now thinks on YOUR engine: planning runs on-device through your Claude subscription (Claude Code) or your local model, with your own keys as an option. Verba's servers only relay the connected-app calls — your requests never burn a shared cloud key, and JARVIS keeps working even offline-first setups.",
+          "Connect almost anything: most apps authenticate with an API key, not a browser sign-in — so Connect now opens a small form asking for exactly the keys that app needs (and still opens the browser for the OAuth ones). After an action, JARVIS can suggest a smart next step (“Invite people to the event?”) and carry it out.",
+        ],
+      },
+      {
+        version: "0.7.5 → 0.7.7",
+        title: "Connect your favorite apps, act by voice",
+        items: [
+          "Connect up to 50 of the most-used apps, Gmail, Slack, Notion, Google Calendar, Linear, GitHub and more, right from Settings ▸ Action.",
+          "Action mode can then act on them by voice. It stays secure: the connection keys live on Verba’s servers and never touch your machine.",
+        ],
+      },
+      {
+        version: "0.6.5 → 0.7.4",
+        title: "Verba now speaks your language",
+        items: [
+          "The entire app, sidebar, settings, every mode and every tool, now translates into 14 languages. Choose your language and the whole interface follows.",
+        ],
+      },
       {
         version: "0.6.2 → 0.6.4",
         title: "A recording pill that stays out of your way",

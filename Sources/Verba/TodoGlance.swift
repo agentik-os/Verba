@@ -123,7 +123,7 @@ struct TodoGlanceView: View {
                     .overlay(Capsule().strokeBorder(Color.hairlineTint, lineWidth: 1))
                     .contentShape(Capsule())
                 }
-                .buttonStyle(.plain).help("Add a to-do by voice")
+                .buttonStyle(.plain).help(L("Add a to-do by voice"))
                 Button(action: onClose) {
                     Image(systemName: "xmark").font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(.secondary).padding(6).contentShape(Rectangle())
@@ -188,7 +188,7 @@ struct TodoGlanceView: View {
                         HStack(spacing: 9) {
                             Image(systemName: "checkmark.circle.fill").font(.system(size: 13))
                                 .foregroundStyle(VerbaAppearance.shared.accentOr(.green))
-                            Text(item.title.isEmpty ? "Untitled" : item.title)
+                            Text(item.title.isEmpty ? L("Untitled") : item.title)
                                 .font(.system(size: 12)).foregroundStyle(.tertiary)
                                 .strikethrough(true, color: .secondary).lineLimit(1)
                             Spacer(minLength: 4)
@@ -286,7 +286,7 @@ struct TodoGlanceView: View {
             }
             .buttonStyle(.plain)
 
-            Text(title.isEmpty ? "Untitled" : title)
+            Text(title.isEmpty ? L("Untitled") : title)
                 .font(.system(size: indent > 0 ? 12 : 13, weight: bold ? .medium : .regular))
                 .foregroundStyle(isDoing ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
                 .strikethrough(isDoing, color: VerbaAppearance.shared.accentOr(.green))
@@ -316,7 +316,7 @@ struct TodoGlanceView: View {
         f.locale = Locale.current
         if cal.isDateInToday(d) {
             f.setLocalizedDateFormatFromTemplate("jmm")
-            return "Today " + f.string(from: d)
+            return L("Today") + " " + f.string(from: d)
         } else if let days = cal.dateComponents([.day], from: cal.startOfDay(for: Date()), to: cal.startOfDay(for: d)).day,
                   days >= 0, days <= 6 {
             f.setLocalizedDateFormatFromTemplate("EEE jmm")

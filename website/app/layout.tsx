@@ -9,24 +9,54 @@ import RefCapture from "@/components/RefCapture";
 const themeScript = `(function(){try{var t=localStorage.getItem('verba_theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`;
 
 export const metadata: Metadata = {
-  title: "Verba, speak it, send it clean",
+  title: "Verba — AI Dictation for Mac | Private Voice to Text, On-Device",
   description:
-    "A macOS menu-bar app that turns your speech into clean, well-structured text anywhere on your Mac. Dictate in any app, in your style, hands free.",
+    "Verba is the most complete AI dictation app for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and JARVIS — a voice agent that acts on 1,000+ connected apps. Private, BYO-AI, $9.99/mo.",
   metadataBase: new URL("https://verba.run"),
+  alternates: { canonical: "/" },
+  keywords: [
+    "AI dictation Mac", "voice to text macOS", "dictation app for Mac", "Wispr Flow alternative",
+    "speech to text Mac", "on-device dictation", "private dictation app", "voice agent Mac",
+  ],
   openGraph: {
-    title: "Verba, speak it, send it clean",
+    title: "Verba — AI Dictation for Mac | Private Voice to Text",
     description:
-      "Speak naturally; Verba writes it cleanly into any app on your Mac. Fast, private, hands-free.",
-    url: "https://verba.run",
+      "On-device voice-to-text with AI cleanup, live translation, and JARVIS — a voice agent acting on 1,000+ apps. Private, BYO-AI, $9.99/mo.",
     siteName: "Verba",
     type: "website",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Verba, speak it, send it clean",
+    title: "Verba — AI Dictation for Mac | Private Voice to Text",
     description:
-      "Speak naturally; Verba writes it cleanly into any app on your Mac. Fast, private, hands-free.",
+      "On-device voice-to-text with AI cleanup, live translation, and JARVIS — a voice agent acting on 1,000+ apps. Private, BYO-AI.",
   },
+};
+
+// Site-wide structured data — Google rich results + LLM/AI-search (GEO) citation eligibility.
+const SITE_JSONLD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      name: "Verba",
+      applicationCategory: "UtilitiesApplication",
+      operatingSystem: "macOS 14+",
+      description:
+        "AI dictation for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and JARVIS — a voice agent that acts on 1,000+ connected apps.",
+      url: "https://verba.run",
+      downloadUrl: "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg",
+      offers: { "@type": "Offer", price: "9.99", priceCurrency: "USD" },
+      featureList: [
+        "On-device voice-to-text (WhisperKit, NVIDIA Parakeet)",
+        "AI rewriting in any app", "Live translation", "Reads your screen (Context mode)",
+        "JARVIS voice agent acting on 1,000+ connected apps",
+        "Bring your own AI (Claude, OpenRouter, local Ollama)", "15 UI languages",
+      ],
+    },
+    { "@type": "Organization", name: "Agentik OS", url: "https://verba.run", logo: "https://verba.run/icon.png" },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -62,7 +92,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             "min-h-[52px] text-base rounded-2xl font-semibold !bg-white !text-black hover:!bg-white/90",
           footerActionText: "!text-[rgba(244,245,248,0.6)]",
           footerActionLink: "!text-white font-medium",
-          // Account dropdown (UserButton popover) — on-brand dark, high-contrast text
+          // Account dropdown (UserButton popover), on-brand dark, high-contrast text
           userButtonPopoverCard:
             "rounded-2xl border border-white/10 bg-[#101014] shadow-2xl",
           userButtonPopoverMain: "bg-[#101014]",
@@ -79,6 +109,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <html lang="en" suppressHydrationWarning>
         <head><script dangerouslySetInnerHTML={{ __html: themeScript }} /></head>
         <body className="font-sans antialiased">
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(SITE_JSONLD) }}
+          />
           <RefCapture />
           {children}
           <Analytics />

@@ -31,11 +31,11 @@ struct AdaptPanel: View {
                 HStack(spacing: 7) {
                     Image(systemName: "wand.and.stars")
                         .font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
-                    Text("Adapt this dictation").font(.headline)
+                    Text(L("Adapt this dictation")).font(.headline)
                 }
                 // Make clear Adapt is a throwaway variation, in contrast to Re-run which overwrites
                 // the saved entry, so the two reprocessing paths aren't confused.
-                Text("Try a variation, this doesn't change the saved entry. Use Save to keep one.")
+                Text(L("Try a variation, this doesn't change the saved entry. Use Save to keep one."))
                     .font(.caption).foregroundStyle(.secondary)
             }
 
@@ -46,17 +46,17 @@ struct AdaptPanel: View {
             // Custom "Intent" adapt: type how you want it transformed, or speak it.
             // One soft-fill field with the mic + Adapt actions embedded (alias-field idiom).
             HStack(spacing: 8) {
-                TextField("Describe how to adapt it (e.g. make it a bug report)", text: $customIntent)
+                TextField(L("Describe how to adapt it (e.g. make it a bug report)"), text: $customIntent)
                     .textFieldStyle(.plain)
                     .onSubmit { adaptCustom() }
                     .disabled(recording || transcribing)
                 Divider().frame(height: 12)
                 Button { toggleVoiceIntent() } label: {
                     if recording {
-                        Label("Listening…", systemImage: "stop.circle.fill")
+                        Label(L("Listening…"), systemImage: "stop.circle.fill")
                             .font(.system(size: 11, weight: .medium)).foregroundStyle(.red)
                     } else if transcribing {
-                        Label("Transcribing…", systemImage: "waveform")
+                        Label(L("Transcribing…"), systemImage: "waveform")
                             .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
                     } else {
                         Image(systemName: "mic.fill")
@@ -67,10 +67,10 @@ struct AdaptPanel: View {
                 }
                 .buttonStyle(.borderless)
                 .disabled(adapting || transcribing)
-                .help("Speak how to adapt the text")
+                .help(L("Speak how to adapt the text"))
                 Divider().frame(height: 12)
                 Button { adaptCustom() } label: {
-                    Label("Adapt", systemImage: "wand.and.stars")
+                    Label(L("Adapt"), systemImage: "wand.and.stars")
                         .font(.system(size: 11, weight: .semibold))
                 }
                 .buttonStyle(.borderless)
@@ -84,7 +84,7 @@ struct AdaptPanel: View {
             if adapting {
                 HStack(spacing: 8) {
                     ProgressView().controlSize(.small)
-                    Text("Adapting\(adaptLabel.isEmpty ? "" : " · \(adaptLabel)")…")
+                    Text("\(L("Adapting"))\(adaptLabel.isEmpty ? "" : " · \(adaptLabel)")…")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             } else if let err = adaptError {
@@ -92,24 +92,24 @@ struct AdaptPanel: View {
             } else if !adaptResult.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 12) {
-                        Text(adaptLabel.isEmpty ? "Result" : "Result · \(adaptLabel)")
+                        Text(adaptLabel.isEmpty ? L("Result") : "\(L("Result")) · \(adaptLabel)")
                             .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
                         Spacer()
                         // The adapted output is no longer a dead-end: paste it where you were typing,
                         // or keep it as a new dictation in History, alongside Copy.
                         Button { _ = Output.paste(adaptResult) } label: {
-                            Label("Paste", systemImage: "arrow.down.doc")
+                            Label(L("Paste"), systemImage: "arrow.down.doc")
                                 .font(.system(size: 12, weight: .medium))
                         }
                         .buttonStyle(.borderless)
-                        .help("Paste the adapted text into the app you were last using")
+                        .help(L("Paste the adapted text into the app you were last using"))
                         Button { saveToHistory() } label: {
-                            Label(saved ? "Saved" : "Save", systemImage: saved ? "checkmark" : "tray.and.arrow.down")
+                            Label(saved ? L("Saved") : L("Save"), systemImage: saved ? "checkmark" : "tray.and.arrow.down")
                                 .font(.system(size: 12, weight: .medium))
                         }
                         .buttonStyle(.borderless)
                         .disabled(saved)
-                        .help("Keep this adapted result as a new dictation in your History")
+                        .help(L("Keep this adapted result as a new dictation in your History"))
                         CopyButton(text: adaptResult)
                     }
                     Text(adaptResult)
@@ -168,7 +168,7 @@ struct AdaptPanel: View {
         adaptError = nil
         recorder.requestPermission { ok in
             guard ok else {
-                adaptError = "Microphone access denied. Allow Verba under System Settings ▸ Privacy & Security ▸ Microphone."
+                adaptError = L("Microphone access denied. Allow Verba under System Settings ▸ Privacy & Security ▸ Microphone.")
                 return
             }
             if recorder.start() {
@@ -177,7 +177,7 @@ struct AdaptPanel: View {
                 // Single deferred retry: the mic may take a beat to free if just released.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                     if recorder.start() { recording = true }
-                    else { adaptError = "Couldn't start recording. The microphone may be in use — wait a moment, then try again." }
+                    else { adaptError = L("Couldn't start recording. The microphone may be in use — wait a moment, then try again.") }
                 }
             }
         }
@@ -189,7 +189,7 @@ struct AdaptPanel: View {
         let url = recorder.stop()
         recorder.releaseArmed()   // free the mic; symmetric to NotesView / AppDelegate
         guard let url else {
-            adaptError = "Couldn't capture audio — try again."
+            adaptError = L("Couldn't capture audio — try again.")
             return
         }
         transcribeVoiceIntent(url)
@@ -212,7 +212,7 @@ struct AdaptPanel: View {
                 await MainActor.run {
                     transcribing = false
                     guard !intent.isEmpty else {
-                        adaptError = "Didn't catch anything — try again."
+                        adaptError = L("Didn't catch anything — try again.")
                         return
                     }
                     customIntent = intent
@@ -232,7 +232,7 @@ struct AdaptPanel: View {
         guard Settings.shared.saveHistory else {
             // History is off (S14) — History.add() would silently early-return, so don't
             // claim a save that never reached disk. Surface why instead.
-            adaptError = "History saving is off — enable it in Settings to keep this."
+            adaptError = L("History saving is off — enable it in Settings to keep this.")
             return
         }
         History.shared.add(original: source, reprompted: adaptResult,

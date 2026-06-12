@@ -10,13 +10,13 @@ struct FreeMonthView: View {
             VStack(alignment: .leading, spacing: 22) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(L("Free Month")).font(.system(size: 17, weight: .bold))
-                    Text("Give a month, get a month. Share Verba and earn free Pro, no limit.")
+                    Text(L("Give a month, get a month. Share Verba and earn free Pro, no limit."))
                         .font(.callout).foregroundStyle(.secondary)
                 }
 
                 // Share link
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Your referral link").font(.subheadline.weight(.semibold))
+                    Text(L("Your referral link")).font(.subheadline.weight(.semibold))
                     HStack {
                         Text(settings.referralLink).font(.system(.callout, design: .monospaced)).lineLimit(1).truncationMode(.middle)
                         Spacer()
@@ -27,14 +27,14 @@ struct FreeMonthView: View {
                                 withAnimation(.easeOut(duration: 0.2)) { copied = false }
                             }
                         } label: {
-                            Label(copied ? "Copied" : "Copy link", systemImage: copied ? "checkmark" : "doc.on.doc")
+                            Label(copied ? L("Copied") : L("Copy link"), systemImage: copied ? "checkmark" : "doc.on.doc")
                         }
                         .glassProminentButton().tint(.primary)
                     }
                     .padding(12).frame(maxWidth: .infinity)
                     .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     HStack {
-                        Button { share() } label: { Label("Share…", systemImage: "square.and.arrow.up") }
+                        Button { share() } label: { Label(L("Share…"), systemImage: "square.and.arrow.up") }
                             .glassButton()
                         Spacer()
                     }
@@ -45,16 +45,16 @@ struct FreeMonthView: View {
 
                 // How it works
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("How it works").font(.subheadline.weight(.semibold))
-                    step("1", "Share your link", "Send your personal link to friends and colleagues.")
-                    step("2", "They subscribe to Pro", "They sign up through your link and start a paid Verba Pro plan.")
-                    step("3", "They actually use it", "Once they've dictated at least 15,000 words, the referral is validated.")
-                    step("4", "You get a free month", "One free month of Pro per validated friend. Unlimited, three friends = three months.")
+                    Text(L("How it works")).font(.subheadline.weight(.semibold))
+                    step("1", L("Share your link"), L("Send your personal link to friends and colleagues."))
+                    step("2", L("They subscribe to Pro"), L("They sign up through your link and start a paid Verba Pro plan."))
+                    step("3", L("They actually use it"), L("Once they've dictated at least 15,000 words, the referral is validated."))
+                    step("4", L("You get a free month"), L("One free month of Pro per validated friend. Unlimited, three friends = three months."))
                 }
                 .padding(18).frame(maxWidth: .infinity, alignment: .leading)
                 .background(.softFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
 
-                Text("Conditions: the invited person must be a paying subscriber (not just signed up) and have dictated 15,000+ words. Self-referrals don't count.")
+                Text(L("Conditions: the invited person must be a paying subscriber (not just signed up) and have dictated 15,000+ words. Self-referrals don't count."))
                     .font(.caption).foregroundStyle(.tertiary).fixedSize(horizontal: false, vertical: true)
             }
             .padding(28)

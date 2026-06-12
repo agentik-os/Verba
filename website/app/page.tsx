@@ -28,6 +28,7 @@ export default function Home() {
       <SpeedProof />
       <LogosStrip />
       <Personas />
+      <JarvisAction />
       <TryNow />
       <ContextMode />
       <NotesTab />
@@ -51,11 +52,84 @@ export default function Home() {
   );
 }
 
+const JARVIS_APPS = [
+  "gmail", "slack", "notion", "googlecalendar", "github", "googlesheets", "googledocs",
+  "googledrive", "outlook", "linear", "jira", "asana", "trello", "hubspot", "salesforce",
+  "stripe", "shopify", "figma", "discord", "zoom", "dropbox", "airtable", "todoist",
+  "calendly", "intercom", "zendesk", "mailchimp", "twitter", "linkedin", "reddit",
+  "youtube", "spotify", "telegram", "clickup", "gitlab", "sentry", "supabase", "posthog",
+  "docusign", "webflow", "canva", "hubspot",
+];
+
+function JarvisAction() {
+  return (
+    <section id="jarvis" className="py-28">
+      <Reveal>
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center">
+          <HeadLeft
+            eyebrow="New · JARVIS"
+            index="00"
+            anchor
+            title={<>Speak it.<br />JARVIS does it.</>}
+            lead="Action mode is now JARVIS, a voice agent that understands what you mean, however you phrase it. It plans the steps, asks a quick question when something is ambiguous or missing, shows you exactly what it will do, and only acts once you confirm, on your Mac and across 1,000+ connected apps."
+          />
+          <div>
+            <PanelCaption>00 · JARVIS, Action feed</PanelCaption>
+            <div className="panel r-panel p-6">
+              <div className="flex items-center gap-2 pf-55">
+                <span aria-hidden>✦</span>
+                <span className="mono-meta">JARVIS</span>
+              </div>
+              <div className="ptint mt-4 rounded-xl border pborder p-4">
+                <div className="text-[13px] font-medium pf-90">Email the team I&apos;m running late</div>
+                <div className="mt-1 text-[12px] pf-55">&ldquo;send an email to the team that I&apos;m running 10 minutes late&rdquo;</div>
+                <div className="mt-3 flex gap-2">
+                  <span className="rounded-full border pborder px-3 py-1 text-[11px] pf-55">Cancel</span>
+                  <span className="rounded-full bg-[var(--fg)] px-3 py-1 text-[11px] font-semibold text-[var(--bg)]">✓ Confirm · Gmail</span>
+                </div>
+              </div>
+              <ul className="mt-5 space-y-2 text-[13px] pf-70">
+                <li>Interprets any phrasing, it recovers the real intent.</li>
+                <li>Asks when it is unsure, a Google Meet, or just a calendar block?</li>
+                <li>Missing a detail? It shows editable fields to fill in.</li>
+                <li>It never writes anything without your confirmation.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-14">
+          <div className="flex items-baseline justify-between">
+            <h3 className="text-lg font-semibold">Connect 1,000+ apps</h3>
+            <span className="muted text-sm">one secure tap to connect</span>
+          </div>
+          <div className="mt-5 grid grid-cols-6 gap-3 sm:grid-cols-9 lg:grid-cols-11">
+            {JARVIS_APPS.map((s, i) => (
+              <div
+                key={`${s}-${i}`}
+                className="flex aspect-square items-center justify-center rounded-xl glass p-2 transition-transform duration-150 hover:scale-110"
+                title={s}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`https://logos.composio.dev/api/${s}`} alt={s} className="h-7 w-7 object-contain" loading="lazy" />
+              </div>
+            ))}
+            <div className="flex aspect-square items-center justify-center rounded-xl glass p-2 text-center text-[12px] font-semibold muted">
+              +1000
+            </div>
+          </div>
+        </div>
+      </Reveal>
+    </section>
+  );
+}
+
 function Nav() {
   return (
     <nav className="anim-nav sticky top-3 z-50 mt-3 flex items-center justify-between rounded-full glass px-5 py-2.5">
       <Logo />
       <div className="hidden items-center gap-7 text-sm muted sm:flex">
+        <a href="#jarvis" className="transition-colors duration-150 hover:text-[var(--fg)]">JARVIS</a>
         <a href="#why" className="transition-colors duration-150 hover:text-[var(--fg)]">Why Verba</a>
         <a href="#notes" className="transition-colors duration-150 hover:text-[var(--fg)]">Notes</a>
         <a href="#translate" className="transition-colors duration-150 hover:text-[var(--fg)]">Translate</a>
@@ -133,7 +207,7 @@ function Hero() {
         </div>
       </div>
 
-      {/* Right: THE focal artifact — the live talk → clean text demonstration,
+      {/* Right: THE focal artifact, the live talk → clean text demonstration,
           layered above the flux backdrop. */}
       <div className="anim-demo relative z-10 lg:pl-2">
         <div className="glow-rec" />
@@ -143,7 +217,7 @@ function Hero() {
   );
 }
 
-/* SPEED-PROOF — your mouth is faster than your hands. The SpeedRace canvas makes
+/* SPEED-PROOF, your mouth is faster than your hands. The SpeedRace canvas makes
    the 150 vs 40 wpm gap visceral, sitting inside product chrome near the top. */
 function SpeedProof() {
   return (
@@ -179,7 +253,7 @@ function SpeedProof() {
   );
 }
 
-/* PERSONAS — who it's for, in one line each. Benefit-led, talk once and move on. */
+/* PERSONAS, who it's for, in one line each. Benefit-led, talk once and move on. */
 function Personas() {
   const personas: { name: string; line: string }[] = [
     { name: "Founders", line: "Clear the inbox, the doc, and the standup notes between meetings. Talk once, send clean, move on." },
@@ -296,14 +370,14 @@ function Bento() {
       </Reveal>
 
       <div className="mt-12 grid auto-rows-[150px] grid-cols-2 gap-3 lg:grid-cols-4">
-        {/* hero bento tile — solid product chrome, carries the headline number */}
+        {/* hero bento tile, solid product chrome, carries the headline number */}
         <Reveal className="col-span-2 row-span-2">
           <div className="panel r-panel flex h-full flex-col justify-between p-7">
             <span className="rec-dot" />
             <div>
               <div className="t-anchor tnum">0&nbsp;bytes</div>
               <p className="mt-3 font-medium">of audio leave your Mac</p>
-              <p className="mt-1.5 max-w-sm text-sm text-white/55">On-device mode transcribes locally, so your audio never leaves the Mac. Transcripts go to your local history, which you can switch off or auto-delete. Cloud tools upload every word; Verba doesn't have to.</p>
+              <p className="mt-1.5 max-w-sm text-sm pf-55">On-device mode transcribes locally, so your audio never leaves the Mac. Transcripts go to your local history, which you can switch off or auto-delete. Cloud tools upload every word; Verba doesn't have to.</p>
             </div>
           </div>
         </Reveal>
@@ -368,16 +442,16 @@ function ContextMode() {
             title={<>Your voice meets<br />your screen</>}
             lead="Press your shortcut, glance at the screen, and talk. Verba captures what you are looking at and writes from it. Reply to the email in front of you, summarize a document, comment on a photo, without touching the clipboard."
           />
-          {/* weighted hero tile — the focal example, in product chrome */}
+          {/* weighted hero tile, the focal example, in product chrome */}
           <div>
           <PanelCaption>01 · Context mode</PanelCaption>
           <div className="panel r-panel p-7">
-            <div className="flex items-center gap-3 text-white/55">
+            <div className="flex items-center gap-3 pf-55">
               <Icon name={hero.icon} className="h-5 w-5" />
               <span className="mono-meta">{hero.label}</span>
             </div>
-            <p className="mt-5 text-lg leading-relaxed text-white/90">"{hero.prompt}"</p>
-            <div className="mt-6 flex items-center gap-2 text-[12px] text-white/40">
+            <p className="mt-5 text-lg leading-relaxed pf-90">"{hero.prompt}"</p>
+            <div className="mt-6 flex items-center gap-2 text-[12px] pf-40">
               <span className="rec-dot" /> Reads your screen, then writes the reply in place.
             </div>
           </div>
@@ -467,24 +541,24 @@ function NotesTab() {
         <PanelCaption>02 · One hour of voice, one document</PanelCaption>
         <div className="panel r-panel overflow-hidden">
           <div className="grid sm:grid-cols-2">
-            <div className="p-8 sm:border-r sm:border-white/[0.06]">
+            <div className="p-8 sm:border-r sm:pborder">
               <p className="mono-meta">Example</p>
-              <p className="mt-3 text-[17px] font-medium leading-snug text-white/90">
+              <p className="mt-3 text-[17px] font-medium leading-snug pf-90">
                 "So the standup ran long today, we decided to push the API milestone to next Friday,
                 the auth bug is now Alex's, and I need to follow up with design about the onboarding
                 flow by Thursday..."
               </p>
-              <p className="mt-3 flex items-center gap-2 text-sm text-white/45"><span className="rec-dot" /> 40 seconds of voice · Meeting notes format</p>
+              <p className="mt-3 flex items-center gap-2 text-sm pf-45"><span className="rec-dot" /> 40 seconds of voice · Meeting notes format</p>
             </div>
             <div className="p-8">
               <p className="mono-meta">Verba produces</p>
-              <div className="mt-3 rounded-lg border border-white/[0.07] bg-black/40 p-4 font-mono text-sm leading-relaxed">
-                <p className="font-semibold text-white/90">## Standup notes</p>
-                <p className="mt-1 text-white/55">**API milestone** pushed to next Friday</p>
-                <p className="text-white/55">**Auth bug** assigned to Alex</p>
-                <p className="text-white/55">**Action:** follow up with design on onboarding flow by Thursday</p>
+              <div className="mt-3 rounded-lg border pborder pbg p-4 font-mono text-sm leading-relaxed">
+                <p className="font-semibold pf-90">## Standup notes</p>
+                <p className="mt-1 pf-55">**API milestone** pushed to next Friday</p>
+                <p className="pf-55">**Auth bug** assigned to Alex</p>
+                <p className="pf-55">**Action:** follow up with design on onboarding flow by Thursday</p>
               </div>
-              <p className="mt-3 text-xs text-white/40">Rendered markdown · editable · copyable · tagged and synced.</p>
+              <p className="mt-3 text-xs pf-40">Rendered markdown · editable · copyable · tagged and synced.</p>
             </div>
           </div>
         </div>
@@ -529,7 +603,7 @@ function NotesTab() {
 
 function LanguageDetection() {
   // Spoken = raw speech (filler, no caps/punctuation); written = the same language,
-  // cleaned. The mode tag shows this is Flow (verbatim) — that's why it stays in your
+  // cleaned. The mode tag shows this is Flow (verbatim), that's why it stays in your
   // language word-for-word, just tidied up.
   const pairs = [
     { mode: "Flow · FR", spoken: "euh bonjour j'aurais besoin d'aide avec mon compte", written: "Bonjour, j'ai besoin d'aide avec mon compte." },
@@ -553,7 +627,7 @@ function LanguageDetection() {
             <div className="card lift r-card p-5">
               <div className="flex items-center justify-between">
                 <p className="eyebrow">You say</p>
-                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/55">{mode}</span>
+                <span className="rounded-full border pborder ptint px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide pf-55">{mode}</span>
               </div>
               <p className="mt-1.5 text-sm muted italic">"{spoken}"</p>
               <p className="mt-3 eyebrow">Verba writes</p>
@@ -596,26 +670,26 @@ function VoiceTodos() {
         <PanelCaption>03 · Voice task manager</PanelCaption>
         <div className="panel r-panel overflow-hidden">
           <div className="grid sm:grid-cols-2">
-            <div className="p-8 sm:border-r sm:border-white/[0.06]">
+            <div className="p-8 sm:border-r sm:pborder">
               <p className="mono-meta">You say</p>
-              <p className="mt-3 text-[17px] font-medium leading-snug text-white/90">
+              <p className="mt-3 text-[17px] font-medium leading-snug pf-90">
                 "Add to my groceries: tomatoes, pasta and parmesan. Oh and I already bought the bread.
                 Pay the electricity bill Friday at 6pm."
               </p>
-              <p className="mt-3 flex items-center gap-2 text-sm text-white/45"><span className="rec-dot" /> One press, one sentence.</p>
+              <p className="mt-3 flex items-center gap-2 text-sm pf-45"><span className="rec-dot" /> One press, one sentence.</p>
             </div>
             <div className="p-8">
               <p className="mono-meta">Verba does</p>
-              <div className="mt-3 space-y-2 rounded-lg border border-white/[0.07] bg-black/40 p-4 text-sm text-white/85">
+              <div className="mt-3 space-y-2 rounded-lg border pborder pbg p-4 text-sm pf-85">
                 <p className="font-semibold text-white">Groceries</p>
-                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/30" /> Tomatoes</p>
-                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/30" /> Pasta</p>
-                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/30" /> Parmesan</p>
-                <p className="flex items-center gap-2 text-white/40 line-through"><Icon name="check" className="h-4 w-4 text-[#6ee7a8]" /> Bread</p>
+                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border pborder30" /> Tomatoes</p>
+                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border pborder30" /> Pasta</p>
+                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border pborder30" /> Parmesan</p>
+                <p className="flex items-center gap-2 pf-40 line-through"><Icon name="check" className="h-4 w-4 text-[#6ee7a8]" /> Bread</p>
                 <p className="mt-2 font-semibold text-white">Bills</p>
-                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/30" /> Pay electricity <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-xs tnum">Fri 18:00</span></p>
+                <p className="flex items-center gap-2"><span className="inline-flex h-4 w-4 items-center justify-center rounded-full border pborder30" /> Pay electricity <span className="rounded ptint10 px-1.5 py-0.5 font-mono text-xs tnum">Fri 18:00</span></p>
               </div>
-              <p className="mt-3 text-xs text-white/40">Filed, dated, and one already checked, automatically.</p>
+              <p className="mt-3 text-xs pf-40">Filed, dated, and one already checked, automatically.</p>
             </div>
           </div>
         </div>
@@ -718,7 +792,7 @@ function WhyBest() {
         />
       </Reveal>
 
-      {/* Social-proof bar — truthful, verifiable signals of a serious, live product. */}
+      {/* Social-proof bar, truthful, verifiable signals of a serious, live product. */}
       <Reveal delay={40}>
         <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
@@ -781,9 +855,9 @@ function ModesModels() {
             <div className={`${isContext ? "panel" : "card lift"} r-card flex h-full flex-col p-6 ${isContext ? "col-span-full sm:col-span-2 lg:col-span-3" : ""}`}>
               <div className="flex items-center justify-between">
                 <h3 className={`font-medium ${isContext ? "text-white" : ""}`}>{mode}</h3>
-                <span className={`rounded-full px-2.5 py-1 font-mono text-[11px] tnum ${isContext ? "border border-white/10 bg-white/[0.05] text-white/70" : "border border-[var(--border)] bg-[var(--tint)]"}`}>{model}</span>
+                <span className={`rounded-full px-2.5 py-1 font-mono text-[11px] tnum ${isContext ? "border pborder ptint pf-70" : "border border-[var(--border)] bg-[var(--tint)]"}`}>{model}</span>
               </div>
-              <p className={`mt-2 text-sm ${isContext ? "text-white/60" : "muted"}`}>{desc}</p>
+              <p className={`mt-2 text-sm ${isContext ? "pf-60" : "muted"}`}>{desc}</p>
             </div>
           </Reveal>
           );
@@ -797,7 +871,7 @@ function CompareTeaser() {
   return (
     <section className="py-28">
       <Reveal>
-        {/* THE INVERSION — the page's single light surface [G7] */}
+        {/* THE INVERSION, the page's single light surface [G7] */}
         <div className="r-panel relative overflow-hidden border border-black/10 bg-[#f4f2ee] px-8 py-16 text-center text-[#0a0a0c] sm:px-12 sm:py-20" style={{ boxShadow: "var(--panel-shadow)" }}>
           <div className="mx-auto mb-7 w-fit"><MicMark size={40} glyph={20} /></div>
           <h2 className="t-statement mx-auto max-w-3xl text-balance">Cloud tools upload your voice. Verba doesn't.</h2>
@@ -825,6 +899,7 @@ function FeatureBlurbs() {
     { name: "Translate as you speak", problem: "Writing in a second language means drafting, copying into a translator, then pasting back. Three steps, every message.", example: "Pick a target language once. Speak French, Verba writes fluent English in place. Tone, names, and numbers preserved." },
     { name: "Bring your own AI", problem: "Cloud dictation tools lock you into their model and charge a markup on every word.", example: "Use your Anthropic key, OpenRouter, your existing Claude Code plan with no key at all, or a fully local Ollama model." },
     { name: "It learns how you write", problem: "Generic rewriters flatten your voice into the same corporate template every time.", example: "Correct a word once and Verba remembers it. It matches your tone per app, so you in Slack still sounds like you." },
+    { name: "Chain dictations, never wait", problem: "Other tools make you sit through processing before you can speak again.", example: "Fire off dictation after dictation: each one still working stacks up as a little chip above the pill, 10 or 20 at a time, and lands the moment it's ready." },
     { name: "Runs fully offline", problem: "Cloud tools upload every word you speak and stop working the moment your connection drops.", example: "Parakeet ships inside the app and transcribes on-device, instantly, in 25 languages. Pair a local model and nothing leaves your Mac." },
   ];
   return (
@@ -886,7 +961,7 @@ function Features() {
         lead="Sixteen more things Verba does once your cursor is in the box. The headline move is dictation anywhere; these are why people stay."
       />
       <div className="mt-12 grid gap-3 lg:grid-cols-3">
-        {/* hero feature — weighted, in product chrome, breaks the equal grid */}
+        {/* hero feature, weighted, in product chrome, breaks the equal grid */}
         <div className="lg:row-span-2">
         <PanelCaption>10 · The core move</PanelCaption>
         <div className="panel r-card flex h-full flex-col justify-between p-7">
@@ -895,7 +970,7 @@ function Features() {
           </div>
           <div className="mt-10">
             <h3 className="text-xl font-semibold text-white">{hero[0]}</h3>
-            <p className="mt-2.5 text-[15px] leading-relaxed text-white/60">{hero[1]}</p>
+            <p className="mt-2.5 text-[15px] leading-relaxed pf-60">{hero[1]}</p>
           </div>
         </div>
         </div>
@@ -979,7 +1054,7 @@ function Shortcuts() {
       blurb: "Rewrite any selection, or speak a command that runs your Mac.",
       rows: [
         { keys: ["⌥", "X"], desc: "Transform picker on selected text", use: "Select a clumsy paragraph anywhere, press it, pick a numbered transform, and it rewrites in place." },
-        { keys: ["fn", "X"], desc: "Action mode, control your Mac by voice", use: "\"Set a timer for 10 minutes\" or \"play my focus playlist.\" Your voice runs your Mac, confirmed before it acts." },
+        { keys: ["fn", "X"], desc: "JARVIS, an assistant that acts for you", use: "Speak any request, however it comes out. Verba works out what you mean, plans the steps, and acts, on your Mac or your connected apps (Gmail, Slack, Notion, Calendar…), always confirmed before it does anything." },
       ],
     },
   ];
@@ -1122,7 +1197,7 @@ function Pricing() {
       </div>
 
       <div className="mx-auto mt-10 grid max-w-3xl gap-4 sm:grid-cols-2">
-        {/* Free — flat supporting card */}
+        {/* Free, flat supporting card */}
         <div className="card r-panel p-8">
           <h3 className="text-lg font-medium">Free</h3>
           <div className="mt-3 font-mono text-4xl font-semibold tnum">$0</div>
@@ -1138,20 +1213,20 @@ function Pricing() {
           <p className="mt-3 text-center font-mono text-[11px] tracking-wide faint tnum">Requires Apple Silicon · macOS 14+</p>
         </div>
 
-        {/* Pro — the ONE glass-budget moment among pricing: solid panel chrome */}
+        {/* Pro, the ONE glass-budget moment among pricing: solid panel chrome */}
         <div ref={proRef} className="panel r-panel p-8" style={{ borderColor: "var(--border-warm)" }}>
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium text-white">Pro</h3>
-            <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs text-white/70">
+            <span className="flex items-center gap-1.5 rounded-full border pborder ptint px-2.5 py-1 text-xs pf-70">
               <span className="rec-dot" /> Most popular
             </span>
           </div>
           <div className="mt-3 flex items-end gap-1 text-white">
             <span className="font-mono text-4xl font-semibold tnum">{PRICE[plan].amount}</span>
-            <span className="mb-1 text-sm text-white/50">{PRICE[plan].sub}</span>
+            <span className="mb-1 text-sm pf-50">{PRICE[plan].sub}</span>
           </div>
-          <p className="mt-1 text-sm text-white/50 tnum">{PRICE[plan].note} · 7-day trial, card required</p>
-          <ul className="mt-6 space-y-2.5 text-sm text-white/85">
+          <p className="mt-1 text-sm pf-50 tnum">{PRICE[plan].note} · 7-day trial, card required</p>
+          <ul className="mt-6 space-y-2.5 text-sm pf-85">
             {["Unlimited dictation", "All modes + custom modes", "Voice-command formatting", "Sync across your Macs", "Priority support"].map((b) => (
               <li key={b} className="flex items-center gap-2.5"><span className="inline-flex h-4 w-4 items-center justify-center rounded-[4px] bg-white text-black"><MicGlyph size={8} /></span>{b}</li>
             ))}
@@ -1159,7 +1234,7 @@ function Pricing() {
           {isSignedIn ? (
             <>
               {justSignedIn && (
-                <p className="mt-6 flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-white/75">
+                <p className="mt-6 flex items-center gap-2 rounded-lg border pborder ptint px-3 py-2 text-xs pf-75">
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#6ee7a8]" />
                   You&rsquo;re signed in. Start your 7-day trial below.
                 </p>
@@ -1201,8 +1276,19 @@ function FAQ() {
     ["Do my notes sync across my Macs?", "Yes. Notes are tied to your Verba account, so they follow you when you sign in on another Mac. No iCloud setup needed."],
     ["How does the Translate mode work?", "Pick a target language once in the Translate mode (English, French, Spanish, German, Italian, Portuguese, Dutch, Russian, Chinese, Japanese, Korean, Arabic, Hindi, Turkish, Polish). Then just speak in whatever language is natural to you and Verba writes the result in your chosen language, every time, preserving tone, names, numbers and code. You can also make a dedicated mode per language and auto-switch it by app."],
   ];
+  // FAQPage structured data — Google FAQ rich results + LLM/AI-search (GEO) citation.
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: qa.map(([q, a]) => ({
+      "@type": "Question",
+      name: q,
+      acceptedAnswer: { "@type": "Answer", text: a },
+    })),
+  };
   return (
     <section className="py-28">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <Reveal>
         <HeadCenter
           eyebrow="FAQ"
@@ -1268,7 +1354,7 @@ function Footer() {
           </div>
         </div>
       </div>
-      {/* Bottom row: status + meta, all mono [C4 — the trust surface] */}
+      {/* Bottom row: status + meta, all mono [C4, the trust surface] */}
       <div className="mt-14 flex flex-wrap items-center justify-between gap-4 border-t hairline pt-6">
         <span className="mono-meta flex items-center gap-2">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#6ee7a8]" />

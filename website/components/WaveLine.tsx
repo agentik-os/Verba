@@ -72,7 +72,7 @@ export default function WaveLine({ className = "" }: { className?: string }) {
 
     function loop() {
       if (!visible) { raf = 0; return; }
-      t += reduce ? 0 : 0.6;
+      t += reduce ? 0 : 0.16;   // gentle, discreet drift (was too fast)
       draw();
       raf = reduce ? 0 : requestAnimationFrame(loop);
       if (reduce) draw();

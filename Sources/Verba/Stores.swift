@@ -588,12 +588,12 @@ final class TransformsStore: ObservableObject {
         let model = Settings.shared.claudeModel
         let sys = selectionSystemPrompt(for: transform)
         let sem = DispatchSemaphore(value: 0)
-        var out: SelectionOutcome = .failure("Transform failed. Try again.")
+        var out: SelectionOutcome = .failure(L("Transform failed. Try again."))
         let task = Task {
             do {
                 let text = try await Reprompter(model: model).reprompt(transcript: selection, systemPrompt: sys)
                 let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                out = trimmed.isEmpty ? .failure("Verba returned nothing for that selection.") : .success(trimmed)
+                out = trimmed.isEmpty ? .failure(L("Verba returned nothing for that selection.")) : .success(trimmed)
             } catch {
                 out = .failure((error as? LocalizedError)?.errorDescription ?? "Transform failed: \(error.localizedDescription)")
             }
@@ -605,7 +605,7 @@ final class TransformsStore: ObservableObject {
         // instead of leaking a late-arriving result the user never sees.
         if sem.wait(timeout: .now() + 60) == .timedOut {
             task.cancel()
-            return .failure("Timed out — the backend took too long. Try again.")
+            return .failure(L("Timed out — the backend took too long. Try again."))
         }
         return out
     }

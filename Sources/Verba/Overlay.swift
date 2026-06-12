@@ -11,7 +11,7 @@ enum CaptureContext {
         switch self {
         case .dictation: return L("Dictation")
         case .note:      return L("Note")
-        case .todo:      return "To-do"
+        case .todo:      return L("To-do")
         case .action:    return L("Action")
         }
     }
@@ -26,11 +26,18 @@ enum CaptureContext {
     }
 }
 
+/// Mic level + animation phase, updated ~25×/s by the recording timer. Kept in their OWN observable
+/// (NOT on OverlayModel) so that high-frequency timer only re-renders the Waveform — not the whole
+/// pill chrome (glass, label, buttons, picker). Re-rendering everything 25×/s was the pill's jank.
+final class WaveLevels: ObservableObject {
+    @Published var level: Float = 0      // 0...1 mic level
+    @Published var phase: Double = 0     // advanced by our own timer → animation never stalls
+}
+
 final class OverlayModel: ObservableObject {
     @Published var context: CaptureContext = .dictation   // what this capture is for (badge)
     @Published var modeName: String = ""  // active reprompt mode for the badge ("" = none, e.g. Note/To-do)
-    @Published var level: Float = 0      // 0...1 mic level
-    @Published var phase: Double = 0     // advanced by our own timer → animation never stalls
+    let waves = WaveLevels()             // high-freq mic level + phase (isolated; see WaveLevels)
     @Published var title: String = ""    // "Listening…" / "Transcribing…" / etc.
     @Published var recording = false
     @Published var paused = false        // dictation paused
@@ -48,9 +55,15 @@ final class OverlayModel: ObservableObject {
     var onCancel: (() -> Void)?          // discard / abort whatever is happening
     @Published var style: OverlayStyle = .floating
     // Background captures still transcribing/polishing while THIS pill shows a new recording.
-    // Surfaced as a small "N processing" dot so the user retains awareness that earlier
-    // dictations are still in flight (and could still fail) — never silent.
-    @Published var inflightCount: Int = 0
+    // Each renders as its own small chip STACKED ABOVE the pill, so starting dictation #2 (or
+    // #20) never hides the ones still working — they all stay visible until they land.
+    @Published var inflightItems: [InflightChip] = []
+}
+
+/// One in-flight dictation surfaced above the pill (id = its Session id).
+struct InflightChip: Identifiable, Equatable {
+    let id: UUID
+    let modeName: String
 }
 
 /// The recording indicator. Two looks (set in Settings ▸ Recording):
@@ -70,16 +83,42 @@ struct OverlayView: View {
     }
 
     // MARK: Floating glass (full)
+    //
+    // Layout: every still-processing dictation gets its own chip STACKED ABOVE the active pill
+    // (newest just above, oldest on top — they "move up" as new recordings start). The window is
+    // bottom-anchored, so the stack grows upward and 10–20 in-flight captures all stay visible.
     private var floating: some View {
+        VStack(spacing: 6) {
+            ForEach(visibleInflight) { chip in inflightChip(chip) }
+            pill
+        }
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: model.inflightItems)
+    }
+
+    /// While recording, EVERY in-flight capture is a previous one → show them all. When idle/
+    /// processing, the pill itself embodies the newest capture → chip only the older ones.
+    private var visibleInflight: [InflightChip] {
+        if model.recording { return model.inflightItems }
+        return model.inflightItems.count > 1 ? Array(model.inflightItems.dropLast()) : []
+    }
+
+    /// One small "still working" chip: spinner + the mode it was dictated in.
+    private func inflightChip(_ chip: InflightChip) -> some View {
+        HStack(spacing: 7) {
+            ProgressView().controlSize(.small).scaleEffect(0.62)
+            Text(chip.modeName.isEmpty ? L("Processing…") : chip.modeName)
+                .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 5)
+        .glass(in: Capsule(style: .continuous))
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+
+    private var pill: some View {
         VStack(spacing: 8) {
             HStack(spacing: 12) {
                 leading(big: true)
-                // Background-capture awareness: when a NEW recording is live but earlier
-                // dictations are still transcribing/polishing in the background, show a small
-                // "N" dot so the user never loses track of pending captures that may still fail.
-                if model.recording, model.inflightCount > 0 {
-                    inflightDot(model.inflightCount)
-                }
                 if model.recording {
                     Button { model.onPauseToggle?() } label: {
                         Image(systemName: model.paused ? "play.fill" : "pause.fill").font(.system(size: 11))
@@ -88,7 +127,7 @@ struct OverlayView: View {
                     // Live meter while recording; when paused, hide it (a level-0 waveform renders as a
                     // sad dashed line) — the orange dot + play button + "Paused" already read clearly.
                     if !model.paused {
-                        Waveform(level: model.level, phase: model.phase).frame(width: 64, height: 24)
+                        Waveform(waves: model.waves).frame(width: 64, height: 24)
                     }
                 }
                 label(size: 13)
@@ -105,7 +144,7 @@ struct OverlayView: View {
                             // escape hatch but was only ever a tooltip. Surface it inline so users
                             // (esp. push-to-talk) can discover it during recording/processing.
                             if showEscHint {
-                                Text("esc").font(.system(size: 10, weight: .semibold))
+                                Text(L("esc")).font(.system(size: 10, weight: .semibold))
                                     .foregroundStyle(.secondary).opacity(0.7)
                                     .lineLimit(1).fixedSize()   // never wrap to "es / c"
                                     .padding(.trailing, 1)
@@ -114,7 +153,7 @@ struct OverlayView: View {
                         .padding(8).contentShape(Rectangle())   // big, always-hittable target
                     }
                     .buttonStyle(.plain)
-                    .help("Cancel (Esc)")
+                    .help(L("Cancel (Esc)"))
                     .allowsHitTesting(true)   // never let an overlaid ProgressView swallow the click
                 }
             }
@@ -131,7 +170,7 @@ struct OverlayView: View {
         .animation(.easeInOut(duration: 0.22), value: model.done)
         .animation(.easeInOut(duration: 0.22), value: model.title)
         .animation(.easeInOut(duration: 0.22), value: model.modeName)
-        .animation(.easeInOut(duration: 0.22), value: model.inflightCount)
+        .animation(.easeInOut(duration: 0.22), value: model.inflightItems)
     }
 
     // MARK: Minimal top bar
@@ -139,7 +178,7 @@ struct OverlayView: View {
         VStack(spacing: 6) {
             HStack(spacing: 8) {
                 leading(big: false)
-                Waveform(level: model.paused ? 0 : model.level, phase: model.phase).frame(width: 54, height: 14)
+                Waveform(waves: model.waves, muted: model.paused).frame(width: 54, height: 14)
                 if !model.title.isEmpty { Text(model.title).font(.system(size: 11, weight: .medium)).lineLimit(1) }
             }
             if model.menu { picker(font: 10) }   // only surfaces when picking a mode
@@ -163,16 +202,6 @@ struct OverlayView: View {
         !model.menu && !model.done && !model.error && !model.info && !model.modeHint
     }
 
-    /// Small "N" dot for background captures still in flight while a new recording runs.
-    private func inflightDot(_ n: Int) -> some View {
-        Text("\(n)")
-            .font(.system(size: 10, weight: .bold))
-            .foregroundStyle(.secondary)
-            .frame(minWidth: 16, minHeight: 16)
-            .background(Color.primary.opacity(VGlass.fillSelected), in: Circle())
-            .help("\(n) earlier \(n == 1 ? "dictation is" : "dictations are") still processing")
-            .transition(.opacity)
-    }
 
     // MARK: Shared pieces
     @ViewBuilder private func leading(big: Bool) -> some View {
@@ -190,7 +219,7 @@ struct OverlayView: View {
             Circle()
                 .fill(model.paused ? Color.orange : VerbaAppearance.shared.accentOr(.red))
                 .frame(width: big ? 10 : 8, height: big ? 10 : 8)
-                .opacity(model.paused ? 1 : 0.6 + Double(model.level) * 0.4)
+                .opacity(model.paused ? 1 : 0.9)
         } else {
             ProgressView().controlSize(.small).scaleEffect(big ? 0.8 : 0.6)
         }
@@ -211,7 +240,7 @@ struct OverlayView: View {
         } else if model.menu {
             Text(L("Choose a mode")).font(.system(size: size, weight: .medium)).lineLimit(1)
         } else if model.paused {
-            Text("Paused").font(.system(size: size, weight: .medium)).lineLimit(1)
+            Text(L("Paused")).font(.system(size: size, weight: .medium)).lineLimit(1)
         } else {
             // "Listening · Custom" → "Listening" + a black tag with the full mode name in white.
             // Both use fixedSize so the mode tag never gets compressed/truncated — it always
@@ -262,7 +291,7 @@ struct OverlayView: View {
             .buttonStyle(.plain)
             .menuIndicator(.hidden)
             .fixedSize()
-            .help("Switch mode — keeps recording")
+            .help(L("Switch mode — keeps recording"))
         } else {
             // Static (non-switchable) tag: no chevron AND a slightly muted fill so it reads as a
             // plain label, not a dead-looking copy of the interactive switcher (which carries the
@@ -304,12 +333,14 @@ struct OverlayView: View {
 /// Lively meter. Motion is driven by `phase` (advanced by our own recording timer),
 /// so it never stalls, unlike TimelineView, which pauses while another app is active.
 private struct Waveform: View {
-    let level: Float
-    let phase: Double
+    @ObservedObject var waves: WaveLevels
+    var muted: Bool = false              // paused → render a flat, quiet meter
     private let bars = 11
     private let maxH: CGFloat = 24
 
     var body: some View {
+        let level = muted ? 0 : waves.level
+        let phase = waves.phase
         let lvl = CGFloat(max(0.05, min(1, level)))
         HStack(spacing: 2.5) {
             ForEach(0..<bars, id: \.self) { i in
@@ -332,7 +363,7 @@ private struct Waveform: View {
 final class OverlayController {
     let model = OverlayModel()
     private var panel: NSPanel?
-    private var sizeObserver: AnyCancellable?
+    private var resizeObserver: NSObjectProtocol?
     private var lastSize: NSSize = .zero
 
     /// Build the panel ahead of time so the first show() is instant.
@@ -360,19 +391,25 @@ final class OverlayController {
         host.view.layer?.masksToBounds = true
         panel = p
         p.layoutIfNeeded()             // warm the SwiftUI render
-        // Keep the pill centered when its content size changes (recording → transcribing →
-        // done all have different widths, which otherwise leaves it visibly off-center).
-        sizeObserver = model.objectWillChange.sink { [weak self] in
-            DispatchQueue.main.async { self?.recenterIfSizeChanged() }
-        }
+        // SwiftUI animates the CONTENT size (the window auto-resizes via .preferredContentSize) as
+        // states change (listening → done/info, chips appearing). On EVERY resize step we just snap
+        // the window ORIGIN so the content stays centered + bottom-anchored — instead of animating
+        // the whole window frame ourselves, which used to fight SwiftUI's size animation and leave
+        // done/info flashes visibly off-center from the listening pill.
+        resizeObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didResizeNotification, object: p, queue: .main
+        ) { [weak self] _ in self?.snapOrigin() }
     }
 
-    private func recenterIfSizeChanged() {
-        guard let panel, panel.isVisible else { return }
-        panel.layoutIfNeeded()
-        guard let size = panel.contentView?.fittingSize, size != lastSize else { return }
-        lastSize = size
-        reposition(animated: true)
+    /// Keep the window centered on screen-X and bottom-anchored, recomputed from its CURRENT size.
+    private func snapOrigin() {
+        guard let panel, panel.isVisible, let screen = NSScreen.main, model.style == .floating else { return }
+        let vf = screen.visibleFrame
+        let size = panel.frame.size
+        let origin = NSPoint(x: vf.midX - size.width / 2, y: vf.minY + 90)
+        if abs(panel.frame.origin.x - origin.x) > 0.5 || abs(panel.frame.origin.y - origin.y) > 0.5 {
+            panel.setFrameOrigin(origin)   // snap, not animate — SwiftUI already animates the size
+        }
     }
 
     func show() {
