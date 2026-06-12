@@ -53,6 +53,25 @@ export default defineSchema({
     uid: v.string(), ts: v.number(),
   }).index("by_uid", ["uid"]),
 
+  tasks: defineTable({   // lightweight synced task manager (mobile-first; ts = identity)
+    uid: v.string(), ts: v.number(),
+    text: v.string(), done: v.boolean(),
+    due: v.optional(v.number()),
+  }).index("by_uid", ["uid"]),
+
+  tasks_deleted: defineTable({
+    uid: v.string(), ts: v.number(),
+  }).index("by_uid", ["uid"]),
+
+  dict: defineTable({   // personal dictionary terms (mirrors the Mac's DictTerm)
+    uid: v.string(), ts: v.number(),
+    spoken: v.string(), written: v.string(), auto: v.boolean(),
+  }).index("by_uid", ["uid"]),
+
+  dict_deleted: defineTable({
+    uid: v.string(), ts: v.number(),
+  }).index("by_uid", ["uid"]),
+
   feedback: defineTable({   // free-form user feedback (admin-reviewed), optional screenshot
     uid: v.string(), alias: v.string(), text: v.string(),
     version: v.optional(v.string()),
