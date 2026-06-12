@@ -165,6 +165,9 @@ export async function POST(req: NextRequest) {
 
   const description = [
     text,
+    // Screenshot goes RIGHT AFTER the feedback (not buried at the bottom) so it's the first thing
+    // you see. It also becomes a proper attachment below, so it shows even if inline rendering is off.
+    ...(assetUrl ? ["", `![screenshot](${assetUrl})`] : []),
     "",
     "---",
     "",
@@ -177,20 +180,30 @@ export async function POST(req: NextRequest) {
     `- **User:** ${user}`,
     tok ? `- **Verified email:** ${tok.email}` : `- **Identity:** unverified (no app token)`,
     `- **Submitted:** ${new Date().toISOString()}`,
-    ...(assetUrl ? ["", "## Screenshot", "", `![screenshot](${assetUrl})`] : []),
   ].join("\n");
 
   try {
     type CreateResp = {
-      issueCreate: { success: boolean; issue: { identifier: string; url: string } | null };
+      issueCreate: { success: boolean; issue: { id: string; identifier: string; url: string } | null };
     };
     const data = await linear<CreateResp>(
       key,
-      `mutation($i:IssueCreateInput!){ issueCreate(input:$i){ success issue { identifier url } } }`,
+      `mutation($i:IssueCreateInput!){ issueCreate(input:$i){ success issue { id identifier url } } }`,
       { i: { teamId: TEAM_ID, projectId: PROJECT_ID, stateId: BACKLOG_STATE_ID, title, description } }
     );
     if (!data.issueCreate?.success || !data.issueCreate.issue) {
       return NextResponse.json({ ok: false, error: "Couldn't file the feedback issue." }, { status: 502, headers: cors });
+    }
+    // Also attach the screenshot as a proper Linear attachment (a visible card), so it shows even
+    // if the inline markdown image doesn't render — belt and suspenders for "is the image visible?".
+    if (assetUrl) {
+      try {
+        await linear(
+          key,
+          `mutation($id:String!,$url:String!){ attachmentCreate(input:{ issueId:$id, title:"Screenshot", subtitle:"User-attached screenshot", url:$url }){ success } }`,
+          { id: data.issueCreate.issue.id, url: assetUrl }
+        );
+      } catch { /* non-fatal: the inline embed already carries the image */ }
     }
     return NextResponse.json({ ok: true, url: data.issueCreate.issue.url }, { headers: cors });
   } catch (e) {
