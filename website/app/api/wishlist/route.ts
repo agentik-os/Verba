@@ -35,6 +35,7 @@ type WishItem = {
   text: string;
   author: string;
   votes: number;
+  created?: number;         // ms epoch from Convex; drives the newest-first tie-break
   mine?: boolean;
   shipped?: boolean;        // persisted in Convex (durable across Linear board changes)
   shippedAt?: number | null;
@@ -228,7 +229,7 @@ export async function GET() {
       return { ...base, shipped: true, shippedAt: new Date(shippedAtMs).toISOString() };
     })
   );
-  merged.sort((a, b) => b.votes - a.votes);
+  merged.sort((a, b) => b.votes - a.votes || (b.created ?? 0) - (a.created ?? 0));
 
   return NextResponse.json({ ok: true, items: merged }, { headers: cors });
 }
@@ -284,8 +285,9 @@ async function handleAdd(body: Body) {
   try {
     const items = await convex<WishItem[]>("query", "wishlist:list", { uid, secret });
     const mine = items.filter((w) => w.text === stored && w.mine);
-    // list() has no created field; if several match, the marker still links the most likely one.
-    createdId = mine.length ? mine[mine.length - 1].id : null;
+    // Pick the most-recently-created match (list() now returns `created`); ties on text are rare.
+    const newest = mine.slice().sort((a, b) => (b.created ?? 0) - (a.created ?? 0))[0];
+    createdId = newest?.id ?? null;
   } catch {
     createdId = null;
   }

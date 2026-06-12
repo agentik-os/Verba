@@ -10,9 +10,10 @@ export const list = query({
     const all = await ctx.db.query("wishlist").collect();
     const isMe = a.uid && a.secret && (await deviceOk(ctx, a.uid, a.secret));
     return all
-      .sort((x, y) => y.votes - x.votes)
+      .sort((x, y) => y.votes - x.votes || y.created - x.created)   // votes desc, then newest-first
       .map((w) => ({
         id: w._id, text: w.text, author: w.author, votes: w.votes,
+        created: w.created,
         mine: isMe ? w.voters.includes(a.uid!) : false,
         shipped: w.shipped === true,
         shippedAt: w.shippedAt ?? null,
