@@ -10,6 +10,9 @@ export interface PlannerCtx {
   toolCatalog: { slug: string; description: string; readOnly: boolean }[];
   /// Slugs the local BM25 ranker found most relevant to this request (a shortlist hint).
   relevant?: string[];
+  /// Full argument schemas for the most likely tools, e.g. `PERPLEXITY_AI_SEARCH(messages: array of
+  /// {role: string, content: string} (required); model: string)`. Match these EXACTLY.
+  schemas?: string[];
   shortcuts: string[];
   searchTargets: string[];
   disabled: string[];
@@ -87,6 +90,8 @@ HARD RULES:
    apple_script:    {"type":"apple_script","label":"...","script":"..."}   // last resort
 - Use ONLY tool slugs / shortcut names / search targets that appear below. Never invent one.
 - For a composio action, put the tool's arguments under EXACTLY the keys shown in that tool's "[args: …]" hint (e.g. GMAIL_SEND_EMAIL → recipient_email, subject, body — never "to"/"text"). Fill every argument the request implies.
+- RESOLVE HUMAN IDENTIFIERS TO INTERNAL IDs: when a tool needs an internal id (a UUID, a numeric id, a channel/team id) but the user gave a human one (a display key like ENG-142, a person's name, an email, a repo name), FIRST needRead a search/list/get tool to resolve it, then use the real id. Never pass a spoken display key where the schema wants an internal id.
+- SCHEMA CONFORMANCE (load-bearing): your composio "arguments" MUST match the tool's schema in EXACT ARGUMENT SCHEMAS above — correct JSON types, every REQUIRED field present, and a field typed "array of {…}" emitted as that LIST of objects, an "object {…}" as that object. Example: a search/chat tool's messages is [{"role":"user","content":"my query"}], NOT the bare string "my query". Never send a string where a list/object is required, and never invent fields the schema doesn't list. If a required field's value isn't in the request, use inputRequest to ask for it.
 - TIME — resolve relative time ("in 10 min", "tomorrow 2pm") against NOW, then format by destination:
    • LOCAL actions (reminder.due, calendar_event.start/end): full ISO8601 WITH the offset, e.g. "2026-06-11T23:11:00+02:00".
    • COMPOSIO tool datetime arguments (e.g. GOOGLECALENDAR_CREATE_EVENT start_datetime): a NAIVE local wall-clock time "YYYY-MM-DDTHH:MM:SS" with NO "Z" and NO "+02:00" offset, AND set the tool's timezone argument to the IANA zone below. Putting an offset in a composio datetime double-counts the timezone and shifts the event hours off — never include one there.
@@ -94,7 +99,7 @@ HARD RULES:
 - Write summary, label, rationale, announce, and any human text in the user's locale.
 
 CONTEXT — NOW is ${c.nowISO} (timezone ${c.timezone}, locale ${c.locale}).
-${c.relevant && c.relevant.length ? `LIKELY BEST MATCHES for this request (ranked locally — verify against the descriptions, don't follow blindly):\n  ${c.relevant.join(", ")}\n` : ""}CONNECTED-APP TOOLS (slug — READ/WRITE — description):
+${c.relevant && c.relevant.length ? `LIKELY BEST MATCHES for this request (ranked locally — verify against the descriptions, don't follow blindly):\n  ${c.relevant.join(", ")}\n` : ""}${c.schemas && c.schemas.length ? `EXACT ARGUMENT SCHEMAS for the likely tools — your composio "arguments" MUST conform to these (right types, required fields present, arrays as arrays of the shown shape, objects as objects). A field typed "array of {role, content}" is a LIST like [{"role":"user","content":"…"}], NEVER a bare string:\n${c.schemas.map((s) => `  • ${s}`).join("\n")}\n` : ""}CONNECTED-APP TOOLS (slug — READ/WRITE — description):
 ${tools}
 LOCAL SHORTCUTS:
 ${sc}

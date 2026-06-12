@@ -40,6 +40,7 @@ export function isReadOnly(slug: string): boolean {
 }
 
 import PHRASES from "./action-phrases.json";
+import { rankByLexical } from "./lexical";
 
 // Example user phrases per action (the JARVIS "intent anchors"), keyed by toolkit → slug.
 const PHRASE_MAP = PHRASES as Record<string, { slug: string; phrases: string[] }[]>;
@@ -51,6 +52,44 @@ export interface CatalogTool {
   slug: string;
   description: string;
   readOnly: boolean;
+  /// Compact argument schema (types, required, nested list/object shapes) so the planner emits
+  /// exactly-valid arguments — e.g. `messages: array of {role: string, content: string} (required)`.
+  schema: string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type JsonSchema = any;
+
+// One-line type for a JSON-Schema property, recursive into arrays/objects so the planner sees the
+// real shape (a list of message objects, not a bare string).
+function typeStr(spec: JsonSchema, depth = 0): string {
+  if (!spec || typeof spec !== "object" || depth > 2) return "any";
+  const t = spec.type;
+  if (t === "array") return `array of ${typeStr(spec.items, depth + 1)}`;
+  if (t === "object" && spec.properties) {
+    const inner = Object.keys(spec.properties)
+      .slice(0, 6)
+      .map((k) => `${k}: ${typeStr(spec.properties[k], depth + 1)}`)
+      .join(", ");
+    return `{${inner}}`;
+  }
+  if (Array.isArray(spec.enum) && spec.enum.length) return `${t || "string"} (${spec.enum.slice(0, 6).join("|")})`;
+  return typeof t === "string" ? t : "string";
+}
+
+// Compact the full input schema into a single readable line for the planner.
+function compactSchema(ip?: { properties?: Record<string, JsonSchema>; required?: string[] }): string {
+  const props = ip?.properties;
+  if (!props) return "";
+  const req = new Set(ip?.required ?? []);
+  const skip = new Set(["user_id", "thread_id"]);
+  const parts: string[] = [];
+  for (const [name, spec] of Object.entries(props)) {
+    if (skip.has(name)) continue;
+    parts.push(`${name}: ${typeStr(spec)}${req.has(name) ? " (required)" : ""}`);
+    if (parts.length >= 14) break;
+  }
+  return parts.join("; ");
 }
 
 // Rank tools so the high-value actions survive the per-toolkit cap. A plain alphabetical slice
@@ -78,14 +117,17 @@ function toolArgNames(t: { inputParameters?: { properties?: Record<string, unkno
 interface RawTool {
   slug: string;
   description?: string;
-  inputParameters?: { properties?: Record<string, unknown> };
+  inputParameters?: { properties?: Record<string, JsonSchema>; required?: string[] };
 }
 
 // Build the read/write tool catalog for the uid's ACTIVE connected toolkits.
 // Mirrors the toolkit-resolution shape used by tools/route.ts + connections/route.ts.
 export async function loadReadWriteCatalog(
   composio: { connectedAccounts: { list: (a: { userIds: string[] }) => Promise<unknown> }; tools: { getRawComposioTools: (a: { toolkits: string[]; limit: number }) => Promise<unknown> } },
-  uid: string
+  uid: string,
+  // The spoken request — used to keep the actions relevant to THIS request inside the per-toolkit
+  // cap (apps like GitHub have 500+ tools; an alphabetical fetch+cap dropped GITHUB_CREATE_AN_ISSUE).
+  query = ""
 ): Promise<CatalogTool[]> {
   const list = (await composio.connectedAccounts.list({ userIds: [uid] })) as {
     items?: { status?: string; toolkit?: { slug?: string } | string }[];
@@ -104,10 +146,13 @@ export async function loadReadWriteCatalog(
 
   const out: CatalogTool[] = [];
   for (const tk of toolkits) {
-    const raw = (await composio.tools.getRawComposioTools({ toolkits: [tk], limit: 50 })) as RawTool[];
-    // These are the user's CONNECTED toolkits — give the planner the FULL action set (ranked so the
-    // high-value ones lead) so JARVIS knows everything it can do with each connected app.
-    const ranked = [...raw].sort((a, b) => toolPriority(b.slug) - toolPriority(a.slug)).slice(0, 45);
+    // Fetch a wide set (apps can have 500+ tools), priority-sort as the tiebreak, then re-rank by
+    // lexical relevance to the request so the right action survives the cap — THEN keep the top 45.
+    const raw = (await composio.tools.getRawComposioTools({ toolkits: [tk], limit: 200 })) as RawTool[];
+    const byPriority = [...raw].sort((a, b) => toolPriority(b.slug) - toolPriority(a.slug));
+    const scorable = byPriority.map((t) => ({ slug: t.slug, description: t.description ?? "", readOnly: false, raw: t }));
+    const reranked = query ? rankByLexical(query, scorable) : scorable;
+    const ranked = reranked.slice(0, 45).map((s) => s.raw);
     for (const t of ranked) {
       const d = (t.description ?? "").replace(/\n/g, " ");
       const short = d.length > 120 ? d.slice(0, 120) + "…" : d;
@@ -117,7 +162,7 @@ export async function loadReadWriteCatalog(
       const ex = phrasesFor(tk, t.slug).slice(0, 2);
       let desc = args.length ? `${short} [args: ${args.join(", ")}]` : short;
       if (ex.length) desc += ` (e.g. ${ex.map((p) => `"${p}"`).join(", ")})`;
-      out.push({ slug: t.slug, description: desc, readOnly: isReadOnly(t.slug) });
+      out.push({ slug: t.slug, description: desc, readOnly: isReadOnly(t.slug), schema: compactSchema(t.inputParameters) });
     }
   }
   return out;

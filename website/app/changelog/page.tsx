@@ -17,7 +17,7 @@ const DAYS: Day[] = [
     date: "June 11, 2026",
     tag: "Today",
     summary:
-      "The day Action mode became a real assistant: speak any request, however you phrase it, and Verba works out what you mean, plans the steps and acts, always with your confirmation, in a calm, JARVIS-style feed. Connect up to 50 of your favorite apps to act on by voice, and the whole app now speaks 14 languages. Plus a calmer recording pill, your whole task tree at a glance, 100 levels with a lifetime reward, social profiles, and a security-hardening pass.",
+      "The day Action mode became a real assistant: speak any request, however you phrase it, and Verba works out what you mean, plans the steps and acts, always with your confirmation, in a calm, JARVIS-style feed. Connect 1,000+ apps to act on by voice, and the whole app now speaks 15 languages. Plus a calmer recording pill, your whole task tree at a glance, 100 levels with a lifetime reward, social profiles, and a security-hardening pass.",
     entries: [
       {
         version: "0.7.8 → 0.9.0",
@@ -30,7 +30,7 @@ const DAYS: Day[] = [
           "Connecting an app is now rock-solid: real logos load reliably, the status always reflects reality, and if you cancel or deny the sign-in the Connect button comes right back instead of hanging.",
           "Polish on the Action feed: the headline stays clean while the assistant thinks (your words are quoted underneath), it never spins forever on a request that stalls, and the app cards lay out cleanly at every width.",
           "Missing a detail? The assistant now asks for it. Say “send an email saying hello” without a recipient and it shows fill-in fields, recipient, subject, body, with what it already drafted pre-filled. Type the rest and send, straight from the feed.",
-          "The assistant is now named JARVIS, and connects to 600+ apps. A new Connected apps section in Settings lets you search the full catalog, filter by category, and connect any of them with one tap.",
+          "The assistant is now named JARVIS, and connects to 1,000+ apps. A new Connected apps section in Settings lets you search the full catalog, filter by category, and connect any of them with one tap.",
           "JARVIS asks a quick question when your request is ambiguous (a Google Meet, or just a calendar block?), and rebuilds spoken email addresses (“simono dot gareth at gmail dot com”) into the real thing, with an editable field to confirm when it's unsure.",
           "Time is now exact: “add an event in 10 minutes” lands at the right minute in your computer's own timezone, instead of drifting by hours.",
           "Tap any app to see everything you can do with it, every action, each with example phrases you can say to JARVIS (“Send an email to Marc about the demo”, “Post in the team channel that the demo is ready”). And JARVIS now knows the full action set of every app you've connected.",

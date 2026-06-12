@@ -84,7 +84,7 @@ async function callPlanner(
       },
       body: JSON.stringify({
         model: PLANNER_MODEL,
-        max_tokens: 4000,
+        max_tokens: 8000,
         system,
         messages,
       }),
@@ -148,6 +148,31 @@ function buildResponse(plan: PlanJSON, reads: ReadResult[]) {
   };
 }
 
+// Composio's manual execution requires a CONCRETE toolkit version (it rejects calls with none:
+// "Toolkit version not specified"). Resolve each tool's version by slug once, cache it per warm
+// instance, and pass it on every read — same fix the /execute route uses for writes. Without this,
+// EVERY auto-run read (Gmail fetch, Calendar list, Linear search, …) failed and the planner could
+// never gather context.
+const versionCache = new Map<string, string | undefined>();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function execTool(composio: any, slug: string, uid: string, args: Record<string, unknown>) {
+  if (!versionCache.has(slug)) {
+    let v: string | undefined;
+    try {
+      const raw = (await composio.tools.getRawComposioTools({ tools: [slug], limit: 1 })) as {
+        slug: string;
+        version?: string;
+      }[];
+      v = raw.find((t) => t.slug === slug)?.version ?? raw[0]?.version;
+    } catch {
+      v = undefined;
+    }
+    versionCache.set(slug, v);
+  }
+  const version = versionCache.get(slug);
+  return composio.tools.execute(slug, { userId: uid, arguments: args, ...(version ? { version } : {}) });
+}
+
 export async function POST(req: NextRequest) {
   const anthropic = process.env.ANTHROPIC_API_KEY;
   if (!anthropic) {
@@ -183,7 +208,7 @@ export async function POST(req: NextRequest) {
   // Tolerate a Composio outage: an empty catalog still lets the planner do local Mac actions.
   let toolCatalog: CatalogTool[] = [];
   try {
-    toolCatalog = await loadReadWriteCatalog(composio as never, uid);
+    toolCatalog = await loadReadWriteCatalog(composio as never, uid, transcript);
   } catch {
     toolCatalog = [];
   }
@@ -193,6 +218,12 @@ export async function POST(req: NextRequest) {
   // first) and pass the top matches to the prompt as an explicit shortlist.
   toolCatalog = rankByLexical(transcript, toolCatalog);
   const relevant = topMatches(transcript, toolCatalog, 10);
+  // Full argument schemas for the most likely tools, so JARVIS emits exactly-valid arguments
+  // (correct types, required fields, lists/objects as such) instead of guessing shapes.
+  const relevantSet = new Set(relevant.length ? relevant : toolCatalog.slice(0, 8).map((t) => t.slug));
+  const schemas = toolCatalog
+    .filter((t) => relevantSet.has(t.slug) && t.schema)
+    .map((t) => `${t.slug}(${t.schema})`);
 
   const ctxBase = {
     nowISO: new Date().toISOString(),
@@ -200,6 +231,7 @@ export async function POST(req: NextRequest) {
     locale: typeof body.locale === "string" && body.locale ? body.locale : "en",
     toolCatalog,
     relevant,
+    schemas,
     shortcuts: Array.isArray(body.shortcuts) ? body.shortcuts.filter((s) => typeof s === "string").slice(0, 120) : [],
     searchTargets: Array.isArray(body.searchTargets) ? body.searchTargets.filter((s) => typeof s === "string") : [],
     disabled: Array.isArray(body.disabled) ? body.disabled.filter((s) => typeof s === "string") : [],
@@ -233,7 +265,7 @@ export async function POST(req: NextRequest) {
       continue;
     }
     try {
-      const result = await composio.tools.execute(slug, { userId: uid, arguments: step.args ?? {} });
+      const result = await execTool(composio, slug, uid, step.args ?? {});
       reads.push({ tool: slug, ok: true, data: result });
     } catch (e) {
       reads.push({ tool: slug, ok: false, error: e instanceof Error ? e.message : "Read failed." });
