@@ -2,7 +2,7 @@
 
 > Deliverable 1 of the Verba GTM package · Skill: `/omg-market-research` (R-MARKETING, upstream-most)
 > Scope: **Verba only** (verba.run). LiquidPad and other Arc 2042 apps are explicitly out of scope.
-> Date: 2026-06-11 · Author: Oracle (OmegaOS)
+> Date: 2026-06-11 · **Last updated: 2026-06-12** (post-JARVIS: the voice → action wave, commits 5ae8804…ebcdcff) · Author: Oracle (OmegaOS)
 
 ## Method & honest caveats
 
@@ -21,8 +21,12 @@
 
 ## 1. The category & why now
 
-Verba sits in **AI voice dictation for the desktop** — "speak, and clean text lands where your cursor is."
-Two things make this the right category at the right time:
+Verba sits in **AI voice dictation for the desktop** — "speak, and clean text lands where your cursor is" — and, since
+June 2026, has crossed into a second, nearly empty category: the **desktop voice agent** — "speak, and it *gets done*."
+The JARVIS Action agent (commit 5ae8804) plans a dictated intent on-device, asks when ambiguous, and executes after the
+user confirms — natively on the Mac and across **1,000+ connected apps** (Gmail, Slack, Notion, Linear, GitHub…) via a
+Composio-backed relay (`Sources/Verba/ActionExecutor.swift`, `website/lib/composio-rw.ts`). No dictation competitor does
+this (§2–3). Several things make this the right category at the right time:
 
 **1. The money is pouring in.** Wispr (maker of **Wispr Flow**, the incumbent Verba benchmarks against) is in
 talks to raise **~$260M at a ~$2B valuation** (May 2026, Menlo Ventures lead) — roughly **3× its $700M valuation
@@ -52,15 +56,24 @@ That ties Verba to the fastest-moving developer tool on the market:
 
 Every one of those developers is a person who already pays Anthropic, already "vibe codes," and would rather speak
 a 3-paragraph spec than type it. **Verba is the voice front-end for that exact population** — and no competitor
-lets you reuse the Claude subscription you already bought.
+lets you reuse the Claude subscription you already bought. The JARVIS architecture deepens this tie: the user's own
+Claude Code (or local model) **is the action planner** — Verba never burns a server-side key (commit d86685b).
+
+**4. The "Jarvis" demand pocket is real and unserved on the Mac.** People have wanted a Jarvis-style assistant for a
+decade; what they got was Siri. The agent wave (Claude Code, MCP-style tool ecosystems, Composio's 1,000+-app catalog)
+finally makes "say it → it's done, with confirmation" technically credible — and the dictation incumbents haven't crossed
+over: they all stop at text (the closest, TalkTastic, does Mac-local app-aware commands only — `website/lib/competitors.ts`).
+Verba enters the "voice agent for the desktop" slot **before** a category leader exists.
 
 ---
 
 ## 2. Competitive landscape
 
 The repo already maintains a verified competitor dataset (`website/lib/competitors.ts`, "facts verified mid-2026")
-which powers the live `/compare` and `/vs/[slug]` SEO pages. Synthesized and cross-checked against live web
-(June 2026), the field splits into four tiers:
+which powers the live `/vs/[slug]` SEO pages and — since commit ebcdcff — a rebuilt `/compare` page: an honest
+**24-feature × 10-brand matrix** (`website/lib/compare-matrix.ts`, generated from a sourced 10-product audit, Verba
+column highlighted, per-vendor sourcing notes). Synthesized and cross-checked against live web (June 2026), the field
+splits into four tiers:
 
 **Tier 1 — The cloud incumbent (the one to convert from)**
 - **Wispr Flow** — $15/mo ($12 annual), cloud-only, cross-platform (Mac/Win/iOS/Android), very polished, SOC2/HIPAA
@@ -78,7 +91,9 @@ which powers the live `/compare` and `/vs/[slug]` SEO pages. Synthesized and cro
 - **Aqua Voice** — ~$8/mo, cloud-only, proprietary "Avalon" model, strong natural-language editing. *Weakness:* cloud-only,
   1,000-word lifetime free cap.
 - **Willow Voice** — $12–15/mo, cloud-default (offline is Pro-only), style-matching, SOC2/HIPAA.
-- **TalkTastic** — ~$15/mo, cloud, app-aware AI actions.
+- **TalkTastic** — cloud, app-aware AI actions (free during beta). *The closest thing to "actions" in the field — but
+  Mac-local app commands only; it cannot execute across external apps (no Gmail/Slack/Linear/GitHub writes), has no
+  confirm-gated agent loop, and no BYO-AI.*
 
 **Tier 4 — Adjacent / not direct**
 - **Apple Dictation** — free, built-in, on-device, but **zero AI cleanup** (the "good enough" anchor Verba must beat on quality).
@@ -100,13 +115,18 @@ No competitor occupies all four of Verba's axes at once:
 | First-class AI restructuring (modes, per-mode model) | ~ | ~ (prompt box) | ✗ | ✓ (cloud) | **✓ (Claude, 6 modes)** |
 | **Bring your own AI account / no markup** | ✗ | partial | ✗ | ✗ | **✓ (unique)** |
 | **Reuse your Claude Code subscription, no key** | ✗ | ✗ | ✗ | ✗ | **✓ (unique)** |
+| **Voice → action: agent executes on 1,000+ connected apps (confirm-gated)** | ✗ | ✗ | ✗ | ✗ | **✓ (unique — JARVIS)** |
+| **Action planning on-device (your AI plans, never a vendor key)** | ✗ | ✗ | ✗ | ✗ | **✓ (unique)** |
 | Reads your screen (vision / Context mode) | ✗ | ✗ | ✗ | ✗ | **✓ (unique)** |
 | Hour-long structured Notes | ✗ | ✗ | ~ (files) | ✗ | **✓** |
 | Price | $15 | $8.49 | ~$69 once | $8 | **$9.99** |
 
-**Two genuinely unique wedges** (no competitor has them): *bring-your-own-Claude (incl. the Claude Code
-subscription with no API key)* and *Context mode (voice + screen vision + agentic Calendar/Reminders/email actions)*.
-Everything else (price, on-device, modes) is "best-in-class," but those two are *category-of-one*.
+**Three genuinely unique wedges** (no competitor has them): *bring-your-own-Claude (incl. the Claude Code subscription
+with no API key)*, ***voice → action* (JARVIS: dictated intent → on-device plan → confirm → execute on 1,000+ connected
+apps — schema-validated and auto-repaired per action, writes never auto-run; commits 5ae8804, 0bec783, 83da81b)*, and
+*Context mode (voice + screen vision)*. Everything else (price, on-device, modes) is "best-in-class," but those three are
+*category-of-one* — and the second one changes the product's shelf entirely: from "dictation that types" to "a voice agent
+that does."
 
 ---
 
@@ -115,14 +135,23 @@ Everything else (price, on-device, modes) is "best-in-class," but those two are 
 **Primary beachhead — the "Claude Code native" Mac developer.**
 Already pays Anthropic; lives in Cursor/terminal/Claude Code; vibe-codes; would rather speak a spec than type it;
 privacy-aware; hates paying a vendor markup on top of the AI they already buy. *Verba's Coding mode (Opus 4.8) +
-"use your Claude Code sub, no key" is built for this person.* This segment is large, concentrated (Reddit r/macapps,
-Hacker News, X dev community, Claude/Cursor Discords), fast-growing (73% of eng teams on AI tools daily), and reachable
-without paid ads.
+"use your Claude Code sub, no key" is built for this person.* JARVIS sharpens the pitch further: their Claude Code
+install **is** the action planner — "the agent you already pay for now runs your Mac by voice." This segment is large,
+concentrated (Reddit r/macapps, Hacker News, X dev community, Claude/Cursor Discords), fast-growing (73% of eng teams
+on AI tools daily), and reachable without paid ads.
+
+**New segment opened by JARVIS — the "voice-first operator."** Founders, PMs, and exec-without-an-EA types who live in
+Gmail/Slack/Linear/Calendar and want spoken intents *executed*, not just typed: "create the issue," "send the invite,"
+"draft the reply." Until now their options were Siri (can't touch real work tools) or nothing. Demand signal: the
+decade-old "I want a real Jarvis" trope, the agent wave, and the fact that the closest dictation competitor (TalkTastic)
+stops at Mac-local commands. Verba's confirm-gated agent + 1,000+ connected apps is the first credible product for them.
 
 **Secondary segments (expansion, in order):**
 1. **Privacy-conscious Mac professionals** — lawyers, doctors, journalists, founders who can't send audio to a vendor cloud.
    Verba's "audio never leaves your Mac, never uploaded" (cloud sync is text-only; local history has an off switch) beats every cloud tool; vs Superwhisper the edge is Keychain-stored keys (not plaintext) + an off switch, not disk storage (both keep local history by default).
 2. **Multilingual knowledge workers** — Translate mode (speak FR, send EN) + auto language detection. Big in EU/LatAm.
+   Now structurally backed: the entire UI ships localized — **998 strings translated into 14 languages** (commit b3dd02c)
+   — so the international funnel isn't en-only past the landing page.
 3. **Long-form thinkers / note-takers** — the Notes tab (hour-long voice → structured doc, #hashtag filing) is a
    standalone wedge vs Otter, without the meeting-bot baggage.
 
@@ -162,9 +191,14 @@ per user is very high (no inference COGS), so there's unusual room to discount, 
   BYO-Claude + does-more) and win the niches Wispr structurally can't (offline, no-markup, local).
 - **BYOK onboarding friction.** "Bring your own AI key" is a power-user concept; the free tier and the "use your Claude
   Code sub with no key" path must make first-run effortless or casual users bounce.
-- **Messaging-integrity gaps (fix before scaling spend) — two, both ~1-day.** **(a) Free-tier copy:** the site now
+- **Agent-trust headwind (new with JARVIS).** "A voice agent connected to my Gmail" triggers a legitimate fear reflex.
+  Verba's architecture is the answer — reads-only auto-run, **every write confirm-gated** (fail-safe classifier,
+  `composio-rw.ts`), planning on-device with the user's own AI (d86685b), per-app disconnect — but the *marketing* must
+  lead with the control story or the feature scares more than it sells. Treat "it asks before it acts" as a headline, not a footnote.
+- **Messaging-integrity gaps (fix before scaling spend) — two, both ~1-day; re-verified 2026-06-12, both still open.**
+  **(a) Free-tier copy:** the site now
   standardises on *"33 dictations"* (hero, bento, `/compare`, `/vs` — matching the code: `Entitlement.swift` →
-  `freeTrialDictations = 33`), but the web **"Try-It" demo** endpoint (`website/app/api/try/route.ts`) still nudges
+  `freeTrialDictations = 33`), but the web **"Try-It" demo** endpoint (`website/app/api/try/route.ts` lines 56/67) still nudges
   *"free up to 10,000 words/month."* Align that one file. **(b) Privacy-claim accuracy:** any *"never writes your audio to disk"* phrasing overstates it — local history (including audio) is **on by default** (`History.swift` copies the
   audio file locally; `Settings.swift` `saveHistory ?? true`). Audio is never *uploaded* (sync is text-only), but it **is**
   stored locally — soften the claim to "audio never leaves your Mac / local history with an off switch," or ship
@@ -199,3 +233,4 @@ near-pure contribution margin — far healthier unit economics than the cloud in
 - Claude Code adoption — [gradually.ai](https://www.gradually.ai/en/claude-code-statistics/), [serpsculpt](https://serpsculpt.com/claude-code-usage-statistics/), [Anthropic Economic Index (Mar 2026)](https://www.anthropic.com/research/economic-index-march-2026-report)
 - Competitor traction — [MacWhisper vs Superwhisper (jamesm.blog)](https://jamesm.blog/ai/mac-dictation-tools-comparison/), [spokenly](https://spokenly.app/blog/wispr-flow-vs-superwhisper-vs-macwhisper), [Medium / Ryan Shrott](https://medium.com/@ryanshrott/best-mac-dictation-apps-in-2026-dictaflow-wispr-flow-superwhisper-and-apple-dictation-compared-11911c671817)
 - Product ground truth — repo: `Sources/Verba/ClaudeCode.swift`, `Entitlement.swift`, `website/lib/competitors.ts`, `website/app/page.tsx`, `README.md`; live `verba.run`
+- JARVIS / voice → action ground truth — `Sources/Verba/ActionExecutor.swift`, `ActionAgentClient.swift`, `website/lib/composio-rw.ts`, `website/lib/compare-matrix.ts`; commits 5ae8804 (JARVIS, 1,000+ apps), 7452012 (secure relay + Connected-apps UI), d86685b + b428a1f (on-device sandboxed planner), 0bec783 + 83da81b (schema validation + auto-repair, 989 toolkits / 36,998 tools), e104b79 (stacked dictations), b3dd02c (i18n 14 languages), ebcdcff (/compare rebuild + SEO/GEO)
