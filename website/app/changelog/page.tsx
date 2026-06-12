@@ -21,9 +21,12 @@ const DAYS: Day[] = [
       "A calmer first run and Bear-style notes. The onboarding now teaches every shortcut — Action, Note, To-do, Transform and more — opens the app the moment you finish, and lets you keep your profile private. Notes get a proper nested tag tree for filing, and you can keep your history text without storing the audio.",
     entries: [
       {
-        version: "0.9.5 → 0.9.12",
+        version: "0.9.5 → 0.9.13",
         title: "Onboarding that shows everything, and Bear-style notes",
         items: [
+          "Notes get one-tap mode actions: apply any mode to a note in a tap — including the custom modes you built yourself, now surfaced right alongside the built-in ones.",
+          "Export a note: save it as a Markdown (.md) or plain-text file straight from the note toolbar.",
+          "Wishlist now shows newest ideas first (within each vote tier), and long requests get a Show more so nothing is cut off or unclickable.",
           "Feedback is one tap now: Send runs Improve-with-AI for you, shows the tidied version to confirm or tweak, then sends — one button, no second step.",
           "Wishlist fix: shipped ideas keep their green “shipped” badge for good — it's saved with the wish now, so it survives behind the scenes changes.",
           "Dictionary auto-learn fixed: correct a name or brand in the text Verba just wrote and it now reliably learns the spelling, so it gets it right next time (punctuation no longer threw it off).",
