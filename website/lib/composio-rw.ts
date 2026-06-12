@@ -55,6 +55,8 @@ export interface CatalogTool {
   /// Compact argument schema (types, required, nested list/object shapes) so the planner emits
   /// exactly-valid arguments — e.g. `messages: array of {role: string, content: string} (required)`.
   schema: string;
+  /// Raw input schema, kept for SERVER-SIDE validation + auto-repair of the planner's arguments.
+  ip?: { properties?: Record<string, JsonSchema>; required?: string[] };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -99,7 +101,7 @@ function compactSchema(ip?: { properties?: Record<string, JsonSchema>; required?
 function toolPriority(slug: string): number {
   const s = (slug ?? "").toUpperCase();
   if (/(?:^|_)(SEND|REPLY|FORWARD)(?:_|$)/.test(s)) return 100;
-  if (/(?:^|_)(CREATE|ADD|POST|UPDATE|EDIT|MODIFY|SET|INVITE|SHARE|UPLOAD|ASSIGN|RSVP|SCHEDULE)(?:_|$)/.test(s)) return 80;
+  if (/(?:^|_)(CREATE|ADD|POST|UPDATE|EDIT|MODIFY|SET|INVITE|SHARE|UPLOAD|ASSIGN|RSVP|SCHEDULE|STAR|UNSTAR|FORK|FOLLOW|WATCH|SUBSCRIBE)(?:_|$)/.test(s)) return 80;
   if (/(?:^|_)(FETCH|SEARCH|LIST|GET|FIND|RETRIEVE|READ|QUERY|FREE_BUSY|FREEBUSY)(?:_|$)/.test(s)) return 60;
   if (/(?:^|_)(DELETE|REMOVE|TRASH|ARCHIVE|REVOKE|BATCH)(?:_|$)/.test(s)) return 10;
   return 30;
@@ -118,6 +120,42 @@ interface RawTool {
   slug: string;
   description?: string;
   inputParameters?: { properties?: Record<string, JsonSchema>; required?: string[] };
+}
+
+// True when a REQUIRED input field is file-uploadable (Composio marks these) — a voice request
+// can't provide one, so the planner must collect it from the user instead of failing later.
+function hasRequiredFile(ip?: { properties?: Record<string, JsonSchema>; required?: string[] }): boolean {
+  const props = ip?.properties;
+  if (!props) return false;
+  const req = new Set(ip?.required ?? []);
+  return Object.entries(props).some(([k, v]) => req.has(k) && (v?.file_uploadable === true || v?.format === "binary"));
+}
+
+/// Validate the planner's arguments against a tool's real JSON schema. Returns human-readable
+/// problems ([] = valid). Deliberately shallow-but-strict on the failure modes that actually break
+/// execution: missing required fields, and wrong JSON types (string where a list/object is needed).
+export function validateArgs(
+  args: Record<string, unknown>,
+  ip?: { properties?: Record<string, JsonSchema>; required?: string[] }
+): string[] {
+  const props = ip?.properties;
+  if (!props) return [];
+  const errs: string[] = [];
+  for (const r of ip?.required ?? []) {
+    const v = args[r];
+    if (v === undefined || v === null || v === "") errs.push(`missing required field "${r}"`);
+  }
+  for (const [k, v] of Object.entries(args)) {
+    const spec = props[k];
+    if (!spec) { errs.push(`unknown field "${k}" (not in the tool's schema)`); continue; }
+    const t = spec.type;
+    if (t === "array" && !Array.isArray(v)) errs.push(`"${k}" must be an ARRAY (got ${typeof v})`);
+    else if (t === "object" && (typeof v !== "object" || v === null || Array.isArray(v))) errs.push(`"${k}" must be an OBJECT`);
+    else if (t === "string" && typeof v !== "string") errs.push(`"${k}" must be a string`);
+    else if ((t === "number" || t === "integer") && typeof v !== "number") errs.push(`"${k}" must be a number`);
+    else if (t === "boolean" && typeof v !== "boolean") errs.push(`"${k}" must be a boolean`);
+  }
+  return errs;
 }
 
 // Build the read/write tool catalog for the uid's ACTIVE connected toolkits.
@@ -162,7 +200,16 @@ export async function loadReadWriteCatalog(
       const ex = phrasesFor(tk, t.slug).slice(0, 2);
       let desc = args.length ? `${short} [args: ${args.join(", ")}]` : short;
       if (ex.length) desc += ` (e.g. ${ex.map((p) => `"${p}"`).join(", ")})`;
-      out.push({ slug: t.slug, description: desc, readOnly: isReadOnly(t.slug), schema: compactSchema(t.inputParameters) });
+      // A tool whose REQUIRED input is a file can't be satisfied by voice alone — say so up front,
+      // so the planner asks for the file (inputRequest) instead of failing at execution.
+      if (hasRequiredFile(t.inputParameters)) desc += " [REQUIRES A LOCAL FILE — ask the user for it]";
+      out.push({
+        slug: t.slug,
+        description: desc,
+        readOnly: isReadOnly(t.slug),
+        schema: compactSchema(t.inputParameters),
+        ip: t.inputParameters,
+      });
     }
   }
   return out;

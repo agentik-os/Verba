@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cors, getComposio, notConfigured, requireUid } from "../_lib";
-import { loadReadWriteCatalog, isReadOnly, type CatalogTool } from "@/lib/composio-rw";
+import { loadReadWriteCatalog, isReadOnly, validateArgs, type CatalogTool } from "@/lib/composio-rw";
 import { plannerSystem } from "@/lib/planner-prompt";
 import { rankByLexical, topMatches } from "@/lib/lexical";
 
@@ -250,6 +250,7 @@ export async function POST(req: NextRequest) {
   let needReads = Array.isArray(plan1.plan.needReads) ? plan1.plan.needReads : [];
   // No reads requested → the plan is final (write actions or a clarification/chat).
   if (needReads.length === 0) {
+    await repairInvalidActions(plan1.plan, toolCatalog, anthropic);
     return NextResponse.json(buildResponse(plan1.plan, []), { headers: cors });
   }
 
@@ -289,5 +290,58 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  await repairInvalidActions(plan2.plan, toolCatalog, anthropic);
   return NextResponse.json(buildResponse(plan2.plan, reads), { headers: cors });
+}
+
+// ---- Universal safety net: validate every proposed composio action's arguments against the
+// tool's REAL JSON schema, and auto-repair invalid ones with one focused model call. This is what
+// makes "any app, any action" reliable without per-app code — wrong shapes (a string where the
+// schema wants a list of objects, a missing required field) are caught and fixed BEFORE the user
+// ever sees the proposal, instead of failing at execution.
+async function repairInvalidActions(plan: PlanJSON, catalog: CatalogTool[], anthropicKey: string) {
+  const bySlug = new Map(catalog.map((t) => [t.slug, t]));
+  for (const p of plan.proposedWriteActions ?? []) {
+    const a = p?.action as Record<string, unknown> | undefined;
+    if (!a || String(a.type ?? "").toLowerCase() !== "composio") continue;
+    const slug = String(a.tool ?? "");
+    const tool = bySlug.get(slug);
+    if (!tool?.ip) continue;
+    const args = (a.arguments ?? {}) as Record<string, unknown>;
+    const errs = validateArgs(args, tool.ip);
+    if (!errs.length) continue;
+
+    try {
+      const r = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-api-key": anthropicKey, "anthropic-version": "2023-06-01" },
+        body: JSON.stringify({
+          model: PLANNER_MODEL,
+          max_tokens: 2000,
+          system:
+            "You repair tool-call arguments. Reply with ONLY a JSON object — the corrected arguments — no prose, no fence.",
+          messages: [{
+            role: "user",
+            content:
+              `Tool: ${slug}\nJSON schema of its input:\n${JSON.stringify(tool.ip).slice(0, 6000)}\n\n` +
+              `Current (INVALID) arguments:\n${JSON.stringify(args)}\n\nValidation errors:\n- ${errs.join("\n- ")}\n\n` +
+              `Return the corrected arguments object only. Keep the user's values; fix shapes/types; drop unknown fields; fill required fields only if their value is clearly derivable from the current arguments.`,
+          }],
+        }),
+      });
+      const data = await r.json().catch(() => null);
+      const text: string = (data?.content ?? [])
+        .filter((b: { type: string }) => b.type === "text")
+        .map((b: { text: string }) => b.text)
+        .join("").trim();
+      const open = text.indexOf("{");
+      const close = text.lastIndexOf("}");
+      if (open >= 0 && close > open) {
+        const fixed = JSON.parse(text.slice(open, close + 1)) as Record<string, unknown>;
+        if (validateArgs(fixed, tool.ip).length < errs.length) a.arguments = fixed;
+      }
+    } catch {
+      /* repair is best-effort; the original args go through if it fails */
+    }
+  }
 }
