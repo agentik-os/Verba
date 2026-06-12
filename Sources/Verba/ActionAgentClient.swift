@@ -198,15 +198,16 @@ enum ActionAgentError: LocalizedError {
 
 // MARK: - Client
 
-/// Sends a spoken Action-mode transcript to the server-side planner (`/api/composio/agent`) and
-/// returns the resolved `VerbaPlan`. Authed by the signed-in app session
-/// (`Authorization: Bearer <AuthToken.current>`) — the same pattern as `ComposioStore`. The relay
-/// holds COMPOSIO_API_KEY + ANTHROPIC_API_KEY + the Composio entity (uid); the Mac never does.
+/// The ON-DEVICE JARVIS planner. The relay only provides what must stay server-side — the
+/// connected-toolkit context (`/agent-context`, no model call) and read-only tool execution
+/// (`/agent-reads`, COMPOSIO_API_KEY) — while the PLANNING LLM runs here, on the user's own
+/// engine: their Claude Code subscription, their local model, or their own key. The server never
+/// spends Anthropic API credits for JARVIS.
 final class ActionAgentClient {
     static let shared = ActionAgentClient()
     private init() {}
 
-    private static let endpoint = "https://verba.run/api/composio/agent"
+    private static let base = "https://verba.run/api/composio"
 
     /// NOW as a LOCAL ISO8601 with the device's UTC offset (e.g. 2026-06-11T23:01:46+02:00), so the
     /// planner reasons in the user's wall-clock time instead of converting from UTC.
@@ -217,49 +218,216 @@ final class ActionAgentClient {
         return f.string(from: Date())
     }
 
-    /// Plan an Action-mode command.
-    /// - Parameters:
-    ///   - transcript: the spoken command, verbatim.
-    ///   - screenText: optional on-screen context (when the command is screen-grounded).
-    ///   - resolveChoice: when re-planning after a clarification, the chosen option id.
-    ///   - readResults: when the relay needs a second "resolve" pass, the read outputs to feed back.
+    /// Plan an Action-mode command: fetch the planner context from the relay, run the planning
+    /// model ON-DEVICE, let the relay execute any read-only steps, resolve, then validate/repair
+    /// the proposed arguments against the real schemas.
     func plan(transcript: String,
               screenText: String? = nil,
               resolveChoice: String? = nil) async throws -> VerbaPlan {
         guard let token = AuthToken.current, !token.isEmpty else { throw ActionAgentError.notSignedIn }
-        guard let url = URL(string: Self.endpoint) else { throw ActionAgentError.badResponse }
 
-        var body: [String: Any] = [
+        // 1 — context (prompts + schemas), built server-side from the user's connected toolkits.
+        var ctxBody: [String: Any] = [
             "transcript": transcript,
             "timezone": TimeZone.current.identifier,
             "locale": Locale.current.identifier,
             "nowISO": Self.localNowISO(),
             "shortcuts": ActionExecutor().availableShortcuts(),
             "searchTargets": Settings.shared.searchTargets.map(\.name),
-            // The actions the user turned OFF in Settings ▸ Action mode — the planner must never
-            // emit these (the relay forwards them into the prompt's DISABLED list).
             "disabled": Array(Settings.shared.disabledActions),
         ]
-        if let screenText, !screenText.isEmpty { body["screenText"] = screenText }
-        if let resolveChoice, !resolveChoice.isEmpty { body["resolveChoice"] = resolveChoice }
+        if let resolveChoice, !resolveChoice.isEmpty { ctxBody["resolveChoice"] = resolveChoice }
+        let ctx = try await Self.post("/agent-context", token: token, body: ctxBody)
+        guard let sysPlan = ctx["systemPlan"] as? String,
+              let sysResolve = ctx["systemResolve"] as? String else { throw ActionAgentError.badResponse }
+        let schemas = ctx["schemas"] as? [String: Any] ?? [:]
 
+        var userMsg = "The user said:\n\n<command>\n\(transcript)\n</command>"
+        if let screenText, !screenText.isEmpty { userMsg += "\n\nON-SCREEN CONTEXT:\n\(screenText.prefix(4000))" }
+        if let resolveChoice, !resolveChoice.isEmpty {
+            userMsg += "\n\nThe user answered your clarification: they chose \"\(resolveChoice)\". Re-plan with that choice pinned."
+        }
+
+        // 2 — PLAN, on the user's own engine.
+        var planObj = try Self.firstJSON(await Self.runLLM(system: sysPlan, user: userMsg))
+
+        // 3 — read-only steps via the relay, then RESOLVE locally with the results.
+        if let needs = planObj["needReads"] as? [[String: Any]], !needs.isEmpty {
+            let readsResp = try await Self.post("/agent-reads", token: token, body: ["steps": needs])
+            let block = readsResp["block"] as? String ?? ""
+            let resolveMsg = userMsg
+                + "\n\nREAD RESULTS (you requested these; use them to produce concrete proposedWriteActions, needReads MUST be []):\n"
+                + block
+            planObj = try Self.firstJSON(await Self.runLLM(system: sysResolve, user: resolveMsg))
+        }
+
+        // 4 — validate the proposed composio arguments against the real schemas; repair once.
+        await Self.repairInvalidActions(&planObj, schemas: schemas)
+
+        // 5 — decode into the app's plan model (same JSON contract as before).
+        let data = try JSONSerialization.data(withJSONObject: planObj)
+        guard let plan = try? JSONDecoder().decode(VerbaPlan.self, from: data) else {
+            throw ActionAgentError.badResponse
+        }
+        return plan
+    }
+
+    // MARK: On-device planning engine
+
+    /// Run one planning completion on the user's engine. `.verba`/unusable choices fall through to
+    /// Claude Code (their subscription) or the local model — NEVER the server's Anthropic key.
+    private static func runLLM(system: String, user: String) async throws -> String {
+        let backend = Settings.shared.repromptBackend.resolved
+        switch backend {
+        case .claudeCode:
+            return try await ClaudeCode.reprompt(systemPrompt: system, userText: user, model: "claude-sonnet-4-6")
+        case .localLLM:
+            return try await LocalLLM.chat(system: system, user: user, model: Settings.shared.localLLMModel)
+        case .apiKey:
+            if let key = Keychain.anthropicKey, !key.isEmpty {
+                return try await anthropicDirect(key: key, system: system, user: user)
+            }
+        case .openRouter:
+            if let key = Keychain.openRouterKey, !key.isEmpty {
+                return try await openRouterDirect(key: key, system: system, user: user)
+            }
+        case .verba, .auto:
+            break
+        }
+        // Fallback chain for hosted/auto or a chosen-but-missing key.
+        if ClaudeCode.isAvailable {
+            return try await ClaudeCode.reprompt(systemPrompt: system, userText: user, model: "claude-sonnet-4-6")
+        }
+        return try await LocalLLM.chat(system: system, user: user, model: Settings.shared.localLLMModel)
+    }
+
+    /// Direct Anthropic call on the USER'S OWN key (their explicit backend choice).
+    private static func anthropicDirect(key: String, system: String, user: String) async throws -> String {
+        var req = URLRequest(url: URL(string: "https://api.anthropic.com/v1/messages")!)
+        req.httpMethod = "POST"
+        req.setValue(key, forHTTPHeaderField: "x-api-key")
+        req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        req.setValue("application/json", forHTTPHeaderField: "content-type")
+        req.timeoutInterval = 120
+        req.httpBody = try JSONSerialization.data(withJSONObject: [
+            "model": "claude-sonnet-4-6", "max_tokens": 8000, "system": system,
+            "messages": [["role": "user", "content": user]],
+        ])
+        let (data, resp) = try await URLSession.shared.data(for: req)
+        let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(code) else { throw ActionAgentError.http(code, "") }
+        let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        let parts = (obj?["content"] as? [[String: Any]]) ?? []
+        return parts.compactMap { ($0["type"] as? String) == "text" ? $0["text"] as? String : nil }.joined()
+    }
+
+    /// Direct OpenRouter call on the user's own key.
+    private static func openRouterDirect(key: String, system: String, user: String) async throws -> String {
+        var req = URLRequest(url: URL(string: "https://openrouter.ai/api/v1/chat/completions")!)
+        req.httpMethod = "POST"
+        req.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "content-type")
+        req.timeoutInterval = 120
+        let chosen = Settings.shared.openRouterModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        req.httpBody = try JSONSerialization.data(withJSONObject: [
+            "model": chosen.isEmpty ? "anthropic/claude-sonnet-4.5" : chosen,
+            "messages": [["role": "system", "content": system], ["role": "user", "content": user]],
+        ])
+        let (data, resp) = try await URLSession.shared.data(for: req)
+        let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(code) else { throw ActionAgentError.http(code, "") }
+        let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        let choices = (obj?["choices"] as? [[String: Any]]) ?? []
+        let msg = choices.first?["message"] as? [String: Any]
+        return msg?["content"] as? String ?? ""
+    }
+
+    // MARK: Plumbing
+
+    /// Authed JSON POST to the relay.
+    private static func post(_ path: String, token: String, body: [String: Any]) async throws -> [String: Any] {
+        guard let url = URL(string: base + path) else { throw ActionAgentError.badResponse }
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "content-type")
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.timeoutInterval = 75   // generous for a 2-phase read→plan; the feed watchdog backs it up
+        req.timeoutInterval = 75
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
-
         let (data, resp) = try await URLSession.shared.data(for: req)
         let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(code) else {
             let msg = ((try? JSONSerialization.jsonObject(with: data)) as? [String: Any])?["error"] as? String
-            throw ActionAgentError.http(code, msg ?? (String(data: data, encoding: .utf8) ?? ""))
+            throw ActionAgentError.http(code, msg ?? "")
         }
-        do {
-            return try JSONDecoder().decode(VerbaPlan.self, from: data)
-        } catch {
+        guard let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
             throw ActionAgentError.badResponse
         }
+        return obj
+    }
+
+    /// First balanced {...} in a model reply (tolerates prose / code fences).
+    private static func firstJSON(_ raw: String) throws -> [String: Any] {
+        guard let open = raw.firstIndex(of: "{"), let close = raw.lastIndex(of: "}"), open < close,
+              let data = String(raw[open...close]).data(using: .utf8),
+              let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
+            throw ActionAgentError.badResponse
+        }
+        return obj
+    }
+
+    // MARK: Validation + one-shot repair (against the real tool schemas)
+
+    /// Shallow-but-strict schema check: required fields present, arrays are arrays, objects are
+    /// objects, scalars typed right. Returns human-readable problems ([] = valid).
+    private static func validate(_ args: [String: Any], ip: [String: Any]) -> [String] {
+        guard let props = ip["properties"] as? [String: Any] else { return [] }
+        var errs: [String] = []
+        for r in (ip["required"] as? [String]) ?? [] {
+            let v = args[r]
+            if v == nil || (v as? String)?.isEmpty == true { errs.append("missing required field \"\(r)\"") }
+        }
+        for (k, v) in args {
+            guard let spec = props[k] as? [String: Any] else { errs.append("unknown field \"\(k)\""); continue }
+            switch spec["type"] as? String {
+            case "array" where !(v is [Any]):                errs.append("\"\(k)\" must be an ARRAY")
+            case "object" where !(v is [String: Any]):       errs.append("\"\(k)\" must be an OBJECT")
+            case "string" where !(v is String):              errs.append("\"\(k)\" must be a string")
+            case "number" where !(v is NSNumber), "integer" where !(v is NSNumber):
+                errs.append("\"\(k)\" must be a number")
+            case "boolean" where !(v is Bool || v is NSNumber): errs.append("\"\(k)\" must be a boolean")
+            default: break
+            }
+        }
+        return errs
+    }
+
+    /// Validate every proposed composio action; on errors, one focused ON-DEVICE repair call.
+    private static func repairInvalidActions(_ plan: inout [String: Any], schemas: [String: Any]) async {
+        guard var proposed = plan["proposedWriteActions"] as? [[String: Any]] else { return }
+        for (i, p) in proposed.enumerated() {
+            guard var action = p["action"] as? [String: Any],
+                  (action["type"] as? String)?.lowercased() == "composio",
+                  let slug = action["tool"] as? String,
+                  let ip = schemas[slug] as? [String: Any] else { continue }
+            let args = action["arguments"] as? [String: Any] ?? [:]
+            let errs = validate(args, ip: ip)
+            guard !errs.isEmpty,
+                  let ipJSON = try? JSONSerialization.data(withJSONObject: ip),
+                  let argsJSON = try? JSONSerialization.data(withJSONObject: args) else { continue }
+            let prompt = "Tool: \(slug)\nJSON schema of its input:\n\(String(data: ipJSON, encoding: .utf8) ?? "")"
+                + "\n\nCurrent (INVALID) arguments:\n\(String(data: argsJSON, encoding: .utf8) ?? "")"
+                + "\n\nValidation errors:\n- \(errs.joined(separator: "\n- "))"
+                + "\n\nReturn ONLY the corrected arguments JSON object. Keep the user's values; fix shapes/types; drop unknown fields."
+            guard let out = try? await runLLM(
+                system: "You repair tool-call arguments. Reply with ONLY a JSON object — the corrected arguments — no prose, no fence.",
+                user: prompt
+            ), let fixed = try? firstJSON(out) else { continue }
+            if validate(fixed, ip: ip).count < errs.count {
+                action["arguments"] = fixed
+                var item = p; item["action"] = action
+                proposed[i] = item
+            }
+        }
+        plan["proposedWriteActions"] = proposed
     }
 }

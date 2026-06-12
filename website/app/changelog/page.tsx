@@ -20,7 +20,7 @@ const DAYS: Day[] = [
       "The day Action mode became a real assistant: speak any request, however you phrase it, and Verba works out what you mean, plans the steps and acts, always with your confirmation, in a calm, JARVIS-style feed. Connect 1,000+ apps to act on by voice, and the whole app now speaks 15 languages. Plus a calmer recording pill, your whole task tree at a glance, 100 levels with a lifetime reward, social profiles, and a security-hardening pass.",
     entries: [
       {
-        version: "0.7.8 → 0.9.0",
+        version: "0.7.8 → 0.9.1",
         title: "Meet JARVIS, your voice agent for 1,000+ apps",
         items: [
           "Action mode is now a real assistant. Say what you want however it comes out, “remind me in 10 to grab the cake” or “I’m hungry, cake in ten minutes” land the same way, and Verba recovers the true intent, resolves the time, and shows exactly what it will do before doing it.",
@@ -36,6 +36,7 @@ const DAYS: Day[] = [
           "Tap any app to see everything you can do with it, every action, each with example phrases you can say to JARVIS (“Send an email to Marc about the demo”, “Post in the team channel that the demo is ready”). And JARVIS now knows the full action set of every app you've connected.",
           "The catalog now spans 1,000+ apps, and the comparison shows what's unique: Verba is the only dictation app with a voice agent that acts on your connected apps, not just edits text.",
           "The recording pill is smoother: the live waveform no longer re-renders the whole pill every frame, so it stays rock-steady while you talk. And a tip in Settings: name the app you want (“send a Slack message…”) and JARVIS picks the right one first try.",
+          "JARVIS now thinks on YOUR engine: planning runs on-device through your Claude subscription (Claude Code) or your local model, with your own keys as an option. Verba's servers only relay the connected-app calls — your requests never burn a shared cloud key, and JARVIS keeps working even offline-first setups.",
           "Connect almost anything: most apps authenticate with an API key, not a browser sign-in — so Connect now opens a small form asking for exactly the keys that app needs (and still opens the browser for the OAuth ones). After an action, JARVIS can suggest a smart next step (“Invite people to the event?”) and carry it out.",
         ],
       },
