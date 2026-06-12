@@ -1114,6 +1114,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // sound + HUD flash that would otherwise imply a change happened (reads as a bug).
         guard Settings.shared.styles.count > 1 else { return }
         let style = Settings.shared.cycleStyle(dir)
+        Gamification.shared.flag(.changedStyle)
         SoundFX.mode()
         if state == .idle {
             flashMode("Style · \(style.name)")

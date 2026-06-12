@@ -68,6 +68,8 @@ final class NotesStore: ObservableObject {
         entries.insert(entry, at: 0)
         save()
         push(entry)   // sync text to the cloud (never the audio)
+        Gamification.shared.flag(.savedNote)
+        if !allTags.isEmpty { Gamification.shared.flag(.taggedNote) }
         return entry
     }
 
@@ -97,6 +99,7 @@ final class NotesStore: ObservableObject {
         entries[i].locked = true
         save()
         push(entries[i])
+        Gamification.shared.flag(.lockedNote)
         return true
     }
 

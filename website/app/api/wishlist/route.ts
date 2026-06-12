@@ -16,11 +16,11 @@ const cors = {
 };
 
 const LINEAR_URL = "https://api.linear.app/graphql";
-const TEAM_ID = "e2568123-2c86-4283-a88f-88e0b508f5ae";
-const PROJECT_ID = "6844e446-a0ca-46b6-a8b4-997cfa13ad83";
+const TEAM_ID = "16e9d4a0-b7ca-4463-ab8a-a024a4049ba1";
+const PROJECT_ID = "66e42b13-f82b-43b9-be0a-6ec5c709e2ab";
 const WISHLIST_LABEL_ID = "b440fe10-8e32-4182-867b-2eab5c1b7d76";
 // File every wishlist issue into Backlog for consistent triage.
-const BACKLOG_STATE_ID = "e7d24547-43c5-464d-8881-413f6e80dd2e";
+const BACKLOG_STATE_ID = "fb9524bf-9b3c-433a-ac87-49069f7523f1";
 
 const CONVEX_MARKER = "convexId:";
 

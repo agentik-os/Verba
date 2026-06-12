@@ -15,6 +15,17 @@ enum GameFlag: String, CaseIterable {
     case usedActionMode, usedVoiceNote, usedVoiceTodo, usedTransform
     case nightOwl        // dictated between 00:00 and 04:00
     case earlyBird       // dictated between 05:00 and 07:00
+    // Feature-exploration flags — power the "Explore Verba" gamified self-onboarding category.
+    case savedNote       // created/saved a long-form Note
+    case taggedNote      // filed a note with a #tag (Bear-style)
+    case lockedNote      // password-protected a note
+    case createdTask     // created a task in the Task Manager
+    case checkedTask     // checked off a task
+    case usedDictionary  // added a word to the dictionary
+    case usedScratchpad  // used the Scratchpad (block note)
+    case usedSnippet     // saved a snippet
+    case connectedApp    // connected an app for JARVIS
+    case changedStyle    // cycled a style on top of a mode
 }
 
 // MARK: Level model
@@ -314,6 +325,9 @@ final class Gamification: ObservableObject {
     static let all: [Achievement] = groups.flatMap(\.items)
 
     static let groups: [Group] = [
+        // FIRST: a gamified self-onboarding — one badge per feature + shortcut, so the user
+        // discovers everything Verba can do and sees each one tick off as they try it.
+        Group(id: "Explore Verba", icon: "wand.and.stars.inverse", items: cat_Explore_Verba),
         Group(id: "Words Spoken", icon: "text.word.spacing", items: cat_Words_Spoken),
         Group(id: "Dictations", icon: "mic.fill", items: cat_Dictations),
         Group(id: "Streaks", icon: "flame.fill", items: cat_Streaks),
@@ -322,7 +336,6 @@ final class Gamification: ObservableObject {
         Group(id: "Big Days", icon: "sun.max.fill", items: cat_Big_Days),
         Group(id: "Time Saved", icon: "clock.arrow.circlepath", items: cat_Time_Saved),
         Group(id: "Airtime", icon: "waveform", items: cat_Airtime),
-        Group(id: "Modes & Features", icon: "square.grid.2x2.fill", items: cat_Modes_Features),
         Group(id: "Special", icon: "sparkles", items: cat_Special),
     ]
 
@@ -513,19 +526,36 @@ final class Gamification: ObservableObject {
         .init(id: "air250h", title: "Voice Marathoner", blurb: "250 hours of talking, total.", icon: "infinity", tier: .platinum) { s,_ in s.totalSeconds >= 900000 },
         .init(id: "air500h", title: "Endless Voice", blurb: "500 hours of talking, total.", icon: "infinity.circle.fill", tier: .diamond) { s,_ in s.totalSeconds >= 1800000 },
     ]
-    private static let cat_Modes_Features: [Achievement] = [
-        .init(id: "notetaker", title: "Note to Self", blurb: "Captured a voice note.", icon: "note.text", tier: .bronze) { _,f in f.contains(.usedVoiceNote) },
-        .init(id: "doer", title: "Just Say It", blurb: "Captured a to-do by voice.", icon: "checklist", tier: .bronze) { _,f in f.contains(.usedVoiceTodo) },
-        .init(id: "shaper", title: "Reshaper", blurb: "Transformed a selection.", icon: "wand.and.stars", tier: .bronze) { _,f in f.contains(.usedTransform) },
-        .init(id: "coder", title: "Shipped It", blurb: "Used Coding mode.", icon: "chevron.left.forwardslash.chevron.right", tier: .bronze) { _,f in f.contains(.usedCoding) },
-        .init(id: "polyglot", title: "Polyglot", blurb: "Used Translate mode.", icon: "globe", tier: .bronze) { _,f in f.contains(.usedTranslate) },
-        .init(id: "intentful", title: "Intentful", blurb: "Used Intent mode.", icon: "scope", tier: .bronze) { _,f in f.contains(.usedIntent) },
-        .init(id: "polisher", title: "Polished", blurb: "Used Polish mode.", icon: "sparkles", tier: .bronze) { _,f in f.contains(.usedPolish) },
-        .init(id: "flower", title: "In the Flow", blurb: "Used Flow (verbatim) mode.", icon: "waveform", tier: .bronze) { _,f in f.contains(.usedFlow) },
-        .init(id: "seer", title: "Second Sight", blurb: "Used Context (screen-aware) mode.", icon: "eye.fill", tier: .silver) { _,f in f.contains(.usedContext) },
-        .init(id: "commander", title: "Hands Free", blurb: "Ran an Action by voice.", icon: "wand.and.rays", tier: .silver) { _,f in f.contains(.usedActionMode) },
-        .init(id: "allcaptures", title: "Full Toolkit", blurb: "Used Action, Note, To-do and Transform.", icon: "square.grid.2x2.fill", tier: .gold) { _,f in [GameFlag.usedActionMode, .usedVoiceNote, .usedVoiceTodo, .usedTransform].allSatisfy { f.contains($0) } },
-        .init(id: "allmodes", title: "Touch of Everything", blurb: "Used Flow, Polish, Intent, Translate, Context and Coding.", icon: "square.grid.3x3.fill", tier: .gold) { _,f in [GameFlag.usedFlow, .usedPolish, .usedIntent, .usedTranslate, .usedContext, .usedCoding].allSatisfy { f.contains($0) } },
+    // "Explore Verba" — the gamified onboarding: a checklist of every feature + shortcut, ordered
+    // roughly how you'd discover them. Existing ids are preserved so earned badges stay earned.
+    private static let cat_Explore_Verba: [Achievement] = [
+        .init(id: "ex_dictate", title: "First Words", blurb: "Make your first dictation.", icon: "mic.fill", tier: .bronze) { s,_ in s.totalCount >= 1 },
+        .init(id: "flower", title: "In the Flow", blurb: "Dictate in Flow (verbatim) mode.", icon: "waveform", tier: .bronze) { _,f in f.contains(.usedFlow) },
+        .init(id: "polisher", title: "Polished", blurb: "Use Polish mode to clean up your speech.", icon: "sparkles", tier: .bronze) { _,f in f.contains(.usedPolish) },
+        .init(id: "intentful", title: "Intentful", blurb: "Use Intent mode — say what you want done.", icon: "scope", tier: .bronze) { _,f in f.contains(.usedIntent) },
+        .init(id: "polyglot", title: "Polyglot", blurb: "Translate live with Translate mode.", icon: "globe", tier: .bronze) { _,f in f.contains(.usedTranslate) },
+        .init(id: "seer", title: "Second Sight", blurb: "Use Context mode — Verba reads your screen.", icon: "eye.fill", tier: .silver) { _,f in f.contains(.usedContext) },
+        .init(id: "coder", title: "Shipped It", blurb: "Use Coding mode.", icon: "chevron.left.forwardslash.chevron.right", tier: .bronze) { _,f in f.contains(.usedCoding) },
+        .init(id: "changedstyle", title: "Stylist", blurb: "Cycle a style on top of a mode (Fn + ] / [).", icon: "paintbrush", tier: .bronze) { _,f in f.contains(.changedStyle) },
+        .init(id: "notetaker", title: "Voice Note", blurb: "Capture a voice note (Fn + Z).", icon: "doc.text", tier: .bronze) { _,f in f.contains(.usedVoiceNote) },
+        .init(id: "savednote", title: "First Note", blurb: "Save a long-form note in the Notes tab.", icon: "note.text", tier: .bronze) { _,f in f.contains(.savedNote) },
+        .init(id: "taggednote", title: "Filed It", blurb: "Tag a note with a #hashtag (Bear-style filing).", icon: "number", tier: .bronze) { _,f in f.contains(.taggedNote) },
+        .init(id: "lockednote", title: "Top Secret", blurb: "Protect a note with a password.", icon: "lock.fill", tier: .silver) { _,f in f.contains(.lockedNote) },
+        .init(id: "doer", title: "Voice To-do", blurb: "Capture a to-do by voice (Fn + T).", icon: "checklist", tier: .bronze) { _,f in f.contains(.usedVoiceTodo) },
+        .init(id: "createdtask", title: "Task Maker", blurb: "Create a task in the Task Manager.", icon: "checklist.checked", tier: .bronze) { _,f in f.contains(.createdTask) },
+        .init(id: "checkedtask", title: "Done!", blurb: "Check off a task.", icon: "checkmark.circle.fill", tier: .bronze) { _,f in f.contains(.checkedTask) },
+        .init(id: "usedscratch", title: "Scratch That", blurb: "Jot something in the Scratchpad.", icon: "pencil.and.scribble", tier: .bronze) { _,f in f.contains(.usedScratchpad) },
+        .init(id: "useddict", title: "Word Wise", blurb: "Teach Verba a word in the Dictionary.", icon: "character.book.closed.fill", tier: .bronze) { _,f in f.contains(.usedDictionary) },
+        .init(id: "usedsnippet", title: "Snippet Saver", blurb: "Save a snippet you can insert by voice.", icon: "text.append", tier: .bronze) { _,f in f.contains(.usedSnippet) },
+        .init(id: "shaper", title: "Reshaper", blurb: "Transform selected text (⌥ + X).", icon: "wand.and.stars", tier: .bronze) { _,f in f.contains(.usedTransform) },
+        .init(id: "commander", title: "Hands Free", blurb: "Run a voice Action with JARVIS (Fn + X).", icon: "wand.and.rays", tier: .silver) { _,f in f.contains(.usedActionMode) },
+        .init(id: "connectedapp", title: "Plugged In", blurb: "Connect an app for JARVIS to act on.", icon: "app.connected.to.app.below.fill", tier: .silver) { _,f in f.contains(.connectedApp) },
+        .init(id: "allmodes", title: "Mode Master", blurb: "Try all six dictation modes.", icon: "square.grid.3x3.fill", tier: .gold) { _,f in [GameFlag.usedFlow, .usedPolish, .usedIntent, .usedTranslate, .usedContext, .usedCoding].allSatisfy { f.contains($0) } },
+        .init(id: "explorer_all", title: "Verba Explorer", blurb: "Try every core feature and shortcut. You know Verba inside out.", icon: "trophy.fill", tier: .diamond) { _,f in
+            [GameFlag.usedFlow, .usedPolish, .usedIntent, .usedTranslate, .usedContext, .usedCoding,
+             .usedVoiceNote, .usedVoiceTodo, .usedActionMode, .usedTransform, .changedStyle,
+             .savedNote, .taggedNote, .lockedNote, .createdTask, .checkedTask,
+             .usedScratchpad, .usedDictionary, .usedSnippet, .connectedApp].allSatisfy { f.contains($0) } },
     ]
     private static let cat_Special: [Achievement] = [
         .init(id: "dawn", title: "Early Bird", blurb: "Dictated at dawn.", icon: "sunrise.fill", tier: .silver) { _,f in f.contains(.earlyBird) },

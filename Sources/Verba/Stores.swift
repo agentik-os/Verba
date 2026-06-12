@@ -311,6 +311,7 @@ final class DictionaryStore: ObservableObject {
         let sp = (spoken?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : $0 } ?? w
         if terms.contains(where: { $0.written.lowercased() == w.lowercased() }) { return false }
         terms.append(DictTerm(spoken: sp, written: w, auto: false))
+        Gamification.shared.flag(.usedDictionary)
         return true
     }
 
@@ -714,6 +715,7 @@ final class TodoStore: ObservableObject {
     func addTask(_ projectID: UUID, _ title: String = "") {
         guard let pi = projects.firstIndex(where: { $0.id == projectID }) else { return }
         projects[pi].tasks.append(TodoTask(title: title))
+        Gamification.shared.flag(.createdTask)
     }
     func removeTask(_ projectID: UUID, _ taskID: UUID) {
         guard let pi = projects.firstIndex(where: { $0.id == projectID }) else { return }
@@ -757,6 +759,7 @@ final class TodoStore: ObservableObject {
             if let ti = projects[pi].tasks.firstIndex(where: { $0.id == taskID }) {
                 projects[pi].tasks[ti].done = done
                 for si in projects[pi].tasks[ti].subtasks.indices { projects[pi].tasks[ti].subtasks[si].done = done }
+                if done { Gamification.shared.flag(.checkedTask) }
                 return
             }
         }

@@ -21,9 +21,13 @@ const DAYS: Day[] = [
       "A calmer first run and Bear-style notes. The onboarding now teaches every shortcut — Action, Note, To-do, Transform and more — opens the app the moment you finish, and lets you keep your profile private. Notes get a proper nested tag tree for filing, and you can keep your history text without storing the audio.",
     entries: [
       {
-        version: "0.9.5 → 0.9.8",
+        version: "0.9.5 → 0.9.10",
         title: "Onboarding that shows everything, and Bear-style notes",
         items: [
+          "New \"Explore Verba\" achievements — a gamified tour of every feature and shortcut. As you try each one (a mode, a note, a tag, the Scratchpad, a task you check off, the dictionary, a connected app, a voice Action…) the matching badge ticks off, all the way to the Verba Explorer trophy. It sits first in Achievements so it doubles as a friendly way to learn the app.",
+          "Notes Intent mode fixed: it no longer auto-formats with an empty instruction. After you record, the raw transcript stays put and the instruction field is focused — type how to shape the note, press Enter, and it applies.",
+          "Feedback fixes from the in-app reports: Add-a-word in the Dictionary now confirms on Enter and jumps to a fresh word so you can add several in a row; the Notes Intent field scrolls when your instruction is long instead of truncating; and on AZERTY (and similar) layouts, Shift+number types a digit again instead of switching modes.",
+          "Send Feedback now runs \"Improve with AI\" for you: tap Send, watch it structure your note, edit the result if you like, then Confirm to send or Cancel to go back.",
           "Lock a note with a password — and each note can have its own. Locked notes are encrypted on your Mac (AES-GCM, a separate key per note); without the password there's no way to read them. Open one, enter its password, and it unlocks just for this session.",
           "Every shortcut is now in Settings ▸ Shortcuts and every one is customizable — including new rebindable Pause/resume and Cancel shortcuts (the default ⌃ and Esc keep working too).",
           "Small thing: the recording pill dropped the little \"esc\" label next to the × — the × still cancels and so does Esc, it just reads cleaner now.",

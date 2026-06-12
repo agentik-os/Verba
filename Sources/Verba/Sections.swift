@@ -615,6 +615,7 @@ struct DictionaryView: View {
     @State private var aiBusy = false
     @State private var aiError: String?
     @State private var selectedID: UUID?    // entry being edited; nil = the "Add" form
+    @FocusState private var focusedTerm: UUID?   // VER-49: focus the current word's field so Enter advances
     @State private var search = ""
     @State private var filterCorrections: Bool? = nil   // nil = all, true = corrections, false = words
     @State private var autoOnly = false                 // when on, show only auto-learned terms
@@ -823,6 +824,15 @@ struct DictionaryView: View {
                     Text(L("Written")).font(.subheadline.weight(.semibold))
                     TextField(correction ? L("The correct spelling Verba should write") : L("Word the transcriber should spell right"),
                               text: $store.terms[idx].written).cleanField()
+                        .focused($focusedTerm, equals: store.terms[idx].id)
+                        // VER-49: Enter confirms this word and jumps to a fresh one (focused), so you
+                        // can add words back-to-back without reaching for the mouse.
+                        .onSubmit {
+                            if !store.terms[idx].written.trimmingCharacters(in: .whitespaces).isEmpty {
+                                Gamification.shared.flag(.usedDictionary)
+                                newWord()
+                            }
+                        }
                         .help(correction
                               ? L("The correct spelling Verba should write instead.")
                               : L("A vocabulary hint sent to the transcriber so it recognizes and spells this word."))
@@ -909,10 +919,12 @@ struct DictionaryView: View {
         }
     }
 
-    /// Append a fresh vocabulary word and jump to its editor.
+    /// Append a fresh vocabulary word and jump to its editor (and focus it, so Enter can chain adds).
     private func newWord() {
-        store.terms.append(DictTerm(spoken: "", written: ""))
-        selectedID = store.terms.last?.id
+        let t = DictTerm(spoken: "", written: "")
+        store.terms.append(t)
+        selectedID = t.id
+        DispatchQueue.main.async { focusedTerm = t.id }   // focus after the row renders
     }
 
     private func remove(_ t: DictTerm) {
@@ -1112,6 +1124,7 @@ struct SnippetsView: View {
     private func newSnippet() {
         store.items.append(Snippet(trigger: "", expansion: ""))
         selectedID = store.items.last?.id
+        Gamification.shared.flag(.usedSnippet)
     }
 
     private func remove(_ s: Snippet) {
@@ -1500,6 +1513,7 @@ struct ScratchpadView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .padding(.horizontal, 24).padding(.vertical, 20)
                         .background(.softFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .onChange(of: pad.text) { _, v in if !v.isEmpty { Gamification.shared.flag(.usedScratchpad) } }
                 }
             }
             .overlay {

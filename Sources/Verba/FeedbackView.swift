@@ -60,6 +60,9 @@ struct FeedbackView: View {
 
     // "Improve with AI" reformat state.
     @State private var improving = false
+    // VER-52: after Send auto-runs "Improve with AI", we hold here so the user can edit the
+    // enhanced text and explicitly Confirm or Cancel before it's actually submitted.
+    @State private var awaitingConfirm = false
     // VER-8: the pre-improve draft, kept so the rewrite is reversible. Non-nil only
     // while the current draft IS an AI rewrite the user hasn't edited or reverted yet.
     @State private var preImproveDraft: String?
@@ -125,9 +128,10 @@ struct FeedbackView: View {
                         .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .onChange(of: draft) { _, newValue in
                             if error != nil { error = nil }
-                            // Any manual edit that diverges from the AI rewrite retires
-                            // the "revert" affordance (we'd no longer restore cleanly).
-                            if preImproveDraft != nil, !improving, newValue != lastImproved {
+                            // Any manual edit that diverges from the AI rewrite retires the "revert"
+                            // affordance — EXCEPT while awaiting Confirm (VER-52), where the user is
+                            // meant to edit the AI text and Cancel must still restore the original.
+                            if preImproveDraft != nil, !improving, !awaitingConfirm, newValue != lastImproved {
                                 preImproveDraft = nil
                                 lastImproved = nil
                             }
@@ -253,15 +257,30 @@ struct FeedbackView: View {
                         }
                     }
                     Spacer()
-                    Button(action: submit) {
-                        if submitting {
-                            ProgressView().controlSize(.small)
-                        } else {
-                            Text(L("Send feedback"))
+                    if awaitingConfirm {
+                        // VER-52: the AI-enhanced feedback is shown above (editable) — confirm to send it,
+                        // or cancel back to your original text.
+                        Button(L("Cancel")) {
+                            revertImprove()
+                            awaitingConfirm = false
                         }
+                        .buttonStyle(.plain).foregroundStyle(.secondary).disabled(submitting)
+                        Button(action: submit) {
+                            if submitting { ProgressView().controlSize(.small) } else { Text(L("Confirm feedback")) }
+                        }
+                        .dialogPrimary(tint: .primary).disabled(!canSubmit)
+                    } else {
+                        Button(action: sendTapped) {
+                            if submitting || improving {
+                                HStack(spacing: 7) { ProgressView().controlSize(.small)
+                                    Text(improving ? L("Improving…") : L("Sending…")).font(.callout) }
+                            } else {
+                                Text(L("Send feedback"))
+                            }
+                        }
+                        .dialogPrimary(tint: .primary)
+                        .disabled(!canSubmit || improving)
                     }
-                    .dialogPrimary(tint: .primary)
-                    .disabled(!canSubmit)
                 }
             }
             .padding(.horizontal, 28).padding(.bottom, 18)
@@ -436,6 +455,9 @@ struct FeedbackView: View {
                 draft = ""
                 screenshot = nil
                 screenshotThumb = nil
+                awaitingConfirm = false
+                preImproveDraft = nil
+                lastImproved = nil
                 flashToast()
             }
         }
@@ -451,9 +473,20 @@ struct FeedbackView: View {
         draft = original
     }
 
+    /// VER-52: "Send feedback" first runs the AI improvement (unless the draft is already the
+    /// unedited AI version), then asks the user to Confirm or Cancel before actually submitting.
+    private func sendTapped() {
+        let t = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !t.isEmpty, !submitting, !improving else { return }
+        // Already the AI-structured version and untouched → no need to improve again, just submit.
+        if let li = lastImproved, t == li.trimmingCharacters(in: .whitespacesAndNewlines) { submit(); return }
+        improveWithAI(thenConfirm: true)
+    }
+
     /// Send the current draft through the reprompt pipeline with a concise clean-up instruction
-    /// and replace the draft with the improved version. Non-destructive on error.
-    private func improveWithAI() {
+    /// and replace the draft with the improved version. Non-destructive on error. When
+    /// `thenConfirm` is true (the Send flow), surface the Confirm/Cancel step on success.
+    private func improveWithAI(thenConfirm: Bool = false) {
         let original = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !original.isEmpty, !improving else { return }
         improving = true
@@ -482,6 +515,7 @@ struct FeedbackView: View {
                     preImproveDraft = original
                     lastImproved = improved
                     draft = improved
+                    if thenConfirm { awaitingConfirm = true }   // VER-52: now show Confirm / Cancel
                 }
             } catch {
                 await MainActor.run {
