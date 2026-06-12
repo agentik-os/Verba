@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { competitors } from "@/lib/competitors";
+import { FEATURES } from "@/lib/features";
 
 const BASE = "https://verba.run";
 
@@ -7,8 +8,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
   const staticPages: MetadataRoute.Sitemap = [
     { url: BASE, lastModified: now, changeFrequency: "weekly", priority: 1 },
+    { url: `${BASE}/best-mac-dictation-app`, lastModified: now, changeFrequency: "monthly", priority: 0.95 },
     { url: `${BASE}/compare`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${BASE}/best-mac-dictation-app`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${BASE}/features`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${BASE}/docs`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE}/changelog`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${BASE}/acknowledgements`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
     { url: `${BASE}/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
@@ -23,5 +26,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...vsPages];
+  const featurePages: MetadataRoute.Sitemap = FEATURES.map((f) => ({
+    url: `${BASE}/features/${f.slug}`,
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.8,
+  }));
+
+  return [...staticPages, ...featurePages, ...vsPages];
 }

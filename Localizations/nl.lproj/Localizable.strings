@@ -1129,6 +1129,7 @@
 "⌃ (Control) pauses & resumes, ⌥ (Option) switches mode mid-sentence, Esc cancels — any time you're recording." = "⌃ (Control) pauzeert en hervat, ⌥ (Option) wisselt midden in een zin van modus, Esc annuleert — wanneer je ook opneemt.";
 "Still seeing the macOS emoji / keyboard popup? Turn it off in System Settings ▸ Keyboard ▸ “Press 🌐 key to” → Do Nothing." = "Zie je nog steeds de macOS emoji-/toetsenbordpop-up? Schakel die uit in Systeeminstellingen ▸ Keyboard ▸ “Press 🌐 key to” → Niets doen.";
 "All Notes" = "Alle notities";
+"All Tasks" = "Alle taken";
 "Untagged" = "Zonder tag";
 "No untagged notes" = "Geen notities zonder tag";
 "Pick another tag, or All Notes to see every note." = "Kies een andere tag, of Alle notities om elke notitie te zien.";
@@ -1167,3 +1168,21 @@
 "Markdown (.md)" = "Markdown (.md)";
 "Plain text (.txt)" = "Platte tekst (.txt)";
 "Export note" = "Notitie exporteren";
+
+/* Settings ▸ Changelog */
+"Changelog" = "Wijzigingen";
+"What's new, every release" = "Wat er nieuw is, elke release";
+"You're on" = "Je gebruikt";
+"Everything Verba has shipped since launch — newest first." = "Alles wat Verba sinds de lancering heeft uitgebracht — nieuwste eerst.";
+
+/* Community — Discord */
+"Discord" = "Discord";
+"Join the Verba community on Discord" = "Word lid van de Verba-community op Discord";
+"time saved" = "bespaarde tijd";
+
+/* Leaderboard — you-vs-them badge comparison */
+"You've earned this one too" = "Jij hebt deze ook";
+"you both have" = "jullie beide";
+"they have, you don't" = "heeft hij, jij niet";
+"you have, they don't" = "heb jij, hij niet";
+"Badges with this mark are ones you've earned too — so you can see at a glance where you're ahead or behind." = "Badges met dit teken heb jij ook verdiend, zo zie je in één oogopslag waar je voor- of achterloopt.";

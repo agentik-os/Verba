@@ -1129,6 +1129,7 @@
 "⌃ (Control) pauses & resumes, ⌥ (Option) switches mode mid-sentence, Esc cancels — any time you're recording." = "녹음 중 언제든지 ⌃(Control)로 일시정지·재개, ⌥(Option)으로 문장 도중 모드 전환, Esc로 취소할 수 있습니다.";
 "Still seeing the macOS emoji / keyboard popup? Turn it off in System Settings ▸ Keyboard ▸ “Press 🌐 key to” → Do Nothing." = "macOS 이모지 / 키보드 팝업이 계속 보이나요? System Settings ▸ Keyboard ▸ “Press 🌐 key to” → 사용 안 함에서 끄세요.";
 "All Notes" = "모든 노트";
+"All Tasks" = "모든 작업";
 "Untagged" = "태그 없음";
 "No untagged notes" = "태그 없는 노트가 없습니다";
 "Pick another tag, or All Notes to see every note." = "다른 태그를 선택하거나 모든 노트로 전체 노트를 확인하세요.";
@@ -1167,3 +1168,21 @@
 "Markdown (.md)" = "마크다운 (.md)";
 "Plain text (.txt)" = "일반 텍스트 (.txt)";
 "Export note" = "노트 내보내기";
+
+/* Settings ▸ Changelog */
+"Changelog" = "변경 내역";
+"What's new, every release" = "모든 릴리스의 새로운 기능";
+"You're on" = "현재 버전";
+"Everything Verba has shipped since launch — newest first." = "출시 이후 Verba가 선보인 모든 것 — 최신순.";
+
+/* Community — Discord */
+"Discord" = "Discord";
+"Join the Verba community on Discord" = "Discord에서 Verba 커뮤니티에 참여하세요";
+"time saved" = "절약한 시간";
+
+/* Leaderboard — you-vs-them badge comparison */
+"You've earned this one too" = "당신도 획득함";
+"you both have" = "둘 다 보유";
+"they have, you don't" = "상대만 보유";
+"you have, they don't" = "나만 보유";
+"Badges with this mark are ones you've earned too — so you can see at a glance where you're ahead or behind." = "이 표시가 있는 배지는 당신도 획득한 것입니다. 어디서 앞서거나 뒤처지는지 한눈에 알 수 있어요.";

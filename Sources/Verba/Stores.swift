@@ -177,6 +177,22 @@ final class Stats: ObservableObject {
         return n
     }
 
+    /// Longest run of consecutive active days, ever (used by Insights + the public social profile).
+    var longestStreak: Int {
+        let active = Set(days.filter { $0.value.count > 0 }.keys)
+        guard !active.isEmpty else { return 0 }
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.locale = Locale(identifier: "en_US_POSIX")
+        var best = 0
+        for key in active {
+            guard let d = f.date(from: key) else { continue }
+            if active.contains(f.string(from: d.addingTimeInterval(-86400))) { continue }   // not a run start
+            var len = 1, cur = d
+            while active.contains(f.string(from: cur.addingTimeInterval(86400))) { len += 1; cur = cur.addingTimeInterval(86400) }
+            best = max(best, len)
+        }
+        return best
+    }
+
     /// (label, words) for the last `n` days, oldest → newest.
     func recentDays(_ n: Int = 14) -> [(label: String, words: Int)] {
         let f = DateFormatter(); f.dateFormat = "MMM d"

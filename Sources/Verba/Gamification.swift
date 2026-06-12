@@ -181,10 +181,10 @@ final class Gamification: ObservableObject {
         return s.totalWords / 4 + s.totalCount * 3 + s.streak * 40
     }
 
-    /// There are 100 levels. Reaching 100 is the ultimate, aspirational goal.
-    static let maxLevel = 100
+    /// There are 1,000 levels. Reaching 1,000 (Voice Singularity) is the ultimate, aspirational goal.
+    static let maxLevel = 1000
 
-    /// Level curve: each level costs more (quadratic), capped at 100.
+    /// Level curve: each level costs more (quadratic), capped at maxLevel.
     func level(for xp: Int) -> LevelInfo {
         // xp needed to REACH level n (n>=1) = 90 * (n-1)^2
         func threshold(_ n: Int) -> Int { 90 * (n - 1) * (n - 1) }
@@ -203,18 +203,26 @@ final class Gamification: ObservableObject {
 
     static func title(for level: Int) -> String {
         switch level {
-        case ..<3:    return "Newcomer"
-        case 3..<6:   return "Speaker"
-        case 6..<10:  return "Orator"
-        case 10..<15: return "Wordsmith"
-        case 15..<22: return "Virtuoso"
-        case 22..<30: return "Maestro"
-        case 30..<40: return "Luminary"
-        case 40..<52: return "Sage"
-        case 52..<65: return "Oracle"
-        case 65..<80: return "Mythic"
-        case 80..<100: return "Legend"
-        default:      return "Voice Immortal"
+        case ..<3:       return "Newcomer"
+        case 3..<6:      return "Speaker"
+        case 6..<10:     return "Orator"
+        case 10..<15:    return "Wordsmith"
+        case 15..<22:    return "Virtuoso"
+        case 22..<30:    return "Maestro"
+        case 30..<40:    return "Luminary"
+        case 40..<52:    return "Sage"
+        case 52..<65:    return "Oracle"
+        case 65..<80:    return "Mythic"
+        case 80..<100:   return "Legend"
+        case 100..<150:  return "Voice Immortal"
+        case 150..<220:  return "Ascendant"
+        case 220..<300:  return "Celestial"
+        case 300..<420:  return "Transcendent"
+        case 420..<560:  return "Ethereal"
+        case 560..<720:  return "Empyrean"
+        case 720..<900:  return "Cosmic"
+        case 900..<1000: return "Eternal"
+        default:         return "Voice Singularity"
         }
     }
 
@@ -357,20 +365,43 @@ final class Gamification: ObservableObject {
         profilePushTask?.cancel()
         let work = DispatchWorkItem {
             ConvexClient.registerDevice(token: AuthToken.current)
+            let s = Stats.shared
+            // Public analytics snapshot — the same Insights numbers, so a tapped profile shows them too.
+            let statsSnapshot: [String: Any] = [
+                "wordsToday": self.todayWords,
+                "streak": s.streak,
+                "longestStreak": s.longestStreak,
+                "wordsThisWeek": s.wordsThisWeek,
+                "totalWords": s.totalWords,
+                "dictations": s.totalCount,
+                "wpm": s.avgWPM,
+                "timeSavedMinutes": s.timeSavedMinutes,
+                "bestDayWords": s.bestDayWords,
+            ]
             ConvexClient.call("mutation", "profiles:push", ConvexClient.authedArgs([
                 "alias": Settings.shared.username,
                 "level": self.levelInfo.level,
                 "xp": self.xp,
                 "league": self.league.name,
                 "badges": Array(self.unlocked),
+                "stats": statsSnapshot,
             ])) { _ in }
         }
         profilePushTask = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: work)
     }
 
+    /// A public analytics snapshot (mirrors the owner's Insights), shown on a tapped social profile.
+    struct ProfileStats {
+        var wordsToday = 0, streak = 0, longestStreak = 0, wordsThisWeek = 0
+        var totalWords = 0, dictations = 0, wpm = 0, timeSavedMinutes = 0, bestDayWords = 0
+    }
+
     /// Another player's public profile, fetched by their leaderboard alias.
-    struct OtherProfile { let alias: String; let level: Int; let league: String; let badges: Set<String> }
+    struct OtherProfile {
+        let alias: String; let level: Int; let league: String; let badges: Set<String>
+        var stats: ProfileStats?   // nil for profiles published before analytics shipped
+    }
 
     func fetchProfile(alias: String, _ done: @escaping (OtherProfile?) -> Void) {
         ConvexClient.call("query", "profiles:byAlias", ["alias": alias]) { data in
@@ -378,11 +409,24 @@ final class Gamification: ObservableObject {
                   let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   obj["status"] as? String == "success",
                   let v = obj["value"] as? [String: Any] else { DispatchQueue.main.async { done(nil) }; return }
+            func intOf(_ d: [String: Any], _ k: String) -> Int {
+                (d[k] as? Int) ?? Int((d[k] as? Double) ?? 0)
+            }
+            var stats: ProfileStats?
+            if let sv = v["stats"] as? [String: Any] {
+                stats = ProfileStats(
+                    wordsToday: intOf(sv, "wordsToday"), streak: intOf(sv, "streak"),
+                    longestStreak: intOf(sv, "longestStreak"), wordsThisWeek: intOf(sv, "wordsThisWeek"),
+                    totalWords: intOf(sv, "totalWords"), dictations: intOf(sv, "dictations"),
+                    wpm: intOf(sv, "wpm"), timeSavedMinutes: intOf(sv, "timeSavedMinutes"),
+                    bestDayWords: intOf(sv, "bestDayWords"))
+            }
             let p = OtherProfile(
                 alias: v["alias"] as? String ?? alias,
-                level: (v["level"] as? Int) ?? Int((v["level"] as? Double) ?? 0),
+                level: intOf(v, "level"),
                 league: v["league"] as? String ?? "Bronze",
-                badges: Set((v["badges"] as? [String]) ?? []))
+                badges: Set((v["badges"] as? [String]) ?? []),
+                stats: stats)
             DispatchQueue.main.async { done(p) }
         }
     }

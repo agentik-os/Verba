@@ -1,0 +1,287 @@
+import Foundation
+
+// The release story, shown in Settings ▸ Changelog and mirrored on verba.run/changelog
+// (keep both in sync — see the verba-site-changelog-sync rule). Content is editorial release
+// notes, kept in English like the achievement copy (NOT L()-wrapped); only the surrounding
+// Settings chrome is localized.
+
+struct ChangelogEntry: Identifiable {
+    let id = UUID()
+    let version: String        // "0.9.14", "website", "Under the hood", …
+    let title: String
+    let items: [String]
+    var time: String? = nil
+
+    /// The little pill label: numeric versions read "v0.9.14", "website" reads "web", and
+    /// editorial buckets ("Under the hood") show verbatim.
+    var badge: String {
+        if version == "website" { return "web" }
+        if let f = version.first, f.isNumber { return "v\(version)" }
+        return version
+    }
+}
+
+struct ChangelogDay: Identifiable {
+    let id = UUID()
+    let date: String
+    var tag: String? = nil
+    var window: String? = nil
+    let summary: String
+    let entries: [ChangelogEntry]
+}
+
+enum Changelog {
+    static let days: [ChangelogDay] = [
+        ChangelogDay(
+            date: "June 12, 2026", tag: "Today",
+            summary: "A calmer first run, Bear-style filing, and the story in the app. Onboarding now teaches every shortcut, opens the app the moment you finish, and lets you keep your profile private. Notes and Tasks both get a proper nested tag tree for filing, you can lock individual notes, the full changelog lives right inside Settings, the level ladder now climbs to 1,000, and every badge explains what it's for.",
+            entries: [
+                ChangelogEntry(version: "0.9.22",
+                    title: "Compare badges with anyone",
+                    items: [
+                        "On another player's profile, you now see which of the badges you've earned too: a checkmark marks every badge you hold — even the ones they haven't, so you can see where you're ahead. A quick tally up top shows what you both have, what they have that you don't, and what you have that they don't.",
+                    ]),
+                ChangelogEntry(version: "0.9.21",
+                    title: "Social profiles now show full Insights",
+                    items: [
+                        "Tap anyone on the leaderboard and you now see their analytics, not just their level and badges: words today, day streak, words this week, total words, dictations, words per minute, time saved, best day ever, and longest streak — the same Insights you see for yourself, now social.",
+                    ]),
+                ChangelogEntry(version: "0.9.20",
+                    title: "Tasks: a tidy status dropdown",
+                    items: [
+                        "In Tasks, the status filter (All, Today, Upcoming, Done, Overdue) is now a clean dropdown instead of a row of chips that ran off the edge of the sidebar — pick a status from a proper menu with icons and a checkmark on the active one.",
+                    ]),
+                ChangelogEntry(version: "0.9.18 → 0.9.19",
+                    title: "A cleaner first line, and a site you can navigate",
+                    items: [
+                        "Fixed for good: a stray first line in Translate and some modes, where the output opened with a preamble (\"Here is the restructured transcript:\", \"Voici la traduction :\") before your text. Verba now strips that line deterministically before anything is pasted, so it can never reach your clipboard again — your transcript lands directly, in every mode.",
+                        "verba.run is reorganized: a Features menu with a dedicated page for each capability — JARVIS, dictation modes, voice notes, voice tasks, live translation, and Context mode — plus a Resources menu, so the nav isn't a wall of links anymore.",
+                        "The landing page is shorter and faster to read: the deep feature walkthroughs moved to their own pages, so the home gets to the point and each feature has a focused page of its own.",
+                        "The new nav menus are now properly readable: the dropdown panels are solid instead of see-through, so the text behind them no longer bleeds through.",
+                    ]),
+                ChangelogEntry(version: "0.9.17",
+                    title: "Docs, a Discord, and a site-wide SEO pass",
+                    items: [
+                        "Community moved to Discord: the Community link in the app (and on the site) now opens our Discord server — come say hi at discord.gg/7xfkfQN9AR.",
+                        "New documentation site at verba.run/docs: setup & permissions, every mode, the AI engines you control, JARVIS, Notes, Tasks, the full shortcut list, privacy, and troubleshooting — all in one place.",
+                        "A thorough SEO/GEO pass on verba.run: richer structured data (WebSite, breadcrumbs, founder/creator, full Offer), social-share images on every page, longer meta descriptions, a www→verba.run redirect, and the docs wired into the sitemap and llms.txt so search engines and AI assistants describe Verba accurately.",
+                    ]),
+                ChangelogEntry(version: "0.9.16",
+                    title: "1,000 levels, and badges that explain themselves",
+                    items: [
+                        "The level ladder now climbs to 1,000 — with a whole new run of titles past Legend: Voice Immortal, Ascendant, Celestial, Transcendent, Ethereal, Empyrean, Cosmic, Eternal, and at the very top, Voice Singularity.",
+                        "Every badge now shows what it's for, right under its name — including on someone else's profile from the leaderboard, so a name like “AI Whisperer” or “Burning the Midnight Oil” tells you exactly what earns it instead of leaving you guessing.",
+                    ]),
+                ChangelogEntry(version: "0.9.14 → 0.9.15",
+                    title: "Tidy Tasks, and the changelog in the app",
+                    items: [
+                        "Tasks file like Notes now: your project tags collapse into a clean, nested sidebar tree — All Tasks and Untagged at the top, parent tags opening to their children with a count each. Click any tag to filter, including every project nested beneath it. No more flat wall of tag chips.",
+                        "New Settings ▸ Changelog: the whole release story, every version since launch, now lives inside the app — so you can see exactly what shipped without leaving Verba.",
+                    ]),
+                ChangelogEntry(version: "0.9.5 → 0.9.13",
+                    title: "Onboarding that shows everything, and Bear-style notes",
+                    items: [
+                        "Notes get one-tap mode actions: apply any mode to a note in a tap — including the custom modes you built yourself, now surfaced right alongside the built-in ones.",
+                        "Export a note: save it as a Markdown (.md) or plain-text file straight from the note toolbar.",
+                        "Wishlist now shows newest ideas first (within each vote tier), and long requests get a Show more so nothing is cut off or unclickable.",
+                        "Feedback is one tap now: Send runs Improve-with-AI for you, shows the tidied version to confirm or tweak, then sends — one button, no second step.",
+                        "Wishlist fix: shipped ideas keep their green “shipped” badge for good — it's saved with the wish now, so it survives behind-the-scenes changes.",
+                        "Dictionary auto-learn fixed: correct a name or brand in the text Verba just wrote and it now reliably learns the spelling, so it gets it right next time (punctuation no longer threw it off).",
+                        "More to unlock: “Explore Verba” now covers every shortcut too — push-to-talk, Fn+number, mode switching, pause, cancel, the to-do glance, chaining dictations, custom modes, your own AI engine, re-working history and file transcription — each badge naming the keys so it doubles as a cheat sheet. Plus a big batch of playful Special badges, all earned purely on-device from your own words and your Mac's clock.",
+                        "New “Explore Verba” achievements — a gamified tour of every feature and shortcut. As you try each one (a mode, a note, a tag, the Scratchpad, a task you check off, the dictionary, a connected app, a voice Action…) the matching badge ticks off, all the way to the Verba Explorer trophy. It sits first in Achievements so it doubles as a friendly way to learn the app.",
+                        "Notes Intent mode fixed: it no longer auto-formats with an empty instruction. After you record, the raw transcript stays put and the instruction field is focused — type how to shape the note, press Enter, and it applies.",
+                        "Feedback fixes from the in-app reports: Add-a-word in the Dictionary confirms on Enter and jumps to a fresh word so you can add several in a row; the Notes Intent field scrolls when your instruction is long; and on AZERTY (and similar) layouts, Shift+number types a digit again instead of switching modes.",
+                        "Lock a note with a password — and each note can have its own. Locked notes are encrypted on your Mac (AES-GCM, a separate key per note); without the password there's no way to read them. Open one, enter its password, and it unlocks just for this session.",
+                        "Every shortcut is now in Settings ▸ Shortcuts and every one is customizable — including new rebindable Pause/resume and Cancel shortcuts (the default ⌃ and Esc keep working too).",
+                        "Small thing: the recording pill dropped the little “esc” label next to the × — the × still cancels and so does Esc, it just reads cleaner now.",
+                        "Achievements went big: 186+ badges, grouped into 10 ordered categories (Words Spoken, Dictations, Streaks, Dedication, Speed, Big Days, Time Saved, Airtime, Modes & Features, Special) with per-category progress, and a new Diamond tier for the extreme milestones — the word ladder climbs all the way to 1,000,000,000,000 words spoken.",
+                        "Notes get a Bear-style tag tree: your #tags now file into a nested, collapsible sidebar with note counts — All Notes and Untagged at the top, parent tags opening to their children. Click any tag to filter, including every note nested beneath it.",
+                        "Onboarding now lists every shortcut, not just the basics: Action (Fn + X), Note (Fn + Z), To-do (Fn + T), today's to-dos (⌥ + Fn), Transform a selection (⌥ + X), switch style (Fn + ] / [), plus pause, switch and cancel — nothing hidden.",
+                        "Finishing onboarding now opens Verba straight away instead of leaving you to re-click the icon.",
+                        "Pick whether your profile is public: a new toggle keeps your name off the leaderboard while you still use it inside the app.",
+                        "Keep your text history without the audio: a new setting stores only the text of each dictation to save disk, while history, search and re-work stay fully available.",
+                        "The whole onboarding and the new settings are translated into all 15 languages.",
+                    ]),
+            ]),
+        ChangelogDay(
+            date: "June 11, 2026",
+            summary: "The day Action mode became a real assistant: speak any request, however you phrase it, and Verba works out what you mean, plans the steps and acts, always with your confirmation, in a calm, JARVIS-style feed. Connect 1,000+ apps to act on by voice, and the whole app now speaks 15 languages. Plus a calmer recording pill, your whole task tree at a glance, 100 levels with a lifetime reward, social profiles, and a security-hardening pass.",
+            entries: [
+                ChangelogEntry(version: "0.7.8 → 0.9.4",
+                    title: "Meet JARVIS, your voice agent for 1,000+ apps",
+                    items: [
+                        "Action mode is now a real assistant. Say what you want however it comes out — “remind me in 10 to grab the cake” or “I'm hungry, cake in ten minutes” land the same way — and Verba recovers the true intent, resolves the time, and shows exactly what it will do before doing it.",
+                        "It goes multi-step when a goal needs context: ask it to find a free hour tomorrow and it reads your calendar, finds the slot, and proposes the event — you just confirm. It reads to understand, but never makes a change without your okay.",
+                        "Everything plays out in a calm, JARVIS-style Action feed: a one-line summary, the proposed step, and a spoken confirmation when it's done.",
+                        "The assistant is now named JARVIS, and connects to 1,000+ apps. A new Connected apps section in Settings lets you search the full catalog, filter by category, and connect any of them with one tap.",
+                        "Missing a detail? The assistant now asks for it. Say “send an email saying hello” without a recipient and it shows fill-in fields with what it already drafted pre-filled. Type the rest and send, straight from the feed.",
+                        "Time is now exact: “add an event in 10 minutes” lands at the right minute in your computer's own timezone, instead of drifting by hours.",
+                        "Tap any app to see everything you can do with it, each with example phrases you can say to JARVIS. And JARVIS now knows the full action set of every app you've connected.",
+                        "The catalog now spans 1,000+ apps, and the comparison shows what's unique: Verba is the only dictation app with a voice agent that acts on your connected apps, not just edits text.",
+                        "Dictations now stack: start the next recording while the last is still processing — every in-flight dictation shows as its own little chip above the pill, so you can fire off 10 in a row and watch them all land.",
+                        "JARVIS now thinks on YOUR engine: planning runs on-device through your Claude subscription (Claude Code) or your local model, with your own keys as an option. Verba's servers only relay the connected-app calls — your requests never burn a shared cloud key.",
+                        "Connect almost anything: most apps authenticate with an API key, not a browser sign-in — so Connect opens a small form asking for exactly the keys that app needs (and still opens the browser for the OAuth ones).",
+                    ]),
+                ChangelogEntry(version: "0.7.5 → 0.7.7",
+                    title: "Connect your favorite apps, act by voice",
+                    items: [
+                        "Connect up to 50 of the most-used apps — Gmail, Slack, Notion, Google Calendar, Linear, GitHub and more — right from Settings ▸ Action.",
+                        "Action mode can then act on them by voice. It stays secure: the connection keys live on Verba's servers and never touch your machine.",
+                    ]),
+                ChangelogEntry(version: "0.6.5 → 0.7.4",
+                    title: "Verba now speaks your language",
+                    items: [
+                        "The entire app — sidebar, settings, every mode and every tool — now translates into 14 languages. Choose your language and the whole interface follows.",
+                    ]),
+                ChangelogEntry(version: "0.5.3 → 0.6.4",
+                    title: "100 levels, a task tree at a glance, and a cleaner pill",
+                    items: [
+                        "Progression runs to 100 levels with new titles all the way up to Voice Immortal, plus dozens of new badges. Earn every badge and Verba Pro is yours for life: the Grand Slam.",
+                        "The quick task glance shows your projects, their tasks and their sub-tasks; add a task by voice from the glance, and check one off with a satisfying slide-out and one-tap undo.",
+                        "Profiles go social: tap anyone on the leaderboard to see their level, league and badges, and share your own stats as a card.",
+                        "Every state of the recording pill was cleaned up — recording, paused, processing and done all read clearly, and the pill is always centered on screen.",
+                    ]),
+                ChangelogEntry(version: "Under the hood",
+                    title: "Faster sync and a security pass",
+                    items: [
+                        "Cloud sync moved to a faster, EU-based backend.",
+                        "A thorough security and reliability hardening pass across the app, the sync layer and the website.",
+                    ]),
+            ]),
+        ChangelogDay(
+            date: "June 10, 2026",
+            summary: "A privacy, security and craft day: history gets a real off switch and auto-delete, cloud data gets a delete-everything button, every sync request is authenticated per device, every dialog moves to the new glass design, and verba.run gets a full craft pass.",
+            entries: [
+                ChangelogEntry(version: "0.4.9 → 0.5.2",
+                    title: "Verba is now a game you can win",
+                    items: [
+                        "New Achievements section: your Level and XP, a daily words goal ring, your weekly League (Bronze to Diamond), and badges to unlock as you dictate, switch modes, build streaks and save hours.",
+                        "Confetti and a reward card celebrate every achievement and level up, the moment you earn it.",
+                        "Every mode now has a plain-language description; any mode you build gets a friendly summary with one tap on Explain with AI.",
+                        "Your standing, live in Achievements: your leaderboard rank, the rival just ahead to catch, and the one just behind.",
+                        "Your Customize look (app and widget) now syncs to your account, so a new Mac restores it exactly.",
+                    ]),
+                ChangelogEntry(version: "0.4.4 → 0.4.8",
+                    title: "A new Polish mode, numbers as digits, and a private leaderboard",
+                    items: [
+                        "New Polish mode (a default): it hears what you meant. When you talk and correct yourself, it follows your self-corrections to the final version and writes finished prose instead of a transcript of you thinking out loud.",
+                        "Numbers you say come out as digits where it reads naturally: “eighty five” becomes 85, “twenty percent” becomes 20%, “three thirty” becomes 3:30.",
+                        "The leaderboard is private by design: it only ever shows a public handle, never a real name.",
+                        "Every keyboard shortcut is rebindable, and the app window is fully glass with adjustable blur.",
+                    ]),
+                ChangelogEntry(version: "0.2.1 → 0.3.8",
+                    title: "Your data, under your control",
+                    items: [
+                        "New History controls: switch history off entirely (nothing written to disk, no audio copy, nothing synced) or auto-delete entries after 7, 30, or 90 days, on this Mac and in the cloud.",
+                        "Delete all my cloud data: one click removes your synced history, notes, stats, and leaderboard entry from our servers.",
+                        "Cloud sync hardened: every device authenticates each request with its own secret, so only your Macs can read or write your data.",
+                        "The whole app window is now one piece of glass, and every page floats as an inset rounded card with breathing room.",
+                        "Every dialog is redesigned in the new frosted glass style; Return and Escape work everywhere.",
+                        "Once Pro, always Pro: the only thing that revokes Pro is the server explicitly saying your subscription ended — never a flaky network.",
+                    ]),
+            ]),
+        ChangelogDay(
+            date: "June 9, 2026",
+            summary: "A huge day, much of it straight from your feedback and wishlist: French that stays French, comments on every wishlist idea, a Context mode that really sees your screen, a redesigned site, hold-to-talk and reliable pause, mid-sentence mode switching, editable Note modes, layered writing Styles, smarter Transforms, a Transcripts library, and concurrent sessions.",
+            entries: [
+                ChangelogEntry(version: "0.1.96 → 0.2.0",
+                    title: "Straight from your feedback and wishlist",
+                    items: [
+                        "From the wishlist: dictate in French and drop in an English word, and Verba keeps the whole thing French instead of flipping the output to English. Brand and loan words are kept exactly as you said them.",
+                        "From the wishlist: you can now discuss a wishlist item. Each card shows a comment count; tap it to expand a thread, read what others think, and add your own.",
+                        "From your feedback: Context mode now genuinely sees your screen again and acts on what's there, and when something goes wrong you get the real reason.",
+                    ]),
+                ChangelogEntry(version: "0.1.90 → 0.1.95",
+                    title: "Action mode, a widget, and a smarter Wishlist",
+                    items: [
+                        "New Action mode (Fn+X): speak a command and Verba does it — create an event or reminder, draft an email, open an app, play music, send a message, or run any of your macOS Shortcuts, always with a confirmation first.",
+                        "New macOS widget: add Verba's Task Manager to Notification Center or your desktop and see today's tasks at a glance.",
+                        "Multi-session is now visible: a Recent results panel lists what processed in the background while you kept dictating, each with a Copy button.",
+                        "Add to dictionary by voice: select text, say “add to dictionary”, and Verba keeps that exact spelling.",
+                    ]),
+                ChangelogEntry(version: "0.1.81 → 0.1.89",
+                    title: "Styles, Transforms, a Transcripts library & concurrent sessions",
+                    items: [
+                        "New Hold-to-talk style: hold the key to speak, release to send.",
+                        "Writing Styles: a tone/format layer on top of any mode, switch with Fn+[ / Fn+], add and edit your own.",
+                        "Transforms upgraded: select text and say a short shortcut (“fix grammar”, “translate to English”) to run it in any app.",
+                        "Transcripts library: imported transcripts saved with tags and notes, with quick re-adapt actions and a voice intent.",
+                        "Pick a public username during onboarding — it's the only thing shown on the leaderboard, never your real name.",
+                        "Change mode while recording hands-free — long-press the key or click the mode on the overlay, without stopping.",
+                    ]),
+            ]),
+        ChangelogDay(
+            date: "June 8, 2026",
+            summary: "A full day of deep work: a complete Task Manager workspace with a generative AI agent, the franglais bug killed, instant capture, and dozens of rough edges sanded down.",
+            entries: [
+                ChangelogEntry(version: "0.1.67 → 0.1.80",
+                    title: "Task Manager grows up",
+                    items: [
+                        "To-dos is now the Task Manager: projects ▸ tasks ▸ sub-tasks in clean accordion panels, tucked under a new Tools section.",
+                        "A smarter AI agent that builds whole hierarchies from one request: “make a Cooking project, a Chocolate cake task, and the full shopping list” creates the project, the task, and a real ingredient list as sub-tasks.",
+                        "A clean date & time picker with quick presets; sub-tasks can carry their own deadline.",
+                        "⌥ + Fn pops a quick glance of today's tasks; a single Fn tap stops a note or task voice capture.",
+                        "Tags on projects with a filter bar — organize by Pro, Perso, Pense-bête, anything.",
+                    ]),
+                ChangelogEntry(version: "0.1.62 → 0.1.66",
+                    title: "Reliability, speed & one language",
+                    items: [
+                        "Single-language output: no more franglais — the result is rewritten fully in the language you spoke, even in Flow.",
+                        "Instant capture: the recorder is pre-armed so it catches your very first word.",
+                        "Reliable cancel and a processing timeout — no more stuck spinners or force-quitting.",
+                        "Drag & drop into file transcription; WhatsApp .opus / Ogg voice notes now transcribe.",
+                        "Add a word as a pure vocabulary hint, with an Improve with AI button; auto-learned terms are tagged.",
+                        "Pick your microphone source in a click; Fn + Tab to cycle modes, even mid-sentence.",
+                    ]),
+            ]),
+        ChangelogDay(
+            date: "June 7, 2026", tag: "Polish & web", window: "23 public releases · 00:10 → 14:16",
+            summary: "The macOS app stabilized across 23 public releases, and verba.run got a real craftsmanship pass.",
+            entries: [
+                ChangelogEntry(version: "website",
+                    title: "A real Liquid Glass website",
+                    items: [
+                        "Redesigned verba.run with depth, specular edges and a native-macOS feel.",
+                        "Dropped every emoji for hand-built SVG icons; added a WebGL sound-wave hero.",
+                        "Wired Vercel Analytics.",
+                    ], time: "22:55"),
+                ChangelogEntry(version: "0.1.33 → 0.1.55",
+                    title: "Twenty-three releases in a day",
+                    items: [
+                        "Onboarding, entitlement sync, trial model and paywall tuning.",
+                        "The recording overlay, the Fn HUD suppression and the meter, refined release after release.",
+                        "Shipped continuously from 00:10 to 14:16.",
+                    ]),
+            ]),
+        ChangelogDay(
+            date: "June 6, 2026", tag: "It syncs, it learns", window: "24 public releases · 01:55 → 23:45",
+            summary: "Verba grew a memory: cloud sync, a learning dictionary, offline reprompting and a real Dynamic Island.",
+            entries: [
+                ChangelogEntry(version: "0.1.1 → 0.1.32",
+                    title: "Sync, learning & local AI",
+                    items: [
+                        "Cloud history & stats sync — your Insights and totals follow your account across Macs.",
+                        "Auto-learning dictionary that remembers your corrections.",
+                        "File transcription and time-saved on the leaderboard.",
+                        "Local offline reprompting via Ollama (Qwen 2.5 7B), downloadable from Settings.",
+                        "A real Dynamic Island overlay; the iOS app scaffolded.",
+                        "Twenty-four public releases from 01:55 to 23:45.",
+                    ]),
+            ]),
+        ChangelogDay(
+            date: "June 5, 2026", tag: "Launch day", window: "first commit 14:07 · first release 21:20",
+            summary: "Verba was born and shipped on the same day — native, on-device, and private from the first line.",
+            entries: [
+                ChangelogEntry(version: "0.1.0",
+                    title: "Verba is born",
+                    items: [
+                        "Native Swift menu-bar dictation with Claude reprompting.",
+                        "Fn-key trigger, faithful reprompting, and modes: Coding, Intent, Flow, Custom.",
+                        "NVIDIA Parakeet on-device engine and a Claude Code (Max plan) backend.",
+                        "Sparkle auto-updates with a notarized release pipeline; full onboarding.",
+                        "Leaderboard (Convex), referral system, the verba.run landing site and Stripe billing.",
+                        "First public release at 21:20, the same day it began.",
+                    ], time: "14:07"),
+            ]),
+    ]
+}

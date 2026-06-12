@@ -1129,6 +1129,7 @@
 "⌃ (Control) pauses & resumes, ⌥ (Option) switches mode mid-sentence, Esc cancels — any time you're recording." = "⌃ (Control) pausa y reanuda, ⌥ (Option) cambia de modo a mitad de frase, Esc cancela — en cualquier momento mientras grabas.";
 "Still seeing the macOS emoji / keyboard popup? Turn it off in System Settings ▸ Keyboard ▸ “Press 🌐 key to” → Do Nothing." = "¿Sigues viendo el menú emergente de emoji / teclado de macOS? Desactívalo en System Settings ▸ Keyboard ▸ “Press 🌐 key to” → No hacer nada.";
 "All Notes" = "Todas las notas";
+"All Tasks" = "Todas las tareas";
 "Untagged" = "Sin etiqueta";
 "No untagged notes" = "No hay notas sin etiqueta";
 "Pick another tag, or All Notes to see every note." = "Elige otra etiqueta, o Todas las notas para ver todas.";
@@ -1167,3 +1168,21 @@
 "Markdown (.md)" = "Markdown (.md)";
 "Plain text (.txt)" = "Texto sin formato (.txt)";
 "Export note" = "Exportar nota";
+
+/* Settings ▸ Changelog */
+"Changelog" = "Novedades";
+"What's new, every release" = "Novedades de cada versión";
+"You're on" = "Estás en la";
+"Everything Verba has shipped since launch — newest first." = "Todo lo que Verba ha lanzado desde el inicio: lo más reciente primero.";
+
+/* Community — Discord */
+"Discord" = "Discord";
+"Join the Verba community on Discord" = "Únete a la comunidad de Verba en Discord";
+"time saved" = "tiempo ahorrado";
+
+/* Leaderboard — you-vs-them badge comparison */
+"You've earned this one too" = "Tú también la tienes";
+"you both have" = "ambos tenéis";
+"they have, you don't" = "la tiene, tú no";
+"you have, they don't" = "la tienes, él no";
+"Badges with this mark are ones you've earned too — so you can see at a glance where you're ahead or behind." = "Las insignias con esta marca también las tienes tú, así ves de un vistazo dónde vas por delante o por detrás.";

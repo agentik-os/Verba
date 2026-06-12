@@ -6,11 +6,24 @@ import { requireDevice } from "./auth";
 // others can view them from the leaderboard. Keyed by uid (device-auth gated to write); read by
 // alias (the public handle shown on the leaderboard).
 
+const statsValidator = v.object({
+  wordsToday: v.number(),
+  streak: v.number(),
+  longestStreak: v.number(),
+  wordsThisWeek: v.number(),
+  totalWords: v.number(),
+  dictations: v.number(),
+  wpm: v.number(),
+  timeSavedMinutes: v.number(),
+  bestDayWords: v.number(),
+});
+
 export const push = mutation({
   args: {
     uid: v.string(), secret: v.string(), alias: v.string(),
     level: v.number(), xp: v.number(), league: v.string(),
     badges: v.array(v.string()),
+    stats: v.optional(statsValidator),
   },
   handler: async (ctx, a) => {
     await requireDevice(ctx, a.uid, a.secret);
@@ -20,7 +33,7 @@ export const push = mutation({
     if (sameAlias.some((r: any) => r.uid !== a.uid)) throw new Error("alias taken");
     const doc = {
       uid: a.uid, alias: a.alias, level: a.level, xp: a.xp,
-      league: a.league, badges: a.badges, updated: Date.now(),
+      league: a.league, badges: a.badges, stats: a.stats, updated: Date.now(),
     };
     const existing = await ctx.db.query("profiles").withIndex("by_uid", (q) => q.eq("uid", a.uid)).unique();
     if (existing) await ctx.db.patch(existing._id, doc);
@@ -35,7 +48,7 @@ export const byAlias = query({
     const rows = await ctx.db.query("profiles").withIndex("by_alias", (q) => q.eq("alias", a.alias)).collect();
     if (rows.length === 0) return null;
     const r = rows.sort((x, y) => y.updated - x.updated)[0];
-    return { alias: r.alias, level: r.level, xp: r.xp, league: r.league, badges: r.badges, referrals: r.referrals ?? 0 };
+    return { alias: r.alias, level: r.level, xp: r.xp, league: r.league, badges: r.badges, referrals: r.referrals ?? 0, stats: r.stats ?? null };
   },
 });
 

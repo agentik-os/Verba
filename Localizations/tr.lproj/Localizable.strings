@@ -1129,6 +1129,7 @@
 "⌃ (Control) pauses & resumes, ⌥ (Option) switches mode mid-sentence, Esc cancels — any time you're recording." = "⌃ (Control) duraklatır ve sürdürür, ⌥ (Option) cümle ortasında mod değiştirir, Esc iptal eder — kayıt sırasında her an.";
 "Still seeing the macOS emoji / keyboard popup? Turn it off in System Settings ▸ Keyboard ▸ “Press 🌐 key to” → Do Nothing." = "macOS emoji / klavye açılır penceresini hâlâ mı görüyorsunuz? System Settings ▸ Keyboard ▸ “Press 🌐 key to” → Hiçbir Şey Yapma ile kapatın.";
 "All Notes" = "Tüm Notlar";
+"All Tasks" = "Tüm Görevler";
 "Untagged" = "Etiketsiz";
 "No untagged notes" = "Etiketsiz not yok";
 "Pick another tag, or All Notes to see every note." = "Başka bir etiket seçin veya tüm notları görmek için Tüm Notlar'a dokunun.";
@@ -1167,3 +1168,21 @@
 "Markdown (.md)" = "Markdown (.md)";
 "Plain text (.txt)" = "Düz metin (.txt)";
 "Export note" = "Notu dışa aktar";
+
+/* Settings ▸ Changelog */
+"Changelog" = "Değişiklikler";
+"What's new, every release" = "Her sürümdeki yenilikler";
+"You're on" = "Şu sürümü kullanıyorsun:";
+"Everything Verba has shipped since launch — newest first." = "Verba'nın lansmandan bu yana yayınladığı her şey — en yeniler önce.";
+
+/* Community — Discord */
+"Discord" = "Discord";
+"Join the Verba community on Discord" = "Verba topluluğuna Discord'da katıl";
+"time saved" = "kazanılan süre";
+
+/* Leaderboard — you-vs-them badge comparison */
+"You've earned this one too" = "Sende de var";
+"you both have" = "ikinizde de var";
+"they have, you don't" = "onda var, sende yok";
+"you have, they don't" = "sende var, onda yok";
+"Badges with this mark are ones you've earned too — so you can see at a glance where you're ahead or behind." = "Bu işareti taşıyan rozetleri sen de kazandın, böylece nerede önde ya da geride olduğunu bir bakışta görürsün.";

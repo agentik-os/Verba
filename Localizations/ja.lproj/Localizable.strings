@@ -1129,6 +1129,7 @@
 "⌃ (Control) pauses & resumes, ⌥ (Option) switches mode mid-sentence, Esc cancels — any time you're recording." = "録音中はいつでも、⌃（Control）で一時停止・再開、⌥（Option）で文の途中でもモード切り替え、Esc でキャンセルできます。";
 "Still seeing the macOS emoji / keyboard popup? Turn it off in System Settings ▸ Keyboard ▸ “Press 🌐 key to” → Do Nothing." = "macOS の絵文字／キーボードのポップアップがまだ表示されますか？System Settings ▸ Keyboard ▸「Press 🌐 key to」→ 何もしない でオフにできます。";
 "All Notes" = "すべてのノート";
+"All Tasks" = "すべてのタスク";
 "Untagged" = "タグなし";
 "No untagged notes" = "タグなしのノートはありません";
 "Pick another tag, or All Notes to see every note." = "別のタグを選ぶか、「すべてのノート」を選ぶとすべてのノートが表示されます。";
@@ -1167,3 +1168,21 @@
 "Markdown (.md)" = "Markdown (.md)";
 "Plain text (.txt)" = "プレーンテキスト (.txt)";
 "Export note" = "ノートを書き出す";
+
+/* Settings ▸ Changelog */
+"Changelog" = "変更履歴";
+"What's new, every release" = "リリースごとの新機能";
+"You're on" = "現在のバージョン";
+"Everything Verba has shipped since launch — newest first." = "ローンチ以来Verbaがリリースしたすべて — 新しい順。";
+
+/* Community — Discord */
+"Discord" = "Discord";
+"Join the Verba community on Discord" = "DiscordでVerbaコミュニティに参加";
+"time saved" = "節約した時間";
+
+/* Leaderboard — you-vs-them badge comparison */
+"You've earned this one too" = "あなたも獲得済み";
+"you both have" = "両方が持つ";
+"they have, you don't" = "相手のみ";
+"you have, they don't" = "あなたのみ";
+"Badges with this mark are ones you've earned too — so you can see at a glance where you're ahead or behind." = "このマークの付いたバッジはあなたも獲得済みです。どこで勝っているか負けているか一目でわかります。";
