@@ -532,7 +532,7 @@ function NotesTab() {
           index="02"
           anchor
           title={<>Talk for an hour,<br />get a clean document</>}
-          lead="Open the Notes tab, pick a format, and talk. An hour of speech becomes a structured document you can read, edit and copy. File it with #hashtags, Bear style. It syncs across your Macs."
+          lead="Open the Notes tab, pick a format, and talk. An hour of speech becomes a structured document you can read, edit and copy. File it with #hashtags that fold into a Bear-style nested tag tree in the sidebar, with counts. It syncs across your Macs."
         />
       </Reveal>
 
@@ -558,7 +558,7 @@ function NotesTab() {
                 <p className="pf-55">**Auth bug** assigned to Alex</p>
                 <p className="pf-55">**Action:** follow up with design on onboarding flow by Thursday</p>
               </div>
-              <p className="mt-3 text-xs pf-40">Rendered markdown · editable · copyable · tagged and synced.</p>
+              <p className="mt-3 text-xs pf-40">Rendered markdown · editable · copyable · filed in a Bear-style tag tree · synced.</p>
             </div>
           </div>
         </div>
@@ -797,7 +797,7 @@ function WhyBest() {
         <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ["Shipping constantly", "40+ public releases and counting, all on the live changelog."],
-            ["A live usage leaderboard", "See your rank, percentile and streak among everyone using Verba."],
+            ["186 achievements to earn", "100 levels, daily streaks and a live leaderboard — see your rank and percentile among everyone using Verba."],
             ["Works in every app", "If your cursor is there, Verba writes there. No window, no paste."],
             ["Your AI, or fully offline", "Bring your own key or run on-device. No vendor markup, no uploads."],
           ].map(([t, d]) => (
