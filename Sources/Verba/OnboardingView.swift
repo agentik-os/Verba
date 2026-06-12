@@ -319,6 +319,21 @@ struct OnboardingView: View {
                         .font(.caption).foregroundStyle(.green)
                 }
             }
+
+            // Full shortcut reference — the power keys beyond plain dictation, so nothing is hidden.
+            Text(L("All shortcuts")).font(.headline).padding(.top, 4)
+            grid([
+                ("bolt.fill", L("Action — Fn + X"), L("Speak a command and Verba acts for you across 1,000+ connected apps (send an email, create an event…). It always asks you to confirm before doing anything.")),
+                ("doc.text", L("Note — Fn + Z"), L("Record a long voice memo; Verba turns it into a clean, structured note.")),
+                ("checklist", L("To-do — Fn + T"), L("Capture a task by voice (Fn + § on ISO keyboards). “Pay the invoice Friday at 6pm.”")),
+                ("calendar.day.timeline.left", L("Today's to-dos — ⌥ + Fn"), L("Glance at what's due today without leaving what you're doing.")),
+                ("wand.and.rays", L("Transform selection — ⌥ + X"), L("Select any text in any app, then ⌥ + X to rewrite, translate or restyle it.")),
+                ("paintbrush", L("Switch style — Fn + ] / Fn + ["), L("Cycle the tone/format layer (next / previous) on top of the active mode.")),
+                ("pause.circle", L("Pause · switch · cancel"), L("⌃ (Control) pauses & resumes, ⌥ (Option) switches mode mid-sentence, Esc cancels — any time you're recording.")),
+            ])
+            // Emoji/keyboard popup escape hatch: if macOS still shows it, point to the system toggle.
+            Label(L("Still seeing the macOS emoji / keyboard popup? Turn it off in System Settings ▸ Keyboard ▸ “Press 🌐 key to” → Do Nothing."), systemImage: "keyboard.badge.ellipsis")
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
     }
 

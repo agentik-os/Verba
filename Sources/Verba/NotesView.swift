@@ -38,6 +38,7 @@ struct NotesView: View {
     @State private var recordError = ""     // legible, persistent "couldn't record" banner (cleared on success / dismiss)
     @State private var work: Task<Void, Never>?
     @State private var filterTag: String?
+    @State private var expandedTags: Set<String> = []   // Bear-style tag tree: which parent tags are open
     @State private var appendMode = false   // next recording is appended to the current note
     @State private var hasComposed = false  // true once a composition has produced content (title/tags/transcript/text); gates the recorder→editor flip so a transient empty edit doesn't yank the editor away
     @State private var lastRecordedSeconds = 0   // duration snapshotted when the recording stops, used for Stats (live `elapsed` is reset before formatting finishes)
@@ -97,9 +98,18 @@ struct NotesView: View {
         .onDisappear { notesCtl.isRecording = false; levelTimer?.invalidate(); levelTimer = nil; autosaveTask?.cancel(); autosaveCommit(); work?.cancel(); if isRecording { _ = recorder.stop(); recorder.releaseArmed() } }
     }
 
-    // MARK: - Left: scrollable list of all notes
+    /// Notes matching the current tag filter. A parent tag (e.g. "work") matches its own notes AND
+    /// any nested child ("work/projects"), like Bear. The "__untagged__" sentinel shows notes with
+    /// no tags at all.
+    private var filteredEntries: [NotesEntry] {
+        guard let f = filterTag else { return store.entries }
+        if f == "__untagged__" { return store.entries.filter { $0.tags.isEmpty } }
+        return store.entries.filter { e in e.tags.contains { $0 == f || $0.hasPrefix(f + "/") } }
+    }
+
+    // MARK: - Left: Bear-style tag tree + scrollable list of notes
     private var sidebar: some View {
-        let entries = filterTag == nil ? store.entries : store.entries.filter { $0.tags.contains(filterTag!) }
+        let entries = filteredEntries
         return VStack(spacing: 0) {
             HStack {
                 Text(L("Notes")).font(.system(size: 17, weight: .bold))
@@ -109,25 +119,20 @@ struct NotesView: View {
             }
             .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
 
-            if !store.allTags.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                        chip(label: L("All"), icon: nil, on: filterTag == nil) { filterTag = nil }
-                        ForEach(store.allTags, id: \.self) { t in
-                            chip(label: "#\(t)", icon: nil, on: filterTag == t) { filterTag = (filterTag == t ? nil : t) }
-                        }
-                    }
-                    .padding(.horizontal, 14).padding(.bottom, 8)
-                }
-            }
+            // Bear-style filing: All Notes / Untagged, then a nested, collapsible tag tree with counts.
+            tagSidebar
+                .padding(.bottom, 4)
+            Divider().opacity(0.35).padding(.horizontal, 10).padding(.bottom, 2)
 
             if entries.isEmpty {
                 Spacer()
                 EmptyState(icon: "note.text",
-                           title: filterTag == nil ? L("No notes yet") : "\(L("No notes with")) #\(filterTag!)",
+                           title: filterTag == nil ? L("No notes yet")
+                               : filterTag == "__untagged__" ? L("No untagged notes")
+                               : "\(L("No notes with")) #\(filterTag!)",
                            message: filterTag == nil
                                ? L("Record a voice memo and Verba turns it into a clean note.")
-                               : L("Pick another tag, or All to see every note."))
+                               : L("Pick another tag, or All Notes to see every note."))
                     .padding(.horizontal, 14)
                 Spacer()
             } else {
@@ -145,6 +150,118 @@ struct NotesView: View {
                 .scrollContentBackground(.hidden)
             }
         }
+    }
+
+    // MARK: - Bear-style tag tree
+
+    /// One node in the nested tag tree. `id` is the full path ("work/projects"); `count` is the
+    /// number of notes filed under this tag OR any of its descendants.
+    private struct TagNode: Identifiable {
+        let id: String
+        let name: String
+        var children: [TagNode]
+        let count: Int
+    }
+
+    /// Build the nested tree from every note's tags, splitting each tag on "/". Counts are unique
+    /// notes per path (a note tagged "work/projects" counts toward both "work" and "work/projects").
+    private var tagTree: [TagNode] {
+        var notesAt: [String: Set<UUID>] = [:]
+        var childPaths: [String: Set<String>] = [:]
+        var roots: Set<String> = []
+        for e in store.entries {
+            for tag in e.tags {
+                let parts = tag.split(separator: "/").map(String.init)
+                var path = ""
+                for (i, part) in parts.enumerated() {
+                    let parent = path
+                    path = path.isEmpty ? part : path + "/" + part
+                    notesAt[path, default: []].insert(e.id)
+                    if i == 0 { roots.insert(path) } else { childPaths[parent, default: []].insert(path) }
+                }
+            }
+        }
+        func build(_ path: String) -> TagNode {
+            let name = path.split(separator: "/").last.map(String.init) ?? path
+            let kids = (childPaths[path] ?? []).sorted().map(build)
+            return TagNode(id: path, name: name, children: kids, count: notesAt[path]?.count ?? 0)
+        }
+        return roots.sorted().map(build)
+    }
+
+    private var untaggedCount: Int { store.entries.filter { $0.tags.isEmpty }.count }
+
+    private var tagSidebar: some View {
+        VStack(spacing: 1) {
+            tagFolderRow(icon: "tray.full", label: L("All Notes"), count: store.entries.count,
+                         on: filterTag == nil, depth: 0, hasChildren: false) { filterTag = nil }
+            if untaggedCount > 0 {
+                tagFolderRow(icon: "tag.slash", label: L("Untagged"), count: untaggedCount,
+                             on: filterTag == "__untagged__", depth: 0, hasChildren: false) {
+                    filterTag = (filterTag == "__untagged__" ? nil : "__untagged__")
+                }
+            }
+            if !tagTree.isEmpty {
+                ScrollView {
+                    VStack(spacing: 1) {
+                        ForEach(visibleTagRows, id: \.node.id) { item in
+                            tagFolderRow(icon: "number", label: item.node.name, count: item.node.count,
+                                         on: filterTag == item.node.id, depth: item.depth,
+                                         hasChildren: !item.node.children.isEmpty,
+                                         expanded: expandedTags.contains(item.node.id),
+                                         onToggle: { toggleTag(item.node.id) }) {
+                                filterTag = (filterTag == item.node.id ? nil : item.node.id)
+                            }
+                        }
+                    }
+                }
+                .frame(maxHeight: 220)
+            }
+        }
+        .padding(.horizontal, 8)
+    }
+
+    /// The tag tree flattened to the currently-visible rows (children shown only under expanded
+    /// parents) — avoids a self-referential recursive ViewBuilder.
+    private var visibleTagRows: [(node: TagNode, depth: Int)] {
+        var out: [(TagNode, Int)] = []
+        func walk(_ nodes: [TagNode], _ depth: Int) {
+            for n in nodes {
+                out.append((n, depth))
+                if expandedTags.contains(n.id) { walk(n.children, depth + 1) }
+            }
+        }
+        walk(tagTree, 0)
+        return out
+    }
+
+    private func toggleTag(_ id: String) {
+        if expandedTags.contains(id) { expandedTags.remove(id) } else { expandedTags.insert(id) }
+    }
+
+    private func tagFolderRow(icon: String, label: String, count: Int, on: Bool, depth: Int,
+                              hasChildren: Bool, expanded: Bool = false,
+                              onToggle: (() -> Void)? = nil, select: @escaping () -> Void) -> some View {
+        HStack(spacing: 5) {
+            if hasChildren {
+                Button { onToggle?() } label: {
+                    Image(systemName: expanded ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 9, weight: .semibold)).foregroundStyle(.secondary)
+                        .frame(width: 12, height: 12)
+                }.buttonStyle(.plain)
+            } else {
+                Color.clear.frame(width: 12, height: 12)
+            }
+            Image(systemName: icon).font(.system(size: 11)).foregroundStyle(on ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary)).frame(width: 15)
+            Text(label).font(.system(size: 12.5, weight: on ? .semibold : .regular)).lineLimit(1)
+            Spacer(minLength: 4)
+            Text("\(count)").font(.system(size: 10)).foregroundStyle(.tertiary).monospacedDigit()
+        }
+        .padding(.vertical, 4).padding(.trailing, 8)
+        .padding(.leading, CGFloat(6 + depth * 14))
+        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(on ? Color.primary.opacity(0.08) : .clear))
+        .contentShape(Rectangle())
+        .onTapGesture(perform: select)
     }
 
     private func noteRow(_ e: NotesEntry) -> some View {
