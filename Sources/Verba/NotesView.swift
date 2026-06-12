@@ -39,6 +39,13 @@ struct NotesView: View {
     @State private var work: Task<Void, Never>?
     @State private var filterTag: String?
     @State private var expandedTags: Set<String> = []   // Bear-style tag tree: which parent tags are open
+    // Per-note password lock
+    @State private var unlocked: Set<UUID> = []         // notes decrypted this session (cleared on quit)
+    @State private var lockSheetFor: NotesEntry?        // note being assigned a NEW password
+    @State private var newPassword = ""
+    @State private var newPasswordConfirm = ""
+    @State private var gatePassword = ""                // password typed at the unlock gate
+    @State private var gateError = false
     @State private var appendMode = false   // next recording is appended to the current note
     @State private var hasComposed = false  // true once a composition has produced content (title/tags/transcript/text); gates the recorder→editor flip so a transient empty edit doesn't yank the editor away
     @State private var lastRecordedSeconds = 0   // duration snapshotted when the recording stops, used for Stats (live `elapsed` is reset before formatting finishes)
@@ -95,6 +102,32 @@ struct NotesView: View {
             .presentationBackground(.thinMaterial)
             .dialogAppear()
         }
+        .sheet(item: $lockSheetFor) { e in
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 10) {
+                    Image(systemName: "lock.fill").font(.system(size: 14, weight: .semibold)).foregroundStyle(.orange)
+                        .frame(width: 32, height: 32).background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    Text(L("Protect this note")).font(.title3.weight(.semibold))
+                    Spacer()
+                }
+                Text(L("Choose a password for this note. Each note can have its own. Without it, the note can't be read — there's no recovery, so keep it safe."))
+                    .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                SecureField(L("Password"), text: $newPassword).textFieldStyle(.roundedBorder)
+                SecureField(L("Confirm password"), text: $newPasswordConfirm).textFieldStyle(.roundedBorder)
+                if !newPasswordConfirm.isEmpty && newPassword != newPasswordConfirm {
+                    Text(L("Passwords don't match.")).font(.caption).foregroundStyle(.red)
+                }
+                HStack {
+                    Button(L("Cancel")) { lockSheetFor = nil; newPassword = ""; newPasswordConfirm = "" }.buttonStyle(.plain)
+                    Spacer()
+                    Button(L("Lock note")) { commitLock() }
+                        .dialogPrimary().keyboardShortcut(.defaultAction)
+                        .disabled(newPassword.isEmpty || newPassword != newPasswordConfirm)
+                }
+            }
+            .padding(22).frame(width: 420)
+            .presentationBackground(.thinMaterial).dialogAppear()
+        }
         .onDisappear { notesCtl.isRecording = false; levelTimer?.invalidate(); levelTimer = nil; autosaveTask?.cancel(); autosaveCommit(); work?.cancel(); if isRecording { _ = recorder.stop(); recorder.releaseArmed() } }
     }
 
@@ -150,6 +183,54 @@ struct NotesView: View {
                 .scrollContentBackground(.hidden)
             }
         }
+    }
+
+    // MARK: - Password lock
+
+    /// Shown in the detail pane when a locked note is selected — asks for that note's password.
+    private func lockGate(_ e: NotesEntry) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: "lock.fill").font(.system(size: 34)).foregroundStyle(.secondary)
+            Text(e.title.isEmpty ? L("Locked note") : e.title).font(.title3.weight(.semibold))
+            Text(L("This note is protected. Enter its password to read it.")).font(.callout).foregroundStyle(.secondary)
+            SecureField(L("Password"), text: $gatePassword)
+                .textFieldStyle(.roundedBorder).frame(width: 240)
+                .onSubmit { tryUnlock(e) }
+            if gateError {
+                Text(L("Wrong password. Try again.")).font(.caption).foregroundStyle(.red)
+            }
+            Button(L("Unlock")) { tryUnlock(e) }.buttonStyle(.borderedProminent).disabled(gatePassword.isEmpty)
+            Button(L("Remove password…"), role: .destructive) { tryRemovePassword(e) }
+                .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(40)
+    }
+
+    private func tryUnlock(_ e: NotesEntry) {
+        guard let dec = store.decrypt(e, password: gatePassword) else { gateError = true; return }
+        gateError = false; gatePassword = ""
+        unlocked.insert(e.id)
+        // Load the decrypted content into the editor (transient — re-locked on disk, plaintext only in memory).
+        transcript = dec.original; editorText = dec.formatted; noteTitle = e.title; noteTags = e.tags
+        format = modes.mode(named: e.formatName); recordingURL = nil; appendMode = false; hasComposed = true
+    }
+
+    private func tryRemovePassword(_ e: NotesEntry) {
+        // Reuse the gate field as the confirmation password for removal.
+        guard !gatePassword.isEmpty, store.removePassword(e, password: gatePassword) else { gateError = true; return }
+        gateError = false; gatePassword = ""; unlocked.insert(e.id)
+        loadSelection(e.id)
+    }
+
+    private func commitLock() {
+        guard let e = lockSheetFor, !newPassword.isEmpty, newPassword == newPasswordConfirm else { return }
+        autosaveCommit()   // make sure the latest edit is saved before we encrypt it
+        if store.lock(e, password: newPassword) {
+            unlocked.remove(e.id)
+            if selectedID == e.id { selectedID = nil; newNote() }   // drop the now-encrypted text from the editor
+        }
+        lockSheetFor = nil; newPassword = ""; newPasswordConfirm = ""
     }
 
     // MARK: - Bear-style tag tree
@@ -266,13 +347,15 @@ struct NotesView: View {
 
     private func noteRow(_ e: NotesEntry) -> some View {
         let selected = selectedID == e.id
+        let isLocked = e.locked && !unlocked.contains(e.id)
         return HStack(alignment: .top, spacing: 9) {
-            Image(systemName: iconFor(e.formatName)).font(.system(size: 13))
-                .foregroundStyle(.secondary).frame(width: 16).padding(.top, 2)
+            Image(systemName: isLocked ? "lock.fill" : iconFor(e.formatName)).font(.system(size: 13))
+                .foregroundStyle(isLocked ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary)).frame(width: 16).padding(.top, 2)
             VStack(alignment: .leading, spacing: 3) {
-                Text(snippet(e)).font(.system(size: 13, weight: .medium)).lineLimit(1)
+                Text(isLocked ? (e.title.isEmpty ? L("Locked note") : e.title) : snippet(e))
+                    .font(.system(size: 13, weight: .medium)).lineLimit(1)
                 HStack(spacing: 5) {
-                    Text(e.formatName).font(.caption2).foregroundStyle(.secondary)
+                    Text(isLocked ? L("Protected") : e.formatName).font(.caption2).foregroundStyle(.secondary)
                     Text("·").font(.caption2).foregroundStyle(.tertiary)
                     Text(e.date.formatted(date: .abbreviated, time: .omitted)).font(.caption2).foregroundStyle(.tertiary)
                 }
@@ -295,6 +378,11 @@ struct NotesView: View {
         .glassCard(selected: selected, cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .contextMenu {
+            if e.locked {
+                Button { selectedID = e.id } label: { Label(L("Unlock to read"), systemImage: "lock.open") }
+            } else {
+                Button { lockSheetFor = e } label: { Label(L("Lock with password…"), systemImage: "lock") }
+            }
             Button(role: .destructive) { remove(e) } label: { Label(L("Delete"), systemImage: "trash") }
         }
     }
@@ -311,8 +399,17 @@ struct NotesView: View {
     }
 
     // MARK: - Right: record a new note, or view/edit the selected one
+    /// The selected note IF it's locked and not yet unlocked this session — gate it.
+    private var gatedNote: NotesEntry? {
+        guard let id = selectedID, let e = store.entries.first(where: { $0.id == id }),
+              e.locked, !unlocked.contains(id) else { return nil }
+        return e
+    }
+
     @ViewBuilder private var detail: some View {
-        if selectedID == nil && !hasComposed && !busy {
+        if let e = gatedNote {
+            lockGate(e)
+        } else if selectedID == nil && !hasComposed && !busy {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     intro
@@ -770,6 +867,9 @@ struct NotesView: View {
         autosaveTask?.cancel(); autosaveTask = nil; autosaveCommit()   // flush the outgoing note's pending edit before loading the new one
         work?.cancel(); busy = false; status = ""
         if isRecording { stopRecorderHard() }
+        // Locked + not yet unlocked → the lock gate (not the editor) is shown; never load the
+        // ciphertext into the editor or let autosave touch it. tryUnlock() loads the plaintext.
+        if e.locked && !unlocked.contains(id) { gatePassword = ""; gateError = false; return }
         transcript = e.original
         editorText = e.formatted
         noteTitle = e.title

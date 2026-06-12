@@ -1099,10 +1099,18 @@ struct SettingsView: View {
                                  target: .primary)
             }
             chordRow(L("Pause / resume while recording"), caps: ["⌃"])
+            chordRecorderRow(L("Custom pause / resume shortcut"),
+                             has: settings.pauseToggleHasShortcut,
+                             code: settings.pauseToggleKeyCode, mods: settings.pauseToggleMods,
+                             target: .pauseToggle)
             chordRow(L("Cancel recording or processing"), caps: ["⎋"])
+            chordRecorderRow(L("Custom cancel shortcut"),
+                             has: settings.cancelHasShortcut,
+                             code: settings.cancelKeyCode, mods: settings.cancelMods,
+                             target: .cancel)
             cardCaption(fnOn
-                ? L("Your trigger is everything: tap or hold to dictate, then ⌃ to pause and ⎋ to cancel.")
-                : L("Pick the keystroke that starts and stops a dictation. ⌃ pauses, ⎋ cancels."))
+                ? L("Your trigger is everything: tap or hold to dictate, then ⌃ to pause and ⎋ to cancel. You can add your own pause/cancel shortcut above — the defaults keep working.")
+                : L("Pick the keystroke that starts and stops a dictation. ⌃ pauses, ⎋ cancels — and you can rebind any of them above."))
         }
 
         // MODES — choosing which rewriting mode the dictation runs through.

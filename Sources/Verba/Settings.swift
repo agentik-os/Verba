@@ -152,7 +152,7 @@ enum RepromptBackend: String, Codable, CaseIterable, Identifiable {
 private let kCtrlOpt: UInt32 = 4096 | 2048
 
 /// What a shortcut is being assigned to (for conflict resolution).
-enum ShortcutTarget: Equatable { case primary; case modePicker; case noteRecord; case actionMode; case todoCapture; case styleNext; case stylePrev; case todoGlance; case profile(UUID) }
+enum ShortcutTarget: Equatable { case primary; case modePicker; case noteRecord; case actionMode; case todoCapture; case styleNext; case stylePrev; case todoGlance; case pauseToggle; case cancel; case profile(UUID) }
 
 /// The shared editing contract for every profile: improve HOW it's written,
 /// never change WHAT was said. This is the fix for "Claude interprets too much".
@@ -543,6 +543,11 @@ final class Settings: ObservableObject {
     @Published var stylePrevMods: UInt32 { didSet { d.set(Int(stylePrevMods), forKey: "stylePrevMods") } }
     @Published var todoGlanceKeyCode: UInt32 { didSet { d.set(Int(todoGlanceKeyCode), forKey: "todoGlanceKeyCode") } }
     @Published var todoGlanceMods: UInt32 { didSet { d.set(Int(todoGlanceMods), forKey: "todoGlanceMods") } }
+    // Optional rebinds for pause/resume and cancel (in ADDITION to the default ⌃ tap and ⎋).
+    @Published var pauseToggleKeyCode: UInt32 { didSet { d.set(Int(pauseToggleKeyCode), forKey: "pauseToggleKeyCode") } }
+    @Published var pauseToggleMods: UInt32 { didSet { d.set(Int(pauseToggleMods), forKey: "pauseToggleMods") } }
+    @Published var cancelKeyCode: UInt32 { didSet { d.set(Int(cancelKeyCode), forKey: "cancelKeyCode") } }
+    @Published var cancelMods: UInt32 { didSet { d.set(Int(cancelMods), forKey: "cancelMods") } }
 
     @Published var profiles: [Profile] { didSet { persistProfiles() } }
     @Published var activeProfileID: UUID { didSet { d.set(activeProfileID.uuidString, forKey: "activeProfileID") } }
@@ -751,6 +756,10 @@ final class Settings: ObservableObject {
         stylePrevMods = UInt32(d.object(forKey: "stylePrevMods") as? Int ?? 0)
         todoGlanceKeyCode = UInt32(d.object(forKey: "todoGlanceKeyCode") as? Int ?? 0)
         todoGlanceMods = UInt32(d.object(forKey: "todoGlanceMods") as? Int ?? 0)
+        pauseToggleKeyCode = UInt32(d.object(forKey: "pauseToggleKeyCode") as? Int ?? 0)
+        pauseToggleMods = UInt32(d.object(forKey: "pauseToggleMods") as? Int ?? 0)
+        cancelKeyCode = UInt32(d.object(forKey: "cancelKeyCode") as? Int ?? 0)
+        cancelMods = UInt32(d.object(forKey: "cancelMods") as? Int ?? 0)
         // SECURITY: the cached `verba.pro` bool is NOT trusted on its own — a raw
         // `defaults write … verba.pro -bool true` must NOT unlock Pro. A cached grant is honored
         // only if BOTH (a) the user has actually signed in (an email is stored) AND (b) a prior
@@ -961,6 +970,8 @@ final class Settings: ObservableObject {
     var styleNextHasShortcut: Bool { styleNextMods != 0 }
     var stylePrevHasShortcut: Bool { stylePrevMods != 0 }
     var todoGlanceHasShortcut: Bool { todoGlanceMods != 0 }
+    var pauseToggleHasShortcut: Bool { pauseToggleMods != 0 }
+    var cancelHasShortcut: Bool { cancelMods != 0 }
 
     private func combo(of t: ShortcutTarget) -> (UInt32, UInt32)? {
         switch t {
@@ -972,6 +983,8 @@ final class Settings: ObservableObject {
         case .styleNext: return styleNextMods == 0 ? nil : (styleNextKeyCode, styleNextMods)
         case .stylePrev: return stylePrevMods == 0 ? nil : (stylePrevKeyCode, stylePrevMods)
         case .todoGlance: return todoGlanceMods == 0 ? nil : (todoGlanceKeyCode, todoGlanceMods)
+        case .pauseToggle: return pauseToggleMods == 0 ? nil : (pauseToggleKeyCode, pauseToggleMods)
+        case .cancel: return cancelMods == 0 ? nil : (cancelKeyCode, cancelMods)
         case .profile(let id):
             guard let p = profiles.first(where: { $0.id == id }), let c = p.hotkeyCode, let m = p.hotkeyMods else { return nil }
             return (c, m)
@@ -1003,6 +1016,12 @@ final class Settings: ObservableObject {
         case .todoGlance:
             todoGlanceKeyCode = combo?.0 ?? 0
             todoGlanceMods = combo?.1 ?? 0
+        case .pauseToggle:
+            pauseToggleKeyCode = combo?.0 ?? 0
+            pauseToggleMods = combo?.1 ?? 0
+        case .cancel:
+            cancelKeyCode = combo?.0 ?? 0
+            cancelMods = combo?.1 ?? 0
         case .profile(let id):
             if let i = profiles.firstIndex(where: { $0.id == id }) {
                 profiles[i].hotkeyCode = combo?.0

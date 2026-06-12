@@ -214,26 +214,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Settings mutates the @Published vars but applyTriggers() is never re-run, so the change
         // silently does nothing (and a cleared binding stays live) until an unrelated edit or a
         // relaunch happens to re-arm. Cover all eight targets, not just primary + mode-picker.
-        Publishers.MergeMany(
-            Settings.shared.$primaryKeyCode.map { _ in () }.eraseToAnyPublisher(),
-            Settings.shared.$primaryMods.map { _ in () }.eraseToAnyPublisher(),
-            Settings.shared.$modePickerKeyCode.map { _ in () }.eraseToAnyPublisher(),
-            Settings.shared.$modePickerMods.map { _ in () }.eraseToAnyPublisher(),
-            Settings.shared.$noteRecordKeyCode.map { _ in () }.eraseToAnyPublisher(),
-            Settings.shared.$noteRecordMods.map { _ in () }.eraseToAnyPublisher(),
-            Settings.shared.$actionModeKeyCode.map { _ in () }.eraseToAnyPublisher(),
-            Settings.shared.$actionModeMods.map { _ in () }.eraseToAnyPublisher(),
-            Settings.shared.$todoCaptureKeyCode.map { _ in () }.eraseToAnyPublisher(),
-            Settings.shared.$todoCaptureMods.map { _ in () }.eraseToAnyPublisher(),
-            Settings.shared.$styleNextKeyCode.map { _ in () }.eraseToAnyPublisher(),
-            Settings.shared.$styleNextMods.map { _ in () }.eraseToAnyPublisher(),
-            Settings.shared.$stylePrevKeyCode.map { _ in () }.eraseToAnyPublisher(),
-            Settings.shared.$stylePrevMods.map { _ in () }.eraseToAnyPublisher(),
-            Settings.shared.$todoGlanceKeyCode.map { _ in () }.eraseToAnyPublisher(),
-            Settings.shared.$todoGlanceMods.map { _ in () }.eraseToAnyPublisher(),
-            Settings.shared.$profiles.map { _ in () }.eraseToAnyPublisher(),
-            Settings.shared.$useFnAsPrimary.map { _ in () }.eraseToAnyPublisher()
-        )
+        let s0 = Settings.shared
+        // Built as an array (not a 20+ variadic) so the type-checker stays fast.
+        let triggerSignals: [AnyPublisher<Void, Never>] = [
+            s0.$primaryKeyCode.map { _ in () }.eraseToAnyPublisher(),
+            s0.$primaryMods.map { _ in () }.eraseToAnyPublisher(),
+            s0.$modePickerKeyCode.map { _ in () }.eraseToAnyPublisher(),
+            s0.$modePickerMods.map { _ in () }.eraseToAnyPublisher(),
+            s0.$noteRecordKeyCode.map { _ in () }.eraseToAnyPublisher(),
+            s0.$noteRecordMods.map { _ in () }.eraseToAnyPublisher(),
+            s0.$actionModeKeyCode.map { _ in () }.eraseToAnyPublisher(),
+            s0.$actionModeMods.map { _ in () }.eraseToAnyPublisher(),
+            s0.$todoCaptureKeyCode.map { _ in () }.eraseToAnyPublisher(),
+            s0.$todoCaptureMods.map { _ in () }.eraseToAnyPublisher(),
+            s0.$styleNextKeyCode.map { _ in () }.eraseToAnyPublisher(),
+            s0.$styleNextMods.map { _ in () }.eraseToAnyPublisher(),
+            s0.$stylePrevKeyCode.map { _ in () }.eraseToAnyPublisher(),
+            s0.$stylePrevMods.map { _ in () }.eraseToAnyPublisher(),
+            s0.$todoGlanceKeyCode.map { _ in () }.eraseToAnyPublisher(),
+            s0.$todoGlanceMods.map { _ in () }.eraseToAnyPublisher(),
+            s0.$pauseToggleKeyCode.map { _ in () }.eraseToAnyPublisher(),
+            s0.$pauseToggleMods.map { _ in () }.eraseToAnyPublisher(),
+            s0.$cancelKeyCode.map { _ in () }.eraseToAnyPublisher(),
+            s0.$cancelMods.map { _ in () }.eraseToAnyPublisher(),
+            s0.$profiles.map { _ in () }.eraseToAnyPublisher(),
+            s0.$useFnAsPrimary.map { _ in () }.eraseToAnyPublisher(),
+        ]
+        Publishers.MergeMany(triggerSignals)
         .dropFirst()
         .receive(on: RunLoop.main)
         .sink { [weak self] in self?.applyTriggers() }
@@ -787,6 +794,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if s.todoGlanceHasShortcut {
             HotKeys.shared.register(id: 8, keyCode: s.todoGlanceKeyCode, modifiers: s.todoGlanceMods) { [weak self] in
                 self?.fnControlPressed()
+            }
+        }
+        // Optional rebinds for pause/resume and cancel (the default ⌃ tap and ⎋ still work too).
+        if s.pauseToggleHasShortcut {
+            HotKeys.shared.register(id: 10, keyCode: s.pauseToggleKeyCode, modifiers: s.pauseToggleMods) { [weak self] in
+                self?.togglePause()
+            }
+        }
+        if s.cancelHasShortcut {
+            HotKeys.shared.register(id: 11, keyCode: s.cancelKeyCode, modifiers: s.cancelMods) { [weak self] in
+                self?.cancelEverything()
             }
         }
         // (Per-mode dedicated ⌃⌥1-6 shortcuts were removed — modes are switched via Fn+Tab,
