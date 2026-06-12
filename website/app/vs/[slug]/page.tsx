@@ -17,6 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: `Verba vs ${c.name}, which dictation app should you use?`,
     description: `${c.name}: ${c.tagline} See how Verba (local-first, $9.99/mo, bring your own AI) compares.`,
+    alternates: { canonical: `/vs/${slug}` },
   };
 }
 

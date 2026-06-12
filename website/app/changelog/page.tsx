@@ -4,9 +4,10 @@ import Reveal from "@/components/Reveal";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export const metadata: Metadata = {
-  title: "Changelog, Verba",
+  title: "Changelog — Verba AI Dictation for Mac",
   description:
     "Every Verba release since launch on June 5, 2026. Shipped in public, fast: 60+ releases in the first days, with dates and times.",
+  alternates: { canonical: "/changelog" },
 };
 
 type Entry = { version?: string; time?: string; title: string; items: string[] };
