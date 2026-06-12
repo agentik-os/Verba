@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   }
   const email = tok.email;
 
-  let body: { transcript?: string; system?: string; model?: string; image?: string };
+  let body: { transcript?: string; system?: string; model?: string; image?: string; purpose?: string };
   try {
     body = await req.json();
   } catch {
@@ -97,9 +97,13 @@ export async function POST(req: NextRequest) {
   // ~85% margin worst case). Anthropic stays as the fallback when configured.
   try {
     if (openrouter) {
-      const orModel = image
-        ? (process.env.REPROMPT_VISION_MODEL ?? "qwen/qwen2.5-vl-72b-instruct")
-        : (process.env.REPROMPT_MODEL ?? "qwen/qwen-2.5-72b-instruct");
+      // JARVIS planning needs frontier-grade instruction following + strict JSON:
+      // route "action" calls to Claude (via OpenRouter), everything else to qwen.
+      const orModel = body.purpose === "action"
+        ? (process.env.ACTION_MODEL ?? "anthropic/claude-haiku-4.5")
+        : image
+          ? (process.env.REPROMPT_VISION_MODEL ?? "qwen/qwen2.5-vl-72b-instruct")
+          : (process.env.REPROMPT_MODEL ?? "qwen/qwen-2.5-72b-instruct");
       const orContent = image
         ? [
             { type: "image_url", image_url: { url: `data:image/png;base64,${image}` } },
