@@ -8,8 +8,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = [
     { url: BASE, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${BASE}/compare`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${BASE}/best-mac-dictation-app`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE}/changelog`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${BASE}/acknowledgements`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE}/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE}/terms`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE}/contact`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
   ];
 
   const vsPages: MetadataRoute.Sitemap = competitors.map((c) => ({

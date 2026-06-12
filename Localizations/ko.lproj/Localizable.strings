@@ -1132,3 +1132,13 @@
 "Untagged" = "태그 없음";
 "No untagged notes" = "태그 없는 노트가 없습니다";
 "Pick another tag, or All Notes to see every note." = "다른 태그를 선택하거나 모든 노트로 전체 노트를 확인하세요.";
+"Words Spoken" = "말한 단어 수";
+"Dictations" = "받아쓰기 횟수";
+"Streaks" = "연속 기록";
+"Dedication" = "꾸준함";
+"Speed" = "속도";
+"Big Days" = "최고의 날";
+"Time Saved" = "절약한 시간";
+"Airtime" = "총 발화 시간";
+"Modes & Features" = "모드 및 기능";
+"Special" = "특별";

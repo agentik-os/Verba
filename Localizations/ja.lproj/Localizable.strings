@@ -1132,3 +1132,13 @@
 "Untagged" = "タグなし";
 "No untagged notes" = "タグなしのノートはありません";
 "Pick another tag, or All Notes to see every note." = "別のタグを選ぶか、「すべてのノート」を選ぶとすべてのノートが表示されます。";
+"Words Spoken" = "発話した単語数";
+"Dictations" = "ディクテーション回数";
+"Streaks" = "連続記録";
+"Dedication" = "継続日数";
+"Speed" = "スピード";
+"Big Days" = "ベストな日";
+"Time Saved" = "節約した時間";
+"Airtime" = "総発話時間";
+"Modes & Features" = "モードと機能";
+"Special" = "スペシャル";

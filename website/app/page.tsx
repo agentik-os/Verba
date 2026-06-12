@@ -1275,6 +1275,12 @@ function FAQ() {
     ["Can it create calendar events or reminders?", "Yes, with the Labs toggle on in Context mode. Say \"create an event tomorrow at 3pm\", \"remind me to call the bank\", or \"draft a reply to this email\" and Verba creates the Calendar event, Reminder, or email draft for you. It always asks you to confirm before doing anything."],
     ["Do my notes sync across my Macs?", "Yes. Notes are tied to your Verba account, so they follow you when you sign in on another Mac. No iCloud setup needed."],
     ["How does the Translate mode work?", "Pick a target language once in the Translate mode (English, French, Spanish, German, Italian, Portuguese, Dutch, Russian, Chinese, Japanese, Korean, Arabic, Hindi, Turkish, Polish). Then just speak in whatever language is natural to you and Verba writes the result in your chosen language, every time, preserving tone, names, numbers and code. You can also make a dedicated mode per language and auto-switch it by app."],
+    ["How much does Verba cost?", "Verba costs $9.99 per month or $84 per year (a saving versus monthly), billed securely through Stripe. New users get 33 free dictations to try it before subscribing, and you bring your own AI plan or key so there are no hidden token charges."],
+    ["Is Verba accurate, and how good is the transcription?", "Verba uses state-of-the-art on-device speech models (WhisperKit and Parakeet) for fast, high-accuracy voice-to-text on Apple Silicon Macs. Its AI cleanup layer then automatically fixes filler words, punctuation, and formatting in whatever app you're typing in, so the final text reads polished rather than raw."],
+    ["Does Verba have a free trial or refund?", "Yes - Verba gives you 33 free dictations to try the full app with no payment required, so you can confirm it works for you before subscribing at $9.99/mo or $84/yr. Billing is handled through Stripe, so subscriptions can be managed and cancelled at any time."],
+    ["Does Verba work offline?", "Yes - in on-device mode Verba transcribes your voice locally using WhisperKit or Parakeet, so core dictation works without an internet connection and your audio never leaves your Mac. You only need a connection for cloud AI features like AI cleanup with a hosted model, live translation, or the JARVIS agent (local Ollama lets you run AI offline too)."],
+    ["Is my data and audio private with Verba?", "Yes - in on-device mode your audio never leaves your Mac, since transcription runs locally with WhisperKit or Parakeet. With JARVIS, your connected-app keys are relayed server-side via Composio and are never stored on your Mac, and you can run AI fully locally with Ollama for maximum privacy."],
+    ["What can the JARVIS voice agent actually do?", "JARVIS is Verba's voice agent that takes action across 1,000+ connected apps via Composio - so you can speak commands to send emails, create calendar events, update tasks, and more without leaving your current app. Connections are relayed server-side and your app keys are never stored on the Mac."],
   ];
   // FAQPage structured data — Google FAQ rich results + LLM/AI-search (GEO) citation.
   const faqJsonLd = {
@@ -1350,6 +1356,10 @@ function Footer() {
             <ul className="space-y-2.5 muted">
               <li><Link href="/account" className="link-quiet">Account</Link></li>
               <li><a href="https://t.me/verba_run" target="_blank" rel="noopener" className="link-quiet">Community</a></li>
+              <li><Link href="/best-mac-dictation-app" className="link-quiet">Best Mac dictation app</Link></li>
+              <li><Link href="/privacy" className="link-quiet">Privacy</Link></li>
+              <li><Link href="/terms" className="link-quiet">Terms</Link></li>
+              <li><Link href="/contact" className="link-quiet">Contact</Link></li>
             </ul>
           </div>
         </div>
