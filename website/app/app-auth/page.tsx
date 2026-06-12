@@ -25,6 +25,9 @@ export default function AppAuth() {
     const handBack = (code?: string, token?: string) => {
       setMsg("Done! Returning to Verba…");
       const q = new URLSearchParams({ email });
+      // The account avatar (Google/Clerk image) so the apps can show it — an image
+      // URL only, never the name (see the privacy note below).
+      if (user.imageUrl) q.set("avatar", user.imageUrl);
       if (code) q.set("code", code);
       // The signed app-session token (issued fresh by /api/link-referral after this
       // Clerk sign-in). The app stores it in the Keychain and sends it as a Bearer
