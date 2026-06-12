@@ -1160,3 +1160,5 @@
 "Confirm password" = "Подтвердите пароль";
 "Passwords don't match." = "Пароли не совпадают.";
 "Lock note" = "Заблокировать";
+"Sending…" = "Отправка…";
+"Confirm feedback" = "Подтвердить отзыв";

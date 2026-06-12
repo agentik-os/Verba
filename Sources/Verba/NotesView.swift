@@ -545,13 +545,19 @@ struct NotesView: View {
             HStack(alignment: .top, spacing: 8) {
                 Image(systemName: "wand.and.rays").font(.system(size: 12)).foregroundStyle(.secondary).padding(.top, 2)
                 Divider().frame(height: 16)
-                // axis:.vertical grows the field to fit a long instruction (1…6 visible lines).
-                TextField(L("How should this note be shaped? (e.g. \u{201C}as a bug report\u{201D})"),
-                          text: $intentText, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .lineLimit(1...6)
-                    .focused($intentFocused)
-                    .onSubmit { applyIntentNow() }                                // Enter re-formats now
+                // axis:.vertical grows the field to fit the instruction; the field is wrapped in a
+                // bounded ScrollView so a LONG intent stays fully accessible (scrolls) instead of
+                // being truncated past a fixed line cap (VER-51).
+                ScrollView {
+                    TextField(L("How should this note be shaped? (e.g. \u{201C}as a bug report\u{201D})"),
+                              text: $intentText, axis: .vertical)
+                        .textFieldStyle(.plain)
+                        .lineLimit(1...)
+                        .focused($intentFocused)
+                        .onSubmit { applyIntentNow() }                                // Enter re-formats now
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxHeight: 140)
                 // No confirm/applied ceremony: applyFormat() always reads the CURRENT intent text,
                 // so the live text IS what gets sent. This button just re-formats the existing
                 // transcript with the latest instruction right now.

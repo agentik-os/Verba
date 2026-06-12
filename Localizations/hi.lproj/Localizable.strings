@@ -1160,3 +1160,5 @@
 "Confirm password" = "पासवर्ड की पुष्टि करें";
 "Passwords don't match." = "पासवर्ड मेल नहीं खाते।";
 "Lock note" = "नोट लॉक करें";
+"Sending…" = "भेज रहे हैं…";
+"Confirm feedback" = "फ़ीडबैक पुष्टि करें";

@@ -1160,3 +1160,5 @@
 "Confirm password" = "Parolayı onayla";
 "Passwords don't match." = "Parolalar eşleşmiyor.";
 "Lock note" = "Notu kilitle";
+"Sending…" = "Gönderiliyor…";
+"Confirm feedback" = "Geri bildirimi onayla";

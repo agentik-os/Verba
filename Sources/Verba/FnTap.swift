@@ -218,7 +218,11 @@ final class FnTap {
             // A digit with NO profile at that index is NOT silently swallowed: while Fn is held we
             // surface a brief "No mode N" info flash so the keystroke isn't just eaten with no
             // feedback, then still consume it (the user clearly meant a mode, not a literal digit).
-            if menuActive || fnDown {
+            // Shift guard: the Fn+number gesture never uses Shift. On AZERTY (and many layouts) the
+            // digits ARE Shift+key, so a user typing a literal digit must NOT trigger a mode — let
+            // Shift+digit fall through to the app as text. (Fn + the physical number key, no Shift,
+            // still picks a mode.)
+            if (menuActive || fnDown) && !event.flags.contains(.maskShift) {
                 if let n = Self.digit(code) {
                     if isRepeat { return fnDown ? nil : Unmanaged.passUnretained(event) }  // consume held digit while Fn down, no re-switch
                     let handled = onDigit?(n) == true

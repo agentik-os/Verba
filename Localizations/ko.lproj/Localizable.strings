@@ -1160,3 +1160,5 @@
 "Confirm password" = "비밀번호 확인";
 "Passwords don't match." = "비밀번호가 일치하지 않습니다.";
 "Lock note" = "메모 잠금";
+"Sending…" = "보내는 중…";
+"Confirm feedback" = "피드백 확인";

@@ -1160,3 +1160,5 @@
 "Confirm password" = "Passwort bestätigen";
 "Passwords don't match." = "Passwörter stimmen nicht überein.";
 "Lock note" = "Notiz sperren";
+"Sending…" = "Wird gesendet…";
+"Confirm feedback" = "Feedback bestätigen";
