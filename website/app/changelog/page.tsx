@@ -21,9 +21,10 @@ const DAYS: Day[] = [
       "A calmer first run and Bear-style notes. The onboarding now teaches every shortcut — Action, Note, To-do, Transform and more — opens the app the moment you finish, and lets you keep your profile private. Notes get a proper nested tag tree for filing, and you can keep your history text without storing the audio.",
     entries: [
       {
-        version: "0.9.5 → 0.9.6",
+        version: "0.9.5 → 0.9.7",
         title: "Onboarding that shows everything, and Bear-style notes",
         items: [
+          "Achievements went big: 186 badges now, grouped into 10 ordered categories (Words Spoken, Dictations, Streaks, Dedication, Speed, Big Days, Time Saved, Airtime, Modes & Features, Special) with per-category progress, and a new Diamond tier for the extreme milestones — the word ladder climbs all the way to 1,000,000,000,000 words spoken.",
           "Notes get a Bear-style tag tree: your #tags now file into a nested, collapsible sidebar with note counts — All Notes and Untagged at the top, parent tags opening to their children. Click any tag to filter, including every note nested beneath it.",
           "Onboarding now lists every shortcut, not just the basics: Action (Fn + X), Note (Fn + Z), To-do (Fn + T), today's to-dos (⌥ + Fn), Transform a selection (⌥ + X), switch style (Fn + ] / [), plus pause, switch and cancel — nothing hidden.",
           "Finishing onboarding now opens Verba straight away instead of leaving you to re-click the icon.",
