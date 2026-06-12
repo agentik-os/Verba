@@ -1053,7 +1053,18 @@ struct NotesView: View {
                     else { transcript = text }
                     editorText = transcript
                 }
-                applyFormat()
+                // Intent mode NEEDS the user's instruction. Auto-formatting with an empty instruction
+                // ran the model on "INSTRUCTION: <nothing>" and produced a useless result, forcing a
+                // confusing re-run. So when Intent has no instruction yet, surface the raw transcript
+                // and focus the intent field — the user types what they want, then Validate (Enter).
+                let needsIntent = await MainActor.run { () -> Bool in
+                    format.intent && intentText.trimmingCharacters(in: .whitespaces).isEmpty
+                }
+                if needsIntent {
+                    await MainActor.run { busy = false; status = ""; intentFocused = true }
+                } else {
+                    applyFormat()
+                }
             } catch {
                 if Task.isCancelled { return }
                 await MainActor.run { busy = false; status = "\(L("Transcription failed:")) \(error.localizedDescription)" }

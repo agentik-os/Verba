@@ -828,7 +828,10 @@ struct DictionaryView: View {
                         // VER-49: Enter confirms this word and jumps to a fresh one (focused), so you
                         // can add words back-to-back without reaching for the mouse.
                         .onSubmit {
-                            if !store.terms[idx].written.trimmingCharacters(in: .whitespaces).isEmpty { newWord() }
+                            if !store.terms[idx].written.trimmingCharacters(in: .whitespaces).isEmpty {
+                                Gamification.shared.flag(.usedDictionary)
+                                newWord()
+                            }
                         }
                         .help(correction
                               ? L("The correct spelling Verba should write instead.")
@@ -1121,6 +1124,7 @@ struct SnippetsView: View {
     private func newSnippet() {
         store.items.append(Snippet(trigger: "", expansion: ""))
         selectedID = store.items.last?.id
+        Gamification.shared.flag(.usedSnippet)
     }
 
     private func remove(_ s: Snippet) {
@@ -1509,6 +1513,7 @@ struct ScratchpadView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .padding(.horizontal, 24).padding(.vertical, 20)
                         .background(.softFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .onChange(of: pad.text) { _, v in if !v.isEmpty { Gamification.shared.flag(.usedScratchpad) } }
                 }
             }
             .overlay {

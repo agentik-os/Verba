@@ -165,6 +165,7 @@ final class ComposioStore: ObservableObject {
                 let map = Self.foldConnections(c)
                 self.connections = map
                 self.pending = self.pending.filter { (map[$0] ?? "").uppercased() != "ACTIVE" }
+                if map.values.contains(where: { $0.uppercased() == "ACTIVE" }) { Gamification.shared.flag(.connectedApp) }
                 self.lastError = nil
 
                 // Warm the tools cache for ACTIVE toolkits (for the Action-mode prompt).
