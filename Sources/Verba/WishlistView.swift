@@ -18,6 +18,7 @@ struct WishlistView: View {
     @StateObject private var model = WishlistModel()
     @State private var draft = ""
     @State private var expanded: Set<String> = []
+    @State private var textExpanded: Set<String> = []   // VER-10: which long requests are expanded inline
     @State private var commentDrafts: [String: String] = [:]
     @State private var posting: Set<String> = []
     @State private var filter: WishFilter = .all
@@ -113,6 +114,8 @@ struct WishlistView: View {
         let voted = item.mine   // HANDOFF-5: server `mine` flag + local vote cache, no voters list
         let shipped = item.shipped
         let isOpen = expanded.contains(item.id)
+        let textOpen = textExpanded.contains(item.id)
+        let longText = item.text.count > 140 || item.text.contains("\n")
         return VStack(alignment: .leading, spacing: 0) {
             // Header — upvote + text + a discreet comment count. Tapping anywhere here toggles.
             HStack(spacing: 14) {
@@ -133,7 +136,20 @@ struct WishlistView: View {
                 .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(voted && !shipped ? Color.primary.opacity(0.1) : Color.primary.opacity(0.04)))
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(item.text).fixedSize(horizontal: false, vertical: true)
+                    Text(item.text)
+                        .lineLimit(textOpen ? nil : 3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if longText {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.18)) {
+                                if textOpen { textExpanded.remove(item.id) } else { textExpanded.insert(item.id) }
+                            }
+                        } label: {
+                            Text(textOpen ? L("Show less") : L("Show more"))
+                                .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
                     HStack(spacing: 6) {
                         Text("\(L("by")) \(item.author)").font(.caption2).foregroundStyle(.tertiary)
                         if shipped {

@@ -242,6 +242,7 @@ struct AdaptPanel: View {
     }
 
     private func runAdapt(label: String, systemPrompt: String, model: String, transcript: String) {
+        Gamification.shared.flag(.reworkedHistory)
         adapting = true; adaptError = nil; adaptResult = ""; adaptLabel = label; saved = false
         Task {
             do {

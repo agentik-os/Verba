@@ -35,7 +35,10 @@ type WishItem = {
   text: string;
   author: string;
   votes: number;
+  created?: number;         // ms epoch from Convex; drives the newest-first tie-break
   mine?: boolean;
+  shipped?: boolean;        // persisted in Convex (durable across Linear board changes)
+  shippedAt?: number | null;
 };
 
 type WishComment = {
@@ -210,14 +213,23 @@ export async function GET() {
     }
   }
 
-  const merged = items
-    .map((w) => {
-      const at = shippedAt.get(w.id);
+  const merged = await Promise.all(
+    items.map(async (w) => {
+      const liveAt = shippedAt.get(w.id);                // from the (current) Linear board
       const comments = commentsByWish.get(w.id) ?? [];
       const base = { ...w, commentCount: comments.length, comments };
-      return at ? { ...base, shipped: true, shippedAt: at } : { ...base, shipped: false };
+      // Shipped = persisted-in-Convex OR live-from-Linear. Once Linear reports a wish Done, persist
+      // it to Convex so the green badge survives even if the Linear board/workspace later changes.
+      if (liveAt && w.shipped !== true) {
+        try { await convex("mutation", "wishlist:setShipped", { id: w.id, at: Date.parse(liveAt) }); } catch { /* best-effort */ }
+      }
+      const isShipped = w.shipped === true || !!liveAt;
+      if (!isShipped) return { ...base, shipped: false };
+      const shippedAtMs = w.shippedAt ?? (liveAt ? Date.parse(liveAt) : Date.now());
+      return { ...base, shipped: true, shippedAt: new Date(shippedAtMs).toISOString() };
     })
-    .sort((a, b) => b.votes - a.votes);
+  );
+  merged.sort((a, b) => b.votes - a.votes || (b.created ?? 0) - (a.created ?? 0));
 
   return NextResponse.json({ ok: true, items: merged }, { headers: cors });
 }
@@ -273,8 +285,9 @@ async function handleAdd(body: Body) {
   try {
     const items = await convex<WishItem[]>("query", "wishlist:list", { uid, secret });
     const mine = items.filter((w) => w.text === stored && w.mine);
-    // list() has no created field; if several match, the marker still links the most likely one.
-    createdId = mine.length ? mine[mine.length - 1].id : null;
+    // Pick the most-recently-created match (list() now returns `created`); ties on text are rare.
+    const newest = mine.slice().sort((a, b) => (b.created ?? 0) - (a.created ?? 0))[0];
+    createdId = newest?.id ?? null;
   } catch {
     createdId = null;
   }

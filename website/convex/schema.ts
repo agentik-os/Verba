@@ -11,6 +11,10 @@ export default defineSchema({
   wishlist: defineTable({
     text: v.string(), author: v.string(), votes: v.number(),
     voters: v.array(v.string()), created: v.number(),
+    // Shipped status persisted here (set when the linked Linear issue goes Done) so the green
+    // "shipped" badge survives even if the Linear board/workspace changes.
+    shipped: v.optional(v.boolean()),
+    shippedAt: v.optional(v.number()),
   }),
 
   history: defineTable({
@@ -33,10 +37,16 @@ export default defineSchema({
     updated: v.number(),
   }).index("by_uid", ["uid"]),
 
-  notes: defineTable({   // long-form Notes, synced text-only across the user's Macs
+  notes: defineTable({   // long-form Notes, synced text-only across the user's devices
     uid: v.string(), ts: v.number(),
     original: v.string(), formatted: v.string(), formatName: v.string(),
     tags: v.array(v.string()),
+    title: v.optional(v.string()),    // user-set note title (the Mac has pushed this since 5b69e1e)
+    // Per-note password lock: when locked, `formatted` is the AES-GCM ciphertext and
+    // `salt` is that note's own salt — synced so any signed-in device can decrypt
+    // with the note's password (key = SHA-256(salt ‖ password), all on-device).
+    salt: v.optional(v.string()),
+    locked: v.optional(v.boolean()),
   }).index("by_uid", ["uid"]),
 
   notes_deleted: defineTable({   // tombstones so note deletions stick across devices

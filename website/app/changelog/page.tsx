@@ -21,9 +21,16 @@ const DAYS: Day[] = [
       "A calmer first run and Bear-style notes. The onboarding now teaches every shortcut — Action, Note, To-do, Transform and more — opens the app the moment you finish, and lets you keep your profile private. Notes get a proper nested tag tree for filing, and you can keep your history text without storing the audio.",
     entries: [
       {
-        version: "0.9.5 → 0.9.10",
+        version: "0.9.5 → 0.9.13",
         title: "Onboarding that shows everything, and Bear-style notes",
         items: [
+          "Notes get one-tap mode actions: apply any mode to a note in a tap — including the custom modes you built yourself, now surfaced right alongside the built-in ones.",
+          "Export a note: save it as a Markdown (.md) or plain-text file straight from the note toolbar.",
+          "Wishlist now shows newest ideas first (within each vote tier), and long requests get a Show more so nothing is cut off or unclickable.",
+          "Feedback is one tap now: Send runs Improve-with-AI for you, shows the tidied version to confirm or tweak, then sends — one button, no second step.",
+          "Wishlist fix: shipped ideas keep their green “shipped” badge for good — it's saved with the wish now, so it survives behind the scenes changes.",
+          "Dictionary auto-learn fixed: correct a name or brand in the text Verba just wrote and it now reliably learns the spelling, so it gets it right next time (punctuation no longer threw it off).",
+          "More to unlock: \"Explore Verba\" now covers every shortcut too — push-to-talk, Fn+number, mode switching, pause, cancel, the to-do glance, chaining dictations, custom modes, your own AI engine, re-working history and file transcription — each badge naming the keys so it doubles as a cheat sheet. And a big batch of playful Special badges: thank your AI (Mind Your Manners → AI Whisperer), Ship It, Bug Hunter, Founder Mode, AI Native, Big Dreamer, Weekend Warrior, Burning the Midnight Oil, Globe Trotter across time zones, and more — all earned purely on-device from your own words and your Mac's clock.",
           "New \"Explore Verba\" achievements — a gamified tour of every feature and shortcut. As you try each one (a mode, a note, a tag, the Scratchpad, a task you check off, the dictionary, a connected app, a voice Action…) the matching badge ticks off, all the way to the Verba Explorer trophy. It sits first in Achievements so it doubles as a friendly way to learn the app.",
           "Notes Intent mode fixed: it no longer auto-formats with an empty instruction. After you record, the raw transcript stays put and the instruction field is focused — type how to shape the note, press Enter, and it applies.",
           "Feedback fixes from the in-app reports: Add-a-word in the Dictionary now confirms on Enter and jumps to a fresh word so you can add several in a row; the Notes Intent field scrolls when your instruction is long instead of truncating; and on AZERTY (and similar) layouts, Shift+number types a digit again instead of switching modes.",

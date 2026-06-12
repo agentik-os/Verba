@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import AppKit
 
 /// Notes tab (#A): record a long voice memo, transcribe it, reorganize into a clean document
 /// with a chosen format, render markdown, tag it (Bear-style #hashtags), edit/copy/save.
@@ -523,7 +524,7 @@ struct NotesView: View {
     private var formatChips: some View {
         VStack(spacing: 10) {
             FlowLayout(spacing: 8, alignment: .center) {
-                ForEach(modes.modes) { f in
+                ForEach(quickActionModes) { f in
                     chip(label: f.name, icon: f.icon, on: f.id == format.id) {
                         format = f; if !transcript.isEmpty { applyFormat() }
                     }
@@ -613,6 +614,28 @@ struct NotesView: View {
         return out
     }
 
+    /// Export the current note to a user-chosen file (VER-9). The body (`editorText`) is already
+    /// Markdown, so we write it verbatim; the default filename comes from the note's title (or its
+    /// first non-empty line). Mirrors the NSSavePanel pattern used elsewhere in the app.
+    private func exportNote(ext: String) {
+        let body = editorText
+        guard !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        let titleTrim = noteTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let firstLine = body.split(separator: "\n", omittingEmptySubsequences: true).first
+            .map { String($0).trimmingCharacters(in: CharacterSet(charactersIn: "# ")) } ?? ""
+        let rawBase = titleTrim.isEmpty ? (firstLine.isEmpty ? "Note" : firstLine) : titleTrim
+        // Strip filename-illegal characters and cap length.
+        let illegal = CharacterSet(charactersIn: "/\\:?%*|\"<>")
+        let base = String(rawBase.components(separatedBy: illegal).joined().prefix(60))
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "\(base.isEmpty ? "Note" : base).\(ext)"
+        panel.canCreateDirectories = true
+        panel.isExtensionHidden = false
+        if panel.runModal() == .OK, let url = panel.url {
+            try? body.data(using: .utf8)?.write(to: url)
+        }
+    }
+
     /// Turn the note's checklist into a real Tasks project so the markdown isn't a dead end.
     /// Each `- [ ]` line becomes a task (its checked state carried over), filed under a project
     /// named after the note's title (or its format).
@@ -653,7 +676,7 @@ struct NotesView: View {
             // Header: format menu + actions
             HStack(spacing: 10) {
                 Menu {
-                    ForEach(modes.modes) { f in
+                    ForEach(quickActionModes) { f in
                         Button { format = f; if !transcript.isEmpty { applyFormat() } } label: {
                             Label(f.name, systemImage: f.icon)
                         }
@@ -696,6 +719,16 @@ struct NotesView: View {
                     .buttonStyle(.borderless)
                     .help("\(L("Create a Tasks project from this checklist")) (\(checklistItems.count) \(checklistItems.count == 1 ? L("item") : L("items")))")
                 }
+                // Export the note to a portable file (the body is already Markdown). VER-9.
+                Menu {
+                    Button(L("Markdown (.md)")) { exportNote(ext: "md") }
+                    Button(L("Plain text (.txt)")) { exportNote(ext: "txt") }
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                .help(L("Export note"))
+                .disabled(editorText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 CopyButton(text: editorText)
                 Button(role: .destructive) { if let id = selectedID, let e = store.entries.first(where: { $0.id == id }) { remove(e) } else { newNote() } } label: { Image(systemName: "trash") }
                     .buttonStyle(.borderless).foregroundStyle(.secondary)
@@ -834,7 +867,20 @@ struct NotesView: View {
         .buttonStyle(.plain)
     }
 
-    private func iconFor(_ name: String) -> String { modes.modes.first { $0.name == name }?.icon ?? "doc.text" }
+    private func iconFor(_ name: String) -> String { quickActionModes.first { $0.name == name }?.icon ?? "doc.text" }
+
+    /// All one-tap note actions: every note format (built-in + custom note modes) PLUS the user's
+    /// custom DICTATION modes (Settings.profiles, non-builtin, non-raw) bridged into note formats so
+    /// they re-format a note in one tap (VER-7). Raw/pure-dictation profiles are excluded (no
+    /// reprompting = no-op as a format). De-duped by name so a custom note mode that shares a name
+    /// with a dictation mode isn't listed twice.
+    private var quickActionModes: [NoteFormat] {
+        let noteNames = Set(modes.modes.map { $0.name })
+        let bridged = settings.profiles
+            .filter { !$0.builtin && !$0.raw && !noteNames.contains($0.name) }
+            .map(NoteFormat.fromProfile)
+        return modes.modes + bridged
+    }
 
     // MARK: selection / lifecycle
     private func newNote() {

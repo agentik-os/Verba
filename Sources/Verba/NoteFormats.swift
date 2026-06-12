@@ -76,6 +76,22 @@ struct NoteFormat: Codable, Identifiable, Equatable, Hashable {
     }
 
     static var cleanNote: NoteFormat { allBuiltIn[0] }
+
+    /// Bridge a custom DICTATION mode (Settings.profiles, non-builtin) into a note quick-action so
+    /// the user's own modes are one-tap re-formats in Notes too (VER-7). The id is derived
+    /// deterministically from the profile id (XOR'd with a fixed salt) so chip/menu selection stays
+    /// stable across re-renders and never collides with a built-in note-format id. We carry the
+    /// profile's `effectiveSystemPrompt` (so a Translate target-language mode keeps translating) and
+    /// its per-mode model. `raw` (pure-dictation) profiles are skipped by the caller.
+    static func fromProfile(_ p: Profile) -> NoteFormat {
+        var bytes = withUnsafeBytes(of: p.id.uuid) { Array($0) }
+        let salt: [UInt8] = [0x4E, 0x6F, 0x74, 0x65, 0x4D, 0x6F, 0x64, 0x65, 0x42, 0x72, 0x69, 0x64, 0x67, 0x65, 0x21, 0x00]
+        for i in 0..<16 { bytes[i] ^= salt[i] }
+        let derived = uuid_t(bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+                             bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15])
+        return NoteFormat(id: UUID(uuid: derived), name: p.name, icon: "wand.and.stars",
+                          systemPrompt: p.effectiveSystemPrompt, model: p.model)
+    }
 }
 
 /// Persisted, editable store for the note modes (mirrors `Settings.profiles` for dictation modes).

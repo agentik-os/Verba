@@ -190,11 +190,18 @@ final class NotesStore: ObservableObject {
 
     private func push(_ e: NotesEntry) {
         guard !Settings.shared.proEmail.isEmpty else { return }
-        ConvexClient.call("mutation", "notes:push", ConvexClient.authedArgs([
+        var args: [String: Any] = [
             "ts": e.date.timeIntervalSince1970 * 1000,
             "title": e.title,
             "original": e.original, "formatted": e.formatted, "formatName": e.formatName, "tags": e.tags,
-        ])) { if !convexOK($0) { VerbaLog.syncFailure("notes:push") } }   // R14
+            "locked": e.locked,
+        ]
+        // Sync the per-note salt so the account's other devices (Mac, iPhone) can decrypt
+        // this note with ITS password — the derived key itself never leaves any device.
+        if let salt = e.salt { args["salt"] = salt }
+        ConvexClient.call("mutation", "notes:push", ConvexClient.authedArgs(args)) {
+            if !convexOK($0) { VerbaLog.syncFailure("notes:push") }   // R14
+        }
     }
 
     func pushAll() {
@@ -231,14 +238,23 @@ final class NotesStore: ObservableObject {
                     let formatted = r["formatted"] as? String ?? ""
                     let formatName = r["formatName"] as? String ?? "Note"
                     let tags = (r["tags"] as? [String]) ?? []
+                    let locked = (r["locked"] as? Bool) ?? false
+                    let salt = r["salt"] as? String
                     if let i = indexByTs[ts.rounded()] {
                         // Known note: pull remote edits (formatted/tags/title/formatName) in place.
                         if merged[i].formatted != formatted || merged[i].tags != tags
-                            || merged[i].title != title || merged[i].formatName != formatName {
+                            || merged[i].title != title || merged[i].formatName != formatName
+                            || merged[i].locked != locked {
                             merged[i].formatted = formatted
                             merged[i].tags = tags
                             merged[i].formatName = formatName
                             if !title.isEmpty { merged[i].title = title }
+                            // Adopt a lock made on another device (or an unlock): the
+                            // ciphertext travels in `formatted`, the note's salt alongside.
+                            merged[i].locked = locked
+                            merged[i].salt = salt
+                            if locked { merged[i].original = "" }
+                            else if let original = r["original"] as? String { merged[i].original = original }
                             changed = true
                         }
                     } else {
@@ -249,7 +265,9 @@ final class NotesStore: ObservableObject {
                             formatted: formatted,
                             formatName: formatName,
                             audioFile: nil,
-                            tags: tags))
+                            tags: tags,
+                            locked: locked,
+                            salt: salt))
                         changed = true
                     }
                 }

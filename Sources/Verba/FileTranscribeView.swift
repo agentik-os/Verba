@@ -218,6 +218,7 @@ struct FileTranscribeView: View {
     }
 
     private func transcribe(_ url: URL) {
+        Gamification.shared.flag(.transcribedFile)
         state = "working"; error = ""; result = ""
         let source = url.lastPathComponent
         let lang = settings.language.isEmpty ? nil : settings.language

@@ -966,6 +966,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Esc / the × in the overlay: discard a recording, abort processing, or dismiss the picker.
     private func cancelEverything() {
+        if state == .recording || state == .processing { Gamification.shared.flag(.cancelledRec) }
         // Forceful, state-independent teardown so the × (and Esc) ALWAYS dismisses the overlay,
         // whatever is happening (recording, transcribing, model-downloading, picker open).
         // The glance is a .nonactivatingPanel that may not own key focus, so its own local Esc
@@ -1081,6 +1082,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Don't pop the glance over a live capture: if ⌥ is tapped mid-Fn-hold while a dictation,
         // note, or to-do voice capture is recording, leave the recording untouched.
         if state == .recording || todoCaptureRecording || NotesController.shared.isRecording { return }
+        Gamification.shared.flag(.usedTodoGlance)
         showTodoGlance()
     }
 
@@ -1152,6 +1154,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .recording:
             let p = step(from: forcedProfile?.id ?? overlay.model.selectedID ?? Settings.shared.activeProfileID)
             forcedProfile = p
+            Gamification.shared.flag(.switchedMode)
             overlay.model.selectedID = p.id
             overlay.model.title = "Listening · \(p.name)"
             overlay.model.modeName = p.name
@@ -1200,7 +1203,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let send = Settings.shared.triggerStyle == .hold
             || Date().timeIntervalSince(pressed) >= fnHoldThreshold
         if send {
-            InputCoach.shared.note(.holdFn)
+            InputCoach.shared.note(.holdFn); Gamification.shared.flag(.usedPushToTalk)
             lastFnDown = nil
             stopAndProcess()
         }
@@ -1211,7 +1214,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let profiles = Settings.shared.profiles
         guard n >= 1, n <= profiles.count else { return false }
         let p = profiles[n - 1]
-        InputCoach.shared.note(.doubleFn)   // onboarding: "mode picker learned"
+        InputCoach.shared.note(.doubleFn); Gamification.shared.flag(.pickedModeNum)   // onboarding: "mode picker learned"
         switch state {
         case .recording:
             // Fn + number while recording → switch THIS dictation's mode live.
@@ -1264,6 +1267,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if recorder.resume() { overlay.model.paused = false; SoundFX.resume() }   // only un-pause the UI if audio actually resumed
         } else {
             recorder.pause(); overlay.model.paused = true; SoundFX.pause()
+            Gamification.shared.flag(.pausedRec)
         }
     }
 
@@ -1350,6 +1354,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // so every state==.idle caller — global shortcut, edit-last, etc. — would otherwise hijack
         // its mic and orphan the capture). Refuse to start a dictation over an in-flight capture.
         if todoCaptureRecording { resetOneShotFlags(); return }   // R3: don't leak editLast/action into the next run
+        // Chained dictation: starting a new one while an earlier dictation is still processing.
+        if SessionStore.shared.hasInflight { Gamification.shared.flag(.chainedDictation) }
         // Free Pro-trial: block new dictations once the trial allowance is spent.
         if Entitlement.freeLimitReached() { resetOneShotFlags(); showPaywall(); return }
         recorder.requestPermission { [weak self] ok in
@@ -1726,9 +1732,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let dur = ctx.recordStartedAt.map { Date().timeIntervalSince($0) } ?? 0
                 Stats.shared.record(words: wordCount(text), seconds: dur)
                 Leaderboard.submit()   // keep the public leaderboard up to date
-                // Gamification: note which mode was used + time-of-day, then re-evaluate achievements.
+                // Gamification: note which mode was used + time-of-day, scan the text for fun
+                // patterns (on-device), then re-evaluate achievements.
                 Gamification.shared.flag(Gamification.flagForMode(result.profileName))
                 Gamification.shared.noteDictationTime()
+                Gamification.shared.scanText(text)
+                // Ran on the user's own engine (local model, own key, or their Claude plan) rather
+                // than the hosted default.
+                switch Settings.shared.repromptBackend.resolved {
+                case .localLLM, .apiKey, .openRouter, .claudeCode: Gamification.shared.flag(.usedOwnAI)
+                default: break
+                }
             }
             // Surface the finished Session: list it (with Copy) and notify without stealing focus.
             SessionStore.shared.complete(session)
