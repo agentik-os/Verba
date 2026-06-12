@@ -8,12 +8,25 @@ export const push = mutation({
     uid: v.string(), secret: v.string(), ts: v.number(),
     original: v.string(), formatted: v.string(), formatName: v.string(),
     tags: v.array(v.string()),
+    title: v.optional(v.string()),
+    // Per-note lock state (see schema.ts): synced so other devices can decrypt/lock.
+    salt: v.optional(v.string()),
+    locked: v.optional(v.boolean()),
   },
   handler: async (ctx, a) => {
     await requireDevice(ctx, a.uid, a.secret);
     const dup = await ctx.db.query("notes").withIndex("by_uid", (q) => q.eq("uid", a.uid))
       .filter((q) => q.eq(q.field("ts"), a.ts)).first();
-    if (dup) { await ctx.db.patch(dup._id, { formatted: a.formatted, tags: a.tags }); return; }
+    if (dup) {
+      await ctx.db.patch(dup._id, {
+        formatted: a.formatted, tags: a.tags,
+        ...(a.title !== undefined ? { title: a.title } : {}),
+        // Lock transition: adopt original (cleared on lock, restored on unlock) and
+        // salt together; an undefined salt on unlock removes the stale field.
+        ...(a.locked !== undefined ? { locked: a.locked, original: a.original, salt: a.salt } : {}),
+      });
+      return;
+    }
     const tomb = await ctx.db.query("notes_deleted").withIndex("by_uid", (q) => q.eq("uid", a.uid))
       .filter((q) => q.eq(q.field("ts"), a.ts)).first();
     if (tomb) return;
@@ -28,7 +41,10 @@ export const pull = query({
     await requireDevice(ctx, a.uid, a.secret);
     const rows = await ctx.db.query("notes").withIndex("by_uid", (q) => q.eq("uid", a.uid)).collect();
     return rows.sort((x, y) => y.ts - x.ts).slice(0, 500)
-      .map((r) => ({ ts: r.ts, original: r.original, formatted: r.formatted, formatName: r.formatName, tags: r.tags }));
+      .map((r) => ({
+        ts: r.ts, original: r.original, formatted: r.formatted, formatName: r.formatName, tags: r.tags,
+        title: r.title ?? "", salt: r.salt, locked: r.locked ?? false,
+      }));
   },
 });
 
