@@ -1095,6 +1095,10 @@ struct NotesView: View {
                     return
                 }
                 await MainActor.run {
+                    // Safety net: every note dictation ALSO lands in History (tagged "note"),
+                    // so the dictated text stays recoverable even if the note is later deleted.
+                    History.shared.add(original: text, reprompted: text, profileName: format.name,
+                                       engine: Self.engineLabel(s), audioURL: nil, source: "note")
                     if appendMode { transcript = (transcript + "\n\n" + text).trimmingCharacters(in: .whitespacesAndNewlines); appendMode = false }
                     else { transcript = text }
                     editorText = transcript
@@ -1146,6 +1150,16 @@ struct NotesView: View {
     }
 
     private func timeString(_ s: Int) -> String { String(format: "%d:%02d", s / 60, s % 60) }
+
+    /// Same engine label the dictation pipeline writes into History (Pipeline.engineLabel is
+    /// private to it), so note-sourced entries filter identically in the History tab.
+    private static func engineLabel(_ s: Settings) -> String {
+        switch s.engine {
+        case .openAI:   return "openai:gpt-4o-transcribe"
+        case .whisper:  return "whisper:\(s.localModel)"
+        case .parakeet: return "parakeet:v3"
+        }
+    }
 }
 
 /// Big circular record control with a soft pulsing ring while recording.

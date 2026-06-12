@@ -21,6 +21,38 @@ struct HistoryEntry: Codable, Identifiable {
     var profileName: String
     var engine: String
     var audioFile: String?      // filename inside the history folder
+    // Where the dictation happened: nil = regular dictation, "note" = dictated into a
+    // long-form note. The safety net: if the note is later deleted (accidentally or not),
+    // its dictated text is still here. Optional so older index.json files keep decoding.
+    var source: String? = nil
+    // Version clock: set when "Re-run" rewrites `reprompted` so the cloud can tell a
+    // genuine rewrite from a stale pushAll replay (see history:push server-side).
+    var updatedAt: Date? = nil
+
+    init(id: UUID = UUID(), date: Date = Date(), original: String, reprompted: String,
+         profileName: String, engine: String, audioFile: String? = nil,
+         source: String? = nil, updatedAt: Date? = nil) {
+        self.id = id; self.date = date; self.original = original; self.reprompted = reprompted
+        self.profileName = profileName; self.engine = engine; self.audioFile = audioFile
+        self.source = source; self.updatedAt = updatedAt
+    }
+
+    // Schema-evolution-proof decoding (same hardening as NotesEntry): Swift's synthesized
+    // Codable requires every non-optional key even when defaulted, so a field added to
+    // this struct would make every pre-existing History/index.json fail to decode and the
+    // whole dictation history come up empty. decodeIfPresent everything instead.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = (try? c.decodeIfPresent(UUID.self, forKey: .id)) ?? UUID()
+        date = (try? c.decodeIfPresent(Date.self, forKey: .date)) ?? Date()
+        original = (try? c.decodeIfPresent(String.self, forKey: .original)) ?? ""
+        reprompted = (try? c.decodeIfPresent(String.self, forKey: .reprompted)) ?? ""
+        profileName = (try? c.decodeIfPresent(String.self, forKey: .profileName)) ?? ""
+        engine = (try? c.decodeIfPresent(String.self, forKey: .engine)) ?? ""
+        audioFile = try? c.decodeIfPresent(String.self, forKey: .audioFile)
+        source = try? c.decodeIfPresent(String.self, forKey: .source)
+        updatedAt = try? c.decodeIfPresent(Date.self, forKey: .updatedAt)
+    }
 }
 
 final class History: ObservableObject {
@@ -42,7 +74,7 @@ final class History: ObservableObject {
 
     var audioFolder: URL { dir }
 
-    func add(original: String, reprompted: String, profileName: String, engine: String, audioURL: URL?) {
+    func add(original: String, reprompted: String, profileName: String, engine: String, audioURL: URL?, source: String? = nil) {
         guard Settings.shared.saveHistory else { return }   // S14: history off → nothing on disk, no audio copy, no cloud push
         var stored: String?
         if let audioURL {
@@ -51,7 +83,7 @@ final class History: ObservableObject {
             stored = dest.lastPathComponent
         }
         let entry = HistoryEntry(original: original, reprompted: reprompted,
-                                 profileName: profileName, engine: engine, audioFile: stored)
+                                 profileName: profileName, engine: engine, audioFile: stored, source: source)
         entries.insert(entry, at: 0)
         save()
         push(entry)   // sync to the cloud (text only, never the audio)
@@ -62,11 +94,16 @@ final class History: ObservableObject {
 
     private func push(_ e: HistoryEntry) {
         guard !Settings.shared.proEmail.isEmpty else { return }   // only for signed-in users
-        ConvexClient.call("mutation", "history:push", ConvexClient.authedArgs([
+        var args: [String: Any] = [
             "ts": e.date.timeIntervalSince1970 * 1000,
             "original": e.original, "reprompted": e.reprompted,
             "profileName": e.profileName, "engine": e.engine,
-        ])) { if !convexOK($0) { VerbaLog.syncFailure("history:push") } }   // R14
+        ]
+        if let source = e.source { args["source"] = source }
+        if let u = e.updatedAt { args["updatedAt"] = u.timeIntervalSince1970 * 1000 }   // re-run rewrites carry their clock
+        ConvexClient.call("mutation", "history:push", ConvexClient.authedArgs(args)) {
+            if !convexOK($0) { VerbaLog.syncFailure("history:push") }   // R14
+        }
     }
 
     /// Push every local entry to the cloud (used after sign-in so anything dictated while
@@ -103,7 +140,9 @@ final class History: ObservableObject {
                         original: r["original"] as? String ?? "",
                         reprompted: r["reprompted"] as? String ?? "",
                         profileName: r["profileName"] as? String ?? "",
-                        engine: r["engine"] as? String ?? "", audioFile: nil))
+                        engine: r["engine"] as? String ?? "", audioFile: nil,
+                        source: r["source"] as? String,
+                        updatedAt: (r["updatedAt"] as? Double).map { Date(timeIntervalSince1970: $0 / 1000) }))
                 }
                 if merged.count != self.entries.count {
                     self.entries = merged.sorted { $0.date > $1.date }
@@ -176,13 +215,19 @@ final class History: ObservableObject {
     func updateReprompted(_ entry: HistoryEntry, text: String) {
         guard let i = entries.firstIndex(where: { $0.id == entry.id }) else { return }
         entries[i].reprompted = text
+        entries[i].updatedAt = Date()   // version the rewrite so a stale replay can't undo it
         save()
         if !Settings.shared.proEmail.isEmpty {
-            ConvexClient.call("mutation", "history:push", ConvexClient.authedArgs([
+            var args: [String: Any] = [
                 "ts": entries[i].date.timeIntervalSince1970 * 1000,
                 "original": entries[i].original, "reprompted": text,
                 "profileName": entries[i].profileName, "engine": entries[i].engine,
-            ])) { if !convexOK($0) { VerbaLog.syncFailure("history:push (re-run)") } }   // R14
+                "updatedAt": entries[i].updatedAt!.timeIntervalSince1970 * 1000,
+            ]
+            if let source = entries[i].source { args["source"] = source }
+            ConvexClient.call("mutation", "history:push", ConvexClient.authedArgs(args)) {
+                if !convexOK($0) { VerbaLog.syncFailure("history:push (re-run)") }   // R14
+            }
         }
     }
 

@@ -20,6 +20,12 @@ export default defineSchema({
   history: defineTable({
     uid: v.string(), ts: v.number(),
     original: v.string(), reprompted: v.string(), profileName: v.string(), engine: v.string(),
+    // Where the dictation happened ("note" = dictated into a long-form note). The note
+    // safety net: a note's dictated text stays recoverable here if the note is deleted.
+    source: v.optional(v.string()),
+    // Version clock (ms): set when a "Re-run" rewrites `reprompted`, so a device that
+    // missed the re-run can never clobber it back with the old text (see history:push).
+    updatedAt: v.optional(v.number()),
   }).index("by_uid", ["uid"]),
 
   history_deleted: defineTable({   // tombstones so deletions stick across devices
@@ -47,6 +53,10 @@ export default defineSchema({
     // with the note's password (key = SHA-256(salt ‖ password), all on-device).
     salt: v.optional(v.string()),
     locked: v.optional(v.boolean()),
+    // Per-note version clock (ms since epoch, client-set; server clock as fallback).
+    // Lets every device refuse stale overwrites in BOTH directions — a pull must never
+    // clobber newer local edits, a push must never clobber a newer cloud copy.
+    updatedAt: v.optional(v.number()),
   }).index("by_uid", ["uid"]),
 
   notes_deleted: defineTable({   // tombstones so note deletions stick across devices

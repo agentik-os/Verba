@@ -25,6 +25,39 @@ struct NotesEntry: Codable, Identifiable {
     // packed (original‖formatted) text, `original` is cleared, and `salt` is this note's own salt.
     var locked: Bool = false
     var salt: String? = nil
+    // Version clock for sync: bumped on every local edit, compared on pull/push so a stale
+    // copy (cloud or local) can never overwrite a newer one. Optional so pre-existing
+    // index.json files still decode; nil falls back to `date` (creation = last edit).
+    var updatedAt: Date? = nil
+
+    init(id: UUID = UUID(), date: Date = Date(), title: String = "", original: String,
+         formatted: String, formatName: String, audioFile: String? = nil, tags: [String] = [],
+         locked: Bool = false, salt: String? = nil, updatedAt: Date? = nil) {
+        self.id = id; self.date = date; self.title = title; self.original = original
+        self.formatted = formatted; self.formatName = formatName; self.audioFile = audioFile
+        self.tags = tags; self.locked = locked; self.salt = salt; self.updatedAt = updatedAt
+    }
+
+    // Schema-evolution-proof decoding. Swift's synthesized Codable REQUIRES every
+    // non-optional key even when the property has a default, so each new field added to
+    // NotesEntry made every pre-existing index.json fail to decode → the notes list came
+    // up EMPTY and the next save overwrote the file (notes lost — the Jun 12 '26 `locked`
+    // addition did exactly this). Every field is decodeIfPresent so an index.json written
+    // by ANY older build always decodes.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = (try? c.decodeIfPresent(UUID.self, forKey: .id)) ?? UUID()
+        date = (try? c.decodeIfPresent(Date.self, forKey: .date)) ?? Date()
+        title = (try? c.decodeIfPresent(String.self, forKey: .title)) ?? ""
+        original = (try? c.decodeIfPresent(String.self, forKey: .original)) ?? ""
+        formatted = (try? c.decodeIfPresent(String.self, forKey: .formatted)) ?? ""
+        formatName = (try? c.decodeIfPresent(String.self, forKey: .formatName)) ?? "Note"
+        audioFile = try? c.decodeIfPresent(String.self, forKey: .audioFile)
+        tags = (try? c.decodeIfPresent([String].self, forKey: .tags)) ?? []
+        locked = (try? c.decodeIfPresent(Bool.self, forKey: .locked)) ?? false
+        salt = try? c.decodeIfPresent(String.self, forKey: .salt)
+        updatedAt = try? c.decodeIfPresent(Date.self, forKey: .updatedAt)
+    }
 }
 
 /// Local store for long-form notes (mirrors History.swift; local-only for v1).
@@ -48,8 +81,17 @@ final class NotesStore: ObservableObject {
         dir = base
         indexURL = base.appendingPathComponent("index.json")
         tombstoneURL = base.appendingPathComponent("tombstones.json")
-        if let data = try? Data(contentsOf: indexURL),
-           let decoded = try? JSONDecoder().decode([NotesEntry].self, from: data) { entries = decoded }
+        if let data = try? Data(contentsOf: indexURL) {
+            if let decoded = try? JSONDecoder().decode([NotesEntry].self, from: data) {
+                entries = decoded
+            } else if !data.isEmpty {
+                // Never let an undecodable index be silently clobbered by the next save():
+                // park a rescue copy first so the notes remain recoverable, then start empty.
+                let rescue = base.appendingPathComponent("index.rescue-\(Int(Date().timeIntervalSince1970)).json")
+                try? data.write(to: rescue)
+                VerbaLog.syncFailure("notes index decode — rescued to \(rescue.lastPathComponent)")
+            }
+        }
         if let data = try? Data(contentsOf: tombstoneURL),
            let decoded = try? JSONDecoder().decode([Double].self, from: data) { tombstones = Set(decoded) }
     }
@@ -80,6 +122,7 @@ final class NotesStore: ObservableObject {
         if let formatName { entries[i].formatName = formatName }
         if let title { entries[i].title = title.trimmingCharacters(in: .whitespacesAndNewlines) }
         if let tags { entries[i].tags = NotesStore.mergeTags(tags + NotesStore.hashtags(in: formatted)) }
+        entries[i].updatedAt = Date()
         save()
         push(entries[i])   // re-sync the edited note
     }
@@ -97,6 +140,7 @@ final class NotesStore: ObservableObject {
         entries[i].formatted = cipher
         entries[i].salt = salt
         entries[i].locked = true
+        entries[i].updatedAt = Date()
         save()
         push(entries[i])
         Gamification.shared.flag(.lockedNote)
@@ -119,6 +163,7 @@ final class NotesStore: ObservableObject {
         entries[i].formatted = dec.formatted
         entries[i].salt = nil
         entries[i].locked = false
+        entries[i].updatedAt = Date()
         save()
         push(entries[i])
         return true
@@ -195,6 +240,7 @@ final class NotesStore: ObservableObject {
             "title": e.title,
             "original": e.original, "formatted": e.formatted, "formatName": e.formatName, "tags": e.tags,
             "locked": e.locked,
+            "updatedAt": (e.updatedAt ?? e.date).timeIntervalSince1970 * 1000,
         ]
         // Sync the per-note salt so the account's other devices (Mac, iPhone) can decrypt
         // this note with ITS password — the derived key itself never leaves any device.
@@ -213,6 +259,29 @@ final class NotesStore: ObservableObject {
     func syncFromCloud() {
         guard !Settings.shared.proEmail.isEmpty else { return }
         ConvexClient.registerDevice(token: AuthToken.current)   // S16: claim the account uid before pulling
+        // Propagate deletions made on the account's OTHER devices: adopt the cloud tombstones,
+        // drop any local copy of a deleted note, and stop re-pushing rows the server refuses.
+        ConvexClient.call("query", "notes:tombstones", ConvexClient.authedArgs()) { [weak self] data in
+            guard let self, let data,
+                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  obj["status"] as? String == "success",
+                  let arr = obj["value"] as? [Any] else { return }   // additive query: absent/failed → just skip
+            let cloud = Set(arr.compactMap { ($0 as? NSNumber)?.doubleValue.rounded() })
+            DispatchQueue.main.async {
+                let fresh = cloud.subtracting(self.tombstones)
+                guard !fresh.isEmpty else { return }
+                self.tombstones.formUnion(fresh)
+                let doomed = self.entries.filter { fresh.contains(($0.date.timeIntervalSince1970 * 1000).rounded()) }
+                for e in doomed {
+                    if let f = e.audioFile { try? FileManager.default.removeItem(at: self.dir.appendingPathComponent(f)) }
+                }
+                if !doomed.isEmpty {
+                    self.entries.removeAll { e in doomed.contains { $0.id == e.id } }
+                    self.save()
+                }
+                self.saveTombstones()
+            }
+        }
         ConvexClient.call("query", "notes:pull", ConvexClient.authedArgs()) { [weak self] data in
             guard let self, let data,
                   let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -240,15 +309,24 @@ final class NotesStore: ObservableObject {
                     let tags = (r["tags"] as? [String]) ?? []
                     let locked = (r["locked"] as? Bool) ?? false
                     let salt = r["salt"] as? String
+                    let cloudUpd = (r["updatedAt"] as? Double) ?? ts
                     if let i = indexByTs[ts.rounded()] {
-                        // Known note: pull remote edits (formatted/tags/title/formatName) in place.
+                        // Known note: pull remote edits (formatted/tags/title/formatName) in place —
+                        // but ONLY when the cloud copy is strictly newer (version guard). A stale
+                        // cloud row (e.g. local edits whose push failed) must never overwrite newer
+                        // local content; the reconcile pass below re-pushes local-newer notes instead.
+                        // Legacy pairs (neither side has a clock yet) keep the historical
+                        // cloud-wins behavior so pre-clock edits still propagate.
+                        let localUpd = (merged[i].updatedAt ?? merged[i].date).timeIntervalSince1970 * 1000
+                        let legacyPair = r["updatedAt"] == nil && merged[i].updatedAt == nil
+                        guard cloudUpd > localUpd.rounded() || legacyPair else { continue }
                         if merged[i].formatted != formatted || merged[i].tags != tags
                             || merged[i].title != title || merged[i].formatName != formatName
                             || merged[i].locked != locked {
                             merged[i].formatted = formatted
                             merged[i].tags = tags
                             merged[i].formatName = formatName
-                            if !title.isEmpty { merged[i].title = title }
+                            merged[i].title = title   // adopt as-is: the guard proved cloud is newer, so a cleared title clears everywhere
                             // Adopt a lock made on another device (or an unlock): the
                             // ciphertext travels in `formatted`, the note's salt alongside.
                             merged[i].locked = locked
@@ -256,6 +334,10 @@ final class NotesStore: ObservableObject {
                             if locked { merged[i].original = "" }
                             else if let original = r["original"] as? String { merged[i].original = original }
                             changed = true
+                        }
+                        if !legacyPair {
+                            merged[i].updatedAt = Date(timeIntervalSince1970: cloudUpd / 1000)
+                            changed = true   // the guard ensured cloudUpd is strictly newer than the stored clock
                         }
                     } else {
                         merged.append(NotesEntry(
@@ -267,13 +349,39 @@ final class NotesStore: ObservableObject {
                             audioFile: nil,
                             tags: tags,
                             locked: locked,
-                            salt: salt))
+                            salt: salt,
+                            updatedAt: Date(timeIntervalSince1970: cloudUpd / 1000)))
                         changed = true
                     }
                 }
                 if changed {
                     self.entries = merged.sorted { $0.date > $1.date }
                     self.save()
+                }
+                // Reconcile (push-back): any local note the cloud is missing — or only holds an
+                // older version of — is re-pushed now. A failed notes:push (offline, transient
+                // server error, the Jun 10–12 '26 validator outage) can therefore never strand a
+                // note on one device: the next pull self-heals the account.
+                var cloudUpdByTs: [Double: Double] = [:]
+                for r in arr {
+                    let ts = (r["ts"] as? Double) ?? 0
+                    guard ts > 0 else { continue }
+                    cloudUpdByTs[ts.rounded()] = (r["updatedAt"] as? Double) ?? ts
+                }
+                // notes:pull caps at the 500 newest rows: when the cap is hit, a local note
+                // older than the oldest pulled row may well exist server-side beyond the cap —
+                // don't re-push those every pull (unbounded mutation spam for big libraries).
+                let cloudCapped = arr.count >= 500
+                let cloudMinTs = cloudUpdByTs.keys.min() ?? 0
+                for e in self.entries {
+                    let tsMs = (e.date.timeIntervalSince1970 * 1000).rounded()
+                    guard !self.tombstones.contains(tsMs) else { continue }
+                    let localUpd = ((e.updatedAt ?? e.date).timeIntervalSince1970 * 1000).rounded()
+                    if let cloudUpd = cloudUpdByTs[tsMs] {
+                        if localUpd > cloudUpd.rounded() { self.push(e) }
+                    } else if !(cloudCapped && tsMs < cloudMinTs) {
+                        self.push(e)
+                    }
                 }
             }
         }

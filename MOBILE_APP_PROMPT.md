@@ -21,6 +21,24 @@ account, same data, on the go.
 - **Notes / history / stats:** Convex (same deployment). The Mac app already reads/writes these;
   mirror its document shapes. Notes support #hashtags (Bear-style tag tree) and per-note password
   lock (AES-GCM, salt per note) — match that model so locked notes stay locked across devices.
+- **Sync contract — data-safety rules (NON-NEGOTIABLE, learned from a real data-loss incident):**
+  1. `ts` (ms) is a note's identity; `updatedAt` (ms) is its version clock. Bump `updatedAt` on
+     EVERY local edit and send it on every `notes:push`. The server refuses writes whose clock is
+     ≤ the stored one; on pull, only adopt a cloud row whose `updatedAt` is strictly newer than
+     the local clock. Never overwrite local content with an older or equal cloud copy.
+  2. After every pull, reconcile: re-push any local note the cloud is missing or holds an older
+     version of. A failed push must NEVER permanently strand a note on one device.
+  3. Deletions: tombstones only (`notes:remove`, `notes:tombstones`); pull the tombstone list and
+     drop local copies. Never hard-delete without a tombstone, never resurrect a tombstoned ts.
+  4. Persist notes locally (offline-first); never keep a note only in memory or only in the cloud.
+  5. Schema evolution: decode stored JSON field-by-field with per-field defaults — a missing key
+     must NEVER fail the whole collection (this exact bug emptied users' Mac notes). If a stored
+     file fails to decode anyway, park a rescue copy before any save can overwrite it.
+  6. Dictating into a note ALSO appends the raw transcript to history with `source: "note"`
+     (the recovery safety net shown in the Mac History tab).
+  7. Never ship a client that sends an argument the deployed Convex validator doesn't accept —
+     deploy the (optional-field) validator FIRST, ship the client after; a mismatch silently
+     kills that sync for everyone.
 - **JARVIS / connected apps:** the secure relay at `https://verba.run/api/composio/*`
   (`/agent-context`, `/agent-reads`, `/execute`, `/connect`, `/connections`). Auth = the user's
   app-session bearer token. Connected-app keys live server-side, never on the device.

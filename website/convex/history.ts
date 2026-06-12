@@ -6,12 +6,28 @@ export const push = mutation({
   args: {
     uid: v.string(), secret: v.string(), ts: v.number(),
     original: v.string(), reprompted: v.string(), profileName: v.string(), engine: v.string(),
+    // "note" = dictated into a long-form note (the History safety net for deleted notes).
+    source: v.optional(v.string()),
+    // Version clock (ms), only sent by "Re-run" — see below.
+    updatedAt: v.optional(v.number()),
   },
   handler: async (ctx, a) => {
     await requireDevice(ctx, a.uid, a.secret);
     const dup = await ctx.db.query("history").withIndex("by_uid", (q) => q.eq("uid", a.uid))
       .filter((q) => q.eq(q.field("ts"), a.ts)).first();
-    if (dup) return;
+    if (dup) {
+      // "Re-run" rewrites the restructured text after the first push — adopt it ONLY with
+      // a strictly newer version clock: a plain pushAll from a device that missed the
+      // re-run carries no clock and must never clobber the rewritten text back.
+      if (a.updatedAt !== undefined && (dup.updatedAt === undefined || a.updatedAt > dup.updatedAt)
+          && dup.reprompted !== a.reprompted) {
+        await ctx.db.patch(dup._id, {
+          reprompted: a.reprompted, updatedAt: a.updatedAt,
+          ...(a.source !== undefined ? { source: a.source } : {}),
+        });
+      }
+      return;
+    }
     const tomb = await ctx.db.query("history_deleted").withIndex("by_uid", (q) => q.eq("uid", a.uid))
       .filter((q) => q.eq(q.field("ts"), a.ts)).first();
     if (tomb) return;   // don't resurrect a deleted entry
@@ -26,7 +42,7 @@ export const pull = query({
     await requireDevice(ctx, a.uid, a.secret);
     const rows = await ctx.db.query("history").withIndex("by_uid", (q) => q.eq("uid", a.uid)).collect();
     return rows.sort((x, y) => y.ts - x.ts).slice(0, 400)
-      .map((r) => ({ ts: r.ts, original: r.original, reprompted: r.reprompted, profileName: r.profileName, engine: r.engine }));
+      .map((r) => ({ ts: r.ts, original: r.original, reprompted: r.reprompted, profileName: r.profileName, engine: r.engine, source: r.source, updatedAt: r.updatedAt }));
   },
 });
 
