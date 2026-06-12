@@ -14,7 +14,20 @@ export const list = query({
       .map((w) => ({
         id: w._id, text: w.text, author: w.author, votes: w.votes,
         mine: isMe ? w.voters.includes(a.uid!) : false,
+        shipped: w.shipped === true,
+        shippedAt: w.shippedAt ?? null,
       }));
+  },
+});
+
+// Persist a wish's shipped status (called server-side once its Linear issue is Done) so the green
+// "shipped" badge survives Linear board/workspace changes. Idempotent; never un-ships.
+export const setShipped = mutation({
+  args: { id: v.id("wishlist"), at: v.optional(v.number()) },
+  handler: async (ctx, a) => {
+    const w = await ctx.db.get(a.id);
+    if (!w || w.shipped === true) return;
+    await ctx.db.patch(a.id, { shipped: true, shippedAt: a.at ?? Date.now() });
   },
 });
 

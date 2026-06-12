@@ -11,6 +11,10 @@ export default defineSchema({
   wishlist: defineTable({
     text: v.string(), author: v.string(), votes: v.number(),
     voters: v.array(v.string()), created: v.number(),
+    // Shipped status persisted here (set when the linked Linear issue goes Done) so the green
+    // "shipped" badge survives even if the Linear board/workspace changes.
+    shipped: v.optional(v.boolean()),
+    shippedAt: v.optional(v.number()),
   }),
 
   history: defineTable({

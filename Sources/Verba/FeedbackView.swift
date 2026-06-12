@@ -212,32 +212,9 @@ struct FeedbackView: View {
                         .help(L("Capture the current screen, or drag an image onto the editor, to attach it"))
                     }
                     Spacer()
-                    // VER-8: revert an AI rewrite back to the user's original words.
-                    // Only present while the draft is still the pristine rewrite.
-                    if canRevertImprove {
-                        Button { revertImprove() } label: {
-                            ActionChip(title: L("Revert"), icon: "arrow.uturn.backward")
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(submitting || improving)
-                        .help(L("Restore your original feedback (undo the AI rewrite)"))
-                        .transition(.opacity)
-                    }
-                    // VER-8: reformat the current draft through the reprompt pipeline.
-                    Button { improveWithAI() } label: {
-                        if improving {
-                            HStack(spacing: 6) {
-                                ProgressView().controlSize(.small)
-                                Text(L("Improving…")).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
-                            }
-                            .padding(.horizontal, 12).padding(.vertical, 4.5)
-                        } else {
-                            ActionChip(title: L("Improve with AI"), icon: "sparkles")
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(!canImprove)
-                    .help(L("Clean up and format your feedback with AI"))
+                    // "Improve with AI" runs automatically when you press Send (it structures your
+                    // note, you confirm, it ships) — so there's no separate Improve/Revert button
+                    // here anymore. One action, three steps, one line.
                 }
 
                 if let error {

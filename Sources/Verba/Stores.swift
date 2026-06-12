@@ -355,6 +355,10 @@ final class DictionaryStore: ObservableObject {
     /// rewrite), then `learn` applies its own per-word guards.
     func learnFromEdit(pasted: String, current: String) {
         let tokens: (String) -> [String] = { $0.split { $0 == " " || $0 == "\n" || $0 == "\t" }.map(String.init) }
+        // Compare words by their LETTERS/DIGITS only — real edits always carry surrounding
+        // punctuation ("soon!" vs "soon", "Simeono," vs "Simono,"), and comparing the raw tokens
+        // dropped the match score below the 60% gate, so nothing was ever learned.
+        let core: (String) -> String = { $0.trimmingCharacters(in: CharacterSet.alphanumerics.inverted).lowercased() }
         let pasted = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
         guard pasted.count >= 3, !current.isEmpty else { return }
         if current.contains(pasted) { return }                       // unedited → nothing to learn
@@ -365,7 +369,7 @@ final class DictionaryStore: ObservableObject {
         for start in 0...(cw.count - n) {
             let window = Array(cw[start..<start + n])
             var identical = 0
-            for (a, b) in zip(pw, window) where a.lowercased() == b.lowercased() { identical += 1 }
+            for (a, b) in zip(pw, window) where core(a) == core(b) { identical += 1 }
             if best == nil || identical > best!.score { best = (identical, window) }
         }
         guard let best, best.score < n, Double(best.score) / Double(n) >= 0.6 else { return }
