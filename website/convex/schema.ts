@@ -82,6 +82,24 @@ export default defineSchema({
     uid: v.string(), ts: v.number(),
   }).index("by_uid", ["uid"]),
 
+  styles: defineTable({   // tone/format layer on top of modes (mirrors the Mac's Style)
+    uid: v.string(), ts: v.number(),
+    name: v.string(), prompt: v.string(),
+  }).index("by_uid", ["uid"]),
+  styles_deleted: defineTable({ uid: v.string(), ts: v.number() }).index("by_uid", ["uid"]),
+
+  snippets: defineTable({   // text-expansion shortcuts (trigger → expansion)
+    uid: v.string(), ts: v.number(),
+    trigger: v.string(), expansion: v.string(),
+  }).index("by_uid", ["uid"]),
+  snippets_deleted: defineTable({ uid: v.string(), ts: v.number() }).index("by_uid", ["uid"]),
+
+  transforms: defineTable({   // named voice actions on selected text
+    uid: v.string(), ts: v.number(),
+    name: v.string(), prompt: v.string(),
+  }).index("by_uid", ["uid"]),
+  transforms_deleted: defineTable({ uid: v.string(), ts: v.number() }).index("by_uid", ["uid"]),
+
   feedback: defineTable({   // free-form user feedback (admin-reviewed), optional screenshot
     uid: v.string(), alias: v.string(), text: v.string(),
     version: v.optional(v.string()),

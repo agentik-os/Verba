@@ -19,8 +19,11 @@ import type * as notes from "../notes.js";
 import type * as profiles from "../profiles.js";
 import type * as ratelimit from "../ratelimit.js";
 import type * as settings from "../settings.js";
+import type * as snippets from "../snippets.js";
 import type * as stats from "../stats.js";
+import type * as styles from "../styles.js";
 import type * as tasks from "../tasks.js";
+import type * as transforms from "../transforms.js";
 import type * as wishlist from "../wishlist.js";
 
 import type {
@@ -41,8 +44,11 @@ declare const fullApi: ApiFromModules<{
   profiles: typeof profiles;
   ratelimit: typeof ratelimit;
   settings: typeof settings;
+  snippets: typeof snippets;
   stats: typeof stats;
+  styles: typeof styles;
   tasks: typeof tasks;
+  transforms: typeof transforms;
   wishlist: typeof wishlist;
 }>;
 
