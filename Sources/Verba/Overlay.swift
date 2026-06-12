@@ -363,7 +363,7 @@ private struct Waveform: View {
 final class OverlayController {
     let model = OverlayModel()
     private var panel: NSPanel?
-    private var sizeObserver: AnyCancellable?
+    private var resizeObserver: NSObjectProtocol?
     private var lastSize: NSSize = .zero
 
     /// Build the panel ahead of time so the first show() is instant.
@@ -391,22 +391,25 @@ final class OverlayController {
         host.view.layer?.masksToBounds = true
         panel = p
         p.layoutIfNeeded()             // warm the SwiftUI render
-        // Keep the pill centered when its content size changes (recording → transcribing →
-        // done all have different widths, which otherwise leaves it visibly off-center).
-        sizeObserver = model.objectWillChange.sink { [weak self] in
-            DispatchQueue.main.async { self?.recenterIfSizeChanged() }
-        }
+        // SwiftUI animates the CONTENT size (the window auto-resizes via .preferredContentSize) as
+        // states change (listening → done/info, chips appearing). On EVERY resize step we just snap
+        // the window ORIGIN so the content stays centered + bottom-anchored — instead of animating
+        // the whole window frame ourselves, which used to fight SwiftUI's size animation and leave
+        // done/info flashes visibly off-center from the listening pill.
+        resizeObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didResizeNotification, object: p, queue: .main
+        ) { [weak self] _ in self?.snapOrigin() }
     }
 
-    private func recenterIfSizeChanged() {
-        guard let panel, panel.isVisible else { return }
-        panel.layoutIfNeeded()
-        guard let size = panel.contentView?.fittingSize else { return }
-        // Only re-center on a real (>1pt) size change — ignore sub-pixel fitting jitter that would
-        // otherwise fire the 0.22s reposition animation repeatedly and make the pill shimmer.
-        guard abs(size.width - lastSize.width) > 1 || abs(size.height - lastSize.height) > 1 else { return }
-        lastSize = size
-        reposition(animated: true)
+    /// Keep the window centered on screen-X and bottom-anchored, recomputed from its CURRENT size.
+    private func snapOrigin() {
+        guard let panel, panel.isVisible, let screen = NSScreen.main, model.style == .floating else { return }
+        let vf = screen.visibleFrame
+        let size = panel.frame.size
+        let origin = NSPoint(x: vf.midX - size.width / 2, y: vf.minY + 90)
+        if abs(panel.frame.origin.x - origin.x) > 0.5 || abs(panel.frame.origin.y - origin.y) > 0.5 {
+            panel.setFrameOrigin(origin)   // snap, not animate — SwiftUI already animates the size
+        }
     }
 
     func show() {
