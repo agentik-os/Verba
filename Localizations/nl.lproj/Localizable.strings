@@ -1078,3 +1078,6 @@
 "Connect %@" = "%@ verbinden";
 "Enter your credentials to connect" = "Voer je inloggegevens in om te verbinden";
 "Couldn't load the connection details. Try again." = "Kon de verbindingsgegevens niet laden. Probeer opnieuw.";
+"Chain recordings" = "Opnames aaneenrijgen";
+"No need to wait: tap Fn and dictate the next one while the last is still processing. Every dictation still working stacks up above the pill, so you can fire off 10 in a row and watch them all land." = "Niet wachten: tik Fn en dicteer de volgende terwijl de vorige nog verwerkt wordt. Elke lopende dictatie stapelt zich boven de pil — vuur er 10 op rij af en zie ze allemaal landen.";
+"Processing…" = "Bezig…";

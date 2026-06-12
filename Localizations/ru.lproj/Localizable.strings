@@ -1078,3 +1078,6 @@
 "Connect %@" = "Подключить %@";
 "Enter your credentials to connect" = "Введите учётные данные для подключения";
 "Couldn't load the connection details. Try again." = "Не удалось загрузить данные подключения. Попробуйте ещё раз.";
+"Chain recordings" = "Записывайте подряд";
+"No need to wait: tap Fn and dictate the next one while the last is still processing. Every dictation still working stacks up above the pill, so you can fire off 10 in a row and watch them all land." = "Ждать не нужно: нажмите Fn и диктуйте следующее, пока предыдущее ещё обрабатывается. Каждая незавершённая диктовка складывается над «таблеткой» — отправьте 10 подряд и наблюдайте, как все завершаются.";
+"Processing…" = "Обработка…";

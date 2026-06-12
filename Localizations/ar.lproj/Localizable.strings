@@ -1078,3 +1078,6 @@
 "Connect %@" = "ربط %@";
 "Enter your credentials to connect" = "أدخل بيانات اعتمادك للربط";
 "Couldn't load the connection details. Try again." = "تعذّر تحميل تفاصيل الاتصال. حاول مرة أخرى.";
+"Chain recordings" = "سلسلة التسجيلات";
+"No need to wait: tap Fn and dictate the next one while the last is still processing. Every dictation still working stacks up above the pill, so you can fire off 10 in a row and watch them all land." = "لا داعي للانتظار: اضغط Fn وأملِ التالي بينما لا يزال السابق قيد المعالجة. كل إملاء لا يزال يعمل يتكدس فوق الكبسولة، فيمكنك إطلاق 10 تباعًا ومشاهدتها كلها تصل.";
+"Processing…" = "قيد المعالجة…";

@@ -249,8 +249,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // the in-flight Sessions, so starting a NEW dictation over still-processing ones is never
         // silent. The dot only renders while model.recording is true (see OverlayView.floating).
         SessionStore.shared.$inflight
-            .map(\.count).removeDuplicates().receive(on: RunLoop.main)
-            .sink { [weak self] n in self?.overlay.model.inflightCount = n }
+            .map { $0.map { InflightChip(id: $0.id, modeName: $0.modeName) } }
+            .removeDuplicates().receive(on: RunLoop.main)
+            .sink { [weak self] items in self?.overlay.model.inflightItems = items }
             .store(in: &cancellables)
 
         // "Capture by voice" button (or a future shortcut) → start/stop a voice to-do capture.
@@ -1358,7 +1359,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.overlay.model.modeName = s.repromptEnabled ? initial.name : ""
             // Prime the background-capture count so the "N processing" dot is correct from the
             // first frame (the $inflight subscription only fires on subsequent changes).
-            self.overlay.model.inflightCount = SessionStore.shared.inflight.count
+            self.overlay.model.inflightItems = SessionStore.shared.inflight.map { InflightChip(id: $0.id, modeName: $0.modeName) }
             self.overlay.model.recording = true
             self.overlay.model.title = "Listening · \(initial.name)"
             self.overlay.model.waves.level = 0

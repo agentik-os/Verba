@@ -1078,3 +1078,6 @@
 "Connect %@" = "%@ を接続";
 "Enter your credentials to connect" = "接続するには認証情報を入力してください";
 "Couldn't load the connection details. Try again." = "接続情報を読み込めませんでした。もう一度お試しください。";
+"Chain recordings" = "録音を連続で";
+"No need to wait: tap Fn and dictate the next one while the last is still processing. Every dictation still working stacks up above the pill, so you can fire off 10 in a row and watch them all land." = "待つ必要はありません。前の録音が処理中でも Fn を押して次を話せます。処理中の口述はピルの上に積み重なり、10件連続で送ってもすべての完了が見えます。";
+"Processing…" = "処理中…";

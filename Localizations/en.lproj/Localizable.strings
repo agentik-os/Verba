@@ -1078,3 +1078,6 @@
 "Connect %@" = "Connect %@";
 "Enter your credentials to connect" = "Enter your credentials to connect";
 "Couldn't load the connection details. Try again." = "Couldn't load the connection details. Try again.";
+"Chain recordings" = "Chain recordings";
+"No need to wait: tap Fn and dictate the next one while the last is still processing. Every dictation still working stacks up above the pill, so you can fire off 10 in a row and watch them all land." = "No need to wait: tap Fn and dictate the next one while the last is still processing. Every dictation still working stacks up above the pill, so you can fire off 10 in a row and watch them all land.";
+"Processing…" = "Processing…";

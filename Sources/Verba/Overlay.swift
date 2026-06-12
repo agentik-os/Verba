@@ -55,9 +55,15 @@ final class OverlayModel: ObservableObject {
     var onCancel: (() -> Void)?          // discard / abort whatever is happening
     @Published var style: OverlayStyle = .floating
     // Background captures still transcribing/polishing while THIS pill shows a new recording.
-    // Surfaced as a small "N processing" dot so the user retains awareness that earlier
-    // dictations are still in flight (and could still fail) — never silent.
-    @Published var inflightCount: Int = 0
+    // Each renders as its own small chip STACKED ABOVE the pill, so starting dictation #2 (or
+    // #20) never hides the ones still working — they all stay visible until they land.
+    @Published var inflightItems: [InflightChip] = []
+}
+
+/// One in-flight dictation surfaced above the pill (id = its Session id).
+struct InflightChip: Identifiable, Equatable {
+    let id: UUID
+    let modeName: String
 }
 
 /// The recording indicator. Two looks (set in Settings ▸ Recording):
@@ -77,16 +83,42 @@ struct OverlayView: View {
     }
 
     // MARK: Floating glass (full)
+    //
+    // Layout: every still-processing dictation gets its own chip STACKED ABOVE the active pill
+    // (newest just above, oldest on top — they "move up" as new recordings start). The window is
+    // bottom-anchored, so the stack grows upward and 10–20 in-flight captures all stay visible.
     private var floating: some View {
+        VStack(spacing: 6) {
+            ForEach(visibleInflight) { chip in inflightChip(chip) }
+            pill
+        }
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: model.inflightItems)
+    }
+
+    /// While recording, EVERY in-flight capture is a previous one → show them all. When idle/
+    /// processing, the pill itself embodies the newest capture → chip only the older ones.
+    private var visibleInflight: [InflightChip] {
+        if model.recording { return model.inflightItems }
+        return model.inflightItems.count > 1 ? Array(model.inflightItems.dropLast()) : []
+    }
+
+    /// One small "still working" chip: spinner + the mode it was dictated in.
+    private func inflightChip(_ chip: InflightChip) -> some View {
+        HStack(spacing: 7) {
+            ProgressView().controlSize(.small).scaleEffect(0.62)
+            Text(chip.modeName.isEmpty ? L("Processing…") : chip.modeName)
+                .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 5)
+        .glass(in: Capsule(style: .continuous))
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+
+    private var pill: some View {
         VStack(spacing: 8) {
             HStack(spacing: 12) {
                 leading(big: true)
-                // Background-capture awareness: when a NEW recording is live but earlier
-                // dictations are still transcribing/polishing in the background, show a small
-                // "N" dot so the user never loses track of pending captures that may still fail.
-                if model.recording, model.inflightCount > 0 {
-                    inflightDot(model.inflightCount)
-                }
                 if model.recording {
                     Button { model.onPauseToggle?() } label: {
                         Image(systemName: model.paused ? "play.fill" : "pause.fill").font(.system(size: 11))
@@ -138,7 +170,7 @@ struct OverlayView: View {
         .animation(.easeInOut(duration: 0.22), value: model.done)
         .animation(.easeInOut(duration: 0.22), value: model.title)
         .animation(.easeInOut(duration: 0.22), value: model.modeName)
-        .animation(.easeInOut(duration: 0.22), value: model.inflightCount)
+        .animation(.easeInOut(duration: 0.22), value: model.inflightItems)
     }
 
     // MARK: Minimal top bar
@@ -170,16 +202,6 @@ struct OverlayView: View {
         !model.menu && !model.done && !model.error && !model.info && !model.modeHint
     }
 
-    /// Small "N" dot for background captures still in flight while a new recording runs.
-    private func inflightDot(_ n: Int) -> some View {
-        Text("\(n)")
-            .font(.system(size: 10, weight: .bold))
-            .foregroundStyle(.secondary)
-            .frame(minWidth: 16, minHeight: 16)
-            .background(Color.primary.opacity(VGlass.fillSelected), in: Circle())
-            .help("\(n) \(L("earlier")) \(n == 1 ? L("dictation is") : L("dictations are")) \(L("still processing"))")
-            .transition(.opacity)
-    }
 
     // MARK: Shared pieces
     @ViewBuilder private func leading(big: Bool) -> some View {

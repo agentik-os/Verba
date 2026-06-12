@@ -381,6 +381,7 @@ struct OnboardingView: View {
             grid([
                 ("text.append", L("Say the punctuation"), L("“new line”, “new paragraph”, “comma”, “bullet point”.")),
                 ("arrow.uturn.backward", L("Fix on the fly"), L("“scratch that” deletes your last phrase, keep talking.")),
+                ("square.stack.3d.up.fill", L("Chain recordings"), L("No need to wait: tap Fn and dictate the next one while the last is still processing. Every dictation still working stacks up above the pill, so you can fire off 10 in a row and watch them all land.")),
             ])
         }
     }

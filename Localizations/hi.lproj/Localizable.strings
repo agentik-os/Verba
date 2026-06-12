@@ -1078,3 +1078,6 @@
 "Connect %@" = "%@ कनेक्ट करें";
 "Enter your credentials to connect" = "कनेक्ट करने के लिए अपने क्रेडेंशियल दर्ज करें";
 "Couldn't load the connection details. Try again." = "कनेक्शन विवरण लोड नहीं हो सका। फिर से कोशिश करें।";
+"Chain recordings" = "रिकॉर्डिंग शृंखला";
+"No need to wait: tap Fn and dictate the next one while the last is still processing. Every dictation still working stacks up above the pill, so you can fire off 10 in a row and watch them all land." = "इंतज़ार की ज़रूरत नहीं: पिछली रिकॉर्डिंग प्रोसेस होते समय Fn दबाएँ और अगली बोलें। हर चालू डिक्टेशन पिल के ऊपर जमा होता है — लगातार 10 भेजें और सबको पूरा होते देखें।";
+"Processing…" = "प्रोसेस हो रहा है…";

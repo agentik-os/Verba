@@ -1078,3 +1078,6 @@
 "Connect %@" = "%@ bağla";
 "Enter your credentials to connect" = "Bağlanmak için kimlik bilgilerini gir";
 "Couldn't load the connection details. Try again." = "Bağlantı ayrıntıları yüklenemedi. Tekrar dene.";
+"Chain recordings" = "Kayıtları zincirle";
+"No need to wait: tap Fn and dictate the next one while the last is still processing. Every dictation still working stacks up above the pill, so you can fire off 10 in a row and watch them all land." = "Beklemeye gerek yok: önceki hâlâ işlenirken Fn'e dokunup sıradakini söyle. Devam eden her dikte hapın üzerine dizilir — art arda 10 tane gönder, hepsinin tamamlanışını izle.";
+"Processing…" = "İşleniyor…";

@@ -1078,3 +1078,6 @@
 "Connect %@" = "%@ 연결";
 "Enter your credentials to connect" = "연결하려면 자격 증명을 입력하세요";
 "Couldn't load the connection details. Try again." = "연결 정보를 불러올 수 없습니다. 다시 시도하세요.";
+"Chain recordings" = "연속 녹음";
+"No need to wait: tap Fn and dictate the next one while the last is still processing. Every dictation still working stacks up above the pill, so you can fire off 10 in a row and watch them all land." = "기다릴 필요 없어요. 이전 녹음이 처리 중이어도 Fn을 눌러 다음을 말하세요. 진행 중인 받아쓰기는 알약 위로 쌓여서 10개를 연달아 보내도 모두 완료되는 걸 볼 수 있어요.";
+"Processing…" = "처리 중…";

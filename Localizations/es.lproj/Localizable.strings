@@ -1078,3 +1078,6 @@
 "Connect %@" = "Conectar %@";
 "Enter your credentials to connect" = "Introduce tus credenciales para conectar";
 "Couldn't load the connection details. Try again." = "No se pudieron cargar los detalles de conexión. Inténtalo de nuevo.";
+"Chain recordings" = "Encadena grabaciones";
+"No need to wait: tap Fn and dictate the next one while the last is still processing. Every dictation still working stacks up above the pill, so you can fire off 10 in a row and watch them all land." = "No hace falta esperar: pulsa Fn y dicta el siguiente mientras el anterior aún se procesa. Cada dictado en curso se apila sobre la píldora; lanza 10 seguidos y míralos llegar todos.";
+"Processing…" = "Procesando…";
