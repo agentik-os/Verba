@@ -4,6 +4,9 @@ import { verifyAppToken } from "@/lib/apptoken";
 import { convexBump } from "@/lib/convex";
 
 export const runtime = "nodejs";
+// EU users + EU Convex: run at Paris/Frankfurt instead of the default US region
+// (measured: shaves the transatlantic round-trip off every rewrite).
+export const preferredRegion = ["cdg1", "fra1"];
 
 // Verba's own hosted AI rewriting endpoint. The macOS app calls this so users don't
 // need their own API key: we run it on the company Anthropic key, gated by the user's
