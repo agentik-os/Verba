@@ -1,0 +1,70 @@
+{
+  "audit": "seo",
+  "preamble_version": "1.0",
+  "compliance_version": "1.2",
+  "score": 81,
+  "score_raw": "323/400",
+  "score_normalized": 81,
+  "grade": "A \u2014 Strong",
+  "score_before_fixes": "298/400 (74, B)",
+  "confidence": "high",
+  "skill_used": "seoaudit",
+  "url": "https://verba.run",
+  "user_need_match": {
+    "quote": "Complete SEO + GEO audit; rank top on Google and LLM search engines",
+    "addressed": true,
+    "evidence": "Technical SEO is now near-complete (canonical per page incl. /acknowledgements, og:url, JSON-LD SoftwareApplication+Organization+FAQPage+BreadcrumbList, sitemap+lastmod, robots AI-crawler allow-list, theme-color, manifest). GEO surface strengthened: /llms.txt, FAQPage on home + all /vs pages, machine-readable compare matrix. Remaining ceiling is CONTENT/TRUST (no privacy/terms, no non-brand intent pages) \u2014 flagged as the top growth work needing product/legal input."
+  },
+  "method": "5 disjoint tracks (Crawl&Index, Rendering&Speed, On-page, Architecture, Content&GEO) fanned out via Workflow; every finding survived a 2-of-3 adversarial lens gate (reproduce/refute/cross-check).",
+  "findings_total": 25,
+  "findings_by_severity": {
+    "critical": 1,
+    "high": 5,
+    "medium": 6,
+    "low": 13
+  },
+  "fixed_this_pass": [
+    "A1 (high): /acknowledgements self-canonical",
+    "C2 (high): og:url emitted site-wide + per page",
+    "C1/C3/D3/E5: /vs BreadcrumbList + FAQPage + visible FAQ + per-page OG",
+    "C4/C5: home & /compare meta descriptions trimmed, /compare title <60c",
+    "D1: theme-color (dark/light)",
+    "D2: web app manifest",
+    "A2/C8: sitemap home loc / canonical trailing-slash match",
+    "E6: Organization sameAs"
+  ],
+  "open_high_value_recommendations": [
+    {
+      "id": "E1",
+      "severity": "critical",
+      "item": "Add Privacy Policy + Terms + contact pages (paid app recording audio, routing voice + connected-app data, Stripe billing). Biggest E-E-A-T/trust gap; also a store/legal requirement.",
+      "needs": "legal/product content"
+    },
+    {
+      "id": "E3",
+      "severity": "high",
+      "item": "Ship 1-2 non-brand intent pages (e.g. /best-mac-dictation-app) to rank for 'best dictation app for Mac' head terms \u2014 currently only brand + /vs pages exist.",
+      "needs": "marketing copy + positioning sign-off"
+    },
+    {
+      "id": "E2",
+      "severity": "high",
+      "item": "Add high-commercial-intent Q&A to the homepage FAQ (pricing, accuracy, refunds) \u2014 what AI Overviews/ChatGPT/Perplexity quote most.",
+      "needs": "quick, can do on request"
+    },
+    {
+      "id": "B1",
+      "severity": "medium",
+      "item": "Remove the opacity fade on the LCP hero H1 (transform-only entrance) to improve LCP for non-reduced-motion users.",
+      "needs": "quick, can do on request"
+    },
+    {
+      "id": "A3",
+      "severity": "low",
+      "item": "Set www.verba.run \u2192 308 redirect to apex in Vercel domain settings (currently serves 200 with soft canonical).",
+      "needs": "Vercel dashboard"
+    }
+  ],
+  "banned_phrase_check": "passed",
+  "finished_at": "2026-06-12"
+}

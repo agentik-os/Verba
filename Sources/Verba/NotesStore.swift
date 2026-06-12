@@ -21,6 +21,10 @@ struct NotesEntry: Codable, Identifiable {
     var formatName: String
     var audioFile: String?      // filename inside the notes folder
     var tags: [String] = []     // #hashtags for Bear-style filing
+    // Per-note password protection: when locked, `formatted` holds the AES-GCM ciphertext of the
+    // packed (original‖formatted) text, `original` is cleared, and `salt` is this note's own salt.
+    var locked: Bool = false
+    var salt: String? = nil
 }
 
 /// Local store for long-form notes (mirrors History.swift; local-only for v1).
@@ -69,12 +73,52 @@ final class NotesStore: ObservableObject {
 
     func update(_ entry: NotesEntry, formatted: String, formatName: String? = nil, tags: [String]? = nil, title: String? = nil) {
         guard let i = entries.firstIndex(where: { $0.id == entry.id }) else { return }
+        if entries[i].locked { return }   // never overwrite a locked note's ciphertext via the editor
         entries[i].formatted = formatted
         if let formatName { entries[i].formatName = formatName }
         if let title { entries[i].title = title.trimmingCharacters(in: .whitespacesAndNewlines) }
         if let tags { entries[i].tags = NotesStore.mergeTags(tags + NotesStore.hashtags(in: formatted)) }
         save()
         push(entries[i])   // re-sync the edited note
+    }
+
+    // MARK: - Per-note password lock (each note has its OWN password)
+
+    /// Encrypt a note with `password` and lock it. The title + tags stay visible (so you can find
+    /// the note); the body is encrypted at rest. Returns false if already locked or crypto fails.
+    @discardableResult
+    func lock(_ entry: NotesEntry, password: String) -> Bool {
+        guard !password.isEmpty, let i = entries.firstIndex(where: { $0.id == entry.id }), !entries[i].locked else { return false }
+        let blob = NoteCrypto.pack(original: entries[i].original, formatted: entries[i].formatted)
+        guard let (cipher, salt) = NoteCrypto.encrypt(blob, password: password) else { return false }
+        entries[i].original = ""
+        entries[i].formatted = cipher
+        entries[i].salt = salt
+        entries[i].locked = true
+        save()
+        push(entries[i])
+        return true
+    }
+
+    /// Try to decrypt a locked note WITHOUT unlocking it on disk — for viewing. Returns the
+    /// plaintext (original, formatted) on the right password, nil otherwise.
+    func decrypt(_ entry: NotesEntry, password: String) -> (original: String, formatted: String)? {
+        guard entry.locked, let salt = entry.salt,
+              let plain = NoteCrypto.decrypt(entry.formatted, password: password, salt: salt) else { return nil }
+        return NoteCrypto.unpack(plain)
+    }
+
+    /// Permanently remove the password: decrypt with the correct password and store as plaintext.
+    @discardableResult
+    func removePassword(_ entry: NotesEntry, password: String) -> Bool {
+        guard let dec = decrypt(entry, password: password), let i = entries.firstIndex(where: { $0.id == entry.id }) else { return false }
+        entries[i].original = dec.original
+        entries[i].formatted = dec.formatted
+        entries[i].salt = nil
+        entries[i].locked = false
+        save()
+        push(entries[i])
+        return true
     }
 
     /// All distinct tags across saved notes (for the filter bar), most common first.

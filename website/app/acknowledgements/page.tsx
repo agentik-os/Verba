@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Acknowledgements, Verba",
   description: "Open-source software and on-device models that power Verba.",
+  alternates: { canonical: "/acknowledgements" },
 };
 
 const groups: { title: string; items: { name: string; note: string; url: string }[] }[] = [

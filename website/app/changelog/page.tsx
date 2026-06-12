@@ -4,9 +4,10 @@ import Reveal from "@/components/Reveal";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export const metadata: Metadata = {
-  title: "Changelog, Verba",
+  title: "Changelog — Verba AI Dictation for Mac",
   description:
     "Every Verba release since launch on June 5, 2026. Shipped in public, fast: 60+ releases in the first days, with dates and times.",
+  alternates: { canonical: "/changelog" },
 };
 
 type Entry = { version?: string; time?: string; title: string; items: string[] };
@@ -14,8 +15,32 @@ type Day = { date: string; tag?: string; window?: string; summary: string; entri
 
 const DAYS: Day[] = [
   {
-    date: "June 11, 2026",
+    date: "June 12, 2026",
     tag: "Today",
+    summary:
+      "A calmer first run and Bear-style notes. The onboarding now teaches every shortcut — Action, Note, To-do, Transform and more — opens the app the moment you finish, and lets you keep your profile private. Notes get a proper nested tag tree for filing, and you can keep your history text without storing the audio.",
+    entries: [
+      {
+        version: "0.9.5 → 0.9.8",
+        title: "Onboarding that shows everything, and Bear-style notes",
+        items: [
+          "Lock a note with a password — and each note can have its own. Locked notes are encrypted on your Mac (AES-GCM, a separate key per note); without the password there's no way to read them. Open one, enter its password, and it unlocks just for this session.",
+          "Every shortcut is now in Settings ▸ Shortcuts and every one is customizable — including new rebindable Pause/resume and Cancel shortcuts (the default ⌃ and Esc keep working too).",
+          "Small thing: the recording pill dropped the little \"esc\" label next to the × — the × still cancels and so does Esc, it just reads cleaner now.",
+          "Achievements went big: 186 badges now, grouped into 10 ordered categories (Words Spoken, Dictations, Streaks, Dedication, Speed, Big Days, Time Saved, Airtime, Modes & Features, Special) with per-category progress, and a new Diamond tier for the extreme milestones — the word ladder climbs all the way to 1,000,000,000,000 words spoken.",
+          "Notes get a Bear-style tag tree: your #tags now file into a nested, collapsible sidebar with note counts — All Notes and Untagged at the top, parent tags opening to their children. Click any tag to filter, including every note nested beneath it.",
+          "Onboarding now lists every shortcut, not just the basics: Action (Fn + X), Note (Fn + Z), To-do (Fn + T), today's to-dos (⌥ + Fn), Transform a selection (⌥ + X), switch style (Fn + ] / [), plus pause, switch and cancel — nothing hidden.",
+          "Finishing onboarding now opens Verba straight away instead of leaving you to re-click the icon.",
+          "Pick whether your profile is public: a new toggle keeps your name off the leaderboard while you still use it inside the app.",
+          "Keep your text history without the audio: a new setting stores only the text of each dictation to save disk, while history, search and re-work stay fully available.",
+          "Clearer first-run copy: your AI choice (local model, your OpenAI/Claude key, or a Claude plan) is shown at one level, modes no longer name a specific model, and a tip points you to the macOS Keyboard setting if the emoji popup ever shows.",
+          "The whole onboarding and the new settings are translated into all 15 languages.",
+        ],
+      },
+    ],
+  },
+  {
+    date: "June 11, 2026",
     summary:
       "The day Action mode became a real assistant: speak any request, however you phrase it, and Verba works out what you mean, plans the steps and acts, always with your confirmation, in a calm, JARVIS-style feed. Connect 1,000+ apps to act on by voice, and the whole app now speaks 15 languages. Plus a calmer recording pill, your whole task tree at a glance, 100 levels with a lifetime reward, social profiles, and a security-hardening pass.",
     entries: [

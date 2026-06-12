@@ -137,20 +137,11 @@ struct OverlayView: View {
                 // (done/error/info/mode) where there is nothing to cancel — otherwise the ×
                 // looks live but Esc is a no-op (escapeShouldCancel is false at idle).
                 if showCancel {
+                    // Just the × — the "esc" word next to it read as clutter; Esc still cancels and
+                    // the tooltip documents it.
                     Button { model.onCancel?() } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "xmark.circle.fill").font(.system(size: 16)).foregroundStyle(.secondary)
-                            // Persistent "Esc to cancel" micro-hint: Esc is the documented universal
-                            // escape hatch but was only ever a tooltip. Surface it inline so users
-                            // (esp. push-to-talk) can discover it during recording/processing.
-                            if showEscHint {
-                                Text(L("esc")).font(.system(size: 10, weight: .semibold))
-                                    .foregroundStyle(.secondary).opacity(0.7)
-                                    .lineLimit(1).fixedSize()   // never wrap to "es / c"
-                                    .padding(.trailing, 1)
-                            }
-                        }
-                        .padding(8).contentShape(Rectangle())   // big, always-hittable target
+                        Image(systemName: "xmark.circle.fill").font(.system(size: 16)).foregroundStyle(.secondary)
+                            .padding(8).contentShape(Rectangle())   // big, always-hittable target
                     }
                     .buttonStyle(.plain)
                     .help(L("Cancel (Esc)"))
@@ -187,12 +178,6 @@ struct OverlayView: View {
         .background(Color.black.opacity(0.9), in: Capsule(style: .continuous))
         .environment(\.colorScheme, .dark)
         .fixedSize()
-    }
-
-    // Esc-to-cancel is meaningful only while something is actually cancellable (recording or
-    // the processing spinner) — never during the brief done/error/info/mode flashes or the picker.
-    private var showEscHint: Bool {
-        !model.menu && !model.done && !model.error && !model.info && !model.modeHint
     }
 
     // The × is only an honest affordance while something is cancellable. During a pure

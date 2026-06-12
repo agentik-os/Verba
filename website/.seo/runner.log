@@ -1,0 +1,9 @@
+[2026-06-12T11:48:01+02:00] audit-runner seo on /Users/hacker/Verba/website
+[2026-06-12T11:48:01+02:00] PHASE 1 gather: /Users/hacker/.omega/lib/audit-gather/seo.sh
+─── seo gather ───
+RAW_DIR=.seo/raw
+PROJECT_PATH=/Users/hacker/Verba/website
+FILES=<none>
+URL=https://verba.run
+seo gather done
+[2026-06-12T11:48:03+02:00] PHASE 1 done rc=0

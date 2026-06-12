@@ -172,8 +172,8 @@ struct OnboardingView: View {
             grid([
                 ("lock.shield", L("Private by default"), L("Transcription runs on your Mac. Your audio never has to leave the device.")),
                 ("bolt.fill", L("Instant, anywhere"), L("One key from any app. No window to open, no copy-paste.")),
-                ("brain", L("Your AI, your way"), L("Use your Claude plan or your own key, no markup on someone's cloud.")),
-                ("slider.horizontal.3", L("Modes that fit"), L("Coding, writing, casual, intent, each routed to the right model.")),
+                ("brain", L("Your AI, your way"), L("Run a local model with no key, or bring your own — OpenAI, Claude, or a Claude Pro plan. Your AI, no markup.")),
+                ("slider.horizontal.3", L("Modes that fit"), L("Coding, writing, casual, intent — each one shaped for the moment, and you can build your own.")),
             ])
         }
     }
@@ -212,7 +212,7 @@ struct OnboardingView: View {
     // Synced to the account (Clerk) so the same handle follows them across Macs and the web.
     private var aliasStep: some View {
         VStack(alignment: .leading, spacing: 18) {
-            title(L("Pick your username"), L("This is your PUBLIC name on the Verba leaderboard. It is never your real name or email, so pick something you're happy for anyone to see."))
+            title(L("Pick your username"), L("It is never your real name or email. Pick something you like — you decide below whether it shows on the public leaderboard."))
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 14) {
                     ZStack {
@@ -222,7 +222,8 @@ struct OnboardingView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         TextField(L("Your username"), text: $settings.username)
                             .textFieldStyle(.plain).font(.title2.weight(.semibold))
-                        Text(L("Public leaderboard name — not your real name")).font(.caption).foregroundStyle(.secondary)
+                        Text(settings.showOnLeaderboard ? L("Shown on the public leaderboard — not your real name")
+                                                        : L("Private — used only inside the app, never shown publicly")).font(.caption).foregroundStyle(.secondary)
                     }
                     Button { settings.username = Settings.randomAlias() } label: {
                         Image(systemName: "shuffle")
@@ -231,7 +232,18 @@ struct OnboardingView: View {
                 }
                 .padding(16).frame(maxWidth: .infinity, alignment: .leading)
                 .glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                Label(L("Public on the leaderboard, synced to your account. You can change it anytime in Settings."), systemImage: "info.circle")
+                // Privacy choice: a user who doesn't want a public profile still keeps a name,
+                // but it never appears on the leaderboard (binds to the existing opt-out flag).
+                Toggle(isOn: Binding(get: { !settings.showOnLeaderboard },
+                                     set: { settings.showOnLeaderboard = !$0 })) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L("Keep my profile private")).font(.callout.weight(.medium))
+                        Text(L("Don't show me on the public leaderboard. Your name stays just for you.")).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                .glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                Label(L("Synced to your account. You can change your name or this choice anytime in Settings."), systemImage: "info.circle")
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
@@ -250,7 +262,7 @@ struct OnboardingView: View {
             Toggle(isOn: $settings.useFnAsPrimary) {
                 VStack(alignment: .leading) {
                     Text(L("Use the Fn (🌐 globe) key")).font(.callout.weight(.medium))
-                    Text(L("Verba swallows the globe key so macOS won't show the keyboard/emoji popup.")).font(.caption).foregroundStyle(.secondary)
+                    Text(L("Verba intercepts the globe key so macOS won't show the keyboard/emoji popup.")).font(.caption).foregroundStyle(.secondary)
                 }
             }
             .padding(14)
@@ -276,14 +288,14 @@ struct OnboardingView: View {
             }
             if settings.useFnAsPrimary {
                 HStack {
-                    Text(L("Three ways to use it")).font(.headline)
+                    Text(L("Main controls")).font(.headline)
                     Spacer()
                     Text(L("Try each one now 👇")).font(.caption).foregroundStyle(.secondary)
                 }
                 actionRow("hand.tap", L("Single tap"), L("Tap Fn once to start recording your default mode. Tap again to send."), done: coach.singleFn)
                 actionRow("hand.tap.fill", L("Press & hold"), L("Hold Fn while you speak, release to send (push-to-talk)."), done: coach.holdFn)
-                actionRow("number.circle", L("Fn + number"), L("Hold Fn and press 1 to 9 to dictate in a specific mode (1 Flow, 2 Intent, …)."), done: coach.doubleFn)
-                actionRow("slider.horizontal.3", L("Change mode"), L("Fn + Tab jumps to the next mode (Fn + ⇧ + Tab for the previous one) — even mid-sentence while you're holding Fn. ⌃ (Control) pauses & resumes."), done: coach.changeMode)
+                actionRow("number.circle", L("Pick a mode: Fn + number"), L("Hold Fn and press 1 to 9 to dictate in a specific mode (1 Flow, 2 Intent, …). The mode you pick sticks for next time."), done: coach.doubleFn)
+                actionRow("slider.horizontal.3", L("Switch mode on the fly"), L("Fn + Tab → next mode, Fn + ⇧ + Tab → previous — even mid-sentence while holding Fn. ⌃ (Control) pauses & resumes, ⌥ (Option) also switches mode, Esc cancels."), done: coach.changeMode)
                 if coach.singleFn && coach.holdFn && coach.doubleFn && coach.changeMode {
                     Label(L("Nice, you've got the trigger key down."), systemImage: "checkmark.seal.fill")
                         .font(.caption).foregroundStyle(.green)
@@ -307,6 +319,21 @@ struct OnboardingView: View {
                         .font(.caption).foregroundStyle(.green)
                 }
             }
+
+            // Full shortcut reference — the power keys beyond plain dictation, so nothing is hidden.
+            Text(L("All shortcuts")).font(.headline).padding(.top, 4)
+            grid([
+                ("bolt.fill", L("Action — Fn + X"), L("Speak a command and Verba acts for you across 1,000+ connected apps (send an email, create an event…). It always asks you to confirm before doing anything.")),
+                ("doc.text", L("Note — Fn + Z"), L("Record a long voice memo; Verba turns it into a clean, structured note.")),
+                ("checklist", L("To-do — Fn + T"), L("Capture a task by voice (Fn + § on ISO keyboards). “Pay the invoice Friday at 6pm.”")),
+                ("calendar.day.timeline.left", L("Today's to-dos — ⌥ + Fn"), L("Glance at what's due today without leaving what you're doing.")),
+                ("wand.and.rays", L("Transform selection — ⌥ + X"), L("Select any text in any app, then ⌥ + X to rewrite, translate or restyle it.")),
+                ("paintbrush", L("Switch style — Fn + ] / Fn + ["), L("Cycle the tone/format layer (next / previous) on top of the active mode.")),
+                ("pause.circle", L("Pause · switch · cancel"), L("⌃ (Control) pauses & resumes, ⌥ (Option) switches mode mid-sentence, Esc cancels — any time you're recording.")),
+            ])
+            // Emoji/keyboard popup escape hatch: if macOS still shows it, point to the system toggle.
+            Label(L("Still seeing the macOS emoji / keyboard popup? Turn it off in System Settings ▸ Keyboard ▸ “Press 🌐 key to” → Do Nothing."), systemImage: "keyboard.badge.ellipsis")
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -344,24 +371,24 @@ struct OnboardingView: View {
             }
             .padding(13).frame(maxWidth: .infinity, alignment: .leading)
             .glass(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            modeCard("Flow", "Haiku", L("Raw dictation, your exact words, no AI."), nil)
-            modeCard("Intent", "Sonnet", L("The power mode. Say what you want, then the content, Verba does exactly that."),
+            modeCard("Flow", L("No AI"), L("Raw dictation, your exact words, no AI."), nil)
+            modeCard("Intent", L("Smart"), L("The power mode. Say what you want, then the content, Verba does exactly that."),
                      L("“Turn the following into three bullet points: we ship dark mode, postpone billing, hire a designer in Q3.”"))
-            modeCard("Coding", "Opus", L("Rambling feedback → a precise prompt for Cursor / Claude Code."),
+            modeCard("Coding", L("Pro"), L("Rambling feedback → a precise prompt for Cursor / Claude Code."),
                      L("“the login button doesn't work on mobile, the onclick is wrong, show the spinner while it loads”"))
-            modeCard("Context", L("Sonnet (vision)"), L("The new advanced mode. Verba takes a screenshot, reads your screen, and acts on what is there."),
+            modeCard("Context", L("Vision"), L("The new advanced mode. Verba takes a screenshot, reads your screen, and acts on what is there."),
                      L("“reply to this email and say I'm in”, “write a caption for this photo”, “answer the question on screen”"))
-            Label(L("Context needs Screen Recording permission (you'll grant it on first use) and a vision model (Anthropic or OpenRouter key)."), systemImage: "camera.viewfinder")
+            modeCard(L("Create your own"), L("Custom"), L("Build a mode for exactly your need — describe it and Verba writes the prompt. Auto-switch it per app. In Settings ▸ Modes."), nil)
+            Label(L("Every mode runs on the model you choose — a local model, your Claude/OpenAI/OpenRouter key, or your Claude plan. Adjustable anytime in Settings ▸ Modes."), systemImage: "slider.horizontal.3")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            Label(L("You can also create your own Custom mode later in Settings ▸ Modes."), systemImage: "plus.circle")
-                .font(.caption).foregroundStyle(.secondary)
+            Label(L("Context needs Screen Recording permission (you'll grant it on first use) and a vision-capable model."), systemImage: "camera.viewfinder")
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private var pauseAndFormatting: some View {
         VStack(alignment: .leading, spacing: 16) {
-            title(L("Pause without lifting a finger"), L("Start a recording with Fn, then press Control to try it."))
-            actionRow("hand.tap", L("Single tap"), L("Tap Fn once to start recording your default mode. Tap again to send."), done: coach.singleFn)
+            title(L("Pause without lifting a finger"), L("While a recording is running, press Control to pause — tap it again to resume."))
             HStack(spacing: 12) {
                 Text(coach.control ? "✓" : "⌃").font(.system(size: 24, weight: .semibold))
                     .frame(width: 46, height: 46)
@@ -388,10 +415,10 @@ struct OnboardingView: View {
 
     private var insightsAndTools: some View {
         VStack(alignment: .leading, spacing: 16) {
-            title(L("Track your flow"), L("After you dictate, Verba shows a few simple KPIs."))
+            title(L("Track your flow"), L("Verba turns every dictation into simple insight — and keeps your work within reach."))
             grid([
-                ("chart.bar.fill", L("Insights"), L("Words dictated, words-per-minute, streak and a daily chart.")),
-                ("clock.arrow.circlepath", L("History"), L("Every dictation, searchable, with replayable audio.")),
+                ("chart.bar.fill", L("Insights"), L("Words dictated, words-per-minute, streak and a daily chart — your flow at a glance.")),
+                ("clock.arrow.circlepath", L("History you can rework"), L("Every dictation is saved and searchable. Reopen one and re-run it in another mode to reshape it. Audio replay is optional — keep or turn it off in Settings.")),
                 ("text.badge.plus", L("Snippets"), L("Save blocks (signature, address) and insert them by intent.")),
                 ("character.book.closed", L("Dictionary"), L("Teach Verba names and jargon so they're always spelled right.")),
             ])

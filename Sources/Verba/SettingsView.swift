@@ -1099,10 +1099,18 @@ struct SettingsView: View {
                                  target: .primary)
             }
             chordRow(L("Pause / resume while recording"), caps: ["⌃"])
+            chordRecorderRow(L("Custom pause / resume shortcut"),
+                             has: settings.pauseToggleHasShortcut,
+                             code: settings.pauseToggleKeyCode, mods: settings.pauseToggleMods,
+                             target: .pauseToggle)
             chordRow(L("Cancel recording or processing"), caps: ["⎋"])
+            chordRecorderRow(L("Custom cancel shortcut"),
+                             has: settings.cancelHasShortcut,
+                             code: settings.cancelKeyCode, mods: settings.cancelMods,
+                             target: .cancel)
             cardCaption(fnOn
-                ? L("Your trigger is everything: tap or hold to dictate, then ⌃ to pause and ⎋ to cancel.")
-                : L("Pick the keystroke that starts and stops a dictation. ⌃ pauses, ⎋ cancels."))
+                ? L("Your trigger is everything: tap or hold to dictate, then ⌃ to pause and ⎋ to cancel. You can add your own pause/cancel shortcut above — the defaults keep working.")
+                : L("Pick the keystroke that starts and stops a dictation. ⌃ pauses, ⎋ cancels — and you can rebind any of them above."))
         }
 
         // MODES — choosing which rewriting mode the dictation runs through.
@@ -1253,6 +1261,11 @@ struct SettingsView: View {
         card(L("Dictation history")) {
             toggleRow(L("Save dictation history"), $settings.saveHistory,
                       help: settings.saveHistory ? nil : L("Off: new dictations are pasted and forgotten — nothing is written to disk, no audio is kept, nothing is synced. Existing history stays until you delete it below."))
+            if settings.saveHistory {
+                toggleRow(L("Keep recorded audio"), $settings.keepAudio,
+                          help: settings.keepAudio ? L("Audio is saved with each entry so you can replay it. Turn off to keep only the text and save disk space.")
+                                                   : L("Off: your text history is still saved, but no audio is stored. Frees disk if you never replay recordings."))
+            }
             VStack(alignment: .leading, spacing: 6) {
                 Text(L("Keep history for")).font(.caption.weight(.medium)).foregroundStyle(.secondary)
                 chips(retentionOptions, selected: retentionOption(settings.historyRetentionDays),

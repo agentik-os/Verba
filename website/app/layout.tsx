@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
 import { Analytics } from "@vercel/analytics/next";
@@ -10,8 +10,9 @@ const themeScript = `(function(){try{var t=localStorage.getItem('verba_theme');i
 
 export const metadata: Metadata = {
   title: "Verba — AI Dictation for Mac | Private Voice to Text, On-Device",
+  // ≤160 chars so Google doesn't truncate it in the SERP.
   description:
-    "Verba is the most complete AI dictation app for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and JARVIS — a voice agent that acts on 1,000+ connected apps. Private, BYO-AI, $9.99/mo.",
+    "The most complete AI dictation app for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and a voice agent for 1,000+ apps. Private, BYO-AI.",
   metadataBase: new URL("https://verba.run"),
   alternates: { canonical: "/" },
   keywords: [
@@ -22,6 +23,7 @@ export const metadata: Metadata = {
     title: "Verba — AI Dictation for Mac | Private Voice to Text",
     description:
       "On-device voice-to-text with AI cleanup, live translation, and JARVIS — a voice agent acting on 1,000+ apps. Private, BYO-AI, $9.99/mo.",
+    url: "/",
     siteName: "Verba",
     type: "website",
     locale: "en_US",
@@ -55,7 +57,22 @@ const SITE_JSONLD = {
         "Bring your own AI (Claude, OpenRouter, local Ollama)", "15 UI languages",
       ],
     },
-    { "@type": "Organization", name: "Agentik OS", url: "https://verba.run", logo: "https://verba.run/icon.png" },
+    {
+      "@type": "Organization",
+      name: "Agentik OS",
+      url: "https://verba.run",
+      logo: "https://verba.run/icon.png",
+      // Entity disambiguation for the Knowledge Graph + AI search.
+      sameAs: ["https://github.com/agentik-os", "https://t.me/verbadictation"],
+    },
+  ],
+};
+
+// Dark brand chrome on mobile browser address bars.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0b0b0e" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
   ],
 };
 

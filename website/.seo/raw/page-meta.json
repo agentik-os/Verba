@@ -1,0 +1,172 @@
+{
+  "url": "https://verba.run",
+  "title": "Verba \u2014 AI Dictation for Mac | Private Voice to Text, On-Device",
+  "meta_description": "Verba is the most complete AI dictation app for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and JARVIS \u2014 a voice agent that acts on 1,000+ connected apps. Private, BYO-AI, $9.99/mo.",
+  "canonical": "https://verba.run",
+  "viewport": "width=device-width, initial-scale=1",
+  "robots": null,
+  "og": {
+    "title": "Verba \u2014 AI Dictation for Mac | Private Voice to Text",
+    "description": "On-device voice-to-text with AI cleanup, live translation, and JARVIS \u2014 a voice agent acting on 1,000+ apps. Private, BYO-AI, $9.99/mo.",
+    "site_name": "Verba",
+    "locale": "en_US",
+    "image:alt": "Verba. Speak it. Send it clean.",
+    "image:type": "image/png",
+    "image": "https://verba.run/opengraph-image?65330548e216059d",
+    "image:width": "1200",
+    "image:height": "630",
+    "type": "website"
+  },
+  "twitter": {
+    "card": "summary_large_image",
+    "title": "Verba \u2014 AI Dictation for Mac | Private Voice to Text",
+    "description": "On-device voice-to-text with AI cleanup, live translation, and JARVIS \u2014 a voice agent acting on 1,000+ apps. Private, BYO-AI.",
+    "image:alt": "Verba. Speak it. Send it clean.",
+    "image:type": "image/png",
+    "image": "https://verba.run/opengraph-image?65330548e216059d",
+    "image:width": "1200",
+    "image:height": "630"
+  },
+  "schema_blocks": [
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "SoftwareApplication",
+          "name": "Verba",
+          "applicationCategory": "UtilitiesApplication",
+          "operatingSystem": "macOS 14+",
+          "description": "AI dictation for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and JARVIS \u2014 a voice agent that acts on 1,000+ connected apps.",
+          "url": "https://verba.run",
+          "downloadUrl": "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg",
+          "offers": {
+            "@type": "Offer",
+            "price": "9.99",
+            "priceCurrency": "USD"
+          },
+          "featureList": [
+            "On-device voice-to-text (WhisperKit, NVIDIA Parakeet)",
+            "AI rewriting in any app",
+            "Live translation",
+            "Reads your screen (Context mode)",
+            "JARVIS voice agent acting on 1,000+ connected apps",
+            "Bring your own AI (Claude, OpenRouter, local Ollama)",
+            "15 UI languages"
+          ]
+        },
+        {
+          "@type": "Organization",
+          "name": "Agentik OS",
+          "url": "https://verba.run",
+          "logo": "https://verba.run/icon.png"
+        }
+      ]
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Does it work in every app?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, Verba pastes into whatever you\u2019re typing in: editors, browsers, chat apps, mail, notes. If your cursor is there, Verba can write there."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can it work offline?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. On-device transcription (Whisper or Parakeet) runs entirely on your Mac, no internet needed, and your audio never leaves the device."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What languages does it understand?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "On-device Whisper covers ~99 languages worldwide. Parakeet is a faster option for 25 European languages. It writes back in the language you spoke."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do the AI modes work?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Verba ships six modes: Flow (verbatim, no AI, the default), Polish (resolves your self-corrections), Intent, Translate, Context, and Coding. Each mode is a system prompt that shapes how the model rewrites your speech. Context also takes a screenshot to ground the output in what is on your screen. You can edit any prompt, or just describe what you need and AI builds you a custom mode."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Do I need an API key?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. Verba uses your Claude Code plan if it is installed (no API key needed). You can also bring your own Anthropic key, an OpenRouter key, or run a local Ollama model entirely offline. You never pay a markup on someone\u2019s cloud."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is Context mode?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Context mode takes a screenshot of your screen, analyzes it with a vision model, and writes based on what you say and what it sees. Say \"reply to this email\" and it drafts a reply to the message on screen. It requires macOS Screen Recording permission and a vision-capable model (Anthropic API key or OpenRouter key)."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can it handle long recordings?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, talk for twenty minutes and Verba turns the whole thing into clean, well-ordered text."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is my data private?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "In on-device mode your audio never leaves your Mac. Transcripts are saved to your local history by default. You can turn history off entirely (nothing written, nothing synced) or auto-delete entries after 7, 30, or 90 days. When you sign in, your history, notes, and stats sync to your account so they follow you across Macs; signed out, nothing is uploaded. API keys live in your macOS Keychain, and you can delete all your cloud data at any time."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can Verba take notes?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. The Notes tab lets you record up to a full hour of speech and Verba turns it into a clean, structured document. Pick a format before you start: Clean note, Brain dump to outline, Summary, Meeting notes, Journal, Email, Code task, To-do list, or Article outline. Markdown is rendered (headings, bold, checkboxes). You can tag notes with #hashtags to file and filter them, edit the result in place, and copy it anywhere."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can it create calendar events or reminders?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, with the Labs toggle on in Context mode. Say \"create an event tomorrow at 3pm\", \"remind me to call the bank\", or \"draft a reply to this email\" and Verba creates the Calendar event, Reminder, or email draft for you. It always asks you to confirm before doing anything."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Do my notes sync across my Macs?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Notes are tied to your Verba account, so they follow you when you sign in on another Mac. No iCloud setup needed."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does the Translate mode work?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Pick a target language once in the Translate mode (English, French, Spanish, German, Italian, Portuguese, Dutch, Russian, Chinese, Japanese, Korean, Arabic, Hindi, Turkish, Polish). Then just speak in whatever language is natural to you and Verba writes the result in your chosen language, every time, preserving tone, names, numbers and code. You can also make a dedicated mode per language and auto-switch it by app."
+          }
+        }
+      ]
+    }
+  ],
+  "h1_count": 1,
+  "img_no_alt": 0,
+  "links_total": 24,
+  "html_size_bytes": 164191
+}

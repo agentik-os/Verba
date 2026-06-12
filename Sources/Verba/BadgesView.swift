@@ -48,10 +48,23 @@ struct BadgesView: View {
                 Text(L("Badges")).font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
                     .textCase(.uppercase).padding(.horizontal, 28)
 
-                LazyVGrid(columns: cols, spacing: 12) {
-                    ForEach(Gamification.all) { a in badge(a) }
+                // Grouped by category, in a logical order (volume → consistency → speed → features).
+                ForEach(Gamification.groups) { group in
+                    let earnedIn = group.items.filter { game.unlocked.contains($0.id) }.count
+                    HStack(spacing: 8) {
+                        Image(systemName: group.icon).font(.system(size: 13)).foregroundStyle(.secondary).frame(width: 18)
+                        Text(L(group.id)).font(.system(size: 14, weight: .semibold))
+                        Spacer()
+                        Text("\(earnedIn) / \(group.items.count)").font(.caption).foregroundStyle(.tertiary).monospacedDigit()
+                    }
+                    .padding(.horizontal, 28).padding(.top, 10)
+                    LazyVGrid(columns: cols, spacing: 12) {
+                        ForEach(group.items) { a in badge(a) }
+                    }
+                    .padding(.horizontal, 28)
                 }
-                .padding(.horizontal, 28).padding(.bottom, 28)
+                .padding(.bottom, 8)
+                Spacer(minLength: 20)
             }
         }
         .onAppear { Gamification.shared.evaluate(); board.load() }
