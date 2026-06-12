@@ -5,10 +5,16 @@ import { competitors } from "@/lib/competitors";
 import { COMPARE } from "@/lib/compare-matrix";
 
 export const metadata: Metadata = {
-  title: "Verba vs Wispr Flow, superwhisper & more — Mac dictation comparison",
+  title: "Verba vs Wispr Flow, superwhisper & more — Mac dictation",
   description:
-    "An honest, sourced feature-by-feature comparison of Verba against Wispr Flow, superwhisper, Aqua Voice, MacWhisper, Willow, VoiceInk, TalkTastic, Apple Dictation and Otter — 24 features, side by side.",
+    "An honest, sourced comparison of Verba vs Wispr Flow, superwhisper, Aqua Voice, MacWhisper and 5 more — 24 dictation features, side by side.",
   alternates: { canonical: "/compare" },
+  openGraph: {
+    title: "Verba vs the rest — Mac dictation comparison",
+    description: "Honest, sourced: 24 features across 10 Mac dictation apps, side by side.",
+    url: "/compare",
+    type: "article",
+  },
 };
 
 // Render one matrix cell from a normalized value (yes / no / partial / ? / short text).

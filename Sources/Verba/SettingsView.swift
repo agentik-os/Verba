@@ -1253,6 +1253,11 @@ struct SettingsView: View {
         card(L("Dictation history")) {
             toggleRow(L("Save dictation history"), $settings.saveHistory,
                       help: settings.saveHistory ? nil : L("Off: new dictations are pasted and forgotten — nothing is written to disk, no audio is kept, nothing is synced. Existing history stays until you delete it below."))
+            if settings.saveHistory {
+                toggleRow(L("Keep recorded audio"), $settings.keepAudio,
+                          help: settings.keepAudio ? L("Audio is saved with each entry so you can replay it. Turn off to keep only the text and save disk space.")
+                                                   : L("Off: your text history is still saved, but no audio is stored. Frees disk if you never replay recordings."))
+            }
             VStack(alignment: .leading, spacing: 6) {
                 Text(L("Keep history for")).font(.caption.weight(.medium)).foregroundStyle(.secondary)
                 chips(retentionOptions, selected: retentionOption(settings.historyRetentionDays),

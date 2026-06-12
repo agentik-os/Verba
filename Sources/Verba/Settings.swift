@@ -587,6 +587,9 @@ final class Settings: ObservableObject {
     }
     // S14: history controls. Off = nothing is written to disk, no audio copy, no cloud push.
     @Published var saveHistory: Bool { didSet { d.set(saveHistory, forKey: "verba.saveHistory") } }
+    // Keep the recorded audio alongside each history entry (for replay/re-adapt). Off = text
+    // history is still saved, but no audio is stored — saves disk for users who never replay.
+    @Published var keepAudio: Bool { didSet { d.set(keepAudio, forKey: "verba.keepAudio") } }
     // History retention in days; 0 = keep forever (default). Options: 7 / 30 / 90.
     @Published var historyRetentionDays: Int { didSet { d.set(historyRetentionDays, forKey: "verba.historyRetentionDays") } }
     // Opt out of the public leaderboard: hide the profile and stop submitting scores.
@@ -767,6 +770,7 @@ final class Settings: ObservableObject {
         proEmail = d.string(forKey: "verba.email") ?? ""
         showOnLeaderboard = d.object(forKey: "verba.showOnLeaderboard") as? Bool ?? true
         saveHistory = d.object(forKey: "verba.saveHistory") as? Bool ?? true
+        keepAudio = d.object(forKey: "verba.keepAudio") as? Bool ?? true
         historyRetentionDays = d.object(forKey: "verba.historyRetentionDays") as? Int ?? 0
         // Public alias for the leaderboard (never the email or real name). Fun default if unset.
         usernameCustomized = d.bool(forKey: "verba.usernameCustomized")

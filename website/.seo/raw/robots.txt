@@ -1,0 +1,23 @@
+User-Agent: *
+Allow: /
+Disallow: /account
+Disallow: /app-auth
+Disallow: /api
+
+User-Agent: GPTBot
+User-Agent: OAI-SearchBot
+User-Agent: ChatGPT-User
+User-Agent: ClaudeBot
+User-Agent: anthropic-ai
+User-Agent: Claude-Web
+User-Agent: PerplexityBot
+User-Agent: Perplexity-User
+User-Agent: Google-Extended
+User-Agent: Applebot-Extended
+User-Agent: CCBot
+Allow: /
+Disallow: /account
+Disallow: /app-auth
+Disallow: /api
+
+Sitemap: https://verba.run/sitemap.xml

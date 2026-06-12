@@ -14,11 +14,28 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const c = getCompetitor(slug);
   if (!c) return {};
+  const title = `Verba vs ${c.name}, which dictation app should you use?`;
+  const description = `${c.name}: ${c.tagline} See how Verba (local-first, $9.99/mo, bring your own AI) compares.`;
   return {
-    title: `Verba vs ${c.name}, which dictation app should you use?`,
-    description: `${c.name}: ${c.tagline} See how Verba (local-first, $9.99/mo, bring your own AI) compares.`,
+    title,
+    description,
     alternates: { canonical: `/vs/${slug}` },
+    openGraph: { title, description, url: `/vs/${slug}`, type: "article" },
+    twitter: { card: "summary_large_image", title, description },
   };
+}
+
+// 3-4 quotable Q&A per competitor → FAQPage schema for AI search + a visible FAQ block.
+function vsFaq(c: { name: string; price: string; onDevice: string }) {
+  const local =
+    c.onDevice === "yes"
+      ? `Both run on-device. Verba adds AI cleanup, live translation, and JARVIS — a voice agent that acts on 1,000+ connected apps.`
+      : `Verba transcribes on-device by default, so your audio never has to leave your Mac; ${c.name} sends audio to the cloud.`;
+  return [
+    { q: `Is Verba a good ${c.name} alternative?`, a: `Yes. Verba is a native Mac dictation app at $9.99/mo with on-device transcription, AI cleanup in any app, live translation, and a voice agent for 1,000+ apps. ${local}` },
+    { q: `Verba vs ${c.name}: which is more private?`, a: local },
+    { q: `How much does Verba cost vs ${c.name}?`, a: `Verba is $9.99/mo (or $84/year) with 33 free dictations to start; ${c.name} is ${c.price}. Verba lets you bring your own AI key or use a local model, with no markup.` },
+  ];
 }
 
 function Row({ label, verba, them, verbaGood }: { label: string; verba: string; them: string; verbaGood?: boolean }) {
@@ -36,8 +53,32 @@ export default async function Vs({ params }: { params: Promise<{ slug: string }>
   const c = getCompetitor(slug);
   if (!c) notFound();
 
+  const faq = vsFaq(c);
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: "https://verba.run/" },
+          { "@type": "ListItem", position: 2, name: "Compare", item: "https://verba.run/compare" },
+          { "@type": "ListItem", position: 3, name: `Verba vs ${c.name}`, item: `https://verba.run/vs/${slug}` },
+        ],
+      },
+      {
+        "@type": "FAQPage",
+        mainEntity: faq.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      },
+    ],
+  };
+
   return (
     <main className="relative mx-auto max-w-5xl px-6 pb-24">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="aurora" />
       <nav className="flex items-center justify-between py-6">
         <Link href="/" className="flex items-center gap-2.5">
@@ -103,6 +144,18 @@ export default async function Vs({ params }: { params: Promise<{ slug: string }>
           <p className="mt-5 text-xs muted">We'd rather tell you the truth than oversell. If you need mobile or Windows today, those tools win, Verba is the best native macOS, privacy-first option.</p>
         </div>
       </div>
+
+      <section className="mt-16">
+        <h2 className="text-center text-2xl font-semibold tracking-tight">Verba vs {c.name} — FAQ</h2>
+        <div className="mx-auto mt-8 grid max-w-3xl gap-2.5">
+          {faq.map((f) => (
+            <details key={f.q} className="group glass rounded-xl px-6 py-5">
+              <summary className="cursor-pointer list-none font-medium">{f.q}</summary>
+              <p className="mt-3 text-sm muted">{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
 
       <div className="mt-16 text-center">
         <a href={DOWNLOAD} className="rounded-full bg-[var(--fg)] px-7 py-3 font-medium text-[var(--bg)] hover:opacity-90">

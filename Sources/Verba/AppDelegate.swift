@@ -1699,7 +1699,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Output.copyToClipboard(text, rich: rich, keepTrailingNewline: keepNL)
             }
             History.shared.add(original: result.original, reprompted: result.reprompted,
-                               profileName: result.profileName, engine: result.engine, audioURL: ctx.audioURL)
+                               profileName: result.profileName, engine: result.engine,
+                               audioURL: Settings.shared.keepAudio ? ctx.audioURL : nil)
             self.lastResultText = text   // #2: remember for "edit last by voice"
             if Settings.shared.toneMatch { ToneStore.record(bundleID: ctx.capturedBundleID, text: text) }
             if ctx.countStats {
@@ -2286,6 +2287,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.onboardingWC?.close(); self?.onboardingWC = nil
             self?.applyTriggers()   // now onboarded + permissions granted → start the Fn tap
             self?.recorder.prewarm()   // pre-arm so the first dictation captures from the first word
+            // Open the app right away: finishing onboarding used to just close the window, leaving
+            // the user staring at the desktop and re-clicking the menu-bar icon. Land them in the app.
+            self?.openMain()
         }
         onboardingWC = makeWindow(title: "Welcome to Verba", view: view, size: NSSize(width: 620, height: 720), glass: true)
         present(onboardingWC)

@@ -1,0 +1,94 @@
+{
+  "audit": "seo",
+  "tools_run": [
+    "lighthouse-seo",
+    "head-fetch",
+    "page-meta-parser",
+    "robots-fetch",
+    "sitemap-fetch",
+    "sitemap-parser"
+  ],
+  "tools_skipped": [],
+  "findings_total": 1,
+  "findings_by_severity": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 1,
+    "info": 0
+  },
+  "findings": [
+    {
+      "tool": "head-parser",
+      "severity": "low",
+      "location": "https://verba.run",
+      "rule": "description-length",
+      "message": "meta description length 208 (recommended 120-160)",
+      "suggested_fix": "Adjust to 120-160 chars."
+    }
+  ],
+  "metrics": {
+    "page_meta": {
+      "title_present": true,
+      "title_length": 63,
+      "description_present": true,
+      "description_length": 208,
+      "canonical": "https://verba.run",
+      "viewport": "width=device-width, initial-scale=1",
+      "robots": null,
+      "og_keys": [
+        "title",
+        "description",
+        "site_name",
+        "locale",
+        "image:alt",
+        "image:type",
+        "image",
+        "image:width",
+        "image:height",
+        "type"
+      ],
+      "twitter_keys": [
+        "card",
+        "title",
+        "description",
+        "image:alt",
+        "image:type",
+        "image",
+        "image:width",
+        "image:height"
+      ],
+      "schema_count": 2,
+      "h1_count": 1,
+      "img_no_alt": 0,
+      "html_size_bytes": 164191
+    },
+    "sitemap_url_count": 13,
+    "sitemap_sample_urls": [
+      "https://verba.run/",
+      "https://verba.run/compare",
+      "https://verba.run/changelog",
+      "https://verba.run/acknowledgements",
+      "https://verba.run/vs/wispr-flow"
+    ],
+    "robots_txt_present": true
+  },
+  "evidence_index": [
+    {
+      "file": "lighthouse-seo.json",
+      "size": 3
+    },
+    {
+      "file": "page-meta.json",
+      "size": 8489
+    },
+    {
+      "file": "robots.txt",
+      "size": 451
+    },
+    {
+      "file": "sitemap-stats.json",
+      "size": 537
+    }
+  ]
+}
