@@ -26,6 +26,20 @@ enum GameFlag: String, CaseIterable {
     case usedSnippet     // saved a snippet
     case connectedApp    // connected an app for JARVIS
     case changedStyle    // cycled a style on top of a mode
+    // More features + shortcuts (also Explore).
+    case usedPushToTalk  // held Fn to talk, released to send
+    case pickedModeNum   // picked a mode with Fn + number
+    case switchedMode    // switched mode mid-flight (Fn+Tab / Option)
+    case pausedRec       // paused a recording with Control
+    case cancelledRec    // cancelled with Esc
+    case usedTodoGlance  // ⌥+Fn today's to-dos glance
+    case chainedDictation // started a 2nd dictation while one was still processing
+    case createdCustomMode // built a custom dictation mode
+    case usedOwnAI       // ran on a local model or your own key
+    case reworkedHistory // re-ran / adapted a past dictation
+    case transcribedFile // transcribed an audio/video file
+    // Fun context flags (Special).
+    case weekendWarrior, lateNightShip, fridayEve, mondayAM, lunchBreak, holidayHustle, comebackKid
 }
 
 // MARK: Level model
@@ -101,10 +115,62 @@ final class Gamification: ObservableObject {
 
     private var flags: Set<GameFlag>
 
+    // Fun counters (how many times you said "thanks", "ship it", mentioned AI, …) + the set of
+    // timezones you've dictated from. Persisted; read by the playful Special achievements. All
+    // on-device: a tiny word scan of YOUR final text to light up a badge, never uploaded.
+    @Published private(set) var counters: [String: Int] = [:]
+    private var seenTZ: Set<String> = []
+    private let kCounters = "verba.game.counters"
+    private let kTZ = "verba.game.seenTZ"
+    private let kLastActive = "verba.game.lastActiveDay"
+
     private init() {
         unlocked = Set(d.stringArray(forKey: kUnlocked) ?? []).intersection(Set(Gamification.all.map(\.id)))
         dailyGoal = d.object(forKey: kGoal) as? Int ?? 400
         flags = Set((d.stringArray(forKey: kFlags) ?? []).compactMap(GameFlag.init))
+        counters = (d.dictionary(forKey: kCounters) as? [String: Int]) ?? [:]
+        seenTZ = Set(d.stringArray(forKey: kTZ) ?? [])
+    }
+
+    func counter(_ key: String) -> Int { counters[key] ?? 0 }
+    var timezoneCount: Int { seenTZ.count }
+
+    private func bump(_ key: String, by n: Int = 1) {
+        counters[key, default: 0] += n
+        d.set(counters, forKey: kCounters)
+    }
+
+    /// Scan the delivered text for fun, legit patterns and bump the matching counters. Pure local
+    /// word-matching (FR + EN), case-insensitive, on word boundaries so substrings never false-fire.
+    func scanText(_ raw: String) {
+        let text = " " + raw.lowercased() + " "
+        func has(_ words: [String]) -> Bool {
+            words.contains { w in
+                guard let re = try? NSRegularExpression(pattern: "\\b" + NSRegularExpression.escapedPattern(for: w) + "\\b") else { return false }
+                return re.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
+            }
+        }
+        if has(["thank you", "thanks", "thank u", "merci"]) { bump("thanks") }
+        if has(["please", "s'il te plaît", "stp", "s'il vous plaît"]) { bump("please") }
+        if has(["sorry", "my bad", "désolé", "pardon"]) { bump("sorry") }
+        if has(["ship it", "ship this", "let's ship", "on déploie", "deploy", "go live"]) { bump("ship") }
+        if has(["bug", "broken", "crash", "doesn't work", "ne marche pas", "fix this", "error"]) { bump("bug") }
+        if has(["refactor", "merge", "commit", "pull request", "code", "function", "endpoint", "api"]) { bump("vibe") }
+        if has(["ai", "gpt", "claude", "llm", "prompt", "model", "agent", "neural"]) { bump("ai") }
+        if has(["startup", "fundraise", "raise", "investor", "mrr", "arr", "runway", "users", "growth", "revenue", "launch"]) { bump("founder") }
+        if has(["billion", "unicorn", "world", "change the world", "moonshot", "10x", "empire"]) { bump("dreamer") }
+        if has(["coffee", "café", "espresso", "caffeine"]) { bump("coffee") }
+        if has(["love", "amazing", "awesome", "génial", "incroyable", "let's go", "let's gooo"]) { bump("hype") }
+        if has(["idea", "what if", "imagine", "concept", "brainstorm"]) { bump("idea") }
+        evaluate()
+    }
+
+    /// Record the timezone of a dictation (for the globe-trotter badges).
+    func noteTimezone(_ id: String = TimeZone.current.identifier) {
+        guard !id.isEmpty, !seenTZ.contains(id) else { return }
+        seenTZ.insert(id)
+        d.set(Array(seenTZ), forKey: kTZ)
+        evaluate()
     }
 
     // MARK: XP + level
@@ -192,11 +258,28 @@ final class Gamification: ObservableObject {
         evaluate()
     }
 
-    /// Note the current time-of-day bucket (call on each dictation) then evaluate.
+    /// Note the current time-of-day / day-of-week context (call on each dictation) then evaluate.
     func noteDictationTime(_ date: Date = Date()) {
-        let h = Calendar.current.component(.hour, from: date)
-        let newFlag: GameFlag? = h < 4 ? .nightOwl : (5...7).contains(h) ? .earlyBird : nil
-        if let f = newFlag { flag(f) }
+        let cal = Calendar.current
+        let h = cal.component(.hour, from: date)
+        let wd = cal.component(.weekday, from: date)   // 1 = Sunday … 7 = Saturday
+        let comps = cal.dateComponents([.month, .day], from: date)
+        if h < 4 { flag(.nightOwl) }
+        else if (5...7).contains(h) { flag(.earlyBird) }
+        if h >= 1 && h < 5 { flag(.lateNightShip) }                 // shipping at 1–5 AM
+        if wd == 1 || wd == 7 { flag(.weekendWarrior) }             // Sat / Sun
+        if wd == 6 && h >= 17 { flag(.fridayEve) }                  // Friday evening
+        if wd == 2 && (6...10).contains(h) { flag(.mondayAM) }      // Monday morning
+        if (12...13).contains(h) { flag(.lunchBreak) }
+        // A few playful "holiday" days (Jan 1, Dec 24/25/31).
+        if (comps.month == 1 && comps.day == 1) || (comps.month == 12 && [24, 25, 31].contains(comps.day ?? 0)) {
+            flag(.holidayHustle)
+        }
+        // Comeback: dictated again after a 7+ day gap.
+        let day = Int(date.timeIntervalSince1970 / 86400)
+        if let last = d.object(forKey: kLastActive) as? Int, day - last >= 7 { flag(.comebackKid) }
+        d.set(day, forKey: kLastActive)
+        noteTimezone()
         evaluate()
     }
 
@@ -550,6 +633,18 @@ final class Gamification: ObservableObject {
         .init(id: "shaper", title: "Reshaper", blurb: "Transform selected text (⌥ + X).", icon: "wand.and.stars", tier: .bronze) { _,f in f.contains(.usedTransform) },
         .init(id: "commander", title: "Hands Free", blurb: "Run a voice Action with JARVIS (Fn + X).", icon: "wand.and.rays", tier: .silver) { _,f in f.contains(.usedActionMode) },
         .init(id: "connectedapp", title: "Plugged In", blurb: "Connect an app for JARVIS to act on.", icon: "app.connected.to.app.below.fill", tier: .silver) { _,f in f.contains(.connectedApp) },
+        // Shortcuts — each blurb names the keys, so the badge doubles as a cheat sheet.
+        .init(id: "pushtotalk", title: "Push to Talk", blurb: "Hold Fn while you speak, release to send.", icon: "hand.tap.fill", tier: .bronze) { _,f in f.contains(.usedPushToTalk) },
+        .init(id: "bynumbers", title: "By the Numbers", blurb: "Pick a mode with Fn + 1…9.", icon: "number.circle", tier: .bronze) { _,f in f.contains(.pickedModeNum) },
+        .init(id: "quickswitch", title: "Quick Switch", blurb: "Switch mode mid-sentence — Fn + Tab (or ⌥).", icon: "arrow.left.arrow.right", tier: .bronze) { _,f in f.contains(.switchedMode) },
+        .init(id: "takeabreath", title: "Take a Breath", blurb: "Pause a recording with ⌃ (Control).", icon: "pause.circle", tier: .bronze) { _,f in f.contains(.pausedRec) },
+        .init(id: "nevermind", title: "Never Mind", blurb: "Cancel a recording with Esc.", icon: "xmark.circle", tier: .bronze) { _,f in f.contains(.cancelledRec) },
+        .init(id: "ataglance", title: "At a Glance", blurb: "Peek at today's to-dos — ⌥ + Fn.", icon: "calendar.day.timeline.left", tier: .bronze) { _,f in f.contains(.usedTodoGlance) },
+        .init(id: "chainreaction", title: "Chain Reaction", blurb: "Start a new dictation while the last still processes.", icon: "square.stack.3d.up.fill", tier: .silver) { _,f in f.contains(.chainedDictation) },
+        .init(id: "makeityours", title: "Make It Yours", blurb: "Build your own custom mode (Settings ▸ Modes).", icon: "slider.horizontal.3", tier: .silver) { _,f in f.contains(.createdCustomMode) },
+        .init(id: "yourengine", title: "Your Engine", blurb: "Run on a local model or your own AI key.", icon: "cpu", tier: .silver) { _,f in f.contains(.usedOwnAI) },
+        .init(id: "rewind", title: "Rewind", blurb: "Re-run a past dictation in another mode from History.", icon: "clock.arrow.circlepath", tier: .bronze) { _,f in f.contains(.reworkedHistory) },
+        .init(id: "dropdone", title: "Drop & Done", blurb: "Transcribe an audio or video file.", icon: "waveform.and.magnifyingglass", tier: .bronze) { _,f in f.contains(.transcribedFile) },
         .init(id: "allmodes", title: "Mode Master", blurb: "Try all six dictation modes.", icon: "square.grid.3x3.fill", tier: .gold) { _,f in [GameFlag.usedFlow, .usedPolish, .usedIntent, .usedTranslate, .usedContext, .usedCoding].allSatisfy { f.contains($0) } },
         .init(id: "explorer_all", title: "Verba Explorer", blurb: "Try every core feature and shortcut. You know Verba inside out.", icon: "trophy.fill", tier: .diamond) { _,f in
             [GameFlag.usedFlow, .usedPolish, .usedIntent, .usedTranslate, .usedContext, .usedCoding,
@@ -557,10 +652,45 @@ final class Gamification: ObservableObject {
              .savedNote, .taggedNote, .lockedNote, .createdTask, .checkedTask,
              .usedScratchpad, .usedDictionary, .usedSnippet, .connectedApp].allSatisfy { f.contains($0) } },
     ]
+    // Fun, legit Special badges — lit up by an on-device word scan of your own text + your
+    // computer's time/timezone. Nothing is uploaded; it's just for the joy of the unlock.
+    private static func said(_ key: String) -> Int { Gamification.shared.counter(key) }
     private static let cat_Special: [Achievement] = [
-        .init(id: "dawn", title: "Early Bird", blurb: "Dictated at dawn.", icon: "sunrise.fill", tier: .silver) { _,f in f.contains(.earlyBird) },
-        .init(id: "night", title: "Night Owl", blurb: "Dictated after midnight.", icon: "moon.stars.fill", tier: .silver) { _,f in f.contains(.nightOwl) },
-        .init(id: "roundclock", title: "Round the Clock", blurb: "Dictated both after midnight and at dawn.", icon: "clock.badge.checkmark.fill", tier: .gold) { _,f in f.contains(.nightOwl) && f.contains(.earlyBird) },
+        // Time of day / week
+        .init(id: "dawn", title: "Early Bird", blurb: "Dictate at dawn (5–7 AM).", icon: "sunrise.fill", tier: .silver) { _,f in f.contains(.earlyBird) },
+        .init(id: "night", title: "Night Owl", blurb: "Dictate after midnight.", icon: "moon.stars.fill", tier: .silver) { _,f in f.contains(.nightOwl) },
+        .init(id: "roundclock", title: "Round the Clock", blurb: "Dictate both after midnight and at dawn.", icon: "clock.badge.checkmark.fill", tier: .gold) { _,f in f.contains(.nightOwl) && f.contains(.earlyBird) },
+        .init(id: "midnightoil", title: "Burning the Midnight Oil", blurb: "Ship something between 1 and 5 AM.", icon: "flame.fill", tier: .gold) { _,f in f.contains(.lateNightShip) },
+        .init(id: "weekendwar", title: "Weekend Warrior", blurb: "Dictate on a Saturday or Sunday.", icon: "figure.run", tier: .bronze) { _,f in f.contains(.weekendWarrior) },
+        .init(id: "fridayfeel", title: "Friday Feeling", blurb: "Still going on a Friday evening.", icon: "party.popper.fill", tier: .bronze) { _,f in f.contains(.fridayEve) },
+        .init(id: "mondaymotiv", title: "Monday Motivation", blurb: "Up and dictating on a Monday morning.", icon: "sun.max.fill", tier: .bronze) { _,f in f.contains(.mondayAM) },
+        .init(id: "lunchlaunch", title: "Lunch & Launch", blurb: "Working through the lunch hour.", icon: "fork.knife", tier: .bronze) { _,f in f.contains(.lunchBreak) },
+        .init(id: "holidayhustle", title: "Holiday Hustler", blurb: "Dictate on a holiday. The grind never stops.", icon: "gift.fill", tier: .gold) { _,f in f.contains(.holidayHustle) },
+        .init(id: "comeback", title: "Comeback Kid", blurb: "Return to Verba after a week away.", icon: "arrow.uturn.up.circle.fill", tier: .silver) { _,f in f.contains(.comebackKid) },
+        // Where in the world (your computer's timezone)
+        .init(id: "globetrot", title: "Globe Trotter", blurb: "Dictate from 2 different time zones.", icon: "globe.americas.fill", tier: .silver) { _,_ in Gamification.shared.timezoneCount >= 2 },
+        .init(id: "nomad", title: "Digital Nomad", blurb: "Dictate from 3 different time zones.", icon: "airplane", tier: .gold) { _,_ in Gamification.shared.timezoneCount >= 3 },
+        .init(id: "jetsetter", title: "Jet Setter", blurb: "Dictate from 5 different time zones.", icon: "airplane.departure", tier: .platinum) { _,_ in Gamification.shared.timezoneCount >= 5 },
+        // Politeness — being nice to the AI 🤝
+        .init(id: "manners", title: "Mind Your Manners", blurb: "Say thank you to your AI.", icon: "hands.sparkles.fill", tier: .bronze) { _,_ in said("thanks") >= 1 },
+        .init(id: "gracious", title: "Gracious", blurb: "Thank the AI 10 times. It appreciates it.", icon: "heart.fill", tier: .silver) { _,_ in said("thanks") >= 10 },
+        .init(id: "aiwhisperer", title: "AI Whisperer", blurb: "Thank the AI 50 times. Friends for life.", icon: "sparkles", tier: .gold) { _,_ in said("thanks") >= 50 },
+        .init(id: "polite", title: "Please & Thank You", blurb: "Say “please” 5 times.", icon: "hand.raised.fill", tier: .bronze) { _,_ in said("please") >= 5 },
+        .init(id: "noworries", title: "No Worries", blurb: "Apologize 5 times (to a machine).", icon: "face.smiling", tier: .bronze) { _,_ in said("sorry") >= 5 },
+        // Vibe-coding & AI-native founder life 🚀
+        .init(id: "shipit", title: "Ship It", blurb: "Say “ship it” once. Done is better than perfect.", icon: "paperplane.fill", tier: .bronze) { _,_ in said("ship") >= 1 },
+        .init(id: "serialshipper", title: "Serial Shipper", blurb: "Say “ship it” 25 times. Velocity.", icon: "shippingbox.fill", tier: .gold) { _,_ in said("ship") >= 25 },
+        .init(id: "bughunter", title: "Bug Hunter", blurb: "Mention a bug 10 times. It's never your code.", icon: "ant.fill", tier: .silver) { _,_ in said("bug") >= 10 },
+        .init(id: "vibecoder", title: "Vibe Coder", blurb: "Drop 10 coding words (refactor, merge, deploy…).", icon: "chevron.left.forwardslash.chevron.right", tier: .silver) { _,_ in said("vibe") >= 10 },
+        .init(id: "prompteng", title: "Prompt Engineer", blurb: "Talk about AI 10 times.", icon: "brain.head.profile", tier: .silver) { _,_ in said("ai") >= 10 },
+        .init(id: "ainative", title: "AI Native", blurb: "Talk about AI 50 times. You live in the future.", icon: "cpu.fill", tier: .gold) { _,_ in said("ai") >= 50 },
+        .init(id: "foundermode", title: "Founder Mode", blurb: "Mention startup life 10 times (MRR, users, runway…).", icon: "chart.line.uptrend.xyaxis", tier: .silver) { _,_ in said("founder") >= 10 },
+        .init(id: "raising", title: "Raising a Round", blurb: "Founder-talk 50 times. To the moon.", icon: "banknote.fill", tier: .gold) { _,_ in said("founder") >= 50 },
+        .init(id: "bigdreamer", title: "Big Dreamer", blurb: "Say “billion”, “unicorn” or “change the world”.", icon: "moon.stars.fill", tier: .silver) { _,_ in said("dreamer") >= 1 },
+        .init(id: "moonshot", title: "Moonshot", blurb: "Dream big 25 times.", icon: "sparkle", tier: .gold) { _,_ in said("dreamer") >= 25 },
+        .init(id: "ideamachine", title: "Idea Machine", blurb: "Start 25 thoughts with an idea (“what if…”).", icon: "lightbulb.fill", tier: .silver) { _,_ in said("idea") >= 25 },
+        .init(id: "hypebeast", title: "Hype Beast", blurb: "Say “let's go / amazing / génial” 25 times.", icon: "flame.circle.fill", tier: .silver) { _,_ in said("hype") >= 25 },
+        .init(id: "caffeinated", title: "Caffeinated", blurb: "Mention coffee 5 times. Fuel.", icon: "cup.and.saucer.fill", tier: .bronze) { _,_ in said("coffee") >= 5 },
     ]
 
 }

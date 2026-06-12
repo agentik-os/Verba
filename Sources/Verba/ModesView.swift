@@ -246,6 +246,7 @@ struct ModesView: View {
                 p.raw = draft.raw
                 await MainActor.run {
                     settings.profiles.append(p)
+                    Gamification.shared.flag(.createdCustomMode)
                     selectedID = p.id
                     genBusy = false
                     showGenerator = false
@@ -530,6 +531,7 @@ struct ModesView: View {
     private func addBlankProfile() -> UUID {
         let p = Profile(name: "New mode", systemPrompt: Profile.custom.systemPrompt)
         settings.profiles.append(p)
+        Gamification.shared.flag(.createdCustomMode)
         return p.id
     }
 }
