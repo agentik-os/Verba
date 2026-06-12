@@ -14,8 +14,33 @@ const STOP = new Set(
     .split(" ")
 );
 
+// Bridge spoken/French/abbreviated words to the English nouns inside tool slugs, so e.g.
+// "liste mes repos" reaches GITHUB_LIST_REPOSITORIES and "mes mails" reaches GMAIL_*EMAIL*.
+const SYN: Record<string, string[]> = {
+  repo: ["repository", "repositories"], repos: ["repository", "repositories"],
+  mail: ["email", "message"], mails: ["email", "messages"], mel: ["email"], courriel: ["email"], courriels: ["email"],
+  email: ["message"], message: ["email"], msg: ["message"],
+  event: ["calendar"], events: ["calendar"], evenement: ["event", "calendar"], evenements: ["event", "calendar"],
+  rdv: ["event", "calendar"], agenda: ["calendar", "event"], reunion: ["event", "meeting", "calendar"],
+  ticket: ["issue"], tickets: ["issue", "issues"], tache: ["issue", "task"], taches: ["issue", "task"],
+  liste: ["list"], lister: ["list"], montre: ["list", "get"], montrer: ["list", "get"], affiche: ["list"],
+  cherche: ["search", "find"], chercher: ["search", "find"], recherche: ["search"], trouve: ["find", "search"],
+  envoie: ["send"], envoyer: ["send"], envoi: ["send"], poste: ["post", "create"], poster: ["post"],
+  cree: ["create"], creer: ["create"], ajoute: ["add", "create"], ajouter: ["add", "create"], supprime: ["delete", "remove"],
+  avatar: ["avatar"], avatars: ["avatar"], voix: ["voice"], video: ["video"], videos: ["video"],
+  profil: ["profile", "info"], profile: ["info"], depot: ["repository"], depots: ["repository"],
+  fichier: ["file", "drive"], fichiers: ["file"], dossier: ["folder", "drive"],
+  message_: ["chat"], channel: ["channel", "conversation"], canal: ["channel"],
+};
+
 function tokenize(s: string): string[] {
-  return (s.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((t) => t.length > 2 && !STOP.has(t));
+  const base = (s.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((t) => t.length > 2 && !STOP.has(t));
+  const out: string[] = [];
+  for (const t of base) {
+    out.push(t);
+    if (SYN[t]) out.push(...SYN[t]);
+  }
+  return out;
 }
 
 /// Rank `tools` by BM25 relevance to `query`; returns a new array, most-relevant first. Ties and

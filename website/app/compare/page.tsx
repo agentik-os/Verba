@@ -1,29 +1,35 @@
 import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
 import type { Metadata } from "next";
-import { competitors, VERBA, onDeviceLabel } from "@/lib/competitors";
+import { competitors } from "@/lib/competitors";
+import { COMPARE } from "@/lib/compare-matrix";
 
 export const metadata: Metadata = {
-  title: "Verba vs the rest, dictation app comparison",
+  title: "Verba vs Wispr Flow, superwhisper & more — Mac dictation comparison",
   description:
-    "How Verba compares to Wispr Flow, Superwhisper, MacWhisper, Aqua Voice, Willow, VoiceInk, Apple Dictation and Otter. Local-first, private, $9.99/mo.",
+    "An honest, sourced feature-by-feature comparison of Verba against Wispr Flow, superwhisper, Aqua Voice, MacWhisper, Willow, VoiceInk, TalkTastic, Apple Dictation and Otter — 24 features, side by side.",
+  alternates: { canonical: "/compare" },
 };
+
+// Render one matrix cell from a normalized value (yes / no / partial / ? / short text).
+function Cell({ v, verba }: { v: string; verba?: boolean }) {
+  const yes = v.startsWith("yes");
+  const qual = yes && v.includes(":") ? v.split(":")[1] : "";
+  if (yes)
+    return (
+      <span className={`inline-flex items-center gap-1 ${verba ? "font-semibold" : ""}`}>
+        <span className="tick">✓</span>
+        {qual && <span className="text-[11px] muted">{qual}</span>}
+      </span>
+    );
+  if (v === "no") return <span className="cross">✗</span>;
+  if (v === "partial") return <span className="text-[12px]" style={{ color: "var(--fg-50)" }}>~ partial</span>;
+  if (v === "?") return <span className="muted">–</span>;
+  return <span className={`text-[12px] ${verba ? "font-medium" : "muted"}`}>{v}</span>;
+}
 
 const DOWNLOAD = "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg";
 
-// What each tool can DO by voice beyond producing text. Only Verba ships a true voice agent
-// (JARVIS) that acts on 1,000+ connected apps; the rest top out at editing the text itself.
-const VOICE_ACTIONS: Record<string, string> = {
-  "wispr-flow": "Text commands only",
-  "talktastic": "App-aware text actions",
-  "superwhisper": "No",
-  "macwhisper": "No",
-  "aqua-voice": "Text editing only",
-  "willow-voice": "No",
-  "voiceink": "No",
-  "apple-dictation": "No",
-  "otter-ai": "No",
-};
 
 export default function Compare() {
   return (
@@ -43,54 +49,59 @@ export default function Compare() {
 
       <section className="py-14 text-center">
         <h1 className="mx-auto max-w-3xl text-balance text-4xl font-semibold tracking-tight sm:text-6xl">
-          How Verba compares
+          Verba vs the rest, feature by feature
         </h1>
-        <p className="mx-auto mt-5 max-w-xl text-lg muted text-balance">
-          Most dictation apps send your voice to the cloud and bake the AI cost into a $12-17/mo
-          bill. Verba runs on-device, lets you bring your own AI account, costs $9.99, and is the
-          only one with JARVIS, a voice agent that acts on 1,000+ apps.
+        <p className="mx-auto mt-5 max-w-2xl text-lg muted text-balance">
+          An honest, sourced comparison across 24 features. Verba is the only Mac dictation app that
+          runs on-device by default, lets you bring your own AI (or your Claude plan with no key),
+          and ships JARVIS — a voice agent that acts on 1,000+ connected apps. Every value below is
+          verified from each vendor; nothing inflated.
         </p>
       </section>
 
-      {/* Master matrix */}
+      {/* Features-as-rows / brands-as-columns honest matrix */}
       <div className="table-scrim glass rounded-2xl">
-      <div className="overflow-x-auto">
-        <table className="table-pin w-full min-w-[900px] border-collapse text-left text-sm">
-          <thead>
-            <tr className="muted">
-              <th className="p-4 font-medium">App</th>
-              <th className="p-4 font-medium">Price</th>
-              <th className="p-4 font-medium">On-device</th>
-              <th className="p-4 font-medium">Voice actions</th>
-              <th className="p-4 font-medium">Transcription</th>
-              <th className="p-4 font-medium">Privacy default</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="grid-row bg-[var(--tint)]">
-              <td className="p-4 font-semibold">Verba</td>
-              <td className="p-4">{VERBA.price}</td>
-              <td className="p-4 tick">Yes</td>
-              <td className="p-4 tick font-medium">JARVIS · acts on 1,000+ apps</td>
-              <td className="p-4">{VERBA.transcription}</td>
-              <td className="p-4">On-device: audio stays on your Mac; local history, synced only when signed in</td>
-            </tr>
-            {competitors.map((c) => (
-              <tr key={c.slug} className="grid-row">
-                <td className="p-4">
-                  <Link href={`/vs/${c.slug}`} className="font-medium hover:underline">{c.name}</Link>
-                </td>
-                <td className="p-4 muted">{c.price}</td>
-                <td className={`p-4 ${c.onDevice === "yes" ? "tick" : "cross"}`}>{onDeviceLabel(c.onDevice)}</td>
-                <td className={`p-4 ${(VOICE_ACTIONS[c.slug] ?? "No") === "No" ? "cross" : "muted"}`}>{VOICE_ACTIONS[c.slug] ?? "No"}</td>
-                <td className="p-4 muted">{c.transcription}</td>
-                <td className="p-4 muted">{c.privacy.split(".")[0]}.</td>
+        <div className="overflow-x-auto">
+          <table className="table-pin w-full min-w-[1040px] border-collapse text-left text-sm">
+            <thead>
+              <tr>
+                <th className="sticky left-0 z-10 bg-[var(--bg)] p-3 text-left font-medium muted">Feature</th>
+                {COMPARE.columns.map((slug) => {
+                  const isV = slug === "verba";
+                  const inner = (
+                    <span className="block text-[13px] font-semibold leading-tight">{COMPARE.names[slug]}</span>
+                  );
+                  return (
+                    <th
+                      key={slug}
+                      className={`p-3 text-center align-bottom ${isV ? "bg-[var(--tint)]" : ""}`}
+                    >
+                      {isV ? inner : <Link href={`/vs/${slug}`} className="hover:underline">{inner}</Link>}
+                      <span className="mt-1 block text-[10px] muted">{COMPARE.prices[slug]}</span>
+                    </th>
+                  );
+                })}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {COMPARE.rows.map((row) => (
+                <tr key={row.feature} className="grid-row">
+                  <td className="sticky left-0 z-10 bg-[var(--bg)] p-3 text-[13px] font-medium">{row.feature}</td>
+                  {COMPARE.columns.map((slug) => (
+                    <td key={slug} className={`p-3 text-center ${slug === "verba" ? "bg-[var(--tint)]" : ""}`}>
+                      <Cell v={(row.cells as Record<string, string>)[slug]} verba={slug === "verba"} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-      </div>
+      <p className="mt-3 text-center text-xs muted">
+        Verified mid-2026 from each vendor&apos;s site, pricing page and public reviews. Found an error?
+        Tell us and we&apos;ll fix it — this table stays honest.
+      </p>
 
       {/* Per-competitor cards */}
       <h2 className="mt-20 text-center text-3xl font-semibold tracking-tight">Head-to-head</h2>

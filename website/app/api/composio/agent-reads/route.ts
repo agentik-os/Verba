@@ -67,8 +67,17 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Render each read result, capped — but NEVER cut mid-record silently (that seeds hallucinated
+  // entries from dangling JSON). When over budget, truncate and append an explicit marker so the
+  // resolve model knows the data is incomplete and must not invent the rest.
+  const PER_READ = 18000;
   const block = reads
-    .map((r) => `• ${r.tool}: ${r.ok ? JSON.stringify(r.data).slice(0, 6000) : `ERROR ${r.error}`}`)
+    .map((r) => {
+      if (!r.ok) return `• ${r.tool}: ERROR ${r.error}`;
+      const full = JSON.stringify(r.data);
+      if (full.length <= PER_READ) return `• ${r.tool}: ${full}`;
+      return `• ${r.tool}: ${full.slice(0, PER_READ)}\n  …[TRUNCATED — the data above is incomplete; do NOT infer or invent any items beyond what is fully shown]`;
+    })
     .join("\n");
 
   return NextResponse.json(

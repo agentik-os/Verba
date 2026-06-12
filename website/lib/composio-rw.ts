@@ -184,9 +184,14 @@ export async function loadReadWriteCatalog(
 
   const out: CatalogTool[] = [];
   for (const tk of toolkits) {
-    // Fetch a wide set (apps can have 500+ tools), priority-sort as the tiebreak, then re-rank by
-    // lexical relevance to the request so the right action survives the cap — THEN keep the top 45.
-    const raw = (await composio.tools.getRawComposioTools({ toolkits: [tk], limit: 200 })) as RawTool[];
+    // Prefer Composio's CURATED "important" set: ~40 high-value tools (send/list/get/create) that
+    // are the ones users actually invoke — and it includes core reads like GITHUB_LIST_REPOSITORIES
+    // that a flat alphabetical limit:200 of a 600-tool app silently drops. Fall back to a wide flat
+    // fetch if the curated set comes back thin.
+    let raw = (await composio.tools.getRawComposioTools({ toolkits: [tk], important: true, limit: 60 } as never)) as RawTool[];
+    if (!raw || raw.length < 12) {
+      raw = (await composio.tools.getRawComposioTools({ toolkits: [tk], limit: 200 })) as RawTool[];
+    }
     const byPriority = [...raw].sort((a, b) => toolPriority(b.slug) - toolPriority(a.slug));
     const scorable = byPriority.map((t) => ({ slug: t.slug, description: t.description ?? "", readOnly: false, raw: t }));
     const reranked = query ? rankByLexical(query, scorable) : scorable;
