@@ -193,6 +193,20 @@ enum Pipeline {
             if profile.targetLanguage == nil, Output.willPasteRich(frontmostBundleID) {
                 sys += markdownFormattingAddendum
             }
+            // Universal anti-preamble guard (final position = strongest signal). Some models still
+            // open with a label/preamble ("Here is the translation:", "Voici…", "Sure,…") despite the
+            // per-mode "no preamble" lines — most visibly in Translate, where it shows up as a stray
+            // first line. This mode-agnostic directive suppresses it WITHOUT ever stripping/altering
+            // real content (a heuristic line-strip would risk eating a legitimate first line).
+            sys += """
+
+
+            OUTPUT FORMAT (this overrides any urge to be conversational): reply with the result ONLY. \
+            Your very first character must be the first character of the result. Never begin with a \
+            preamble, label, heading, restatement of the request, or meta-comment such as "Here is", \
+            "Translation:", "Sure", or "Voici". Do not add closing commentary either — output the \
+            result text and nothing else.
+            """
 
             let r = Reprompter(model: profile.model ?? s.claudeModel)   // per-mode model override
 
@@ -347,6 +361,11 @@ enum Pipeline {
                 status(Quips.current())   // fun, ever-changing geek line instead of "Restructuring…"
                 reprompted = try await r.reprompt(transcript: original, systemPrompt: sys)
             }
+
+            // GUARANTEE (not just a prompt): strip any leading model preamble before it can reach
+            // the clipboard. The system prompt asks for no preamble, but models still slip one in
+            // ("Here is the restructured transcript:") — this makes it deterministically impossible.
+            reprompted = stripLeadingPreamble(reprompted)
         }
 
         // Raw/Flow mode (no AI) → fall back to literal snippet expansion. In AI modes the
@@ -708,6 +727,45 @@ enum Pipeline {
     /// confidently a DIFFERENT language than the document's dominant one, the text is mixed.
     /// Deliberately conservative — short or clearly-monolingual text returns false so we don't
     /// pay for an unneeded LLM pass or risk mangling clean output.
+    /// Deterministically remove a leading "preamble" line some models still emit despite the
+    /// no-preamble instruction ("Here is the restructured transcript:", "Voici la traduction :"),
+    /// so it can NEVER reach the clipboard. Conservative: only strips a short leading clause that
+    /// BOTH opens like a preamble AND names the act of transcribing / translating / rewriting — a
+    /// combination a user would essentially never dictate as real content. Never empties the output.
+    static func stripLeadingPreamble(_ s: String) -> String {
+        let openers = ["here is", "here's", "here are", "here you go", "voici", "voilà",
+                       "below is", "below are", "this is the", "sure", "okay", "ok,",
+                       "i've ", "i have "]
+        let metaNouns = ["transcript", "transcription", "translation", "traduction",
+                         "rewrite", "rewritten", "restructur", "réécrit", "reformul",
+                         "reformatted", "cleaned up", "cleaned-up", "clean version",
+                         "polished version", "corrected version", "tidied"]
+        func looksLikePreamble(_ seg: String) -> Bool {
+            guard seg.count <= 100 else { return false }
+            let low = seg.lowercased()
+            let hasOpener = openers.contains { low.hasPrefix($0) }
+            let hasMeta = metaNouns.contains { low.contains($0) }
+            return hasOpener && hasMeta
+        }
+        // Form 1: "<preamble>: <content>" — the preamble ends at the first colon.
+        if let colon = s.firstIndex(of: ":") {
+            let seg = String(s[s.startIndex..<colon])
+            if !seg.contains("\n"), looksLikePreamble(seg) {
+                let after = String(s[s.index(after: colon)...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                if !after.isEmpty { return after }
+            }
+        }
+        // Form 2: "<preamble>\n\n<content>" — a colon-less preamble on its own first line.
+        if let nl = s.firstIndex(of: "\n") {
+            let firstLine = String(s[s.startIndex..<nl])
+            if looksLikePreamble(firstLine) {
+                let rest = String(s[nl...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                if !rest.isEmpty { return rest }
+            }
+        }
+        return s
+    }
+
     static func isMixedLanguage(_ text: String) -> Bool {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         // Need enough words for per-sentence detection to be meaningful.

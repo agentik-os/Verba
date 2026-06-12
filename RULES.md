@@ -29,5 +29,16 @@
 - Permissions macOS requises : **Microphone** + **Accessibilité** (auto-paste ⌘V, fallback presse-papiers).
 - Déploiement web : **Vercel avec token explicite** (VPS headless, jamais de login interactif).
 
+## R-CHANGELOG — Changelog auto à jour (obligatoire)
+> Dès qu'une feature est **terminée et bien fonctionnelle** (buildée, vérifiée au runtime, shippée), son changelog est mis à jour **dans le même passage** — jamais « plus tard ». Une feature finie sans entrée de changelog n'est **pas** considérée comme done.
+
+**Deux sources de vérité à synchroniser ensemble, toujours :**
+1. **App** — `Sources/Verba/Changelog.swift` (montré dans **Settings ▸ Changelog**) : ajouter/mettre à jour l'entrée du jour avec la fourchette de versions, un titre, et les puces de ce qui a changé. Le plus récent en premier.
+2. **Site** — `website/app/changelog/page.tsx` (`DAYS[]`, montré sur **verba.run/changelog**) : la **même** entrée, mêmes versions, même contenu.
+
+**Procédure :** même version/fourchette des deux côtés · une puce par changement visible utilisateur · jamais de nom d'utilisateur ni d'info confidentielle (le changelog est public) · mettre aussi à jour les claims chiffrés du site (homepage : nb d'achievements, nb de niveaux, etc.) quand ils changent · déployer le site (`vercel --prod` depuis la racine du repo, root dir = `website`) et inclure le changelog dans la release de l'app.
+
+**Définition de « fini » :** `swift build` clean **et** vérifié au runtime **et** release/déployé. Tant que ce n'est pas réuni, ne pas marquer done — mais dès que ça l'est, le changelog part avec.
+
 ## Objectif
 - Produit commercial macOS payant (entitlement / free month / leaderboard présents dans les sources). Modèle économique chiffré : *à préciser*.

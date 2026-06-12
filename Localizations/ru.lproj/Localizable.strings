@@ -1129,6 +1129,7 @@
 "⌃ (Control) pauses & resumes, ⌥ (Option) switches mode mid-sentence, Esc cancels — any time you're recording." = "⌃ (Control) ставит на паузу и возобновляет, ⌥ (Option) меняет режим на полуслове, Esc отменяет — в любой момент записи.";
 "Still seeing the macOS emoji / keyboard popup? Turn it off in System Settings ▸ Keyboard ▸ “Press 🌐 key to” → Do Nothing." = "Всё ещё видите всплывающее окно эмодзи / клавиатуры macOS? Отключите его в System Settings ▸ Keyboard ▸ «Press 🌐 key to» → Ничего не делать.";
 "All Notes" = "Все заметки";
+"All Tasks" = "Все задачи";
 "Untagged" = "Без тегов";
 "No untagged notes" = "Нет заметок без тегов";
 "Pick another tag, or All Notes to see every note." = "Выберите другой тег или «Все заметки», чтобы увидеть все заметки.";
@@ -1167,3 +1168,21 @@
 "Markdown (.md)" = "Markdown (.md)";
 "Plain text (.txt)" = "Обычный текст (.txt)";
 "Export note" = "Экспорт заметки";
+
+/* Settings ▸ Changelog */
+"Changelog" = "История изменений";
+"What's new, every release" = "Что нового в каждой версии";
+"You're on" = "У вас";
+"Everything Verba has shipped since launch — newest first." = "Всё, что Verba выпустила с момента запуска — сначала новое.";
+
+/* Community — Discord */
+"Discord" = "Discord";
+"Join the Verba community on Discord" = "Присоединяйтесь к сообществу Verba в Discord";
+"time saved" = "сэкономлено";
+
+/* Leaderboard — you-vs-them badge comparison */
+"You've earned this one too" = "У вас тоже есть";
+"you both have" = "есть у обоих";
+"they have, you don't" = "есть у него, нет у вас";
+"you have, they don't" = "есть у вас, нет у него";
+"Badges with this mark are ones you've earned too — so you can see at a glance where you're ahead or behind." = "Значки с этой отметкой есть и у вас, чтобы сразу видеть, где вы впереди или позади.";

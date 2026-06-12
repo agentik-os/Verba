@@ -14,7 +14,19 @@ export const metadata: Metadata = {
     description: "Honest, sourced: 24 features across 10 Mac dictation apps, side by side.",
     url: "/compare",
     type: "article",
+    images: ["/opengraph-image"],
   },
+  twitter: { card: "summary_large_image", images: ["/opengraph-image"] },
+};
+
+// Breadcrumb so search/AI engines see Home › Compare as the navigation path.
+const BREADCRUMB_JSONLD = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://verba.run/" },
+    { "@type": "ListItem", position: 2, name: "Compare", item: "https://verba.run/compare" },
+  ],
 };
 
 // Render one matrix cell from a normalized value (yes / no / partial / ? / short text).
@@ -40,6 +52,7 @@ const DOWNLOAD = "https://github.com/agentik-os/Verba-releases/releases/latest/d
 export default function Compare() {
   return (
     <main className="mx-auto max-w-6xl px-6 pb-24">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(BREADCRUMB_JSONLD) }} />
       <nav className="flex items-center justify-between py-6">
         <Link href="/" className="flex items-center gap-2.5">
           <span className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] bg-black ring-1 ring-[var(--border)]">

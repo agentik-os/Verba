@@ -1129,6 +1129,7 @@
 "⌃ (Control) pauses & resumes, ⌥ (Option) switches mode mid-sentence, Esc cancels — any time you're recording." = "⌃ (Control) pauses & resumes, ⌥ (Option) switches mode mid-sentence, Esc cancels — any time you're recording.";
 "Still seeing the macOS emoji / keyboard popup? Turn it off in System Settings ▸ Keyboard ▸ “Press 🌐 key to” → Do Nothing." = "Still seeing the macOS emoji / keyboard popup? Turn it off in System Settings ▸ Keyboard ▸ “Press 🌐 key to” → Do Nothing.";
 "All Notes" = "All Notes";
+"All Tasks" = "All Tasks";
 "Untagged" = "Untagged";
 "No untagged notes" = "No untagged notes";
 "Pick another tag, or All Notes to see every note." = "Pick another tag, or All Notes to see every note.";
@@ -1167,3 +1168,21 @@
 "Markdown (.md)" = "Markdown (.md)";
 "Plain text (.txt)" = "Plain text (.txt)";
 "Export note" = "Export note";
+
+/* Settings ▸ Changelog */
+"Changelog" = "Changelog";
+"What's new, every release" = "What's new, every release";
+"You're on" = "You're on";
+"Everything Verba has shipped since launch — newest first." = "Everything Verba has shipped since launch — newest first.";
+
+/* Community — Discord */
+"Discord" = "Discord";
+"Join the Verba community on Discord" = "Join the Verba community on Discord";
+"time saved" = "time saved";
+
+/* Leaderboard — you-vs-them badge comparison */
+"You've earned this one too" = "You've earned this one too";
+"you both have" = "you both have";
+"they have, you don't" = "they have, you don't";
+"you have, they don't" = "you have, they don't";
+"Badges with this mark are ones you've earned too — so you can see at a glance where you're ahead or behind." = "Badges with this mark are ones you've earned too — so you can see at a glance where you're ahead or behind.";

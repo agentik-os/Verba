@@ -392,8 +392,10 @@ struct TodosView: View {
     @State private var genText = ""
     @State private var genBusy = false
     @State private var genError: String?
-    @State private var activeTags: Set<String> = []
+    @State private var filterTag: String?                // Bear-style single-select tag filter (nil = all)
+    @State private var expandedTags: Set<String> = []    // which parent tags are open in the tree
     @State private var statusFilter: StatusFilter = .all
+    @State private var statusMenuOpen = false
     @State private var selectedProjectID: UUID?   // project shown in the detail pane; nil = All tasks
 
     // MARK: - Layout (two-pane Notes grammar, adapted to Projects ▸ Tasks ▸ Sub-tasks)
@@ -413,7 +415,7 @@ struct TodosView: View {
         }
         // When the live filters hide the selected project, fall back to the All-tasks pane.
         .onChange(of: statusFilter) { _, _ in syncSelectionToFilter() }
-        .onChange(of: activeTags) { _, _ in syncSelectionToFilter() }
+        .onChange(of: filterTag) { _, _ in syncSelectionToFilter() }
     }
 
     /// Drop the selection when the live filters hide the currently-selected project.
@@ -438,13 +440,14 @@ struct TodosView: View {
             captureCard
                 .padding(.horizontal, 12).padding(.bottom, 10)
 
-            statusChips
+            statusDropdown
                 .padding(.horizontal, 14).padding(.bottom, 8)
 
-            if !store.allTags.isEmpty {
-                tagChips
-                    .padding(.horizontal, 14).padding(.bottom, 8)
-            }
+            // Bear-style filing (same as Notes): All Tasks / Untagged + a nested, collapsible tag
+            // tree with project counts, instead of a flat scroll of tag chips.
+            tagSidebar
+                .padding(.bottom, 4)
+            Divider().opacity(0.35).padding(.horizontal, 10).padding(.bottom, 2)
 
             if store.projects.isEmpty {
                 Spacer()
@@ -578,53 +581,172 @@ struct TodosView: View {
         .background(Color.red.opacity(0.07), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
     }
 
-    /// Status filter chips (horizontal scroll, exemplar chip grammar).
-    private var statusChips: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(StatusFilter.allCases) { s in
-                    chip(label: L(s.rawValue), icon: s.icon, on: statusFilter == s) {
-                        statusFilter = s
-                    }
-                }
-            }
-        }
-    }
-
-    /// Tag filter chips, shown once any project carries a tag.
-    @ViewBuilder private var tagChips: some View {
-        let tags = store.allTags
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                chip(label: L("All tags"), icon: "tag", on: activeTags.isEmpty) { activeTags.removeAll() }
-                ForEach(tags, id: \.self) { tag in
-                    chip(label: tag, icon: "tag", on: activeTags.contains(tag)) {
-                        if activeTags.contains(tag) { activeTags.remove(tag) } else { activeTags.insert(tag) }
-                    }
-                }
-            }
-        }
-    }
-
-    /// Exemplar chip helper (monochrome; soft neutral fill + bold text + quiet border when on).
-    @ViewBuilder private func chip(label: String, icon: String?, on: Bool, action: @escaping () -> Void) -> some View {
+    /// Status filter as a designed dropdown (the 5 statuses overflowed the 270px sidebar as chips).
+    /// A capsule trigger shows the current filter; a native popover lists all options with icon,
+    /// label, a checkmark on the active one, and a hover highlight.
+    private var statusDropdown: some View {
         Button {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { action() }
+            statusMenuOpen.toggle()
         } label: {
-            HStack(spacing: 5) {
-                if let icon { Image(systemName: icon).font(.system(size: 10, weight: .semibold)) }
-                Text(label).font(.system(size: 12, weight: on ? .semibold : .medium))
+            HStack(spacing: 7) {
+                Image(systemName: statusFilter.icon).font(.system(size: 11, weight: .semibold))
+                Text(L(statusFilter.rawValue)).font(.system(size: 12.5, weight: .semibold))
+                Spacer(minLength: 4)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 9, weight: .semibold)).foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 12).padding(.vertical, 6.5)
-            .foregroundStyle(on ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.primary.opacity(0.75)))
-            .background(
-                Capsule(style: .continuous)
-                    .fill(Color.primary.opacity(on ? VGlass.fillSelected : VGlass.fillSecondary))
-            )
-            .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(on ? VGlass.hairlineSelected : VGlass.hairline), lineWidth: 1))
+            .foregroundStyle(Color.primary)
+            .padding(.horizontal, 12).padding(.vertical, 7.5)
+            .background(Capsule(style: .continuous).fill(Color.primary.opacity(VGlass.fillSecondary)))
+            .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(VGlass.hairline), lineWidth: 1))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        .popover(isPresented: $statusMenuOpen, arrowEdge: .bottom) {
+            VStack(spacing: 2) {
+                ForEach(StatusFilter.allCases) { s in
+                    StatusMenuRow(status: s, selected: statusFilter == s) {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { statusFilter = s }
+                        statusMenuOpen = false
+                    }
+                }
+            }
+            .padding(6)
+            .frame(width: 206)
+        }
+    }
+
+    /// One row in the status dropdown popover: icon + label + a checkmark on the active filter,
+    /// with a quiet hover highlight so it feels responsive (not a flat list).
+    private struct StatusMenuRow: View {
+        let status: StatusFilter
+        let selected: Bool
+        let action: () -> Void
+        @State private var hovering = false
+        var body: some View {
+            Button(action: action) {
+                HStack(spacing: 9) {
+                    Image(systemName: status.icon).font(.system(size: 12)).frame(width: 18)
+                        .foregroundStyle(selected ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+                    Text(L(status.rawValue)).font(.system(size: 13, weight: selected ? .semibold : .regular))
+                    Spacer(minLength: 16)
+                    if selected {
+                        Image(systemName: "checkmark").font(.system(size: 11, weight: .semibold))
+                    }
+                }
+                .padding(.horizontal, 10).padding(.vertical, 7)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color.primary.opacity(selected ? 0.08 : (hovering ? 0.05 : 0))))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .onHover { hovering = $0 }
+        }
+    }
+
+    // MARK: - Bear-style tag tree (same filing as the Notes tab)
+
+    private struct TagNode: Identifiable {
+        let id: String
+        let name: String
+        var children: [TagNode]
+        let count: Int
+    }
+
+    /// Nested tree built from every project's tags, split on "/". Count = projects filed under a
+    /// tag OR any descendant (a project tagged "work/launch" counts toward "work" and "work/launch").
+    private var tagTree: [TagNode] {
+        var projAt: [String: Set<UUID>] = [:]
+        var childPaths: [String: Set<String>] = [:]
+        var roots: Set<String> = []
+        for p in store.projects {
+            for tag in p.tags {
+                let parts = tag.lowercased().split(separator: "/").map(String.init)
+                var path = ""
+                for (i, part) in parts.enumerated() {
+                    let parent = path
+                    path = path.isEmpty ? part : path + "/" + part
+                    projAt[path, default: []].insert(p.id)
+                    if i == 0 { roots.insert(path) } else { childPaths[parent, default: []].insert(path) }
+                }
+            }
+        }
+        func build(_ path: String) -> TagNode {
+            let name = path.split(separator: "/").last.map(String.init) ?? path
+            let kids = (childPaths[path] ?? []).sorted().map(build)
+            return TagNode(id: path, name: name, children: kids, count: projAt[path]?.count ?? 0)
+        }
+        return roots.sorted().map(build)
+    }
+
+    private var untaggedCount: Int { store.projects.filter { $0.tags.isEmpty }.count }
+
+    private var tagSidebar: some View {
+        VStack(spacing: 1) {
+            tagFolderRow(icon: "tray.full", label: L("All Tasks"), count: store.projects.count,
+                         on: filterTag == nil, depth: 0, hasChildren: false) { filterTag = nil }
+            if untaggedCount > 0 {
+                tagFolderRow(icon: "tag.slash", label: L("Untagged"), count: untaggedCount,
+                             on: filterTag == "__untagged__", depth: 0, hasChildren: false) {
+                    filterTag = (filterTag == "__untagged__" ? nil : "__untagged__")
+                }
+            }
+            if !tagTree.isEmpty {
+                ScrollView {
+                    VStack(spacing: 1) {
+                        ForEach(visibleTagRows, id: \.node.id) { item in
+                            tagFolderRow(icon: "number", label: item.node.name, count: item.node.count,
+                                         on: filterTag == item.node.id, depth: item.depth,
+                                         hasChildren: !item.node.children.isEmpty,
+                                         expanded: expandedTags.contains(item.node.id),
+                                         onToggle: { toggleTag(item.node.id) }) {
+                                filterTag = (filterTag == item.node.id ? nil : item.node.id)
+                            }
+                        }
+                    }
+                }
+                .frame(maxHeight: 200)
+            }
+        }
+        .padding(.horizontal, 8)
+    }
+
+    private var visibleTagRows: [(node: TagNode, depth: Int)] {
+        var out: [(TagNode, Int)] = []
+        func walk(_ nodes: [TagNode], _ depth: Int) {
+            for n in nodes { out.append((n, depth)); if expandedTags.contains(n.id) { walk(n.children, depth + 1) } }
+        }
+        walk(tagTree, 0)
+        return out
+    }
+
+    private func toggleTag(_ id: String) {
+        if expandedTags.contains(id) { expandedTags.remove(id) } else { expandedTags.insert(id) }
+    }
+
+    private func tagFolderRow(icon: String, label: String, count: Int, on: Bool, depth: Int,
+                              hasChildren: Bool, expanded: Bool = false,
+                              onToggle: (() -> Void)? = nil, select: @escaping () -> Void) -> some View {
+        HStack(spacing: 5) {
+            if hasChildren {
+                Button { onToggle?() } label: {
+                    Image(systemName: expanded ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 9, weight: .semibold)).foregroundStyle(.secondary).frame(width: 12, height: 12)
+                }.buttonStyle(.plain)
+            } else {
+                Color.clear.frame(width: 12, height: 12)
+            }
+            Image(systemName: icon).font(.system(size: 11)).foregroundStyle(on ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary)).frame(width: 15)
+            Text(label).font(.system(size: 12.5, weight: on ? .semibold : .regular)).lineLimit(1)
+            Spacer(minLength: 4)
+            Text("\(count)").font(.system(size: 10)).foregroundStyle(.tertiary).monospacedDigit()
+        }
+        .padding(.vertical, 4).padding(.trailing, 8)
+        .padding(.leading, CGFloat(6 + depth * 14))
+        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(on ? Color.primary.opacity(0.08) : .clear))
+        .contentShape(Rectangle())
+        .onTapGesture(perform: select)
     }
 
     // MARK: - Right: the selected project's tasks, or an "all tasks" overview
@@ -740,13 +862,15 @@ struct TodosView: View {
         matchesTags(project) && matchesStatus(project)
     }
 
-    /// A project passes the tag filter when no live tags are selected, or it bears any selected tag.
-    /// Intersecting with the current tag set self-heals selections whose tag was deleted.
+    /// A project passes the tag filter when no tag is selected, when "Untagged" is selected and it
+    /// has no tags, or when it bears the selected tag OR a child of it (Bear-style: "work" includes
+    /// "work/projects"). Self-heals a selection whose tag was deleted.
     private func matchesTags(_ project: TodoProject) -> Bool {
-        let live = activeTags.intersection(Set(store.allTags))
-        if live.isEmpty { return true }
-        let projTags = Set(project.tags.map { $0.lowercased() })   // case-insensitive, matches allTags dedupe
-        return live.contains { projTags.contains($0.lowercased()) }
+        guard let f = filterTag else { return true }
+        let projTags = project.tags.map { $0.lowercased() }
+        if f == "__untagged__" { return project.tags.isEmpty }
+        let fl = f.lowercased()
+        return projTags.contains { $0 == fl || $0.hasPrefix(fl + "/") }
     }
 
     /// A project passes the status filter when any of its tasks matches. View-only: no store interaction.

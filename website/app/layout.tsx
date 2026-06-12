@@ -49,7 +49,16 @@ const SITE_JSONLD = {
         "AI dictation for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and JARVIS — a voice agent that acts on 1,000+ connected apps.",
       url: "https://verba.run",
       downloadUrl: "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg",
-      offers: { "@type": "Offer", price: "9.99", priceCurrency: "USD" },
+      softwareVersion: "0.9.16",
+      offers: {
+        "@type": "Offer",
+        price: "9.99",
+        priceCurrency: "USD",
+        availability: "https://schema.org/InStock",
+        priceValidUntil: "2027-12-31",
+        url: "https://verba.run",
+      },
+      creator: { "@type": "Person", name: "Gareth Simono" },
       featureList: [
         "On-device voice-to-text (WhisperKit, NVIDIA Parakeet)",
         "AI rewriting in any app", "Live translation", "Reads your screen (Context mode)",
@@ -58,12 +67,22 @@ const SITE_JSONLD = {
       ],
     },
     {
+      // Site entity — helps Google/LLMs treat verba.run as the canonical website node.
+      "@type": "WebSite",
+      name: "Verba",
+      url: "https://verba.run",
+      inLanguage: "en",
+      publisher: { "@id": "https://verba.run/#org" },
+    },
+    {
+      "@id": "https://verba.run/#org",
       "@type": "Organization",
       name: "Agentik OS",
       url: "https://verba.run",
       logo: "https://verba.run/icon.png",
+      founder: { "@type": "Person", name: "Gareth Simono" },
       // Entity disambiguation for the Knowledge Graph + AI search.
-      sameAs: ["https://github.com/agentik-os", "https://t.me/verbadictation"],
+      sameAs: ["https://github.com/agentik-os", "https://discord.gg/7xfkfQN9AR"],
     },
   ],
 };

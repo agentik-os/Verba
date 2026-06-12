@@ -3,7 +3,7 @@ import LegalDoc from "@/components/LegalDoc";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — Verba",
-  description: "How Verba handles your voice, transcripts and data. On-device by default; you control what syncs.",
+  description: "How Verba handles your voice, transcripts, and data — on-device by default, with full control over what syncs, how long history is kept, and your connected-app keys.",
   alternates: { canonical: "/privacy" },
 };
 

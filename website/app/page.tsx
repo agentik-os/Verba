@@ -13,6 +13,8 @@ import Icon from "@/components/Icon";
 import { getRef } from "@/components/RefCapture";
 import { Logo, MicMark, MicGlyph, HeadLeft, HeadCenter, PanelCaption, CrossRule } from "@/components/Brand";
 import ThemeToggle from "@/components/ThemeToggle";
+import SiteNav from "@/components/SiteNav";
+import { FEATURES } from "@/lib/features";
 
 const PRICE = {
   monthly: { amount: "$9.99", sub: "/month", note: "billed monthly · cancel anytime" },
@@ -23,23 +25,16 @@ const DOWNLOAD_URL = "https://github.com/agentik-os/Verba-releases/releases/late
 export default function Home() {
   return (
     <main className="relative mx-auto max-w-6xl px-6">
-      <Nav />
+      <SiteNav />
       <Hero />
       <SpeedProof />
       <LogosStrip />
       <Personas />
       <JarvisAction />
       <TryNow />
-      <ContextMode />
-      <NotesTab />
-      <VoiceTodos />
-      <TranslateMode />
-      <ModesModels />
-      <Bento />
+      <FeatureGrid />
       <WhyBest />
-      <LanguageDetection />
       <Jokes />
-      <FeatureBlurbs />
       <Features />
       <Personalize />
       <Shortcuts />
@@ -49,6 +44,33 @@ export default function Home() {
       <FAQ />
       <Footer />
     </main>
+  );
+}
+
+// Compact capabilities grid — replaces the long inline feature sections; each card deep-links to a
+// dedicated, SEO-targeted feature page (shorter landing + more indexable pages).
+function FeatureGrid() {
+  return (
+    <section id="features-overview" className="py-28">
+      <Reveal>
+        <HeadCenter eyebrow="Features" index="06" title="Everything Verba does" lead="Speak, and Verba turns it into clean text, a note, a translation, an organized task list, or a real action across your apps. Go deep on any of them." />
+      </Reveal>
+      <div className="mx-auto mt-12 grid max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {FEATURES.map((f, i) => (
+          <Reveal key={f.slug} delay={i * 40}>
+            <Link href={`/features/${f.slug}`} className="card r-card lift block h-full px-6 py-6 transition hover:opacity-95">
+              <p className="mono-meta">{f.eyebrow}</p>
+              <h3 className="mt-2 text-base font-semibold tracking-tight">{f.navLabel}</h3>
+              <p className="mt-2 text-sm leading-relaxed muted line-clamp-3">{f.metaDescription}</p>
+              <span className="mt-4 inline-block text-sm font-medium">Learn more →</span>
+            </Link>
+          </Reveal>
+        ))}
+      </div>
+      <div className="mt-8 text-center">
+        <Link href="/features" className="inline-flex items-center gap-2 rounded-full glass px-6 py-2.5 text-sm font-medium hover:opacity-90">See all features →</Link>
+      </div>
+    </section>
   );
 }
 
@@ -136,6 +158,7 @@ function Nav() {
         <a href="#features" className="transition-colors duration-150 hover:text-[var(--fg)]">Features</a>
         <a href="#shortcuts" className="transition-colors duration-150 hover:text-[var(--fg)]">Shortcuts</a>
         <Link href="/compare" className="transition-colors duration-150 hover:text-[var(--fg)]">Compare</Link>
+        <Link href="/docs" className="transition-colors duration-150 hover:text-[var(--fg)]">Docs</Link>
         <Link href="/changelog" className="transition-colors duration-150 hover:text-[var(--fg)]">Changelog</Link>
         <a href="#pricing" className="transition-colors duration-150 hover:text-[var(--fg)]">Pricing</a>
       </div>
@@ -797,7 +820,7 @@ function WhyBest() {
         <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ["Shipping constantly", "40+ public releases and counting, all on the live changelog."],
-            ["186 achievements to earn", "100 levels, daily streaks and a live leaderboard — see your rank and percentile among everyone using Verba."],
+            ["230+ achievements to earn", "1,000 levels, daily streaks and a live leaderboard — see your rank and percentile among everyone using Verba."],
             ["Works in every app", "If your cursor is there, Verba writes there. No window, no paste."],
             ["Your AI, or fully offline", "Bring your own key or run on-device. No vendor markup, no uploads."],
           ].map(([t, d]) => (
@@ -1345,9 +1368,10 @@ function Footer() {
           <div>
             <p className="mono-meta mb-4">Resources</p>
             <ul className="space-y-2.5 muted">
-              <li><a href="#features" className="link-quiet">Features</a></li>
-              <li><a href="#notes" className="link-quiet">Notes</a></li>
-              <li><a href="#translate" className="link-quiet">Translate</a></li>
+              <li><Link href="/features" className="link-quiet">Features</Link></li>
+              <li><Link href="/docs" className="link-quiet">Documentation</Link></li>
+              <li><Link href="/features/jarvis-voice-agent" className="link-quiet">JARVIS voice agent</Link></li>
+              <li><Link href="/features/voice-notes" className="link-quiet">Voice notes</Link></li>
               <li><Link href="/acknowledgements" className="link-quiet">Acknowledgements</Link></li>
             </ul>
           </div>
@@ -1355,7 +1379,7 @@ function Footer() {
             <p className="mono-meta mb-4">Company</p>
             <ul className="space-y-2.5 muted">
               <li><Link href="/account" className="link-quiet">Account</Link></li>
-              <li><a href="https://t.me/verba_run" target="_blank" rel="noopener" className="link-quiet">Community</a></li>
+              <li><a href="https://discord.gg/7xfkfQN9AR" target="_blank" rel="noopener" className="link-quiet">Community (Discord)</a></li>
               <li><Link href="/best-mac-dictation-app" className="link-quiet">Best Mac dictation app</Link></li>
               <li><Link href="/privacy" className="link-quiet">Privacy</Link></li>
               <li><Link href="/terms" className="link-quiet">Terms</Link></li>

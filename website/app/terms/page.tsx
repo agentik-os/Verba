@@ -3,7 +3,7 @@ import LegalDoc from "@/components/LegalDoc";
 
 export const metadata: Metadata = {
   title: "Terms of Service — Verba",
-  description: "The terms for using Verba, the macOS AI dictation app by Agentik OS.",
+  description: "The Terms of Service for Verba, the native macOS AI dictation app by Agentik OS: subscriptions, the JARVIS voice agent, bring-your-own-AI, and acceptable use.",
   alternates: { canonical: "/terms" },
 };
 

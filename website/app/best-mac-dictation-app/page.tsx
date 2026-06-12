@@ -6,7 +6,8 @@ export const metadata: Metadata = {
   title: "Best Dictation App for Mac (2026) — Ranked & Compared",
   description: "An honest, sourced ranking of the best Mac dictation apps in 2026: Verba, Wispr Flow, superwhisper, MacWhisper and more — on-device, privacy, AI cleanup and voice agents compared.",
   alternates: { canonical: "/best-mac-dictation-app" },
-  openGraph: { title: "Best Dictation App for Mac (2026)", description: "Ranked & compared: Verba, Wispr Flow, superwhisper, MacWhisper and more.", url: "/best-mac-dictation-app", type: "article" },
+  openGraph: { title: "Best Dictation App for Mac (2026)", description: "Ranked & compared: Verba, Wispr Flow, superwhisper, MacWhisper and more.", url: "/best-mac-dictation-app", type: "article", images: ["/opengraph-image"] },
+  twitter: { card: "summary_large_image", images: ["/opengraph-image"] },
 };
 
 const DOWNLOAD = "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg";
@@ -14,6 +15,10 @@ const DOWNLOAD = "https://github.com/agentik-os/Verba-releases/releases/latest/d
 const faq = [
   { q: "What is the best dictation app for Mac in 2026?", a: "For most people Verba is the best overall: it transcribes on-device by default, cleans your speech with AI in any app, translates live, and is the only one with a voice agent (JARVIS) that acts on 1,000+ connected apps — at $9.99/mo. Wispr Flow is the most polished cloud option; superwhisper is the best pure-local alternative." },
   { q: "What is the best private, on-device dictation app for Mac?", a: "Verba and superwhisper both transcribe fully on-device so your audio never leaves your Mac. Verba adds AI cleanup, translation and a voice agent on top, and lets you run a local model so nothing leaves the machine." },
+  { q: "Is Verba a good Wispr Flow alternative?", a: "Yes. Verba matches Wispr Flow's AI cleanup but adds on-device transcription (your audio can stay on your Mac), bring-your-own-AI with no markup, live translation, and JARVIS — a voice agent that acts on 1,000+ apps. Wispr Flow is cloud-only and more polished on mobile; Verba is the more private, more capable Mac option at $9.99/mo." },
+  { q: "Does Verba work offline?", a: "Yes. In on-device mode Verba transcribes locally with WhisperKit or NVIDIA Parakeet, so dictation works with no internet and your audio never leaves your Mac. You can also run the AI cleanup offline with a local Ollama model. A connection is only needed for hosted-AI features like cloud rewriting, live translation, or the JARVIS agent." },
+  { q: "How does Verba compare to superwhisper on price?", a: "Verba is $9.99/mo or $84/year and you bring your own AI key or run a local model, so there is no token markup. superwhisper offers a one-time lifetime license, which is cheaper long-term if you only need local transcription. Verba is the better pick if you also want AI cleanup in any app, live translation, and a voice agent." },
+  { q: "Which Mac dictation app has a voice agent?", a: "Verba is the only Mac dictation app with a built-in voice agent: JARVIS (Action mode) plans the steps, asks to clarify, and — after you confirm — acts across 1,000+ connected apps (Gmail, Slack, Notion, Google Calendar, Linear, GitHub and more) via Composio. Other apps only turn speech into text." },
 ];
 
 export default function Page() {

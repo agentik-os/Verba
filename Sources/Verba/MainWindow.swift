@@ -189,7 +189,7 @@ struct MainWindow: View {
                         if settings.navVisible(.files) { row(.files) }
                     }
 
-                    // Collapsible "Community" group (leaderboard / wishlist / free month + Telegram).
+                    // Collapsible "Community" group (leaderboard / wishlist / free month + Discord).
                     groupHeader(L("Community"), collapsed: communityCollapsed) {
                         withAnimation(appearance.reduceMotion ? nil : .easeInOut(duration: 0.18)) { communityCollapsed.toggle() }
                     }
@@ -199,7 +199,7 @@ struct MainWindow: View {
                         if settings.navVisible(.wishlist) { row(.wishlist) }
                         if settings.navVisible(.feedback) { row(.feedback) }
                         if settings.navVisible(.freeMonth) { row(.freeMonth) }
-                        telegramRow
+                        discordRow
                     }
                 }
                 .padding(.horizontal, 8).padding(.top, 4)
@@ -288,12 +288,12 @@ struct MainWindow: View {
         .padding(.horizontal, 11).padding(.top, 14).padding(.bottom, 4)
     }
 
-    /// Telegram community link, styled like a sidebar row.
-    private var telegramRow: some View {
-        Button { if let u = URL(string: "https://t.me/verba_run") { openURL(u) } } label: {
+    /// Discord community link, styled like a sidebar row.
+    private var discordRow: some View {
+        Button { if let u = URL(string: "https://discord.gg/7xfkfQN9AR") { openURL(u) } } label: {
             HStack(spacing: 10) {
-                Image(systemName: "paperplane.fill").frame(width: 18)
-                Text(L("Telegram"))
+                Image(systemName: "bubble.left.and.bubble.right.fill").frame(width: 18)
+                Text(L("Discord"))
                 Spacer(minLength: 0)
                 Image(systemName: "arrow.up.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
             }
@@ -303,7 +303,7 @@ struct MainWindow: View {
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
-        .help(L("Join the Verba community on Telegram (@verba_run)"))
+        .help(L("Join the Verba community on Discord"))
     }
 
     /// A nav row. Selected = solid primary pill with inverted label, so it stands

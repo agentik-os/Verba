@@ -1129,6 +1129,7 @@
 "⌃ (Control) pauses & resumes, ⌥ (Option) switches mode mid-sentence, Esc cancels — any time you're recording." = "录制过程中随时可用：⌃ (Control) 暂停与继续，⌥ (Option) 在句中切换模式，Esc 取消。";
 "Still seeing the macOS emoji / keyboard popup? Turn it off in System Settings ▸ Keyboard ▸ “Press 🌐 key to” → Do Nothing." = "仍然弹出 macOS 表情符号 / 键盘弹窗？前往 System Settings ▸ Keyboard ▸ “Press 🌐 key to” → 关闭即可。";
 "All Notes" = "全部笔记";
+"All Tasks" = "全部任务";
 "Untagged" = "未标记";
 "No untagged notes" = "没有未标记的笔记";
 "Pick another tag, or All Notes to see every note." = "选择其他标签，或选「全部笔记」查看所有笔记。";
@@ -1167,3 +1168,21 @@
 "Markdown (.md)" = "Markdown (.md)";
 "Plain text (.txt)" = "纯文本 (.txt)";
 "Export note" = "导出笔记";
+
+/* Settings ▸ Changelog */
+"Changelog" = "更新日志";
+"What's new, every release" = "每个版本的新功能";
+"You're on" = "当前版本";
+"Everything Verba has shipped since launch — newest first." = "Verba 自发布以来的所有更新 — 最新在前。";
+
+/* Community — Discord */
+"Discord" = "Discord";
+"Join the Verba community on Discord" = "在 Discord 上加入 Verba 社区";
+"time saved" = "节省的时间";
+
+/* Leaderboard — you-vs-them badge comparison */
+"You've earned this one too" = "你也获得了";
+"you both have" = "你们都有";
+"they have, you don't" = "对方有，你没有";
+"you have, they don't" = "你有，对方没有";
+"Badges with this mark are ones you've earned too — so you can see at a glance where you're ahead or behind." = "带有此标记的徽章是你也获得的，让你一眼看出自己在哪些方面领先或落后。";

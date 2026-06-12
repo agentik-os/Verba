@@ -18,8 +18,64 @@ const DAYS: Day[] = [
     date: "June 12, 2026",
     tag: "Today",
     summary:
-      "A calmer first run and Bear-style notes. The onboarding now teaches every shortcut — Action, Note, To-do, Transform and more — opens the app the moment you finish, and lets you keep your profile private. Notes get a proper nested tag tree for filing, and you can keep your history text without storing the audio.",
+      "A calmer first run, Bear-style filing, and the story in the app. The onboarding now teaches every shortcut — Action, Note, To-do, Transform and more — opens the app the moment you finish, and lets you keep your profile private. Notes and Tasks both get a proper nested tag tree for filing, the full changelog now lives right inside Settings, the level ladder climbs to 1,000, and every badge explains what it's for.",
     entries: [
+      {
+        version: "0.9.22",
+        title: "Compare badges with anyone",
+        items: [
+          "On another player's profile, you now see which of the badges you've earned too: a checkmark marks every badge you hold — even the ones they haven't, so you can see where you're ahead. A quick tally up top shows what you both have, what they have that you don't, and what you have that they don't.",
+        ],
+      },
+      {
+        version: "0.9.21",
+        title: "Social profiles now show full Insights",
+        items: [
+          "Tap anyone on the leaderboard and you now see their analytics, not just their level and badges: words today, day streak, words this week, total words, dictations, words per minute, time saved, best day ever, and longest streak — the same Insights you see for yourself, now social.",
+        ],
+      },
+      {
+        version: "0.9.20",
+        title: "Tasks: a tidy status dropdown",
+        items: [
+          "In Tasks, the status filter (All, Today, Upcoming, Done, Overdue) is now a clean dropdown instead of a row of chips that ran off the edge of the sidebar — pick a status from a proper menu with icons and a checkmark on the active one.",
+        ],
+      },
+      {
+        version: "0.9.18 → 0.9.19",
+        title: "A cleaner first line, and a site you can navigate",
+        items: [
+          "Fixed for good: a stray first line in Translate and some modes, where the output opened with a preamble (“Here is the restructured transcript:”, “Voici la traduction :”) before your text. Verba now strips that line deterministically before anything is pasted, so it can never reach your clipboard again — your transcript lands directly, in every mode.",
+          "verba.run is reorganized: a Features menu with a dedicated page for each capability — JARVIS, dictation modes, voice notes, voice tasks, live translation, and Context mode — plus a Resources menu, so the nav isn't a wall of links anymore.",
+          "The landing page is shorter and faster to read: the deep feature walkthroughs moved to their own pages, so the home gets to the point and each feature has a focused page of its own.",
+          "The new nav menus are now properly readable: the dropdown panels are solid instead of see-through, so the text behind them no longer bleeds through.",
+        ],
+      },
+      {
+        version: "0.9.17",
+        title: "Docs, a Discord, and a site-wide SEO pass",
+        items: [
+          "Community moved to Discord: the Community link in the app (and on the site) now opens our Discord server — come say hi at discord.gg/7xfkfQN9AR.",
+          "New documentation site at verba.run/docs: setup & permissions, every mode, the AI engines you control, JARVIS, Notes, Tasks, the full shortcut list, privacy, and troubleshooting — all in one place.",
+          "A thorough SEO/GEO pass on verba.run: richer structured data (WebSite, breadcrumbs, founder/creator, full Offer), social-share images on every page, longer meta descriptions, a www→verba.run redirect, and the docs wired into the sitemap and llms.txt so search engines and AI assistants describe Verba accurately.",
+        ],
+      },
+      {
+        version: "0.9.16",
+        title: "1,000 levels, and badges that explain themselves",
+        items: [
+          "The level ladder now climbs to 1,000 — with a whole new run of titles past Legend: Voice Immortal, Ascendant, Celestial, Transcendent, Ethereal, Empyrean, Cosmic, Eternal, and at the very top, Voice Singularity.",
+          "Every badge now shows what it's for, right under its name — including on someone else's profile from the leaderboard, so a name like “AI Whisperer” or “Burning the Midnight Oil” tells you exactly what earns it instead of leaving you guessing.",
+        ],
+      },
+      {
+        version: "0.9.14 → 0.9.15",
+        title: "Tidy Tasks, and the changelog in the app",
+        items: [
+          "Tasks file like Notes now: your project tags collapse into a clean, nested sidebar tree — All Tasks and Untagged at the top, parent tags opening to their children with a count each. Click any tag to filter, including every project nested beneath it. No more flat wall of tag chips.",
+          "New Settings ▸ Changelog: the whole release story — every version since launch — now lives inside the app, so you can see exactly what shipped without leaving Verba.",
+        ],
+      },
       {
         version: "0.9.5 → 0.9.13",
         title: "Onboarding that shows everything, and Bear-style notes",

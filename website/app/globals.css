@@ -212,6 +212,20 @@ body::after {
   --glass-hi: rgba(255,255,255,.9);
 }
 
+/* Dropdown menu panels (nav Features/Resources). These render INSIDE the nav's own .glass, so a
+   nested backdrop-filter can't re-blur the page behind it — the text below would bleed through a
+   translucent panel. So the panel is near-opaque (readable no matter what's behind), with a blur
+   on top purely for polish. */
+.menu-panel {
+  background: var(--menu-bg);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid var(--border);
+  box-shadow: 0 16px 48px -16px rgba(0,0,0,.65);
+}
+:root { --menu-bg: rgba(9,9,13,0.97); }
+[data-theme="light"] { --menu-bg: rgba(255,255,255,0.98); }
+
 /* ---- Two-step radius scale (12 / 16), not 16/24-everywhere ---- */
 .r-card { border-radius: 12px; }
 .r-panel { border-radius: 16px; }

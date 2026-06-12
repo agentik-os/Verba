@@ -4,6 +4,9 @@ import { verifyAppToken } from "@/lib/apptoken";
 import { convexBump } from "@/lib/convex";
 
 export const runtime = "nodejs";
+// EU users + EU Convex: run at Paris/Frankfurt instead of the default US region
+// (measured: shaves the transatlantic round-trip off every rewrite).
+export const preferredRegion = ["cdg1", "fra1"];
 
 // Verba's own hosted AI rewriting endpoint. The macOS app calls this so users don't
 // need their own API key: we run it on the company Anthropic key, gated by the user's
@@ -30,7 +33,8 @@ export async function OPTIONS() {
 
 export async function POST(req: NextRequest) {
   const anthropic = process.env.ANTHROPIC_API_KEY;
-  if (!anthropic) {
+  const openrouter = process.env.OPENROUTER_API_KEY;
+  if (!anthropic && !openrouter) {
     return NextResponse.json({ error: "AI rewriting isn't configured yet." }, { status: 503, headers: cors });
   }
 
@@ -41,7 +45,7 @@ export async function POST(req: NextRequest) {
   }
   const email = tok.email;
 
-  let body: { transcript?: string; system?: string; model?: string; image?: string };
+  let body: { transcript?: string; system?: string; model?: string; image?: string; purpose?: string };
   try {
     body = await req.json();
   } catch {
@@ -88,11 +92,53 @@ export async function POST(req: NextRequest) {
       ]
     : userText;
 
+  // Primary engine: OpenRouter open-source (cost-controlled — see VerbaMobile economics
+  // report 2026-06-12: hosted Sonnet loses money on heavy users; qwen-2.5-72b holds an
+  // ~85% margin worst case). Anthropic stays as the fallback when configured.
   try {
+    if (openrouter) {
+      // JARVIS planning needs frontier-grade instruction following + strict JSON:
+      // route "action" calls to Claude (via OpenRouter), everything else to qwen.
+      const orModel = body.purpose === "action"
+        ? (process.env.ACTION_MODEL ?? "anthropic/claude-haiku-4.5")
+        : image
+          ? (process.env.REPROMPT_VISION_MODEL ?? "qwen/qwen2.5-vl-72b-instruct")
+          : (process.env.REPROMPT_MODEL ?? "qwen/qwen-2.5-72b-instruct");
+      const orContent = image
+        ? [
+            { type: "image_url", image_url: { url: `data:image/png;base64,${image}` } },
+            { type: "text", text: `Here is what I said. Use the screenshot to do it:\n\n<request>\n${transcript}\n</request>` },
+          ]
+        : userText;
+      const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${openrouter}`, "content-type": "application/json" },
+        body: JSON.stringify({
+          model: orModel,
+          provider: { sort: "throughput" },   // measured: 0.9s vs 7s on default routing
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: orContent },
+          ],
+        }),
+      });
+      const data = await r.json();
+      const text: string = data?.choices?.[0]?.message?.content?.trim() ?? "";
+      if (r.ok && text) {
+        return NextResponse.json({ text }, { headers: cors });
+      }
+      // fall through to Anthropic if configured; else surface the OpenRouter error
+      if (!anthropic) {
+        return NextResponse.json(
+          { error: data?.error?.message ?? "Rewrite failed." },
+          { status: r.ok ? 502 : r.status, headers: cors }
+        );
+      }
+    }
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        "x-api-key": anthropic,
+        "x-api-key": anthropic!,
         "anthropic-version": "2023-06-01",
         "content-type": "application/json",
       },

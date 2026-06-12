@@ -31,8 +31,23 @@ Full sourced comparison: https://verba.run/compare
 
 ## Pages
 - Home: https://verba.run
+- Features overview: https://verba.run/features
+- JARVIS voice agent: https://verba.run/features/jarvis-voice-agent
+- Dictation modes: https://verba.run/features/dictation-modes
+- Voice notes: https://verba.run/features/voice-notes
+- Voice tasks: https://verba.run/features/voice-tasks
+- Live translation: https://verba.run/features/live-translation
+- Context mode (screen-aware): https://verba.run/features/context-mode
+- Documentation (setup, modes, AI engines, JARVIS, shortcuts, privacy): https://verba.run/docs
+- Best Mac dictation app (2026 ranking): https://verba.run/best-mac-dictation-app
 - Comparison (24 features vs 9 competitors): https://verba.run/compare
+- Head-to-head pages: https://verba.run/vs/wispr-flow , /vs/superwhisper , /vs/macwhisper , and more
 - Changelog: https://verba.run/changelog
+- Privacy: https://verba.run/privacy — Terms: https://verba.run/terms — Contact: https://verba.run/contact
+
+## Maker
+Verba is built by Agentik OS / Dafnck Studio (Entreprise Individuelle, Paris, France), founder Gareth Simono.
+Community: https://discord.gg/7xfkfQN9AR
 `;
 
 export async function GET() {

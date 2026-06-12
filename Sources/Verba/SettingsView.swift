@@ -7,7 +7,7 @@ import EventKit
 // MARK: - Settings sections (the custom left rail)
 
 private enum SettingsSection: String, CaseIterable, Identifiable {
-    case account, dictation, rewriting, action, connectedApps, output, customize, shortcuts, privacy, updates
+    case account, dictation, rewriting, action, connectedApps, output, customize, shortcuts, privacy, updates, changelog
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -21,6 +21,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .shortcuts:     return L("Shortcuts")
         case .privacy:       return L("Privacy & history")
         case .updates:       return L("Updates & about")
+        case .changelog:     return L("Changelog")
         }
     }
     var icon: String {
@@ -35,6 +36,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .shortcuts:     return "keyboard"
         case .privacy:       return "lock.shield"
         case .updates:       return "arrow.triangle.2.circlepath"
+        case .changelog:     return "sparkles"
         }
     }
     var subtitle: String {
@@ -49,6 +51,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .shortcuts:     return L("Triggers & chords")
         case .privacy:       return L("History, permissions")
         case .updates:       return L("Version & releases")
+        case .changelog:     return L("What's new, every release")
         }
     }
 }
@@ -194,6 +197,7 @@ struct SettingsView: View {
         case .shortcuts: shortcutsDetail
         case .privacy:   privacyDetail
         case .updates:   updatesDetail
+        case .changelog: changelogDetail
         }
     }
 
@@ -1407,6 +1411,70 @@ struct SettingsView: View {
             explainerRow(L("JARVIS & connected apps"), L("Action mode is powered by JARVIS, Verba's voice agent, with 1,000+ third-party app connections — connect your apps in the Connected apps section and act on them by voice."))
             explainerRow(L("Acknowledgements"), L("WhisperKit, NVIDIA Parakeet, Ollama, Sparkle, and the SwiftUI community. Thank you."))
         }
+    }
+
+    // MARK: - Changelog (the full release story, mirrored from verba.run/changelog)
+
+    @ViewBuilder private var changelogDetail: some View {
+        card {
+            HStack(spacing: 10) {
+                Image(systemName: "sparkles").font(.system(size: 15)).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(L("You're on")) v\(Updater.currentVersion)").font(.system(size: 13, weight: .semibold))
+                    Text(L("Everything Verba has shipped since launch — newest first.")).font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+        }
+        ForEach(Changelog.days) { day in changelogDayView(day) }
+    }
+
+    @ViewBuilder private func changelogDayView(_ day: ChangelogDay) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(day.date).font(.system(size: 15, weight: .bold))
+                if let tag = day.tag {
+                    Text(tag).font(.caption2.weight(.medium)).foregroundStyle(.secondary)
+                        .padding(.horizontal, 8).padding(.vertical, 2)
+                        .background(Capsule().fill(Color.primary.opacity(0.08)))
+                }
+                if let w = day.window {
+                    Text(w).font(.caption2).foregroundStyle(.tertiary)
+                }
+            }
+            Text(day.summary).font(.callout).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            ForEach(day.entries) { entry in changelogEntryCard(entry) }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func changelogEntryCard(_ entry: ChangelogEntry) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Text(entry.badge)
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .padding(.horizontal, 7).padding(.vertical, 2)
+                    .background(Capsule().fill(Color.primary.opacity(0.1)))
+                    .foregroundStyle(.primary)
+                Text(entry.title).font(.system(size: 13.5, weight: .semibold))
+                    .fixedSize(horizontal: false, vertical: true)
+                if let t = entry.time {
+                    Spacer(minLength: 4)
+                    Text(t).font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
+                }
+            }
+            ForEach(entry.items, id: \.self) { item in
+                HStack(alignment: .top, spacing: 9) {
+                    Circle().fill(Color.primary.opacity(0.4)).frame(width: 5, height: 5).padding(.top, 6)
+                    Text(item).font(.system(size: 12.5)).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.04)))
     }
 
     // MARK: - Engine lifecycle (local engines: install / use / uninstall)

@@ -53,6 +53,53 @@ export default defineSchema({
     uid: v.string(), ts: v.number(),
   }).index("by_uid", ["uid"]),
 
+  tasks: defineTable({   // lightweight synced task manager (mobile-first; ts = identity)
+    uid: v.string(), ts: v.number(),
+    text: v.string(), done: v.boolean(),
+    due: v.optional(v.number()),
+  }).index("by_uid", ["uid"]),
+
+  tasks_deleted: defineTable({
+    uid: v.string(), ts: v.number(),
+  }).index("by_uid", ["uid"]),
+
+  dict: defineTable({   // personal dictionary terms (mirrors the Mac's DictTerm)
+    uid: v.string(), ts: v.number(),
+    spoken: v.string(), written: v.string(), auto: v.boolean(),
+  }).index("by_uid", ["uid"]),
+
+  dict_deleted: defineTable({
+    uid: v.string(), ts: v.number(),
+  }).index("by_uid", ["uid"]),
+
+  modes: defineTable({   // user-created reprompting modes, synced per account
+    uid: v.string(), ts: v.number(),
+    name: v.string(), system: v.string(), raw: v.boolean(),
+    model: v.optional(v.string()),
+  }).index("by_uid", ["uid"]),
+
+  modes_deleted: defineTable({
+    uid: v.string(), ts: v.number(),
+  }).index("by_uid", ["uid"]),
+
+  styles: defineTable({   // tone/format layer on top of modes (mirrors the Mac's Style)
+    uid: v.string(), ts: v.number(),
+    name: v.string(), prompt: v.string(),
+  }).index("by_uid", ["uid"]),
+  styles_deleted: defineTable({ uid: v.string(), ts: v.number() }).index("by_uid", ["uid"]),
+
+  snippets: defineTable({   // text-expansion shortcuts (trigger → expansion)
+    uid: v.string(), ts: v.number(),
+    trigger: v.string(), expansion: v.string(),
+  }).index("by_uid", ["uid"]),
+  snippets_deleted: defineTable({ uid: v.string(), ts: v.number() }).index("by_uid", ["uid"]),
+
+  transforms: defineTable({   // named voice actions on selected text
+    uid: v.string(), ts: v.number(),
+    name: v.string(), prompt: v.string(),
+  }).index("by_uid", ["uid"]),
+  transforms_deleted: defineTable({ uid: v.string(), ts: v.number() }).index("by_uid", ["uid"]),
+
   feedback: defineTable({   // free-form user feedback (admin-reviewed), optional screenshot
     uid: v.string(), alias: v.string(), text: v.string(),
     version: v.optional(v.string()),
@@ -81,6 +128,19 @@ export default defineSchema({
     league: v.string(),
     badges: v.array(v.string()),   // earned achievement ids
     referrals: v.optional(v.number()),  // people who joined via this user's code
+    // Public analytics snapshot, so a tapped profile shows the same Insights the owner sees
+    // (words today, streak, totals…). Optional: older profiles predate it.
+    stats: v.optional(v.object({
+      wordsToday: v.number(),
+      streak: v.number(),
+      longestStreak: v.number(),
+      wordsThisWeek: v.number(),
+      totalWords: v.number(),
+      dictations: v.number(),
+      wpm: v.number(),
+      timeSavedMinutes: v.number(),
+      bestDayWords: v.number(),
+    })),
     updated: v.number(),
   }).index("by_uid", ["uid"]).index("by_alias", ["alias"]),
 });

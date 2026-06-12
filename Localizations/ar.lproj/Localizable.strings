@@ -1129,6 +1129,7 @@
 "⌃ (Control) pauses & resumes, ⌥ (Option) switches mode mid-sentence, Esc cancels — any time you're recording." = "⌃ (Control) للإيقاف المؤقت والاستئناف، ⌥ (Option) لتبديل الوضع أثناء الجملة، Esc للإلغاء — في أي وقت أثناء التسجيل.";
 "Still seeing the macOS emoji / keyboard popup? Turn it off in System Settings ▸ Keyboard ▸ “Press 🌐 key to” → Do Nothing." = "ما زالت نافذة الرموز التعبيرية / لوحة المفاتيح في macOS تظهر؟ أوقفها من System Settings ▸ Keyboard ▸ “Press 🌐 key to” → لا تفعل شيئًا.";
 "All Notes" = "كل الملاحظات";
+"All Tasks" = "كل المهام";
 "Untagged" = "بلا وسم";
 "No untagged notes" = "لا ملاحظات بلا وسم";
 "Pick another tag, or All Notes to see every note." = "اختر وسمًا آخر، أو كل الملاحظات لعرض جميع الملاحظات.";
@@ -1167,3 +1168,21 @@
 "Markdown (.md)" = "ماركداون (.md)";
 "Plain text (.txt)" = "نص عادي (.txt)";
 "Export note" = "تصدير الملاحظة";
+
+/* Settings ▸ Changelog */
+"Changelog" = "سجل التغييرات";
+"What's new, every release" = "الجديد في كل إصدار";
+"You're on" = "أنت تستخدم";
+"Everything Verba has shipped since launch — newest first." = "كل ما أصدرته Verba منذ الإطلاق — الأحدث أولاً.";
+
+/* Community — Discord */
+"Discord" = "Discord";
+"Join the Verba community on Discord" = "انضم إلى مجتمع Verba على Discord";
+"time saved" = "الوقت الموفر";
+
+/* Leaderboard — you-vs-them badge comparison */
+"You've earned this one too" = "لقد حصلت على هذه أيضًا";
+"you both have" = "لديكما معًا";
+"they have, you don't" = "لديه وليس لديك";
+"you have, they don't" = "لديك وليس لديه";
+"Badges with this mark are ones you've earned too — so you can see at a glance where you're ahead or behind." = "الشارات التي تحمل هذه العلامة حصلت عليها أنت أيضًا، لترى بنظرة واحدة أين تتقدّم أو تتأخّر.";
