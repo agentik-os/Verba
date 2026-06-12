@@ -72,6 +72,16 @@ export default defineSchema({
     uid: v.string(), ts: v.number(),
   }).index("by_uid", ["uid"]),
 
+  modes: defineTable({   // user-created reprompting modes, synced per account
+    uid: v.string(), ts: v.number(),
+    name: v.string(), system: v.string(), raw: v.boolean(),
+    model: v.optional(v.string()),
+  }).index("by_uid", ["uid"]),
+
+  modes_deleted: defineTable({
+    uid: v.string(), ts: v.number(),
+  }).index("by_uid", ["uid"]),
+
   feedback: defineTable({   // free-form user feedback (admin-reviewed), optional screenshot
     uid: v.string(), alias: v.string(), text: v.string(),
     version: v.optional(v.string()),
@@ -100,6 +110,19 @@ export default defineSchema({
     league: v.string(),
     badges: v.array(v.string()),   // earned achievement ids
     referrals: v.optional(v.number()),  // people who joined via this user's code
+    // Public analytics snapshot, so a tapped profile shows the same Insights the owner sees
+    // (words today, streak, totals…). Optional: older profiles predate it.
+    stats: v.optional(v.object({
+      wordsToday: v.number(),
+      streak: v.number(),
+      longestStreak: v.number(),
+      wordsThisWeek: v.number(),
+      totalWords: v.number(),
+      dictations: v.number(),
+      wpm: v.number(),
+      timeSavedMinutes: v.number(),
+      bestDayWords: v.number(),
+    })),
     updated: v.number(),
   }).index("by_uid", ["uid"]).index("by_alias", ["alias"]),
 });
