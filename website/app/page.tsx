@@ -899,6 +899,7 @@ function FeatureBlurbs() {
     { name: "Translate as you speak", problem: "Writing in a second language means drafting, copying into a translator, then pasting back. Three steps, every message.", example: "Pick a target language once. Speak French, Verba writes fluent English in place. Tone, names, and numbers preserved." },
     { name: "Bring your own AI", problem: "Cloud dictation tools lock you into their model and charge a markup on every word.", example: "Use your Anthropic key, OpenRouter, your existing Claude Code plan with no key at all, or a fully local Ollama model." },
     { name: "It learns how you write", problem: "Generic rewriters flatten your voice into the same corporate template every time.", example: "Correct a word once and Verba remembers it. It matches your tone per app, so you in Slack still sounds like you." },
+    { name: "Chain dictations, never wait", problem: "Other tools make you sit through processing before you can speak again.", example: "Fire off dictation after dictation: each one still working stacks up as a little chip above the pill, 10 or 20 at a time, and lands the moment it's ready." },
     { name: "Runs fully offline", problem: "Cloud tools upload every word you speak and stop working the moment your connection drops.", example: "Parakeet ships inside the app and transcribes on-device, instantly, in 25 languages. Pair a local model and nothing leaves your Mac." },
   ];
   return (

@@ -31,10 +31,10 @@ interface ActionOut { slug: string; name: string; description: string; phrases: 
 const liveCache = new Map<string, Record<string, string[]>>();
 
 async function rankedActions(composio: ReturnType<typeof getComposio>, toolkit: string): Promise<RawTool[]> {
-  const raw = (await composio!.tools.getRawComposioTools({ toolkits: [toolkit], limit: 50 } as never)) as RawTool[];
+  const raw = (await composio!.tools.getRawComposioTools({ toolkits: [toolkit], limit: 200 } as never)) as RawTool[];
   return [...raw]
     .sort((a, b) => actionPriority(b.slug) - actionPriority(a.slug))
-    .slice(0, 24)
+    .slice(0, 60)
     .map((t) => ({ slug: t.slug, name: t.name ?? t.slug, description: (t.description ?? "").replace(/\n/g, " ").slice(0, 160) }));
 }
 

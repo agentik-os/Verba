@@ -1136,6 +1136,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             overlay.model.selectedID = p.id
             overlay.model.title = "Listening · \(p.name)"
             overlay.model.modeName = p.name
+            Settings.shared.activeProfileID = p.id   // sticky: keep this mode for the next dictations
             SoundFX.mode()
         case .idle:
             let p = step(from: Settings.shared.activeProfileID)
@@ -1201,9 +1202,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             overlay.model.modeName = p.name
         case .idle, .processing:
             // Fn + number from idle (or while a background Session processes) → record in that mode.
-            if overlay.model.menu { Settings.shared.activeProfileID = p.id; dismissMenu() }
+            if overlay.model.menu { dismissMenu() }
             startRecording(forced: p)
         }
+        // An explicit mode pick is STICKY: it becomes the active mode for every next dictation
+        // until the user changes it again (the launch default only seeds the first session).
+        Settings.shared.activeProfileID = p.id
+        // The Fn press that carried this digit was a CHORD, not a push-to-talk press — releasing
+        // Fn must not stop/send the recording it just started (it used to kill it instantly in
+        // hold style, or after the hold threshold in tap style). Hold style keeps push-to-talk
+        // semantics for a live mid-hold switch.
+        if Settings.shared.triggerStyle != .hold { fnPressAt = nil }
         return true
     }
     /// Arrows move the highlight in the OPEN mode picker (consumed only while it's up, so no
@@ -1350,6 +1359,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.forcedProfile = p
                 self?.overlay.model.title = "Listening · \(p.name)"
                 self?.overlay.model.modeName = p.name
+                Settings.shared.activeProfileID = p.id   // sticky: an explicit pick persists
             }
             self.overlay.model.menu = false   // hide the numbers once recording starts
             self.overlay.model.paused = false
