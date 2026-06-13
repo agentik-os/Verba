@@ -90,10 +90,11 @@ export async function POST(req: NextRequest) {
       const conn = await composio.connectedAccounts.link(auth.uid, await oauthAuthConfigId(composio, toolkit));
       return NextResponse.json({ redirectUrl: conn.redirectUrl, id: conn.id }, { headers: cors });
     }
-    // No-auth tools → link directly, no credentials, no redirect.
+    // No-auth toolkits need no connected account at all — Composio refuses to even
+    // create an auth config for them ("Auth_Config_NoAuthApp") and /execute works
+    // with just the user id. Nothing to link; report active.
     if (style === "none") {
-      const conn = await composio.connectedAccounts.link(auth.uid, await oauthAuthConfigId(composio, toolkit));
-      return NextResponse.json({ ok: true, id: conn.id, status: conn.status ?? "ACTIVE" }, { headers: cors });
+      return NextResponse.json({ ok: true, status: "ACTIVE" }, { headers: cors });
     }
     // API key / bearer / basic → create a custom auth config with the user's credentials, then link.
     const credentials = body.fields ?? {};

@@ -109,5 +109,6 @@ ${tools}
 LOCAL SHORTCUTS:
 ${sc}
 SEARCH TARGETS: ${st}
-DISABLED ACTIONS (never emit): ${dis}`;
+DISABLED ACTIONS (never emit): ${dis}
+A disabled kind is UNAVAILABLE on this device — never propose it, but don't give up either: when a connected app can achieve the same goal, propose THAT instead (reminder/calendar_event → a GOOGLECALENDAR or GOOGLETASKS tool; email_draft → the connected email app's send/draft tool; search → open_url). Only fall back to chat when no connected app covers the goal.`;
 }
