@@ -127,13 +127,31 @@ export async function POST(req: NextRequest) {
       if (r.ok && text) {
         return NextResponse.json({ text }, { headers: cors });
       }
-      // fall through to Anthropic if configured; else surface the OpenRouter error
-      if (!anthropic) {
-        return NextResponse.json(
-          { error: data?.error?.message ?? "Rewrite failed." },
-          { status: r.ok ? 502 : r.status, headers: cors }
-        );
+      // Retry ONCE on OpenRouter's default provider routing (sort=throughput
+      // occasionally picks a flaky provider), then surface the REAL error.
+      // Never fall back to the direct Anthropic key when OpenRouter is
+      // configured: that key is unfunded by design, and its "credit balance is
+      // too low" reply was masking the actual failure from users.
+      const r2 = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${openrouter}`, "content-type": "application/json" },
+        body: JSON.stringify({
+          model: orModel,
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: orContent },
+          ],
+        }),
+      });
+      const data2 = await r2.json();
+      const text2: string = data2?.choices?.[0]?.message?.content?.trim() ?? "";
+      if (r2.ok && text2) {
+        return NextResponse.json({ text: text2 }, { headers: cors });
       }
+      return NextResponse.json(
+        { error: data2?.error?.message ?? data?.error?.message ?? "Rewrite failed." },
+        { status: r2.ok ? 502 : r2.status, headers: cors }
+      );
     }
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
