@@ -67,6 +67,11 @@ export default defineSchema({
     uid: v.string(), ts: v.number(),
     text: v.string(), done: v.boolean(),
     due: v.optional(v.number()),
+    // Mac TodoTask extras (Stores.swift): subtasks as a JSON string + the owning project name,
+    // so the Mac's Projects▸Tasks▸Sub-tasks structure round-trips LOSSLESSLY. Mobile reads the
+    // flat {text,done,due} and ignores these; all optional for older/mobile-made rows.
+    subtasks: v.optional(v.string()),
+    project: v.optional(v.string()),
   }).index("by_uid", ["uid"]),
 
   tasks_deleted: defineTable({
@@ -86,6 +91,15 @@ export default defineSchema({
     uid: v.string(), ts: v.number(),
     name: v.string(), system: v.string(), raw: v.boolean(),
     model: v.optional(v.string()),
+    // Mac Profile extras (Settings.swift): carried so a Mac↔cloud round-trip is LOSSLESS.
+    // The mobile client ignores fields it doesn't use; all optional for older rows.
+    matchBundleIDs: v.optional(v.array(v.string())),
+    hotkeyCode: v.optional(v.number()),
+    hotkeyMods: v.optional(v.number()),
+    vision: v.optional(v.boolean()),
+    targetLanguage: v.optional(v.string()),
+    seedHash: v.optional(v.string()),
+    explainer: v.optional(v.string()),
   }).index("by_uid", ["uid"]),
 
   modes_deleted: defineTable({

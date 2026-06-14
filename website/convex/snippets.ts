@@ -46,3 +46,13 @@ export const remove = mutation({
     if (!tomb) await ctx.db.insert("snippets_deleted", { uid: a.uid, ts: a.ts });
   },
 });
+
+// Deletion tombstones so every device drops a snippet deleted elsewhere (mirrors notes:tombstones).
+export const tombstones = query({
+  args: { uid: v.string(), secret: v.string() },
+  handler: async (ctx, a) => {
+    await requireDevice(ctx, a.uid, a.secret);
+    const rows = await ctx.db.query("snippets_deleted").withIndex("by_uid", (q) => q.eq("uid", a.uid)).collect();
+    return rows.map((r) => r.ts);
+  },
+});

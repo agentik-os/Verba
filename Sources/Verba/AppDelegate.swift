@@ -88,6 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Quips.refillIfLow(tone: Settings.shared.quipTone)  // pre-warm the AI-generated loading lines
         EngineManager.seedBundledModels()   // copy the app-bundled Parakeet model into cache (first run, offline-instant)
         preloadEngine()   // load the local transcription model now so the first dictation is instant
+        ConfigSync.shared.start()   // observe modes/styles/snippets/transforms/dictionary/tasks for cloud sync
         // Re-check the real subscription on launch so Pro reflects Stripe, not just sign-in.
         if !Settings.shared.proEmail.isEmpty {
             Task { @MainActor in
@@ -102,6 +103,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Stats.shared.syncFromCloud()     // restore Insights / Total Words for the account
             NotesStore.shared.syncFromCloud()// pull long-form notes for the account
             VerbaAppearance.shared.syncFromCloud()  // restore the Customize look (app + widget)
+            ConfigSync.shared.pushAll()      // first run: send the Mac's existing config up (idempotent)
+            ConfigSync.shared.pullAll()      // then pull modes/styles/snippets/transforms/dictionary/tasks
             // Gamification: backfill achievements/level from existing stats (now), then re-evaluate
             // after the cloud stats land so a returning user's profile reflects every Mac.
             Gamification.shared.evaluate()
@@ -321,6 +324,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 NotesStore.shared.pushAll()
                 VerbaAppearance.shared.syncFromCloud()  // restore the saved Customize look on sign-in
                 NotesStore.shared.syncFromCloud()
+                ConfigSync.shared.pushAll()   // push config made while signed out, then merge the account's
+                ConfigSync.shared.pullAll()
             }
             .store(in: &cancellables)
 

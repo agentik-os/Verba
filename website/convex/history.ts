@@ -59,6 +59,17 @@ export const remove = mutation({
   },
 });
 
+// The account's history deletion tombstones, so every device can drop a row deleted elsewhere
+// and stop re-pushing it (mirrors notes:tombstones). Added for Mac↔mobile delete propagation.
+export const tombstones = query({
+  args: { uid: v.string(), secret: v.string() },
+  handler: async (ctx, a) => {
+    await requireDevice(ctx, a.uid, a.secret);
+    const rows = await ctx.db.query("history_deleted").withIndex("by_uid", (q) => q.eq("uid", a.uid)).collect();
+    return rows.map((r) => r.ts);
+  },
+});
+
 // S10 + S14: delete-with-tombstones — wipe the whole cloud history for a uid.
 export const wipe = mutation({
   args: { uid: v.string(), secret: v.string() },
