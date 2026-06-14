@@ -152,6 +152,7 @@ export default defineSchema({
     league: v.string(),
     badges: v.array(v.string()),   // earned achievement ids
     referrals: v.optional(v.number()),  // people who joined via this user's code
+    avatar: v.optional(v.string()),     // profile photo URL (Clerk image), synced across devices
     // Public analytics snapshot, so a tapped profile shows the same Insights the owner sees
     // (words today, streak, totals…). Optional: older profiles predate it.
     stats: v.optional(v.object({
