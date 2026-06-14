@@ -508,6 +508,13 @@ struct NotesView: View {
             .foregroundStyle(Color.red)
             HStack(spacing: 10) {
                 Button(L("Retry")) { recordError = ""; toggleRecord() }.glassProminentButton().tint(.red)
+                // Retry can only fail again on a hard permission denial (macOS won't re-prompt);
+                // offer the actionable path — open the Microphone privacy pane directly.
+                Button(L("Open Settings")) {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }.glassButton()
                 Button(L("Dismiss")) { recordError = "" }.glassButton()
             }
             .controlSize(.small)

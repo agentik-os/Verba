@@ -1365,7 +1365,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if Entitlement.freeLimitReached() { resetOneShotFlags(); showPaywall(); return }
         recorder.requestPermission { [weak self] ok in
             guard let self else { return }
-            guard ok else { self.resetOneShotFlags(); self.flashError("Microphone access denied"); return }
+            guard ok else {
+                let wasAction = self.actionModeRecording   // captured before resetOneShotFlags clears it
+                self.resetOneShotFlags()
+                self.flashError(wasAction ? "Action mode needs microphone access" : "Microphone access denied")
+                return
+            }
             // Start capturing FIRST (the recorder is pre-armed, so record() is instant) so the
             // first spoken word is never clipped, THEN do the slower frontmost-app / selection
             // captures and overlay work while audio is already flowing.

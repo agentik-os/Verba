@@ -131,10 +131,21 @@ struct OnboardingView: View {
                     .opacity(canAdvance ? 1 : 0.35)
                     .disabled(!canAdvance)
             } else {
-                Button(action: finish) { Text(L("Start using Verba")).frame(minWidth: 140) }
-                    .buttonStyle(DarkButton())
-                    .opacity(micGranted && axGranted && imGranted ? 1 : 0.35)
-                    .disabled(!(micGranted && axGranted && imGranted))
+                VStack(spacing: 8) {
+                    Button(action: finish) { Text(L("Start using Verba")).frame(minWidth: 140) }
+                        .buttonStyle(DarkButton())
+                        .opacity(micGranted && axGranted && imGranted ? 1 : 0.35)
+                        .disabled(!(micGranted && axGranted && imGranted))
+                    // If a core permission was revoked after the permissions step, don't leave a
+                    // silent dead button — name what's still missing so the user can go back.
+                    if !(micGranted && axGranted && imGranted) {
+                        let missing = [micGranted ? nil : L("Microphone"),
+                                       axGranted ? nil : L("Accessibility"),
+                                       imGranted ? nil : L("Input Monitoring")].compactMap { $0 }.joined(separator: ", ")
+                        Text(L("Still needed: ") + missing)
+                            .font(.caption).foregroundStyle(.orange).multilineTextAlignment(.center)
+                    }
+                }
             }
         }
         .padding(.horizontal, 30).padding(.top, 14).padding(.bottom, 46)   // roomy, not glued to the edge
