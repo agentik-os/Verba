@@ -136,10 +136,10 @@ struct Reprompter {
         if backend == .verba || backend == .claudeCode || signedIn {
             return try await verbaHosted(transcript: transcript, systemPrompt: systemPrompt, imageBase64: b64)
         }
-        // Not signed in and no matching backend key — use whatever vision-capable key exists.
-        if hasOpenRouter { return try await openRouterVision(systemPrompt: systemPrompt, userText: userText, base64PNG: b64) }
-        guard hasAnthropic else { throw RepromptError.missingKey }
-        return try await anthropicVision(systemPrompt: systemPrompt, userText: userText, base64PNG: b64)
+        // Not signed in and no matching backend key: do NOT silently grab a stray third-party key
+        // for a privacy-sensitive screenshot (contract above). Tell the user to sign in or pick a
+        // vision-capable backend instead.
+        throw RepromptError.missingKey
     }
 
     private func anthropicVision(systemPrompt: String, userText: String, base64PNG: String) async throws -> String {

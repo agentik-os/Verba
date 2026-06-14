@@ -259,29 +259,42 @@ final class NotesStore: ObservableObject {
     func syncFromCloud() {
         guard !Settings.shared.proEmail.isEmpty else { return }
         ConvexClient.registerDevice(token: AuthToken.current)   // S16: claim the account uid before pulling
-        // Propagate deletions made on the account's OTHER devices: adopt the cloud tombstones,
-        // drop any local copy of a deleted note, and stop re-pushing rows the server refuses.
+        // Propagate deletions from the account's OTHER devices FIRST, THEN pull. notes:tombstones
+        // and notes:pull must NOT race: if the pull block ran before the tombstone merge, a note
+        // deleted elsewhere could be re-adopted AND re-pushed by the reconcile pass, resurrecting
+        // it server-side. We serialize the pull inside the tombstones completion, after the merge.
         ConvexClient.call("query", "notes:tombstones", ConvexClient.authedArgs()) { [weak self] data in
-            guard let self, let data,
-                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  obj["status"] as? String == "success",
-                  let arr = obj["value"] as? [Any] else { return }   // additive query: absent/failed → just skip
-            let cloud = Set(arr.compactMap { ($0 as? NSNumber)?.doubleValue.rounded() })
+            guard let self else { return }
+            let cloud: Set<Double> = {
+                guard let data,
+                      let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      obj["status"] as? String == "success",
+                      let arr = obj["value"] as? [Any] else { return [] }   // additive query absent/failed → skip merge, still pull
+                return Set(arr.compactMap { ($0 as? NSNumber)?.doubleValue.rounded() })
+            }()
             DispatchQueue.main.async {
                 let fresh = cloud.subtracting(self.tombstones)
-                guard !fresh.isEmpty else { return }
-                self.tombstones.formUnion(fresh)
-                let doomed = self.entries.filter { fresh.contains(($0.date.timeIntervalSince1970 * 1000).rounded()) }
-                for e in doomed {
-                    if let f = e.audioFile { try? FileManager.default.removeItem(at: self.dir.appendingPathComponent(f)) }
+                if !fresh.isEmpty {
+                    self.tombstones.formUnion(fresh)
+                    let doomed = self.entries.filter { fresh.contains(($0.date.timeIntervalSince1970 * 1000).rounded()) }
+                    for e in doomed {
+                        if let f = e.audioFile { try? FileManager.default.removeItem(at: self.dir.appendingPathComponent(f)) }
+                    }
+                    if !doomed.isEmpty {
+                        self.entries.removeAll { e in doomed.contains { $0.id == e.id } }
+                        self.save()
+                    }
+                    self.saveTombstones()
                 }
-                if !doomed.isEmpty {
-                    self.entries.removeAll { e in doomed.contains { $0.id == e.id } }
-                    self.save()
-                }
-                self.saveTombstones()
+                self.pullFromCloud()   // pull AFTER cloud deletions merged → resurrect-guard + reconcile see them
             }
         }
+    }
+
+    /// Pull cloud notes, adopt strictly-newer remote edits in place, and reconcile (re-push any
+    /// local note the cloud is missing or holds an older version of). Always runs AFTER the
+    /// tombstone merge (see syncFromCloud) so a note deleted elsewhere is never resurrected.
+    private func pullFromCloud() {
         ConvexClient.call("query", "notes:pull", ConvexClient.authedArgs()) { [weak self] data in
             guard let self, let data,
                   let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],

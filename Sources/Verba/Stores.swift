@@ -337,16 +337,34 @@ final class DictionaryStore: ObservableObject {
     /// forms (a freshly seeded correction row) never replace anything; single-character spoken
     /// forms are skipped (too ambiguous to swap safely).
     func apply(to text: String) -> String {
-        var out = text
+        // Single simultaneous pass (same model as SnippetsStore.apply): collect every term's
+        // matches against the ORIGINAL text, then splice the non-overlapping ones once. This stops
+        // the old cascade where term B could rewrite term A's output (B's spoken == A's written).
+        let ns = text as NSString
+        let full = NSRange(location: 0, length: ns.length)
+        var matches: [(range: NSRange, written: String, len: Int)] = []
         for t in terms {
             let spoken = t.spoken.trimmingCharacters(in: .whitespacesAndNewlines)
             guard spoken.count >= 2, !t.written.isEmpty,
                   let re = Self.wordBoundaryRegex(for: spoken) else { continue }
-            let range = NSRange(out.startIndex..., in: out)
-            // Escape `$`/`\` in the replacement so written text with those chars is inserted literally.
-            let template = NSRegularExpression.escapedTemplate(for: t.written)
-            out = re.stringByReplacingMatches(in: out, range: range, withTemplate: template)
+            re.enumerateMatches(in: text, range: full) { m, _, _ in
+                guard let r = m?.range, r.length > 0 else { return }
+                matches.append((r, t.written, spoken.count))
+            }
         }
+        guard !matches.isEmpty else { return text }
+        // Earliest start wins, then the longest spoken form; skip anything overlapping an accepted match.
+        matches.sort { a, b in a.range.location != b.range.location ? a.range.location < b.range.location : a.len > b.len }
+        var out = ""
+        var cursor = 0
+        for m in matches where m.range.location >= cursor {
+            if m.range.location > cursor {
+                out += ns.substring(with: NSRange(location: cursor, length: m.range.location - cursor))
+            }
+            out += m.written
+            cursor = m.range.location + m.range.length
+        }
+        if cursor < ns.length { out += ns.substring(from: cursor) }
         return out
     }
 

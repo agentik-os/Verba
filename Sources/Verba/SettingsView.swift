@@ -872,21 +872,8 @@ struct SettingsView: View {
             apiKeyField(L("OpenAI (cloud transcription)"), "sk-…", $openAIKey) { Keychain.openAIKey = $0 }
             apiKeyField(L("Anthropic (Claude reprompting)"), "sk-ant-…", $anthropicKey) { Keychain.anthropicKey = $0 }
             apiKeyField(L("OpenRouter (any writing model)"), "sk-or-…", $openRouterKey) { Keychain.openRouterKey = $0 }
-            HStack {
-                Button(L("Save keys")) {
-                    Keychain.openAIKey = openAIKey.trimmingCharacters(in: .whitespacesAndNewlines)
-                    Keychain.anthropicKey = anthropicKey.trimmingCharacters(in: .whitespacesAndNewlines)
-                    Keychain.openRouterKey = openRouterKey.trimmingCharacters(in: .whitespacesAndNewlines)
-                    withAnimation { keysSaved = true }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { withAnimation { keysSaved = false } }
-                }
-                .glassButton().controlSize(.small)
-                if keysSaved {
-                    Label(L("Saved"), systemImage: "checkmark.circle.fill")
-                        .font(.caption).foregroundStyle(.green).transition(.opacity)
-                }
-                Spacer()
-            }
+            // Keys persist on every keystroke via apiKeyField's onChange (see footer) — no separate
+            // "Save keys" button: it was a no-op whose "Saved" flash implied typing wasn't already saved.
         }
     }
 

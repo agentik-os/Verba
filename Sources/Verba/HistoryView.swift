@@ -221,9 +221,9 @@ struct HistoryView: View {
                     // so the duplicate next to the regular dictations is self-explaining.
                     Label(L("Note"), systemImage: "note.text")
                         .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(.secondary)
                         .padding(.horizontal, 6).padding(.vertical, 1.5)
-                        .background(Capsule(style: .continuous).fill(Color.accentColor.opacity(0.12)))
+                        .background(Capsule(style: .continuous).fill(.softFill))
                         .lineLimit(1)
                 }
                 Text("·").font(.caption2).foregroundStyle(.tertiary)
