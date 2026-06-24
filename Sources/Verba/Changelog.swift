@@ -36,6 +36,11 @@ enum Changelog {
             date: "June 12, 2026", tag: "Today",
             summary: "A calmer first run, Bear-style filing, and the story in the app. Onboarding now teaches every shortcut, opens the app the moment you finish, and lets you keep your profile private. Notes and Tasks both get a proper nested tag tree for filing, you can lock individual notes, the full changelog lives right inside Settings, the level ladder now climbs to 1,000, and every badge explains what it's for.",
             entries: [
+                ChangelogEntry(version: "0.9.26",
+                    title: "Reuse a tag you already have, in Tasks",
+                    items: [
+                        "When you add a tag to a project in Tasks, Verba now suggests the tags you've already used on your other projects right under the field, filtered as you type. Tap one to file the project under an existing tag in a single click, instead of retyping it and risking a near-duplicate, the picker stays open so you can add several in a row.",
+                    ]),
                 ChangelogEntry(version: "0.9.25",
                     title: "A human-copywriting pass, and a footer on every page",
                     items: [

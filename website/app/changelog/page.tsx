@@ -22,6 +22,13 @@ const DAYS: Day[] = [
       "A calmer first run, Bear-style filing, and the story in the app. The onboarding now teaches every shortcut, Action, Note, To-do, Transform and more, opens the app the moment you finish, and lets you keep your profile private. Notes and Tasks both get a proper nested tag tree for filing, the full changelog now lives right inside Settings, the level ladder climbs to 1,000, and every badge explains what it's for.",
     entries: [
       {
+        version: "0.9.26",
+        title: "Reuse a tag you already have, in Tasks",
+        items: [
+          "When you add a tag to a project in Tasks, Verba now suggests the tags you've already used on your other projects right under the field, filtered as you type. Tap one to file the project under an existing tag in a single click, instead of retyping it and risking a near-duplicate, the picker stays open so you can add several in a row.",
+        ],
+      },
+      {
         version: "0.9.25",
         title: "A human-copywriting pass, and a footer on every page",
         items: [
