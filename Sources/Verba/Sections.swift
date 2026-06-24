@@ -1332,7 +1332,7 @@ struct StyleView: View {
                                 .foregroundStyle(isActive ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary))
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        Text(L("e.g. “British English, no exclamation marks, sign off with ‘, G’.” Applies on top of every mode except Flow (raw dictation)."))
+                        Text(L("e.g. “British English, no exclamation marks, sign off with ‘, G’.” Applies on top of every mode except Raw (raw dictation)."))
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }

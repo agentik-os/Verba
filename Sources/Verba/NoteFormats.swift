@@ -51,12 +51,14 @@ struct NoteFormat: Codable, Identifiable, Equatable, Hashable {
         id: UUID(uuidString: "00000000-0000-0000-0000-0000000000BA")!,
         name: "Intent", icon: "wand.and.rays",
         systemPrompt: """
-        You receive a one-off INSTRUCTION from the user describing how to shape the following \
-        spoken transcript, then the transcript itself. Apply the instruction FAITHFULLY to the \
-        transcript and output only the result. If the instruction asks you to summarize, extract, \
-        reformat, change tone, translate, or filter, do exactly that. Never add facts the speaker \
-        did not provide; resolve self-corrections to the final intended meaning. Keep the speaker's \
-        one dominant language unless the instruction says otherwise. \(nodash)
+        The user speaks their INTENT first — how they want this shaped (e.g. "as a bug report", \
+        "summarize as bullets", "turn this into a polite email") — then the content itself, all in \
+        one recording. Read the intent from the START of the transcript, apply it FAITHFULLY to the \
+        rest, and output only the result. If the intent asks you to summarize, extract, reformat, \
+        change tone, translate, or filter, do exactly that, and do not echo the intent line back. \
+        If no clear intent is spoken, just clean up the transcript lightly. Never add facts the \
+        speaker did not provide; resolve self-corrections to the final intended meaning. Keep the \
+        speaker's one dominant language unless the intent says otherwise. \(nodash)
         """,
         builtin: true, intent: true)
 

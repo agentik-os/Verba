@@ -16,6 +16,37 @@ struct LeaderEntry: Identifiable, Decodable {
     private enum CodingKeys: String, CodingKey { case uid, alias, words, wpm, streak, saved, me }
 }
 
+/// VER-14: the timeframe filter for the leaderboard. The client computes the day boundary
+/// (`sinceDay`) and passes it to Convex, which sums the per-day stats since that day.
+enum LeaderTimeframe: String, CaseIterable, Identifiable {
+    case allTime, year, month, week
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .allTime: return L("All time")
+        case .year: return L("Year")
+        case .month: return L("Month")
+        case .week: return L("Week")
+        }
+    }
+    /// Inclusive "yyyy-MM-dd" window start in the user's local time, or nil for all-time.
+    var sinceDay: String? {
+        let cal = Calendar.current
+        let now = Date()
+        let start: Date?
+        switch self {
+        case .allTime: return nil
+        case .year:  start = cal.date(from: cal.dateComponents([.year], from: now))
+        case .month: start = cal.date(from: cal.dateComponents([.year, .month], from: now))
+        case .week:  start = cal.date(byAdding: .day, value: -6, to: cal.startOfDay(for: now))
+        }
+        guard let start else { return nil }
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"; f.locale = Locale(identifier: "en_US_POSIX"); f.timeZone = .current
+        return f.string(from: start)
+    }
+}
+
 /// Talks to the shared Convex leaderboard through the shared ConvexClient (S16).
 enum Leaderboard {
 
@@ -49,8 +80,10 @@ enum Leaderboard {
 
     /// Fetch the whole board (alias + metrics only). Passing uid+secret lets the server
     /// mark the caller's own row with `me: true`.
-    static func fetch(_ done: @escaping ([LeaderEntry]) -> Void) {
-        ConvexClient.call("query", "leaderboard:board", ConvexClient.authedArgs()) { data in
+    static func fetch(timeframe: LeaderTimeframe = .allTime, _ done: @escaping ([LeaderEntry]) -> Void) {
+        var args = ConvexClient.authedArgs()
+        if let since = timeframe.sinceDay { args["sinceDay"] = since }   // VER-14: windowed totals
+        ConvexClient.call("query", "leaderboard:board", args) { data in
             guard let data,
                   let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   obj["status"] as? String == "success",

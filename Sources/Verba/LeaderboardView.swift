@@ -35,12 +35,21 @@ final class LeaderboardModel: ObservableObject {
     /// True from the moment an alias/visibility change is made until the deferred reload lands,
     /// so the user's pinned row can show a subtle "updating…" indicator.
     @Published var refreshing = false
+    @Published var timeframe: LeaderTimeframe = .allTime   // VER-14
     func load() {
         loading = true
+        let tf = timeframe
         // Push our latest alias/stats first, then fetch so the board reflects it immediately.
         Leaderboard.submit { [weak self] in
-            Leaderboard.fetch { self?.entries = $0; self?.loading = false; self?.refreshing = false }
+            Leaderboard.fetch(timeframe: tf) { self?.entries = $0; self?.loading = false; self?.refreshing = false }
         }
+    }
+    /// VER-14: switch the timeframe window and re-fetch (no re-submit needed).
+    func setTimeframe(_ t: LeaderTimeframe) {
+        guard t != timeframe else { return }
+        timeframe = t
+        loading = true
+        Leaderboard.fetch(timeframe: t) { [weak self] in self?.entries = $0; self?.loading = false }
     }
     /// Reload AFTER the debounced alias→submit sink (0.9s in AppDelegate) has pushed,
     /// so the fresh fetch reflects the new alias / visibility.
@@ -95,6 +104,9 @@ struct LeaderboardView: View {
 
             identityCard
                 .padding(.horizontal, 28).padding(.bottom, 12)
+
+            timeframeChips
+                .padding(.horizontal, 28).padding(.bottom, 8)
 
             metricChips
                 .padding(.horizontal, 28).padding(.bottom, 6)
@@ -226,6 +238,27 @@ struct LeaderboardView: View {
         }
         .padding(.horizontal, 14).padding(.vertical, 11)
         .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.04)))
+    }
+
+    // MARK: Timeframe switcher (VER-14) — All time / Year / Month / Week, so the board scales over time.
+    private var timeframeChips: some View {
+        HStack(spacing: 8) {
+            ForEach(LeaderTimeframe.allCases) { tf in
+                let selected = model.timeframe == tf
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { model.setTimeframe(tf) }
+                } label: {
+                    Text(tf.label).font(.system(size: 12, weight: selected ? .semibold : .medium))
+                        .padding(.horizontal, 12).padding(.vertical, 6.5)
+                        .foregroundStyle(selected ? AnyShapeStyle(Color.primary) : AnyShapeStyle(.primary.opacity(0.75)))
+                        .background(Capsule(style: .continuous).fill(Color.primary.opacity(selected ? VGlass.fillSelected : VGlass.fillSecondary)))
+                        .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(selected ? VGlass.hairlineSelected : VGlass.hairline), lineWidth: 1))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer()
+        }
     }
 
     // MARK: Metric switcher — capsule tag chips, not a cramped segmented control.

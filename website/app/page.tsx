@@ -425,7 +425,7 @@ function Bento() {
             <Icon name="bolt" className="h-7 w-7 shrink-0 text-[var(--fg-dim)]" />
             <div>
               <p className="font-medium">Modes, the right model each time</p>
-              <p className="mt-1 text-sm muted">Flow (verbatim), Polish (hears what you meant), Intent, Translate, Context (vision), and Coding. Sonnet for intent, Opus for code. Edit any prompt, or describe a need and let AI build you a custom mode.</p>
+              <p className="mt-1 text-sm muted">Raw (verbatim), Polish (hears what you meant), Intent, Translate, Context (vision), and Coding. Sonnet for intent, Opus for code. Edit any prompt, or describe a need and let AI build you a custom mode.</p>
             </div>
           </div>
         </Reveal>
@@ -627,13 +627,13 @@ function NotesTab() {
 
 function LanguageDetection() {
   // Spoken = raw speech (filler, no caps/punctuation); written = the same language,
-  // cleaned. The mode tag shows this is Flow (verbatim), that's why it stays in your
+  // cleaned. The mode tag shows this is Raw (verbatim), that's why it stays in your
   // language word-for-word, just tidied up.
   const pairs = [
-    { mode: "Flow · FR", spoken: "euh bonjour j'aurais besoin d'aide avec mon compte", written: "Bonjour, j'ai besoin d'aide avec mon compte." },
-    { mode: "Flow · ES", spoken: "hola eh quiero cancelar mi suscripción", written: "Hola, quiero cancelar mi suscripción." },
-    { mode: "Flow · EN", spoken: "hey um can we like reschedule to thursday", written: "Hey, can we reschedule to Thursday?" },
-    { mode: "Flow · DE", spoken: "ähm ich brauche die rechnung bis freitag", written: "Ich brauche die Rechnung bis Freitag." },
+    { mode: "Raw · FR", spoken: "euh bonjour j'aurais besoin d'aide avec mon compte", written: "Bonjour, j'ai besoin d'aide avec mon compte." },
+    { mode: "Raw · ES", spoken: "hola eh quiero cancelar mi suscripción", written: "Hola, quiero cancelar mi suscripción." },
+    { mode: "Raw · EN", spoken: "hey um can we like reschedule to thursday", written: "Hey, can we reschedule to Thursday?" },
+    { mode: "Raw · DE", spoken: "ähm ich brauche die rechnung bis freitag", written: "Ich brauche die Rechnung bis Freitag." },
   ];
   return (
     <section className="py-28">
@@ -801,7 +801,7 @@ function WhyBest() {
     ["Bring your own AI", "Use your Anthropic key, OpenRouter, your existing Claude Code subscription with no key at all, or a fully local Ollama model. You're never locked into our markup."],
     ["Actually private", "On-device transcription with Parakeet and Whisper, your audio never leaves the Mac. API keys live in the macOS Keychain, and your history is yours to control: switch it off entirely or auto-delete it after 7, 30, or 90 days."],
     ["Works with no internet", "Parakeet ships inside the app and transcribes offline, instantly, in 25 languages. Pair it with a local LLM and the entire pipeline runs on your Mac."],
-    ["Six modes, plus your own", "Flow, Polish, Intent, Translate, Context and Coding, routed to Sonnet or Opus so you only pay for power where it matters. Edit any prompt, or describe a need and AI builds you a custom mode."],
+    ["Six modes, plus your own", "Raw, Polish, Intent, Translate, Context and Coding, routed to Sonnet or Opus so you only pay for power where it matters. Edit any prompt, or describe a need and AI builds you a custom mode."],
     ["It learns you", "Auto-learns your vocabulary from your edits, matches your writing tone per app, and remembers how you phrase things. It sounds like you, not a template."],
     ["One press, then done", "Tap Fn, talk, and clean text lands where your cursor is. Hands-free formatting, redo in another mode, edit the last result by voice. No app switching, ever."],
   ];
@@ -854,7 +854,7 @@ function WhyBest() {
 
 function ModesModels() {
   const rows = [
-    ["Flow", "No AI", "Verbatim transcription, no rewriting. Your words, exactly as spoken, cleaned up for punctuation only."],
+    ["Raw", "No AI", "Verbatim transcription, no rewriting. Your words, exactly as spoken, cleaned up for punctuation only."],
     ["Polish", "Sonnet 4.6", "Hears what you meant. It follows your self-corrections to the final version, drops the parts you took back, and writes finished prose, not a transcript of thinking out loud."],
     ["Intent", "Sonnet 4.6", "State the goal at the start: \"turn this into a bug report\", \"rewrite as a formal email\". Verba follows your lead."],
     ["Translate", "Sonnet 4.6", "Pick a target language once. Speak in any language and Verba writes it in the one you chose, every time."],
@@ -1054,7 +1054,7 @@ function Shortcuts() {
     },
     {
       title: "Switch modes and styles",
-      blurb: "Flip between Flow, Intent, Translate and your own modes mid-thought.",
+      blurb: "Flip between Raw, Intent, Translate and your own modes mid-thought.",
       rows: [
         { keys: ["fn", "⇥"], desc: "Next mode, add ⇧ for previous", use: "Mid-dictation you decide this should be a Slack message, not an email. Fn + Tab, keep talking." },
         { keys: ["fn", "1-9"], desc: "Jump to a mode by number", use: "Fn + 3 drops you straight into Translate without hunting through a list." },
@@ -1290,7 +1290,7 @@ function FAQ() {
     ["Does it work in every app?", "Yes, Verba pastes into whatever you’re typing in: editors, browsers, chat apps, mail, notes. If your cursor is there, Verba can write there."],
     ["Can it work offline?", "Yes. On-device transcription (Whisper or Parakeet) runs entirely on your Mac, no internet needed, and your audio never leaves the device."],
     ["What languages does it understand?", "On-device Whisper covers ~99 languages worldwide. Parakeet is a faster option for 25 European languages. It writes back in the language you spoke."],
-    ["How do the AI modes work?", "Verba ships six modes: Flow (verbatim, no AI, the default), Polish (resolves your self-corrections), Intent, Translate, Context, and Coding. Each mode is a system prompt that shapes how the model rewrites your speech. Context also takes a screenshot to ground the output in what is on your screen. You can edit any prompt, or just describe what you need and AI builds you a custom mode."],
+    ["How do the AI modes work?", "Verba ships six modes: Raw (verbatim, no AI, the default), Polish (resolves your self-corrections), Intent, Translate, Context, and Coding. Each mode is a system prompt that shapes how the model rewrites your speech. Context also takes a screenshot to ground the output in what is on your screen. You can edit any prompt, or just describe what you need and AI builds you a custom mode."],
     ["Do I need an API key?", "No. Verba uses your Claude Code plan if it is installed (no API key needed). You can also bring your own Anthropic key, an OpenRouter key, or run a local Ollama model entirely offline. You never pay a markup on someone’s cloud."],
     ["What is Context mode?", "Context mode takes a screenshot of your screen, analyzes it with a vision model, and writes based on what you say and what it sees. Say \"reply to this email\" and it drafts a reply to the message on screen. It requires macOS Screen Recording permission and a vision-capable model (Anthropic API key or OpenRouter key)."],
     ["Can it handle long recordings?", "Yes, talk for twenty minutes and Verba turns the whole thing into clean, well-ordered text."],

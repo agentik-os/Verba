@@ -305,7 +305,7 @@ struct OnboardingView: View {
                 }
                 actionRow("hand.tap", L("Single tap"), L("Tap Fn once to start recording your default mode. Tap again to send."), done: coach.singleFn)
                 actionRow("hand.tap.fill", L("Press & hold"), L("Hold Fn while you speak, release to send (push-to-talk)."), done: coach.holdFn)
-                actionRow("number.circle", L("Pick a mode: Fn + number"), L("Hold Fn and press 1 to 9 to dictate in a specific mode (1 Flow, 2 Intent, …). The mode you pick sticks for next time."), done: coach.doubleFn)
+                actionRow("number.circle", L("Pick a mode: Fn + number"), L("Hold Fn and press 1 to 9 to dictate in a specific mode (1 Raw, 2 Intent, …). The mode you pick sticks for next time."), done: coach.doubleFn)
                 actionRow("slider.horizontal.3", L("Switch mode on the fly"), L("Fn + Tab → next mode, Fn + ⇧ + Tab → previous — even mid-sentence while holding Fn. ⌃ (Control) pauses & resumes, ⌥ (Option) also switches mode, Esc cancels."), done: coach.changeMode)
                 if coach.singleFn && coach.holdFn && coach.doubleFn && coach.changeMode {
                     Label(L("Nice, you've got the trigger key down."), systemImage: "checkmark.seal.fill")
@@ -382,7 +382,11 @@ struct OnboardingView: View {
             }
             .padding(13).frame(maxWidth: .infinity, alignment: .leading)
             .glass(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            modeCard("Flow", L("No AI"), L("Raw dictation, your exact words, no AI."), nil)
+            // VER-27: lead with the one mode you need to start (Raw), then clearly mark the rest
+            // as advanced so new users aren't overwhelmed by every mode at once.
+            Text(L("Start here")).font(.caption.weight(.semibold)).foregroundStyle(.secondary).textCase(.uppercase)
+            modeCard("Raw", L("No AI"), L("Raw dictation, your exact words, no AI. This is all you need to start, the rest is for later."), nil)
+            Text(L("Advanced modes — explore when you're ready")).font(.caption.weight(.semibold)).foregroundStyle(.secondary).textCase(.uppercase).padding(.top, 4)
             modeCard("Intent", L("Smart"), L("The power mode. Say what you want, then the content, Verba does exactly that."),
                      L("“Turn the following into three bullet points: we ship dark mode, postpone billing, hire a designer in Q3.”"))
             modeCard("Coding", L("Pro"), L("Rambling feedback → a precise prompt for Cursor / Claude Code."),

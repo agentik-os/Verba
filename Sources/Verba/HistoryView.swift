@@ -210,7 +210,7 @@ struct HistoryView: View {
             Text(snippet(full)).font(.system(size: 13, weight: .medium)).lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
             HStack(spacing: 5) {
-                Text(e.profileName.isEmpty ? L("Flow") : e.profileName)
+                Text(e.profileName.isEmpty ? L("Raw") : e.profileName)
                     .font(.system(size: 9.5, weight: .medium, design: .monospaced))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 6).padding(.vertical, 1.5)

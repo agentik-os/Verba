@@ -34,8 +34,18 @@ enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
             date: "June 12, 2026", tag: "Today",
-            summary: "A calmer first run, Bear-style filing, and the story in the app. Onboarding now teaches every shortcut, opens the app the moment you finish, and lets you keep your profile private. Notes and Tasks both get a proper nested tag tree for filing, you can lock individual notes, the full changelog lives right inside Settings, the level ladder now climbs to 1,000, and every badge explains what it's for.",
+            summary: "A calmer first run, a nested tag tree for filing, and the story in the app. Onboarding now teaches every shortcut, opens the app the moment you finish, and lets you keep your profile private. Notes and Tasks both get a proper nested tag tree for filing, you can lock individual notes, the full changelog lives right inside Settings, the level ladder now climbs to 1,000, and every badge explains what it's for.",
             entries: [
+                ChangelogEntry(version: "0.9.28",
+                    title: "Flow is now Raw, plus more of your feedback",
+                    items: [
+                        "Flow mode is renamed Raw, the same verbatim, no-AI dictation, with a clearer name.",
+                        "Leaderboard: filter by All time, Year, Month, or Week.",
+                        "Notes: Intent now works by speaking your intent at the start of the recording, then your note, with an explanation up front instead of a separate text box.",
+                        "Feedback: one tidy action bar, Dictate and Attach screenshot now sit with the main buttons.",
+                        "Onboarding leads with the core mode first, the advanced modes come after.",
+                        "Faster first word: the mic re-arms right after a voice note so the next dictation starts instantly.",
+                    ]),
                 ChangelogEntry(version: "0.9.27",
                     title: "A batch of fixes from your feedback",
                     items: [
@@ -112,7 +122,7 @@ enum Changelog {
                         "New Settings ▸ Changelog: the whole release story, every version since launch, now lives inside the app, so you can see exactly what shipped without leaving Verba.",
                     ]),
                 ChangelogEntry(version: "0.9.5 → 0.9.13",
-                    title: "Onboarding that shows everything, and Bear-style notes",
+                    title: "Onboarding that shows everything, and a tag tree for notes",
                     items: [
                         "Notes get one-tap mode actions: apply any mode to a note in a tap, including the custom modes you built yourself, now surfaced right alongside the built-in ones.",
                         "Export a note: save it as a Markdown (.md) or plain-text file straight from the note toolbar.",
@@ -128,7 +138,7 @@ enum Changelog {
                         "Every shortcut is now in Settings ▸ Shortcuts and every one is customizable, including new rebindable Pause/resume and Cancel shortcuts (the default ⌃ and Esc keep working too).",
                         "Small thing: the recording pill dropped the little “esc” label next to the ×, the × still cancels and so does Esc, it just reads cleaner now.",
                         "Achievements went big: 186+ badges, grouped into 10 ordered categories (Words Spoken, Dictations, Streaks, Dedication, Speed, Big Days, Time Saved, Airtime, Modes & Features, Special) with per-category progress, and a new Diamond tier for the extreme milestones, the word ladder climbs all the way to 1,000,000,000,000 words spoken.",
-                        "Notes get a Bear-style tag tree: your #tags now file into a nested, collapsible sidebar with note counts, All Notes and Untagged at the top, parent tags opening to their children. Click any tag to filter, including every note nested beneath it.",
+                        "Notes get a nested tag tree: your #tags now file into a collapsible sidebar with note counts, All Notes and Untagged at the top, parent tags opening to their children. Click any tag to filter, including every note nested beneath it.",
                         "Onboarding now lists every shortcut, not just the basics: Action (Fn + X), Note (Fn + Z), To-do (Fn + T), today's to-dos (⌥ + Fn), Transform a selection (⌥ + X), switch style (Fn + ] / [), plus pause, switch and cancel, nothing hidden.",
                         "Finishing onboarding now opens Verba straight away instead of leaving you to re-click the icon.",
                         "Pick whether your profile is public: a new toggle keeps your name off the leaderboard while you still use it inside the app.",
@@ -259,7 +269,7 @@ enum Changelog {
                 ChangelogEntry(version: "0.1.62 → 0.1.66",
                     title: "Reliability, speed & one language",
                     items: [
-                        "Single-language output: no more franglais, the result is rewritten fully in the language you spoke, even in Flow.",
+                        "Single-language output: no more franglais, the result is rewritten fully in the language you spoke, even in Raw.",
                         "Instant capture: the recorder is pre-armed so it catches your very first word.",
                         "Reliable cancel and a processing timeout, no more stuck spinners or force-quitting.",
                         "Drag & drop into file transcription; WhatsApp .opus / Ogg voice notes now transcribe.",
@@ -309,7 +319,7 @@ enum Changelog {
                     title: "Verba is born",
                     items: [
                         "Native Swift menu-bar dictation with Claude reprompting.",
-                        "Fn-key trigger, faithful reprompting, and modes: Coding, Intent, Flow, Custom.",
+                        "Fn-key trigger, faithful reprompting, and modes: Coding, Intent, Raw, Custom.",
                         "NVIDIA Parakeet on-device engine and a Claude Code (Max plan) backend.",
                         "Sparkle auto-updates with a notarized release pipeline; full onboarding.",
                         "Leaderboard (Convex), referral system, the verba.run landing site and Stripe billing.",

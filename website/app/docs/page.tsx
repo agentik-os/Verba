@@ -66,7 +66,7 @@ const SECTIONS: Section[] = [
     blurb: "Six built-in modes plus custom AI-built modes, each is a prompt that shapes your speech.",
     blocks: [
       { kind: "ul", items: [
-        "Flow, verbatim, no AI rewriting (the default).",
+        "Raw, verbatim, no AI rewriting (the default).",
         "Polish, resolves your self-corrections into finished prose.",
         "Intent, you give an instruction and Verba writes to it.",
         "Translate, pick a target language once; speak any language, it writes the target.",

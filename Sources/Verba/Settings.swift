@@ -331,10 +331,10 @@ extension Profile {
         builtin: true, hotkeyCode: 19 /* 2 */, hotkeyMods: kCtrlOpt, model: "claude-sonnet-4-6")
 
     static let flow = Profile(
-        name: "Flow",
-        systemPrompt: "(Free-flow dictation, your words are transcribed exactly, with no AI reprompting or reordering.)",
+        name: "Raw",
+        systemPrompt: "(Raw dictation, your words are transcribed exactly, with no AI reprompting or reordering.)",
         builtin: true, hotkeyCode: 18 /* 1 */, hotkeyMods: kCtrlOpt, raw: true,
-        explainer: "Flow is pure dictation: your exact words land as text, with no AI rewriting. Reach for it when you want a faithful transcript, like notes or quotes. Just press your trigger and talk.")
+        explainer: "Raw is pure dictation: your exact words land as text, with no AI rewriting. Reach for it when you want a faithful transcript, like notes or quotes. Just press your trigger and talk.")
 
     static let polish = Profile(
         name: "Polish",
@@ -404,6 +404,10 @@ extension Profile {
     /// Built-in modes that were shipped once and then retired — dropped on migration so they
     /// disappear for existing users too (not kept as orphan custom modes).
     static let retiredBuiltinNames: Set<String> = ["Casual", "Custom"]
+    /// Built-in modes renamed across versions (VER-21: Flow → Raw). Applied to saved profiles
+    /// before the name-keyed merge so the renamed mode keeps its id + customizations instead of
+    /// being treated as retired and duplicated by the new default.
+    static let renamedBuiltins: [String: String] = ["Flow": "Raw"]
 }
 
 final class Settings: ObservableObject {
@@ -411,7 +415,7 @@ final class Settings: ObservableObject {
     private let d = UserDefaults.standard
 
     // Bump when the built-in profiles change so users get the new prompts/shortcuts.
-    static let profilesVersion = 21  // canonical order Flow, Intent, Polish, Translate, Context, Coding (re-sorts built-ins for existing users)
+    static let profilesVersion = 22  // VER-21: Flow renamed to Raw (migrates existing users' saved built-in)
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }
@@ -834,7 +838,12 @@ final class Settings: ObservableObject {
             // Version bump → merge. Drop any retired built-in (Polish/Casual) up front so it
             // disappears for existing users instead of lingering as an orphan custom mode.
             let saved2 = saved.filter { !($0.builtin && Profile.retiredBuiltinNames.contains($0.name)) }
-            let saved = saved2
+            // VER-21: rename saved built-ins (Flow → Raw) before the name-keyed merge so they keep
+            // their id/hotkey/customizations and match the renamed default instead of duplicating.
+            let saved = saved2.map { p -> Profile in
+                guard p.builtin, let renamed = Profile.renamedBuiltins[p.name] else { return p }
+                var c = p; c.name = renamed; return c
+            }
             let customs = saved.filter { !$0.builtin }    // user modes, kept verbatim in order
             var mergedBuiltins: [Profile] = []
             var matchedNames = Set<String>()
@@ -868,11 +877,12 @@ final class Settings: ObservableObject {
                 .map { p -> Profile in var c = p; c.builtin = false; return c }
             loaded = mergedBuiltins + retired + customs
         }
-        // Keep the saved active mode if it survived the merge; else Flow (the default on a
+        // Keep the saved active mode if it survived the merge; else Raw (the default on a
         // fresh install); else first.
         let savedActive = d.string(forKey: "activeProfileID").flatMap(UUID.init)
         activeProfileID = savedActive.flatMap { id in loaded.first { $0.id == id }?.id }
-            ?? loaded.first(where: { $0.name == "Flow" })?.id ?? loaded.first!.id
+            ?? loaded.first(where: { $0.name == "Raw" })?.id
+            ?? loaded.first(where: { $0.raw })?.id ?? loaded.first!.id
         // Backfill the built-in mode descriptions for existing users (saved before explainers existed).
         profiles = loaded.map { p in
             guard p.builtin, (p.explainer ?? "").isEmpty, let ex = Settings.builtinExplainers[p.name] else { return p }
@@ -1052,7 +1062,7 @@ final class Settings: ObservableObject {
     /// Friendly, plain-language descriptions for the built-in modes (shown in the mode editor;
     /// the user can regenerate any of them, and custom modes get one via the Explain button).
     static let builtinExplainers: [String: String] = [
-        "Flow": "Flow is pure dictation: your exact words land as text, with no AI rewriting. Reach for it when you want a faithful transcript, like notes or quotes. Press your trigger and talk.",
+        "Raw": "Raw is pure dictation: your exact words land as text, with no AI rewriting. Reach for it when you want a faithful transcript, like notes or quotes. Press your trigger and talk.",
         "Polish": "Polish hears what you meant. As you talk and correct yourself, it follows your changes to the final version and drops the parts you took back, then writes clean, finished prose. Great for thinking out loud into a tidy message.",
         "Intent": "Intent lets you say the goal first, then the content. Start with how you want it handled, like turn this into a bug report or rewrite as a formal email, then speak the material. Verba applies your instruction and outputs only the result.",
         "Translate": "Translate writes your speech in another language. Pick a target language once, then talk in whatever language is natural; the output always comes back in the one you chose. Perfect for replying across languages without a second tab.",

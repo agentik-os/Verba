@@ -546,7 +546,7 @@ struct NotesView: View {
                     }
                 }
             }
-            if format.intent { intentField }
+            if format.intent { intentHelper }
             Button { showModeManager = true } label: {
                 Label(L("Manage modes"), systemImage: "slider.horizontal.3").font(.caption)
             }
@@ -554,7 +554,35 @@ struct NotesView: View {
         }
     }
 
-    /// Free-form instruction for the Intent note mode: a one-off directive shaping THIS note.
+    /// VER-20: before recording, explain that the intent is SPOKEN at the start of the note (not
+    /// typed in a separate box); once a note exists, the typed field returns so it can be refined.
+    @ViewBuilder private var intentHelper: some View {
+        if transcript.isEmpty {
+            intentExplanation
+        } else {
+            intentField
+        }
+    }
+
+    /// The "how Intent works" card shown while composing — invites recording instead of typing.
+    private var intentExplanation: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "wand.and.rays").font(.system(size: 12)).foregroundStyle(.secondary).padding(.top, 1)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(L("Say your intent, then your note, in one recording"))
+                    .font(.system(size: 12, weight: .medium))
+                Text(L("Start by saying how you want it shaped (e.g. “as a bug report”, “summarize as bullets”), then speak your content. Verba applies your intent to the rest. Just press your trigger and talk."))
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 9)
+        .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .frame(maxWidth: 460)
+    }
+
+    /// Free-form instruction to REFINE an existing Intent note: a one-off directive reshaping it.
     /// Multi-line / auto-expanding so a long intent stays fully visible; Enter (or the Validate
     /// button) confirms it, flipping an "applied" state so the user knows the instruction registered.
     private var intentField: some View {
@@ -751,7 +779,7 @@ struct NotesView: View {
                     .help(selectedID == nil ? L("Discard") : L("Delete note"))
             }
             formatToolbar
-            if format.intent { intentField }
+            if format.intent { intentHelper }
             if addedToTasksFlash {
                 Label(L("Added to Tasks — open the Tasks tab to see them"), systemImage: "checkmark.circle.fill")
                     .font(.system(size: 11, weight: .medium)).foregroundStyle(.green)
@@ -1135,18 +1163,11 @@ struct NotesView: View {
                     else { transcript = text }
                     editorText = transcript
                 }
-                // Intent mode NEEDS the user's instruction. Auto-formatting with an empty instruction
-                // ran the model on "INSTRUCTION: <nothing>" and produced a useless result, forcing a
-                // confusing re-run. So when Intent has no instruction yet, surface the raw transcript
-                // and focus the intent field — the user types what they want, then Validate (Enter).
-                let needsIntent = await MainActor.run { () -> Bool in
-                    format.intent && intentText.trimmingCharacters(in: .whitespaces).isEmpty
-                }
-                if needsIntent {
-                    await MainActor.run { busy = false; status = ""; intentFocused = true }
-                } else {
-                    applyFormat()
-                }
+                // VER-20: Intent now reads the spoken intent from the START of the recording (the
+                // user says "as a bug report", then the content, in one take) — no separate typed
+                // field required. So always apply the format; a typed instruction, if present, still
+                // takes precedence (effectiveSystemPrompt prepends it).
+                applyFormat()
             } catch {
                 if Task.isCancelled { return }
                 await MainActor.run { busy = false; status = "\(L("Transcription failed:")) \(error.localizedDescription)" }

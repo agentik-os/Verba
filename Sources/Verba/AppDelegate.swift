@@ -270,6 +270,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { [weak self] _ in self?.startTodoCapture() }
             .store(in: &cancellables)
 
+        // VER-25: a Note recording releases the shared pre-armed mic (so the Notes window can grab
+        // it). When it finishes, re-arm the shared recorder immediately — otherwise the next Fn
+        // dictation cold-starts AVAudioRecorder (the 1–1.5s delay that clipped the first words).
+        NotesController.shared.$isRecording
+            .removeDuplicates().receive(on: RunLoop.main)
+            .sink { [weak self] recording in
+                guard let self, !recording else { return }
+                // Only re-arm when nothing else holds the mic.
+                if self.state == .idle && !self.todoCaptureRecording && !self.actionModeRecording {
+                    self.recorder.prewarm()
+                }
+            }
+            .store(in: &cancellables)
+
         // A note records in the Notes window via its own recorder, but it shows the SAME floating
         // pill as dictation (labelled "Note"). Drive that overlay from the shared controller so the
         // pill, Control-pause and the × all work for note recording too.

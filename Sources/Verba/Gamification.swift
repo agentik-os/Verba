@@ -657,7 +657,7 @@ final class Gamification: ObservableObject {
     // roughly how you'd discover them. Existing ids are preserved so earned badges stay earned.
     private static let cat_Explore_Verba: [Achievement] = [
         .init(id: "ex_dictate", title: "First Words", blurb: "Make your first dictation.", icon: "mic.fill", tier: .bronze) { s,_ in s.totalCount >= 1 },
-        .init(id: "flower", title: "In the Flow", blurb: "Dictate in Flow (verbatim) mode.", icon: "waveform", tier: .bronze) { _,f in f.contains(.usedFlow) },
+        .init(id: "flower", title: "In the Flow", blurb: "Dictate in Raw (verbatim) mode.", icon: "waveform", tier: .bronze) { _,f in f.contains(.usedFlow) },
         .init(id: "polisher", title: "Polished", blurb: "Use Polish mode to clean up your speech.", icon: "sparkles", tier: .bronze) { _,f in f.contains(.usedPolish) },
         .init(id: "intentful", title: "Intentful", blurb: "Use Intent mode — say what you want done.", icon: "scope", tier: .bronze) { _,f in f.contains(.usedIntent) },
         .init(id: "polyglot", title: "Polyglot", blurb: "Translate live with Translate mode.", icon: "globe", tier: .bronze) { _,f in f.contains(.usedTranslate) },

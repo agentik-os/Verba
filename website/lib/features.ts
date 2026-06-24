@@ -91,8 +91,8 @@ export const FEATURES: Feature[] = [
     "eyebrow": "DICTATION MODES",
     "h1": "AI Dictation Modes for Mac: Voice to Clean Text, Your Way",
     "metaTitle": "AI Dictation Modes for Mac, Verba",
-    "metaDescription": "Verba's AI dictation modes turn voice into clean text on your Mac: Flow, Polish, Intent, Coding, plus custom modes and styles. Switch with Fn+1..9. BYO AI.",
-    "lead": "Raw transcription is a solved problem. What you actually want is voice that lands as clean, finished text in whatever app you're in, formatted the way that moment needs it. Verba does that with dictation modes: pick Flow for verbatim, Polish to clean up your speech, Intent to write to an instruction, or Coding for code, then layer a style on top. Switch with Fn+1..9, and the AI cleanup runs on a model you control, never a billed call we make for you.",
+    "metaDescription": "Verba's AI dictation modes turn voice into clean text on your Mac: Raw, Polish, Intent, Coding, plus custom modes and styles. Switch with Fn+1..9. BYO AI.",
+    "lead": "Raw transcription is a solved problem. What you actually want is voice that lands as clean, finished text in whatever app you're in, formatted the way that moment needs it. Verba does that with dictation modes: pick Raw for verbatim, Polish to clean up your speech, Intent to write to an instruction, or Coding for code, then layer a style on top. Switch with Fn+1..9, and the AI cleanup runs on a model you control, never a billed call we make for you.",
     "sections": [
       {
         "h2": "What an AI dictation mode actually does",
@@ -105,10 +105,10 @@ export const FEATURES: Feature[] = [
         ]
       },
       {
-        "h2": "The four core modes: Flow, Polish, Intent, Coding",
-        "body": "Verba ships six built-in modes; these four are the ones you'll live in. Flow is pure speech-to-text with no AI, the fastest path when you just want your exact words down. Polish reads your transcript and resolves the way people really talk, the self-corrections, the false starts, the 'no wait, make that', and writes the version you meant. Intent treats your speech as a command and writes the thing you asked for, so you can say 'reply to this saying I'll be ten minutes late, keep it casual' and get the message, not a transcript of the request. Coding is tuned for code and technical text, preserving symbols, identifiers and structure instead of prose-ifying them.",
+        "h2": "The four core modes: Raw, Polish, Intent, Coding",
+        "body": "Verba ships six built-in modes; these four are the ones you'll live in. Raw is pure speech-to-text with no AI, the fastest path when you just want your exact words down. Polish reads your transcript and resolves the way people really talk, the self-corrections, the false starts, the 'no wait, make that', and writes the version you meant. Intent treats your speech as a command and writes the thing you asked for, so you can say 'reply to this saying I'll be ten minutes late, keep it casual' and get the message, not a transcript of the request. Coding is tuned for code and technical text, preserving symbols, identifiers and structure instead of prose-ifying them.",
         "bullets": [
-          "Flow: verbatim, no AI, instant",
+          "Raw: verbatim, no AI, instant",
           "Polish: resolves filler and self-corrections into clean prose",
           "Intent: write to an instruction, not a transcript of it",
           "Coding: keeps symbols, identifiers and structure intact",
@@ -149,11 +149,11 @@ export const FEATURES: Feature[] = [
     "faq": [
       {
         "q": "What are AI dictation modes in Verba?",
-        "a": "Dictation modes are presets that turn your voice into the kind of text you want. Verba ships six built-in modes, including Flow (verbatim, no AI), Polish (cleans up filler and self-corrections), Intent (writes to a spoken instruction), and Coding (preserves code and symbols). You can also build custom modes and layer styles on top."
+        "a": "Dictation modes are presets that turn your voice into the kind of text you want. Verba ships six built-in modes, including Raw (verbatim, no AI), Polish (cleans up filler and self-corrections), Intent (writes to a spoken instruction), and Coding (preserves code and symbols). You can also build custom modes and layer styles on top."
       },
       {
-        "q": "What's the difference between Flow and Polish mode?",
-        "a": "Flow is pure speech-to-text with no AI, giving you your exact words instantly. Polish runs your transcript through an AI cleanup pass that resolves false starts, filler, and self-corrections, writing the clean version you actually meant to say."
+        "q": "What's the difference between Raw and Polish mode?",
+        "a": "Raw is pure speech-to-text with no AI, giving you your exact words instantly. Polish runs your transcript through an AI cleanup pass that resolves false starts, filler, and self-corrections, writing the clean version you actually meant to say."
       },
       {
         "q": "How do I switch between dictation modes on Mac?",
@@ -411,7 +411,7 @@ export const FEATURES: Feature[] = [
       },
       {
         "h2": "How Context mode differs from Verba's other modes",
-        "body": "Flow and Polish only transcribe and clean what you say. Intent writes to an instruction but knows nothing about your screen. Translate converts language, and JARVIS (Fn+X's cousin, Action mode) takes real actions across connected apps after you confirm. Context sits between dictation and agent: it does not act on your behalf or touch other apps, it simply reads the screen and writes from it. If you want screen-aware writing without an agent doing anything, Context is the mode. Switch to it with Fn+1..9 like any other, and layer a style with Fn+]/[ if you want a particular tone."
+        "body": "Raw and Polish only transcribe and clean what you say. Intent writes to an instruction but knows nothing about your screen. Translate converts language, and JARVIS (Fn+X's cousin, Action mode) takes real actions across connected apps after you confirm. Context sits between dictation and agent: it does not act on your behalf or touch other apps, it simply reads the screen and writes from it. If you want screen-aware writing without an agent doing anything, Context is the mode. Switch to it with Fn+1..9 like any other, and layer a style with Fn+]/[ if you want a particular tone."
       }
     ],
     "faq": [
@@ -453,7 +453,7 @@ export const FEATURE_NAV: { href: string; label: string; desc?: string }[] = [
   {
     "href": "/features/dictation-modes",
     "label": "Modes",
-    "desc": "Flow, Polish, Intent, Coding"
+    "desc": "Raw, Polish, Intent, Coding"
   },
   {
     "href": "/features/voice-notes",

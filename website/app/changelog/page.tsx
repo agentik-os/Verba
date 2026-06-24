@@ -19,8 +19,20 @@ const DAYS: Day[] = [
     date: "June 12, 2026",
     tag: "Today",
     summary:
-      "A calmer first run, Bear-style filing, and the story in the app. The onboarding now teaches every shortcut, Action, Note, To-do, Transform and more, opens the app the moment you finish, and lets you keep your profile private. Notes and Tasks both get a proper nested tag tree for filing, the full changelog now lives right inside Settings, the level ladder climbs to 1,000, and every badge explains what it's for.",
+      "A calmer first run, a nested tag tree for filing, and the story in the app. The onboarding now teaches every shortcut, Action, Note, To-do, Transform and more, opens the app the moment you finish, and lets you keep your profile private. Notes and Tasks both get a proper nested tag tree for filing, the full changelog now lives right inside Settings, the level ladder climbs to 1,000, and every badge explains what it's for.",
     entries: [
+      {
+        version: "0.9.28",
+        title: "Flow is now Raw, plus more of your feedback",
+        items: [
+          "Flow mode is renamed Raw, the same verbatim, no-AI dictation, with a clearer name.",
+          "Leaderboard: filter by All time, Year, Month, or Week.",
+          "Notes: Intent now works by speaking your intent at the start of the recording, then your note, with an explanation up front instead of a separate text box.",
+          "Feedback: one tidy action bar, Dictate and Attach screenshot now sit with the main buttons.",
+          "Onboarding leads with the core mode first, the advanced modes come after.",
+          "Faster first word: the mic re-arms right after a voice note so the next dictation starts instantly.",
+        ],
+      },
       {
         version: "0.9.27",
         title: "A batch of fixes from your feedback",
@@ -122,7 +134,7 @@ const DAYS: Day[] = [
       },
       {
         version: "0.9.5 → 0.9.13",
-        title: "Onboarding that shows everything, and Bear-style notes",
+        title: "Onboarding that shows everything, and a tag tree for notes",
         items: [
           "Notes get one-tap mode actions: apply any mode to a note in a tap, including the custom modes you built yourself, now surfaced right alongside the built-in ones.",
           "Export a note: save it as a Markdown (.md) or plain-text file straight from the note toolbar.",
@@ -139,7 +151,7 @@ const DAYS: Day[] = [
           "Every shortcut is now in Settings ▸ Shortcuts and every one is customizable, including new rebindable Pause/resume and Cancel shortcuts (the default ⌃ and Esc keep working too).",
           "Small thing: the recording pill dropped the little \"esc\" label next to the ×, the × still cancels and so does Esc, it just reads cleaner now.",
           "Achievements went big: 186 badges now, grouped into 10 ordered categories (Words Spoken, Dictations, Streaks, Dedication, Speed, Big Days, Time Saved, Airtime, Modes & Features, Special) with per-category progress, and a new Diamond tier for the extreme milestones, the word ladder climbs all the way to 1,000,000,000,000 words spoken.",
-          "Notes get a Bear-style tag tree: your #tags now file into a nested, collapsible sidebar with note counts, All Notes and Untagged at the top, parent tags opening to their children. Click any tag to filter, including every note nested beneath it.",
+          "Notes get a nested tag tree: your #tags now file into a nested, collapsible sidebar with note counts, All Notes and Untagged at the top, parent tags opening to their children. Click any tag to filter, including every note nested beneath it.",
           "Onboarding now lists every shortcut, not just the basics: Action (Fn + X), Note (Fn + Z), To-do (Fn + T), today's to-dos (⌥ + Fn), Transform a selection (⌥ + X), switch style (Fn + ] / [), plus pause, switch and cancel, nothing hidden.",
           "Finishing onboarding now opens Verba straight away instead of leaving you to re-click the icon.",
           "Pick whether your profile is public: a new toggle keeps your name off the leaderboard while you still use it inside the app.",
@@ -282,7 +294,7 @@ const DAYS: Day[] = [
           "From your feedback on Notes: the recording timer ticks again, the intent box grows to fit a long instruction, you can validate your intent (and see it's applied), and the note now actually follows the intent you set instead of ignoring it.",
           "From your feedback on Transforms: select text in any app and right-click → Services → “Transform with Verba” to run a transform without dictating, and the voice trigger keeps working too.",
           "New Customize settings: style the app and the macOS widget independently: glass material, blur, corner radius, accent color (monochrome by default, plus a palette or your own custom color), and one-tap presets. Liquid Glass, your way.",
-          "Modes are reordered (Flow, Intent, Translate, Context, Coding on ⌃⌥1-5); create your own with the AI mode generator instead of editing a placeholder.",
+          "Modes are reordered (Raw, Intent, Translate, Context, Coding on ⌃⌥1-5); create your own with the AI mode generator instead of editing a placeholder.",
           "From your feedback: Escape now cancels even while Verba is polishing; attaching a screenshot sends the real image (not a file path); a clear notice appears if you prompt with AI rewriting turned off; the feedback Dictate button shows a live, mic-reactive waveform; and Improve-with-AI now structures your report into Section / Issue / Expected.",
           "Send as much feedback as you want. The per-user limit is gone.",
         ],
@@ -295,7 +307,7 @@ const DAYS: Day[] = [
           "History matches Notes exactly now, and Insights gained a stack of new stats: this week vs last week, your most productive day, current vs longest streak, milestone progress, time saved, and your live leaderboard standing (rank and percentile).",
           "Pure black-and-white UI: selection is a quiet neutral highlight, never a heavy black block or a stray blue tint. Page titles are the exact same size on every screen.",
           "The Shortcuts settings are grouped into clear cards with real keycaps, so every trigger is easy to find.",
-          "Your chosen username now sticks across restarts instead of resetting, and a fresh install starts in Flow (verbatim) mode.",
+          "Your chosen username now sticks across restarts instead of resetting, and a fresh install starts in Raw (verbatim) mode.",
         ],
       },
       {
@@ -332,7 +344,7 @@ const DAYS: Day[] = [
           "Every dialog is redesigned in the new frosted glass style: action confirmations, the review panel, update and permission prompts, the trial screen, plus the Settings and History windows. Return and Escape work everywhere.",
           "Voice to-do capture finally works on US keyboards: the shortcut is now Fn+T (Fn+§ still works on European layouts), and Settings shows the right one for your keyboard.",
           "Verba is much lighter at launch: the on-device model now loads when you start recording (hidden behind your speaking time) and unloads after 10 minutes of inactivity.",
-          "Edit-the-last-result by voice now works in Flow mode too, an update can no longer install itself in the middle of a dictation, errors stay visible in menu-bar-only mode, and temporary recordings are cleaned up automatically.",
+          "Edit-the-last-result by voice now works in Raw mode too, an update can no longer install itself in the middle of a dictation, errors stay visible in menu-bar-only mode, and temporary recordings are cleaned up automatically.",
           "Your custom modes and edited prompts now survive app updates.",
           "verba.run: a full design craft pass (motion, type, the works), and link previews you share now match the product.",
         ],
@@ -503,7 +515,7 @@ const DAYS: Day[] = [
         version: "0.1.66",
         title: "Reliability, speed & one language",
         items: [
-          "Single-language output: no more franglais, the result is rewritten fully in the language you spoke, even in Flow.",
+          "Single-language output: no more franglais, the result is rewritten fully in the language you spoke, even in Raw.",
           "Instant capture: the recorder is pre-armed so it catches your very first word.",
           "Reliable cancel and a processing timeout, no more stuck spinners or force-quitting.",
           "Drag & drop into file transcription; WhatsApp .opus / Ogg voice notes now transcribe.",
@@ -601,7 +613,7 @@ const DAYS: Day[] = [
         title: "Verba is born",
         items: [
           "Native Swift menu-bar dictation with Claude reprompting.",
-          "Fn-key trigger, faithful reprompting, and modes: Coding, Intent, Flow, Custom.",
+          "Fn-key trigger, faithful reprompting, and modes: Coding, Intent, Raw, Custom.",
           "NVIDIA Parakeet on-device engine and a Claude Code (Max plan) backend.",
           "Sparkle auto-updates with a notarized release pipeline; full onboarding.",
           "Leaderboard (Convex), referral system, the verba.run landing site and Stripe billing.",

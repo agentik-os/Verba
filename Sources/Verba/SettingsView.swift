@@ -806,7 +806,7 @@ struct SettingsView: View {
             }
             labeledField(L("Spoken language"), $settings.language, prompt: L("ISO code, blank = auto"))
             toggleRow(L("Single-language output"), $settings.languageGuard,
-                      help: settings.languageGuard ? L("If the engine mixes two languages mid-sentence, Verba rewrites the result fully in its dominant language. Applies to every mode, including Flow.") : nil)
+                      help: settings.languageGuard ? L("If the engine mixes two languages mid-sentence, Verba rewrites the result fully in its dominant language. Applies to every mode, including Raw.") : nil)
         }
 
         card(L("Voice commands")) {

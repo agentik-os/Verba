@@ -18,7 +18,7 @@ Price: $9.99/month or $84/year. Free trial: 33 full-feature dictations.
 - Platform: macOS 14+ (Apple Silicon). No Windows, iOS or Android app.
 - Transcription: on-device by default (WhisperKit ~99 languages, NVIDIA Parakeet 25 languages); optional cloud (your OpenAI key).
 - Privacy: in on-device mode your audio never leaves your Mac.
-- AI rewriting: 6 built-in modes (Flow, Polish, Intent, Translate, Context, Coding) + AI-built custom modes.
+- AI rewriting: 6 built-in modes (Raw, Polish, Intent, Translate, Context, Coding) + AI-built custom modes.
 - Bring your own AI: your Claude subscription via Claude Code (no API key), your Anthropic key, OpenRouter, or a local Ollama model.
 - Context mode: reads your screen (vision) and writes from it.
 - Live translation to a target language.

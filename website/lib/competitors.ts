@@ -33,7 +33,7 @@ export const VERBA = {
   platforms: "macOS (Apple Silicon)",
   transcription: "On-device Whisper / Parakeet (or cloud, optional)",
   onDevice: "yes" as const,
-  aiEditing: "Six built-in modes (Flow, Polish, Intent, Translate, Context, Coding) plus AI-built custom modes, per-mode Claude models, voice commands",
+  aiEditing: "Six built-in modes (Raw, Polish, Intent, Translate, Context, Coding) plus AI-built custom modes, per-mode Claude models, voice commands",
   privacy: "On-device transcription keeps audio on your Mac. Text history is local, synced only when signed in, with an off switch and retention controls. Keys in Keychain.",
 };
 

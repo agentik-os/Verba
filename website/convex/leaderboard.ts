@@ -4,13 +4,29 @@ import { deviceOk, requireDevice } from "./auth";
 
 // S1: never return uids to clients. Callers that pass a valid uid+secret get `me: true`
 // on their own row instead.
-async function rows(ctx: any, uid?: string, secret?: string) {
+//
+// VER-14: when `sinceDay` (yyyy-MM-dd) is given, `words` is the sum of the per-day `stats`
+// table since that day (timeframe leaderboard: Week/Month/Year). The client computes the
+// boundary and passes it, since a query can't read the wall clock deterministically. Lifetime
+// wpm/streak/saved are kept as-is for display. No `sinceDay` → lifetime totals from `scores`.
+async function rows(ctx: any, uid?: string, secret?: string, sinceDay?: string) {
   const all = await ctx.db.query("scores").collect();
   const isMe = uid && secret && (await deviceOk(ctx, uid, secret));
-  return all.map((s: any) => ({
-    alias: s.alias, words: s.words, wpm: s.wpm, streak: s.streak, saved: s.saved ?? 0,
-    me: isMe ? s.uid === uid : false,
-  }));
+  if (!sinceDay) {
+    return all.map((s: any) => ({
+      alias: s.alias, words: s.words, wpm: s.wpm, streak: s.streak, saved: s.saved ?? 0,
+      me: isMe ? s.uid === uid : false,
+    }));
+  }
+  const out: any[] = [];
+  for (const s of all) {
+    const days = await ctx.db.query("stats").withIndex("by_uid", (q: any) => q.eq("uid", s.uid)).collect();
+    const words = days
+      .filter((d: any) => typeof d.day === "string" && d.day >= sinceDay)
+      .reduce((sum: number, d: any) => sum + (d.words ?? 0), 0);
+    out.push({ alias: s.alias, words, wpm: s.wpm, streak: s.streak, saved: s.saved ?? 0, me: isMe ? s.uid === uid : false });
+  }
+  return out;
 }
 
 export const list = query({
@@ -22,9 +38,9 @@ export const list = query({
 });
 
 export const board = query({
-  args: { uid: v.optional(v.string()), secret: v.optional(v.string()) },
+  args: { uid: v.optional(v.string()), secret: v.optional(v.string()), sinceDay: v.optional(v.string()) },
   handler: async (ctx, a) => {
-    return await rows(ctx, a.uid, a.secret);
+    return await rows(ctx, a.uid, a.secret, a.sinceDay);
   },
 });
 

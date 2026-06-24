@@ -150,13 +150,47 @@ struct FeedbackView: View {
                     }
                 }
 
-                // Screenshot + dictation affordances, then "Improve with AI".
+                // VER-12: the screenshot preview sits above the unified action bar (below) so the
+                // bar height stays stable. The Dictate / Attach buttons now live in that one bar
+                // alongside Cancel / Give feedback, instead of floating as a disconnected group.
+                if let thumb = screenshotThumb {
+                    HStack(spacing: 8) {
+                        ZStack(alignment: .topTrailing) {
+                            Image(nsImage: thumb)
+                                .resizable().aspectRatio(contentMode: .fill)
+                                .frame(width: 96, height: 60)
+                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Color.hairlineTint))
+                            Button {
+                                screenshot = nil; screenshotThumb = nil
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundStyle(.white, .black.opacity(0.55))
+                            }
+                            .buttonStyle(.borderless)
+                            .help(L("Remove screenshot"))
+                            .padding(4)
+                        }
+                        Text(L("Screenshot attached")).font(.callout).foregroundStyle(.secondary)
+                        Spacer()
+                    }
+                }
+
+                if let error {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .font(.callout).foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                // VER-16: a stable bottom bar — the status sits left, the primary action keeps a
+                // fixed footprint (so it never jumps between "Give feedback" / "Improving…" /
+                // "Confirm feedback"), and Cancel sits to its left only while confirming.
                 HStack(spacing: 10) {
-                    // Dictate: a chip that mirrors the three voice states (idle / listening / transcribing).
-                    // Lives in the action row — never floating over the editor's growing text.
+                    // Dictate chip (mirrors idle / listening / transcribing) + Attach screenshot,
+                    // now grouped in the SAME bar as the primary actions (VER-12).
                     Button { toggleVoice() } label: {
                         if recording {
-                            // Live, level-driven meter so the chip visibly reacts to the voice.
                             HStack(spacing: 7) {
                                 Image(systemName: "stop.circle.fill").font(.system(size: 10, weight: .semibold))
                                 Text(L("Listening…")).font(.system(size: 12, weight: .medium))
@@ -178,63 +212,17 @@ struct FeedbackView: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    // Mirror canImprove/canSubmit: while an AI rewrite is in flight, the draft is
-                    // about to be replaced, so block concurrent dictation that would be discarded.
                     .disabled(submitting || transcribing || improving)
                     .help(L("Dictate your feedback"))
-
-                    if let thumb = screenshotThumb {
-                        ZStack(alignment: .topTrailing) {
-                            Image(nsImage: thumb)
-                                .resizable().aspectRatio(contentMode: .fill)
-                                .frame(width: 96, height: 60)
-                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Color.hairlineTint))
-                            Button {
-                                screenshot = nil; screenshotThumb = nil
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 16))
-                                    .foregroundStyle(.white, .black.opacity(0.55))
-                            }
-                            .buttonStyle(.borderless)
-                            .help(L("Remove screenshot"))
-                            .padding(4)
-                        }
-                        Text(L("Screenshot attached")).font(.callout).foregroundStyle(.secondary)
-                    } else {
+                    if screenshotThumb == nil {
                         Button { attachScreenshot() } label: {
                             ActionChip(title: L("Attach screenshot"), icon: "camera.viewfinder")
                         }
                         .buttonStyle(.plain)
-                        // Disabled while improving too: parity with Dictate/Send so an in-flight
-                        // AI rewrite can't be raced by a concurrent draft/attachment mutation.
                         .disabled(submitting || improving)
                         .help(L("Capture the current screen, or drag an image onto the editor, to attach it"))
                     }
-                    Spacer()
-                    // "Improve with AI" runs automatically when you press Send (it structures your
-                    // note, you confirm, it ships) — so there's no separate Improve/Revert button
-                    // here anymore. One action, three steps, one line.
-                }
-
-                if let error {
-                    Label(error, systemImage: "exclamationmark.triangle")
-                        .font(.callout).foregroundStyle(.red)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                HStack {
-                    if recording {
-                        Label(L("Listening…"), systemImage: "waveform")
-                            .font(.callout).foregroundStyle(.red)
-                    } else if transcribing {
-                        HStack(spacing: 8) {
-                            ProgressView().controlSize(.small)
-                            Text(L("Transcribing…")).font(.callout).foregroundStyle(.secondary)
-                        }
-                    }
-                    Spacer()
+                    Spacer(minLength: 12)
                     if awaitingConfirm {
                         // VER-52: the AI-enhanced feedback is shown above (editable) — confirm to send it,
                         // or cancel back to your original text.
@@ -244,22 +232,27 @@ struct FeedbackView: View {
                         }
                         .buttonStyle(.plain).foregroundStyle(.secondary).disabled(submitting)
                         Button(action: submit) {
-                            if submitting { ProgressView().controlSize(.small) } else { Text(L("Confirm feedback")) }
+                            Group {
+                                if submitting { ProgressView().controlSize(.small) } else { Text(L("Confirm feedback")) }
+                            }.frame(minWidth: 124)
                         }
                         .dialogPrimary(tint: .primary).disabled(!canSubmit)
                     } else {
                         Button(action: sendTapped) {
-                            if submitting || improving {
-                                HStack(spacing: 7) { ProgressView().controlSize(.small)
-                                    Text(improving ? L("Improving…") : L("Sending…")).font(.callout) }
-                            } else {
-                                Text(L("Give feedback"))
-                            }
+                            Group {
+                                if submitting || improving {
+                                    HStack(spacing: 7) { ProgressView().controlSize(.small)
+                                        Text(improving ? L("Improving…") : L("Sending…")).font(.callout) }
+                                } else {
+                                    Text(L("Give feedback"))
+                                }
+                            }.frame(minWidth: 124)
                         }
                         .dialogPrimary(tint: .primary)
                         .disabled(!canSubmit || improving)
                     }
                 }
+                .frame(minHeight: 30)
             }
             .padding(.horizontal, 28).padding(.bottom, 18)
 
