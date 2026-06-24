@@ -4,13 +4,14 @@ import SiteNav from "@/components/SiteNav";
 import Reveal from "@/components/Reveal";
 import { FEATURES } from "@/lib/features";
 
+import SiteFooter from "@/components/SiteFooter";
 export const metadata: Metadata = {
-  title: "Features — Verba AI Dictation for Mac",
+  title: "Features, Verba AI Dictation for Mac",
   description:
-    "Everything Verba does: the JARVIS voice agent, AI dictation modes, voice notes, voice tasks, live translation, and screen-aware Context mode — all on your Mac.",
+    "Everything Verba does: the JARVIS voice agent, AI dictation modes, voice notes, voice tasks, live translation, and screen-aware Context mode, all on your Mac.",
   alternates: { canonical: "/features" },
   openGraph: {
-    title: "Verba Features — AI Dictation for Mac",
+    title: "Verba Features, AI Dictation for Mac",
     description: "JARVIS voice agent, dictation modes, voice notes, voice tasks, live translation, and Context mode.",
     url: "/features",
     type: "website",
@@ -62,6 +63,7 @@ export default function FeaturesHub() {
           </Reveal>
         ))}
       </div>
+    <SiteFooter />
     </main>
   );
 }

@@ -1470,7 +1470,13 @@ struct SettingsView: View {
         let _ = engineRefresh
         let active = settings.engine == engineTab
         if engineTab == .openAI {
-            if active { activeLabel } else {
+            if active {
+                // "Active & ready" lied when no key was set — every dictation then failed. Show the gap.
+                if (Keychain.openAIKey ?? "").isEmpty {
+                    Label(L("Add your OpenAI key below to use this engine"), systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption).foregroundStyle(.orange)
+                } else { activeLabel }
+            } else {
                 Button(L("Use OpenAI")) { settings.engine = .openAI }.glassProminentButton().controlSize(.small)
             }
         } else {

@@ -1,4 +1,4 @@
-// Feature pages — content authored once here, rendered by app/features/[slug]/page.tsx and the
+// Feature pages, content authored once here, rendered by app/features/[slug]/page.tsx and the
 // /features hub. Keeping it as data (like lib/competitors) means one consistent layout for every
 // feature page and one place to add the next one. Each page targets a distinct keyword cluster.
 
@@ -22,7 +22,7 @@ export const FEATURES: Feature[] = [
     "navLabel": "JARVIS",
     "eyebrow": "JARVIS",
     "h1": "JARVIS: The Voice Agent for Mac That Acts on Your Apps",
-    "metaTitle": "JARVIS Voice Agent for Mac — Verba",
+    "metaTitle": "JARVIS Voice Agent for Mac, Verba",
     "metaDescription": "JARVIS is a voice agent for Mac that acts across 1,000+ apps like Gmail, Slack, and Notion. It plans, shows the steps, and only acts after you confirm.",
     "lead": "Most voice assistants on a Mac stop at a search box or a half-baked reminder. JARVIS, Verba's Action mode, is a real voice agent that plans the work, shows you exactly what it intends to do, and reaches into more than 1,000 connected apps to actually do it. You speak, it proposes, you confirm, it acts. No app left open, no copy-paste, no guessing what it ran.",
     "sections": [
@@ -90,7 +90,7 @@ export const FEATURES: Feature[] = [
     "navLabel": "Modes",
     "eyebrow": "DICTATION MODES",
     "h1": "AI Dictation Modes for Mac: Voice to Clean Text, Your Way",
-    "metaTitle": "AI Dictation Modes for Mac — Verba",
+    "metaTitle": "AI Dictation Modes for Mac, Verba",
     "metaDescription": "Verba's AI dictation modes turn voice into clean text on your Mac: Flow, Polish, Intent, Coding, plus custom modes and styles. Switch with Fn+1..9. BYO AI.",
     "lead": "Raw transcription is a solved problem. What you actually want is voice that lands as clean, finished text in whatever app you're in, formatted the way that moment needs it. Verba does that with dictation modes: pick Flow for verbatim, Polish to clean up your speech, Intent to write to an instruction, or Coding for code, then layer a style on top. Switch with Fn+1..9, and the AI cleanup runs on a model you control, never a billed call we make for you.",
     "sections": [
@@ -174,7 +174,7 @@ export const FEATURES: Feature[] = [
     "navLabel": "Voice Notes",
     "eyebrow": "NOTES",
     "h1": "Voice Notes App for Mac: Talk an Hour, Get a Clean Doc",
-    "metaTitle": "Voice Notes App for Mac — Verba",
+    "metaTitle": "Voice Notes App for Mac, Verba",
     "metaDescription": "Verba is a voice notes app for Mac. Dictate notes up to an hour, get a clean structured document, nest #tags, lock with a password, export .md or .txt.",
     "lead": "Open Verba, hit record, and just talk. You can ramble for up to an hour, and Verba turns the whole thing into a clean, structured document instead of a wall of raw transcript. It is the voice notes app for Mac that organizes what you said: choose a format, watch it render in Markdown, nest your hashtags into a tidy tree, and lock anything sensitive behind its own password.",
     "sections": [
@@ -241,7 +241,7 @@ export const FEATURES: Feature[] = [
     "navLabel": "Voice Tasks",
     "eyebrow": "TASKS",
     "h1": "Voice Task Manager for Mac: Add Tasks by Speaking",
-    "metaTitle": "Voice Task Manager for Mac — Verba",
+    "metaTitle": "Voice Task Manager for Mac, Verba",
     "metaDescription": "Add tasks by voice on your Mac. Speak one request and Verba builds a project, tasks, and sub-tasks. Nested tags, an ⌥+Fn glance, fully BYO AI.",
     "lead": "Most task apps make you stop, click into a project, type a title, set a list, and indent sub-items by hand. Verba is a voice task manager for Mac that skips all of that: say what you need done and an AI agent turns one spoken request into a project with tasks and sub-tasks, already organized. It is the same menu-bar app you dictate with, so capturing work is never more than a hotkey away.",
     "sections": [
@@ -308,7 +308,7 @@ export const FEATURES: Feature[] = [
     "navLabel": "Live Translation",
     "eyebrow": "TRANSLATE MODE",
     "h1": "Live Voice Translation on Mac: Speak Any Language, It Writes Yours",
-    "metaTitle": "Live Voice Translation on Mac — Verba",
+    "metaTitle": "Live Voice Translation on Mac, Verba",
     "metaDescription": "Dictate in another language on your Mac. Speak any of ~99 languages, Verba writes your target language and pastes it into any app. Pick a target once, talk.",
     "lead": "Verba's Translate mode turns your voice into finished text in the language you need. Pick a target language once, then speak whatever language is easiest for you, and Verba writes clean, native-sounding text right where your cursor is. It is live voice translation built into the Mac you already use, not another browser tab or app to switch into.",
     "sections": [
@@ -373,7 +373,7 @@ export const FEATURES: Feature[] = [
     "navLabel": "Context mode",
     "eyebrow": "CONTEXT MODE",
     "h1": "Screen-Aware Dictation for Mac: Reply to What You See by Voice",
-    "metaTitle": "Context Mode: Screen-Aware Dictation Mac — Verba",
+    "metaTitle": "Context Mode: Screen-Aware Dictation Mac, Verba",
     "metaDescription": "Verba Context mode reads your Mac screen with a vision model and writes from it. Reply to the email or form on screen by voice, no copy-paste, no context.",
     "lead": "Most dictation hears your words but is blind to your screen, so you end up narrating context it should already see. Verba's Context mode (Fn+X) takes a screenshot, reads it with a vision model you control, and writes from what is actually in front of you. Say \"reply to this email\" or \"summarize this thread\" and Verba does it from the pixels, then pastes into the cursor.",
     "sections": [

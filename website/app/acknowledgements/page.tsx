@@ -2,6 +2,7 @@ import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
 import type { Metadata } from "next";
 
+import SiteFooter from "@/components/SiteFooter";
 export const metadata: Metadata = {
   title: "Acknowledgements, Verba",
   description: "Open-source software and on-device models that power Verba.",
@@ -71,6 +72,7 @@ export default function Acknowledgements() {
           as a Core ML conversion of the original weights. Full license texts ship inside the app.
         </p>
       </section>
+    <SiteFooter />
     </main>
   );
 }

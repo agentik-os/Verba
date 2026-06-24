@@ -14,6 +14,7 @@ import { getRef } from "@/components/RefCapture";
 import { Logo, MicMark, MicGlyph, HeadLeft, HeadCenter, PanelCaption, CrossRule } from "@/components/Brand";
 import ThemeToggle from "@/components/ThemeToggle";
 import SiteNav from "@/components/SiteNav";
+import SiteFooter from "@/components/SiteFooter";
 import { FEATURES } from "@/lib/features";
 
 const PRICE = {
@@ -42,12 +43,12 @@ export default function Home() {
       <CompareTeaser />
       <Pricing />
       <FAQ />
-      <Footer />
+      <SiteFooter />
     </main>
   );
 }
 
-// Compact capabilities grid — replaces the long inline feature sections; each card deep-links to a
+// Compact capabilities grid, replaces the long inline feature sections; each card deep-links to a
 // dedicated, SEO-targeted feature page (shorter landing + more indexable pages).
 function FeatureGrid() {
   return (
@@ -820,7 +821,7 @@ function WhyBest() {
         <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ["Shipping constantly", "40+ public releases and counting, all on the live changelog."],
-            ["230+ achievements to earn", "1,000 levels, daily streaks and a live leaderboard — see your rank and percentile among everyone using Verba."],
+            ["230+ achievements to earn", "1,000 levels, daily streaks and a live leaderboard, see your rank and percentile among everyone using Verba."],
             ["Works in every app", "If your cursor is there, Verba writes there. No window, no paste."],
             ["Your AI, or fully offline", "Bring your own key or run on-device. No vendor markup, no uploads."],
           ].map(([t, d]) => (
@@ -1305,7 +1306,7 @@ function FAQ() {
     ["Is my data and audio private with Verba?", "Yes - in on-device mode your audio never leaves your Mac, since transcription runs locally with WhisperKit or Parakeet. With JARVIS, your connected-app keys are relayed server-side via Composio and are never stored on your Mac, and you can run AI fully locally with Ollama for maximum privacy."],
     ["What can the JARVIS voice agent actually do?", "JARVIS is Verba's voice agent that takes action across 1,000+ connected apps via Composio - so you can speak commands to send emails, create calendar events, update tasks, and more without leaving your current app. Connections are relayed server-side and your app keys are never stored on the Mac."],
   ];
-  // FAQPage structured data — Google FAQ rich results + LLM/AI-search (GEO) citation.
+  // FAQPage structured data, Google FAQ rich results + LLM/AI-search (GEO) citation.
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",

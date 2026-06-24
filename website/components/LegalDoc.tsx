@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
 
+import SiteFooter from "@/components/SiteFooter";
 // Minimal, dependency-free markdown renderer for our own trusted legal/contact docs.
 // Supports: #/##/### headings, - bullet lists, **bold**, [text](url) links, and paragraphs.
 function inline(text: string, keyBase: string): React.ReactNode[] {
@@ -75,6 +76,7 @@ export default function LegalDoc({ title, md }: { title: string; md: string }) {
         <h1 className="text-4xl font-semibold tracking-tight">{title}</h1>
         <div className="mt-6">{render(md)}</div>
       </article>
+    <SiteFooter />
     </main>
   );
 }

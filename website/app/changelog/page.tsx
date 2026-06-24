@@ -3,8 +3,9 @@ import type { Metadata } from "next";
 import Reveal from "@/components/Reveal";
 import ThemeToggle from "@/components/ThemeToggle";
 
+import SiteFooter from "@/components/SiteFooter";
 export const metadata: Metadata = {
-  title: "Changelog — Verba AI Dictation for Mac",
+  title: "Changelog, Verba AI Dictation for Mac",
   description:
     "Every Verba release since launch on June 5, 2026. Shipped in public, fast: 60+ releases in the first days, with dates and times.",
   alternates: { canonical: "/changelog" },
@@ -18,35 +19,58 @@ const DAYS: Day[] = [
     date: "June 12, 2026",
     tag: "Today",
     summary:
-      "A calmer first run, Bear-style filing, and the story in the app. The onboarding now teaches every shortcut — Action, Note, To-do, Transform and more — opens the app the moment you finish, and lets you keep your profile private. Notes and Tasks both get a proper nested tag tree for filing, the full changelog now lives right inside Settings, the level ladder climbs to 1,000, and every badge explains what it's for.",
+      "A calmer first run, Bear-style filing, and the story in the app. The onboarding now teaches every shortcut, Action, Note, To-do, Transform and more, opens the app the moment you finish, and lets you keep your profile private. Notes and Tasks both get a proper nested tag tree for filing, the full changelog now lives right inside Settings, the level ladder climbs to 1,000, and every badge explains what it's for.",
     entries: [
+      {
+        version: "0.9.25",
+        title: "A human-copywriting pass, and a footer on every page",
+        items: [
+          "Rewrote verba.run to read like a person wrote it, not a model: we removed the em dashes (the punctuation readers and Google associate with AI-generated text) across every page, and tidied the prose that came with them.",
+          "Every page now shares one consistent footer, with each link kept on a single line so nothing wraps awkwardly.",
+          "The plan label in the app menu (Pro plan / Free trial) is now a quiet monochrome instead of bright green, so it matches the rest of the design.",
+        ],
+      },
+      {
+        version: "0.9.24",
+        title: "No more “access data from other apps” prompt",
+        items: [
+          "Fixed: macOS kept popping up “Verba would like to access data from other apps” whenever you used Action mode. That was Verba reading your Shortcuts list (to match a spoken command to a real Shortcut) via the system tool. Verba now runs that helper with disclaimed responsibility, the access is attributed to macOS's own Shortcuts tool, which is already allowed, so the prompt no longer appears, even after an update.",
+        ],
+      },
+      {
+        version: "0.9.23",
+        title: "Action mode (Fn+X) fixed",
+        items: [
+          "Fixed: Action mode (Fn+X / JARVIS) had stopped running commands after a recent change. The new “no preamble” instruction we added to clean up Translate output was leaking into JARVIS's planning and telling it to reply with plain text only, which suppressed the structured action it needs to actually do something. The guard is now kept out of the agent's path, and the command transcript is never altered when an action is detected, so Fn+X executes your commands again.",
+        ],
+      },
       {
         version: "0.9.22",
         title: "Compare badges with anyone",
         items: [
-          "On another player's profile, you now see which of the badges you've earned too: a checkmark marks every badge you hold — even the ones they haven't, so you can see where you're ahead. A quick tally up top shows what you both have, what they have that you don't, and what you have that they don't.",
+          "On another player's profile, you now see which of the badges you've earned too: a checkmark marks every badge you hold, even the ones they haven't, so you can see where you're ahead. A quick tally up top shows what you both have, what they have that you don't, and what you have that they don't.",
         ],
       },
       {
         version: "0.9.21",
         title: "Social profiles now show full Insights",
         items: [
-          "Tap anyone on the leaderboard and you now see their analytics, not just their level and badges: words today, day streak, words this week, total words, dictations, words per minute, time saved, best day ever, and longest streak — the same Insights you see for yourself, now social.",
+          "Tap anyone on the leaderboard and you now see their analytics, not just their level and badges: words today, day streak, words this week, total words, dictations, words per minute, time saved, best day ever, and longest streak, the same Insights you see for yourself, now social.",
         ],
       },
       {
         version: "0.9.20",
         title: "Tasks: a tidy status dropdown",
         items: [
-          "In Tasks, the status filter (All, Today, Upcoming, Done, Overdue) is now a clean dropdown instead of a row of chips that ran off the edge of the sidebar — pick a status from a proper menu with icons and a checkmark on the active one.",
+          "In Tasks, the status filter (All, Today, Upcoming, Done, Overdue) is now a clean dropdown instead of a row of chips that ran off the edge of the sidebar, pick a status from a proper menu with icons and a checkmark on the active one.",
         ],
       },
       {
         version: "0.9.18 → 0.9.19",
         title: "A cleaner first line, and a site you can navigate",
         items: [
-          "Fixed for good: a stray first line in Translate and some modes, where the output opened with a preamble (“Here is the restructured transcript:”, “Voici la traduction :”) before your text. Verba now strips that line deterministically before anything is pasted, so it can never reach your clipboard again — your transcript lands directly, in every mode.",
-          "verba.run is reorganized: a Features menu with a dedicated page for each capability — JARVIS, dictation modes, voice notes, voice tasks, live translation, and Context mode — plus a Resources menu, so the nav isn't a wall of links anymore.",
+          "Fixed for good: a stray first line in Translate and some modes, where the output opened with a preamble (“Here is the restructured transcript:”, “Voici la traduction :”) before your text. Verba now strips that line deterministically before anything is pasted, so it can never reach your clipboard again, your transcript lands directly, in every mode.",
+          "verba.run is reorganized: a Features menu with a dedicated page for each capability, JARVIS, dictation modes, voice notes, voice tasks, live translation, and Context mode, plus a Resources menu, so the nav isn't a wall of links anymore.",
           "The landing page is shorter and faster to read: the deep feature walkthroughs moved to their own pages, so the home gets to the point and each feature has a focused page of its own.",
           "The new nav menus are now properly readable: the dropdown panels are solid instead of see-through, so the text behind them no longer bleeds through.",
         ],
@@ -55,8 +79,8 @@ const DAYS: Day[] = [
         version: "0.9.17",
         title: "Docs, a Discord, and a site-wide SEO pass",
         items: [
-          "Community moved to Discord: the Community link in the app (and on the site) now opens our Discord server — come say hi at discord.gg/7xfkfQN9AR.",
-          "New documentation site at verba.run/docs: setup & permissions, every mode, the AI engines you control, JARVIS, Notes, Tasks, the full shortcut list, privacy, and troubleshooting — all in one place.",
+          "Community moved to Discord: the Community link in the app (and on the site) now opens our Discord server, come say hi at discord.gg/7xfkfQN9AR.",
+          "New documentation site at verba.run/docs: setup & permissions, every mode, the AI engines you control, JARVIS, Notes, Tasks, the full shortcut list, privacy, and troubleshooting, all in one place.",
           "A thorough SEO/GEO pass on verba.run: richer structured data (WebSite, breadcrumbs, founder/creator, full Offer), social-share images on every page, longer meta descriptions, a www→verba.run redirect, and the docs wired into the sitemap and llms.txt so search engines and AI assistants describe Verba accurately.",
         ],
       },
@@ -64,39 +88,39 @@ const DAYS: Day[] = [
         version: "0.9.16",
         title: "1,000 levels, and badges that explain themselves",
         items: [
-          "The level ladder now climbs to 1,000 — with a whole new run of titles past Legend: Voice Immortal, Ascendant, Celestial, Transcendent, Ethereal, Empyrean, Cosmic, Eternal, and at the very top, Voice Singularity.",
-          "Every badge now shows what it's for, right under its name — including on someone else's profile from the leaderboard, so a name like “AI Whisperer” or “Burning the Midnight Oil” tells you exactly what earns it instead of leaving you guessing.",
+          "The level ladder now climbs to 1,000, with a whole new run of titles past Legend: Voice Immortal, Ascendant, Celestial, Transcendent, Ethereal, Empyrean, Cosmic, Eternal, and at the very top, Voice Singularity.",
+          "Every badge now shows what it's for, right under its name, including on someone else's profile from the leaderboard, so a name like “AI Whisperer” or “Burning the Midnight Oil” tells you exactly what earns it instead of leaving you guessing.",
         ],
       },
       {
         version: "0.9.14 → 0.9.15",
         title: "Tidy Tasks, and the changelog in the app",
         items: [
-          "Tasks file like Notes now: your project tags collapse into a clean, nested sidebar tree — All Tasks and Untagged at the top, parent tags opening to their children with a count each. Click any tag to filter, including every project nested beneath it. No more flat wall of tag chips.",
-          "New Settings ▸ Changelog: the whole release story — every version since launch — now lives inside the app, so you can see exactly what shipped without leaving Verba.",
+          "Tasks file like Notes now: your project tags collapse into a clean, nested sidebar tree, All Tasks and Untagged at the top, parent tags opening to their children with a count each. Click any tag to filter, including every project nested beneath it. No more flat wall of tag chips.",
+          "New Settings ▸ Changelog: the whole release story, every version since launch, now lives inside the app, so you can see exactly what shipped without leaving Verba.",
         ],
       },
       {
         version: "0.9.5 → 0.9.13",
         title: "Onboarding that shows everything, and Bear-style notes",
         items: [
-          "Notes get one-tap mode actions: apply any mode to a note in a tap — including the custom modes you built yourself, now surfaced right alongside the built-in ones.",
+          "Notes get one-tap mode actions: apply any mode to a note in a tap, including the custom modes you built yourself, now surfaced right alongside the built-in ones.",
           "Export a note: save it as a Markdown (.md) or plain-text file straight from the note toolbar.",
           "Wishlist now shows newest ideas first (within each vote tier), and long requests get a Show more so nothing is cut off or unclickable.",
-          "Feedback is one tap now: Send runs Improve-with-AI for you, shows the tidied version to confirm or tweak, then sends — one button, no second step.",
-          "Wishlist fix: shipped ideas keep their green “shipped” badge for good — it's saved with the wish now, so it survives behind the scenes changes.",
+          "Feedback is one tap now: Send runs Improve-with-AI for you, shows the tidied version to confirm or tweak, then sends, one button, no second step.",
+          "Wishlist fix: shipped ideas keep their green “shipped” badge for good, it's saved with the wish now, so it survives behind the scenes changes.",
           "Dictionary auto-learn fixed: correct a name or brand in the text Verba just wrote and it now reliably learns the spelling, so it gets it right next time (punctuation no longer threw it off).",
-          "More to unlock: \"Explore Verba\" now covers every shortcut too — push-to-talk, Fn+number, mode switching, pause, cancel, the to-do glance, chaining dictations, custom modes, your own AI engine, re-working history and file transcription — each badge naming the keys so it doubles as a cheat sheet. And a big batch of playful Special badges: thank your AI (Mind Your Manners → AI Whisperer), Ship It, Bug Hunter, Founder Mode, AI Native, Big Dreamer, Weekend Warrior, Burning the Midnight Oil, Globe Trotter across time zones, and more — all earned purely on-device from your own words and your Mac's clock.",
-          "New \"Explore Verba\" achievements — a gamified tour of every feature and shortcut. As you try each one (a mode, a note, a tag, the Scratchpad, a task you check off, the dictionary, a connected app, a voice Action…) the matching badge ticks off, all the way to the Verba Explorer trophy. It sits first in Achievements so it doubles as a friendly way to learn the app.",
-          "Notes Intent mode fixed: it no longer auto-formats with an empty instruction. After you record, the raw transcript stays put and the instruction field is focused — type how to shape the note, press Enter, and it applies.",
+          "More to unlock: \"Explore Verba\" now covers every shortcut too, push-to-talk, Fn+number, mode switching, pause, cancel, the to-do glance, chaining dictations, custom modes, your own AI engine, re-working history and file transcription, each badge naming the keys so it doubles as a cheat sheet. And a big batch of playful Special badges: thank your AI (Mind Your Manners → AI Whisperer), Ship It, Bug Hunter, Founder Mode, AI Native, Big Dreamer, Weekend Warrior, Burning the Midnight Oil, Globe Trotter across time zones, and more, all earned purely on-device from your own words and your Mac's clock.",
+          "New \"Explore Verba\" achievements, a gamified tour of every feature and shortcut. As you try each one (a mode, a note, a tag, the Scratchpad, a task you check off, the dictionary, a connected app, a voice Action…) the matching badge ticks off, all the way to the Verba Explorer trophy. It sits first in Achievements so it doubles as a friendly way to learn the app.",
+          "Notes Intent mode fixed: it no longer auto-formats with an empty instruction. After you record, the raw transcript stays put and the instruction field is focused, type how to shape the note, press Enter, and it applies.",
           "Feedback fixes from the in-app reports: Add-a-word in the Dictionary now confirms on Enter and jumps to a fresh word so you can add several in a row; the Notes Intent field scrolls when your instruction is long instead of truncating; and on AZERTY (and similar) layouts, Shift+number types a digit again instead of switching modes.",
           "Send Feedback now runs \"Improve with AI\" for you: tap Send, watch it structure your note, edit the result if you like, then Confirm to send or Cancel to go back.",
-          "Lock a note with a password — and each note can have its own. Locked notes are encrypted on your Mac (AES-GCM, a separate key per note); without the password there's no way to read them. Open one, enter its password, and it unlocks just for this session.",
-          "Every shortcut is now in Settings ▸ Shortcuts and every one is customizable — including new rebindable Pause/resume and Cancel shortcuts (the default ⌃ and Esc keep working too).",
-          "Small thing: the recording pill dropped the little \"esc\" label next to the × — the × still cancels and so does Esc, it just reads cleaner now.",
-          "Achievements went big: 186 badges now, grouped into 10 ordered categories (Words Spoken, Dictations, Streaks, Dedication, Speed, Big Days, Time Saved, Airtime, Modes & Features, Special) with per-category progress, and a new Diamond tier for the extreme milestones — the word ladder climbs all the way to 1,000,000,000,000 words spoken.",
-          "Notes get a Bear-style tag tree: your #tags now file into a nested, collapsible sidebar with note counts — All Notes and Untagged at the top, parent tags opening to their children. Click any tag to filter, including every note nested beneath it.",
-          "Onboarding now lists every shortcut, not just the basics: Action (Fn + X), Note (Fn + Z), To-do (Fn + T), today's to-dos (⌥ + Fn), Transform a selection (⌥ + X), switch style (Fn + ] / [), plus pause, switch and cancel — nothing hidden.",
+          "Lock a note with a password, and each note can have its own. Locked notes are encrypted on your Mac (AES-GCM, a separate key per note); without the password there's no way to read them. Open one, enter its password, and it unlocks just for this session.",
+          "Every shortcut is now in Settings ▸ Shortcuts and every one is customizable, including new rebindable Pause/resume and Cancel shortcuts (the default ⌃ and Esc keep working too).",
+          "Small thing: the recording pill dropped the little \"esc\" label next to the ×, the × still cancels and so does Esc, it just reads cleaner now.",
+          "Achievements went big: 186 badges now, grouped into 10 ordered categories (Words Spoken, Dictations, Streaks, Dedication, Speed, Big Days, Time Saved, Airtime, Modes & Features, Special) with per-category progress, and a new Diamond tier for the extreme milestones, the word ladder climbs all the way to 1,000,000,000,000 words spoken.",
+          "Notes get a Bear-style tag tree: your #tags now file into a nested, collapsible sidebar with note counts, All Notes and Untagged at the top, parent tags opening to their children. Click any tag to filter, including every note nested beneath it.",
+          "Onboarding now lists every shortcut, not just the basics: Action (Fn + X), Note (Fn + Z), To-do (Fn + T), today's to-dos (⌥ + Fn), Transform a selection (⌥ + X), switch style (Fn + ] / [), plus pause, switch and cancel, nothing hidden.",
           "Finishing onboarding now opens Verba straight away instead of leaving you to re-click the icon.",
           "Pick whether your profile is public: a new toggle keeps your name off the leaderboard while you still use it inside the app.",
           "Keep your text history without the audio: a new setting stores only the text of each dictation to save disk, while history, search and re-work stay fully available.",
@@ -130,9 +154,9 @@ const DAYS: Day[] = [
           "The recording pill is smoother: the live waveform no longer re-renders the whole pill every frame, so it stays rock-steady while you talk. And a tip in Settings: name the app you want (“send a Slack message…”) and JARVIS picks the right one first try.",
           "The recording indicator stays put: the Done, info and mode-change flashes now sit at the exact same centered spot as the live Listening pill, instead of drifting as the width changes.",
           "Mode switches now stick: jump to a mode with Fn+1…9 (or the picker) and Verba stays on it for every next dictation until you change it. And the Fn+number chord no longer cuts the recording when you release Fn. JARVIS's on-device planner now runs fully sandboxed (no tools), so it always fetches your real data through Verba instead of improvising.",
-          "Dictations now stack: start the next recording while the last is still processing — every in-flight dictation shows as its own little chip above the pill, so you can fire off 10 in a row and watch them all land. Onboarding now teaches this too.",
-          "JARVIS now thinks on YOUR engine: planning runs on-device through your Claude subscription (Claude Code) or your local model, with your own keys as an option. Verba's servers only relay the connected-app calls — your requests never burn a shared cloud key, and JARVIS keeps working even offline-first setups.",
-          "Connect almost anything: most apps authenticate with an API key, not a browser sign-in — so Connect now opens a small form asking for exactly the keys that app needs (and still opens the browser for the OAuth ones). After an action, JARVIS can suggest a smart next step (“Invite people to the event?”) and carry it out.",
+          "Dictations now stack: start the next recording while the last is still processing, every in-flight dictation shows as its own little chip above the pill, so you can fire off 10 in a row and watch them all land. Onboarding now teaches this too.",
+          "JARVIS now thinks on YOUR engine: planning runs on-device through your Claude subscription (Claude Code) or your local model, with your own keys as an option. Verba's servers only relay the connected-app calls, your requests never burn a shared cloud key, and JARVIS keeps working even offline-first setups.",
+          "Connect almost anything: most apps authenticate with an API key, not a browser sign-in, so Connect now opens a small form asking for exactly the keys that app needs (and still opens the browser for the OAuth ones). After an action, JARVIS can suggest a smart next step (“Invite people to the event?”) and carry it out.",
         ],
       },
       {
@@ -226,7 +250,7 @@ const DAYS: Day[] = [
         version: "0.3.7 → 0.3.8",
         title: "A window that feels like glass",
         items: [
-          "The whole app window is now one piece of glass, and every page floats as an inset rounded card with breathing room on the edges , modern, not stuck to the window border.",
+          "The whole app window is now one piece of glass, and every page floats as an inset rounded card with breathing room on the edges, modern, not stuck to the window border.",
           "Escape now belongs to Verba while recording: it cancels your dictation without also closing something in the app behind it.",
           "And a sweep of smaller fixes across every screen, plus matching site copy.",
         ],
@@ -665,6 +689,7 @@ export default function Changelog() {
           </a>
         </div>
       </section>
+    <SiteFooter />
     </main>
   );
 }

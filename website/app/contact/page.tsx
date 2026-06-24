@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import LegalDoc from "@/components/LegalDoc";
 
 export const metadata: Metadata = {
-  title: "Contact — Verba",
+  title: "Contact, Verba",
   description: "Get in touch with the Verba team at Agentik OS for support or questions.",
   alternates: { canonical: "/contact" },
 };

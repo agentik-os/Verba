@@ -3,14 +3,15 @@ import ThemeToggle from "@/components/ThemeToggle";
 import type { Metadata } from "next";
 import { competitors } from "@/lib/competitors";
 import { COMPARE } from "@/lib/compare-matrix";
+import SiteFooter from "@/components/SiteFooter";
 
 export const metadata: Metadata = {
-  title: "Verba vs Wispr Flow, superwhisper & more — Mac dictation",
+  title: "Verba vs Wispr Flow, superwhisper & more, Mac dictation",
   description:
-    "An honest, sourced comparison of Verba vs Wispr Flow, superwhisper, Aqua Voice, MacWhisper and 5 more — 24 dictation features, side by side.",
+    "An honest, sourced comparison of Verba vs Wispr Flow, superwhisper, Aqua Voice, MacWhisper and 5 more, 24 dictation features, side by side.",
   alternates: { canonical: "/compare" },
   openGraph: {
-    title: "Verba vs the rest — Mac dictation comparison",
+    title: "Verba vs the rest, Mac dictation comparison",
     description: "Honest, sourced: 24 features across 10 Mac dictation apps, side by side.",
     url: "/compare",
     type: "article",
@@ -42,7 +43,7 @@ function Cell({ v, verba }: { v: string; verba?: boolean }) {
     );
   if (v === "no") return <span className="cross">✗</span>;
   if (v === "partial") return <span className="text-[12px]" style={{ color: "var(--fg-50)" }}>~ partial</span>;
-  if (v === "?") return <span className="muted">–</span>;
+  if (v === "?") return <span className="muted">, </span>;
   return <span className={`text-[12px] ${verba ? "font-medium" : "muted"}`}>{v}</span>;
 }
 
@@ -73,7 +74,7 @@ export default function Compare() {
         <p className="mx-auto mt-5 max-w-2xl text-lg muted text-balance">
           An honest, sourced comparison across 24 features. Verba is the only Mac dictation app that
           runs on-device by default, lets you bring your own AI (or your Claude plan with no key),
-          and ships JARVIS — a voice agent that acts on 1,000+ connected apps. Every value below is
+          and ships JARVIS, a voice agent that acts on 1,000+ connected apps. Every value below is
           verified from each vendor; nothing inflated.
         </p>
       </section>
@@ -119,7 +120,7 @@ export default function Compare() {
       </div>
       <p className="mt-3 text-center text-xs muted">
         Verified mid-2026 from each vendor&apos;s site, pricing page and public reviews. Found an error?
-        Tell us and we&apos;ll fix it — this table stays honest.
+        Tell us and we&apos;ll fix it, this table stays honest.
       </p>
 
       {/* Per-competitor cards */}
@@ -141,22 +142,7 @@ export default function Compare() {
         <p className="mt-6 text-xs muted">33 free dictations · Pro $9.99/mo · cancel anytime</p>
       </div>
 
-      <footer className="mt-24 flex flex-col items-center gap-3 border-t hairline pt-12 text-sm muted">
-        <Link href="/" className="flex items-center gap-2.5">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] bg-black ring-1 ring-[var(--border)]">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z" /><path d="M5 11a1 1 0 1 1 2 0 5 5 0 0 0 10 0 1 1 0 1 1 2 0 7 7 0 0 1-6 6.93V21a1 1 0 1 1-2 0v-3.07A7 7 0 0 1 5 11Z" /></svg>
-          </span>
-          <span className="text-[15px] font-semibold tracking-tight text-[var(--fg)]">Verba</span>
-        </Link>
-        <p>Speak it. Send it clean.</p>
-        <div className="flex flex-wrap justify-center gap-5">
-          <Link href="/" className="hover:text-[var(--fg)]">Home</Link>
-          <Link href="/#pricing" className="hover:text-[var(--fg)]">Pricing</Link>
-          <Link href="/acknowledgements" className="hover:text-[var(--fg)]">Acknowledgements</Link>
-          <a href={DOWNLOAD} className="hover:text-[var(--fg)]">Download</a>
-        </div>
-        <p className="text-xs">© 2026 Verba · Runs on-device with open models</p>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

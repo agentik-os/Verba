@@ -193,20 +193,27 @@ enum Pipeline {
             if profile.targetLanguage == nil, Output.willPasteRich(frontmostBundleID) {
                 sys += markdownFormattingAddendum
             }
-            // Universal anti-preamble guard (final position = strongest signal). Some models still
-            // open with a label/preamble ("Here is the translation:", "Voici…", "Sure,…") despite the
-            // per-mode "no preamble" lines — most visibly in Translate, where it shows up as a stray
-            // first line. This mode-agnostic directive suppresses it WITHOUT ever stripping/altering
-            // real content (a heuristic line-strip would risk eating a legitimate first line).
-            sys += """
+            // Anti-preamble guard (final position = strongest signal). Some models still open with a
+            // label/preamble ("Here is the translation:", "Voici…", "Sure,…") despite the per-mode "no
+            // preamble" lines — most visibly in Translate, where it shows up as a stray first line.
+            // This suppresses it WITHOUT ever stripping/altering real content.
+            //
+            // CRITICAL EXCEPTION — the agentic / Action path: there the model must be free to emit a
+            // STRUCTURED ACTION (JSON) that JARVIS parses & executes. "output the result text and
+            // nothing else" suppresses that JSON, so the spoken command stops running (this is exactly
+            // what broke Fn+X Action mode). Skip the guard whenever a structured action is possible —
+            // the agenticActionsAddendum already governs that path's output format.
+            if !(actionMode || (profile.vision && s.agenticActions)) {
+                sys += """
 
 
-            OUTPUT FORMAT (this overrides any urge to be conversational): reply with the result ONLY. \
-            Your very first character must be the first character of the result. Never begin with a \
-            preamble, label, heading, restatement of the request, or meta-comment such as "Here is", \
-            "Translation:", "Sure", or "Voici". Do not add closing commentary either — output the \
-            result text and nothing else.
-            """
+                OUTPUT FORMAT (this overrides any urge to be conversational): reply with the result ONLY. \
+                Your very first character must be the first character of the result. Never begin with a \
+                preamble, label, heading, restatement of the request, or meta-comment such as "Here is", \
+                "Translation:", "Sure", or "Voici". Do not add closing commentary either — output the \
+                result text and nothing else.
+                """
+            }
 
             let r = Reprompter(model: profile.model ?? s.claudeModel)   // per-mode model override
 
@@ -365,7 +372,14 @@ enum Pipeline {
             // GUARANTEE (not just a prompt): strip any leading model preamble before it can reach
             // the clipboard. The system prompt asks for no preamble, but models still slip one in
             // ("Here is the restructured transcript:") — this makes it deterministically impossible.
-            reprompted = stripLeadingPreamble(reprompted)
+            //
+            // BUT only on TEXT we deliver. When an Action was detected (Fn+X / agentic), `reprompted`
+            // is still the RAW user transcript (never reassigned) and is handed to the action agent as
+            // fallbackText — stripping it would corrupt the user's own words (e.g. "open Spotify, here
+            // is…"). Skip the strip whenever an action is in play.
+            if detectedAction == nil {
+                reprompted = stripLeadingPreamble(reprompted)
+            }
         }
 
         // Raw/Flow mode (no AI) → fall back to literal snippet expansion. In AI modes the

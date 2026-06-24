@@ -964,44 +964,78 @@ private struct ProjectDetail: View {
         .padding(.horizontal, 22).padding(.top, 18).padding(.bottom, 12)
     }
 
-    /// Removable tag chips plus an "Add tag" affordance.
+    /// Removable tag chips plus an "Add tag" affordance, with a suggestion row
+    /// (existing tags from other projects) shown while typing a new tag.
     private var tagsRow: some View {
-        FlowLayout(spacing: 6) {
-            ForEach(project.tags, id: \.self) { tag in
-                HStack(spacing: 5) {
-                    Text(tag).font(.caption).lineLimit(1)
-                    Button { onRemoveTag(tag) } label: { Image(systemName: "xmark.circle.fill") }
-                        .buttonStyle(.plain).foregroundStyle(.tertiary)
+        VStack(alignment: .leading, spacing: 6) {
+            FlowLayout(spacing: 6) {
+                ForEach(project.tags, id: \.self) { tag in
+                    HStack(spacing: 5) {
+                        Text(tag).font(.caption).lineLimit(1)
+                        Button { onRemoveTag(tag) } label: { Image(systemName: "xmark.circle.fill") }
+                            .buttonStyle(.plain).foregroundStyle(.tertiary)
+                    }
+                    .padding(.horizontal, 9).padding(.vertical, 5)
+                    .background(.softFill, in: Capsule())
                 }
-                .padding(.horizontal, 9).padding(.vertical, 5)
-                .background(.softFill, in: Capsule())
+                if addingTag {
+                    HStack(spacing: 4) {
+                        Image(systemName: "tag").font(.caption2).foregroundStyle(.secondary)
+                        TextField(L("Tag"), text: $tagDraft)
+                            .textFieldStyle(.plain).font(.caption).frame(width: 80)
+                            .onSubmit { commitTag() }
+                        Button { commitTag() } label: { Image(systemName: "checkmark.circle.fill") }
+                            .buttonStyle(.plain).foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 9).padding(.vertical, 5)
+                    .background(.softFill, in: Capsule())
+                } else {
+                    Button { addingTag = true } label: {
+                        Label(L("Add tag"), systemImage: "plus").font(.caption)
+                    }
+                    .buttonStyle(.plain).foregroundStyle(.secondary)
+                    .padding(.horizontal, 9).padding(.vertical, 5)
+                    .background(.softFill, in: Capsule())
+                }
             }
-            if addingTag {
-                HStack(spacing: 4) {
-                    Image(systemName: "tag").font(.caption2).foregroundStyle(.secondary)
-                    TextField(L("Tag"), text: $tagDraft)
-                        .textFieldStyle(.plain).font(.caption).frame(width: 80)
-                        .onSubmit(commitTag)
-                    Button { commitTag() } label: { Image(systemName: "checkmark.circle.fill") }
+            if addingTag && !tagSuggestions.isEmpty {
+                FlowLayout(spacing: 6) {
+                    ForEach(tagSuggestions, id: \.self) { tag in
+                        Button { commitTag(tag) } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "number").font(.caption2)
+                                Text(tag).font(.caption).lineLimit(1)
+                            }
+                            .padding(.horizontal, 9).padding(.vertical, 5)
+                            .background(.softFill.opacity(0.6), in: Capsule())
+                            .overlay(Capsule().strokeBorder(.secondary.opacity(0.25)))
+                        }
                         .buttonStyle(.plain).foregroundStyle(.secondary)
+                    }
                 }
-                .padding(.horizontal, 9).padding(.vertical, 5)
-                .background(.softFill, in: Capsule())
-            } else {
-                Button { addingTag = true } label: {
-                    Label(L("Add tag"), systemImage: "plus").font(.caption)
-                }
-                .buttonStyle(.plain).foregroundStyle(.secondary)
-                .padding(.horizontal, 9).padding(.vertical, 5)
-                .background(.softFill, in: Capsule())
             }
         }
     }
 
-    private func commitTag() {
-        let t = tagDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+    /// Existing tags (across all projects) that aren't already on this project,
+    /// narrowed by the current draft. Lets the user reuse a tag instead of retyping it.
+    private var tagSuggestions: [String] {
+        let draft = tagDraft.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let present = Set(project.tags.map { $0.lowercased() })
+        return TodoStore.shared.allTags.filter { tag in
+            let lt = tag.lowercased()
+            guard !present.contains(lt) else { return false }
+            return draft.isEmpty || lt.contains(draft)
+        }.prefix(8).map { $0 }
+    }
+
+    private func commitTag(_ tag: String? = nil) {
+        let t = (tag ?? tagDraft).trimmingCharacters(in: .whitespacesAndNewlines)
         if !t.isEmpty { onAddTag(t) }
-        tagDraft = ""; addingTag = false
+        tagDraft = ""
+        // Keep the editor open after picking a suggestion so several can be added in a row;
+        // close it when the user submits a typed/empty draft.
+        addingTag = (tag != nil)
     }
 }
 

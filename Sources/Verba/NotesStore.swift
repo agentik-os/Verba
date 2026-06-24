@@ -115,9 +115,13 @@ final class NotesStore: ObservableObject {
         return entry
     }
 
-    func update(_ entry: NotesEntry, formatted: String, formatName: String? = nil, tags: [String]? = nil, title: String? = nil) {
-        guard let i = entries.firstIndex(where: { $0.id == entry.id }) else { return }
-        if entries[i].locked { return }   // never overwrite a locked note's ciphertext via the editor
+    /// Returns true only when the edit was actually committed. A locked note returns false here —
+    /// the editor must route locked edits through updateUnlockedNote(...) so they get re-encrypted
+    /// (otherwise edits were silently dropped while the UI still flashed "Saved" — data loss).
+    @discardableResult
+    func update(_ entry: NotesEntry, formatted: String, formatName: String? = nil, tags: [String]? = nil, title: String? = nil) -> Bool {
+        guard let i = entries.firstIndex(where: { $0.id == entry.id }) else { return false }
+        if entries[i].locked { return false }   // locked notes go through updateUnlockedNote (re-encrypt)
         entries[i].formatted = formatted
         if let formatName { entries[i].formatName = formatName }
         if let title { entries[i].title = title.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -125,6 +129,31 @@ final class NotesStore: ObservableObject {
         entries[i].updatedAt = Date()
         save()
         push(entries[i])   // re-sync the edited note
+        return true
+    }
+
+    /// Commit an edit to a note that's locked but unlocked THIS session: re-encrypt the new
+    /// plaintext with the note's own password (key = SHA-256(salt ‖ password)) so the body stays
+    /// ciphertext at rest. Title + tags stay in clear (so the note is findable). Returns false if
+    /// the note isn't locked, the password is empty, or crypto fails.
+    @discardableResult
+    func updateUnlockedNote(_ entry: NotesEntry, original: String, formatted: String,
+                            formatName: String? = nil, tags: [String]? = nil, title: String? = nil,
+                            password: String) -> Bool {
+        guard !password.isEmpty, let i = entries.firstIndex(where: { $0.id == entry.id }), entries[i].locked else { return false }
+        let blob = NoteCrypto.pack(original: original, formatted: formatted)
+        guard let (cipher, salt) = NoteCrypto.encrypt(blob, password: password) else { return false }
+        entries[i].original = ""          // ciphertext-only at rest
+        entries[i].formatted = cipher
+        entries[i].salt = salt
+        if let formatName { entries[i].formatName = formatName }
+        if let title { entries[i].title = title.trimmingCharacters(in: .whitespacesAndNewlines) }
+        // Tags are visible while locked, so extract #hashtags from the PLAINTEXT before encrypting.
+        if let tags { entries[i].tags = NotesStore.mergeTags(tags + NotesStore.hashtags(in: formatted)) }
+        entries[i].updatedAt = Date()
+        save()
+        push(entries[i])
+        return true
     }
 
     // MARK: - Per-note password lock (each note has its OWN password)

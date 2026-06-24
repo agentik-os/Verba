@@ -337,7 +337,7 @@ struct MainWindow: View {
                             .font(.caption.weight(.medium)).lineLimit(1).truncationMode(.middle)
                         Text(settings.isPro ? L("Pro plan") : L("Free trial"))
                             .font(.caption2)
-                            .foregroundStyle(settings.isPro ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
+                            .foregroundStyle(.secondary)   // monochrome, discreet (no green) to match the design
                     }
                     Spacer(minLength: 4)
                 }

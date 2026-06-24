@@ -3,13 +3,14 @@ import type { Metadata } from "next";
 import Reveal from "@/components/Reveal";
 import ThemeToggle from "@/components/ThemeToggle";
 
+import SiteFooter from "@/components/SiteFooter";
 export const metadata: Metadata = {
-  title: "Documentation — Verba AI Dictation for Mac",
+  title: "Documentation, Verba AI Dictation for Mac",
   description:
     "Verba's technical documentation: install & permissions, dictation modes, AI engines and bring-your-own-AI setup, the JARVIS voice agent, Notes, Tasks, shortcuts, privacy and troubleshooting.",
   alternates: { canonical: "/docs" },
   openGraph: {
-    title: "Verba Documentation — Mac AI Dictation",
+    title: "Verba Documentation, Mac AI Dictation",
     description:
       "How Verba works, end to end: setup, permissions, modes, AI engines, JARVIS, Notes, Tasks, every shortcut, privacy and troubleshooting.",
     url: "/docs",
@@ -37,10 +38,10 @@ const SECTIONS: Section[] = [
     blocks: [
       { kind: "steps", items: [
         "Download Verba for macOS (Apple Silicon, macOS 14 or later) and drag it to Applications.",
-        "Launch it. Verba lives in your menu bar — there is no Dock icon.",
+        "Launch it. Verba lives in your menu bar, there is no Dock icon.",
         "Grant Microphone access (to hear you) and Accessibility access (to type into other apps via ⌘V). Both are requested on first run; you can re-grant them in System Settings ▸ Privacy & Security.",
         "Optional: grant Screen Recording only if you want Context mode (Verba reading your screen).",
-        "Hold the Fn (globe) key, speak, release — your clean text is pasted where your cursor is.",
+        "Hold the Fn (globe) key, speak, release, your clean text is pasted where your cursor is.",
       ] },
       { kind: "p", text: "New installs include 33 full-feature dictations to try everything before subscribing. Verba is $9.99/month or $84/year, billed through Stripe." },
     ],
@@ -55,23 +56,23 @@ const SECTIONS: Section[] = [
         "Hold-to-talk: hold Fn while you speak, release to send. Choose your style in Settings ▸ Dictation.",
         "While recording, a small pill shows a live waveform. Press the × (or Esc) to cancel without pasting.",
         "Pause/resume mid-dictation with ⌃ (Control); both shortcuts are rebindable.",
-        "Dictations stack: start the next one while the last is still processing — each in-flight job shows as a chip above the pill.",
+        "Dictations stack: start the next one while the last is still processing, each in-flight job shows as a chip above the pill.",
       ] },
     ],
   },
   {
     id: "modes",
     title: "Modes & styles",
-    blurb: "Six built-in modes plus custom AI-built modes — each is a prompt that shapes your speech.",
+    blurb: "Six built-in modes plus custom AI-built modes, each is a prompt that shapes your speech.",
     blocks: [
       { kind: "ul", items: [
-        "Flow — verbatim, no AI rewriting (the default).",
-        "Polish — resolves your self-corrections into finished prose.",
-        "Intent — you give an instruction and Verba writes to it.",
-        "Translate — pick a target language once; speak any language, it writes the target.",
-        "Context — screenshots your screen and writes from what it sees (needs Screen Recording + a vision model).",
-        "Coding — formats for code and technical writing.",
-        "Custom modes — describe what you need and Verba's AI builds a new mode; edit any prompt freely.",
+        "Flow, verbatim, no AI rewriting (the default).",
+        "Polish, resolves your self-corrections into finished prose.",
+        "Intent, you give an instruction and Verba writes to it.",
+        "Translate, pick a target language once; speak any language, it writes the target.",
+        "Context, screenshots your screen and writes from what it sees (needs Screen Recording + a vision model).",
+        "Coding, formats for code and technical writing.",
+        "Custom modes, describe what you need and Verba's AI builds a new mode; edit any prompt freely.",
       ] },
       { kind: "p", text: "Switch modes with Fn+1…9 or the menu-bar picker; the choice sticks for every next dictation until you change it. Writing Styles (Fn+] / Fn+[) layer tone/format on top of any mode." },
     ],
@@ -79,7 +80,7 @@ const SECTIONS: Section[] = [
   {
     id: "ai-engines",
     title: "AI engines & bring-your-own-AI",
-    blurb: "Transcription and AI rewriting both run on engines you choose — local or your own keys.",
+    blurb: "Transcription and AI rewriting both run on engines you choose, local or your own keys.",
     blocks: [
       { kind: "p", text: "Transcription (speech → text):" },
       { kind: "ul", items: [
@@ -88,24 +89,24 @@ const SECTIONS: Section[] = [
       ] },
       { kind: "p", text: "AI rewriting (cleanup, modes):" },
       { kind: "ul", items: [
-        "Your Claude subscription via Claude Code — no API key needed.",
+        "Your Claude subscription via Claude Code, no API key needed.",
         "Your own Anthropic API key, or an OpenRouter key.",
-        "A fully local Ollama model — offline, no key, no markup.",
+        "A fully local Ollama model, offline, no key, no markup.",
       ] },
       { kind: "p", text: "Verba is strictly bring-your-own-AI: it never makes a billed API call on your behalf. All keys are stored in the macOS Keychain, never on Verba's servers." },
     ],
   },
   {
     id: "jarvis",
-    title: "JARVIS — the voice agent",
+    title: "JARVIS, the voice agent",
     blurb: "Action mode (Fn+X) plans, asks to clarify, and acts on 1,000+ connected apps after you confirm.",
     blocks: [
-      { kind: "p", text: "Say a goal however it comes out — \"remind me in 10 to grab the cake\" or \"find me a free hour tomorrow and book it\". JARVIS recovers your intent, resolves times in your timezone, reads context when it needs to, shows exactly what it will do, and only acts on your confirmation." },
+      { kind: "p", text: "Say a goal however it comes out, \"remind me in 10 to grab the cake\" or \"find me a free hour tomorrow and book it\". JARVIS recovers your intent, resolves times in your timezone, reads context when it needs to, shows exactly what it will do, and only acts on your confirmation." },
       { kind: "ul", items: [
         "Connect apps in Settings ▸ Connected apps: Gmail, Slack, Notion, Google Calendar, Linear, GitHub and 1,000+ more, via Composio.",
         "Most apps connect with an API key; OAuth apps open a browser sign-in.",
         "Connection keys are relayed server-side and never stored on your Mac.",
-        "Planning runs on your own AI engine (Claude Code or a local model) — your requests never burn a shared cloud key.",
+        "Planning runs on your own AI engine (Claude Code or a local model), your requests never burn a shared cloud key.",
       ] },
     ],
   },
@@ -115,10 +116,10 @@ const SECTIONS: Section[] = [
     blurb: "Record up to an hour and turn it into a clean, structured document.",
     blocks: [
       { kind: "ul", items: [
-        "Pick a format before you start: Clean note, Brain-dump→outline, Summary, Meeting notes, Journal, Email, Code task, To-do list, or Article outline — plus your own custom modes.",
+        "Pick a format before you start: Clean note, Brain-dump→outline, Summary, Meeting notes, Journal, Email, Code task, To-do list, or Article outline, plus your own custom modes.",
         "Markdown is rendered (headings, bold, checkboxes). Edit the result in place.",
-        "File and filter notes with #hashtags — they nest into a Bear-style tag tree in the sidebar.",
-        "Lock a note with its own password — locked notes are encrypted on your Mac (AES-GCM, a separate key per note).",
+        "File and filter notes with #hashtags, they nest into a Bear-style tag tree in the sidebar.",
+        "Lock a note with its own password, locked notes are encrypted on your Mac (AES-GCM, a separate key per note).",
         "Export any note as Markdown (.md) or plain text.",
       ] },
     ],
@@ -129,7 +130,7 @@ const SECTIONS: Section[] = [
     blurb: "A voice task manager: projects → tasks → sub-tasks, built by an AI agent.",
     blocks: [
       { kind: "ul", items: [
-        "Describe a list — \"a Cooking project, a Chocolate cake task, and the full shopping list\" — and Verba builds the whole hierarchy.",
+        "Describe a list, \"a Cooking project, a Chocolate cake task, and the full shopping list\", and Verba builds the whole hierarchy.",
         "Tags file into the same nested tree as Notes; filter by any tag and everything nested beneath it.",
         "⌥+Fn pops a quick glance of today's tasks; add or check off tasks by voice from there.",
       ] },
@@ -141,7 +142,7 @@ const SECTIONS: Section[] = [
     blurb: "Teach Verba your vocabulary, and run quick text transforms anywhere.",
     blocks: [
       { kind: "ul", items: [
-        "Add a word by voice (\"add to dictionary\") or in Settings — great for names and brands. Verba keeps the exact spelling, even through the AI rewrite.",
+        "Add a word by voice (\"add to dictionary\") or in Settings, great for names and brands. Verba keeps the exact spelling, even through the AI rewrite.",
         "Auto-learn: correct a word in text Verba just wrote and it learns the spelling for next time.",
         "Transforms: select text in any app and say a short shortcut (\"fix grammar\", \"translate to English\"), or right-click ▸ Services ▸ Transform with Verba.",
       ] },
@@ -153,7 +154,7 @@ const SECTIONS: Section[] = [
     blurb: "You decide what is stored, for how long, and what syncs.",
     blocks: [
       { kind: "ul", items: [
-        "On-device mode keeps your audio on your Mac — it never leaves the device.",
+        "On-device mode keeps your audio on your Mac, it never leaves the device.",
         "Turn history off entirely (nothing written, nothing synced), or auto-delete entries after 7, 30, or 90 days.",
         "Optionally store only the text of each dictation, not the audio, to save disk.",
         "Signed in, your history, notes and stats sync across your Macs; signed out, nothing is uploaded.",
@@ -213,7 +214,7 @@ const JSONLD = {
   "@graph": [
     {
       "@type": "TechArticle",
-      headline: "Verba Documentation — AI Dictation for Mac",
+      headline: "Verba Documentation, AI Dictation for Mac",
       description:
         "Technical documentation for Verba: setup, permissions, dictation modes, AI engines, the JARVIS voice agent, Notes, Tasks, shortcuts, privacy and troubleshooting.",
       url: "https://verba.run/docs",
@@ -296,7 +297,7 @@ export default function Docs() {
         <div className="mx-auto mb-6 w-fit rounded-full glass px-4 py-1.5 text-xs muted">Documentation</div>
         <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">How Verba works</h1>
         <p className="mx-auto mt-5 max-w-2xl text-lg muted text-balance">
-          Everything from first launch to power use — setup and permissions, dictation modes, the AI
+          Everything from first launch to power use, setup and permissions, dictation modes, the AI
           engines you control, the JARVIS voice agent, Notes, Tasks, every shortcut, privacy, and the
           fixes for the few things that trip people up.
         </p>
@@ -338,6 +339,7 @@ export default function Docs() {
           </p>
         </div>
       </section>
+    <SiteFooter />
     </main>
   );
 }

@@ -29,7 +29,7 @@ export const COMPARE = {
  "prices": {
   "verba": "$9.99/mo",
   "wispr-flow": "$15/mo (monthly); $12/mo billed annually",
-  "superwhisper": "$8.49–$8.99/mo (Pro; ~$84.99/yr; $249.99 lifetime)",
+  "superwhisper": "$8.49 to $8.99/mo (Pro; ~$84.99/yr; $249.99 lifetime)",
   "aqua-voice": "$8/mo (annual) / $10/mo (monthly)",
   "macwhisper": "No monthly plan on Gumroad (one-time €59/~$69 lifetime); App Store \"Whisper Transcription\" subscription ~$6.99/mo (or $29.99/yr); optional Assistant add-on $9.99/mo",
   "willow-voice": "$15/mo (monthly) or $12/mo billed annually (Individual); free plan 2,000 words/week",
@@ -389,11 +389,11 @@ export const COMPARE = {
    "cells": {
     "verba": "$9.99/mo (or $84/year; 3",
     "wispr-flow": "$15/mo (Pro monthly); $1",
-    "superwhisper": "$8.49–$8.99/mo (Pro)",
+    "superwhisper": "$8.49 to $8.99/mo (Pro)",
     "aqua-voice": "$8/mo billed annually ($",
     "macwhisper": "no",
     "willow-voice": "$15/mo monthly, or $12/m",
-    "voiceink": "$0/mo — one-time lifetim",
+    "voiceink": "$0/mo, one-time lifetim",
     "talktastic": "Free during beta; no ver",
     "apple-dictation": "$0 (free, included with ",
     "otter-ai": "$0 Basic (free), $16.99 "

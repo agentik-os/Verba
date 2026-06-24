@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { competitors, getCompetitor, VERBA, onDeviceLabel } from "@/lib/competitors";
 
+import SiteFooter from "@/components/SiteFooter";
 const DOWNLOAD = "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg";
 
 export function generateStaticParams() {
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 function vsFaq(c: { name: string; price: string; onDevice: string }) {
   const local =
     c.onDevice === "yes"
-      ? `Both run on-device. Verba adds AI cleanup, live translation, and JARVIS — a voice agent that acts on 1,000+ connected apps.`
+      ? `Both run on-device. Verba adds AI cleanup, live translation, and JARVIS, a voice agent that acts on 1,000+ connected apps.`
       : `Verba transcribes on-device by default, so your audio never has to leave your Mac; ${c.name} sends audio to the cloud.`;
   return [
     { q: `Is Verba a good ${c.name} alternative?`, a: `Yes. Verba is a native Mac dictation app at $9.99/mo with on-device transcription, AI cleanup in any app, live translation, and a voice agent for 1,000+ apps. ${local}` },
@@ -146,7 +147,7 @@ export default async function Vs({ params }: { params: Promise<{ slug: string }>
       </div>
 
       <section className="mt-16">
-        <h2 className="text-center text-2xl font-semibold tracking-tight">Verba vs {c.name} — FAQ</h2>
+        <h2 className="text-center text-2xl font-semibold tracking-tight">Verba vs {c.name}, FAQ</h2>
         <div className="mx-auto mt-8 grid max-w-3xl gap-2.5">
           {faq.map((f) => (
             <details key={f.q} className="group glass rounded-xl px-6 py-5">
@@ -163,6 +164,7 @@ export default async function Vs({ params }: { params: Promise<{ slug: string }>
         </a>
         <p className="mt-6 text-xs muted">33 free dictations · Pro $9.99/mo · 7-day trial</p>
       </div>
+    <SiteFooter />
     </main>
   );
 }

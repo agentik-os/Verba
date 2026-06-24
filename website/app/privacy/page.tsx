@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import LegalDoc from "@/components/LegalDoc";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Verba",
-  description: "How Verba handles your voice, transcripts, and data — on-device by default, with full control over what syncs, how long history is kept, and your connected-app keys.",
+  title: "Privacy Policy, Verba",
+  description: "How Verba handles your voice, transcripts, and data, on-device by default, with full control over what syncs, how long history is kept, and your connected-app keys.",
   alternates: { canonical: "/privacy" },
 };
 
@@ -11,19 +11,19 @@ const MD = `## Verba Privacy Policy
 
 **Effective date:** June 12, 2026
 
-Verba is a native macOS dictation and voice-agent app, and a product of Agentik {OS}, operated by Dafnck Studio (Entreprise Individuelle), founded by Gareth Simono and registered in France ("we", "us", "Verba"). This Privacy Policy explains what data Verba processes, where it goes, and the controls you have. We built Verba to keep your voice on your Mac by default — this policy describes exactly when that is and isn't the case.
+Verba is a native macOS dictation and voice-agent app, and a product of Agentik {OS}, operated by Dafnck Studio (Entreprise Individuelle), founded by Gareth Simono and registered in France ("we", "us", "Verba"). This Privacy Policy explains what data Verba processes, where it goes, and the controls you have. We built Verba to keep your voice on your Mac by default, this policy describes exactly when that is and isn't the case.
 
 We do not sell your personal information.
 
-## 1. Summary — what leaves your Mac
+## 1. Summary, what leaves your Mac
 
 - **Your audio stays on your Mac by default.** In on-device transcription mode (WhisperKit / Parakeet), your microphone audio is converted to text locally and never transmitted to us or any third party.
-- **Some features require sending data off-device** — for example AI cleanup, live translation, or the JARVIS voice agent using a cloud AI provider, and JARVIS actions on connected apps. These are described below.
+- **Some features require sending data off-device**, for example AI cleanup, live translation, or the JARVIS voice agent using a cloud AI provider, and JARVIS actions on connected apps. These are described below.
 - **You can stay fully local.** Using on-device transcription with a local AI model (Ollama) and without signing in keeps essentially all processing on your machine.
 
 ## 2. Information We Process
 
-**Voice and audio.** With on-device transcription, audio is processed locally and not sent to us. If you choose a cloud AI provider for transcription, cleanup, translation, or JARVIS, the relevant text (and, where you have selected a cloud transcription path, audio) is sent to that provider under your own credentials — see "Bring-Your-Own-AI" below.
+**Voice and audio.** With on-device transcription, audio is processed locally and not sent to us. If you choose a cloud AI provider for transcription, cleanup, translation, or JARVIS, the relevant text (and, where you have selected a cloud transcription path, audio) is sent to that provider under your own credentials, see "Bring-Your-Own-AI" below.
 
 **Transcripts and notes.** Transcriptions and notes are stored locally on your Mac. If you are signed in, they may be synced to our backend so they are available across your sessions/devices. If you are not signed in, they are not synced to us.
 
@@ -49,10 +49,10 @@ The Verba macOS app does not rely on advertising cookies. Our website and accoun
 
 We share data only with service providers needed to operate Verba, and only as necessary for their function:
 
-- **The AI provider you choose** (Anthropic, OpenAI, OpenRouter, or local Ollama) — receives the text/audio you send for cleanup, translation, transcription, or JARVIS, under your own key/plan. Local Ollama receives nothing off-device.
-- **Composio** — relays JARVIS actions to the 1,000+ apps you connect, and holds the connected-app credentials server-side.
-- **Stripe** — payment and subscription processing.
-- **Clerk** — account authentication.
+- **The AI provider you choose** (Anthropic, OpenAI, OpenRouter, or local Ollama), receives the text/audio you send for cleanup, translation, transcription, or JARVIS, under your own key/plan. Local Ollama receives nothing off-device.
+- **Composio**, relays JARVIS actions to the 1,000+ apps you connect, and holds the connected-app credentials server-side.
+- **Stripe**, payment and subscription processing.
+- **Clerk**, account authentication.
 
 Each provider acts under its own privacy terms. We do not sell your personal information, and we do not share it for third-party advertising.
 
@@ -63,7 +63,7 @@ Each provider acts under its own privacy terms. We do not sell your personal inf
 - **Connected-app credentials** are retained until you disconnect the app or close your account, after which they are revoked/deleted.
 - **Billing records** are retained as required for accounting and legal compliance.
 
-**The off-switch:** You can turn off cloud sync by not signing in (or signing out), keep transcription fully on-device, and use a local Ollama model — in that configuration Verba processes essentially everything locally. Disconnecting a JARVIS app deletes its server-side credentials.
+**The off-switch:** You can turn off cloud sync by not signing in (or signing out), keep transcription fully on-device, and use a local Ollama model, in that configuration Verba processes essentially everything locally. Disconnecting a JARVIS app deletes its server-side credentials.
 
 ## 7. Your Rights
 

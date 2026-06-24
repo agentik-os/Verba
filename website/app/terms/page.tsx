@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import LegalDoc from "@/components/LegalDoc";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — Verba",
+  title: "Terms of Service, Verba",
   description: "The Terms of Service for Verba, the native macOS AI dictation app by Agentik OS: subscriptions, the JARVIS voice agent, bring-your-own-AI, and acceptable use.",
   alternates: { canonical: "/terms" },
 };
@@ -15,7 +15,7 @@ These Terms of Service ("Terms") govern your use of Verba, a native macOS dictat
 
 ## 1. The Service
 
-Verba provides on-device voice-to-text transcription (WhisperKit / Parakeet), AI-assisted text cleanup in any app, live translation, and JARVIS — a voice agent that can act on 1,000+ connected apps via Composio. We may add, modify, or discontinue features. We reserve the right to modify the Service to maintain quality, security, and compliance.
+Verba provides on-device voice-to-text transcription (WhisperKit / Parakeet), AI-assisted text cleanup in any app, live translation, and JARVIS, a voice agent that can act on 1,000+ connected apps via Composio. We may add, modify, or discontinue features. We reserve the right to modify the Service to maintain quality, security, and compliance.
 
 ## 2. License
 
@@ -39,9 +39,9 @@ You agree to use Verba lawfully and not to: use it for unlawful, infringing, har
 
 ## 6. Bring-Your-Own-AI (BYO-AI)
 
-Verba lets you connect your own AI provider (a Claude plan / Claude Code, or an Anthropic, OpenAI, or OpenRouter key, or local Ollama). Your use of those providers is governed by **their** terms and pricing, and you are responsible for your own usage, costs, and key security. We are not responsible for the availability, accuracy, output, or acts of third-party AI providers, and AI output may be inaccurate — review it before relying on it.
+Verba lets you connect your own AI provider (a Claude plan / Claude Code, or an Anthropic, OpenAI, or OpenRouter key, or local Ollama). Your use of those providers is governed by **their** terms and pricing, and you are responsible for your own usage, costs, and key security. We are not responsible for the availability, accuracy, output, or acts of third-party AI providers, and AI output may be inaccurate, review it before relying on it.
 
-## 7. JARVIS & Connected Apps — Your Responsibility
+## 7. JARVIS & Connected Apps, Your Responsibility
 
 JARVIS can take actions on apps you connect via Composio, relayed on your behalf server-side. **You are solely responsible for which apps you connect and for the actions you instruct JARVIS to perform**, including any sending, deleting, posting, purchasing, or modifying of data in those apps. We do not review or guarantee individual actions and are not liable for the consequences of actions you authorize. Disconnect any app at any time to revoke access.
 

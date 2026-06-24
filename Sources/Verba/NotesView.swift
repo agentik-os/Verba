@@ -42,6 +42,7 @@ struct NotesView: View {
     @State private var expandedTags: Set<String> = []   // Bear-style tag tree: which parent tags are open
     // Per-note password lock
     @State private var unlocked: Set<UUID> = []         // notes decrypted this session (cleared on quit)
+    @State private var unlockedKeys: [UUID: String] = [:]   // session-only note passwords (never persisted) to re-encrypt locked-note edits
     @State private var lockSheetFor: NotesEntry?        // note being assigned a NEW password
     @State private var newPassword = ""
     @State private var newPasswordConfirm = ""
@@ -203,6 +204,7 @@ struct NotesView: View {
             Button(L("Unlock")) { tryUnlock(e) }.buttonStyle(.borderedProminent).disabled(gatePassword.isEmpty)
             Button(L("Remove password…"), role: .destructive) { tryRemovePassword(e) }
                 .buttonStyle(.plain).font(.caption).foregroundStyle(.secondary)
+                .disabled(gatePassword.isEmpty)   // empty field said "Wrong password" instead of asking for it
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(40)
@@ -210,6 +212,7 @@ struct NotesView: View {
 
     private func tryUnlock(_ e: NotesEntry) {
         guard let dec = store.decrypt(e, password: gatePassword) else { gateError = true; return }
+        unlockedKeys[e.id] = gatePassword   // retain the session key so edits can be re-encrypted on save
         gateError = false; gatePassword = ""
         unlocked.insert(e.id)
         // Load the decrypted content into the editor (transient — re-locked on disk, plaintext only in memory).
@@ -812,8 +815,10 @@ struct NotesView: View {
                 .foregroundStyle(.secondary)
         } else if savedFlash {
             Label(L("Saved"), systemImage: "checkmark.circle.fill").font(.caption).foregroundStyle(.green)
-        } else {
+        } else if selectedID != nil {
             Label(L("Auto-saved"), systemImage: "checkmark.circle").font(.caption).foregroundStyle(.secondary)
+        } else {
+            Label(L("Draft"), systemImage: "pencil.circle").font(.caption).foregroundStyle(.tertiary)
         }
     }
 
@@ -978,7 +983,15 @@ struct NotesView: View {
         if let id = selectedID, let e = store.entries.first(where: { $0.id == id }) {
             let mergedTags = NotesStore.mergeTags(noteTags + NotesStore.hashtags(in: doc))
             if e.formatted == doc, e.formatName == format.name, e.tags == mergedTags, e.title == titleTrim { return }   // unchanged → skip
-            store.update(e, formatted: doc, formatName: format.name, tags: noteTags, title: titleTrim)
+            // A locked-but-unlocked-this-session note must be re-encrypted, not written as plaintext —
+            // and we must NOT flash "Saved" if the commit didn't actually happen (was silent data loss).
+            let committed: Bool
+            if e.locked, let pw = unlockedKeys[id] {
+                committed = store.updateUnlockedNote(e, original: transcript, formatted: doc, formatName: format.name, tags: noteTags, title: titleTrim, password: pw)
+            } else {
+                committed = store.update(e, formatted: doc, formatName: format.name, tags: noteTags, title: titleTrim)
+            }
+            guard committed else { return }
         } else {
             let e = store.add(original: transcript, formatted: doc, formatName: format.name, audioURL: recordingURL, tags: noteTags, title: titleTrim)
             Stats.shared.record(words: wordCount(doc), seconds: Double(lastRecordedSeconds))

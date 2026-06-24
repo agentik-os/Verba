@@ -9,7 +9,7 @@ import RefCapture from "@/components/RefCapture";
 const themeScript = `(function(){try{var t=localStorage.getItem('verba_theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`;
 
 export const metadata: Metadata = {
-  title: "Verba — AI Dictation for Mac | Private Voice to Text, On-Device",
+  title: "Verba, AI Dictation for Mac | Private Voice to Text, On-Device",
   // ≤160 chars so Google doesn't truncate it in the SERP.
   description:
     "The most complete AI dictation app for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and a voice agent for 1,000+ apps. Private, BYO-AI.",
@@ -20,9 +20,9 @@ export const metadata: Metadata = {
     "speech to text Mac", "on-device dictation", "private dictation app", "voice agent Mac",
   ],
   openGraph: {
-    title: "Verba — AI Dictation for Mac | Private Voice to Text",
+    title: "Verba, AI Dictation for Mac | Private Voice to Text",
     description:
-      "On-device voice-to-text with AI cleanup, live translation, and JARVIS — a voice agent acting on 1,000+ apps. Private, BYO-AI, $9.99/mo.",
+      "On-device voice-to-text with AI cleanup, live translation, and JARVIS, a voice agent acting on 1,000+ apps. Private, BYO-AI, $9.99/mo.",
     url: "/",
     siteName: "Verba",
     type: "website",
@@ -30,13 +30,13 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Verba — AI Dictation for Mac | Private Voice to Text",
+    title: "Verba, AI Dictation for Mac | Private Voice to Text",
     description:
-      "On-device voice-to-text with AI cleanup, live translation, and JARVIS — a voice agent acting on 1,000+ apps. Private, BYO-AI.",
+      "On-device voice-to-text with AI cleanup, live translation, and JARVIS, a voice agent acting on 1,000+ apps. Private, BYO-AI.",
   },
 };
 
-// Site-wide structured data — Google rich results + LLM/AI-search (GEO) citation eligibility.
+// Site-wide structured data, Google rich results + LLM/AI-search (GEO) citation eligibility.
 const SITE_JSONLD = {
   "@context": "https://schema.org",
   "@graph": [
@@ -46,7 +46,7 @@ const SITE_JSONLD = {
       applicationCategory: "UtilitiesApplication",
       operatingSystem: "macOS 14+",
       description:
-        "AI dictation for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and JARVIS — a voice agent that acts on 1,000+ connected apps.",
+        "AI dictation for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and JARVIS, a voice agent that acts on 1,000+ connected apps.",
       url: "https://verba.run",
       downloadUrl: "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg",
       softwareVersion: "0.9.16",
@@ -67,7 +67,7 @@ const SITE_JSONLD = {
       ],
     },
     {
-      // Site entity — helps Google/LLMs treat verba.run as the canonical website node.
+      // Site entity, helps Google/LLMs treat verba.run as the canonical website node.
       "@type": "WebSite",
       name: "Verba",
       url: "https://verba.run",

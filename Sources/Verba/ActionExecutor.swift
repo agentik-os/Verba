@@ -2,6 +2,15 @@ import Foundation
 import EventKit
 import AppKit
 
+// Private API (used by Terminal, iTerm, Chromium…) that makes a spawned child process "responsible
+// for itself" — its macOS data-access (TCC) decisions are judged against the CHILD's identity, not
+// Verba's. We disclaim responsibility for the helper tools we run (notably `/usr/bin/shortcuts`,
+// which reads the Shortcuts app's data): that access is attributed to Apple's own, already-entitled
+// `shortcuts` binary, so macOS 15's "Verba would like to access data from other apps" prompt never
+// fires for it.
+@_silgen_name("responsibility_spawnattrs_setdisclaim")
+private func responsibility_spawnattrs_setdisclaim(_ attrs: UnsafeMutablePointer<posix_spawnattr_t?>, _ disclaim: Int32) -> Int32
+
 // MARK: - VerbaAction — a structured agentic action dictated in Context mode
 //
 // Context mode can resolve a spoken request like "create an event tomorrow at 3pm" or
@@ -627,7 +636,53 @@ struct ActionExecutor {
     }
 
     /// Run a process and capture (exit status, stdout, stderr-trimmed).
+    /// Run a helper tool with responsibility DISCLAIMED (see the top-of-file note): the child owns
+    /// its own TCC decisions, so `/usr/bin/shortcuts list` doesn't make macOS prompt the user with
+    /// "Verba would like to access data from other apps." Falls back to a plain Process if the
+    /// low-level spawn ever fails, so Action mode never silently loses these tools.
     private static func runProcess(_ launchPath: String, _ args: [String]) -> (Int32, String, String) {
+        var attr: posix_spawnattr_t?
+        guard posix_spawnattr_init(&attr) == 0 else { return runProcessPlain(launchPath, args) }
+        defer { posix_spawnattr_destroy(&attr) }
+        _ = responsibility_spawnattrs_setdisclaim(&attr, 1)
+
+        let outPipe = Pipe(), errPipe = Pipe(), inPipe = Pipe()
+        var fa: posix_spawn_file_actions_t?
+        posix_spawn_file_actions_init(&fa)
+        defer { posix_spawn_file_actions_destroy(&fa) }
+        posix_spawn_file_actions_adddup2(&fa, inPipe.fileHandleForReading.fileDescriptor, 0)
+        posix_spawn_file_actions_adddup2(&fa, outPipe.fileHandleForWriting.fileDescriptor, 1)
+        posix_spawn_file_actions_adddup2(&fa, errPipe.fileHandleForWriting.fileDescriptor, 2)
+
+        let argv = [launchPath] + args
+        let cArgs: [UnsafeMutablePointer<CChar>?] = argv.map { strdup($0) } + [nil]
+        defer { for p in cArgs where p != nil { free(p) } }
+
+        var pid: pid_t = 0
+        let spawnRC = posix_spawn(&pid, launchPath, &fa, &attr, cArgs, environ)
+        // Close the child's ends (and our unused stdin) in the parent.
+        try? inPipe.fileHandleForReading.close()
+        try? outPipe.fileHandleForWriting.close()
+        try? errPipe.fileHandleForWriting.close()
+        try? inPipe.fileHandleForWriting.close()
+        guard spawnRC == 0 else { return runProcessPlain(launchPath, args) }
+
+        // Drain both pipes concurrently so a full buffer can't deadlock us.
+        var outData = Data(), errData = Data()
+        let group = DispatchGroup()
+        let q = DispatchQueue(label: "verba.runproc.drain", attributes: .concurrent)
+        q.async(group: group) { outData = outPipe.fileHandleForReading.readDataToEndOfFile() }
+        q.async(group: group) { errData = errPipe.fileHandleForReading.readDataToEndOfFile() }
+        group.wait()
+        var status: Int32 = 0
+        waitpid(pid, &status, 0)
+        let exit: Int32 = (status & 0x7f) == 0 ? (status >> 8) & 0xff : -1
+        let err = (String(data: errData, encoding: .utf8) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return (exit, String(data: outData, encoding: .utf8) ?? "", err)
+    }
+
+    /// Plain (non-disclaimed) fallback — only used if the low-level spawn fails to initialize.
+    private static func runProcessPlain(_ launchPath: String, _ args: [String]) -> (Int32, String, String) {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: launchPath)
         p.arguments = args

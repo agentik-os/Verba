@@ -5,6 +5,7 @@ import SiteNav from "@/components/SiteNav";
 import Reveal from "@/components/Reveal";
 import { FEATURES, getFeature } from "@/lib/features";
 
+import SiteFooter from "@/components/SiteFooter";
 const DOWNLOAD = "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg";
 
 export function generateStaticParams() {
@@ -100,7 +101,7 @@ export default async function FeaturePage({ params }: { params: Promise<{ slug: 
           ))}
         </div>
 
-        {/* FAQ — visible + already in FAQPage schema above */}
+        {/* FAQ, visible + already in FAQPage schema above */}
         <div className="mt-14">
           <h2 className="text-2xl font-semibold tracking-tight">Questions, answered</h2>
           <div className="mt-6 grid gap-2.5">
@@ -116,7 +117,7 @@ export default async function FeaturePage({ params }: { params: Promise<{ slug: 
           </div>
         </div>
 
-        {/* Cross-links to the other feature pages — internal linking + discovery */}
+        {/* Cross-links to the other feature pages, internal linking + discovery */}
         <div className="mt-16">
           <p className="mono-meta">More features</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -129,6 +130,7 @@ export default async function FeaturePage({ params }: { params: Promise<{ slug: 
           </div>
         </div>
       </article>
+    <SiteFooter />
     </main>
   );
 }
