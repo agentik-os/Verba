@@ -10,7 +10,7 @@ export const list = query({
     const all = await ctx.db.query("wishlist").collect();
     const isMe = a.uid && a.secret && (await deviceOk(ctx, a.uid, a.secret));
     return all
-      .sort((x, y) => y.votes - x.votes || y.created - x.created)   // votes desc, then newest-first
+      .sort((x, y) => y.created - x.created || y.votes - x.votes)   // newest-first, then votes desc (VER-22)
       .map((w) => ({
         id: w._id, text: w.text, author: w.author, votes: w.votes,
         created: w.created,

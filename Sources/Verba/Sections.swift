@@ -624,6 +624,7 @@ struct DictionaryView: View {
     // space sentinel in `spoken`, so editing whitespace can't flip the row's type and no literal
     // space leaks into the UI or AI payloads.
     @State private var correctionDrafts: Set<UUID> = []
+    @State private var addedFlash = false   // VER-23: brief "Added to dictionary" confirmation on Enter
 
     private var autoCount: Int { store.terms.filter(\.auto).count }
     private var hasWritten: Bool {
@@ -678,6 +679,21 @@ struct DictionaryView: View {
             // "New term" forever and skew the list and filter counts.
             pruneEmpty(oldValue)
         }
+        // VER-23: clear any blank "New term" tile left over from a previous session so the page
+        // never opens with a stray empty row.
+        .onAppear { pruneAllEmpty() }
+        // VER-23: a brief, unobtrusive confirmation when a word is committed with Enter.
+        .overlay(alignment: .bottom) {
+            if addedFlash {
+                Label(L("Added to dictionary"), systemImage: "checkmark.circle.fill")
+                    .font(.callout.weight(.medium)).foregroundStyle(.white)
+                    .padding(.horizontal, 14).padding(.vertical, 9)
+                    .background(.green, in: Capsule())
+                    .padding(.bottom, 20)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: addedFlash)
     }
 
     /// Remove a term the user opened but left entirely empty (no written and no spoken form).
@@ -830,6 +846,7 @@ struct DictionaryView: View {
                         .onSubmit {
                             if !store.terms[idx].written.trimmingCharacters(in: .whitespaces).isEmpty {
                                 Gamification.shared.flag(.usedDictionary)
+                                flashAdded()   // VER-23: acknowledge the add
                                 newWord()
                             }
                         }
@@ -920,11 +937,27 @@ struct DictionaryView: View {
     }
 
     /// Append a fresh vocabulary word and jump to its editor (and focus it, so Enter can chain adds).
+    /// VER-23: prune any blank tile first, so a new add never stacks below an unfilled "New term" row.
     private func newWord() {
+        pruneAllEmpty()
         let t = DictTerm(spoken: "", written: "")
         store.terms.append(t)
         selectedID = t.id
         DispatchQueue.main.async { focusedTerm = t.id }   // focus after the row renders
+    }
+
+    /// Remove every term with neither a written nor a spoken form (blank "New term" tiles).
+    private func pruneAllEmpty() {
+        store.terms.removeAll {
+            $0.written.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            $0.spoken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+    }
+
+    /// VER-23: flash the "Added to dictionary" confirmation, then auto-dismiss.
+    private func flashAdded() {
+        addedFlash = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { addedFlash = false }
     }
 
     private func remove(_ t: DictTerm) {

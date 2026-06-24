@@ -252,7 +252,7 @@ struct FeedbackView: View {
                                 HStack(spacing: 7) { ProgressView().controlSize(.small)
                                     Text(improving ? L("Improving…") : L("Sending…")).font(.callout) }
                             } else {
-                                Text(L("Send feedback"))
+                                Text(L("Give feedback"))
                             }
                         }
                         .dialogPrimary(tint: .primary)

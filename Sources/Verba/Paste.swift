@@ -221,10 +221,24 @@ enum Output {
     /// Returns false only when Accessibility isn't granted (caller falls back to clipboard-only).
     @discardableResult
     static func paste(_ text: String, rich: Bool = false, target: PasteTarget?) -> Bool {
+        // VER-24: auto-paste delivers text via the clipboard (⌘V), but it must not silently
+        // overwrite whatever the user had copied. Unless they opted into keeping dictations on the
+        // clipboard (Settings ▸ Copy to clipboard), snapshot the current clipboard now and put it
+        // back once ⌘V has landed.
+        let preserveClipboard = !Settings.shared.copyToClipboard
+        let savedClipboard = preserveClipboard ? snapshotPasteboard() : []
+        let scheduleRestore: () -> Void = {
+            guard preserveClipboard else { return }
+            // Well after ⌘V is delivered & consumed (the paste fires at +0.05–0.20s below).
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { restorePasteboard(savedClipboard) }
+        }
+
         // Preserve a single trailing newline only for multi-line editors (code/long-form), where a
         // paragraph break is intentional; chat/search/single-line targets still get a full strip so
         // we never auto-submit. The decision keys off the captured target's bundle id.
         copyToClipboard(text, rich: rich, keepTrailingNewline: prefersTrailingNewline(target?.bundleID))
+        // No Accessibility → we couldn't paste; leave the text on the clipboard as the fallback
+        // (don't restore), matching the caller's "Copied to clipboard" prompt.
         guard accessibilityTrusted else { return false }
 
         // No captured target (or capture failed) → behave exactly like the legacy paste.
@@ -232,6 +246,7 @@ enum Output {
               let app = NSRunningApplication(processIdentifier: pid),
               !app.isTerminated else {
             postPasteShortcut(after: 0.05)
+            scheduleRestore()
             return true
         }
 
@@ -264,6 +279,31 @@ enum Output {
                 postPasteShortcut(after: 0.05)
             }
         }
+        scheduleRestore()
         return true
+    }
+
+    // MARK: clipboard preservation (VER-24)
+
+    /// Deep-copy the current general pasteboard into detached items so it can be restored after
+    /// an auto-paste. Reads each item's data for every advertised type (text, RTF, images, …).
+    private static func snapshotPasteboard() -> [NSPasteboardItem] {
+        let pb = NSPasteboard.general
+        return (pb.pasteboardItems ?? []).map { item in
+            let copy = NSPasteboardItem()
+            for type in item.types {
+                if let data = item.data(forType: type) { copy.setData(data, forType: type) }
+            }
+            return copy
+        }
+    }
+
+    /// Put a snapshotted clipboard back. A no-op for an empty snapshot leaves the dictated text in
+    /// place rather than blanking the clipboard (safer than clearing it).
+    private static func restorePasteboard(_ items: [NSPasteboardItem]) {
+        guard !items.isEmpty else { return }
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.writeObjects(items)
     }
 }

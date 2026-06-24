@@ -309,7 +309,7 @@ struct OnboardingView: View {
                 actionRow("slider.horizontal.3", L("Switch mode on the fly"), L("Fn + Tab → next mode, Fn + ⇧ + Tab → previous — even mid-sentence while holding Fn. ⌃ (Control) pauses & resumes, ⌥ (Option) also switches mode, Esc cancels."), done: coach.changeMode)
                 if coach.singleFn && coach.holdFn && coach.doubleFn && coach.changeMode {
                     Label(L("Nice, you've got the trigger key down."), systemImage: "checkmark.seal.fill")
-                        .font(.caption).foregroundStyle(.green)
+                        .font(.callout.weight(.medium)).foregroundStyle(.green)
                 }
             } else {
                 // Shortcut path: the Fn-tap/hold/number gestures don't apply, so coach the
@@ -327,7 +327,7 @@ struct OnboardingView: View {
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 if coach.singleFn {
                     Label(L("Nice, your shortcut works."), systemImage: "checkmark.seal.fill")
-                        .font(.caption).foregroundStyle(.green)
+                        .font(.callout.weight(.medium)).foregroundStyle(.green)
                 }
             }
 
@@ -493,7 +493,7 @@ struct OnboardingView: View {
             .padding(16).frame(maxWidth: .infinity, alignment: .leading).glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             if core {
                 Label(L("All set, you can continue. Screen Recording is optional (Context mode)."), systemImage: "checkmark.seal.fill")
-                    .font(.caption).foregroundStyle(.green).fixedSize(horizontal: false, vertical: true)
+                    .font(.callout.weight(.medium)).foregroundStyle(.green).fixedSize(horizontal: false, vertical: true)
             } else {
                 Label(L("Grant Microphone, Accessibility and Input Monitoring to continue. The Continue button unlocks once they're on."), systemImage: "lock.fill")
                     .font(.caption).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)

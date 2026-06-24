@@ -88,6 +88,7 @@ struct MainWindow: View {
     @ObservedObject var settings = Settings.shared
     @ObservedObject private var notesCtl = NotesController.shared
     @ObservedObject private var appearance = VerbaAppearance.shared
+    @ObservedObject private var updater = Updater.shared   // VER-17: surface "update available" in the sidebar
     @State private var selection: NavItem? = .home
     @State private var qwenInstalling = false
     @State private var qwenProgress: Double = 0
@@ -328,6 +329,40 @@ struct MainWindow: View {
     }
 
     private var sidebarFooter: some View {
+        VStack(spacing: 8) {
+            // VER-17: a prominent, eye-catching banner the moment Sparkle finds a newer build, so
+            // users actually update instead of missing fixes buried behind Settings ▸ Check for updates.
+            if updater.updateAvailable {
+                Button { updater.installUpdate() } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "arrow.down.circle.fill")
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(L("New version available")).font(.caption.weight(.semibold)).lineLimit(1)
+                            if let v = updater.latestVersion {
+                                Text(L("Click to update to") + " \(v)").font(.caption2).opacity(0.9).lineLimit(1)
+                            } else {
+                                Text(L("Click to update")).font(.caption2).opacity(0.9).lineLimit(1)
+                            }
+                        }
+                        Spacer(minLength: 4)
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10).padding(.vertical, 8)
+                    .frame(maxWidth: .infinity)
+                    .background(VerbaAppearance.shared.accentColor, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 10)
+                .help(L("A new version of Verba is available — click to install and relaunch"))
+            }
+            footerPanel
+        }
+        .padding(.vertical, 10)
+        .onAppear { if !settings.proEmail.isEmpty { Task { _ = await settings.verifyPro() } } }
+    }
+
+    private var footerPanel: some View {
         HStack(spacing: 8) {
             Button { selection = .settings } label: {
                 HStack(spacing: 9) {
@@ -356,8 +391,7 @@ struct MainWindow: View {
         .padding(.horizontal, 10).padding(.vertical, 8)
         .frame(maxWidth: .infinity)
         .background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .padding(.horizontal, 10).padding(.vertical, 10)
-        .onAppear { if !settings.proEmail.isEmpty { Task { _ = await settings.verifyPro() } } }
+        .padding(.horizontal, 10)
     }
 
     @ViewBuilder

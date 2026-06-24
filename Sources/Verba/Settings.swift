@@ -695,7 +695,9 @@ final class Settings: ObservableObject {
         quipTone = QuipTone(rawValue: d.string(forKey: "quipTone") ?? "") ?? .geek
         language = d.string(forKey: "language") ?? ""
         autoPaste = d.object(forKey: "autoPaste") as? Bool ?? true
-        copyToClipboard = d.object(forKey: "copyToClipboard") as? Bool ?? true
+        // VER-24: off by default — auto-paste now restores the prior clipboard instead of leaving
+        // the dictation on it. Users who want every dictation copied can enable this.
+        copyToClipboard = d.object(forKey: "copyToClipboard") as? Bool ?? false
         richTextPaste = d.object(forKey: "richTextPaste") as? Bool ?? true
         reviewBeforeSend = d.object(forKey: "reviewBeforeSend") as? Bool ?? false
         autoDetectProfile = d.object(forKey: "autoDetectProfile") as? Bool ?? true

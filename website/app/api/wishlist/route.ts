@@ -229,7 +229,9 @@ export async function GET() {
       return { ...base, shipped: true, shippedAt: new Date(shippedAtMs).toISOString() };
     })
   );
-  merged.sort((a, b) => b.votes - a.votes || (b.created ?? 0) - (a.created ?? 0));
+  // VER-22: newest-first so a just-added wish lands at the top (it has few votes and was
+  // otherwise buried under the high-vote shipped items); votes break ties.
+  merged.sort((a, b) => (b.created ?? 0) - (a.created ?? 0) || b.votes - a.votes);
 
   return NextResponse.json({ ok: true, items: merged }, { headers: cors });
 }

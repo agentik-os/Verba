@@ -65,6 +65,12 @@ struct NotesView: View {
             Divider().opacity(0.4)
             detail.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        // VER-11 / VER-18: ⌘⌫ deletes the selected note without reaching for the trash icon.
+        .background {
+            Button("") { deleteSelectedNote() }
+                .keyboardShortcut(.delete, modifiers: .command)
+                .hidden()
+        }
         .onReceive(tick) { _ in if isRecording && !isPaused { elapsed = pausedAccum + Int(Date().timeIntervalSince(recordStart)) } }
         .onChange(of: selectedID) { _, id in loadSelection(id) }
         .onChange(of: editorText) { _, _ in markComposedIfNeeded(); scheduleAutosave() }
@@ -948,6 +954,12 @@ struct NotesView: View {
         let wasSelected = (selectedID == e.id)
         store.delete(e)
         if wasSelected { newNote() }
+    }
+
+    /// Delete the currently-selected note (⌘⌫). No-op while composing a new, unsaved note.
+    private func deleteSelectedNote() {
+        guard let id = selectedID, let e = store.entries.first(where: { $0.id == id }) else { return }
+        remove(e)
     }
 
     private func consumePending() {
