@@ -94,12 +94,13 @@ struct FeedbackView: View {
     private let editorInset: CGFloat = 10
 
     private var canSubmit: Bool {
-        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        // VER-13: a screenshot alone is enough — the AI reads it to build the feedback.
+        (!draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || screenshot != nil)
             && !submitting && !recording && !transcribing && !improving
     }
 
     private var canImprove: Bool {
-        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        (!draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || screenshot != nil)
             && !submitting && !recording && !transcribing && !improving
     }
 
@@ -465,10 +466,16 @@ struct FeedbackView: View {
     /// `thenConfirm` is true (the Send flow), surface the Confirm/Cancel step on success.
     private func improveWithAI(thenConfirm: Bool = false) {
         let original = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !original.isEmpty, !improving else { return }
+        let shot = screenshot
+        // VER-13: allow Improve even with no typed text as long as a screenshot is attached —
+        // the model reads the image to infer the section and what's wrong.
+        guard !(original.isEmpty && shot == nil), !improving else { return }
         improving = true
         error = nil
         let model = Settings.shared.claudeModel.hasPrefix("claude-") ? Settings.shared.claudeModel : "claude-sonnet-4-6"
+        let imageNote = shot != nil
+            ? "\n\nA screenshot of the app is attached. Read it to identify the exact screen/feature for Section and to flesh out Issue/Expected — infer these from the image, never output \"—\" for Section when a screenshot is provided."
+            : ""
         let system = """
         You structure user feedback so the team instantly understands what part of the app it concerns, what is wrong, and what the user wants. Rewrite the feedback into exactly these three labelled lines, fixing grammar, punctuation and flow:
 
@@ -476,13 +483,18 @@ struct FeedbackView: View {
         Issue: <what is currently wrong, confusing or missing>
         Expected: <the behaviour or outcome the user wants instead>
 
-        Rules: Keep every concrete detail, the original meaning and the user's tone. Be concise — one short line per field. Do not add new ideas, do not answer or comment on the feedback. If a field is genuinely not stated and cannot be reasonably inferred from the text, write "—" for that field rather than inventing content. Return only the three labelled lines, with no preamble, quotes or extra commentary.
+        Rules: Keep every concrete detail, the original meaning and the user's tone. Be concise — one short line per field. Do not add new ideas, do not answer or comment on the feedback. If a field is genuinely not stated and cannot be reasonably inferred from the text, write "—" for that field rather than inventing content. Return only the three labelled lines, with no preamble, quotes or extra commentary.\(imageNote)
         """
         Task {
             do {
-                let improved = try await Reprompter(model: model)
-                    .reprompt(transcript: original, systemPrompt: system)
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                let improved = try await {
+                    if let shot {
+                        return try await Reprompter(model: model)
+                            .repromptVision(transcript: original, systemPrompt: system, imagePNG: shot)
+                    }
+                    return try await Reprompter(model: model)
+                        .reprompt(transcript: original, systemPrompt: system)
+                }().trimmingCharacters(in: .whitespacesAndNewlines)
                 await MainActor.run {
                     improving = false
                     guard !improved.isEmpty else { return }
