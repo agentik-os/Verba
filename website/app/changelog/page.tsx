@@ -22,6 +22,19 @@ const DAYS: Day[] = [
       "A calmer first run, Bear-style filing, and the story in the app. The onboarding now teaches every shortcut, Action, Note, To-do, Transform and more, opens the app the moment you finish, and lets you keep your profile private. Notes and Tasks both get a proper nested tag tree for filing, the full changelog now lives right inside Settings, the level ladder climbs to 1,000, and every badge explains what it's for.",
     entries: [
       {
+        version: "0.9.27",
+        title: "A batch of fixes from your feedback",
+        items: [
+          "Dictation no longer overwrites your clipboard: auto-paste now puts back whatever you had copied. (Copying every dictation is now an opt-in toggle.)",
+          "Notes: press ⌘⌫ to delete the selected note.",
+          "A “New version available” banner now shows in the sidebar the moment an update is ready, so you can update in one click.",
+          "Dictionary: no more stray empty tile, and a quick “Added to dictionary” confirmation when you press Enter.",
+          "Wishlist now shows the newest ideas first.",
+          "Feedback: the screenshot you attach is now read by Improve-with-AI, and the button reads “Give feedback”.",
+          "Onboarding: the success messages are larger and easier to read.",
+        ],
+      },
+      {
         version: "0.9.26",
         title: "Reuse a tag you already have, in Tasks",
         items: [

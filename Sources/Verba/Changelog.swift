@@ -36,6 +36,17 @@ enum Changelog {
             date: "June 12, 2026", tag: "Today",
             summary: "A calmer first run, Bear-style filing, and the story in the app. Onboarding now teaches every shortcut, opens the app the moment you finish, and lets you keep your profile private. Notes and Tasks both get a proper nested tag tree for filing, you can lock individual notes, the full changelog lives right inside Settings, the level ladder now climbs to 1,000, and every badge explains what it's for.",
             entries: [
+                ChangelogEntry(version: "0.9.27",
+                    title: "A batch of fixes from your feedback",
+                    items: [
+                        "Dictation no longer overwrites your clipboard: auto-paste now puts back whatever you had copied. (Copying every dictation is now an opt-in toggle.)",
+                        "Notes: press ⌘⌫ to delete the selected note.",
+                        "A \"New version available\" banner now shows in the sidebar the moment an update is ready, so you can update in one click.",
+                        "Dictionary: no more stray empty tile, and a quick \"Added to dictionary\" confirmation when you press Enter.",
+                        "Wishlist now shows the newest ideas first.",
+                        "Feedback: the screenshot you attach is now read by Improve-with-AI, and the button reads \"Give feedback\".",
+                        "Onboarding: the success messages are larger and easier to read.",
+                    ]),
                 ChangelogEntry(version: "0.9.26",
                     title: "Reuse a tag you already have, in Tasks",
                     items: [
