@@ -22,6 +22,15 @@ const DAYS: Day[] = [
       "A calmer first run, a nested tag tree for filing, and the story in the app. The onboarding now teaches every shortcut, Action, Note, To-do, Transform and more, opens the app the moment you finish, and lets you keep your profile private. Notes and Tasks both get a proper nested tag tree for filing, the full changelog now lives right inside Settings, the level ladder climbs to 1,000, and every badge explains what it's for.",
     entries: [
       {
+        version: "0.9.29",
+        title: "Fixes that make recent updates actually work",
+        items: [
+          "⌘⌫ now really deletes the selected note (the shortcut wasn't firing before).",
+          "The Intent note mode now reads the intent you speak at the start of the recording.",
+          "Attaching only a screenshot to feedback (no typed text) now sends instead of doing nothing.",
+        ],
+      },
+      {
         version: "0.9.28",
         title: "Flow is now Raw, plus more of your feedback",
         items: [

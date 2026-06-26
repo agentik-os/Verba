@@ -448,7 +448,9 @@ struct FeedbackView: View {
     /// unedited AI version), then asks the user to Confirm or Cancel before actually submitting.
     private func sendTapped() {
         let t = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !t.isEmpty, !submitting, !improving else { return }
+        // VER-13: a screenshot-only feedback (no typed text) must still start the improve flow —
+        // improveWithAI reads the image. Mirror canSubmit, which already allows screenshot != nil.
+        guard (!t.isEmpty || screenshot != nil), !submitting, !improving else { return }
         // Already the AI-structured version and untouched → no need to improve again, just submit.
         if let li = lastImproved, t == li.trimmingCharacters(in: .whitespacesAndNewlines) { submit(); return }
         improveWithAI(thenConfirm: true)

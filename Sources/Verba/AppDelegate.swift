@@ -761,9 +761,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         edit.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
         edit.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
         edit.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        // VER-11 / VER-18: ⌘⌫ deletes the selected note. A real AppKit menu item (not SwiftUI's
+        // inline keyboardShortcut(.delete), which never fires). validateMenuItem scopes it to the
+        // Notes tab and disables it while a text field is being edited (so ⌘⌫ keeps its normal
+        // delete-to-line-start behaviour there).
+        edit.addItem(.separator())
+        // The ⌫ key sends U+007F (verified at runtime) — keyEquivalent must be "\u{7f}", NOT
+        // backspace "\u{8}", or the item never matches ⌘⌫.
+        let delNote = NSMenuItem(title: "Delete Note", action: #selector(deleteSelectedNoteCmd), keyEquivalent: "\u{7f}")
+        delNote.keyEquivalentModifierMask = .command
+        delNote.target = self
+        edit.addItem(delNote)
         editItem.submenu = edit
 
         NSApp.mainMenu = main
+    }
+
+    @objc private func deleteSelectedNoteCmd() {
+        NotesController.shared.deleteSelectedSignal &+= 1
+    }
+
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if menuItem.action == #selector(deleteSelectedNoteCmd) {
+            guard NotesController.shared.visible else { return false }   // only on the Notes tab
+            // Don't steal ⌘⌫ while editing text (it means delete-to-line-start there).
+            let fr = NSApp.keyWindow?.firstResponder
+            if let fr, fr is NSText || fr is NSTextView { return false }
+            return true
+        }
+        return true
     }
 
     private func applyTriggers() {

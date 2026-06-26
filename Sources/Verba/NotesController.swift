@@ -22,6 +22,14 @@ final class NotesController: ObservableObject {
     /// fire the stop signal instead of starting a stray dictation. Maintained by NotesView.
     @Published var isRecording = false
 
+    // MARK: - Delete-note keyboard command (VER-11/18)
+    /// True while the Notes tab is the visible section, so the ⌘⌫ "Delete Note" menu item is only
+    /// active there. Maintained by NotesView (onAppear/onDisappear).
+    @Published var visible = false
+    /// Bumped by the AppKit "Delete Note" menu item (⌘⌫) to ask NotesView to delete the selected
+    /// note — the reliable path, since SwiftUI's inline keyboardShortcut(.delete) never fires.
+    @Published var deleteSelectedSignal = 0
+
     // MARK: - Pause/resume bridge (Control key + overlay pause button + in-app control)
     /// Whether the in-progress note recording is paused. Owned by NotesView (it owns the recorder),
     /// mirrored here so the overlay can show the paused state.

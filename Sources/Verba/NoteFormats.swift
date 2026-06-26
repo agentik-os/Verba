@@ -104,15 +104,41 @@ final class NoteModesStore: ObservableObject {
     private let d = UserDefaults.standard
 
     // Bump when the built-in note modes change so users inherit the new prompts.
-    static let version = 1
+    // v2 (VER-20): the Intent mode now reads the spoken intent from the start of the recording.
+    static let version = 2
 
     @Published var modes: [NoteFormat] { didSet { persist() } }
 
     private init() {
-        let upToDate = d.integer(forKey: "noteModesVersion") >= Self.version
-        if upToDate, let data = d.data(forKey: "noteModes"),
-           let saved = try? JSONDecoder().decode([NoteFormat].self, from: data), !saved.isEmpty {
+        // Use a LOCAL UserDefaults here: referencing the stored `d` inside the closure would touch
+        // `self` before `modes` is initialized (a compile error).
+        let ud = UserDefaults.standard
+        let upToDate = ud.integer(forKey: "noteModesVersion") >= Self.version
+        let saved: [NoteFormat]? = {
+            guard let data = ud.data(forKey: "noteModes"),
+                  let s = try? JSONDecoder().decode([NoteFormat].self, from: data), !s.isEmpty else { return nil }
+            return s
+        }()
+        if upToDate, let saved {
             modes = saved
+        } else if let saved {
+            // Version bump WITH existing data → refresh the built-in prompts in place by id (so
+            // fixes like the rewritten Intent prompt reach existing users) while KEEPING the user's
+            // custom modes and order. The old code full-reset to allBuiltIn here, silently wiping
+            // every user-created note mode; this merge never does that.
+            let fresh = Dictionary(uniqueKeysWithValues: NoteFormat.allBuiltIn.map { ($0.id, $0) })
+            var merged: [NoteFormat] = saved.map { m in
+                guard m.builtin, let f = fresh[m.id] else { return m }
+                var c = m
+                c.systemPrompt = f.systemPrompt; c.model = f.model; c.intent = f.intent
+                c.name = f.name; c.icon = f.icon
+                return c
+            }
+            let have = Set(merged.map(\.id))
+            for b in NoteFormat.allBuiltIn where !have.contains(b.id) { merged.append(b) }
+            modes = merged
+            d.set(Self.version, forKey: "noteModesVersion")
+            if let data = try? JSONEncoder().encode(merged) { d.set(data, forKey: "noteModes") }
         } else {
             modes = NoteFormat.allBuiltIn
             d.set(Self.version, forKey: "noteModesVersion")

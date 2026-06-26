@@ -65,12 +65,12 @@ struct NotesView: View {
             Divider().opacity(0.4)
             detail.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        // VER-11 / VER-18: ⌘⌫ deletes the selected note without reaching for the trash icon.
-        .background {
-            Button("") { deleteSelectedNote() }
-                .keyboardShortcut(.delete, modifiers: .command)
-                .hidden()
-        }
+        // VER-11 / VER-18: ⌘⌫ deletes the selected note. SwiftUI's inline keyboardShortcut(.delete)
+        // never fires (it isn't registered into AppKit's performKeyEquivalent chain), so the real
+        // ⌘⌫ lives as an AppKit menu item (AppDelegate) that bumps this signal.
+        .onChange(of: notesCtl.deleteSelectedSignal) { _, _ in deleteSelectedNote() }
+        .onAppear { notesCtl.visible = true }
+        .onDisappear { notesCtl.visible = false }
         .onReceive(tick) { _ in if isRecording && !isPaused { elapsed = pausedAccum + Int(Date().timeIntervalSince(recordStart)) } }
         .onChange(of: selectedID) { _, id in loadSelection(id) }
         .onChange(of: editorText) { _, _ in markComposedIfNeeded(); scheduleAutosave() }

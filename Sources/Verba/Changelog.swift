@@ -36,6 +36,13 @@ enum Changelog {
             date: "June 12, 2026", tag: "Today",
             summary: "A calmer first run, a nested tag tree for filing, and the story in the app. Onboarding now teaches every shortcut, opens the app the moment you finish, and lets you keep your profile private. Notes and Tasks both get a proper nested tag tree for filing, you can lock individual notes, the full changelog lives right inside Settings, the level ladder now climbs to 1,000, and every badge explains what it's for.",
             entries: [
+                ChangelogEntry(version: "0.9.29",
+                    title: "Fixes that make recent updates actually work",
+                    items: [
+                        "⌘⌫ now really deletes the selected note (the shortcut wasn't firing before).",
+                        "The Intent note mode now reads the intent you speak at the start of the recording.",
+                        "Attaching only a screenshot to feedback (no typed text) now sends instead of doing nothing.",
+                    ]),
                 ChangelogEntry(version: "0.9.28",
                     title: "Flow is now Raw, plus more of your feedback",
                     items: [
