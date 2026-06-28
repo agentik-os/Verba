@@ -1,0 +1,43 @@
+{
+  "mission": "Verba — package de levée pré-seed (pitch + deck + 100 investisseurs + 100 emails)",
+  "scope": "marketing/fundraising/",
+  "generated_at": "2026-06-28",
+  "communication": "fr",
+  "deliverables": {
+    "deck_pdf": "deck/Verba-Pitch-Deck.pdf",
+    "deck_data": "deck/deck.json",
+    "pitch_one_pager": "one-pager.md",
+    "pitch_deck_content": "pitch-deck-content.md",
+    "email_blurb": "email-blurb.md",
+    "investors_csv": "investors-100.csv",
+    "investors_research": "investors-research.md",
+    "emails_dir": "emails/ (100 drafts personnalisés)",
+    "sending_plan": "sending-plan.md",
+    "email_infra": "email-infra.md"
+  },
+  "counts": {
+    "investors": 100,
+    "investors_with_verified_public_contact_channel": 25,
+    "investors_contact_a_verifier": 75,
+    "emails_drafts": 100,
+    "deck_slides": 13
+  },
+  "send_step": {
+    "status": "pending",
+    "nothing_sent": true,
+    "reason": "Aucun email envoyé. L'envoi attend (1) le GO/NO-GO opérateur via Atlas ET (2) l'authentification d'un domaine d'envoi dédié — verba.run n'a aujourd'hui ni SPF, ni DKIM, ni DMARC (vérifié 2026-06-28, cf. email-infra.md).",
+    "batch_size": "10-15/jour",
+    "gates": [
+      "Authentifier un domaine d'envoi dédié dans Resend (SPF + DKIM + DMARC verts)",
+      "Remplacer [Prénom]/[Fondateur] + sourcer les adresses réelles des 75 contacts 'à vérifier' (jamais d'adresse devinée)",
+      "GO/NO-GO opérateur via Atlas",
+      "Envoyer par lots de 10-15/jour depuis le domaine warmé"
+    ]
+  },
+  "honesty_notes": [
+    "Données réelles uniquement : chaque investisseur est ancré à une société de portefeuille réelle + une URL source citable (voir investors-100.csv). Zéro contact halluciné.",
+    "75/100 emails investisseurs ne sont pas publics -> contact_status 'à vérifier' (canal = intro chaude ou formulaire public).",
+    "Traction du pitch : produit livré + validation de catégorie (Wispr ~2 Md$). Aucun chiffre d'utilisateurs/MRR/téléchargements inventé (pré-revenu).",
+    "L'enveloppe de levée (500 k€ / SAFE / runway / répartition) est une hypothèse fondateur indicative à confirmer, pas un chiffre dérivé des docs."
+  ]
+}

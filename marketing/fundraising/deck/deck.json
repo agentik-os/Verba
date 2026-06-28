@@ -1,0 +1,104 @@
+{
+  "template": "whitepaper",
+  "theme": "agentik",
+  "eyebrow": "Pré-seed · Confidentiel",
+  "title": "Verba — Pitch Pré-seed",
+  "subtitle": "Lagent vocal privacy-first du Mac · verba.run",
+  "author": "Verba",
+  "date": "2026-06-28",
+  "docId": "verba-pitch-preseed",
+  "abstract": "Verba est un agent vocal façon Jarvis pour le Mac, privacy-first et bring-your-own-Claude : on parle, Claude restructure le texte là où est le curseur, puis JARVIS exécute l'intention dictée sur 1 000+ applications connectées — après confirmation. Le produit est déjà live sur verba.run (14 langues, agent JARVIS livré) dans une catégorie qu'un incumbent à ~2 Md$ (Wispr Flow) vient de valider. Nous levons un pré-seed pour transformer un produit déjà expédié en machine de distribution : le risque produit est derrière nous, le jeu ouvert est la distribution et la conversion.",
+  "sections": [
+    {
+      "index": "01",
+      "eyebrow": "Le problème",
+      "title": "On pense plus vite qu'on ne tape — et les outils vocaux s'arrêtent au texte",
+      "lead": "Dicter est 4× plus rapide que le clavier, mais les outils actuels forcent un choix impossible : confidentialité, coût, ou intelligence — jamais les trois, et jamais l'action.",
+      "body": "Trois douleurs non résolues pour le Mac power-user :\n\n- **La voix part dans le cloud.** Les outils de dictation cloud (Wispr Flow, Aqua, Otter) uploadent chaque mot prononcé. Inacceptable pour un avocat, un médecin, un journaliste, un fondateur.\n- **On paie deux fois l'IA.** Ces outils facturent 12-17 $/mois une marge sur une IA que le développeur paie déjà à Anthropic. Aucun ne laisse réutiliser l'abonnement Claude existant.\n- **Au mieux, ça tape.** Même le meilleur outil s'arrête au texte. Personne ne transforme « crée le ticket Linear et préviens l'équipe » en actions exécutées. Siri ne touche pas aux vrais outils de travail ; le rêve d'un vrai Jarvis pour le Mac reste vide.\n\nLe modèle mental du marché : *« cloud → Wispr, local → Superwhisper, transcription → MacWhisper. »* **Personne ne possède le créneau « local + vraie restructuration IA + bring-your-own-Claude » — et personne du tout ne possède « la voix qui agit ».**"
+    },
+    {
+      "index": "02",
+      "eyebrow": "La solution",
+      "title": "Verba : la voix qui restructure — et qui agit — sur votre Mac",
+      "lead": "Appuyez sur une touche, parlez. Claude nettoie votre texte là où est le curseur ; dites « crée le ticket, envoie le mail », confirmez, c'est fait. Speak it. Send it clean.",
+      "body": "**Verba transforme votre parole brouillonne en texte propre, prêt à envoyer, partout sur votre Mac — et désormais *agit* sur ce que vous dites.** Live sur **verba.run**, macOS, **9,99 $/mois**.\n\nDeux produits dans une seule app :\n\n1. **Dictée + restructuration IA.** 6 modes (dont Coding sur Opus 4.8), le texte arrive formaté à l'endroit du curseur. On-device, l'audio ne quitte jamais le Mac.\n2. **JARVIS — voix → action.** Un agent vocal *confirm-gated* : il prend une intention dictée, **planifie les étapes sur l'appareil avec votre propre Claude** (jamais notre clé serveur), montre exactement ce qu'il va faire, et n'exécute **qu'après votre confirmation** — sur **1 000+ applications connectées** (Gmail, Slack, Notion, Linear, GitHub…) + actions Mac natives.\n\nLa bascule de catégorie : de *« dictée + nettoyage IA »* à **voix → action**, un créneau qu'aucun concurrent de la dictation n'occupe. La démo — *« je l'ai dit, il l'a fait (après avoir demandé) »* — est l'actif viral."
+    },
+    {
+      "index": "03",
+      "eyebrow": "Pourquoi maintenant",
+      "title": "La catégorie vient d'être validée — et un tailwind est unique à Verba",
+      "lead": "Un incumbent à ~2 Md$ prouve le marché ; la génération Claude Code crée une vague que nous sommes seuls à pouvoir surfer.",
+      "body": "Trois forces convergent en 2026 :\n\n- **Un incumbent à ~2 Md$ valide la catégorie.** Wispr (Wispr Flow), l'outil cloud auquel Verba se benchmarke, est en discussion pour lever **~260 M$ à une valorisation de ~2 Md$** (mai 2026, Menlo Ventures lead) — environ **3× sa valorisation de 700 M$ six mois plus tôt**, sur 81 M$ levés à ce jour, 270 clients Fortune 500. Un incumbent à 2 Md$ crée un vaste vivier d'utilisateurs bien marketés à débaucher.\n- **La génération Claude Code.** Claude Code figure parmi les outils dev les plus adoptés : *selon le sondage Pragmatic Engineer (fév. 2026)*, il serait cité par **~46 % de 15 000 développeurs** et **71 % des devs utilisant des agents IA** en feraient leur outil principal ; **73 % des équipes eng.** déclareraient utiliser l'IA de code au quotidien (vs 41 % en 2025), pour un **run rate rapporté à 2,5 Md$+** *(estimations tierces / Anthropic Economic Index)*. Ces chiffres proviennent de sondages tiers, pas de données Verba. Chacun de ces développeurs paie déjà Anthropic et préférerait *parler* une spec de 3 paragraphes plutôt que la taper. **Verba est la couche vocale de cette population — et le seul à laisser réutiliser l'abonnement Claude déjà acheté, sans clé.**\n- **Le créneau « Jarvis » est enfin techniquement crédible.** La vague des agents (Claude Code, écosystèmes d'outils MCP, catalogue 1 000+ apps) rend « dis-le → c'est fait, après confirmation » réel. Verba entre dans le créneau **avant** qu'un leader de catégorie n'existe."
+    },
+    {
+      "index": "04",
+      "eyebrow": "Marché / TAM",
+      "title": "Un marché de 3,87 Md$ en 2026, +17 %/an — il nous faut une erreur d'arrondi",
+      "lead": "Le TAM le plus pertinent — les outils de speech-to-text IA — pèse 3,87 Md$ en 2026 et croît à 17,4 %/an vers 16,4 Md$ en 2035.",
+      "body": "| Segment (2026) | Taille 2026 | Prévision | CAGR | Source |\n|---|---|---|---|---|\n| **Outils AI speech-to-text** *(TAM à ancrer)* | **3,87 Md$** | 16,42 Md$ (2035) | **17,4 %** | Precedence Research |\n| Reconnaissance vocale (large) | 23,70 Md$ | 104 Md$ (2034) | 20,3 % | Fortune Business Insights |\n| Voice AI (le plus large) | ~22,5 Md$ | — | 34-35 % | ringly.io / industrie |\n| Transcription IA | 4,5 Md$ (2024) | 19,2 Md$ (2034) | ~16 % | Sonix / industrie |\n\n**Le TAM à ancrer : les outils AI speech-to-text à 3,87 Md$ en 2026, +17 %/an.**\n\nLa cible de revenu (5-15 k€/mois ≈ 600-2 000 abonnés payants) représente **moins de 0,1 % de la catégorie**. Ce n'est pas une question de TAM, c'est une question d'exécution SOM (distribution + conversion). Pour calibrer : un seul concurrent indé (MacWhisper) affiche **~1 900 avis de niveau payant** — une fraction de ses acheteurs réels — la preuve que l'acheteur indé existe en volume."
+    },
+    {
+      "index": "05",
+      "eyebrow": "Le produit",
+      "title": "Déjà expédié : un produit profond, livré et localisé",
+      "lead": "Verba n'est pas un deck, c'est une app live. Le risque produit est largement derrière nous.",
+      "body": "Ce qui est **déjà livré** et vérifiable sur verba.run / dans le repo :\n\n- **Dictée on-device** (Whisper / Parakeet), texte restructuré là où est le curseur, **6 modes** (dont Coding sur Opus 4.8).\n- **JARVIS, l'agent voix → action** : plan généré sur l'appareil par l'IA de l'utilisateur, **confirm-gated**, sur **1 000+ apps connectées** + actions Mac natives. Catalogue durci (989 toolkits / 36 998 outils), chaque action **schema-validée et auto-réparée**, les écritures ne s'exécutent jamais automatiquement.\n- **Bring-your-own-AI** : réutilisez votre abonnement **Claude Code sans clé API**, ou Anthropic / OpenRouter / Ollama local.\n- **Context (vision écran)**, **Notes** (1 h de voix → document structuré), **Translate** live, dictées chaînées.\n- **Localisation 14 langues** (998 strings UI) — la voie d'expansion internationale est structurellement ouverte.\n- **Boucles de croissance déjà codées** : parrainage « Free Month », leaderboard, couche de gamification complète.\n\nUn essai *forced-value* est déjà dans le produit : **33 dictées gratuites → paywall → essai Pro 7 jours**."
+    },
+    {
+      "index": "06",
+      "eyebrow": "Les douves",
+      "title": "Trois douves category-of-one — qu'aucun concurrent n'occupe",
+      "lead": "Quatre différenciateurs, dont trois category-of-one : impossibles à copier sans renier son propre modèle.",
+      "body": "1. **Bring your own AI — y compris votre abonnement Claude Code, sans clé.** *Aucun concurrent ne l'a.* Coût d'inférence **nul** pour nous : l'utilisateur apporte l'IA.\n2. **Voix → action (JARVIS).** Dictez l'intention, ça planifie sur l'appareil, vous confirmez, ça exécute — sur **1 000+ apps connectées** + actions Mac. *Aucun concurrent de la dictation n'exécute* (le plus proche, TalkTastic, s'arrête aux commandes Mac-locales).\n3. **Privé par défaut + planification on-device.** Transcription on-device, **l'audio ne quitte jamais le Mac et n'est jamais uploadé** (la sync cloud est text-only ; l'historique local a un interrupteur), et **même le planificateur d'actions tourne sur l'appareil avec l'IA de l'utilisateur**. Bat tout outil cloud, qui uploade chaque mot.\n4. **Fait ce que les autres ne peuvent pas** — lit votre écran (Context/vision), Notes structurées d'une heure, Translate live, dictées chaînées.\n\nLes points 1, 2 et 3 sont *category-of-one*. Le point 2 change carrément le rayon du produit : de « la dictée qui tape » à « l'agent vocal qui fait ». **Pour le marketing, la douve devient un message : « il demande avant d'agir » est un titre, pas une note de bas de page.**"
+    },
+    {
+      "index": "07",
+      "eyebrow": "Concurrence",
+      "title": "L'espace blanc que Verba possède seul",
+      "lead": "Aucun concurrent ne couvre les quatre axes à la fois — et trois colonnes sont Verba-only.",
+      "body": "| Axe | Wispr Flow | Superwhisper | MacWhisper | Aqua | **Verba** |\n|---|---|---|---|---|---|\n| On-device par défaut (audio jamais hors du Mac) | ✗ | ✓ (écrit sur disque) | ✓ | ✗ | **✓ (jamais uploadé + off-switch)** |\n| Restructuration IA 1ʳᵉ classe (modes) | ~ | ~ | ✗ | ✓ (cloud) | **✓ (Claude, 6 modes)** |\n| **Bring your own AI / pas de marge** | ✗ | partiel | ✗ | ✗ | **✓ (unique)** |\n| **Réutiliser l'abo Claude Code, sans clé** | ✗ | ✗ | ✗ | ✗ | **✓ (unique)** |\n| **Voix → action sur 1 000+ apps (confirm-gated)** | ✗ | ✗ | ✗ | ✗ | **✓ (unique — JARVIS)** |\n| Lit votre écran (vision / Context) | ✗ | ✗ | ✗ | ✗ | **✓ (unique)** |\n| Prix /mois | 15 $ | 8,49 $ | ~69 $ (1×) | ~8 $ | **9,99 $** |\n\n**Tiers du marché :** Tier 1 — Wispr Flow (cloud, 2 Md$, le profil à convertir). Tier 2 — power-tools locaux Mac (Superwhisper, MacWhisper ~1 900 avis @ 4,8, VoiceInk OSS). Tier 3 — challengers cloud (Aqua, Willow, TalkTastic). Tier 4 — Apple Dictation (gratuit, zéro IA), Otter (réunions).\n\n**On ne combat pas Wispr de front — on out-*positionne* :** privacy + BYO-Claude + does-more + *acts*, sur les niches que le cloud ne peut structurellement pas servir (offline, no-markup, local)."
+    },
+    {
+      "index": "08",
+      "eyebrow": "Business model",
+      "title": "9,99 $/mois, marge quasi pure — le coût d'inférence est nul",
+      "lead": "Prix sous les incumbents cloud, en faisant plus — et sans aucune COGS d'inférence, car l'utilisateur apporte son IA.",
+      "body": "| App | Mensuel | Annuel / one-time | Tier gratuit |\n|---|---|---|---|\n| **Verba** | **9,99 $** | **84 $/an** | essai full-Pro 33 dictées |\n| Wispr Flow | 15 $ | 12 $/mo annuel | 2 000 mots/sem |\n| Willow | 12-15 $ | — | limité |\n| Otter | 16,99 $ | 8,33 $/mo annuel | 300 min/mo |\n| Aqua | ~8 $ | — | 1 000 mots à vie |\n| Superwhisper | 8,49 $ | 84,99 $/an · **249,99 $ à vie** | oui |\n| MacWhisper | — | **~69 $ à vie** / 6,99 $/mo | petits modèles gratuits |\n| Apple Dictation | gratuit | — | gratuit |\n\n**Lecture :** Verba est **sous les incumbents cloud** (9,99 $ vs 12-17 $) et à parité avec les power-tools locaux, tout en faisant plus. Comme le **BYOK met le coût d'inférence à zéro**, la marge brute par utilisateur est très élevée : revenu ≈ marge de contribution quasi pure — des unit economics bien plus saines que les incumbents cloud au même prix.\n\n**Leviers à activer :** (a) un tier **Lifetime / « Founder » à ~149-199 $** — la catégorie a un fort comportement lifetime (Superwhisper 249,99 $, MacWhisper ~69 $) que Verba n'adresse pas encore ; front-load de cash, sans risque de coût car COGS≈0. (b) pousser l'annuel (meilleure rétention, runway prépayée)."
+    },
+    {
+      "index": "09",
+      "eyebrow": "Traction",
+      "title": "Traction honnête : maturité produit + validation de catégorie",
+      "lead": "Verba est pré-revenu : nous ne divulguons aucun chiffre d'utilisateurs, de MRR ou de téléchargements. La traction est la profondeur du produit et la validation du marché — pas des vanity metrics inventées.",
+      "body": "**Ce qui est vrai, vérifiable, et compte :**\n\n- **Produit livré et live** — verba.run, macOS, JARVIS expédié (agent voix → action sur 1 000+ apps), **localisé en 14 langues**, boucles de croissance (parrainage, leaderboard, gamification) **déjà codées**, essai forced-value (33 dictées) déjà en place.\n- **Trois douves category-of-one** déjà dans le produit (BYO-Claude sans clé, voix → action confirm-gated, Context/vision on-device).\n- **GEO + SEO déjà construits** — matrice `/compare` 24 features × 10 marques, pages `/vs`, JSON-LD, `/llms.txt`, robots ouverts aux crawlers IA : positionnés pour être *la réponse citée* par les LLM.\n- **Catégorie validée par le marché, pas par nous** — un incumbent à **~2 Md$** (Wispr Flow), un indé à **~1 900 avis payants** (MacWhisper), une culture de comparaison active sur r/macapps.\n\n**Le jeu ouvert n'est pas le risque produit — c'est la distribution et la conversion.** Pour atteindre 5-15 k€/mois il faut **~600-2 000 abonnés payants** ; à ~7 % de conversion, cela correspond à **~9,4-28 k téléchargements cumulés** sur 9-12 mois — soit **< 0,1 % de la catégorie**. C'est précisément le poste qu'un pré-seed et un co-fondateur marketing financent."
+    },
+    {
+      "index": "10",
+      "eyebrow": "Go-to-market",
+      "title": "Land narrow → expand : trois moteurs composés, zéro paid-first",
+      "lead": "Beachhead = les développeurs Mac natifs Claude Code, atteignables sans un euro de pub. Puis on élargit le message, pas le build.",
+      "body": "**Séquencement (la cible est déjà servie par le produit — c'est une décision de *message*, pas de build) :**\n\n| Phase | Segment | Hook |\n|---|---|---|\n| **Beachhead** | Développeurs Mac natifs Claude Code | « La couche vocale de Claude Code — votre abo fait la planification, sans clé » |\n| Expand 1 | Professionnels privacy-first (légal, médical, fondateurs) | « Votre audio ne quitte jamais votre Mac ; même la planification est on-device » |\n| Expand 2 | Voice-first operators (founders, PMs) | « Dis-le une fois : planifie, envoie, classe — confirme, c'est fait » |\n| Expand 3 | Travailleurs multilingues (EU/LatAm) | « Pensez dans votre langue, écrivez dans la leur » (UI en 14 langues) |\n| Expand 4 | Penseurs long-format / note-takers | « Parlez une heure, obtenez un document propre » |\n\n**Trois moteurs composés :**\n- **A — SEO + GEO de comparaison** *(déjà bâti)* : `/compare`, `/vs`, JSON-LD, `/llms.txt`. Bottom-funnel, haute intention, cité par les LLM.\n- **B — Communauté & lancement** : Show HN, r/macapps, r/ClaudeAI, building-in-public ; **lancement Product Hunt** (visé mardi 28 juil. 2026) avec le titre « *The Mac dictation app that became a voice agent* ». La démo JARVIS est l'actif viral.\n- **C — Créateurs & démos** : seeding de 10-20 reviewers dev/Mac ; « speak vs type, ça réutilise ton abo Claude — et ça *agit* ».\n\n**Conversion :** essai forced-value 33 dictées → paywall → 7 jours Pro, plus les **boucles parrainage + leaderboard déjà codées** — à allumer et rendre visibles."
+    },
+    {
+      "index": "11",
+      "eyebrow": "Équipe",
+      "title": "Un fondateur technique qui construit des systèmes agentiques et ship en public",
+      "lead": "Le produit profond est déjà là. Nous cherchons le co-fondateur marketing-owner pour le jeu ouvert : la distribution.",
+      "body": "**[Fondateur — bio a completer par operateur]**\n\n- Fondateur technique solo. Construit des systèmes agentiques et **ship en public** — l'histoire (un fondateur, dev agentique, privacy-first, livrant un agent confirm-gated) *est* du marketing auprès de l'audience beachhead exacte.\n- A déjà expédié un produit profond et live : dictée on-device, JARVIS (voix → action sur 1 000+ apps), 14 langues, boucles de croissance codées.\n\n**Le poste que nous ouvrons : co-fondateur marketing-owner.** Le risque produit est largement derrière ; le jeu ouvert est la distribution et la conversion. C'est exactement le siège proposé — propriété du SEO/GEO de comparaison, des lancements communautaires, du seeding créateurs, et de l'activation des boucles déjà construites.\n\n*Note d'honnêteté (au stade pré-seed) :* aucun logo public ni témoignage encore — la première vague de preuve sociale est un livrable explicite du lancement, pas une métrique présentée comme acquise."
+    },
+    {
+      "index": "12",
+      "eyebrow": "L'ask",
+      "title": "Pré-seed 500 k€ — transformer un produit livré en machine de distribution",
+      "lead": "Le risque produit est derrière nous. Nous finançons la distribution, la conversion, et la levée de la seule grande objection (Mac-only).",
+      "body": "**Ask (indicatif) : 500 k€ en pré-seed (SAFE), ~18-24 mois de piste.**\n\n| Poste | % | À quoi ça sert |\n|---|---|---|\n| **Distribution & croissance** | ~40 % | Co-fondateur marketing-owner ; SEO + GEO de comparaison ; contenu use-case ; seeding 10-20 créateurs ; Product Hunt + Show HN |\n| **Expansion produit** | ~30 % | App **iOS** (répond à l'objection Mac-only) ; approfondir JARVIS + apps connectées |\n| **Acquisition payante** | ~15 % | Débloquée **après** preuve de conversion organique : retargeting /compare, search « Wispr Flow alternative » |\n| **Opérations & runway** | ~15 % | Salaire fondateur, juridique, infra |\n\n> **À confirmer avec le fondateur.** Le montant (500 k€), l'instrument (SAFE), la piste (~18-24 mois) et la répartition 40/30/15/15 ci-dessus sont des **hypothèses fondateur indicatives**, pas des chiffres dérivés des documents produit/marché — ceux-ci ne fixent que la cible de revenu (~5-15 k€/mois). À sourcer auprès du fondateur ou à présenter comme proposition de structuration avant tout envoi.\n\n**Pourquoi c'est un bon pari capital :** coût d'inférence **nul** (l'utilisateur apporte son Claude) → chaque euro de revenu est une marge quasi pure ; le capital finance la distribution, pas la COGS. Jalon : franchir les **~600-2 000 abonnés payants (≈ 5-15 k€/mois)**, soit **< 0,1 % de la catégorie**, puis laisser composer les boucles parrainage / leaderboard / gamification déjà codées.\n\n*La question d'existence du marché est réglée (incumbent à 2 Md$). La seule question restante est l'exécution de la distribution — exactement ce que ce pré-seed finance.*"
+    },
+    {
+      "index": "13",
+      "eyebrow": "Vision",
+      "title": "L'espace de travail vocal privé, bring-your-own-AI, pour la génération des agents",
+      "lead": "De la dictée qui tape à l'agent qui fait. Verba veut être la couche vocale par défaut du Mac à l'ère des agents — sans jamais uploader votre voix.",
+      "body": "**Là où on va :**\n\n- **Court terme** — gagner les développeurs Claude Code (beachhead concentré, zéro pub), lancer (PH + Show HN + créateurs), allumer les boucles de croissance, atteindre 5-15 k€/mois.\n- **Moyen terme** — élargir le message aux professionnels privacy-first, aux *voice-first operators* (le segment Jarvis), aux travailleurs multilingues (14 langues déjà en place) et aux note-takers long-format ; expédier iOS pour effacer l'objection Mac-only ; posséder le vocabulaire « Jarvis pour Mac » avant qu'un leader n'émerge.\n- **Long terme** — **devenir la catégorie : « l'espace de travail vocal privé, bring-your-own-AI, pour le Mac — qui agit ».** À mesure que chaque app devient pilotable par agent, Verba est la couche vocale confirm-gated, on-device, qui réutilise l'IA que vous payez déjà — la première Jarvis crédible du Mac.\n\n**Le pari :** une catégorie validée à 2 Md$, trois douves category-of-one, une marge quasi pure, un produit déjà livré. *Speak it. Send it clean. Then watch it act.*"
+    }
+  ]
+}
