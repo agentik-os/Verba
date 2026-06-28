@@ -1188,14 +1188,14 @@ function Pricing() {
     }
   }, [isSignedIn]);
 
-  async function checkout() {
+  async function checkout(p: "monthly" | "annual" | "founder" = plan) {
     setLoading(true);
     setError("");
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, ref: getRef() }),
+        body: JSON.stringify({ plan: p, ref: getRef() }),
       });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
@@ -1267,7 +1267,7 @@ function Pricing() {
                   You&rsquo;re signed in. Start your 7-day trial below.
                 </p>
               )}
-              <button onClick={checkout} disabled={loading} className="mt-7 w-full rounded-[10px] bg-white px-6 py-3 font-medium text-black transition hover:opacity-90 disabled:opacity-60">
+              <button onClick={() => checkout()} disabled={loading} className="mt-7 w-full rounded-[10px] bg-white px-6 py-3 font-medium text-black transition hover:opacity-90 disabled:opacity-60">
                 {loading ? "Redirecting…" : "Start 7-day trial"}
               </button>
             </>
@@ -1283,6 +1283,51 @@ function Pricing() {
               {error}
             </p>
           )}
+        </div>
+      </div>
+
+      {/* Founder's Edition, the one-time anchor below the two recurring plans. A full-width
+          warm band keeps Pro as the only solid-panel moment while reading as the premium offer. */}
+      <div className="mx-auto mt-4 max-w-3xl">
+        <div className="card r-panel relative overflow-hidden p-7 sm:p-8" style={{ borderColor: "var(--border-warm)" }}>
+          <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[0.6]" style={{ background: "radial-gradient(120% 150% at 100% 0%, rgba(244,237,224,0.07), transparent 62%)" }} />
+          <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="max-w-sm">
+              <span className="inline-flex items-center gap-1.5 rounded-full border pborder ptint px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.2em] pf-70">
+                <span className="rec-dot" /> Founder&rsquo;s Edition
+              </span>
+              <h3 className="mt-3.5 text-lg font-medium">Lifetime, pay once, yours forever</h3>
+              <p className="mt-1.5 text-sm muted">Everything in Pro, no subscription. One payment, every future update included.</p>
+              <div className="mt-4 flex items-end gap-2">
+                <span className="font-mono text-4xl font-semibold tnum">$149</span>
+                <span className="mb-1 text-sm muted">one-time</span>
+              </div>
+            </div>
+            <div className="shrink-0">
+              {isSignedIn ? (
+                <button
+                  onClick={() => checkout("founder")}
+                  disabled={loading}
+                  className="group inline-flex items-center gap-2.5 rounded-full bg-white py-3 pl-6 pr-3 font-medium text-black transition duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
+                >
+                  {loading ? "Redirecting…" : "Get lifetime access"}
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/5 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:-translate-y-px">
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden><path d="M3.5 8.5L8.5 3.5M8.5 3.5H4.25M8.5 3.5V7.75" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  </span>
+                </button>
+              ) : (
+                <SignInButton mode="modal" forceRedirectUrl="/#pricing">
+                  <button className="group inline-flex items-center gap-2.5 rounded-full bg-white py-3 pl-6 pr-3 font-medium text-black transition duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:opacity-90 active:scale-[0.98]">
+                    Sign in for lifetime
+                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/5 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:-translate-y-px">
+                      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden><path d="M3.5 8.5L8.5 3.5M8.5 3.5H4.25M8.5 3.5V7.75" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    </span>
+                  </button>
+                </SignInButton>
+              )}
+              <p className="mt-2.5 text-center font-mono text-[11px] tracking-wide faint tnum">Limited Founder&rsquo;s release</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>

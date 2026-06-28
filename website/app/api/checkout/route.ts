@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   try { body = await req.json(); } catch { return NextResponse.json({ error: "bad request" }, { status: 400, headers: cors }); }
 
   const plan = body.plan;
-  if (plan !== "monthly" && plan !== "annual") {
+  if (plan !== "monthly" && plan !== "annual" && plan !== "founder") {
     return NextResponse.json({ error: "unknown plan" }, { status: 400, headers: cors });
   }
   const price = priceFor(plan);
@@ -37,22 +37,40 @@ export async function POST(req: NextRequest) {
   // Referral attribution: carried from the ?ref link → Stripe metadata, so a webhook
   // can later reward the referrer once this subscriber qualifies.
   const ref = (body.ref ?? "").toString().slice(0, 64).trim();
-  const meta: Record<string, string> = { product: "verba", plan };
+  // Founder's Edition is a one-time purchase that grants Pro for life; entitlementByEmail
+  // recognizes it by metadata.plan === "lifetime", so the metadata plan is "lifetime" here
+  // (not "founder"), while subscriptions keep their monthly/annual plan label.
+  const metaPlan = plan === "founder" ? "lifetime" : plan;
+  const meta: Record<string, string> = { product: "verba", plan: metaPlan };
   if (ref) meta.referredBy = ref;
 
   try {
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      line_items: [{ price, quantity: 1 }],
-      allow_promotion_codes: true,
-      customer_email: email || undefined,
-      // Explicit per-project label so this subscription reads as "Verba Pro" on the
-      // shared Stripe account (dashboard + invoices), never the account name (LiquidApp).
-      subscription_data: { description: "Verba Pro", trial_period_days: 7, metadata: meta },
-      metadata: meta,
-      success_url: `${SITE_URL}/account?status=success`,
-      cancel_url: `${SITE_URL}/#pricing`,
-    });
+    const session = plan === "founder"
+      ? await stripe.checkout.sessions.create({
+          mode: "payment",
+          line_items: [{ price, quantity: 1 }],
+          allow_promotion_codes: true,
+          customer_email: email || undefined,
+          // Force a Customer so the PaymentIntent is retrievable by email later, which is
+          // how entitlementByEmail confirms the lifetime grant (no webhook in prod).
+          customer_creation: "always",
+          payment_intent_data: { description: "Verba Founder's Edition (Lifetime)", metadata: meta },
+          metadata: meta,
+          success_url: `${SITE_URL}/account?status=success`,
+          cancel_url: `${SITE_URL}/#pricing`,
+        })
+      : await stripe.checkout.sessions.create({
+          mode: "subscription",
+          line_items: [{ price, quantity: 1 }],
+          allow_promotion_codes: true,
+          customer_email: email || undefined,
+          // Explicit per-project label so this subscription reads as "Verba Pro" on the
+          // shared Stripe account (dashboard + invoices), never the account name (LiquidApp).
+          subscription_data: { description: "Verba Pro", trial_period_days: 7, metadata: meta },
+          metadata: meta,
+          success_url: `${SITE_URL}/account?status=success`,
+          cancel_url: `${SITE_URL}/#pricing`,
+        });
     return NextResponse.json({ url: session.url }, { headers: cors });
   } catch {
     return NextResponse.json({ error: "stripe error" }, { status: 502, headers: cors });
