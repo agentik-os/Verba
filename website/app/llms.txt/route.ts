@@ -5,9 +5,10 @@ export const runtime = "nodejs";
 
 const BODY = `# Verba
 
-Verba is a native macOS menu-bar AI dictation app: speak, and Verba transcribes you and uses an
-LLM you control to turn rambling speech into clean, well-structured text in any app, then JARVIS,
-Verba's voice agent, can act on it across 1,000+ connected apps.
+Verba is a native macOS menu-bar voice agent: speak, and Verba transcribes you on-device and uses
+an LLM you control (including your Claude Code subscription, with no API key) to turn rambling
+speech into clean, well-structured text in any app, then JARVIS, Verba's voice agent, acts on it
+across 1,000+ connected apps. Dictation that doesn't just type, it acts.
 
 Website: https://verba.run
 Download (macOS 14+): https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg

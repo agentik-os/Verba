@@ -210,9 +210,9 @@ function Hero() {
           <span className="text-[var(--fg-dim)]">Send it clean.</span>
         </h1>
         <p className="anim-sub t-lead mt-7 max-w-xl">
-          The most complete voice-to-text on the Mac, and the only one that acts on what you say.
-          Press a key, talk the way it comes out, and polished text lands exactly where your cursor
-          is. In any app, in any language, with the AI you already pay for.
+          The private voice app for your Mac that doesn&apos;t just write what you say, it does it.
+          Dictate clean text into any app, reuse the Claude Code subscription you already pay for (no API key),
+          and let JARVIS act across 1,000+ apps. Every step is planned on-device, and nothing happens until you confirm.
         </p>
         <div className="anim-cta mt-9 flex flex-wrap items-center gap-3">
           <a href={DOWNLOAD_URL} className="btn-primary px-7 py-3">
@@ -221,9 +221,9 @@ function Hero() {
           <a href="#how" className="btn-ghost px-7 py-3">See how it works</a>
         </div>
         <p className="anim-cta mt-4 font-mono text-[11px] tracking-wide muted tnum">Download free · 33 dictations in-app, no card · then a 7-day Pro trial, cancel anytime</p>
-        <p className="anim-cta mt-2 font-mono text-[11px] tracking-wide faint tnum">Apple Silicon · macOS 14+</p>
+        <p className="anim-cta mt-2 font-mono text-[11px] tracking-wide faint tnum">Have Claude Code? Zero setup, no API key, no markup · Apple Silicon · macOS 14+</p>
         <div className="anim-cta mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[13px] muted">
-          {["Dictate anywhere", "Reads your screen", "Hour-long notes", "Translate live", "Runs offline", "Your Claude sub, no key", "Acts on what you say"].map((p) => (
+          {["Acts on what you say", "Your Claude sub, no key", "Runs offline", "Reads your screen", "Hour-long notes", "Translate live"].map((p) => (
             <span key={p} className="flex items-center gap-2">
               <span className="h-1 w-1 rounded-full bg-[var(--accent-line)]" />{p}
             </span>
@@ -280,8 +280,8 @@ function SpeedProof() {
 /* PERSONAS, who it's for, in one line each. Benefit-led, talk once and move on. */
 function Personas() {
   const personas: { name: string; line: string }[] = [
+    { name: "Engineers", line: "Talk a rambling thought into a clean Opus prompt inside Cursor or Claude Code. Then say \"create the Linear issue, email the team\", your Claude Code sub plans it on-device, you confirm, it's done. No API key." },
     { name: "Founders", line: "Clear the inbox, the doc, and the standup notes between meetings. Talk once, send clean, move on." },
-    { name: "Engineers", line: "Turn rambling feedback into a precise prompt for Cursor or Claude Code, routed to Opus. File the bug as you describe it." },
     { name: "Writers", line: "Capture the draft at the speed you think it. An hour of voice becomes a structured document you can actually edit." },
     { name: "Support and ops", line: "Answer every ticket in your own tone, per app. Verba matches how you write in Slack, Mail, and Notion." },
     { name: "Multilingual teams", line: "Think in your language, write in theirs. Speak French, send English. Every time, no prefix, no second tab." },
@@ -293,7 +293,7 @@ function Personas() {
         <HeadCenter
           eyebrow="Who it's for"
           title="One key, for the way you actually work"
-          lead="Verba is the complete voice OS for your Mac. It doesn't just transcribe: it reads your screen, files your tasks, translates as you speak, and acts on what it hears."
+          lead="Built first for Claude Code-native developers, Verba is the complete voice OS for anyone who thinks faster than they type. It doesn't just transcribe: it reads your screen, files your tasks, translates as you speak, and acts on what it hears."
         />
       </Reveal>
       <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

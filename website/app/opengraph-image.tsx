@@ -82,7 +82,7 @@ export default function Image() {
               letterSpacing: "-0.01em",
             }}
           >
-            The most complete voice-to-text on the Mac.
+            The private Mac voice agent. It doesn't just type, it acts.
           </div>
         </div>
 

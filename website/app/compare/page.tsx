@@ -69,7 +69,7 @@ export default function Compare() {
 
       <section className="py-14 text-center">
         <h1 className="mx-auto max-w-3xl text-balance text-4xl font-semibold tracking-tight sm:text-6xl">
-          Verba vs the rest, feature by feature
+          Verba vs the rest, it doesn't just type, it acts
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-lg muted text-balance">
           An honest, sourced comparison across 24 features. Verba is the only Mac dictation app that
