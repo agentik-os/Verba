@@ -221,7 +221,7 @@ function Hero() {
           <a href="#how" className="btn-ghost px-7 py-3">See how it works</a>
         </div>
         <p className="anim-cta mt-4 font-mono text-[11px] tracking-wide muted tnum">Download free · 33 dictations in-app, no card · then a 7-day Pro trial, cancel anytime</p>
-        <p className="anim-cta mt-2 font-mono text-[11px] tracking-wide faint tnum">Have Claude Code? Zero setup, no API key, no markup · Apple Silicon · macOS 14+</p>
+        <p className="anim-cta mt-2 font-mono text-[11px] tracking-wide muted tnum">Have Claude Code? Zero setup, no API key, no markup <span className="faint">· Apple Silicon · macOS 14+</span></p>
         <div className="anim-cta mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[13px] muted">
           {["Acts on what you say", "Your Claude sub, no key", "Runs offline", "Reads your screen", "Hour-long notes", "Translate live"].map((p) => (
             <span key={p} className="flex items-center gap-2">
@@ -280,7 +280,7 @@ function SpeedProof() {
 /* PERSONAS, who it's for, in one line each. Benefit-led, talk once and move on. */
 function Personas() {
   const personas: { name: string; line: string }[] = [
-    { name: "Engineers", line: "Talk a rambling thought into a clean Opus prompt inside Cursor or Claude Code. Then say \"create the Linear issue, email the team\", your Claude Code sub plans it on-device, you confirm, it's done. No API key." },
+    { name: "Engineers", line: "Dictate a rambling thought into a clean Opus prompt in Cursor or Claude Code. Say \"create the issue, email the team\", confirm, done." },
     { name: "Founders", line: "Clear the inbox, the doc, and the standup notes between meetings. Talk once, send clean, move on." },
     { name: "Writers", line: "Capture the draft at the speed you think it. An hour of voice becomes a structured document you can actually edit." },
     { name: "Support and ops", line: "Answer every ticket in your own tone, per app. Verba matches how you write in Slack, Mail, and Notion." },
