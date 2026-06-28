@@ -27,6 +27,23 @@ in the live product and the repo — no invented features.
    *(skill: `/omg-marketing-strategist`)*
 5. **[content-strategy.md](./content-strategy.md)** — the content plan: 4 pillars, topic clusters, buyer-stage keyword map,
    priority-scored topics, and a 90-day editorial calendar mapped to the GTM phases. *(skill: `/omg-content-strategy`)*
+6. **[launch-strategy.md](./launch-strategy.md)** — the week-by-week launch: the single narrative, T-4→T+8 timeline, a
+   Product Hunt launch (28 Jul 2026) + Show HN + Reddit + X plays, hour-by-hour runbook, the Lifetime/Founder tier as the
+   lever, risks. *(skill: `/omg-launch-strategy`)*
+7. **[social-content.md](./social-content.md)** — 14 ready-to-post organic angles (X/HN/Reddit/LinkedIn) with full copy,
+   a posting cadence, a one-demo→~30-posts repurposing matrix, and a hook swipe bank. *(skill: `/omg-social-content`)*
+8. **[ad-creative.md](./ad-creative.md)** — paid creative (after organic proves conversion): 4 angles, Google RSA sets,
+   Reddit/X feed ads, /compare + /vs retargeting, negative keywords, the angle-first test plan. *(skill: `/omg-ad-creative`)*
+9. **[cold-email.md](./cold-email.md)** — outbound = relationship outreach (B2C, no enterprise prospecting): 5 sequences
+   (creators, newsletters, partners/bundles, podcasts, power-users) + seed-license mechanics + anti-spam etiquette. *(skill: `/omg-cold-email`)*
+10. **[partnerships-distribution.md](./partnerships-distribution.md)** — Setapp, bundles/lifetime, Mac integrations
+    (Raycast, Alfred, indie-Mac media, Claude/Cursor community, MCP), creator/affiliate (Dub), and the App Store question —
+    each a pursue/later/avoid verdict with cited sources, a target list, and a 90-day sequence.
+
+**📄 Consolidated deliverable — [Verba-Marketing-Strategy.pdf](./Verba-Marketing-Strategy.pdf)** — the full strategy in
+**French**, 14 parts, 45 pages (positioning, ICP/personas, the irresistible offer, channels, content/SEO/GEO, social, paid
++ outbound, pricing, partnerships, growth loops, the week-by-week launch, the 90-day roadmap). Rendered via the OmegaOS
+pdfgen `doc` template; verified page-by-page; adversarially verified (2-of-3) against the SSOT.
 
 ## The play in three lines
 - **Product:** the only Mac dictation app that's **private by default** *and* lets you **bring your own AI (reuse your Claude
