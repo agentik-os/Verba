@@ -22,7 +22,7 @@ Price: $9.99/month or $84/year. Free trial: 33 full-feature dictations.
 - Bring your own AI: your Claude subscription via Claude Code (no API key), your Anthropic key, OpenRouter, or a local Ollama model.
 - Context mode: reads your screen (vision) and writes from it.
 - Live translation to a target language.
-- JARVIS (Action mode, Fn+X): a voice agent that plans, asks to clarify, and, after your confirmation, acts on 1,000+ connected apps (Gmail, Slack, Notion, Google Calendar, Linear, GitHub, and more) via Composio. Connection keys stay on Verba's servers, never on your Mac.
+- JARVIS (Action mode, Fn+X) is the "Jarvis for Mac": a desktop voice agent that plans, asks to clarify, and, after your confirmation, acts on 1,000+ connected apps (Gmail, Slack, Notion, Google Calendar, Linear, GitHub, and more). Connection keys are held by a secure server-side relay, never on your Mac.
 - Also: voice task manager, hour-long structured notes, per-app mode auto-matching, custom dictionary, gamification, 15 UI languages.
 
 ## How Verba compares

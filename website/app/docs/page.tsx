@@ -103,7 +103,7 @@ const SECTIONS: Section[] = [
     blocks: [
       { kind: "p", text: "Say a goal however it comes out, \"remind me in 10 to grab the cake\" or \"find me a free hour tomorrow and book it\". JARVIS recovers your intent, resolves times in your timezone, reads context when it needs to, shows exactly what it will do, and only acts on your confirmation." },
       { kind: "ul", items: [
-        "Connect apps in Settings ▸ Connected apps: Gmail, Slack, Notion, Google Calendar, Linear, GitHub and 1,000+ more, via Composio.",
+        "Connect apps in Settings ▸ Connected apps: Gmail, Slack, Notion, Google Calendar, Linear, GitHub and 1,000+ more.",
         "Most apps connect with an API key; OAuth apps open a browser sign-in.",
         "Connection keys are relayed server-side and never stored on your Mac.",
         "Planning runs on your own AI engine (Claude Code or a local model), your requests never burn a shared cloud key.",

@@ -112,10 +112,10 @@ function JarvisAction() {
                 </div>
               </div>
               <ul className="mt-5 space-y-2 text-[13px] pf-70">
-                <li>Interprets any phrasing, it recovers the real intent.</li>
-                <li>Asks when it is unsure, a Google Meet, or just a calendar block?</li>
+                <li>Understands what you mean, however you phrase it.</li>
+                <li>Asks when it&apos;s unsure: a Google Meet, or just a calendar block?</li>
                 <li>Missing a detail? It shows editable fields to fill in.</li>
-                <li>It never writes anything without your confirmation.</li>
+                <li>It never writes anything until you confirm.</li>
               </ul>
             </div>
           </div>
@@ -210,9 +210,9 @@ function Hero() {
           <span className="text-[var(--fg-dim)]">Send it clean.</span>
         </h1>
         <p className="anim-sub t-lead mt-7 max-w-xl">
-          The most complete voice-to-text on the Mac. Press a key, talk the way it comes out,
-          and polished text lands exactly where your cursor is. In any app, in any language,
-          with your own AI.
+          The most complete voice-to-text on the Mac, and the only one that acts on what you say.
+          Press a key, talk the way it comes out, and polished text lands exactly where your cursor
+          is. In any app, in any language, with the AI you already pay for.
         </p>
         <div className="anim-cta mt-9 flex flex-wrap items-center gap-3">
           <a href={DOWNLOAD_URL} className="btn-primary px-7 py-3">
@@ -223,7 +223,7 @@ function Hero() {
         <p className="anim-cta mt-4 font-mono text-[11px] tracking-wide muted tnum">Download free · 33 dictations in-app, no card · then a 7-day Pro trial, cancel anytime</p>
         <p className="anim-cta mt-2 font-mono text-[11px] tracking-wide faint tnum">Apple Silicon · macOS 14+</p>
         <div className="anim-cta mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[13px] muted">
-          {["Dictate anywhere", "Reads your screen", "Hour-long notes", "Translate live", "Runs offline", "Bring your own AI"].map((p) => (
+          {["Dictate anywhere", "Reads your screen", "Hour-long notes", "Translate live", "Runs offline", "Your Claude sub, no key", "Acts on what you say"].map((p) => (
             <span key={p} className="flex items-center gap-2">
               <span className="h-1 w-1 rounded-full bg-[var(--accent-line)]" />{p}
             </span>
@@ -906,6 +906,9 @@ function CompareTeaser() {
           <Link href="/compare" className="mt-9 inline-flex items-center gap-2 rounded-[10px] bg-[#0a0a0c] px-7 py-3 font-medium text-white transition-opacity duration-150 hover:opacity-90">
             See the full comparison
           </Link>
+          <p className="mt-4 text-sm">
+            <Link href="/vs/wispr-flow" className="font-medium text-black/60 underline decoration-black/20 underline-offset-4 transition-colors hover:text-black">Verba vs Wispr Flow →</Link>
+          </p>
         </div>
       </Reveal>
     </section>
@@ -1250,6 +1253,7 @@ function Pricing() {
             <span className="mb-1 text-sm pf-50">{PRICE[plan].sub}</span>
           </div>
           <p className="mt-1 text-sm pf-50 tnum">{PRICE[plan].note} · 7-day trial, card required</p>
+          <p className="mt-2 text-xs pf-50">Audio stays on your Mac · your own AI, no markup · cancel anytime.</p>
           <ul className="mt-6 space-y-2.5 text-sm pf-85">
             {["Unlimited dictation", "All modes + custom modes", "Voice-command formatting", "Sync across your Macs", "Priority support"].map((b) => (
               <li key={b} className="flex items-center gap-2.5"><span className="inline-flex h-4 w-4 items-center justify-center rounded-[4px] bg-white text-black"><MicGlyph size={8} /></span>{b}</li>
@@ -1303,8 +1307,8 @@ function FAQ() {
     ["Is Verba accurate, and how good is the transcription?", "Verba uses state-of-the-art on-device speech models (WhisperKit and Parakeet) for fast, high-accuracy voice-to-text on Apple Silicon Macs. Its AI cleanup layer then automatically fixes filler words, punctuation, and formatting in whatever app you're typing in, so the final text reads polished rather than raw."],
     ["Does Verba have a free trial or refund?", "Yes - Verba gives you 33 free dictations to try the full app with no payment required, so you can confirm it works for you before subscribing at $9.99/mo or $84/yr. Billing is handled through Stripe, so subscriptions can be managed and cancelled at any time."],
     ["Does Verba work offline?", "Yes - in on-device mode Verba transcribes your voice locally using WhisperKit or Parakeet, so core dictation works without an internet connection and your audio never leaves your Mac. You only need a connection for cloud AI features like AI cleanup with a hosted model, live translation, or the JARVIS agent (local Ollama lets you run AI offline too)."],
-    ["Is my data and audio private with Verba?", "Yes - in on-device mode your audio never leaves your Mac, since transcription runs locally with WhisperKit or Parakeet. With JARVIS, your connected-app keys are relayed server-side via Composio and are never stored on your Mac, and you can run AI fully locally with Ollama for maximum privacy."],
-    ["What can the JARVIS voice agent actually do?", "JARVIS is Verba's voice agent that takes action across 1,000+ connected apps via Composio - so you can speak commands to send emails, create calendar events, update tasks, and more without leaving your current app. Connections are relayed server-side and your app keys are never stored on the Mac."],
+    ["Is my data and audio private with Verba?", "Yes - in on-device mode your audio never leaves your Mac, since transcription runs locally with WhisperKit or Parakeet. With JARVIS, the action plan is generated on your Mac by your own AI (your Claude plan, your key, or a local model), never a server key, and every action runs only after you confirm. The keys that connect your apps are held by a secure relay, never on your Mac, and you can run AI fully locally with Ollama for maximum privacy."],
+    ["What can the JARVIS voice agent actually do?", "JARVIS is Verba's voice agent that takes action across 1,000+ connected apps - so you can speak commands to send emails, create calendar events, update tasks, and more without leaving your current app. It plans on your Mac with your own AI, shows you the steps, and only acts once you confirm. The keys that connect your apps are held by a secure relay, never on your Mac."],
   ];
   // FAQPage structured data, Google FAQ rich results + LLM/AI-search (GEO) citation.
   const faqJsonLd = {

@@ -28,11 +28,11 @@ export const FEATURES: Feature[] = [
     "sections": [
       {
         "h2": "A voice assistant that acts on your apps, not just answers",
-        "body": "JARVIS is built for getting things done across the tools you already live in. Hit Fn+X, say what you want in plain language, and it figures out which apps and actions the request needs, then carries them out for you. It is wired into 1,000+ apps through Composio, so the same spoken request can touch your inbox, your calendar, your project tracker, and your team chat in one go.",
+        "body": "JARVIS is built for getting things done across the tools you already live in. Hit Fn+X, say what you want in plain language, and it figures out which apps and actions the request needs, then carries them out for you. It is wired into 1,000+ connected apps, so the same spoken request can touch your inbox, your calendar, your project tracker, and your team chat in one go.",
         "bullets": [
           "Trigger Action mode anywhere with Fn+X, no app to switch to",
           "Acts across Gmail, Slack, Notion, Google Calendar, Linear, GitHub, and 1,000+ more",
-          "Connected via Composio so coverage grows without a Verba update",
+          "Connected through a secure relay so coverage grows without a Verba update",
           "One spoken request can chain actions across several apps",
           "Works system-wide, wherever your cursor is"
         ]
@@ -49,7 +49,7 @@ export const FEATURES: Feature[] = [
       },
       {
         "h2": "Runs on the AI you control, with keys that stay server-side",
-        "body": "The planning brain behind JARVIS is your own AI engine, the same bring-your-own setup the rest of Verba uses: your Claude subscription through Claude Code with no API key, your Anthropic key, OpenRouter, or a local model. Verba never makes a billed AI call on your behalf. And the credentials that connect your apps never land on your Mac. App connection keys are held server-side through Composio, so your laptop holds the conversation, not your Slack or Gmail tokens.",
+        "body": "The planning brain behind JARVIS is your own AI engine, the same bring-your-own setup the rest of Verba uses: your Claude subscription through Claude Code with no API key, your Anthropic key, OpenRouter, or a local model. Verba never makes a billed AI call on your behalf. And the credentials that connect your apps never land on your Mac. App connection keys are held by a secure server-side relay, so your laptop holds the conversation, not your Slack or Gmail tokens.",
         "bullets": [
           "Planning runs on your own AI engine, strictly bring-your-own",
           "Verba never makes a billed call for you",
@@ -69,7 +69,7 @@ export const FEATURES: Feature[] = [
       },
       {
         "q": "Which apps can the voice agent act on?",
-        "a": "JARVIS connects to over 1,000 apps through Composio, including Gmail, Slack, Notion, Google Calendar, Linear, and GitHub. One spoken request can chain actions across several of them at once."
+        "a": "JARVIS connects to over 1,000 apps, including Gmail, Slack, Notion, Google Calendar, Linear, and GitHub. One spoken request can chain actions across several of them at once."
       },
       {
         "q": "Does JARVIS act without asking me first?",
@@ -81,7 +81,7 @@ export const FEATURES: Feature[] = [
       },
       {
         "q": "Where are my app connection keys stored?",
-        "a": "App connection keys stay server-side through Composio and never land on your Mac. Any AI keys you choose to store live in the macOS Keychain."
+        "a": "App connection keys stay on a secure server-side relay and never land on your Mac. Any AI keys you choose to store live in the macOS Keychain."
       }
     ]
   },

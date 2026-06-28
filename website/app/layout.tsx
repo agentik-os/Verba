@@ -49,7 +49,7 @@ const SITE_JSONLD = {
         "AI dictation for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and JARVIS, a voice agent that acts on 1,000+ connected apps.",
       url: "https://verba.run",
       downloadUrl: "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg",
-      softwareVersion: "0.9.16",
+      softwareVersion: "0.9.29",
       offers: {
         "@type": "Offer",
         price: "9.99",

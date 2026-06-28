@@ -11,6 +11,8 @@ const MODES = [
   { key: "custom", label: "Custom", model: "Sonnet 4.6", tip: "Write your own instruction and test it live." },
 ];
 
+const DOWNLOAD_URL = "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg";
+
 const darkCard = { color: "#f4f5f8", "--muted": "rgba(244,245,248,0.55)" } as Record<string, string>;
 
 /// In-browser taste of Verba: pick a mode (or write a custom one), record ~45s, we transcribe
@@ -153,6 +155,11 @@ export default function TryIt() {
               </div>
             </div>
           )
+        )}
+        {state === "done" && (
+          <a href={DOWNLOAD_URL} className="btn-primary mt-6 inline-flex items-center gap-2 px-7 py-3">
+            Get this in every app, free
+          </a>
         )}
       </div>
       <p className="mt-3 text-center text-xs muted">No sign-up needed · 7 free tries · your clip isn't stored.</p>
