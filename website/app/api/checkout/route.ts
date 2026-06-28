@@ -72,7 +72,11 @@ export async function POST(req: NextRequest) {
           cancel_url: `${SITE_URL}/#pricing`,
         });
     return NextResponse.json({ url: session.url }, { headers: cors });
-  } catch {
-    return NextResponse.json({ error: "stripe error" }, { status: 502, headers: cors });
+  } catch (e: unknown) {
+    // Never swallow Stripe errors silently — surface the code/type (safe, non-sensitive)
+    // so a misconfigured key/price/permission is diagnosable from the response + logs.
+    const err = e as { code?: string; type?: string; message?: string };
+    console.error("checkout session error", { plan, code: err?.code, type: err?.type, message: err?.message });
+    return NextResponse.json({ error: "stripe error", code: err?.code, type: err?.type }, { status: 502, headers: cors });
   }
 }
