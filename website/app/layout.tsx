@@ -9,20 +9,21 @@ import RefCapture from "@/components/RefCapture";
 const themeScript = `(function(){try{var t=localStorage.getItem('verba_theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`;
 
 export const metadata: Metadata = {
-  title: "Verba, AI Dictation for Mac | Private Voice to Text, On-Device",
+  title: "Verba, the Mac Voice Agent | Private Dictation that Acts",
   // ≤160 chars so Google doesn't truncate it in the SERP.
   description:
-    "The most complete AI dictation app for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and a voice agent for 1,000+ apps. Private, BYO-AI.",
+    "Verba is the private Mac voice agent: dictate and it acts across 1,000+ apps. On-device voice-to-text, reuse your Claude Code plan with no key. $9.99/mo.",
   metadataBase: new URL("https://verba.run"),
   alternates: { canonical: "/" },
   keywords: [
-    "AI dictation Mac", "voice to text macOS", "dictation app for Mac", "Wispr Flow alternative",
-    "speech to text Mac", "on-device dictation", "private dictation app", "voice agent Mac",
+    "Mac voice agent", "AI dictation Mac", "voice to text macOS", "dictation app for Mac",
+    "Wispr Flow alternative", "speech to text Mac", "on-device dictation", "private dictation app",
+    "Jarvis for Mac", "voice to action Mac", "Claude Code voice", "dictate to Claude Code",
   ],
   openGraph: {
-    title: "Verba, AI Dictation for Mac | Private Voice to Text",
+    title: "Verba, the Mac Voice Agent | Dictation that Acts",
     description:
-      "On-device voice-to-text with AI cleanup, live translation, and JARVIS, a voice agent acting on 1,000+ apps. Private, BYO-AI, $9.99/mo.",
+      "The private Mac voice agent: dictate and it acts across 1,000+ apps. On-device voice-to-text, AI cleanup, live translation. Reuse your Claude Code plan, no key. $9.99/mo.",
     url: "/",
     siteName: "Verba",
     type: "website",
@@ -30,9 +31,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Verba, AI Dictation for Mac | Private Voice to Text",
+    title: "Verba, the Mac Voice Agent | Dictation that Acts",
     description:
-      "On-device voice-to-text with AI cleanup, live translation, and JARVIS, a voice agent acting on 1,000+ apps. Private, BYO-AI.",
+      "The private Mac voice agent, dictation that acts on 1,000+ apps. On-device voice-to-text, reuse your Claude Code plan with no key.",
   },
 };
 
@@ -46,7 +47,7 @@ const SITE_JSONLD = {
       applicationCategory: "UtilitiesApplication",
       operatingSystem: "macOS 14+",
       description:
-        "AI dictation for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and JARVIS, a voice agent that acts on 1,000+ connected apps.",
+        "The private Mac voice agent: on-device voice-to-text and AI cleanup in any app, plus JARVIS, which acts on 1,000+ connected apps. Bring your own AI, including your Claude Code plan with no key.",
       url: "https://verba.run",
       downloadUrl: "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg",
       softwareVersion: "0.9.29",
