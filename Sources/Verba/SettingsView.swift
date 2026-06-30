@@ -1507,6 +1507,8 @@ struct SettingsView: View {
                     } else {
                         Button(active ? L("Activate") : L("Use this model")) { activate(engineTab) }.glassProminentButton().controlSize(.small)
                     }
+                    Button(L("Reinstall")) { installEngine(engineTab) }.glassButton().controlSize(.small)
+                        .help(L("Re-download this model, e.g. if it's corrupted or only partly downloaded."))
                     Button(L("Uninstall"), role: .destructive) { confirmUninstall = true }.glassButton().controlSize(.small)
                         .confirmationDialog(L("Uninstall this model?"), isPresented: $confirmUninstall, titleVisibility: .visible) {
                             Button(L("Uninstall"), role: .destructive) { uninstallEngine(engineTab) }

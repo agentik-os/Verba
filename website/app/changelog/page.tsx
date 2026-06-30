@@ -19,8 +19,16 @@ const DAYS: Day[] = [
     date: "June 30, 2026",
     tag: "Today",
     summary:
-      "Pick your Translate language on the fly, a new Prompt mode that turns what you say into an optimized AI prompt, and the ability to rename your imported transcripts.",
+      "The Automatic engine now self-heals, you can pick your Translate language on the fly, a new Prompt mode turns what you say into an optimized AI prompt, and you can rename your imported transcripts.",
     entries: [
+      {
+        version: "0.9.33",
+        title: "The Automatic engine never dead-ends",
+        items: [
+          "On the Automatic engine (Claude Code, else Verba), if a model or backend fails, is unavailable, or is rate-limited, Verba now automatically tries the next one until a dictation comes back — no more “Claude Code failed” dead-ends.",
+          "Local transcription models: a Reinstall button to re-download a model if it ever gets corrupted or only partly downloaded. (Your model is still installed automatically in the background on first launch.)",
+        ],
+      },
       {
         version: "0.9.32",
         title: "Pick your Translate language inline",

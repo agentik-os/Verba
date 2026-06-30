@@ -16,10 +16,60 @@ enum RepromptError: LocalizedError {
 /// Restructures a raw transcript into a clean prompt/message using Claude (BYOK).
 struct Reprompter {
     var model: String
+    /// Forced backend for ONE attempt, set by the Automatic fallback loop. nil = use the user's
+    /// configured backend (the normal path).
+    var backendOverride: RepromptBackend? = nil
 
     func reprompt(transcript: String, systemPrompt: String, fast: Bool = false) async throws -> String {
         let userText = "Here is the raw voice transcript to restructure:\n\n<transcript>\n\(transcript)\n</transcript>"
-        var backend = Settings.shared.repromptBackend.resolved
+        // Automatic mode (Claude Code, else Verba) auto-recovers: it walks each available backend and
+        // model until one succeeds, so a failed Claude CLI, an unavailable or rate-limited model never
+        // dead-ends the dictation. An explicitly chosen backend keeps its single, predictable attempt.
+        if backendOverride == nil, Settings.shared.repromptBackend == .auto {
+            return try await autoFallback(transcript: transcript, systemPrompt: systemPrompt, userText: userText, fast: fast)
+        }
+        return try await runOnce(transcript: transcript, systemPrompt: systemPrompt, userText: userText, fast: fast)
+    }
+
+    /// Automatic mode: try every available (backend, model) pair until one returns text. Order: the
+    /// user's Claude Code first (free, runs on their plan), then their Anthropic key, then Verba's
+    /// hosted engine (always works, no key); within each, the mode's model first, then lighter models
+    /// that are likelier to be available / within limits.
+    private func autoFallback(transcript: String, systemPrompt: String, userText: String, fast: Bool) async throws -> String {
+        var backends: [RepromptBackend] = []
+        if ClaudeCode.isAvailable, !fast { backends.append(.claudeCode) }   // skip the slow CLI on the notes fast-path
+        if let k = Keychain.anthropicKey, !k.isEmpty { backends.append(.apiKey) }
+        backends.append(.verba)
+        var seen = Set<String>(); backends = backends.filter { seen.insert($0.rawValue).inserted }
+
+        var lastError: Error?
+        for b in backends {
+            for m in Reprompter.fallbackModels(preferred: model) {
+                var attempt = self
+                attempt.backendOverride = b
+                attempt.model = m
+                do {
+                    return try await attempt.runOnce(transcript: transcript, systemPrompt: systemPrompt, userText: userText, fast: fast)
+                } catch {
+                    lastError = error
+                    NSLog("Verba: Automatic reprompt attempt failed (\(b.rawValue) · \(m)): \(error.localizedDescription) — trying next")
+                }
+            }
+        }
+        throw lastError ?? RepromptError.empty
+    }
+
+    /// Model fallback order for Automatic mode: the chosen model first, then the balanced and lightest
+    /// models. Deduped; only Claude models (every Automatic backend speaks them).
+    static func fallbackModels(preferred: String) -> [String] {
+        var list = preferred.hasPrefix("claude-") ? [preferred] : []
+        for m in ["claude-sonnet-4-6", "claude-haiku-4-5"] where !list.contains(m) { list.append(m) }
+        return list
+    }
+
+    /// A single reprompt attempt against one resolved backend + this instance's `model`.
+    private func runOnce(transcript: String, systemPrompt: String, userText: String, fast: Bool) async throws -> String {
+        var backend = backendOverride ?? Settings.shared.repromptBackend.resolved
         // Notes fast path: spawning the Claude CLI costs ~6-8s of pure startup overhead per call,
         // which dwarfs the generation. For notes, never spawn it — swap to a direct HTTP model call
         // (API key if present, else the hosted proxy). Same model, no process spawn.
