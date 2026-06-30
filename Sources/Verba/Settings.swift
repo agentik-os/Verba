@@ -400,7 +400,36 @@ extension Profile {
         builtin: true, hotkeyCode: 21 /* 4 */, hotkeyMods: kCtrlOpt,
         model: "claude-sonnet-4-6", vision: true)
 
-    static let defaults: [Profile] = [.flow, .intent, .polish, .translate, .context, .coding]
+    static let prompt = Profile(
+        name: "Prompt",
+        systemPrompt: faithfulCore + """
+
+
+        CONTEXT: the output is a PROMPT for an AI assistant (ChatGPT, Claude, Gemini, an image \
+        generator, etc.). The speaker dictated what they want, often loosely and out of order. \
+        Turn it into a clean, well-engineered prompt that gets a great result on the first try:
+
+        - Open with a crisp, imperative statement of the task (what you want the AI to do).
+        - Add a role/persona only if it genuinely sharpens the result ("You are a senior \
+        copywriter…"), never as boilerplate.
+        - Give the context the AI needs: background, audience, and any source material or \
+        examples the speaker provided.
+        - State the constraints, tone, length, and desired OUTPUT FORMAT explicitly (a list, \
+        table, JSON, an email, etc.) whenever the speaker implied one.
+        - Keep EVERY concrete detail verbatim: names, numbers, quotes, examples, URLs, file \
+        names. Never paraphrase these. Resolve self-corrections to the final intent; drop the \
+        retracted attempts.
+        - Be specific and unambiguous, but do NOT invent requirements, facts, or scope the \
+        speaker didn't state, and do not pad it.
+        - Use light structure (a short header or bullets) only when it makes the prompt clearer.
+
+        Write the prompt in the ONE language the speaker used.
+        Output ONLY the finished prompt, ready to paste, with no preamble, quotes, or commentary.
+        """,
+        builtin: true, model: "claude-sonnet-4-6",
+        explainer: "Prompt mode turns what you say into a clean, optimized AI prompt. Ramble what you want from ChatGPT, Claude, or an image generator and Verba structures it into a clear task with the right context, constraints, and output format, ready to paste.")
+
+    static let defaults: [Profile] = [.flow, .intent, .polish, .translate, .context, .coding, .prompt]
     /// Built-in modes that were shipped once and then retired — dropped on migration so they
     /// disappear for existing users too (not kept as orphan custom modes).
     static let retiredBuiltinNames: Set<String> = ["Casual", "Custom"]
@@ -415,7 +444,7 @@ final class Settings: ObservableObject {
     private let d = UserDefaults.standard
 
     // Bump when the built-in profiles change so users get the new prompts/shortcuts.
-    static let profilesVersion = 22  // VER-21: Flow renamed to Raw (migrates existing users' saved built-in)
+    static let profilesVersion = 23  // adds the built-in "Prompt" mode (dictation → optimized AI prompt)
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }
@@ -1068,6 +1097,7 @@ final class Settings: ObservableObject {
         "Translate": "Translate writes your speech in another language. Pick a target language once, then talk in whatever language is natural; the output always comes back in the one you chose. Perfect for replying across languages without a second tab.",
         "Context": "Context can see your screen. It takes a screenshot and acts on what is visible based on what you say, like reply to the email on screen or summarize this document. Look at something, describe what you want, and it drafts it.",
         "Coding": "Coding turns rambling feedback into a precise prompt for a coding agent like Cursor or Claude Code, keeping every detail. Talk through the change you want and paste the clean prompt straight into your tool.",
+        "Prompt": "Prompt mode turns what you say into a clean, optimized AI prompt. Ramble what you want from ChatGPT, Claude, or an image generator and Verba structures it into a clear task with the right context, constraints, and output format, ready to paste.",
     ]
 
     static func stampedDefaults() -> [Profile] {

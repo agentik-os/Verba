@@ -19,8 +19,16 @@ const DAYS: Day[] = [
     date: "June 30, 2026",
     tag: "Today",
     summary:
-      "Name your transcripts. A file you import for transcription used to be stuck with its original file name — now you can rename any saved transcript to whatever makes sense.",
+      "A new Prompt mode that turns what you say into an optimized AI prompt, plus the ability to rename your imported transcripts.",
     entries: [
+      {
+        version: "0.9.31",
+        title: "New mode: Prompt",
+        items: [
+          "Prompt mode turns rambling dictation into a clean, optimized AI prompt — task, context, constraints, and output format — ready to paste into ChatGPT, Claude, an image generator, anything.",
+          "It's the general-purpose sibling of Coding mode. Pick it from your modes, or set it as a per-app default.",
+        ],
+      },
       {
         version: "0.9.30",
         title: "Rename imported transcripts",
