@@ -33,7 +33,18 @@ struct ChangelogDay: Identifiable {
 enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
-            date: "June 12, 2026", tag: "Today",
+            date: "June 30, 2026", tag: "Today",
+            summary: "Name your transcripts. A file you import for transcription used to be stuck with its original file name — now you can rename any saved transcript to whatever makes sense.",
+            entries: [
+                ChangelogEntry(version: "0.9.30",
+                    title: "Rename imported transcripts",
+                    items: [
+                        "Open a saved transcript and click its name to rename it — handy when the file came in as something like “audio_2026.m4a”.",
+                        "Clear the name to fall back to the original file name. Your existing transcripts are untouched.",
+                    ]),
+            ]),
+        ChangelogDay(
+            date: "June 12, 2026",
             summary: "A calmer first run, a nested tag tree for filing, and the story in the app. Onboarding now teaches every shortcut, opens the app the moment you finish, and lets you keep your profile private. Notes and Tasks both get a proper nested tag tree for filing, you can lock individual notes, the full changelog lives right inside Settings, the level ladder now climbs to 1,000, and every badge explains what it's for.",
             entries: [
                 ChangelogEntry(version: "0.9.29",

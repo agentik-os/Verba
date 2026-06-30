@@ -10,6 +10,16 @@ struct TranscriptEntry: Codable, Identifiable {
     var sourceName: String      // original file name it was imported from
     var tags: [String] = []     // #hashtags for filing/filtering
     var note: String = ""       // optional free-form note
+    // User-chosen name set by renaming after import. OPTIONAL on purpose: entries saved by older
+    // versions have no `title` key, and an Optional decodes a missing key to nil (a non-optional
+    // would throw keyNotFound and wipe the whole library). nil/blank ⇒ fall back to sourceName.
+    var title: String? = nil
+
+    /// What the library + detail header show: the custom title if set, else the imported file name.
+    var displayName: String {
+        let t = (title ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return t.isEmpty ? sourceName : t
+    }
 }
 
 /// Local store for imported transcripts (mirrors NotesStore; local-only — no cloud sync).
@@ -42,6 +52,14 @@ final class TranscriptStore: ObservableObject {
         if let text { entries[i].text = text }
         if let note { entries[i].note = note }
         if let tags { entries[i].tags = NotesStore.mergeTags(tags) }
+        save()
+    }
+
+    /// Rename a transcript after import. A blank name clears the custom title (reverts to the file name).
+    func rename(_ entry: TranscriptEntry, to name: String) {
+        guard let i = entries.firstIndex(where: { $0.id == entry.id }) else { return }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        entries[i].title = trimmed.isEmpty ? nil : trimmed
         save()
     }
 

@@ -76,7 +76,7 @@ struct FileTranscribeView: View {
             Image(systemName: "waveform").font(.system(size: 13))
                 .foregroundStyle(.secondary).frame(width: 16).padding(.top, 2)
             VStack(alignment: .leading, spacing: 2) {
-                Text(e.sourceName.isEmpty ? snippet(e) : e.sourceName).font(.system(size: 13, weight: .medium)).lineLimit(1)
+                Text(e.displayName.isEmpty ? snippet(e) : e.displayName).font(.system(size: 13, weight: .medium)).lineLimit(1)
                 Text(e.date.formatted(date: .abbreviated, time: .omitted)).font(.caption2).foregroundStyle(.tertiary)
                 if !e.tags.isEmpty {
                     Text(e.tags.prefix(3).map { "#\($0)" }.joined(separator: " "))
@@ -285,6 +285,28 @@ private struct TranscriptDetailView: View {
     @State private var tags: [String] = []
     @State private var tagInput = ""
     @State private var noteSaveTask: Task<Void, Never>?
+    @State private var titleText = ""
+    @State private var titleSaveTask: Task<Void, Never>?
+
+    /// Current persisted name shown in the field (custom title, else the imported file name).
+    private var currentName: String { entry.title ?? entry.sourceName }
+
+    /// Debounce rename persistence, like the note: save 0.5s after the last keystroke.
+    private func scheduleTitleSave(_ value: String) {
+        titleSaveTask?.cancel()
+        titleSaveTask = Task {
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            if Task.isCancelled { return }
+            store.rename(entry, to: value)
+        }
+    }
+
+    /// Flush a pending debounced rename immediately (on submit/disappear).
+    private func flushTitleSave() {
+        titleSaveTask?.cancel()
+        titleSaveTask = nil
+        if titleText != currentName { store.rename(entry, to: titleText) }
+    }
 
     /// Debounce note persistence: cancel any pending write and schedule a trailing
     /// save 0.5s after the last keystroke, instead of re-encoding the whole library on every char.
@@ -310,8 +332,14 @@ private struct TranscriptDetailView: View {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(entry.sourceName.isEmpty ? "Transcript" : entry.sourceName)
+                        // Editable name — rename an imported transcript after the fact. Persists
+                        // debounced (and on submit/blur); a blank name reverts to the file name.
+                        TextField("Transcript", text: $titleText)
+                            .textFieldStyle(.plain)
                             .font(.system(size: 22, weight: .bold)).lineLimit(1)
+                            .onChange(of: titleText) { _, v in scheduleTitleSave(v) }
+                            .onSubmit { flushTitleSave() }
+                            .help("Rename this transcript")
                         Text(entry.date.formatted(date: .abbreviated, time: .shortened))
                             .font(.caption).foregroundStyle(.secondary)
                     }
@@ -340,8 +368,8 @@ private struct TranscriptDetailView: View {
             }
             .padding(24)
         }
-        .onAppear { note = entry.note; tags = entry.tags }
-        .onDisappear { flushNoteSave() }
+        .onAppear { note = entry.note; tags = entry.tags; titleText = currentName }
+        .onDisappear { flushNoteSave(); flushTitleSave() }
     }
 
     private var tagEditor: some View {
