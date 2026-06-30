@@ -436,7 +436,7 @@ final class Gamification: ObservableObject {
         switch name {
         case "Translate": return .usedTranslate
         case "Context":   return .usedContext
-        case "Coding":    return .usedCoding
+        case "Prompt":    return .usedCoding   // Coding merged into Prompt; flag kept for saved data
         case "Intent":    return .usedIntent
         case "Polish":    return .usedPolish
         default:          return .usedFlow
@@ -662,7 +662,7 @@ final class Gamification: ObservableObject {
         .init(id: "intentful", title: "Intentful", blurb: "Use Intent mode — say what you want done.", icon: "scope", tier: .bronze) { _,f in f.contains(.usedIntent) },
         .init(id: "polyglot", title: "Polyglot", blurb: "Translate live with Translate mode.", icon: "globe", tier: .bronze) { _,f in f.contains(.usedTranslate) },
         .init(id: "seer", title: "Second Sight", blurb: "Use Context mode — Verba reads your screen.", icon: "eye.fill", tier: .silver) { _,f in f.contains(.usedContext) },
-        .init(id: "coder", title: "Shipped It", blurb: "Use Coding mode.", icon: "chevron.left.forwardslash.chevron.right", tier: .bronze) { _,f in f.contains(.usedCoding) },
+        .init(id: "coder", title: "Shipped It", blurb: "Use Prompt mode.", icon: "chevron.left.forwardslash.chevron.right", tier: .bronze) { _,f in f.contains(.usedCoding) },
         .init(id: "changedstyle", title: "Stylist", blurb: "Cycle a style on top of a mode (Fn + ] / [).", icon: "paintbrush", tier: .bronze) { _,f in f.contains(.changedStyle) },
         .init(id: "notetaker", title: "Voice Note", blurb: "Capture a voice note (Fn + Z).", icon: "doc.text", tier: .bronze) { _,f in f.contains(.usedVoiceNote) },
         .init(id: "savednote", title: "First Note", blurb: "Save a long-form note in the Notes tab.", icon: "note.text", tier: .bronze) { _,f in f.contains(.savedNote) },

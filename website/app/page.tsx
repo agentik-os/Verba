@@ -425,7 +425,7 @@ function Bento() {
             <Icon name="bolt" className="h-7 w-7 shrink-0 text-[var(--fg-dim)]" />
             <div>
               <p className="font-medium">Modes, the right model each time</p>
-              <p className="mt-1 text-sm muted">Raw (verbatim), Polish (hears what you meant), Intent, Translate, Context (vision), and Coding. Sonnet for intent, Opus for code. Edit any prompt, or describe a need and let AI build you a custom mode.</p>
+              <p className="mt-1 text-sm muted">Raw (verbatim), Polish (hears what you meant), Intent, Translate, Context (vision), and Prompt (turn what you say into an optimized AI prompt). Sonnet for intent, Opus for prompts. Edit any prompt, or describe a need and let AI build you a custom mode.</p>
             </div>
           </div>
         </Reveal>
@@ -801,7 +801,7 @@ function WhyBest() {
     ["Bring your own AI", "Use your Anthropic key, OpenRouter, your existing Claude Code subscription with no key at all, or a fully local Ollama model. You're never locked into our markup."],
     ["Actually private", "On-device transcription with Parakeet and Whisper, your audio never leaves the Mac. API keys live in the macOS Keychain, and your history is yours to control: switch it off entirely or auto-delete it after 7, 30, or 90 days."],
     ["Works with no internet", "Parakeet ships inside the app and transcribes offline, instantly, in 25 languages. Pair it with a local LLM and the entire pipeline runs on your Mac."],
-    ["Six modes, plus your own", "Raw, Polish, Intent, Translate, Context and Coding, routed to Sonnet or Opus so you only pay for power where it matters. Edit any prompt, or describe a need and AI builds you a custom mode."],
+    ["Six modes, plus your own", "Raw, Polish, Intent, Translate, Context and Prompt, routed to Sonnet or Opus so you only pay for power where it matters. Edit any prompt, or describe a need and AI builds you a custom mode."],
     ["It learns you", "Auto-learns your vocabulary from your edits, matches your writing tone per app, and remembers how you phrase things. It sounds like you, not a template."],
     ["One press, then done", "Tap Fn, talk, and clean text lands where your cursor is. Hands-free formatting, redo in another mode, edit the last result by voice. No app switching, ever."],
   ];
@@ -859,7 +859,7 @@ function ModesModels() {
     ["Intent", "Sonnet 4.6", "State the goal at the start: \"turn this into a bug report\", \"rewrite as a formal email\". Verba follows your lead."],
     ["Translate", "Sonnet 4.6", "Pick a target language once. Speak in any language and Verba writes it in the one you chose, every time."],
     ["Context", "Sonnet 4.6", "Takes a screenshot of your screen and acts on what it sees, based on what you say. Reply to the email on screen, summarize a document, comment on a photo."],
-    ["Coding", "Opus 4.8", "Turns rambling feedback into a precise prompt for Cursor or Claude Code."],
+    ["Prompt", "Opus 4.8", "Turns what you say into an optimized prompt for any AI — ChatGPT, Claude, an image generator, or a coding agent like Cursor or Claude Code."],
   ];
   return (
     <section className="py-28">
@@ -1062,7 +1062,7 @@ function Shortcuts() {
         { keys: ["fn", "⇥"], desc: "Next mode, add ⇧ for previous", use: "Mid-dictation you decide this should be a Slack message, not an email. Fn + Tab, keep talking." },
         { keys: ["fn", "1-9"], desc: "Jump to a mode by number", use: "Fn + 3 drops you straight into Translate without hunting through a list." },
         { keys: ["⌥"], desc: "Next mode hands-free while recording", use: "Tap Option to cycle modes without ever leaving the recording." },
-        { keys: ["⌃", "⌥", "1-6"], desc: "Each mode's own dedicated shortcut", use: "Bind Coding to ⌃⌥5 and reach it from anywhere, no cycling." },
+        { keys: ["⌃", "⌥", "1-6"], desc: "Each mode's own dedicated shortcut", use: "Bind Prompt to ⌃⌥5 and reach it from anywhere, no cycling." },
         { keys: ["fn", "]"], desc: "Next Style, Fn + [ for previous", use: "Same mode, new tone. Flick from neutral to formal as a layer on top." },
       ],
     },
@@ -1339,7 +1339,7 @@ function FAQ() {
     ["Does it work in every app?", "Yes, Verba pastes into whatever you’re typing in: editors, browsers, chat apps, mail, notes. If your cursor is there, Verba can write there."],
     ["Can it work offline?", "Yes. On-device transcription (Whisper or Parakeet) runs entirely on your Mac, no internet needed, and your audio never leaves the device."],
     ["What languages does it understand?", "On-device Whisper covers ~99 languages worldwide. Parakeet is a faster option for 25 European languages. It writes back in the language you spoke."],
-    ["How do the AI modes work?", "Verba ships seven modes: Raw (verbatim, no AI, the default), Polish (resolves your self-corrections), Intent, Translate, Context, Coding, and Prompt (turns what you say into an optimized AI prompt). Each mode is a system prompt that shapes how the model rewrites your speech. Context also takes a screenshot to ground the output in what is on your screen. You can edit any prompt, or just describe what you need and AI builds you a custom mode."],
+    ["How do the AI modes work?", "Verba ships six modes: Raw (verbatim, no AI, the default), Polish (resolves your self-corrections), Intent, Translate, Context, and Prompt (turns what you say into an optimized prompt for any AI, including coding agents). Each mode is a system prompt that shapes how the model rewrites your speech. Context also takes a screenshot to ground the output in what is on your screen. You can edit any prompt, or just describe what you need and AI builds you a custom mode."],
     ["Do I need an API key?", "No. Verba uses your Claude Code plan if it is installed (no API key needed). You can also bring your own Anthropic key, an OpenRouter key, or run a local Ollama model entirely offline. You never pay a markup on someone’s cloud."],
     ["What is Context mode?", "Context mode takes a screenshot of your screen, analyzes it with a vision model, and writes based on what you say and what it sees. Say \"reply to this email\" and it drafts a reply to the message on screen. It requires macOS Screen Recording permission and a vision-capable model (Anthropic API key or OpenRouter key)."],
     ["Can it handle long recordings?", "Yes, talk for twenty minutes and Verba turns the whole thing into clean, well-ordered text."],

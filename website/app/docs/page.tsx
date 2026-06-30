@@ -71,7 +71,7 @@ const SECTIONS: Section[] = [
         "Intent, you give an instruction and Verba writes to it.",
         "Translate, pick a target language once; speak any language, it writes the target.",
         "Context, screenshots your screen and writes from what it sees (needs Screen Recording + a vision model).",
-        "Coding, formats for code and technical writing.",
+        "Prompt, turns what you say into an optimized prompt for any AI (ChatGPT, Claude, an image generator, or a coding agent like Cursor / Claude Code).",
         "Custom modes, describe what you need and Verba's AI builds a new mode; edit any prompt freely.",
       ] },
       { kind: "p", text: "Switch modes with Fn+1…9 or the menu-bar picker; the choice sticks for every next dictation until you change it. Writing Styles (Fn+] / Fn+[) layer tone/format on top of any mode." },

@@ -271,13 +271,13 @@ struct ModesView: View {
     }
 
     /// If `p` is the active profile and its prompt has just been blanked, demote it to the
-    /// first remaining mode with a usable prompt (falling back to the built-in .coding mode).
+    /// first remaining mode with a usable prompt (falling back to the built-in .prompt mode).
     private func demoteIfActiveBlanked(_ p: Profile) {
         guard settings.activeProfileID == p.id, !hasUsablePrompt(p) else { return }
         if let replacement = settings.profiles.first(where: { $0.id != p.id && hasUsablePrompt($0) }) {
             settings.activeProfileID = replacement.id
         } else {
-            settings.activeProfileID = Profile.coding.id
+            settings.activeProfileID = Profile.prompt.id
         }
     }
 

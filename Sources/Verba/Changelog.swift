@@ -34,8 +34,14 @@ enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
             date: "June 30, 2026", tag: "Today",
-            summary: "Connected apps move into the sidebar, the Automatic engine now self-heals, you can pick your Translate language on the fly, a new Prompt mode turns what you say into an optimized AI prompt, and you can rename your imported transcripts.",
+            summary: "Coding and Prompt merge into one Prompt mode, Connected apps move into the sidebar, the Automatic engine now self-heals, you can pick your Translate language on the fly, and you can rename your imported transcripts.",
             entries: [
+                ChangelogEntry(version: "0.9.35",
+                    title: "Coding and Prompt are now one mode: Prompt",
+                    items: [
+                        "Coding and Prompt did the same job — turn what you say into a clean, engineered prompt — so they're now a single Prompt mode.",
+                        "It auto-detects what you need: a precise coding-agent prompt (Cursor, Claude Code — every file path, function and error kept verbatim) or a general AI prompt (ChatGPT, Claude, an image generator — task, context, constraints, output format). Still on ⌃⌥5, still auto-activates in your editor and terminal.",
+                    ]),
                 ChangelogEntry(version: "0.9.34",
                     title: "Connected apps, front and center",
                     items: [

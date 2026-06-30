@@ -389,8 +389,8 @@ struct OnboardingView: View {
             Text(L("Advanced modes — explore when you're ready")).font(.caption.weight(.semibold)).foregroundStyle(.secondary).textCase(.uppercase).padding(.top, 4)
             modeCard("Intent", L("Smart"), L("The power mode. Say what you want, then the content, Verba does exactly that."),
                      L("“Turn the following into three bullet points: we ship dark mode, postpone billing, hire a designer in Q3.”"))
-            modeCard("Coding", L("Pro"), L("Rambling feedback → a precise prompt for Cursor / Claude Code."),
-                     L("“the login button doesn't work on mobile, the onclick is wrong, show the spinner while it loads”"))
+            modeCard("Prompt", L("Pro"), L("What you say → a clean, optimized AI prompt. For ChatGPT, Claude, an image generator, or a coding agent like Cursor / Claude Code."),
+                     L("“a prompt to plan a 3-day Tokyo trip on a 1500 euro budget, foodie, skip museums” or “the login button doesn't work on mobile, the onclick is wrong, show a spinner while it loads”"))
             modeCard("Context", L("Vision"), L("The new advanced mode. Verba takes a screenshot, reads your screen, and acts on what is there."),
                      L("“reply to this email and say I'm in”, “write a caption for this photo”, “answer the question on screen”"))
             modeCard(L("Create your own"), L("Custom"), L("Build a mode for exactly your need — describe it and Verba writes the prompt. Auto-switch it per app. In Settings ▸ Modes."), nil)

@@ -273,31 +273,6 @@ let translateLanguages = ["English", "French", "Spanish", "German", "Italian", "
                           "Russian", "Chinese", "Japanese", "Korean", "Arabic", "Hindi", "Turkish", "Polish"]
 
 extension Profile {
-    static let coding = Profile(
-        name: "Coding",
-        systemPrompt: faithfulCore + """
-
-
-        CONTEXT: the output is a prompt for a coding agent (Claude Code, Cursor, etc.).
-        The speaker dictated feedback or a request, often long and out of order. Turn it
-        into a precise, well-engineered prompt that an agent can act on without guessing:
-
-        - Open with a one-line statement of the goal / desired outcome.
-        - Then give the needed context (what exists today, the problem, where it happens).
-        - Then the concrete work: an ordered list of changes/steps, in a logical sequence.
-        - Then constraints, acceptance criteria, edge cases, and any open questions, \
-        each only if the speaker mentioned them.
-        - Keep EVERY technical detail verbatim: file paths, function/variable names, \
-        commands, error messages, library/version names, numbers. Never paraphrase these.
-        - Group related points; resolve self-corrections to the final intent.
-        - Be unambiguous and imperative ("Add…", "Change…", "Fix…"), but do NOT invent \
-        requirements, scope, or solutions the speaker didn't state, and do not over-engineer.
-        - Use clean markdown (short headers / bullet lists) when it aids clarity.
-        """,
-        matchBundleIDs: ["com.todesktop.230313mzl4w4u92", "com.microsoft.VSCode", "com.apple.dt.Xcode",
-                         "com.googlecode.iterm2", "com.apple.Terminal", "dev.warp.Warp-Stable"],
-        builtin: true, hotkeyCode: 23 /* 5 */, hotkeyMods: kCtrlOpt, model: "claude-opus-4-8")
-
     static let intent = Profile(
         name: "Intent",
         systemPrompt: """
@@ -405,34 +380,38 @@ extension Profile {
         systemPrompt: faithfulCore + """
 
 
-        CONTEXT: the output is a PROMPT for an AI assistant (ChatGPT, Claude, Gemini, an image \
-        generator, etc.). The speaker dictated what they want, often loosely and out of order. \
-        Turn it into a clean, well-engineered prompt that gets a great result on the first try:
+        CONTEXT: the output is a PROMPT for an AI. The speaker dictated what they want, often \
+        loosely and out of order. Turn it into a clean, well-engineered prompt that gets a great \
+        result on the first try. Adapt to the request:
 
-        - Open with a crisp, imperative statement of the task (what you want the AI to do).
-        - Add a role/persona only if it genuinely sharpens the result ("You are a senior \
-        copywriter…"), never as boilerplate.
-        - Give the context the AI needs: background, audience, and any source material or \
-        examples the speaker provided.
-        - State the constraints, tone, length, and desired OUTPUT FORMAT explicitly (a list, \
-        table, JSON, an email, etc.) whenever the speaker implied one.
-        - Keep EVERY concrete detail verbatim: names, numbers, quotes, examples, URLs, file \
-        names. Never paraphrase these. Resolve self-corrections to the final intent; drop the \
-        retracted attempts.
-        - Be specific and unambiguous, but do NOT invent requirements, facts, or scope the \
-        speaker didn't state, and do not pad it.
-        - Use light structure (a short header or bullets) only when it makes the prompt clearer.
+        - If it's a CODING / technical request (a code change, a bug, an agent like Claude Code or \
+        Cursor, or mentions of files, functions, commands, errors): write a precise engineering \
+        prompt. Open with the goal in one line, then the context (what exists, the problem, where), \
+        then an ordered list of concrete changes/steps, then constraints, acceptance criteria and \
+        edge cases only if mentioned. Keep EVERY technical detail verbatim: file paths, \
+        function/variable names, commands, error messages, library/version names, numbers. Be \
+        imperative ("Add…", "Fix…").
+        - Otherwise (a general AI request — writing, research, an image, analysis): open with a \
+        crisp, imperative statement of the task; add a role only if it genuinely sharpens the \
+        result; give the needed context and any source material; state the constraints, tone, \
+        length and desired OUTPUT FORMAT (a list, table, JSON, an email…) when implied.
+        - In BOTH cases: keep every concrete detail verbatim, resolve self-corrections to the final \
+        intent, drop the retracted attempts, and NEVER invent requirements, facts, or scope the \
+        speaker didn't state. Use light structure (a short header or bullets) only when it makes \
+        the prompt clearer.
 
         Write the prompt in the ONE language the speaker used.
         Output ONLY the finished prompt, ready to paste, with no preamble, quotes, or commentary.
         """,
-        builtin: true, model: "claude-sonnet-4-6",
-        explainer: "Prompt mode turns what you say into a clean, optimized AI prompt. Ramble what you want from ChatGPT, Claude, or an image generator and Verba structures it into a clear task with the right context, constraints, and output format, ready to paste.")
+        matchBundleIDs: ["com.todesktop.230313mzl4w4u92", "com.microsoft.VSCode", "com.apple.dt.Xcode",
+                         "com.googlecode.iterm2", "com.apple.Terminal", "dev.warp.Warp-Stable"],
+        builtin: true, hotkeyCode: 23 /* 5 */, hotkeyMods: kCtrlOpt, model: "claude-opus-4-8",
+        explainer: "Prompt mode turns what you say into a clean, optimized AI prompt — for any assistant (ChatGPT, Claude, an image generator) and for coding agents like Cursor or Claude Code. Ramble what you want; Verba structures it with the right context, constraints, and output format, keeping every technical detail verbatim. Ready to paste.")
 
-    static let defaults: [Profile] = [.flow, .intent, .polish, .translate, .context, .coding, .prompt]
+    static let defaults: [Profile] = [.flow, .intent, .polish, .translate, .context, .prompt]
     /// Built-in modes that were shipped once and then retired — dropped on migration so they
     /// disappear for existing users too (not kept as orphan custom modes).
-    static let retiredBuiltinNames: Set<String> = ["Casual", "Custom"]
+    static let retiredBuiltinNames: Set<String> = ["Casual", "Custom", "Coding"]   // Coding merged into Prompt
     /// Built-in modes renamed across versions (VER-21: Flow → Raw). Applied to saved profiles
     /// before the name-keyed merge so the renamed mode keeps its id + customizations instead of
     /// being treated as retired and duplicated by the new default.
@@ -444,7 +423,7 @@ final class Settings: ObservableObject {
     private let d = UserDefaults.standard
 
     // Bump when the built-in profiles change so users get the new prompts/shortcuts.
-    static let profilesVersion = 23  // adds the built-in "Prompt" mode (dictation → optimized AI prompt)
+    static let profilesVersion = 24  // merge Coding into Prompt (one mode for any AI + coding-agent prompts)
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }
@@ -670,7 +649,7 @@ final class Settings: ObservableObject {
     var uid: String { referralCode.isEmpty ? deviceUid : referralCode }
 
     var activeProfile: Profile {
-        profiles.first { $0.id == activeProfileID } ?? profiles.first ?? .coding
+        profiles.first { $0.id == activeProfileID } ?? profiles.first ?? .flow
     }
 
     var activeStyle: Style {
@@ -1096,8 +1075,7 @@ final class Settings: ObservableObject {
         "Intent": "Intent lets you say the goal first, then the content. Start with how you want it handled, like turn this into a bug report or rewrite as a formal email, then speak the material. Verba applies your instruction and outputs only the result.",
         "Translate": "Translate writes your speech in another language. Pick a target language once, then talk in whatever language is natural; the output always comes back in the one you chose. Perfect for replying across languages without a second tab.",
         "Context": "Context can see your screen. It takes a screenshot and acts on what is visible based on what you say, like reply to the email on screen or summarize this document. Look at something, describe what you want, and it drafts it.",
-        "Coding": "Coding turns rambling feedback into a precise prompt for a coding agent like Cursor or Claude Code, keeping every detail. Talk through the change you want and paste the clean prompt straight into your tool.",
-        "Prompt": "Prompt mode turns what you say into a clean, optimized AI prompt. Ramble what you want from ChatGPT, Claude, or an image generator and Verba structures it into a clear task with the right context, constraints, and output format, ready to paste.",
+        "Prompt": "Prompt mode turns what you say into a clean, optimized AI prompt — for any assistant (ChatGPT, Claude, an image generator) and for coding agents like Cursor or Claude Code. Ramble what you want; Verba structures it with the right context, constraints, and output format, keeping every technical detail verbatim. Ready to paste.",
     ]
 
     static func stampedDefaults() -> [Profile] {
