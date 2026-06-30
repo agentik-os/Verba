@@ -158,6 +158,35 @@ export function validateArgs(
   return errs;
 }
 
+// A toolkit's raw tool catalog is user-independent and changes rarely, but loadReadWriteCatalog
+// runs on EVERY transcript and used to re-fetch it per call — 1-2 Composio API calls per connected
+// toolkit, every utterance, uncached. A chatty JARVIS session multiplied that into hundreds of
+// calls/minute and tripped Composio's rate limits (the "aggressive usage" that burned the key).
+// Cache each toolkit's raw fetch process-wide with a short TTL (same module-level pattern as the
+// version caches in the agent/execute routes): a warm instance now hits Composio once per toolkit
+// per window instead of once per utterance, regardless of how many users share it.
+const TOOLKIT_TTL_MS = 10 * 60 * 1000;
+const toolkitToolsCache = new Map<string, { at: number; tools: RawTool[] }>();
+
+async function fetchToolkitTools(
+  composio: { tools: { getRawComposioTools: (a: { toolkits: string[]; limit: number }) => Promise<unknown> } },
+  tk: string
+): Promise<RawTool[]> {
+  const hit = toolkitToolsCache.get(tk);
+  if (hit && Date.now() - hit.at < TOOLKIT_TTL_MS) return hit.tools;
+  // Prefer Composio's CURATED "important" set: ~40 high-value tools (send/list/get/create) that
+  // are the ones users actually invoke — and it includes core reads like GITHUB_LIST_REPOSITORIES
+  // that a flat alphabetical limit:200 of a 600-tool app silently drops. Fall back to a wide flat
+  // fetch if the curated set comes back thin.
+  let raw = (await composio.tools.getRawComposioTools({ toolkits: [tk], important: true, limit: 60 } as never)) as RawTool[];
+  if (!raw || raw.length < 12) {
+    raw = (await composio.tools.getRawComposioTools({ toolkits: [tk], limit: 200 })) as RawTool[];
+  }
+  raw = raw ?? [];
+  toolkitToolsCache.set(tk, { at: Date.now(), tools: raw });
+  return raw;
+}
+
 // Build the read/write tool catalog for the uid's ACTIVE connected toolkits.
 // Mirrors the toolkit-resolution shape used by tools/route.ts + connections/route.ts.
 export async function loadReadWriteCatalog(
@@ -184,14 +213,7 @@ export async function loadReadWriteCatalog(
 
   const out: CatalogTool[] = [];
   for (const tk of toolkits) {
-    // Prefer Composio's CURATED "important" set: ~40 high-value tools (send/list/get/create) that
-    // are the ones users actually invoke — and it includes core reads like GITHUB_LIST_REPOSITORIES
-    // that a flat alphabetical limit:200 of a 600-tool app silently drops. Fall back to a wide flat
-    // fetch if the curated set comes back thin.
-    let raw = (await composio.tools.getRawComposioTools({ toolkits: [tk], important: true, limit: 60 } as never)) as RawTool[];
-    if (!raw || raw.length < 12) {
-      raw = (await composio.tools.getRawComposioTools({ toolkits: [tk], limit: 200 })) as RawTool[];
-    }
+    const raw = await fetchToolkitTools(composio, tk);
     const byPriority = [...raw].sort((a, b) => toolPriority(b.slug) - toolPriority(a.slug));
     const scorable = byPriority.map((t) => ({ slug: t.slug, description: t.description ?? "", readOnly: false, raw: t }));
     const reranked = query ? rankByLexical(query, scorable) : scorable;
