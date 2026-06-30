@@ -1,13 +1,14 @@
 import SwiftUI
 
 enum NavItem: String, CaseIterable, Identifiable {
-    case home, notes, todos, insights, modes, dictionary, snippets, style, transforms, scratchpad, files, history, achievements, leaderboard, wishlist, feedback, freeMonth, settings
+    case home, notes, todos, insights, modes, dictionary, snippets, style, transforms, scratchpad, files, connectedApps, history, achievements, leaderboard, wishlist, feedback, freeMonth, settings
     var id: String { rawValue }
     var title: String {
         switch self {
         case .achievements: return "Achievements"; case .home: return "Home"; case .notes: return "Notes"; case .todos: return "Task Manager"; case .insights: return "Insights"; case .modes: return "Modes"
         case .dictionary: return "Dictionary"; case .snippets: return "Snippets"; case .style: return "Style"
         case .transforms: return "Transforms"; case .scratchpad: return "Scratchpad"; case .files: return "Transcribe file"
+        case .connectedApps: return "Connected apps"
         case .history: return "History"; case .leaderboard: return "Leaderboard"
         case .wishlist: return "Wishlist"; case .feedback: return "Feedback"; case .freeMonth: return "Free Month"; case .settings: return "Settings"
         }
@@ -18,6 +19,7 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .dictionary: return "character.book.closed"; case .snippets: return "text.badge.plus"
         case .style: return "paintbrush"; case .transforms: return "arrow.triangle.2.circlepath"
         case .scratchpad: return "note.text"; case .files: return "waveform.badge.plus"
+        case .connectedApps: return "app.connected.to.app.below.fill"
         case .history: return "clock.arrow.circlepath"
         case .leaderboard: return "trophy"; case .wishlist: return "lightbulb"
         case .feedback: return "bubble.left.and.text.bubble.right"
@@ -188,6 +190,7 @@ struct MainWindow: View {
                         if settings.navVisible(.style) { row(.style) }
                         if settings.navVisible(.transforms) { row(.transforms) }
                         if settings.navVisible(.files) { row(.files) }
+                        row(.connectedApps)   // JARVIS connected apps — a first-class feature, not buried in Settings
                     }
 
                     // Collapsible "Community" group (leaderboard / wishlist / free month + Discord).
@@ -408,6 +411,7 @@ struct MainWindow: View {
         case .transforms: TransformsView()
         case .scratchpad: ScratchpadView()
         case .files: FileTranscribeView()
+        case .connectedApps: ConnectedAppsPage()
         case .history: HistoryView()
         case .achievements: BadgesView()
         case .leaderboard: LeaderboardView()

@@ -20,6 +20,23 @@ struct ComposioCatalogApp: Identifiable {
     var id: String { slug }
 }
 
+/// Full-page Connected Apps, surfaced in the sidebar under Library (moved out of Settings — it's a
+/// first-class feature). Wraps the inline grid with the page title + the same intro it had in Settings.
+struct ConnectedAppsPage: View {
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                Text(L("Connected apps")).font(.system(size: 22, weight: .bold))
+                Text(L("Connect your favorite apps, then let JARVIS act on them by voice in Action mode — send an email, post to Slack, create a calendar event, add a Notion page, and hundreds more. Your connection keys stay on Verba's servers, never on your Mac."))
+                    .font(.callout).foregroundStyle(.secondary)
+                ComposioConnectionsView(embedded: true)
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+}
+
 struct ComposioConnectionsView: View {
     var embedded = false   // true → render inline (no window chrome) inside Settings ▸ Action
     @ObservedObject private var store = ComposioStore.shared

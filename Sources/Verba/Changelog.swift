@@ -34,8 +34,13 @@ enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
             date: "June 30, 2026", tag: "Today",
-            summary: "The Automatic engine now self-heals, you can pick your Translate language on the fly, a new Prompt mode turns what you say into an optimized AI prompt, and you can rename your imported transcripts.",
+            summary: "Connected apps move into the sidebar, the Automatic engine now self-heals, you can pick your Translate language on the fly, a new Prompt mode turns what you say into an optimized AI prompt, and you can rename your imported transcripts.",
             entries: [
+                ChangelogEntry(version: "0.9.34",
+                    title: "Connected apps, front and center",
+                    items: [
+                        "Connected apps moved out of Settings and into the sidebar, under Library — connect Gmail, Slack, Notion and 1,000+ more, then act on them by voice with JARVIS. It's a real feature, so it now has a real home.",
+                    ]),
                 ChangelogEntry(version: "0.9.33",
                     title: "The Automatic engine never dead-ends",
                     items: [
