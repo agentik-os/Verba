@@ -2092,6 +2092,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(mi)
         }
 
+        // Translate language: when a Translate mode exists, pick its output language right here.
+        // The choice sticks as the default next time (persisted on the profile).
+        if let tp = s.translateProfile {
+            menu.addItem(.separator())
+            let h = NSMenuItem(title: "Translate language", action: nil, keyEquivalent: "")
+            h.isEnabled = false
+            menu.addItem(h)
+            for lang in translateLanguages {
+                let mi = NSMenuItem(title: lang, action: #selector(pickTranslateLanguage(_:)), keyEquivalent: "")
+                mi.target = self
+                mi.state = (tp.targetLanguage == lang) ? .on : .off
+                mi.representedObject = lang
+                menu.addItem(mi)
+            }
+        }
+
         // Style picker: a tone/format layer applied on top of the active mode (Fn + [ / Fn + ]).
         menu.addItem(.separator())
         let styleHeader = NSMenuItem(title: "Style", action: nil, keyEquivalent: "")
@@ -2294,6 +2310,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let idStr = sender.representedObject as? String, let id = UUID(uuidString: idStr) else { return }
         Settings.shared.activeProfileID = id
         refreshUI()   // rebuild the menu so the checkmark moves to the new default
+    }
+
+    @objc private func pickTranslateLanguage(_ sender: NSMenuItem) {
+        guard let lang = sender.representedObject as? String else { return }
+        Settings.shared.setTranslateLanguage(lang)   // persisted → remembered as the default next time
+        refreshUI()   // rebuild the menu so the checkmark moves to the chosen language
     }
 
     @objc private func pickDefaultStyle(_ sender: NSMenuItem) {

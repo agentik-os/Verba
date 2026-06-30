@@ -1114,6 +1114,19 @@ final class Settings: ObservableObject {
         activeProfileID = profiles.first!.id
     }
 
+    /// The Translate mode (a built-in identified by a non-nil targetLanguage), if present.
+    var translateProfile: Profile? { profiles.first { $0.targetLanguage != nil } }
+
+    /// Set the Translate mode's output language. Mutating `profiles` runs its didSet → persistProfiles,
+    /// so the chosen language is remembered as the default the next time you use Translate. `id`
+    /// targets a specific translate profile (the one you're in); nil updates the first/only one.
+    func setTranslateLanguage(_ lang: String, for id: UUID? = nil) {
+        let idx = id.flatMap { wanted in profiles.firstIndex { $0.id == wanted && $0.targetLanguage != nil } }
+            ?? profiles.firstIndex { $0.targetLanguage != nil }
+        guard let i = idx else { return }
+        profiles[i].targetLanguage = lang
+    }
+
     /// Restore the built-in styles (just "Normal"), dropping any custom ones.
     func resetStylesToDefaults() {
         styles = Style.defaults

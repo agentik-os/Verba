@@ -19,8 +19,16 @@ const DAYS: Day[] = [
     date: "June 30, 2026",
     tag: "Today",
     summary:
-      "A new Prompt mode that turns what you say into an optimized AI prompt, plus the ability to rename your imported transcripts.",
+      "Pick your Translate language on the fly, a new Prompt mode that turns what you say into an optimized AI prompt, and the ability to rename your imported transcripts.",
     entries: [
+      {
+        version: "0.9.32",
+        title: "Pick your Translate language inline",
+        items: [
+          "In Translate mode, a small language chip now sits right on the recording pill (and in the menu bar) — tap it to switch the output language without opening Settings.",
+          "Your choice is remembered as the default, so the next dictation translates into the same language until you change it.",
+        ],
+      },
       {
         version: "0.9.31",
         title: "New mode: Prompt",

@@ -238,6 +238,11 @@ struct OverlayView: View {
                 if parts.count > 1, !parts[1].isEmpty {
                     modeTag(parts[1], size: size)
                 }
+                // In Translate mode, a small language chip: tap to pick the output language. The
+                // choice is saved on the mode, so it's remembered as your default next time.
+                if let tp = currentProfile, tp.targetLanguage != nil {
+                    translateLangTag(tp, size: size)
+                }
             }
         }
     }
@@ -288,6 +293,38 @@ struct OverlayView: View {
                 .background(Capsule().fill(Color.black.opacity(0.8)))
                 .fixedSize(horizontal: true, vertical: false)
         }
+    }
+
+    /// The profile currently in play: the one picked mid-recording, else the active default.
+    private var currentProfile: Profile? {
+        let id = model.selectedID ?? model.activeID
+        return model.profiles.first { $0.id == id }
+    }
+
+    /// A small language chip beside the mode pill, shown only in Translate mode. Tapping it picks the
+    /// output language; the choice persists on the mode, so it's remembered as the default next time.
+    @ViewBuilder private func translateLangTag(_ profile: Profile, size: CGFloat) -> some View {
+        let current = profile.targetLanguage ?? "English"
+        Menu {
+            ForEach(translateLanguages, id: \.self) { lang in
+                Button {
+                    Settings.shared.setTranslateLanguage(lang, for: profile.id)
+                    if let i = model.profiles.firstIndex(where: { $0.id == profile.id }) {
+                        model.profiles[i].targetLanguage = lang   // reflect the pick immediately
+                    }
+                } label: {
+                    if lang == current { Label(lang, systemImage: "checkmark") } else { Text(lang) }
+                }
+            }
+        } label: {
+            HStack(spacing: 2) {
+                FlagView(language: current, height: size + 3)
+                Image(systemName: "chevron.down").font(.system(size: size - 4, weight: .bold)).foregroundStyle(.secondary)
+            }
+            .fixedSize(horizontal: true, vertical: false)
+        }
+        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
+        .help(L("Translate language — saved as your default"))
     }
 
     @ViewBuilder private func picker(font: CGFloat) -> some View {
