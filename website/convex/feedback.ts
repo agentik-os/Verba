@@ -38,6 +38,62 @@ export const submit = mutation({
   },
 });
 
+/// Durable record written by the web /api/feedback route, BEFORE it calls Linear, so a Linear
+/// outage never loses a feedback again. Server-gated by APP_TOKEN_SECRET (same pattern as
+/// ratelimit:bump) — the public can't insert rows by hitting this directly. Returns the row id.
+export const record = mutation({
+  args: {
+    serverKey: v.string(),
+    uid: v.optional(v.string()),
+    alias: v.optional(v.string()),
+    text: v.string(),
+    version: v.optional(v.string()),
+    os: v.optional(v.string()),
+    engine: v.optional(v.string()),
+    mode: v.optional(v.string()),
+    email: v.optional(v.string()),
+    screenshotUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, a) => {
+    if (!process.env.APP_TOKEN_SECRET || a.serverKey !== process.env.APP_TOKEN_SECRET) {
+      throw new Error("unauthorized");
+    }
+    const text = a.text.trim().slice(0, 4000);
+    if (!text) throw new Error("empty");
+    return await ctx.db.insert("feedback", {
+      uid: a.uid ?? "",
+      alias: a.alias ?? "",
+      text,
+      version: a.version,
+      os: a.os,
+      engine: a.engine,
+      mode: a.mode,
+      email: a.email,
+      screenshotUrl: a.screenshotUrl,
+      createdAt: Date.now(),
+      status: "new",
+      synced: false,
+    });
+  },
+});
+
+/// Stamp a recorded feedback as filed in Linear (server-gated). Best-effort from the route: a
+/// failure here just leaves synced:false — still a durable, recoverable record.
+export const markSynced = mutation({
+  args: {
+    serverKey: v.string(),
+    id: v.id("feedback"),
+    linearId: v.optional(v.string()),
+    linearUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, a) => {
+    if (!process.env.APP_TOKEN_SECRET || a.serverKey !== process.env.APP_TOKEN_SECRET) {
+      throw new Error("unauthorized");
+    }
+    await ctx.db.patch(a.id, { synced: true, linearId: a.linearId, linearUrl: a.linearUrl });
+  },
+});
+
 /// Admin-only listing, gated by the ADMIN_SECRET Convex env var (S15: the old
 /// hardcoded constant is burned in git history — the env value must be a NEW secret).
 /// Returns [] on a wrong/missing secret. On success: all feedback newest-first,

@@ -130,7 +130,17 @@ export default defineSchema({
     screenshot: v.optional(v.id("_storage")),
     createdAt: v.number(),
     status: v.optional(v.string()),
-  }),
+    // Durable record written by the web /api/feedback route BEFORE the Linear call, so a Linear
+    // outage (e.g. a dead API key) never loses a feedback again. Context + the Linear sync outcome.
+    os: v.optional(v.string()),
+    engine: v.optional(v.string()),
+    mode: v.optional(v.string()),
+    email: v.optional(v.string()),
+    screenshotUrl: v.optional(v.string()),
+    linearId: v.optional(v.string()),
+    linearUrl: v.optional(v.string()),
+    synced: v.optional(v.boolean()),
+  }).index("by_synced", ["synced"]),
 
   device_auth: defineTable({   // uid → sha256(device secret); multiple rows = multiple devices
     uid: v.string(),

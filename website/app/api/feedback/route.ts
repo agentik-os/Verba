@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAppToken } from "@/lib/apptoken";
-import { convexBump } from "@/lib/convex";
+import { convexBump, convexCall } from "@/lib/convex";
 
 export const runtime = "nodejs";
 
@@ -182,6 +182,27 @@ export async function POST(req: NextRequest) {
     `- **Submitted:** ${new Date().toISOString()}`,
   ].join("\n");
 
+  // Durable record FIRST (Convex), so a Linear outage — like the dead API key that silently lost
+  // ~2 weeks of feedback — never drops one again. Best-effort: a Convex hiccup must NOT block
+  // filing the Linear issue, so we swallow its error and still proceed to Linear below.
+  let recordId: string | null = null;
+  try {
+    recordId = await convexCall<string>("mutation", "feedback:record", {
+      serverKey: process.env.APP_TOKEN_SECRET ?? "",
+      uid: body.uid ?? "",
+      alias: body.alias ?? "",
+      text,
+      version: body.version,
+      os: body.os,
+      engine: body.engine,
+      mode: body.mode,
+      email: tok?.email ?? body.email,
+      screenshotUrl: assetUrl ?? undefined,
+    });
+  } catch {
+    recordId = null;
+  }
+
   try {
     type CreateResp = {
       issueCreate: { success: boolean; issue: { id: string; identifier: string; url: string } | null };
@@ -204,6 +225,18 @@ export async function POST(req: NextRequest) {
           { id: data.issueCreate.issue.id, url: assetUrl }
         );
       } catch { /* non-fatal: the inline embed already carries the image */ }
+    }
+    // Stamp the durable record as filed (synced:true + the Linear link). Best-effort: if it fails
+    // the row simply stays synced:false — still a recoverable record, never a lost feedback.
+    if (recordId) {
+      try {
+        await convexCall("mutation", "feedback:markSynced", {
+          serverKey: process.env.APP_TOKEN_SECRET ?? "",
+          id: recordId,
+          linearId: data.issueCreate.issue.identifier,
+          linearUrl: data.issueCreate.issue.url,
+        });
+      } catch { /* non-fatal: the durable row stays synced:false */ }
     }
     return NextResponse.json({ ok: true, url: data.issueCreate.issue.url }, { headers: cors });
   } catch (e) {
