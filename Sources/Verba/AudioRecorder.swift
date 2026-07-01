@@ -185,6 +185,15 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         return ok
     }
 
+    /// Stop after a short SILENT tail so a word still trailing off when the user releases the trigger
+    /// (people routinely stop a beat before the last syllable lands) still makes it into the file. The
+    /// mic keeps capturing for `tail` seconds; nothing is shown to the user. Falls back to an immediate
+    /// stop when not recording or tail <= 0. The finished URL is delivered on the main thread.
+    func stop(afterTail tail: TimeInterval, _ done: @escaping (URL?) -> Void) {
+        guard tail > 0, recorder?.isRecording == true else { done(stop()); return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + tail) { [weak self] in done(self?.stop()) }
+    }
+
     /// Stop and return the finished file URL (nil if nothing recorded).
     func stop() -> URL? {
         guard let rec = recorder else { restoreMic(); return nil }

@@ -1473,9 +1473,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// A short silent tail kept recording after the user stops, so the last word (people routinely
+    /// release the trigger a beat before the final syllable lands) still makes it into the file.
+    /// Normal finalize only — cancel/discard paths stop the recorder immediately.
+    static let stopTailSeconds: TimeInterval = 0.4
+
     private func stopAndProcess() {
         levelTimer?.invalidate(); levelTimer = nil
-        guard let url = recorder.stop() else {
+        // Keep capturing for a brief tail so the trailing last word lands, then finalize. Silent:
+        // the pill flips to processing right after; the user just gets the whole sentence.
+        recorder.stop(afterTail: Self.stopTailSeconds) { [weak self] url in self?.finishStop(url) }
+    }
+
+    private func finishStop(_ url: URL?) {
+        guard let url else {
             // R3: even this early-out must clear the one-shot flags (editLast/action/forced/…)
             // or they'd silently misroute the NEXT dictation.
             resetOneShotFlags()

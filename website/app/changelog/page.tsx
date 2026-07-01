@@ -16,8 +16,22 @@ type Day = { date: string; tag?: string; window?: string; summary: string; entri
 
 const DAYS: Day[] = [
   {
-    date: "June 30, 2026",
+    date: "July 1, 2026",
     tag: "Today",
+    summary:
+      "Verba never loses your last word: it keeps listening for a brief silent moment after you stop, so the final word of your sentence is always caught.",
+    entries: [
+      {
+        version: "0.9.36",
+        title: "Never lose your last word",
+        items: [
+          "Verba now keeps the mic open for a brief, silent moment after you stop, so the last word of your sentence is always captured, even when you release the trigger a beat early. No more cut-off or wrong final words.",
+        ],
+      },
+    ],
+  },
+  {
+    date: "June 30, 2026",
     summary:
       "Coding and Prompt merge into one Prompt mode, Connected apps move into the sidebar, the Automatic engine now self-heals, you can pick your Translate language on the fly, and you can rename your imported transcripts.",
     entries: [
