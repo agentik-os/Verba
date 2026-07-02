@@ -105,6 +105,13 @@
 .atelier-tree summary {
   font-weight: 600;
   list-style: none;
+  display: flex;
+  align-items: center;
+}
+/* The folder link fills the row so caret + label sit on one flex line. */
+.atelier-tree summary > a {
+  flex: 1 1 auto;
+  padding: 0;
 }
 .atelier-tree summary::-webkit-details-marker { display: none; }
 .atelier-tree summary::before {
@@ -134,6 +141,8 @@
   flex: 1 1 auto;
   min-width: 0;
 }
+.atelier-breadcrumb .crumb { display: contents; }
+.atelier-breadcrumb .crumb-ellipsis { display: none; }
 .atelier-breadcrumb a { color: var(--at-muted); text-decoration: none; }
 .atelier-breadcrumb a:hover { color: var(--at-accent); text-decoration: underline; }
 .atelier-breadcrumb .sep { opacity: 0.5; }
@@ -224,6 +233,28 @@
   }
   .atelier-content { padding: 1.1rem 1rem 4rem; }
   .atelier-search input { width: 150px; }
+
+  /* Compact sticky chrome: one-line topbar, breadcrumb collapsed to "… / current". */
+  .atelier-topbar { padding: 0.4rem 0.75rem; gap: 0.5rem; }
+  .atelier-breadcrumb { flex-wrap: nowrap; overflow: hidden; }
+  .atelier-breadcrumb .crumb:not(.crumb-current) { display: none; }
+  .atelier-breadcrumb .crumb-current .sep { display: none; }
+  .atelier-breadcrumb .crumb-ellipsis { display: inline-flex; gap: 0.25rem; }
+  .atelier-breadcrumb .current {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Readability + tap targets: ≥16px article text, ≥40px sidebar rows. */
+  .atelier-prose { font-size: 1rem; }
+  .atelier-tree a,
+  .atelier-tree summary {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+  }
 }
 
 /* ---- Rendered markdown prose ---- */

@@ -1,11 +1,9 @@
 // Build step (runs before `next build`): copies every non-markdown file from marketing/
-// into website/public/atelier/ (preserving relative paths) and emits _search.json — the
-// client-side search index of [{slug,title,folder}] for all docs. Both outputs live under
+// into website/public/atelier/ (preserving relative paths). The output lives under
 // public/atelier/ which is gitignored (a reproducible build artifact) and gated by middleware.
+// (The client search index is prop-fed from lib/atelier's searchIndex() — no JSON artifact.)
 import fs from "node:fs";
 import path from "node:path";
-
-const README = "README.md";
 
 function locateMarketingDir() {
   const candidates = [
@@ -18,20 +16,6 @@ function locateMarketingDir() {
   throw new Error(`[atelier-assets] marketing directory not found. Looked in: ${candidates.join(", ")}`);
 }
 
-function mdSlug(relPath) {
-  const parts = relPath.split("/");
-  if (parts[parts.length - 1] === README) {
-    parts.pop();
-    return parts.join("/");
-  }
-  return relPath.replace(/\.md$/, "");
-}
-
-function firstHeadingOrName(content, fallbackName) {
-  const m = content.match(/^#\s+(.+?)\s*$/m);
-  return m ? m[1].trim() : fallbackName.replace(/\.md$/, "");
-}
-
 const marketingDir = locateMarketingDir();
 const outDir = path.join(process.cwd(), "public", "atelier");
 
@@ -40,7 +24,6 @@ fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 
 let assetCount = 0;
-const search = [];
 
 function walk(absDir, relDir) {
   for (const entry of fs.readdirSync(absDir, { withFileTypes: true })) {
@@ -48,15 +31,9 @@ function walk(absDir, relDir) {
     const abs = path.join(absDir, entry.name);
     if (entry.isDirectory()) {
       walk(abs, rel);
-    } else if (entry.name.endsWith(".md")) {
-      const content = fs.readFileSync(abs, "utf8");
-      search.push({
-        slug: mdSlug(rel),
-        title: firstHeadingOrName(content, entry.name),
-        folder: relDir,
-      });
-    } else {
+    } else if (!entry.name.endsWith(".md")) {
       // Non-markdown asset → copy into public/atelier/ preserving the relative path.
+      // (Markdown is rendered by lib/atelier at build time, never served raw.)
       const dest = path.join(outDir, rel);
       fs.mkdirSync(path.dirname(dest), { recursive: true });
       fs.copyFileSync(abs, dest);
@@ -67,8 +44,4 @@ function walk(absDir, relDir) {
 
 walk(marketingDir, "");
 
-fs.writeFileSync(path.join(outDir, "_search.json"), JSON.stringify(search));
-
-console.log(
-  `[atelier-assets] copied ${assetCount} assets + ${search.length} search entries into public/atelier/ from ${marketingDir}`,
-);
+console.log(`[atelier-assets] copied ${assetCount} assets into public/atelier/ from ${marketingDir}`);

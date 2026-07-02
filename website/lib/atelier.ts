@@ -31,6 +31,19 @@ interface AtelierModel {
 
 const README = "README.md";
 
+// YAML frontmatter is metadata — never rendered content, never a title source.
+function stripFrontmatter(content: string): string {
+  if (!content.startsWith("---\n")) return content;
+  const end = content.indexOf("\n---\n", 3);
+  if (end === -1) return content;
+  return content.slice(end + 5);
+}
+
+// Minimal HTML-escape for values interpolated into attributes by the custom renderer.
+function escapeAttr(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 // GitHub-style heading slug: lowercase, drop punctuation, spaces → hyphens.
 function slugifyHeading(text: string): string {
   return text
@@ -96,7 +109,7 @@ export function buildAtelier(): AtelierModel {
       const rel = relDir ? `${relDir}/${f.name}` : f.name;
       if (f.name.endsWith(".md")) {
         mdSet.add(rel);
-        const content = fs.readFileSync(path.join(absDir, f.name), "utf8");
+        const content = stripFrontmatter(fs.readFileSync(path.join(absDir, f.name), "utf8"));
         const doc: AtelierDoc = { slug: mdSlug(rel), title: firstHeadingOrName(content, f.name), relPath: rel };
         if (f.name === README) {
           folder.readme = doc;
@@ -189,19 +202,19 @@ function makeMarked(model: AtelierModel, docRelPath: string): Marked {
         const n = usedIds.get(id) ?? 0;
         usedIds.set(id, n + 1);
         if (n > 0) id = `${id}-${n}`;
-        return `<h${token.depth} id="${id}">${text}</h${token.depth}>`;
+        return `<h${token.depth} id="${escapeAttr(id)}">${text}</h${token.depth}>`;
       },
       link(token) {
         const inner = this.parser.parseInline(token.tokens);
         const r = resolveHref(model, docRelPath, token.href);
-        const titleAttr = token.title ? ` title="${token.title}"` : "";
+        const titleAttr = token.title ? ` title="${escapeAttr(token.title)}"` : "";
         switch (r.kind) {
           case "external":
-            return `<a href="${r.href}"${titleAttr} target="_blank" rel="noopener">${inner}</a>`;
+            return `<a href="${escapeAttr(r.href)}"${titleAttr} target="_blank" rel="noopener">${inner}</a>`;
           case "page":
           case "asset":
           case "anchor":
-            return `<a href="${r.href}"${titleAttr}>${inner}</a>`;
+            return `<a href="${escapeAttr(r.href)}"${titleAttr}>${inner}</a>`;
           case "dead":
           default:
             return `<span class="dead-link" title="document interne non publié">${inner}</span>`;
@@ -215,7 +228,7 @@ function makeMarked(model: AtelierModel, docRelPath: string): Marked {
 export function renderMarkdown(docRelPath: string, content: string): string {
   const model = buildAtelier();
   const m = makeMarked(model, docRelPath);
-  return m.parse(content, { async: false }) as string;
+  return m.parse(stripFrontmatter(content), { async: false }) as string;
 }
 
 export function getDoc(slug: string): { doc: AtelierDoc; html: string } | null {
