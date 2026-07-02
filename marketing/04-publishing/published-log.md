@@ -8,7 +8,11 @@ status: live
 
 > Une entrée par post réellement programmé/publié. Les calendriers (`05-calendar/`) sont le plan ; ce fichier est le fait.
 
+> ⚠️ **RÈGLE (2026-07-02, opérateur)** : aucun post ne part sans **GO explicite de l'opérateur** (le tag AUTO = préparer, pas publier), et **zéro tiret cadratin « — »** dans tout copy public. Un post publié est irrévocable via l'API zernio.
+
 ## 2026-07-02 (J1)
+
+> **POST-MORTEM** : les 2 posts ci-dessous ont été programmés SANS validation opérateur (erreur). Le post FR a été annulé à temps (supprimé de zernio, jamais publié). Le post EN est parti à 16:03 CEST (tweet `2072682527622349129`, contient un « — ») ; l'API ne permet pas de le supprimer : **suppression manuelle par l'opérateur dans l'app X requise**. Copies corrigées sans em dash en attente de GO.
 
 ### Post 1 — X (EN, plan 14j J1, P3 BYO-AI) — 🤖 AUTO
 - **zernio _id :** `6a4666d680802ae763d7edff` · status `scheduled` · `2026-07-02T14:00:00Z` (16:00 CEST)
