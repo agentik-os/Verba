@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/atelier-assets.mjs && next build",
     "start": "next start",
     "lint": "next lint"
   },
@@ -15,6 +15,7 @@
     "@vercel/analytics": "^2.0.1",
     "convex": "^1.40.0",
     "js-sha256": "^0.11.1",
+    "marked": "18.0.5",
     "next": "15.5.19",
     "react": "19.2.0",
     "react-dom": "19.2.0",

@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
-      { userAgent: "*", allow: "/", disallow: ["/account", "/app-auth", "/api"] },
+      { userAgent: "*", allow: "/", disallow: ["/account", "/app-auth", "/api", "/atelier"] },
       // Explicitly welcome AI search / answer-engine crawlers (GEO): being citable in ChatGPT,
       // Claude, Perplexity and Google AI Overviews drives discovery for the dictation niche.
       {
@@ -12,7 +12,7 @@ export default function robots(): MetadataRoute.Robots {
           "PerplexityBot", "Perplexity-User", "Google-Extended", "Applebot-Extended", "CCBot",
         ],
         allow: "/",
-        disallow: ["/account", "/app-auth", "/api"],
+        disallow: ["/account", "/app-auth", "/api", "/atelier"],
       },
     ],
     sitemap: "https://verba.run/sitemap.xml",

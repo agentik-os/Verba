@@ -1,0 +1,287 @@
+/* Scoped styles for the internal /atelier docs site. Imported ONLY by app/atelier/layout.tsx —
+   must never affect public pages. Tailwind (from the root layout's globals.css) is still
+   available for structural utilities; this file styles the rendered markdown prose + shell. */
+
+.atelier-root {
+  --at-bg: #ffffff;
+  --at-fg: #1a1a1a;
+  --at-muted: #6b7280;
+  --at-border: #e5e7eb;
+  --at-accent: #2563eb;
+  --at-code-bg: #f3f4f6;
+  --at-sidebar-bg: #fafafa;
+  min-height: 100vh;
+  background: var(--at-bg);
+  color: var(--at-fg);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  .atelier-root {
+    --at-bg: #0d1117;
+    --at-fg: #e6edf3;
+    --at-muted: #8b949e;
+    --at-border: #30363d;
+    --at-accent: #58a6ff;
+    --at-code-bg: #161b22;
+    --at-sidebar-bg: #010409;
+  }
+}
+
+/* ---- Shell layout ---- */
+.atelier-shell {
+  display: flex;
+  align-items: stretch;
+  min-height: 100vh;
+}
+.atelier-sidebar {
+  width: 300px;
+  flex: 0 0 300px;
+  background: var(--at-sidebar-bg);
+  border-right: 1px solid var(--at-border);
+  padding: 1rem 0.75rem 3rem;
+  overflow-y: auto;
+  max-height: 100vh;
+  position: sticky;
+  top: 0;
+}
+.atelier-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.atelier-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1.25rem;
+  background: color-mix(in srgb, var(--at-bg) 90%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--at-border);
+}
+.atelier-content {
+  padding: 1.5rem 1.75rem 5rem;
+  max-width: 900px;
+  width: 100%;
+}
+
+/* ---- Sidebar tree ---- */
+.atelier-sidebar .at-brand {
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 0.25rem 0.5rem 0.75rem;
+  display: block;
+  color: var(--at-fg);
+  text-decoration: none;
+}
+.atelier-tree,
+.atelier-tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.atelier-tree ul {
+  padding-left: 0.85rem;
+  border-left: 1px solid var(--at-border);
+  margin-left: 0.35rem;
+}
+.atelier-tree li {
+  margin: 0.05rem 0;
+}
+.atelier-tree a,
+.atelier-tree summary {
+  display: block;
+  padding: 0.28rem 0.5rem;
+  border-radius: 6px;
+  color: var(--at-fg);
+  text-decoration: none;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+.atelier-tree summary {
+  font-weight: 600;
+  list-style: none;
+}
+.atelier-tree summary::-webkit-details-marker { display: none; }
+.atelier-tree summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 1em;
+  color: var(--at-muted);
+  transition: transform 0.15s ease;
+}
+.atelier-tree details[open] > summary::before { transform: rotate(90deg); }
+.atelier-tree a:hover,
+.atelier-tree summary:hover { background: color-mix(in srgb, var(--at-accent) 12%, transparent); }
+.atelier-tree a.active {
+  background: color-mix(in srgb, var(--at-accent) 18%, transparent);
+  color: var(--at-accent);
+  font-weight: 600;
+}
+
+/* ---- Breadcrumb ---- */
+.atelier-breadcrumb {
+  font-size: 0.82rem;
+  color: var(--at-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.atelier-breadcrumb a { color: var(--at-muted); text-decoration: none; }
+.atelier-breadcrumb a:hover { color: var(--at-accent); text-decoration: underline; }
+.atelier-breadcrumb .sep { opacity: 0.5; }
+.atelier-breadcrumb .current { color: var(--at-fg); font-weight: 600; }
+
+/* ---- Search ---- */
+.atelier-search { position: relative; flex: 0 0 auto; }
+.atelier-search input {
+  width: 220px;
+  max-width: 40vw;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--at-border);
+  border-radius: 8px;
+  background: var(--at-bg);
+  color: var(--at-fg);
+  font-size: 0.85rem;
+}
+.atelier-search input:focus { outline: 2px solid var(--at-accent); outline-offset: 0; }
+.atelier-search-results {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  width: min(420px, 80vw);
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--at-bg);
+  border: 1px solid var(--at-border);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  z-index: 30;
+}
+.atelier-search-results a {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  color: var(--at-fg);
+  text-decoration: none;
+  border-bottom: 1px solid var(--at-border);
+}
+.atelier-search-results a:last-child { border-bottom: none; }
+.atelier-search-results a:hover { background: color-mix(in srgb, var(--at-accent) 12%, transparent); }
+.atelier-search-results .r-title { font-size: 0.86rem; font-weight: 600; }
+.atelier-search-results .r-path { font-size: 0.72rem; color: var(--at-muted); }
+.atelier-search-empty { padding: 0.6rem 0.75rem; font-size: 0.82rem; color: var(--at-muted); }
+
+/* ---- Folder listing (folders without a README, and children lists) ---- */
+.atelier-listing { list-style: none; padding: 0; margin: 1rem 0; }
+.atelier-listing li { margin: 0.35rem 0; }
+.atelier-listing a {
+  color: var(--at-accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+.atelier-listing a:hover { text-decoration: underline; }
+.atelier-children-heading { margin-top: 2.5rem; border-top: 1px solid var(--at-border); padding-top: 1.25rem; }
+
+/* ---- Mobile toggle ---- */
+.atelier-menu-btn {
+  display: none;
+  border: 1px solid var(--at-border);
+  background: var(--at-bg);
+  color: var(--at-fg);
+  border-radius: 8px;
+  padding: 0.35rem 0.6rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+@media (max-width: 767px) {
+  .atelier-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 40;
+    width: 82vw;
+    max-width: 320px;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+  }
+  .atelier-sidebar.open { transform: translateX(0); }
+  .atelier-menu-btn { display: inline-block; }
+  .atelier-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 39;
+  }
+  .atelier-content { padding: 1.1rem 1rem 4rem; }
+  .atelier-search input { width: 150px; }
+}
+
+/* ---- Rendered markdown prose ---- */
+.atelier-prose { line-height: 1.65; font-size: 0.95rem; word-wrap: break-word; }
+.atelier-prose h1 { font-size: 1.85rem; font-weight: 700; margin: 0 0 1rem; line-height: 1.2; }
+.atelier-prose h2 { font-size: 1.4rem; font-weight: 700; margin: 2rem 0 0.75rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--at-border); }
+.atelier-prose h3 { font-size: 1.15rem; font-weight: 600; margin: 1.5rem 0 0.5rem; }
+.atelier-prose h4 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+.atelier-prose p { margin: 0.75rem 0; }
+.atelier-prose a { color: var(--at-accent); text-decoration: underline; text-underline-offset: 2px; }
+.atelier-prose ul, .atelier-prose ol { margin: 0.75rem 0; padding-left: 1.5rem; }
+.atelier-prose li { margin: 0.3rem 0; }
+.atelier-prose blockquote {
+  margin: 1rem 0;
+  padding: 0.25rem 1rem;
+  border-left: 3px solid var(--at-accent);
+  color: var(--at-muted);
+  background: color-mix(in srgb, var(--at-accent) 6%, transparent);
+}
+.atelier-prose hr { border: none; border-top: 1px solid var(--at-border); margin: 2rem 0; }
+.atelier-prose code {
+  background: var(--at-code-bg);
+  padding: 0.12em 0.4em;
+  border-radius: 5px;
+  font-size: 0.85em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.atelier-prose pre {
+  background: var(--at-code-bg);
+  padding: 1rem;
+  border-radius: 10px;
+  overflow-x: auto;
+  margin: 1rem 0;
+  white-space: pre;
+}
+.atelier-prose pre code { background: none; padding: 0; font-size: 0.82rem; white-space: pre-wrap; word-break: break-word; }
+.atelier-prose img { max-width: 100%; height: auto; }
+/* Tables: bordered + horizontally scrollable on small screens. */
+.atelier-prose table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+  font-size: 0.85rem;
+  display: block;
+  overflow-x: auto;
+}
+.atelier-prose th, .atelier-prose td {
+  border: 1px solid var(--at-border);
+  padding: 0.5rem 0.7rem;
+  text-align: left;
+  vertical-align: top;
+}
+.atelier-prose th { background: var(--at-code-bg); font-weight: 600; }
+/* Unlinked internal targets (document not published). */
+.atelier-prose .dead-link,
+.atelier-listing .dead-link {
+  color: var(--at-muted);
+  text-decoration: underline dotted;
+  cursor: not-allowed;
+}
+.atelier-prose :target { scroll-margin-top: 4rem; }
