@@ -21,6 +21,8 @@ export default function SiteFooter() {
                 <a href="https://www.tiktok.com/@verba.run" target="_blank" rel="noopener" className="link-quiet whitespace-nowrap">TikTok</a>
                 <a href="https://www.youtube.com/@VerbaRun" target="_blank" rel="noopener" className="link-quiet whitespace-nowrap">YouTube</a>
                 <a href="https://x.com/verba_run" target="_blank" rel="noopener" className="link-quiet whitespace-nowrap">X</a>
+                <a href="https://www.reddit.com/user/VerbaRun/" target="_blank" rel="noopener" className="link-quiet whitespace-nowrap">Reddit</a>
+                <a href="https://es.pinterest.com/verbarun/" target="_blank" rel="noopener" className="link-quiet whitespace-nowrap">Pinterest</a>
               </div>
             </div>
           </div>

@@ -91,6 +91,8 @@ const SITE_JSONLD = {
         "https://www.tiktok.com/@verba.run",
         "https://www.youtube.com/@VerbaRun",
         "https://x.com/verba_run",
+        "https://www.reddit.com/user/VerbaRun/",
+        "https://es.pinterest.com/verbarun/",
       ],
     },
   ],
