@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
 import { Analytics } from "@vercel/analytics/next";
+import Script from "next/script";
 import "./globals.css";
 import RefCapture from "@/components/RefCapture";
 
@@ -83,7 +84,14 @@ const SITE_JSONLD = {
       logo: "https://verba.run/icon.png",
       founder: { "@type": "Person", name: "Gareth Simono" },
       // Entity disambiguation for the Knowledge Graph + AI search.
-      sameAs: ["https://github.com/agentik-os", "https://discord.gg/7xfkfQN9AR"],
+      sameAs: [
+        "https://github.com/agentik-os",
+        "https://discord.gg/7xfkfQN9AR",
+        "https://www.instagram.com/verba.run/",
+        "https://www.tiktok.com/@verba.run",
+        "https://www.youtube.com/@VerbaRun",
+        "https://x.com/verba_run",
+      ],
     },
   ],
 };
@@ -153,6 +161,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <RefCapture />
           {children}
           <Analytics />
+          {/* Google Ads (gtag.js) — conversion tracking, AW-18293643888 */}
+          <Script src="https://www.googletagmanager.com/gtag/js?id=AW-18293643888" strategy="afterInteractive" />
+          <Script id="google-ads-gtag" strategy="afterInteractive">
+            {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'AW-18293643888');`}
+          </Script>
         </body>
       </html>
     </ClerkProvider>

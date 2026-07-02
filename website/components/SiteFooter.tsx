@@ -14,6 +14,15 @@ export default function SiteFooter() {
           <div>
             <Logo />
             <p className="t-anchor mt-8 max-w-md text-[var(--faint)]">Speak it.<br />Send it clean.</p>
+            <div className="mt-8">
+              <p className="mono-meta mb-3">Follow</p>
+              <div className="flex flex-wrap items-center gap-4 muted">
+                <a href="https://www.instagram.com/verba.run/" target="_blank" rel="noopener" className="link-quiet whitespace-nowrap">Instagram</a>
+                <a href="https://www.tiktok.com/@verba.run" target="_blank" rel="noopener" className="link-quiet whitespace-nowrap">TikTok</a>
+                <a href="https://www.youtube.com/@VerbaRun" target="_blank" rel="noopener" className="link-quiet whitespace-nowrap">YouTube</a>
+                <a href="https://x.com/verba_run" target="_blank" rel="noopener" className="link-quiet whitespace-nowrap">X</a>
+              </div>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
             <div>
