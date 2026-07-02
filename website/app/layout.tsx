@@ -86,7 +86,6 @@ const SITE_JSONLD = {
       // Entity disambiguation for the Knowledge Graph + AI search.
       sameAs: [
         "https://github.com/agentik-os",
-        "https://discord.gg/7xfkfQN9AR",
         "https://www.instagram.com/verba.run/",
         "https://www.tiktok.com/@verba.run",
         "https://www.youtube.com/@VerbaRun",

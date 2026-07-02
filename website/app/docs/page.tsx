@@ -202,7 +202,7 @@ const SECTIONS: Section[] = [
         "Context mode does nothing: it needs Screen Recording permission and a vision-capable model (Anthropic or OpenRouter key).",
         "The macOS emoji popup appears when you press Fn: set the globe/Fn key to \"Do Nothing\" in System Settings ▸ Keyboard.",
         "On AZERTY layouts, Fn+number switches modes; use the menu-bar picker if a layout intercepts the chord.",
-        "Still stuck? Email hello@agentik-os.com or join the community on Discord.",
+        "Still stuck? Email hello@agentik-os.com or join the community on Telegram.",
       ] },
     ],
   },
@@ -335,7 +335,7 @@ export default function Docs() {
         <div className="glass-strong rounded-3xl p-10">
           <h2 className="text-2xl font-semibold tracking-tight">Still have a question?</h2>
           <p className="mx-auto mt-3 max-w-md muted text-balance">
-            Read the FAQ on the homepage, email <a href="mailto:hello@agentik-os.com" className="underline">hello@agentik-os.com</a>, or join the community on <a href="https://discord.gg/7xfkfQN9AR" target="_blank" rel="noopener" className="underline">Discord</a>.
+            Read the FAQ on the homepage, email <a href="mailto:hello@agentik-os.com" className="underline">hello@agentik-os.com</a>, or join the community on <a href="https://t.me/verbarun" target="_blank" rel="noopener" className="underline">Telegram</a>.
           </p>
         </div>
       </section>

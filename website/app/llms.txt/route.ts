@@ -48,7 +48,7 @@ Full sourced comparison: https://verba.run/compare
 
 ## Maker
 Verba is built by Agentik OS / Dafnck Studio (Entreprise Individuelle, Paris, France), founder Gareth Simono.
-Community: https://discord.gg/7xfkfQN9AR
+Community: https://t.me/verbarun
 `;
 
 export async function GET() {

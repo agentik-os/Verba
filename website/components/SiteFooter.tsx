@@ -51,7 +51,7 @@ export default function SiteFooter() {
               <p className="mono-meta mb-4">Company</p>
               <ul className="space-y-2.5 muted">
                 <li><Link href="/account" className="link-quiet whitespace-nowrap">Account</Link></li>
-                <li><a href="https://discord.gg/7xfkfQN9AR" target="_blank" rel="noopener" className="link-quiet whitespace-nowrap">Community (Discord)</a></li>
+                <li><a href="https://t.me/verbarun" target="_blank" rel="noopener" className="link-quiet whitespace-nowrap">Community (Telegram)</a></li>
                 <li><Link href="/best-mac-dictation-app" className="link-quiet whitespace-nowrap">Best Mac dictation app</Link></li>
                 <li><Link href="/privacy" className="link-quiet whitespace-nowrap">Privacy</Link></li>
                 <li><Link href="/terms" className="link-quiet whitespace-nowrap">Terms</Link></li>

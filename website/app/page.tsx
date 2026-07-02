@@ -1429,7 +1429,7 @@ function Footer() {
             <p className="mono-meta mb-4">Company</p>
             <ul className="space-y-2.5 muted">
               <li><Link href="/account" className="link-quiet">Account</Link></li>
-              <li><a href="https://discord.gg/7xfkfQN9AR" target="_blank" rel="noopener" className="link-quiet">Community (Discord)</a></li>
+              <li><a href="https://t.me/verbarun" target="_blank" rel="noopener" className="link-quiet">Community (Telegram)</a></li>
               <li><Link href="/best-mac-dictation-app" className="link-quiet">Best Mac dictation app</Link></li>
               <li><Link href="/privacy" className="link-quiet">Privacy</Link></li>
               <li><Link href="/terms" className="link-quiet">Terms</Link></li>

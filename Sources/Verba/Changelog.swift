@@ -33,7 +33,17 @@ struct ChangelogDay: Identifiable {
 enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
-            date: "July 1, 2026", tag: "Today",
+            date: "July 2, 2026", tag: "Today",
+            summary: "Our community moves to Telegram.",
+            entries: [
+                ChangelogEntry(version: "0.9.37",
+                    title: "Community is now on Telegram",
+                    items: [
+                        "We've moved the community to Telegram. The Community link in the sidebar now opens our Telegram channel, t.me/verbarun. Come say hi.",
+                    ]),
+            ]),
+        ChangelogDay(
+            date: "July 1, 2026",
             summary: "Verba never loses your last word: it keeps listening for a brief silent moment after you stop, so the final word of your sentence is always caught.",
             entries: [
                 ChangelogEntry(version: "0.9.36",
