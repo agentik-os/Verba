@@ -14,6 +14,22 @@ understand the play and the path to **€5–15k/mo** in product revenue.
 Produced by the OmegaOS marketing suite (R-MARKETING dependency order), **scoped to Verba only**. Every claim is grounded
 in the live product and the repo — no invented features.
 
+## Marketing machine — status board (numbered scaffold)
+> Réconcilié 2026-06-30 : la **machine marketing numérotée** (`00-context → 04-publishing`) consolide les docs racine riches
+> existants (ne les duplique pas) et ajoute la couche visuelle + publishing manquante. Le SSOT reste `../.agents/product-marketing.md`.
+
+| Layer | Fichier | Statut | Note |
+|---|---|---|---|
+| 00-context | `product-marketing.md` · `market-research.md` · `competitors.md` · `audience-personas.md` | ✅ filled | Miroir consolidé du SSOT + market/concurrents/personas, cités |
+| 01-strategy | `gtm-strategy.md` · `content-strategy.md` · `launch-strategy.md` | ✅ filled | Résumés exécutifs renvoyant aux docs racine (GTM/content/launch) |
+| 02-copy | `copywriting.md` · `ad-creative.md` · `social-content.md` · `cold-email.md` | ✅ filled | Copy EN publiable (audience Mac/dev) + variantes FR |
+| 03-visual-identity | `DA.md` · `higgsfield/system-prompt.md` · `preprompt.md` · `avatar-soul.md` · `shotlist.md` | ✅ filled | DA = transcription de `globals.css` "Black-craft" ; avatar = **non** (scene-led) ; 12 shots |
+| 04-publishing | `zernio.md` · `calendar.json` | ✅ filled | Profil `verba` ; **12** stubs ; `scheduledFor: null` — **non connecté, non publié** |
+
+**Docs racine riches (préservés, non clobbérés) :** `EXECUTIVE-SUMMARY.md`, `market-research.md`, `gtm-strategy.md`,
+`content-strategy.md`, `launch-strategy.md`, `social-content.md`, `ad-creative.md`, `cold-email.md`,
+`partnerships-distribution.md`, `Verba-Marketing-Strategy.pdf`, `content-juillet-2026/`, `fundraising/`.
+
 ## Read in this order
 1. **[EXECUTIVE-SUMMARY.md](./EXECUTIVE-SUMMARY.md)** — *start here.* One page: the product, the market timing, the wedge,
    the GTM motion, and the subscriber math for €5–15k/mo.

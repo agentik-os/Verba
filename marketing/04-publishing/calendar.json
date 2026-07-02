@@ -1,0 +1,104 @@
+{
+  "project": "Verba",
+  "profileSlug": "verba",
+  "timezone": "Europe/Paris",
+  "_note": "Publishing queue derived from 01-strategy/content-strategy.md (5 pillars P1-P5) + 02-copy/social-content.md + content-juillet-2026/. Each item -> omega-zernio post / bulk-upload. scheduledFor stays null: the operator schedules AFTER content is validated + accounts connected. Publishable hooks are EN (anglophone Mac/dev audience). Do NOT publish until validated + connected.",
+  "posts": [
+    {
+      "title": "JARVIS demo — create a Linear issue by voice",
+      "platform": "twitter",
+      "pillar": "P5 Voice -> action",
+      "scheduledFor": null,
+      "draftHook": "Your voice shouldn't just type. It should do. Watch me create a Linear issue without touching my keyboard — JARVIS plans it, I confirm, done.",
+      "shotRef": "S1"
+    },
+    {
+      "title": "You're paying twice for AI — the math",
+      "platform": "twitter",
+      "pillar": "P3 BYO-AI / no markup",
+      "scheduledFor": null,
+      "draftHook": "You pay for Claude. Then $15/mo for a dictation app to use *an* AI to clean your words. That's a markup on AI you already own. The breakdown 🧵",
+      "shotRef": "S2"
+    },
+    {
+      "title": "Your audio never leaves your Mac",
+      "platform": "instagram",
+      "pillar": "P2 Private on-device",
+      "scheduledFor": null,
+      "draftHook": "Most dictation apps upload every word you speak. Verba transcribes on-device — your audio never leaves your Mac. Off switch, auto-prune, keys in the Keychain.",
+      "shotRef": "S3"
+    },
+    {
+      "title": "I dictated to Claude Code for a week instead of typing",
+      "platform": "twitter",
+      "pillar": "P1 Voice-driven coding",
+      "scheduledFor": null,
+      "draftHook": "I haven't typed a prompt to Claude Code in a week. Speak a 20-min spec, get a clean Opus-grade prompt pasted into Cursor — using the sub I already pay for. Thread 🧵",
+      "shotRef": "S4"
+    },
+    {
+      "title": "An honest 24-feature Mac dictation comparison",
+      "platform": "linkedin",
+      "pillar": "P4 Best Mac dictation / comparisons",
+      "scheduledFor": null,
+      "draftHook": "'Best Mac dictation app' is a loaded claim, so we built a 24-feature x 10-brand comparison. We don't win every row — and we show it. Radical honesty.",
+      "shotRef": "S5"
+    },
+    {
+      "title": "Speak it, ship it — speak-vs-type",
+      "platform": "tiktok",
+      "pillar": "P1 Voice-driven coding",
+      "scheduledFor": null,
+      "draftHook": "I think faster than I type. Watch: typing a spec vs speaking it into clean text in 3 seconds. Verba for Mac.",
+      "shotRef": "S7"
+    },
+    {
+      "title": "Reuse your Claude Code sub — no API key",
+      "platform": "twitter",
+      "pillar": "P3 BYO-AI / no markup",
+      "scheduledFor": null,
+      "draftHook": "If you have Claude Code installed, Verba uses your subscription to clean your dictation. No API key. No second AI bill. Category of one.",
+      "shotRef": "S8"
+    },
+    {
+      "title": "Private by default — for confidential work",
+      "platform": "linkedin",
+      "pillar": "P2 Private on-device",
+      "scheduledFor": null,
+      "draftHook": "Lawyers, doctors, founders: where does your dictation audio go? With Verba, nowhere it doesn't have to. On-device, audio never uploaded, keys in the Keychain.",
+      "shotRef": "S9"
+    },
+    {
+      "title": "Your voice should DO, not just type",
+      "platform": "tiktok",
+      "pillar": "P5 Voice -> action",
+      "scheduledFor": null,
+      "draftHook": "Speak the intent. See the plan. Hit confirm. It's done — across 1,000+ apps. The Mac dictation app that became a voice agent.",
+      "shotRef": "S6"
+    },
+    {
+      "title": "1,000+ connected apps, every write confirm-gated",
+      "platform": "instagram",
+      "pillar": "P5 Voice -> action",
+      "scheduledFor": null,
+      "draftHook": "JARVIS can act across 1,000+ apps — Gmail, Slack, Linear, GitHub. Read-only steps run automatically; every write is shown and runs only after you confirm.",
+      "shotRef": "S11"
+    },
+    {
+      "title": "Product Hunt launch — voice agent for Mac",
+      "platform": "twitter",
+      "pillar": "Launch (28 Jul 2026)",
+      "scheduledFor": null,
+      "draftHook": "We're live on Product Hunt. Verba: the Mac dictation app that became a voice agent. Private by default, bring your own AI, and now it acts. 🚀",
+      "shotRef": "S10"
+    },
+    {
+      "title": "Run your whole dictation pipeline locally",
+      "platform": "twitter",
+      "pillar": "P2 Private on-device",
+      "scheduledFor": null,
+      "draftHook": "Parakeet for transcription + local Ollama for cleanup = a full dictation pipeline with zero cloud. Your voice, your Mac, your model.",
+      "shotRef": "S2"
+    }
+  ]
+}
