@@ -36,7 +36,15 @@ function isAncestor(pathname: string, slug: string): boolean {
   return pathname === base || pathname.startsWith(base + "/");
 }
 
-function FolderNode({ folder, pathname }: { folder: TreeFolder; pathname: string }) {
+function FolderNode({
+  folder,
+  pathname,
+  onNavigate,
+}: {
+  folder: TreeFolder;
+  pathname: string;
+  onNavigate: () => void;
+}) {
   const label = folder.readmeTitle || folder.name;
   return (
     <li>
@@ -45,14 +53,19 @@ function FolderNode({ folder, pathname }: { folder: TreeFolder; pathname: string
           <Link
             href={slugHref(folder.slug)}
             className={isActive(pathname, folder.slug) ? "active" : undefined}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              // stopPropagation keeps the <details> from toggling, but it also kept the
+              // drawer's close-on-click (on <aside>) from firing — close it explicitly.
+              e.stopPropagation();
+              onNavigate();
+            }}
           >
             {label}
           </Link>
         </summary>
         <ul>
           {folder.folders.map((f) => (
-            <FolderNode key={f.slug} folder={f} pathname={pathname} />
+            <FolderNode key={f.slug} folder={f} pathname={pathname} onNavigate={onNavigate} />
           ))}
           {folder.docs.map((d) => (
             <li key={d.slug}>
@@ -85,8 +98,13 @@ function Breadcrumb({ index, pathname }: { index: SearchEntry[]; pathname: strin
   });
   return (
     <nav className="atelier-breadcrumb" aria-label="Fil d'Ariane">
+      {crumbs.length > 1 && (
+        <span className="crumb-ellipsis" aria-hidden="true">
+          …<span className="sep">/</span>
+        </span>
+      )}
       {crumbs.map((c, i) => (
-        <span key={c.href} style={{ display: "contents" }}>
+        <span key={c.href} className={c.current ? "crumb crumb-current" : "crumb"}>
           {i > 0 && <span className="sep">/</span>}
           {c.current ? (
             <span className="current">{c.label}</span>
@@ -128,7 +146,7 @@ export default function AtelierShell({
               </li>
             ))}
             {tree.folders.map((f) => (
-              <FolderNode key={f.slug} folder={f} pathname={pathname} />
+              <FolderNode key={f.slug} folder={f} pathname={pathname} onNavigate={() => setMenuOpen(false)} />
             ))}
           </ul>
         </aside>
