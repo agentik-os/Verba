@@ -12,11 +12,11 @@ gate: la barre opérateur = "indiscernable d'un vrai tournage Sony Alpha" ; en d
 
 ## 1. Vidéo UGC (talking humans)
 
-**Modèles, du meilleur au fallback :**
-1. `veo3_1` avec `--model veo-3-1-preview --quality ultra` (JAMAIS le défaut veo-3-1-fast/basic : c'est lui qui donne le rendu « IA 2020 »). Dialogue + lip-sync natifs. 48 crédits/8 s : la qualité coûte, on paie.
-2. `seedance_2_0` `--resolution 1080p+ --bitrate_mode high --generate_audio true` (alternative look).
-3. `kling3_0 --mode 4k --sound on` (alternative look).
-Bake-off sur le même prompt quand on définit un nouveau format récurrent ; l'opérateur tranche.
+**Modèles (bake-off tranché par l'opérateur le 2026-07-02 : « je valide seedance la B ») :**
+1. **DÉFAUT : `seedance_2_0 --resolution 1080p --bitrate_mode high --generate_audio true`** (réalisme image gagnant : peau, lumière, rendu appareil photo).
+2. Fallback dialogue/lip-sync exigeant : `veo3_1 --model veo-3-1-preview --quality ultra` (48 crédits/8 s ; JAMAIS le défaut veo-3-1-fast/basic : c'est lui qui donnait le rendu « IA 2020 »).
+3. Alternative : `kling3_0 --mode 4k --sound on`.
+Re-bake-off sur le même prompt quand on définit un nouveau format récurrent ; l'opérateur tranche.
 
 **Bloc réalisme à préfixer à CHAQUE prompt vidéo (le « Sony Alpha block ») :**
 "Ultra-photorealistic UGC footage, indistinguishable from a real video shot on a Sony A7S III with a 35mm f/1.4 lens: shallow depth of field, natural window light, true-to-life skin texture with visible pores and imperfections, individual hair strands, natural color grade, faint sensor grain, subtle handheld micro-shake, imperfect casual framing. Documentary realism, not stylized, not cinematic lighting."
