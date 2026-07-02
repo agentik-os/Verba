@@ -109,7 +109,7 @@ We may update this policy; material changes will be reflected by a new effective
 - General / privacy questions: **hello@agentik-os.com**
 - Data-protection & rights requests: **studio@dafnck.com**
 
-Data controller: Dafnck Studio (Entreprise Individuelle), Gareth Simono, Paris, France.\`;
+Data controller: Dafnck Studio (Entreprise Individuelle), Gareth Simono, Paris, France.`;
 
 export default function Page() {
   return <LegalDoc title="Privacy Policy" md={MD} />;
