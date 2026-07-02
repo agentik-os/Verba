@@ -1,2 +1,5 @@
 .vercel
 .env*.local
+
+# Atelier docs are copied from ../marketing at build time (reproducible artifact).
+/public/atelier/
