@@ -93,6 +93,7 @@ const SITE_JSONLD = {
         "https://x.com/verba_run",
         "https://www.reddit.com/user/VerbaRun/",
         "https://es.pinterest.com/verbarun/",
+        "https://t.me/verbarun",
       ],
     },
   ],
