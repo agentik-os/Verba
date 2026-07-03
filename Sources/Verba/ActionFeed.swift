@@ -96,8 +96,11 @@ final class ActionFeedStore: ObservableObject {
     /// Safety net: if an item is still thinking/running after a while (a hung relay or a stalled
     /// executor), collapse it to a friendly failure instead of spinning forever.
     private func watchdog(_ id: UUID) {
+        // A LOCAL model runs the 2-phase agentic plan (PLAN + RESOLVE) on-device and is far slower
+        // than a hosted one, so give it a generous budget; a hung hosted relay still fails in ~2.5 min.
+        let seconds: UInt64 = Settings.shared.repromptBackend.resolved == .localLLM ? 300 : 150
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 80_000_000_000)   // 80s
+            try? await Task.sleep(nanoseconds: seconds * 1_000_000_000)
             guard let idx = items.firstIndex(where: { $0.id == id }) else { return }
             if items[idx].status == .thinking || items[idx].status == .running {
                 failed(id, error: L("That took too long — try again."))

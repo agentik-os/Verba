@@ -33,7 +33,18 @@ struct ChangelogDay: Identifiable {
 enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
-            date: "July 3, 2026", tag: "Today",
+            date: "July 4, 2026", tag: "Today",
+            summary: "JARVIS is reliable with any engine, including your local model, no more 'took too long'.",
+            entries: [
+                ChangelogEntry(version: "0.9.47",
+                    title: "JARVIS runs on your engine, reliably",
+                    items: [
+                        "JARVIS plans on the exact engine you selected, your local model, your Claude plan, or your key, and now waits long enough for a local model to think (they run entirely on your Mac, so they're slower).",
+                        "Fixed the 'took too long' error: the connected-app reads on our relay had no time budget and were cut short. They now get the time they need.",
+                    ]),
+            ]),
+        ChangelogDay(
+            date: "July 3, 2026", tag: nil,
             summary: "Meet the new Verba: a Features page, a calmer first run, gentle discovery, and one model everywhere. Verba now grows with you.",
             entries: [
                 ChangelogEntry(version: "0.9.46",
