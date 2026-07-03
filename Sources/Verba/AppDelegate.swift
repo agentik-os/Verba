@@ -415,7 +415,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
-        if s.repromptBackend == .localLLM { LocalLLM.ensureServer { _ in } }   // warm the local LLM server
+        // Fully local: start Ollama, or download it (open-source engine, ~143 MB) if it isn't installed
+        // yet, so on-device reprompting is ready without any manual setup.
+        if s.repromptBackend == .localLLM {
+            LocalLLM.ensureServer { up in
+                if !up { LocalLLM.installBinary { ok in if ok { LocalLLM.ensureServer { _ in } } } }
+            }
+        }
         // Warm the Claude Code path lookup off the reprompt path (its login-shell probe is slow).
         Task.detached(priority: .utility) { _ = ClaudeCode.isAvailable }
     }

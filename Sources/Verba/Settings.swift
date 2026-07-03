@@ -753,7 +753,9 @@ final class Settings: ObservableObject {
             d.set(Array(seededFeatures), forKey: "enabledFeatures")
         }
         enabledFeatures = seededFeatures
-        repromptBackend = RepromptBackend(rawValue: d.string(forKey: "repromptBackend") ?? "") ?? .auto
+        // Default NEW installs to Fully local (open-source, on-device, no account). Existing users keep
+        // their persisted choice — this ?? only applies when nothing was ever saved.
+        repromptBackend = RepromptBackend(rawValue: d.string(forKey: "repromptBackend") ?? "") ?? .localLLM
         openRouterModel = d.string(forKey: "openRouterModel") ?? "anthropic/claude-3.7-sonnet"
         localLLMModel = d.string(forKey: "localLLMModel") ?? "qwen2.5:7b"
         overlayStyle = OverlayStyle(rawValue: d.string(forKey: "overlayStyle") ?? "") ?? .floating
