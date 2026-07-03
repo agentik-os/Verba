@@ -1126,7 +1126,7 @@ function Shortcuts() {
         <HeadCenter
           eyebrow="Every shortcut, every power"
           title="One keyboard, the whole app"
-          lead="Verba lives under your fingers. Start a dictation, switch modes, capture a note, rewrite a selection, or speak a command that runs your Mac, all without leaving the keyboard. Here is the full set."
+          lead="Verba lives under your fingers. Start a dictation, switch modes, capture a note, rewrite a selection, or speak a command that runs your Mac, all without leaving the keyboard. These are only suggested defaults, every shortcut is yours to choose in the app."
         />
       </Reveal>
 

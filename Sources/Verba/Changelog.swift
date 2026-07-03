@@ -34,8 +34,13 @@ enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
             date: "July 3, 2026", tag: "Today",
-            summary: "One model, everywhere. A calmer first run, a new Features page, and gentle discovery: Verba now grows with you.",
+            summary: "One model everywhere, feature detail cards, a calmer first run, and gentle discovery: Verba now grows with you.",
             entries: [
+                ChangelogEntry(version: "0.9.42",
+                    title: "See what a feature does before you turn it on",
+                    items: [
+                        "Tap any card on the Features page to open its detail: what it does, what it needs (a permission, a connection), and one button to turn it on or off.",
+                    ]),
                 ChangelogEntry(version: "0.9.41",
                     title: "One model, everywhere",
                     items: [

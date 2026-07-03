@@ -6,6 +6,7 @@ import SwiftUI
 /// Turning a feature OFF only hides its surfaces; it never deletes notes, tasks, or history.
 struct FeaturesView: View {
     @ObservedObject private var settings = Settings.shared
+    @State private var detail: Feature?
 
     /// One catalog entry. `key` empty ⇒ a Level-1 essential (always active, no toggle).
     private struct Feature: Identifiable {
@@ -13,6 +14,7 @@ struct FeaturesView: View {
         let name: String
         let benefit: String
         let icon: String
+        var requires: String = ""   // extra thing this feature needs (permission, connection…)
         var id: String { key.isEmpty ? name : key }
         var gated: Bool { !key.isEmpty }
     }
@@ -26,11 +28,11 @@ struct FeaturesView: View {
     private let advanced: [Feature] = [
         .init(key: FeatureFlags.notes, name: "Notes", benefit: "Long recordings, structured into notes with tags and lock.", icon: "doc.badge.ellipsis"),
         .init(key: FeatureFlags.tasks, name: "Tasks", benefit: "Turn speech into projects, tasks and reminders.", icon: "checklist"),
-        .init(key: FeatureFlags.advancedModes, name: "Advanced modes", benefit: "Intent, Context (reads your screen), and your own custom modes.", icon: "wand.and.stars"),
+        .init(key: FeatureFlags.advancedModes, name: "Advanced modes", benefit: "Intent, Context (reads your screen), and your own custom modes.", icon: "wand.and.stars", requires: "Context mode asks for Screen Recording the first time you use it."),
         .init(key: FeatureFlags.transcribe, name: "Transcribe files", benefit: "Drop in an audio or video file, get the transcript.", icon: "waveform.badge.plus"),
     ]
     private let power: [Feature] = [
-        .init(key: FeatureFlags.jarvis, name: "JARVIS", benefit: "Your voice acts across 1,000+ apps: send, create, schedule.", icon: "bolt.fill"),
+        .init(key: FeatureFlags.jarvis, name: "JARVIS", benefit: "Your voice acts across 1,000+ apps: send, create, schedule.", icon: "bolt.fill", requires: "Connect your apps in Connected apps, and sign in so actions can run on your behalf."),
         .init(key: FeatureFlags.snippets, name: "Snippets", benefit: "Expand short spoken triggers into saved blocks of text.", icon: "text.badge.plus"),
         .init(key: FeatureFlags.transforms, name: "Transforms", benefit: "Select text, speak an instruction, get it rewritten in place.", icon: "arrow.triangle.2.circlepath"),
     ]
@@ -51,6 +53,7 @@ struct FeaturesView: View {
             .padding(28)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .sheet(item: $detail) { detailSheet($0) }
     }
 
     private var header: some View {
@@ -81,15 +84,22 @@ struct FeaturesView: View {
     private func card(_ f: Feature) -> some View {
         let on = f.gated ? settings.isFeatureEnabled(f.key) : true
         return HStack(spacing: 12) {
-            Image(systemName: f.icon)
-                .font(.system(size: 16))
-                .foregroundStyle(on ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
-                .frame(width: 24)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(f.name).font(.system(size: 14, weight: .semibold))
-                Text(f.benefit).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            // Tapping the icon/text opens the feature's detail sheet; the toggle stays for a quick flip.
+            Button { detail = f } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: f.icon)
+                        .font(.system(size: 16))
+                        .foregroundStyle(on ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
+                        .frame(width: 24)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(f.name).font(.system(size: 14, weight: .semibold))
+                        Text(f.benefit).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 8)
+                }
+                .contentShape(Rectangle())
             }
-            Spacer(minLength: 8)
+            .buttonStyle(.plain)
             if f.gated {
                 Toggle("", isOn: Binding(
                     get: { settings.isFeatureEnabled(f.key) },
@@ -104,5 +114,39 @@ struct FeaturesView: View {
         }
         .padding(14)
         .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    /// Feature detail sheet (roadmap §5): benefit, what it needs, and Activate/Deactivate.
+    @ViewBuilder private func detailSheet(_ f: Feature) -> some View {
+        let active = f.gated ? settings.isFeatureEnabled(f.key) : true
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 12) {
+                Image(systemName: f.icon).font(.system(size: 26)).foregroundStyle(.tint).frame(width: 40)
+                Text(f.name).font(.system(size: 20, weight: .bold))
+                Spacer()
+            }
+            Text(f.benefit).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            if !f.requires.isEmpty {
+                Label(f.requires, systemImage: "info.circle")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+            HStack {
+                if !f.gated {
+                    Label(L("Always on"), systemImage: "checkmark.seal.fill").foregroundStyle(.green).font(.callout.weight(.medium))
+                    Spacer()
+                } else if active {
+                    Button(L("Turn off"), role: .destructive) { settings.setFeature(f.key, false); detail = nil }
+                    Spacer()
+                    Text(L("Turning off only hides it, your data is kept.")).font(.caption).foregroundStyle(.tertiary)
+                } else {
+                    Button(L("Activate")) { settings.setFeature(f.key, true); detail = nil }.keyboardShortcut(.defaultAction)
+                    Spacer()
+                }
+                Button(L("Close")) { detail = nil }.buttonStyle(.plain).foregroundStyle(.secondary)
+            }
+        }
+        .padding(24)
+        .frame(width: 420, height: 260)
     }
 }
