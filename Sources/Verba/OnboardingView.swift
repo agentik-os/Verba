@@ -20,7 +20,8 @@ struct OnboardingView: View {
     @State private var screenGranted = ScreenCapture.hasPermission()
     @State private var pulse = false
 
-    private let total = 9
+    private let total = 3   // roadmap 2026-07-03: Welcome+Permissions / Choose engine / First dictation
+    @State private var demoText = ""
     private let poll = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
@@ -52,16 +53,7 @@ struct OnboardingView: View {
             }
         }
         .frame(width: 620, height: 720)
-        .onAppear {
-            pulse = true; coach.reset()
-            // Resumed after signing in but before finishing → skip the account step. If the
-            // user already chose a public handle, jump straight to permissions (step 3);
-            // otherwise land on the alias step (step 2) so they still see and confirm their
-            // public username instead of silently keeping the random default.
-            if step == 0 && !settings.proEmail.isEmpty {
-                step = settings.usernameCustomized ? 3 : 2
-            }
-        }
+        .onAppear { pulse = true; coach.reset() }
         .onReceive(poll) { _ in
             micGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
             axGranted = Output.accessibilityTrusted
@@ -72,14 +64,9 @@ struct OnboardingView: View {
             if imGranted && settings.useFnAsPrimary { FnTap.shared.start() }
         }
         .onChange(of: step) { newStep in
-            // Reset the coach flags for the gesture slides on (re)entry so a Back/retry
-            // reflects the CURRENT attempt rather than staying permanently green from
-            // an earlier visit. Step 4 = trigger key (tap/hold/mode), step 5 = pause.
-            switch newStep {
-            case 4: coach.singleFn = false; coach.holdFn = false; coach.doubleFn = false; coach.changeMode = false
-            case 5: coach.singleFn = false; coach.control = false
-            default: break
-            }
+            // Reset the coach flags on the first-dictation screen so a Back/retry reflects the
+            // CURRENT attempt rather than staying green from an earlier visit.
+            if newStep == 2 { coach.singleFn = false; coach.holdFn = false }
         }
     }
 
@@ -99,8 +86,7 @@ struct OnboardingView: View {
     }
 
     private var hero: some View {
-        let icons = ["sparkles", "person.crop.circle.badge.checkmark", "at", "lock.shield",
-                     "globe", "pause.circle", "wand.and.stars", "chart.bar.doc.horizontal", "gift"]
+        let icons = ["lock.shield", "brain", "waveform"]
         return ZStack {
             Circle().fill(accent.opacity(0.16)).frame(width: 96, height: 96).blur(radius: 8)
                 .scaleEffect(pulse ? 1.08 : 0.96)
@@ -155,25 +141,123 @@ struct OnboardingView: View {
     /// right after the account step, before the user can go any further or use the app.
     private var canAdvance: Bool {
         switch step {
-        case 1: return !settings.proEmail.isEmpty
-        case 2: return !settings.username.trimmingCharacters(in: .whitespaces).isEmpty   // username set
-        case 3: return micGranted && axGranted && imGranted   // the 3 core permissions (Screen Recording is optional)
+        case 0: return micGranted && axGranted && imGranted   // the 3 core permissions gate screen 1
         default: return true
         }
     }
 
-    // MARK: steps
+    // MARK: steps — 3 screens (sign-in is deferred, non-blocking; offered later in Settings/Account).
     @ViewBuilder private var content: some View {
         switch step {
-        case 0: welcome
-        case 1: account
-        case 2: aliasStep
-        case 3: permissionsStep
-        case 4: triggerKey
-        case 5: pauseAndFormatting
-        case 6: modes
-        case 7: insightsAndTools
-        default: referral
+        case 0: welcomeAndPermissions
+        case 1: chooseEngine
+        default: firstDictation
+        }
+    }
+
+    // MARK: - Screen 1 · Welcome + Permissions
+    private var welcomeAndPermissions: some View {
+        let core = micGranted && axGranted && imGranted
+        return VStack(alignment: .leading, spacing: 16) {
+            title(L("Speak. It types. Anywhere on your Mac."), L("Two quick permissions and you're dictating. That's it."))
+            VStack(spacing: 12) {
+                permRow("mic.fill", L("Microphone"), L("So Verba can hear you."), granted: micGranted) {
+                    AVCaptureDevice.requestAccess(for: .audio) { _ in }
+                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")!)
+                }
+                Divider()
+                permRow("hand.point.up.left.fill", L("Accessibility"), L("So the text lands at your cursor."), granted: axGranted) {
+                    Output.promptAccessibility()
+                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+                }
+                Divider()
+                permRow("keyboard", L("Input Monitoring"), L("So the Fn key can trigger Verba."), granted: imGranted) {
+                    _ = IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
+                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent")!)
+                }
+            }
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading).glass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            if core {
+                Label(L("All set. Continue."), systemImage: "checkmark.seal.fill")
+                    .font(.callout.weight(.medium)).foregroundStyle(.green)
+            } else {
+                Label(L("Grant these three to continue. Screen Recording is asked later, only if you turn on Context."), systemImage: "lock.fill")
+                    .font(.caption).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    // MARK: - Screen 2 · Choose your engine
+    private var chooseEngine: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            title(L("Choose your engine"), L("How Verba cleans up and understands your speech. Raw dictation always works, with or without AI."))
+            engineCard(.auto, "bolt.fill", L("Verba managed"), L("Works instantly. Zero setup."), badge: L("Recommended to start"))
+            engineCard(.claudeCode, "brain", L("My Claude subscription"), L("Use your Claude Pro/Max plan. No API key."))
+            engineCard(.apiKey, "key.fill", L("My API key"), L("Anthropic, OpenAI or OpenRouter. Your key, your bill."))
+            engineCard(.localLLM, "lock.laptopcomputer", L("Fully local"), L("Nothing ever leaves your Mac."))
+            Text(L("You can change this anytime in Settings ▸ AI rewriting.")).font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private func engineCard(_ backend: RepromptBackend, _ icon: String, _ name: String, _ desc: String, badge: String? = nil) -> some View {
+        let on = settings.repromptBackend == backend
+        return Button {
+            settings.repromptBackend = backend
+            // Fully local: start the local transcription model download now so it's ready by first use.
+            if backend == .localLLM { settings.engine = .parakeet; Task.detached { _ = await EngineManager.install(.parakeet) } }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: icon).font(.system(size: 17)).frame(width: 26)
+                    .foregroundStyle(on ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text(name).font(.callout.weight(.medium))
+                        if let badge { Text(badge).font(.caption2).padding(.horizontal, 6).padding(.vertical, 1).background(.softFill, in: Capsule()) }
+                    }
+                    Text(desc).font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: on ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(on ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
+            }
+            .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(on ? Color.primary.opacity(0.25) : .clear, lineWidth: 1.5))
+            .glass(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Screen 3 · First dictation (the aha moment)
+    private var firstDictation: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            title(L("Press Fn. Speak. Watch."), L("Your words land right where your cursor is."))
+            Toggle(isOn: $settings.useFnAsPrimary) {
+                VStack(alignment: .leading) {
+                    Text(L("Use the Fn (🌐 globe) key")).font(.callout.weight(.medium))
+                    Text(L("The fastest trigger. Turn off to pick your own shortcut.")).font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .padding(14).frame(maxWidth: .infinity, alignment: .leading).glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            if !settings.useFnAsPrimary {
+                HStack {
+                    Text(L("Your shortcut:")).font(.callout)
+                    ShortcutRecorder(label: shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods),
+                                     onCapture: { c, m in settings.primaryKeyCode = c; settings.primaryMods = m })
+                    Spacer()
+                }
+            }
+            actionRow("hand.tap", L("Single tap"), L("Tap to start recording, tap again to send."), done: coach.singleFn)
+            actionRow("hand.tap.fill", L("Press & hold"), L("Hold while you speak, release to send (push-to-talk)."), done: coach.holdFn)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(L("Try it here")).font(.caption.weight(.semibold)).foregroundStyle(.secondary).textCase(.uppercase)
+                TextField(L("Click here, press Fn, and speak…"), text: $demoText, axis: .vertical)
+                    .textFieldStyle(.plain).lineLimit(2...4)
+                    .padding(12).background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+            if coach.singleFn || coach.holdFn {
+                Label(L("You've mastered the essentials. More powers await in Features."), systemImage: "checkmark.seal.fill")
+                    .font(.callout.weight(.medium)).foregroundStyle(.green).fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
