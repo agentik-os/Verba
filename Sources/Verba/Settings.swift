@@ -443,6 +443,10 @@ final class Settings: ObservableObject {
 
     // Bump when the built-in profiles change so users get the new prompts/shortcuts.
     static let profilesVersion = 24  // merge Coding into Prompt (one mode for any AI + coding-agent prompts)
+    /// One-time onboarding reset. Bump this to guide EVERY existing user through the onboarding again
+    /// exactly once on their next launch (used to re-introduce the new 3-screen flow + Features to
+    /// beta testers). Stamped per install so it never repeats for the same target.
+    static let onboardingResetTarget = 1
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }
@@ -783,7 +787,18 @@ final class Settings: ObservableObject {
         // Default to tap-to-toggle (the long-standing hands-free behaviour).
         triggerStyle = TriggerStyle(rawValue: d.string(forKey: "triggerStyle") ?? "") ?? .toggle
         useFnAsPrimary = d.object(forKey: "useFnAsPrimary") as? Bool ?? true
-        onboarded = d.object(forKey: "onboarded") as? Bool ?? false
+        // One-time onboarding reset (runs AFTER enabledFeatures seeded above, so grandfathering is
+        // computed from the REAL prior onboarded state and no existing user loses their features).
+        let wasOnboarded = d.object(forKey: "onboarded") as? Bool ?? false
+        if d.integer(forKey: "onboardingResetVersion") < Settings.onboardingResetTarget {
+            // First launch under this reset target: guide everyone through onboarding once, then stamp
+            // it so it never repeats. Existing (onboarded) users get re-guided; new users onboard normally.
+            d.set(Settings.onboardingResetTarget, forKey: "onboardingResetVersion")
+            onboarded = false
+            d.set(false, forKey: "onboarded")
+        } else {
+            onboarded = wasOnboarded
+        }
         showInDock = d.object(forKey: "showInDock") as? Bool ?? true
         showMenuBarIcon = d.object(forKey: "showMenuBarIcon") as? Bool ?? true
         smartFormatting = d.object(forKey: "smartFormatting") as? Bool ?? true
