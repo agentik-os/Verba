@@ -18,8 +18,16 @@ const DAYS: Day[] = [
   {
     date: "July 3, 2026",
     tag: "Today",
-    summary: "A new Features page: browse everything Verba can do and switch each power on or off. Verba now grows with you.",
+    summary: "A calmer first run and a new Features page: browse everything Verba can do and switch each power on or off. Verba now grows with you.",
     entries: [
+      {
+        version: "0.9.39",
+        title: "A calmer first run",
+        items: [
+          "New Macs now get a 3-screen setup, permissions, your AI engine, and a first live dictation, instead of a long tour. Sign-in is optional and no longer blocks you.",
+          "A shortcut for a feature you haven't turned on stays inert, so nothing fires by accident. Your existing setup is unchanged.",
+        ],
+      },
       {
         version: "0.9.38",
         title: "Features: turn on Verba one power at a time",
