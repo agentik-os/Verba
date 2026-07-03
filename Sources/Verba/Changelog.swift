@@ -34,8 +34,13 @@ enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
             date: "July 3, 2026", tag: "Today",
-            summary: "A calmer first run, a new Features page, and gentle discovery: Verba now grows with you.",
+            summary: "One model, everywhere. A calmer first run, a new Features page, and gentle discovery: Verba now grows with you.",
             entries: [
+                ChangelogEntry(version: "0.9.41",
+                    title: "One model, everywhere",
+                    items: [
+                        "Every mode now uses the single AI model you choose in Settings ▸ AI rewriting. No more per-mode model to manage, pick it once and it applies to Polish, Translate, Prompt, all of them.",
+                    ]),
                 ChangelogEntry(version: "0.9.40",
                     title: "Discover more, at your pace",
                     items: [

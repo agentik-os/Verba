@@ -132,7 +132,7 @@ struct AdaptPanel: View {
     private func adapt(mode: Profile) {
         guard !adapting else { return }
         runAdapt(label: mode.name, systemPrompt: mode.effectiveSystemPrompt,
-                 model: mode.model ?? Settings.shared.claudeModel, transcript: source)
+                 model: Settings.shared.claudeModel, transcript: source)
     }
 
     /// Re-process the source with the user's typed instruction.

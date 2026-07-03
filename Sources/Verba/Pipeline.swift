@@ -215,7 +215,7 @@ enum Pipeline {
                 """
             }
 
-            let r = Reprompter(model: profile.model ?? s.claudeModel)   // per-mode model override
+            let r = Reprompter(model: s.claudeModel)   // always the model chosen in Settings (no per-mode override)
 
             // BRANCH PRECEDENCE (first match wins — ordered most-specific → general):
             //   1. edit-last        — explicit "Edit last by voice" action; the transcript is an
@@ -399,7 +399,7 @@ enum Pipeline {
         if s.languageGuard, detectedAction == nil, !editingLast, !wasInstruction,
            profile.targetLanguage == nil, isMixedLanguage(reprompted) {
             status("Cleaning up language…")
-            if let fixed = try? await normalizeLanguage(reprompted, model: profile.model ?? s.claudeModel) {
+            if let fixed = try? await normalizeLanguage(reprompted, model: s.claudeModel) {
                 reprompted = fixed
             }
         }

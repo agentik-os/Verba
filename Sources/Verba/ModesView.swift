@@ -384,34 +384,17 @@ struct ModesView: View {
                             .foregroundStyle(.secondary)
                     }
                 } else {
-                    let modelB = Binding(
-                        get: { settings.profiles.first { $0.id == id }?.model ?? "" },
-                        set: { v in if let i = index(of: id) { settings.profiles[i].model = v.isEmpty ? nil : v } })
-                    // The model offered must match the AI backend in use. Cloud (Claude / API)
-                    // lets you pick a model per mode; the open-source and OpenRouter backends
-                    // use a single configured model, so we only show that one.
-                    switch settings.repromptBackend {
-                    case .localLLM:
-                        field(L("Model"), hint: L("your local open-source model (set in Settings ▸ AI rewriting) rewrites every mode")) {
-                            Text("Local: \(settings.localLLMModel)")
-                                .foregroundStyle(.secondary)
+                    // Every mode is rewritten by the ONE model you choose in Settings ▸ AI rewriting.
+                    // There is no per-mode model override, the whole app uses the model you selected.
+                    let summary: String = {
+                        switch settings.repromptBackend {
+                        case .localLLM: return "Local: \(settings.localLLMModel)"
+                        case .openRouter: return settings.openRouterModel.isEmpty ? L("OpenRouter default model") : "OpenRouter: \(settings.openRouterModel)"
+                        default: return settings.claudeModel
                         }
-                    case .openRouter:
-                        field(L("Model"), hint: L("your OpenRouter model (set in Settings ▸ AI rewriting) rewrites every mode")) {
-                            Text(settings.openRouterModel.isEmpty ? L("OpenRouter default model") : "OpenRouter: \(settings.openRouterModel)")
-                                .foregroundStyle(.secondary)
-                        }
-                    default:
-                        field(L("Model"), hint: L("which Claude model rewrites this mode (Anthropic / Claude Code)")) {
-                            HStack(spacing: 8) {
-                                TagChip(label: L("Default"), selected: modelB.wrappedValue == "") { modelB.wrappedValue = "" }
-                                    .help("App-wide default (\(settings.claudeModel))")
-                                ForEach(Profile.selectableModels, id: \.id) { m in
-                                    TagChip(label: m.label, selected: modelB.wrappedValue == m.id) { modelB.wrappedValue = m.id }
-                                        .help(m.help)
-                                }
-                            }
-                        }
+                    }()
+                    field(L("Model"), hint: L("every mode uses the model you pick in Settings ▸ AI rewriting")) {
+                        Text(summary).foregroundStyle(.secondary)
                     }
                 }
                 // Friendly, AI-written "what this mode does + how to use it" for the user.

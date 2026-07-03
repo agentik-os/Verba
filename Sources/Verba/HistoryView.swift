@@ -392,7 +392,7 @@ struct HistoryView: View {
                 let sys = p.raw
                     ? Settings.shared.profiles.first(where: { !$0.raw })?.effectiveSystemPrompt ?? ""
                     : p.effectiveSystemPrompt
-                let r = Reprompter(model: p.model ?? Settings.shared.claudeModel)
+                let r = Reprompter(model: Settings.shared.claudeModel)   // always the Settings model (no per-mode override)
                 let out = try await r.reprompt(transcript: e.original, systemPrompt: sys)
                 await MainActor.run {
                     // Stash the prior restructured text so this destructive overwrite is
