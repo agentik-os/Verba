@@ -79,6 +79,7 @@ struct HomeView: View {
 
     var body: some View {
         SectionScaffold(title: L("Home"), subtitle: L("Speak it. Send it clean.")) {
+            DiscoveryHintBubble()   // usage-pulled discovery: at most one dismissable hint per day
             HStack(spacing: 14) {
                 stat("\(stats.totalWords.formatted())", L("total words"), "text.word.spacing")
                 stat("\(stats.avgWPM)", L("words / min"), "gauge.with.dots.needle.67percent")
@@ -90,7 +91,7 @@ struct HomeView: View {
                     Text("Press \(triggerLabel) and talk. Fn + Tab jumps to the next mode (even mid-sentence), ⌃ pauses & resumes, or use ⌃⌥1-6 for a specific mode.")
                         .foregroundStyle(.secondary)
                     FlowLayout(spacing: 8) {
-                        ForEach(settings.profiles.prefix(6)) { p in
+                        ForEach(settings.visibleProfiles.prefix(6)) { p in
                             Text(p.name).font(.caption.weight(.medium))
                                 .padding(.horizontal, 11).padding(.vertical, 5)
                                 .background(.softFill, in: Capsule())

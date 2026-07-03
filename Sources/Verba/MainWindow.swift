@@ -100,6 +100,7 @@ struct MainWindow: View {
 
     private let sidebarWidth: CGFloat = 240
     @ObservedObject private var feedbackInbox = FeedbackInbox.shared
+    @ObservedObject private var discovery = DiscoveryEngine.shared
     @State private var feedbackDropTargeted = false
     @AppStorage("toolsCollapsed") private var toolsCollapsed = false
     @AppStorage("libraryCollapsed") private var libraryCollapsed = false
@@ -155,6 +156,7 @@ struct MainWindow: View {
         .onChange(of: settings.notesTabEnabled) { _, on in
             if !on, selection == .notes { selection = .home }
         }
+        .onChange(of: discovery.openFeaturesSignal) { _, _ in selection = .features }   // hint CTA → Features
         .onChange(of: settings.enabledFeatures) { _, _ in
             // Disabling a feature hides its tab; if you're viewing it, fall back to the Features page.
             let gated: [NavItem: String] = [

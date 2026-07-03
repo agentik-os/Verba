@@ -695,6 +695,12 @@ final class Gamification: ObservableObject {
              .usedVoiceNote, .usedVoiceTodo, .usedActionMode, .usedTransform, .changedStyle,
              .savedNote, .taggedNote, .lockedNote, .createdTask, .checkedTask,
              .usedScratchpad, .usedDictionary, .usedSnippet, .connectedApp].allSatisfy { f.contains($0) } },
+        .init(id: "featureExplorer", title: "Power User", blurb: "Turn on a feature from Advanced and one from Power in the Features page.", icon: "square.grid.2x2.fill", tier: .gold) { _,_ in
+            let s = Settings.shared
+            let l2 = [FeatureFlags.notes, FeatureFlags.tasks, FeatureFlags.transcribe, FeatureFlags.advancedModes]
+            let l3 = [FeatureFlags.jarvis, FeatureFlags.snippets, FeatureFlags.transforms]
+            return l2.contains(where: s.isFeatureEnabled) && l3.contains(where: s.isFeatureEnabled)
+        },
     ]
     // Fun, legit Special badges — lit up by an on-device word scan of your own text + your
     // computer's time/timezone. Nothing is uploaded; it's just for the joy of the unlock.

@@ -1796,6 +1796,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if ctx.countStats {
                 let dur = ctx.recordStartedAt.map { Date().timeIntervalSince($0) } ?? 0
                 Stats.shared.record(words: wordCount(text), seconds: dur)
+                DiscoveryEngine.shared.refresh()   // usage-pulled discovery: maybe surface a hint
                 Leaderboard.submit()   // keep the public leaderboard up to date
                 // Gamification: note which mode was used + time-of-day, scan the text for fun
                 // patterns (on-device), then re-evaluate achievements.
