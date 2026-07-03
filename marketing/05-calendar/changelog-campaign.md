@@ -1,7 +1,7 @@
 ---
 project: Verba
 layer: calendar/campaign
-status: BUILT, en attente GO opérateur avant publication (posts irréversibles via Zernio)
+status: GO opérateur reçu 2026-07-03 (cadence 2/jour, TOUS réseaux). CENTRALISÉ vers la session `Marketing-machine` (hub) pour exécution — cette session-ci NE publie PAS (éviter double-post irréversible sur le profil Zernio unique).
 created: 2026-07-03
 source: Sources/Verba/Changelog.swift (SSOT features réelles) + verba.run/changelog
 networks: via omega-zernio profil "verba" — 15 comptes actifs (twitter, linkedin, instagram, tiktok, youtube, facebook, threads, reddit, pinterest, telegram + ads)
