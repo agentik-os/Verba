@@ -190,11 +190,10 @@ struct OnboardingView: View {
     // MARK: - Screen 2 · Choose your engine
     private var chooseEngine: some View {
         VStack(alignment: .leading, spacing: 12) {
-            title(L("Choose your engine"), L("How Verba cleans up and understands your speech. Raw dictation always works, with or without AI."))
-            engineCard(.auto, "bolt.fill", L("Verba managed"), L("Works instantly. Zero setup."), badge: L("Recommended to start"))
-            engineCard(.claudeCode, "brain", L("My Claude subscription"), L("Use your Claude Pro/Max plan. No API key."))
-            engineCard(.apiKey, "key.fill", L("My API key"), L("Anthropic, OpenAI or OpenRouter. Your key, your bill."))
-            engineCard(.localLLM, "lock.laptopcomputer", L("Fully local"), L("Nothing ever leaves your Mac."))
+            title(L("Choose your engine"), L("How Verba cleans up and understands your speech. Transcription is always on-device."))
+            engineCard(.localLLM, "lock.laptopcomputer", L("Fully local"), L("Open-source models running on your Mac. Nothing ever leaves the device."), badge: L("Recommended"))
+            engineCard(.auto, "bolt.fill", L("Verba managed"), L("Works instantly. Zero setup."))
+            engineCard(.claudeCode, "brain", L("My Claude subscription"), L("Use your Claude Pro/Max plan, no API key. Install the Claude CLI and run “claude” once in Terminal to sign in first."))
             Text(L("You can change this anytime in Settings ▸ AI rewriting.")).font(.caption).foregroundStyle(.secondary)
         }
     }
@@ -203,8 +202,16 @@ struct OnboardingView: View {
         let on = settings.repromptBackend == backend
         return Button {
             settings.repromptBackend = backend
-            // Fully local: start the local transcription model download now so it's ready by first use.
-            if backend == .localLLM { settings.engine = .parakeet; Task.detached { _ = await EngineManager.install(.parakeet) } }
+            // Fully local: install the open-source models now so they're ready by first use — the
+            // on-device transcription model (Parakeet) and the local reprompting engine (Ollama,
+            // which Verba downloads and starts itself if it isn't already installed).
+            if backend == .localLLM {
+                settings.engine = .parakeet
+                Task.detached { _ = await EngineManager.install(.parakeet) }
+                LocalLLM.ensureServer { up in
+                    if !up { LocalLLM.installBinary { ok in if ok { LocalLLM.ensureServer { _ in } } } }
+                }
+            }
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: icon).font(.system(size: 17)).frame(width: 26)
@@ -255,9 +262,28 @@ struct OnboardingView: View {
                     .padding(12).background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
             if coach.singleFn || coach.holdFn {
-                Label(L("You've mastered the essentials. More powers await in Features."), systemImage: "checkmark.seal.fill")
-                    .font(.callout.weight(.medium)).foregroundStyle(.green).fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "checkmark.seal.fill").foregroundStyle(.white)
+                    Text(L("You've mastered the essentials. More powers await in Features."))
+                        .foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
+                }
+                .font(.callout.weight(.semibold))
+                .padding(.horizontal, 14).padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.green.opacity(0.9), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
+            // Join the community, offered at the finish line.
+            HStack(spacing: 8) {
+                Image(systemName: "paperplane.fill")
+                Text(L("Join the Verba community on Telegram"))
+                Spacer()
+                Image(systemName: "arrow.up.right").font(.caption.weight(.bold)).foregroundStyle(.secondary)
+            }
+            .font(.callout.weight(.medium))
+            .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+            .glass(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .contentShape(Rectangle())
+            .onTapGesture { if let u = URL(string: "https://t.me/verbarun") { NSWorkspace.shared.open(u) } }
         }
     }
 

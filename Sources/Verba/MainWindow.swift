@@ -102,9 +102,9 @@ struct MainWindow: View {
     @ObservedObject private var feedbackInbox = FeedbackInbox.shared
     @ObservedObject private var discovery = DiscoveryEngine.shared
     @State private var feedbackDropTargeted = false
-    @AppStorage("toolsCollapsed") private var toolsCollapsed = false
-    @AppStorage("libraryCollapsed") private var libraryCollapsed = false
-    @AppStorage("communityCollapsed") private var communityCollapsed = false
+    @AppStorage("toolsCollapsed") private var toolsCollapsed = true
+    @AppStorage("libraryCollapsed") private var libraryCollapsed = true
+    @AppStorage("communityCollapsed") private var communityCollapsed = true
     @Environment(\.openURL) private var openURL
 
     var body: some View {

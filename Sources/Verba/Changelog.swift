@@ -36,6 +36,13 @@ enum Changelog {
             date: "July 3, 2026", tag: "Today",
             summary: "Meet the new Verba: a Features page, a calmer first run, gentle discovery, and one model everywhere. Verba now grows with you.",
             entries: [
+                ChangelogEntry(version: "0.9.45",
+                    title: "Local-first: open-source models by default",
+                    items: [
+                        "The setup now recommends Fully local first: open-source models run on your Mac and nothing ever leaves the device. Verba installs them for you, the on-device transcription model and the local reprompting engine.",
+                        "Clearer AI options: the API-key card is gone, and My Claude subscription now says to install the Claude CLI and run it once in Terminal to sign in.",
+                        "Sidebar groups (Tools, Library, Community) start collapsed, and you can join the Telegram community right from the end of setup. Fixed a hard-to-read success message.",
+                    ]),
                 ChangelogEntry(version: "0.9.44",
                     title: "Styles now in Settings",
                     items: [
