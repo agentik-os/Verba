@@ -4,6 +4,9 @@ import { verifyAppToken } from "@/lib/apptoken";
 import { convexBump } from "@/lib/convex";
 
 export const runtime = "nodejs";
+// JARVIS planning (2-phase Opus + Composio reads) + reprompting can run tens of seconds;
+// without this Vercel kills the function at its default timeout → the app shows "took too long".
+export const maxDuration = 300;
 // EU users + EU Convex: run at Paris/Frankfurt instead of the default US region
 // (measured: shaves the transatlantic round-trip off every rewrite).
 export const preferredRegion = ["cdg1", "fra1"];

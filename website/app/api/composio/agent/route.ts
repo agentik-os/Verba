@@ -5,6 +5,9 @@ import { plannerSystem } from "@/lib/planner-prompt";
 import { rankByLexical, topMatches } from "@/lib/lexical";
 
 export const runtime = "nodejs";
+// JARVIS planning (2-phase Opus + Composio reads) + reprompting can run tens of seconds;
+// without this Vercel kills the function at its default timeout → the app shows "took too long".
+export const maxDuration = 300;
 
 // VERBA GENIUS ACTION ASSISTANT — server-side agentic planner.
 //
