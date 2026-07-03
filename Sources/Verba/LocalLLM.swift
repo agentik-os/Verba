@@ -290,6 +290,21 @@ enum LocalLLM {
         }
     }
 
+    /// Full fully-local setup, safe to call repeatedly (idempotent): ensure the Ollama server is
+    /// running (download the open-source engine if it's missing), then pull the configured model if
+    /// it isn't present yet. Without the model pull, reprompting throws notDownloaded on first use.
+    static func setupFullyLocal() {
+        let pullModel = {
+            let m = Settings.shared.localLLMModel
+            guard !m.isEmpty else { return }
+            pull(m, progress: { _ in }, done: { _ in })   // Ollama skips the download if already present
+        }
+        ensureServer { up in
+            if up { pullModel() }
+            else { installBinary { ok in if ok { ensureServer { u in if u { pullModel() } } } } }
+        }
+    }
+
     static func chat(system: String, user: String, model: String) async throws -> String {
         var req = URLRequest(url: URL(string: "\(host)/api/chat")!)
         req.httpMethod = "POST"; req.setValue("application/json", forHTTPHeaderField: "content-type")

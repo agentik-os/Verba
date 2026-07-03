@@ -208,9 +208,7 @@ struct OnboardingView: View {
             if backend == .localLLM {
                 settings.engine = .parakeet
                 Task.detached { _ = await EngineManager.install(.parakeet) }
-                LocalLLM.ensureServer { up in
-                    if !up { LocalLLM.installBinary { ok in if ok { LocalLLM.ensureServer { _ in } } } }
-                }
+                LocalLLM.setupFullyLocal()   // engine + model, so on-device reprompting actually works
             }
         } label: {
             HStack(spacing: 12) {

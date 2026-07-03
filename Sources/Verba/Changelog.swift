@@ -36,6 +36,11 @@ enum Changelog {
             date: "July 3, 2026", tag: "Today",
             summary: "Meet the new Verba: a Features page, a calmer first run, gentle discovery, and one model everywhere. Verba now grows with you.",
             entries: [
+                ChangelogEntry(version: "0.9.46",
+                    title: "Fully local, ready out of the box",
+                    items: [
+                        "Fully local now installs its reprompting model automatically too, not just the engine, so on-device Polish, Translate and Prompt work with no manual setup. Raw dictation is instant regardless.",
+                    ]),
                 ChangelogEntry(version: "0.9.45",
                     title: "Local-first: open-source models by default",
                     items: [
