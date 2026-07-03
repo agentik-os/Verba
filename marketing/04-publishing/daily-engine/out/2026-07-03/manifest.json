@@ -1,0 +1,18 @@
+{
+  "date": "2026-07-03",
+  "calendarDay": 1,
+  "pillar": "P2 Dictee prive on-device",
+  "platform": "x",
+  "postText": "Petite question genante : ton app de dictee, elle upload ta voix en ce moment ?\n\nLa plupart le font. Chaque mot part sur leurs serveurs.\n\nOn a construit Verba a l'envers : Whisper et Parakeet tournent sur ton Mac, ton audio ne le quitte jamais. Historique local, avec un vrai bouton off.\n\nParle librement. Privé par défaut. À toi par conception.",
+  "cta": "verba.run",
+  "vo": "Your dictation app might be uploading your voice right now. Most of them do. We built Verba the other way. Whisper and Parakeet run on your Mac. Your audio never leaves it. Local history, with a real off switch. Speak freely. Private by default.",
+  "imageFiles": [
+    "/home/vibe/Station/SideBusiness/Verba/marketing/04-publishing/daily-engine/out/2026-07-03/hero-1080x1350.png",
+    "/home/vibe/Station/SideBusiness/Verba/marketing/04-publishing/daily-engine/out/2026-07-03/hero-9x16.png",
+    "/home/vibe/Station/SideBusiness/Verba/marketing/04-publishing/daily-engine/out/2026-07-03/hero-1x1.png"
+  ],
+  "videoFile": "/home/vibe/Station/SideBusiness/Verba/marketing/04-publishing/daily-engine/out/2026-07-03/reel-9x16.mp4",
+  "durationSec": 16,
+  "voUsed": true,
+  "produced": true
+}

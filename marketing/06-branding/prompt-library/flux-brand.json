@@ -1,0 +1,62 @@
+{
+ "$schema": "flux-2/brand-json@2026 (spec §4.4, object-bound hex, positive phrasing, no negative prompts, <=8 role-named refs)",
+ "project": "Verba",
+ "note": "Hex ONLY works bound to a named object (docs.bfl.ml). No negative prompts, phrase positively; the KILL block (kill-list.md §2) is a gate/review guard, not pasted here. Generate WITHOUT any human avatar (scene-led).",
+ "tokens": {
+  "bg": "#050507", "panel": "#0c0c10", "panel2": "#101015",
+  "fg": "#f4f4f6", "accent": "#f4ede0", "rec": "#ff5a4d"
+ },
+
+ "templates": {
+
+  "product_hero_launch": {
+   "scene": "a matte near-black studio field in deep near-black hex #050507, quiet and empty",
+   "subjects": [
+    { "description": "a MacBook Pro in matte anodized aluminium, screen showing the Verba macOS menu-bar app as a crisp real UI card on a window panel in near-black hex #0c0c10 with a thin hairline border", "position": "centered, filling 4:5", "action": "sitting still, screen lit" },
+    { "description": "the Verba overlay pill near the menu bar with a small record dot in warm red hex #ff5a4d, lit", "position": "top of the screen", "action": "glowing softly" },
+    { "description": "one key word in the UI in warm off-white hex #f4ede0", "position": "single focal element", "action": "the only signature accent in frame" }
+   ],
+   "style": "Apple-grade product photography, matte, editorial restraint, the type carries the premium",
+   "color_palette": ["#050507", "#0c0c10", "#f4f4f6", "#ff5a4d"],
+   "lighting": "one soft directional key from upper-left, low-key matte, near-black room",
+   "mood": "precise, private, calm, premium",
+   "camera": { "angle": "straight-on, eye-level", "lens": "50mm", "depth_of_field": "medium, UI razor-sharp" },
+   "grain": "faint fine grain on the aluminium only; the UI stays crisp and real",
+   "aspect_ratio": "4:5",
+   "watermark": "a small MicMark glyph, a micro icon inside a black rounded square"
+  },
+
+  "on_device_privacy_loop": {
+   "scene": "a clean editorial diagram field in deep near-black hex #050507, heavy whitespace",
+   "subjects": [
+    { "description": "an audio waveform in soft off-white hex #f4f4f6, contained entirely INSIDE a thin hairline device boundary drawn around a Mac", "position": "centered", "action": "resting inside the boundary, never crossing it" },
+    { "description": "a small lock / offline cue with a single record dot in warm red hex #ff5a4d", "position": "beside the boundary", "action": "steady, the only bright accent" }
+   ],
+   "style": "vector-clean editorial diagram, matte, minimal",
+   "color_palette": ["#050507", "#f4f4f6", "#ff5a4d"],
+   "lighting": "flat even low-key",
+   "mood": "secure, private, still",
+   "camera": { "angle": "flat-on", "lens": "35mm", "depth_of_field": "deep, all sharp" },
+   "grain": "faint grain on the field only",
+   "aspect_ratio": "1:1",
+   "honesty_cue": "the phrase 'audio never leaves your Mac' set in SF Pro, tight tracking, in soft off-white hex #f4f4f6"
+  },
+
+  "byo_ai_cost_math": {
+   "scene": "a type-led editorial layout on a deep near-black field hex #050507, left-aligned, heavy whitespace",
+   "subjects": [
+    { "description": "big tabular-figure numbers in soft off-white hex #f4f4f6, '$9.99' large, '$12-17' smaller and struck", "position": "left-aligned block", "action": "set as clean typography" },
+    { "description": "the '$9.99' figure in warm off-white hex #f4ede0", "position": "the single focal number", "action": "the only signature accent" },
+    { "description": "a reused Claude-subscription badge, no API key shown", "position": "below the numbers", "action": "resting" }
+   ],
+   "style": "editorial typography, no photo, SF Pro tight tracking, the whitespace carries it",
+   "color_palette": ["#050507", "#f4f4f6", "#f4ede0"],
+   "lighting": "flat editorial, even",
+   "mood": "clear, the aha of the math, honest",
+   "camera": { "angle": "flat-on", "lens": "50mm", "depth_of_field": "deep" },
+   "grain": "faint grain",
+   "aspect_ratio": "1:1",
+   "watermark": "a small MicMark glyph in a black rounded square"
+  }
+ }
+}

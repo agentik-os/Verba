@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf8">
+<style>
+@font-face{font-family:'ID';src:url('file://__FONTDIR__/InterDisplay-Bold.otf');font-weight:700}
+@font-face{font-family:'ID';src:url('file://__FONTDIR__/InterDisplay-SemiBold.otf');font-weight:600}
+@font-face{font-family:'ID';src:url('file://__FONTDIR__/InterDisplay-Medium.otf');font-weight:500}
+@font-face{font-family:'ID';src:url('file://__FONTDIR__/InterDisplay-Regular.otf');font-weight:400}
+@font-face{font-family:'IDB';src:url('file://__FONTDIR__/InterDisplay-Black.otf');font-weight:900}
+:root{--text:#f4f4f6;--muted:rgba(244,244,246,.60);--faint:rgba(244,244,246,.40);--rec:#ff5a4d;--accent:#f4ede0;--bg:#050507;--surface:#0c0c10;--border:rgba(255,255,255,.08)}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;overflow:hidden;background:transparent}
+#stage{position:relative;width:1080px;height:1920px;font-family:'ID',sans-serif;-webkit-font-smoothing:antialiased;color:var(--text)}
+.bg{position:absolute;inset:0;background:var(--bg);opacity:0}
+.layer{position:absolute;inset:0}
+.center{position:absolute;left:96px;right:96px;top:50%;transform:translateY(-50%)}
+.line{font-weight:700;letter-spacing:-.035em;line-height:1.02;font-size:96px}
+.line.sm{font-size:74px}
+.line.xs{font-size:60px}
+.muted{color:var(--muted);font-weight:500;letter-spacing:-.02em}
+.accent{color:var(--rec)}
+.warm{color:var(--accent)}
+.w{display:inline-block;will-change:transform,opacity}
+.caret{display:inline-block;width:6px;height:1.05em;background:var(--rec);margin-left:8px;vertical-align:-0.14em;will-change:opacity}
+.recdot{position:absolute;border-radius:50%;background:var(--rec);will-change:transform,opacity}
+.eyebrow{font-size:26px;letter-spacing:.28em;text-transform:uppercase;color:var(--faint);font-weight:600}
+.big{font-family:'IDB',sans-serif;font-weight:900;letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+/* macOS menu-bar pill (product UI) */
+.pillbar{position:absolute;left:50%;transform:translateX(-50%);display:inline-flex;align-items:center;gap:16px;background:rgba(12,12,16,.94);border:1px solid var(--border);border-radius:999px;padding:18px 30px;font-size:30px;color:var(--muted);font-weight:500;box-shadow:0 24px 80px rgba(0,0,0,.55)}
+.pilldot{width:20px;height:20px;border-radius:50%;background:var(--rec);will-change:transform,opacity}
+/* macOS window card (crisp real UI, no blur) */
+.uicard{position:absolute;left:96px;right:96px;background:var(--surface);border:1px solid var(--border);border-radius:26px;box-shadow:0 40px 120px rgba(0,0,0,.6);overflow:hidden}
+.uicard .bar{display:flex;align-items:center;gap:12px;padding:22px 26px;border-bottom:1px solid var(--border)}
+.dotr{width:16px;height:16px;border-radius:50%}
+.uicard .body{padding:34px 30px;font-size:44px;font-weight:500;letter-spacing:-.02em;line-height:1.28;min-height:180px}
+.lock{display:inline-flex;align-items:center;gap:14px;font-size:30px;color:var(--muted);font-weight:500}
+.confirm{display:inline-flex;align-items:center;gap:18px;border:2px solid rgba(255,255,255,.14);border-radius:999px;padding:20px 34px;font-size:34px;font-weight:600;color:var(--text);letter-spacing:-.01em;background:rgba(255,255,255,.03)}
+.chk{width:34px;height:34px;border-radius:50%;background:var(--rec);display:inline-flex;align-items:center;justify-content:center;color:#0a0a0d;font-size:22px;font-weight:900}
+.mkwrap{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:0}
+.mk{width:270px;height:270px;border-radius:60px;object-fit:cover;box-shadow:0 40px 120px rgba(0,0,0,.6)}
+.cta-sub{font-size:36px;color:var(--muted);font-weight:500;letter-spacing:-.01em}
+.pill{display:inline-flex;align-items:center;gap:16px;border:1.5px solid rgba(255,255,255,.12);border-radius:999px;padding:14px 26px;font-size:30px;color:var(--muted);font-weight:500}
+.vig{position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 42%,transparent 40%,rgba(5,5,7,.55) 100%);pointer-events:none}
+.grain{position:absolute;inset:0;opacity:.05;pointer-events:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='120' height='120' filter='url(%23n)' opacity='0.5'/></svg>")}
+</style></head>
+<body>
+<div id="stage">
+  <div class="bg" id="bg"></div>
+  <div class="layer" id="scene"></div>
+  <div class="vig" id="vig" style="opacity:0"></div>
+  <div class="grain" id="grain" style="opacity:0"></div>
+</div>
+<script>
+// Data-driven caption timeline. SCRIPT is injected by the engine as window.__SCRIPT.
+// It defines 5 scenes with copy, on a fixed 5-beat structure (~16s):
+//   s1 HOOK (near-black)  s2 caption-over-hero-video  s3 STAT/UI card (near-black)
+//   s4 caption-over-hands-video (product UI, dictated text + caret)  s5 CTA (near-black)
+const S = window.__SCRIPT;
+const FPS=30, DUR=S.dur||16.0;
+const bg=document.getElementById('bg'), scene=document.getElementById('scene'),
+      vig=document.getElementById('vig'), grain=document.getElementById('grain');
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const inv=(t,a,b)=>clamp((t-a)/(b-a),0,1);
+const easeOutQuint=x=>1-Math.pow(1-clamp(x,0,1),5);
+const snap=x=>easeOutQuint(x);
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function words(str){return str.split(' ').map(w=>`<span class="w">${esc(w)}</span>`).join(' ');}
+// timings (fractions of DUR mapped to seconds); classic 5-beat
+const T={s1:[0,2.7],s2:[2.6,6.4],s3:[6.3,10.4],s4:[10.3,14.4],s5:[14.3,DUR]};
+let built=false, els={};
+function build(){
+  built=true;
+  scene.innerHTML=`
+  <div id="s1" class="layer">
+    <div class="recdot" id="s1dot" style="left:510px;top:520px;width:60px;height:60px"></div>
+    <div class="center" id="s1txt" style="top:52%">
+      <div class="line ${S.s1.size||''}" id="s1l">${words(S.s1.text)}</div>
+    </div>
+  </div>
+  <div id="s2" class="layer" style="opacity:0">
+    <div style="position:absolute;left:96px;right:96px;bottom:430px">
+      <div class="eyebrow" id="s2eye">${esc(S.s2.eyebrow||'')}</div>
+      <div class="line sm" id="s2l" style="margin-top:20px">${S.s2.html}</div>
+    </div>
+  </div>
+  <div id="s3" class="layer" style="opacity:0">
+    ${S.s3.html}
+  </div>
+  <div id="s4" class="layer" style="opacity:0">
+    <div class="pillbar" id="s4pill" style="top:640px"><span class="pilldot" id="s4pd"></span>${esc(S.s4.pill||'Verba')}</div>
+    <div class="uicard" id="s4card" style="top:760px">
+      <div class="bar"><span class="dotr" style="background:#ff5f57"></span><span class="dotr" style="background:#febc2e"></span><span class="dotr" style="background:#28c840"></span></div>
+      <div class="body"><span id="s4typed"></span><span class="caret" id="s4caret"></span></div>
+    </div>
+    <div style="position:absolute;left:96px;right:96px;top:1120px">${S.s4.below||''}</div>
+  </div>
+  <div id="s5" class="layer" style="opacity:0">
+    <div class="mkwrap" id="s5wrap" style="top:42%">
+      <img class="mk" id="s5mk" src="file://__ASSETDIR__/mark.png">
+      <div id="s5t1" class="line sm" style="font-size:56px;text-align:center;margin-top:52px;max-width:880px">${esc(S.s5.brand||'Verba')}</div>
+      <div id="s5t2" class="cta-sub" style="text-align:center;margin-top:18px;max-width:820px">${esc(S.s5.sub||'')}</div>
+      <div id="s5cta" style="margin-top:44px;display:flex;align-items:center;gap:20px">
+        <span class="pill"><span class="recdot" style="position:relative;left:0;top:0;width:22px;height:22px;display:inline-block" id="s5dot"></span>${esc(S.s5.cta||'verba.run')}</span>
+      </div>
+    </div>
+  </div>`;
+  els={};
+  ['s1','s1dot','s1l','s2','s2eye','s2l','s3','s4','s4pd','s4card','s4typed','s4caret','s5','s5mk','s5t1','s5t2','s5cta','s5dot','s5wrap'].forEach(id=>els[id]=document.getElementById(id));
+  els.s3els=S.s3.ids.map(id=>document.getElementById(id)).filter(Boolean);
+}
+function setWords(container,t,start,stagger,rise){
+  const ws=container.querySelectorAll('.w');
+  ws.forEach((w,i)=>{const a=start+i*stagger;const p=snap(inv(t,a,a+.42));w.style.opacity=p;w.style.transform=`translateY(${(1-p)*(rise||34)}px)`;});
+}
+function pulse(t,period){const ph=(t%period)/period;const s=.82+.18*(1+Math.cos(ph*2*Math.PI))/2;return {scale:s,op:.55+.45*(1+Math.cos(ph*2*Math.PI))/2};}
+function animate(t){
+  if(!built) build();
+  const nearBlack=(t<T.s1[1])||(t>=T.s3[0]&&t<T.s3[1])||(t>=T.s5[0]);
+  bg.style.opacity=nearBlack?1:0; vig.style.opacity=nearBlack?1:0; grain.style.opacity=nearBlack?1:0;
+  for(const k of ['s1','s2','s3','s4','s5']) els[k].style.opacity=0;
+  // S1 HOOK
+  if(t<T.s1[1]+0.1){
+    els.s1.style.opacity=1;
+    const din=snap(inv(t,0.05,0.55)); const pl=pulse(t,1.6);
+    els.s1dot.style.opacity=din*pl.op; els.s1dot.style.transform=`scale(${(0.3+0.7*din)*pl.scale})`;
+    setWords(els.s1l,t,0.55,0.05,40);
+    els.s1.style.opacity=1-inv(t,T.s1[1]-0.35,T.s1[1]+0.1);
+  }
+  // S2 over hero video
+  if(t>=T.s2[0]-0.1&&t<T.s2[1]+0.1){
+    const inn=inv(t,T.s2[0],T.s2[0]+0.35), ex=inv(t,T.s2[1]-0.4,T.s2[1]);
+    els.s2.style.opacity=Math.min(inn,1-ex);
+    els.s2eye.style.opacity=snap(inv(t,T.s2[0],T.s2[0]+0.4));
+    els.s2eye.style.transform=`translateX(${(1-snap(inv(t,T.s2[0],T.s2[0]+0.4)))*-30}px)`;
+    setWords(els.s2l,t,T.s2[0]+0.35,0.06,34);
+  }
+  // S3 STAT / UI card
+  if(t>=T.s3[0]-0.1&&t<T.s3[1]+0.1){
+    const inn=inv(t,T.s3[0],T.s3[0]+0.3), ex=inv(t,T.s3[1]-0.4,T.s3[1]);
+    els.s3.style.opacity=Math.min(inn,1-ex);
+    S.s3.reveal(t,T.s3[0],els,{snap,inv,setWords});
+  }
+  // S4 product UI: dictated text appears word-by-word with caret + pulsing pill dot
+  if(t>=T.s4[0]-0.1&&t<T.s4[1]+0.1){
+    const inn=inv(t,T.s4[0],T.s4[0]+0.35), ex=inv(t,T.s4[1]-0.4,T.s4[1]);
+    els.s4.style.opacity=Math.min(inn,1-ex);
+    const pl=pulse(t,1.4); els.s4pd.style.transform=`scale(${pl.scale})`; els.s4pd.style.opacity=pl.op;
+    // typewriter: reveal words of S.s4.dictate across the scene
+    const dw=S.s4.dictate.split(' ');
+    const start=T.s4[0]+0.5, per=0.26;
+    const n=clamp(Math.floor((t-start)/per)+1,0,dw.length);
+    els.s4typed.textContent=dw.slice(0,n).join(' ');
+    // caret blink
+    els.s4caret.style.opacity=(Math.floor(t*2)%2===0)?1:0.15;
+    if(S.s4.belowReveal) S.s4.belowReveal(t,T.s4[0],els,{snap,inv});
+  }
+  // S5 CTA
+  if(t>=T.s5[0]-0.1){
+    els.s5.style.opacity=Math.min(inv(t,T.s5[0],T.s5[0]+0.4),1);
+    const mk=snap(inv(t,T.s5[0],T.s5[0]+0.55));
+    els.s5mk.style.transform=`scale(${0.82+0.18*mk})`; els.s5mk.style.opacity=mk;
+    els.s5t1.style.opacity=snap(inv(t,T.s5[0]+0.5,T.s5[0]+0.9));
+    els.s5t1.style.transform=`translateY(${(1-snap(inv(t,T.s5[0]+0.5,T.s5[0]+0.9)))*24}px)`;
+    els.s5t2.style.opacity=snap(inv(t,T.s5[0]+0.75,T.s5[0]+1.2));
+    els.s5t2.style.transform=`translateY(${(1-snap(inv(t,T.s5[0]+0.75,T.s5[0]+1.2)))*22}px)`;
+    const cta=snap(inv(t,T.s5[0]+1.3,T.s5[0]+1.75));
+    els.s5cta.style.opacity=cta; els.s5cta.style.transform=`translateY(${(1-cta)*22}px)`;
+    const pl=pulse(t,1.6); els.s5dot.style.transform=`scale(${pl.scale})`; els.s5dot.style.opacity=pl.op;
+  }
+}
+window.__seek=function(t){animate(t);return true;};
+window.__ready=true;
+window.__DUR=DUR; window.__T=T;
+animate(0);
+</script>
+</body></html>
