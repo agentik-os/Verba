@@ -21,6 +21,13 @@ const DAYS: Day[] = [
     summary: "Meet the new Verba: a Features page, a calmer first run, gentle discovery, and one model everywhere. Verba now grows with you.",
     entries: [
       {
+        version: "0.9.44",
+        title: "Styles now in Settings",
+        items: [
+          "Your tone and format Styles are now a section in Settings, alongside everything else you tune.",
+        ],
+      },
+      {
         version: "0.9.43",
         title: "A quick tour of what's new",
         items: [

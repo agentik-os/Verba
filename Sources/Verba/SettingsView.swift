@@ -8,7 +8,7 @@ import EventKit
 
 private enum SettingsSection: String, CaseIterable, Identifiable {
     // Connected apps moved out of Settings into the sidebar (Library ▸ Connected apps) — it's a feature, not a setting.
-    case account, dictation, rewriting, action, output, customize, shortcuts, privacy, updates, changelog
+    case account, dictation, rewriting, action, output, customize, styles, shortcuts, privacy, updates, changelog
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -18,6 +18,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .action:        return L("Action mode")
         case .output:        return L("Output & feedback")
         case .customize:     return L("Customize")
+        case .styles:        return L("Styles")
         case .shortcuts:     return L("Shortcuts")
         case .privacy:       return L("Privacy & history")
         case .updates:       return L("Updates & about")
@@ -32,6 +33,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .action:        return "bolt.fill"
         case .output:        return "arrow.down.doc"
         case .customize:     return "paintpalette"
+        case .styles:        return "paintbrush"
         case .shortcuts:     return "keyboard"
         case .privacy:       return "lock.shield"
         case .updates:       return "arrow.triangle.2.circlepath"
@@ -46,6 +48,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         case .action:        return L("Destinations, search, tools")
         case .output:        return L("Paste, overlay, sounds")
         case .customize:     return L("Glass, accent, widget")
+        case .styles:        return L("Tone & format layer")
         case .shortcuts:     return L("Triggers & chords")
         case .privacy:       return L("History, permissions")
         case .updates:       return L("Version & releases")
@@ -191,6 +194,7 @@ struct SettingsView: View {
         case .action:        actionDetail
         case .output:        outputDetail
         case .customize: customizeDetail
+        case .styles: StyleView().frame(minHeight: 420)
         case .shortcuts: shortcutsDetail
         case .privacy:   privacyDetail
         case .updates:   updatesDetail
