@@ -34,6 +34,7 @@ export default function Home() {
       <JarvisAction />
       <TryNow />
       <FeatureGrid />
+      <GrowsWithYou />
       <WhyBest />
       <Jokes />
       <Features />
@@ -70,6 +71,40 @@ function FeatureGrid() {
       </div>
       <div className="mt-8 text-center">
         <Link href="/features" className="inline-flex items-center gap-2 rounded-full glass px-6 py-2.5 text-sm font-medium hover:opacity-90">See all features →</Link>
+      </div>
+    </section>
+  );
+}
+
+// "Verba grows with you" — the 3-level story that mirrors the in-app Features page (roadmap §10).
+function GrowsWithYou() {
+  const levels = [
+    { tag: "Essentials", tagline: "On from day one. Press Fn and talk.", items: ["Raw dictation", "Polish", "Translate", "Prompt"] },
+    { tag: "Advanced", tagline: "Turn on when you need them.", items: ["Notes", "Tasks", "Advanced modes", "Transcribe files"] },
+    { tag: "Power", tagline: "The deep end. Your voice, everywhere.", items: ["JARVIS", "Snippets", "Transforms"] },
+  ];
+  return (
+    <section id="grows-with-you" className="py-28">
+      <Reveal>
+        <HeadCenter eyebrow="Grows with you" index="07" title="Start simple. Add power when you want it." lead="New Macs begin with the four essentials, press Fn and talk. Everything else is one click away in the Features page, whenever you're ready. Nothing to wade through on day one." />
+      </Reveal>
+      <div className="mx-auto mt-12 grid max-w-5xl gap-4 sm:grid-cols-3">
+        {levels.map((lv, i) => (
+          <Reveal key={lv.tag} delay={i * 60}>
+            <div className="card r-card h-full px-6 py-6">
+              <p className="mono-meta">{lv.tag}</p>
+              <p className="mt-1 text-sm muted">{lv.tagline}</p>
+              <ul className="mt-4 space-y-2">
+                {lv.items.map((it) => (
+                  <li key={it} className="flex items-center gap-2 text-sm">
+                    <span aria-hidden className="opacity-60">→</span>
+                    {it}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Reveal>
+        ))}
       </div>
     </section>
   );
