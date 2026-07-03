@@ -33,7 +33,19 @@ struct ChangelogDay: Identifiable {
 enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
-            date: "July 2, 2026", tag: "Today",
+            date: "July 3, 2026", tag: "Today",
+            summary: "A new Features page: browse everything Verba can do and switch each power on or off. Verba now grows with you.",
+            entries: [
+                ChangelogEntry(version: "0.9.38",
+                    title: "Features: turn on Verba one power at a time",
+                    items: [
+                        "New Features page in the sidebar: see everything Verba can do, grouped as Essentials, Advanced and Power, and switch each capability on or off in one click.",
+                        "New Macs start with the four essentials (Raw, Polish, Translate, Prompt) and grow from there. Your existing setup is completely untouched, everything you had stays on.",
+                        "Turning a feature off only hides it, it never deletes your notes, tasks or history. In a hurry? One Enable everything button turns it all on.",
+                    ]),
+            ]),
+        ChangelogDay(
+            date: "July 2, 2026",
             summary: "Our community moves to Telegram.",
             entries: [
                 ChangelogEntry(version: "0.9.37",

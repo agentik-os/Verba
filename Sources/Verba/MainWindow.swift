@@ -1,13 +1,14 @@
 import SwiftUI
 
 enum NavItem: String, CaseIterable, Identifiable {
-    case home, notes, todos, insights, modes, dictionary, snippets, style, transforms, scratchpad, files, connectedApps, history, achievements, leaderboard, wishlist, feedback, freeMonth, settings
+    case home, features, notes, todos, insights, modes, dictionary, snippets, style, transforms, scratchpad, files, connectedApps, history, achievements, leaderboard, wishlist, feedback, freeMonth, settings
     var id: String { rawValue }
     var title: String {
         switch self {
         case .achievements: return "Achievements"; case .home: return "Home"; case .notes: return "Notes"; case .todos: return "Task Manager"; case .insights: return "Insights"; case .modes: return "Modes"
         case .dictionary: return "Dictionary"; case .snippets: return "Snippets"; case .style: return "Style"
         case .transforms: return "Transforms"; case .scratchpad: return "Scratchpad"; case .files: return "Transcribe file"
+        case .features: return "Features"
         case .connectedApps: return "Connected apps"
         case .history: return "History"; case .leaderboard: return "Leaderboard"
         case .wishlist: return "Wishlist"; case .feedback: return "Feedback"; case .freeMonth: return "Free Month"; case .settings: return "Settings"
@@ -19,6 +20,7 @@ enum NavItem: String, CaseIterable, Identifiable {
         case .dictionary: return "character.book.closed"; case .snippets: return "text.badge.plus"
         case .style: return "paintbrush"; case .transforms: return "arrow.triangle.2.circlepath"
         case .scratchpad: return "note.text"; case .files: return "waveform.badge.plus"
+        case .features: return "square.grid.2x2"
         case .connectedApps: return "app.connected.to.app.below.fill"
         case .history: return "clock.arrow.circlepath"
         case .leaderboard: return "trophy"; case .wishlist: return "lightbulb"
@@ -153,6 +155,14 @@ struct MainWindow: View {
         .onChange(of: settings.notesTabEnabled) { _, on in
             if !on, selection == .notes { selection = .home }
         }
+        .onChange(of: settings.enabledFeatures) { _, _ in
+            // Disabling a feature hides its tab; if you're viewing it, fall back to the Features page.
+            let gated: [NavItem: String] = [
+                .notes: FeatureFlags.notes, .todos: FeatureFlags.tasks, .files: FeatureFlags.transcribe,
+                .connectedApps: FeatureFlags.jarvis, .snippets: FeatureFlags.snippets, .transforms: FeatureFlags.transforms,
+            ]
+            if let sel = selection, let key = gated[sel], !settings.isFeatureEnabled(key) { selection = .features }
+        }
         .onChange(of: settings.todosTabEnabled) { _, on in
             if !on, selection == .todos { selection = .home }
         }
@@ -167,6 +177,7 @@ struct MainWindow: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 2) {
                     row(.home)
+                    row(.features)   // permanent: the catalog where inactive features are turned on
                     if settings.navVisible(.insights) { row(.insights) }
                     if settings.navVisible(.history) { row(.history) }
 
@@ -175,8 +186,8 @@ struct MainWindow: View {
                         withAnimation(appearance.reduceMotion ? nil : .easeInOut(duration: 0.18)) { toolsCollapsed.toggle() }
                     }
                     if !toolsCollapsed {
-                        if settings.todosTabEnabled { row(.todos) }
-                        if settings.notesTabEnabled { row(.notes) }
+                        if settings.isFeatureEnabled(FeatureFlags.tasks) && settings.todosTabEnabled { row(.todos) }
+                        if settings.isFeatureEnabled(FeatureFlags.notes) && settings.notesTabEnabled { row(.notes) }
                         if settings.navVisible(.scratchpad) { row(.scratchpad) }
                     }
 
@@ -186,11 +197,11 @@ struct MainWindow: View {
                     if !libraryCollapsed {
                         row(.modes)
                         if settings.navVisible(.dictionary) { row(.dictionary) }
-                        if settings.navVisible(.snippets) { row(.snippets) }
+                        if settings.isFeatureEnabled(FeatureFlags.snippets) && settings.navVisible(.snippets) { row(.snippets) }
                         if settings.navVisible(.style) { row(.style) }
-                        if settings.navVisible(.transforms) { row(.transforms) }
-                        if settings.navVisible(.files) { row(.files) }
-                        row(.connectedApps)   // JARVIS connected apps — a first-class feature, not buried in Settings
+                        if settings.isFeatureEnabled(FeatureFlags.transforms) && settings.navVisible(.transforms) { row(.transforms) }
+                        if settings.isFeatureEnabled(FeatureFlags.transcribe) && settings.navVisible(.files) { row(.files) }
+                        if settings.isFeatureEnabled(FeatureFlags.jarvis) { row(.connectedApps) }   // JARVIS connected apps
                     }
 
                     // Collapsible "Community" group (leaderboard / wishlist / free month + Telegram).
@@ -401,6 +412,7 @@ struct MainWindow: View {
     private func detail(_ item: NavItem) -> some View {
         switch item {
         case .home: HomeView()
+        case .features: FeaturesView()
         case .notes: NotesView()
         case .todos: TodosView()
         case .insights: InsightsView()

@@ -418,7 +418,26 @@ extension Profile {
     static let renamedBuiltins: [String: String] = ["Flow": "Raw"]
 }
 
+/// Progressive-disclosure feature catalog (roadmap 2026-07-03). Level-1 essentials — the Raw,
+/// Polish, Translate and Prompt modes — are ALWAYS available and NOT gated here. These keys govern
+/// the toggleable Level-2/3 features so an INACTIVE feature is invisible everywhere: no sidebar
+/// entry, no picker mode, no armed hotkey, no settings section. Existing users are grandfathered
+/// (everything on); brand-new installs start with Level 1 only and grow via the Features page.
+enum FeatureFlags {
+    static let notes = "notes"                 // L2
+    static let tasks = "tasks"                 // L2
+    static let transcribe = "transcribe"       // L2 (Transcribe files)
+    static let advancedModes = "advancedModes" // L2: Intent, Context, and custom modes
+    static let jarvis = "jarvis"               // L3 (Action mode + Connected apps)
+    static let snippets = "snippets"           // L3
+    static let transforms = "transforms"       // L3
+    /// Every toggleable feature, in catalog order. "Enable everything" / grandfathering seed this set.
+    static let allToggleable: [String] = [notes, tasks, transcribe, advancedModes, jarvis, snippets, transforms]
+}
+
 final class Settings: ObservableObject {
+    /// The Level-1 built-in modes, always shown in the picker regardless of the Advanced-modes feature.
+    static let level1ModeNames: Set<String> = ["Raw", "Polish", "Translate", "Prompt"]
     static let shared = Settings()
     private let d = UserDefaults.standard
 
@@ -432,6 +451,8 @@ final class Settings: ObservableObject {
     @Published var micUID: String { didSet { d.set(micUID, forKey: "micUID") } }
     // Sidebar items the user hid (NavItem raw values). Home / Modes / Settings are always shown.
     @Published var hiddenNav: Set<String> { didSet { d.set(Array(hiddenNav), forKey: "hiddenNav") } }
+    /// Enabled toggleable (L2/L3) features. Seeded once at first load (grandfather vs new install); see init.
+    @Published var enabledFeatures: Set<String> { didSet { d.set(Array(enabledFeatures), forKey: "enabledFeatures") } }
     @Published var repromptBackend: RepromptBackend { didSet { d.set(repromptBackend.rawValue, forKey: "repromptBackend") } }
     @Published var openRouterModel: String { didSet { d.set(openRouterModel, forKey: "openRouterModel") } }
     @Published var localLLMModel: String { didSet { d.set(localLLMModel, forKey: "localLLMModel") } }
@@ -662,6 +683,22 @@ final class Settings: ObservableObject {
         if on { hiddenNav.remove(item.rawValue) } else { hiddenNav.insert(item.rawValue) }
     }
 
+    // MARK: - FeatureFlags (progressive disclosure)
+    func isFeatureEnabled(_ key: String) -> Bool { enabledFeatures.contains(key) }
+    func setFeature(_ key: String, _ on: Bool) {
+        if on { enabledFeatures.insert(key) } else { enabledFeatures.remove(key) }
+    }
+    /// "Enable everything (I know what I'm doing)" — turns on every toggleable feature.
+    func enableAllFeatures() { enabledFeatures = Set(FeatureFlags.allToggleable) }
+
+    /// Modes shown in the picker / menu / cycle: all when Advanced modes is active, else only the
+    /// Level-1 four (Raw, Polish, Translate, Prompt). Keeps hidden advanced/custom modes out of reach.
+    var visibleProfiles: [Profile] {
+        isFeatureEnabled(FeatureFlags.advancedModes)
+            ? profiles
+            : profiles.filter { Settings.level1ModeNames.contains($0.name) }
+    }
+
     /// Verify the subscription against verba.run (token-authenticated) and update `isPro`.
     /// THE RULE: once Pro, the ONLY thing that revokes Pro is an explicit server "no"
     /// (HTTP 200, active:false, on a token-authenticated check). Wifi changes, offline,
@@ -700,6 +737,18 @@ final class Settings: ObservableObject {
         claudeModel = d.string(forKey: "claudeModel") ?? "claude-sonnet-4-6"
         micUID = d.string(forKey: "micUID") ?? ""
         hiddenNav = Set(d.stringArray(forKey: "hiddenNav") ?? [])
+        // FeatureFlags: seed ONCE. An install that has already onboarded is an existing user →
+        // grandfather EVERYTHING on so no beta tester loses a tab or hotkey. A brand-new install
+        // (never onboarded) starts at Level 1 only and unlocks the rest from the Features page.
+        let seededFeatures: Set<String>
+        if let savedFeatures = d.stringArray(forKey: "enabledFeatures") {
+            seededFeatures = Set(savedFeatures)
+        } else {
+            let existingUser = (d.object(forKey: "onboarded") as? Bool) ?? false
+            seededFeatures = existingUser ? Set(FeatureFlags.allToggleable) : []
+            d.set(Array(seededFeatures), forKey: "enabledFeatures")
+        }
+        enabledFeatures = seededFeatures
         repromptBackend = RepromptBackend(rawValue: d.string(forKey: "repromptBackend") ?? "") ?? .auto
         openRouterModel = d.string(forKey: "openRouterModel") ?? "anthropic/claude-3.7-sonnet"
         localLLMModel = d.string(forKey: "localLLMModel") ?? "qwen2.5:7b"

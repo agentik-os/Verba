@@ -1187,7 +1187,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Advance the active mode by `delta` (default = next). While recording it switches THIS
     /// dictation's mode live (no interruption); from idle it sets the default and shows a brief hint.
     private func cycleMode(_ delta: Int = 1) {
-        let profiles = Settings.shared.profiles
+        let profiles = Settings.shared.visibleProfiles   // cycle only through enabled (visible) modes
         guard !profiles.isEmpty else { return }
         func step(from id: UUID?) -> Profile {
             let cur = profiles.firstIndex { $0.id == id } ?? 0
@@ -1256,7 +1256,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func fnDigit(_ n: Int) -> Bool {
         guard Settings.shared.useFnAsPrimary else { return false }
-        let profiles = Settings.shared.profiles
+        let profiles = Settings.shared.visibleProfiles   // Fn+digit picks among visible modes only
         guard n >= 1, n <= profiles.count else { return false }
         let p = profiles[n - 1]
         InputCoach.shared.note(.doubleFn); Gamification.shared.flag(.pickedModeNum)   // onboarding: "mode picker learned"
@@ -1340,7 +1340,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         overlay.model.menu = true
         overlay.model.recording = false
         overlay.model.paused = false
-        overlay.model.profiles = s.profiles
+        overlay.model.profiles = s.visibleProfiles
         overlay.model.activeID = s.activeProfileID
         overlay.model.onStart = { [weak self] p in
             Settings.shared.activeProfileID = p.id   // picking sets the default too
@@ -1428,7 +1428,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Populate the live mode switcher in the overlay.
             let s = Settings.shared
             let initial = forced ?? s.profile(forBundleID: self.capturedBundleID)
-            self.overlay.model.profiles = s.repromptEnabled ? s.profiles : []
+            self.overlay.model.profiles = s.repromptEnabled ? s.visibleProfiles : []
             self.overlay.model.selectedID = initial.id
             self.overlay.model.onSelect = { [weak self] p in
                 self?.forcedProfile = p
@@ -2095,7 +2095,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let modeHeader = NSMenuItem(title: "Default mode", action: nil, keyEquivalent: "")
         modeHeader.isEnabled = false
         menu.addItem(modeHeader)
-        for p in s.profiles {
+        for p in s.visibleProfiles {
             let mi = NSMenuItem(title: p.name, action: #selector(pickDefaultMode(_:)), keyEquivalent: "")
             mi.target = self
             mi.state = (p.id == s.activeProfileID) ? .on : .off
@@ -2143,7 +2143,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(.separator())
             let redoParent = NSMenuItem(title: "Redo last in…", action: nil, keyEquivalent: "")
             let redoSub = NSMenu()
-            for p in s.profiles {
+            for p in s.visibleProfiles {
                 let mi = NSMenuItem(title: p.name, action: #selector(redoLastMode(_:)), keyEquivalent: "")
                 mi.target = self; mi.representedObject = p.id.uuidString
                 redoSub.addItem(mi)
@@ -2295,7 +2295,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // The Fn-combinations only exist when Fn is the primary trigger (the Fn event tap is live).
         if s.useFnAsPrimary {
-            let maxN = min(max(s.profiles.count, 1), 9)
+            let maxN = min(max(s.visibleProfiles.count, 1), 9)
             m.addItem(.separator())
             header("Modes  (while holding Fn)")
             ref("Fn + Tab", "Next mode  (add ⇧ for previous)")
