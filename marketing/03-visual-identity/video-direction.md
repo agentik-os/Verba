@@ -8,6 +8,8 @@ gate: RIEN ne se publie ni ne s'automatise tant que l'opérateur n'a pas validé
 ---
 # Direction vidéo Verba, refonte complète (v2)
 
+> **AMENDEMENT v4 (2026-07-03)** : montage final industrialisé. Chaîne prouvée : Seedance (rushes UGC parlés) → transcription Whisper word-level (OpenAI, cale les captions + coupe les silences) → captions ASS mot-à-mot bold SF-Pro-like sans chevauchement → nappe `sonilo_music` duckée sous les voix → end card de marque. Template réutilisable : `Station/Marketing/projects/verba/assets/video/promos/build-promo.sh` (+ `.notes.md`). Première promo `verba-promo-final.mp4` (31s, vox-pop 4 personnes) validée.
+
 > **AMENDEMENT v3 (2026-07-02, opérateur)** : la matière des vidéos = **UGC d'humains IA qui parlent** (Veo 3.1, dialogue + lip-sync natifs, quality high), situations réelles de type promo d'outil. Le motion design « photo + texte par-dessus » est REJETÉ. **INTERDIT de montrer un écran ou une interface d'ordinateur** (l'IA générative invente des UI fausses) : MacBook dos caméra ou fermé, l'humain et sa main sur la touche Fn oui, l'écran jamais. Les 2 clips de référence validés en interne : selfie-vlog 9:16 + scène bureau 16:9 (jobs Higgsfield `0a4c862b`, `2e808349`). Déclinaisons designs statiques : chaque visuel validé sort en 9:16 / 4:5 / 1:1 / 16:9 (image-to-image nano_banana_2, texte identique lettre à lettre).
 
 ## 1. Post-mortem de l'existant (rejeté par l'opérateur, 2026-07-02)
