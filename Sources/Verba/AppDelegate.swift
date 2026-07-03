@@ -442,6 +442,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Fn + Z (or a custom shortcut): open the Notes tab and immediately start a new note recording.
     @objc func startNoteRecording() {
         guard Settings.shared.onboarded else { openOnboarding(); return }
+        guard Settings.shared.isFeatureEnabled(FeatureFlags.notes) else { return }   // inactive feature = inert hotkey
         // Fn+Z chord: the bare Fn already auto-started a dictation — discard it and record a note.
         abortPhantomFnDictation()
         // Any OTHER in-flight dictation (a deliberate one, no Fn hold) must not collide with a note.
@@ -468,6 +469,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// regardless of the active mode or the Labs "Agentic actions" toggle.
     @objc func startActionMode() {
         guard Settings.shared.onboarded else { openOnboarding(); return }
+        guard Settings.shared.isFeatureEnabled(FeatureFlags.jarvis) else { return }   // inactive feature = inert hotkey
         // Fn+X chord: the bare Fn already auto-started a dictation — discard it and record an action.
         abortPhantomFnDictation()
         // Don't collide with any OTHER in-flight capture (deliberate dictation / note / to-do).
@@ -543,6 +545,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// First call starts recording; a second call (or pressing the button again) stops & processes.
     @objc func startTodoCapture() {
         guard Settings.shared.onboarded else { openOnboarding(); return }
+        guard Settings.shared.isFeatureEnabled(FeatureFlags.tasks) else { return }   // inactive feature = inert hotkey
         // A bare-Fn tap already stopped this capture (Fn+T/§ stop chord): swallow the trailing
         // T/§-keyDown so it doesn't immediately restart a new capture.
         if todoCaptureJustStopped { todoCaptureJustStopped = false; return }
@@ -960,6 +963,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// ⌥X pressed: if text is selected in the frontmost app, show the glass transform picker
     /// (numbered 1-9) at the cursor; picking one runs it on the selection and replaces it.
     private func showTransformPicker() {
+        guard Settings.shared.isFeatureEnabled(FeatureFlags.transforms) else { return }   // inactive feature = inert hotkey
         guard state == .idle else { return }   // not while recording/processing
         // A transform is already applying in the background (multi-second, network-bound): don't let
         // a second ⌥X re-enter — its paste would collide with the in-flight one into whatever is
