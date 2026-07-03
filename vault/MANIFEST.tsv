@@ -1,0 +1,4 @@
+.vercel__.env.production.local	.vercel/.env.production.local	dotenv
+website__.env.local	website/.env.local	dotenv
+website__.vercel__.env.preview.local	website/.vercel/.env.preview.local	dotenv
+website__.vercel__.env.production.local	website/.vercel/.env.production.local	dotenv
