@@ -31,6 +31,14 @@ const JSONLD = {
   ],
 };
 
+// The 3-level structure (roadmap §10.4), mirroring the in-app Features page. Grouped by slug so the
+// FEATURES data stays untouched.
+const LEVELS: { tag: string; blurb: string; slugs: string[] }[] = [
+  { tag: "Essentials", blurb: "On from day one. Press Fn and talk.", slugs: ["dictation-modes", "live-translation"] },
+  { tag: "Advanced", blurb: "Turn on when you need them.", slugs: ["voice-notes", "voice-tasks", "context-mode"] },
+  { tag: "Power", blurb: "The deep end. Your voice, everywhere.", slugs: ["jarvis-voice-agent"] },
+];
+
 export default function FeaturesHub() {
   return (
     <main className="relative mx-auto max-w-5xl px-6 pb-28">
@@ -51,18 +59,30 @@ export default function FeaturesHub() {
         </div>
       </section>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {FEATURES.map((f, i) => (
-          <Reveal key={f.slug} delay={i * 40}>
-            <Link href={`/features/${f.slug}`} className="glass lift block h-full rounded-3xl p-6 transition hover:opacity-95">
-              <p className="mono-meta">{f.eyebrow}</p>
-              <h2 className="mt-2 text-lg font-semibold tracking-tight">{f.h1}</h2>
-              <p className="mt-2 text-sm leading-relaxed muted">{f.metaDescription}</p>
-              <span className="mt-4 inline-block text-sm font-medium">Learn more →</span>
-            </Link>
-          </Reveal>
-        ))}
-      </div>
+      {LEVELS.map((lv) => (
+        <section key={lv.tag} className="mb-12">
+          <div className="mb-4">
+            <p className="mono-meta">{lv.tag}</p>
+            <p className="text-sm muted">{lv.blurb}</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {lv.slugs.map((slug, i) => {
+              const f = FEATURES.find((x) => x.slug === slug);
+              if (!f) return null;
+              return (
+                <Reveal key={slug} delay={i * 40}>
+                  <Link href={`/features/${f.slug}`} className="glass lift block h-full rounded-3xl p-6 transition hover:opacity-95">
+                    <p className="mono-meta">{f.eyebrow}</p>
+                    <h2 className="mt-2 text-lg font-semibold tracking-tight">{f.h1}</h2>
+                    <p className="mt-2 text-sm leading-relaxed muted">{f.metaDescription}</p>
+                    <span className="mt-4 inline-block text-sm font-medium">Learn more →</span>
+                  </Link>
+                </Reveal>
+              );
+            })}
+          </div>
+        </section>
+      ))}
     <SiteFooter />
     </main>
   );
