@@ -193,9 +193,36 @@ struct OnboardingView: View {
             title(L("Choose your engine"), L("How Verba cleans up and understands your speech. Transcription is always on-device."))
             engineCard(.localLLM, "lock.laptopcomputer", L("Fully local"), L("Open-source models running on your Mac. Nothing ever leaves the device."), badge: L("Recommended"))
             engineCard(.auto, "bolt.fill", L("Verba managed"), L("Works instantly. Zero setup."))
-            engineCard(.claudeCode, "brain", L("My Claude subscription"), L("Use your Claude Pro/Max plan, no API key. Install the Claude CLI and run “claude” once in Terminal to sign in first."))
+            engineCard(.claudeCode, "brain", L("My Claude subscription"), L("Use your Claude Pro/Max plan, no API key."))
+            engineExplainer
             Text(L("You can change this anytime in Settings ▸ AI rewriting.")).font(.caption).foregroundStyle(.secondary)
         }
+    }
+
+    /// Contextual "how this works" shown under the cards for the selected engine — so the user
+    /// understands the Claude-CLI (terminal, auto-detected) vs local trade-off before continuing.
+    @ViewBuilder private var engineExplainer: some View {
+        switch settings.repromptBackend {
+        case .claudeCode:
+            explainerBox("terminal", L("How it works"), L("This uses the Claude Code command-line tool, not the desktop app. Install it once (npm i -g @anthropic-ai/claude-code), run “claude” in Terminal and sign in with your Claude plan. Verba then finds and connects to it automatically. Best for complex JARVIS actions, they plan more reliably on Claude."))
+        case .localLLM:
+            explainerBox("lock.laptopcomputer", L("How it works"), L("Verba downloads and runs open-source models on your Mac. Everything stays on the device. Everyday dictation and cleanup work great; for complex multi-step JARVIS actions, your Claude plan is more reliable."))
+        default:
+            EmptyView()
+        }
+    }
+
+    private func explainerBox(_ icon: String, _ title: String, _ body: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: icon).foregroundStyle(.tint).font(.system(size: 14)).frame(width: 18)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(.caption.weight(.semibold))
+                Text(body).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+        .background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .transition(.opacity)
     }
 
     private func engineCard(_ backend: RepromptBackend, _ icon: String, _ name: String, _ desc: String, badge: String? = nil) -> some View {
@@ -253,11 +280,15 @@ struct OnboardingView: View {
             }
             actionRow("hand.tap", L("Single tap"), L("Tap to start recording, tap again to send."), done: coach.singleFn)
             actionRow("hand.tap.fill", L("Press & hold"), L("Hold while you speak, release to send (push-to-talk)."), done: coach.holdFn)
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text(L("Try it here")).font(.caption.weight(.semibold)).foregroundStyle(.secondary).textCase(.uppercase)
-                TextField(L("Click here, press Fn, and speak…"), text: $demoText, axis: .vertical)
-                    .textFieldStyle(.plain).lineLimit(2...4)
-                    .padding(12).background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                TextField(L("Click here, press Fn, and speak. Watch your words appear."), text: $demoText, axis: .vertical)
+                    .textFieldStyle(.plain).font(.system(size: 16)).lineLimit(3...6)
+                    .padding(16)
+                    .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
+                    .background(.softFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.18), lineWidth: 1))
             }
             if coach.singleFn || coach.holdFn {
                 HStack(alignment: .top, spacing: 8) {

@@ -446,7 +446,7 @@ final class Settings: ObservableObject {
     /// One-time onboarding reset. Bump this to guide EVERY existing user through the onboarding again
     /// exactly once on their next launch (used to re-introduce the new 3-screen flow + Features to
     /// beta testers). Stamped per install so it never repeats for the same target.
-    static let onboardingResetTarget = 1
+    static let onboardingResetTarget = 2
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }

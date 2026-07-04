@@ -18,8 +18,16 @@ const DAYS: Day[] = [
   {
     date: "July 4, 2026",
     tag: "Today",
-    summary: "JARVIS is reliable with any engine, including your local model, no more 'took too long'.",
+    summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
     entries: [
+      {
+        version: "0.9.49",
+        title: "A more polished Features page and setup",
+        items: [
+          "The Features page now uses clean Activate pills instead of system switches, marks your always-on Essentials, and each feature opens a bigger detail card. Setup now explains each AI engine, including exactly how the Claude option connects.",
+          "We'll walk you through the refreshed setup once more so everyone sees the new experience. Your setup, shortcuts and data are unchanged.",
+        ],
+      },
       {
         version: "0.9.48",
         title: "JARVIS self-corrects, even on smaller models",

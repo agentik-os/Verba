@@ -81,10 +81,13 @@ struct FeaturesView: View {
         }
     }
 
+    /// The one motion signature reused across this surface (taste: a single spring, not per-view guesses).
+    static let anim = Animation.spring(response: 0.34, dampingFraction: 0.86)
+
     private func card(_ f: Feature) -> some View {
         let on = f.gated ? settings.isFeatureEnabled(f.key) : true
         return HStack(spacing: 12) {
-            // Tapping the icon/text opens the feature's detail sheet; the toggle stays for a quick flip.
+            // Tapping the icon/text opens the feature's detail sheet; the pill flips it quickly.
             Button { detail = f } label: {
                 HStack(spacing: 12) {
                     Image(systemName: f.icon)
@@ -100,20 +103,37 @@ struct FeaturesView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            if f.gated {
-                Toggle("", isOn: Binding(
-                    get: { settings.isFeatureEnabled(f.key) },
-                    set: { settings.setFeature(f.key, $0) }
-                ))
-                .labelsHidden()
-                .toggleStyle(.switch)
-            } else {
-                Label(L("Active"), systemImage: "checkmark.circle.fill")
-                    .font(.caption.weight(.medium)).foregroundStyle(.green).labelStyle(.titleAndIcon)
-            }
+            statusPill(f)
         }
         .padding(14)
         .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        // Essentials read as the core, already-active tier: a hairline accent edge; gated features are plain.
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(f.gated ? Color.clear : Color.primary.opacity(0.14), lineWidth: 1)
+        )
+    }
+
+    /// One coherent pill (no native switch, which jars with the glass): green "On" for essentials,
+    /// a green "Active" / neutral "Activate" toggle for gated features.
+    @ViewBuilder private func statusPill(_ f: Feature) -> some View {
+        if f.gated {
+            let active = settings.isFeatureEnabled(f.key)
+            Button {
+                withAnimation(Self.anim) { settings.setFeature(f.key, !active) }
+            } label: {
+                Text(active ? L("Active") : L("Activate"))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(active ? AnyShapeStyle(.green) : AnyShapeStyle(.primary))
+                    .padding(.horizontal, 12).padding(.vertical, 5)
+                    .background(active ? Color.green.opacity(0.14) : Color.primary.opacity(0.06), in: Capsule())
+                    .overlay(Capsule().strokeBorder(active ? Color.green.opacity(0.30) : Color.primary.opacity(0.16), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+        } else {
+            Label(L("On"), systemImage: "checkmark.circle.fill")
+                .font(.caption.weight(.semibold)).foregroundStyle(.green).labelStyle(.titleAndIcon)
+        }
     }
 
     /// Feature detail sheet (roadmap §5): benefit, what it needs, and Activate/Deactivate.
@@ -126,6 +146,15 @@ struct FeaturesView: View {
                 Spacer()
             }
             Text(f.benefit).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            // Mini-demo placeholder (roadmap §5): a 5-second in-action clip lands here per feature.
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous).fill(.softFill)
+                VStack(spacing: 6) {
+                    Image(systemName: f.icon).font(.system(size: 26)).foregroundStyle(.tint.opacity(0.7))
+                    Text(L("Quick demo coming soon")).font(.caption).foregroundStyle(.tertiary)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 120)
             if !f.requires.isEmpty {
                 Label(f.requires, systemImage: "info.circle")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
@@ -136,17 +165,17 @@ struct FeaturesView: View {
                     Label(L("Always on"), systemImage: "checkmark.seal.fill").foregroundStyle(.green).font(.callout.weight(.medium))
                     Spacer()
                 } else if active {
-                    Button(L("Turn off"), role: .destructive) { settings.setFeature(f.key, false); detail = nil }
+                    Button(L("Turn off"), role: .destructive) { withAnimation(Self.anim) { settings.setFeature(f.key, false) }; detail = nil }
                     Spacer()
                     Text(L("Turning off only hides it, your data is kept.")).font(.caption).foregroundStyle(.tertiary)
                 } else {
-                    Button(L("Activate")) { settings.setFeature(f.key, true); detail = nil }.keyboardShortcut(.defaultAction)
+                    Button(L("Activate")) { withAnimation(Self.anim) { settings.setFeature(f.key, true) }; detail = nil }.keyboardShortcut(.defaultAction)
                     Spacer()
                 }
                 Button(L("Close")) { detail = nil }.buttonStyle(.plain).foregroundStyle(.secondary)
             }
         }
         .padding(24)
-        .frame(width: 420, height: 260)
+        .frame(width: 460, height: 400)
     }
 }
