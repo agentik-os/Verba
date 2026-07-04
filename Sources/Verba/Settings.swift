@@ -435,6 +435,14 @@ enum FeatureFlags {
     static let allToggleable: [String] = [notes, tasks, transcribe, advancedModes, jarvis, snippets, transforms]
 }
 
+/// A named set of modes the user can enable together in one tap (e.g. "Developer" = Intent + Prompt,
+/// "Copywriting" = its own set). Lets someone with dozens of modes flip their active toolkit per workflow.
+struct ModeGroup: Codable, Identifiable, Equatable {
+    var id: UUID = UUID()
+    var name: String
+    var modeIDs: [UUID]
+}
+
 final class Settings: ObservableObject {
     /// The Level-1 built-in modes, always shown in the picker regardless of the Advanced-modes feature.
     static let level1ModeNames: Set<String> = ["Raw", "Polish", "Translate", "Prompt"]
@@ -446,7 +454,7 @@ final class Settings: ObservableObject {
     /// One-time onboarding reset. Bump this to guide EVERY existing user through the onboarding again
     /// exactly once on their next launch (used to re-introduce the new 3-screen flow + Features to
     /// beta testers). Stamped per install so it never repeats for the same target.
-    static let onboardingResetTarget = 2
+    static let onboardingResetTarget = 3
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }
@@ -457,6 +465,13 @@ final class Settings: ObservableObject {
     @Published var hiddenNav: Set<String> { didSet { d.set(Array(hiddenNav), forKey: "hiddenNav") } }
     /// Enabled toggleable (L2/L3) features. Seeded once at first load (grandfather vs new install); see init.
     @Published var enabledFeatures: Set<String> { didSet { d.set(Array(enabledFeatures), forKey: "enabledFeatures") } }
+    /// Modes the user has turned OFF (by id). A disabled mode is hidden from the picker/menu/cycle but
+    /// never deleted. Raw is never disable-able. Empty = every mode enabled (the default).
+    @Published var disabledModeIDs: Set<String> { didSet { d.set(Array(disabledModeIDs), forKey: "disabledModeIDs") } }
+    /// User-defined mode groups (activate a whole workflow's modes at once).
+    @Published var modeGroups: [ModeGroup] {
+        didSet { if let data = try? JSONEncoder().encode(modeGroups) { d.set(data, forKey: "modeGroups") } }
+    }
     @Published var repromptBackend: RepromptBackend { didSet { d.set(repromptBackend.rawValue, forKey: "repromptBackend") } }
     @Published var openRouterModel: String { didSet { d.set(openRouterModel, forKey: "openRouterModel") } }
     @Published var localLLMModel: String { didSet { d.set(localLLMModel, forKey: "localLLMModel") } }
@@ -696,11 +711,31 @@ final class Settings: ObservableObject {
     func enableAllFeatures() { enabledFeatures = Set(FeatureFlags.allToggleable) }
 
     /// Modes shown in the picker / menu / cycle: all when Advanced modes is active, else only the
-    /// Level-1 four (Raw, Polish, Translate, Prompt). Keeps hidden advanced/custom modes out of reach.
+    /// Level-1 four (Raw, Polish, Translate, Prompt) — then minus any the user turned OFF (Raw always
+    /// stays so dictation never breaks). Keeps hidden advanced/custom/disabled modes out of reach.
     var visibleProfiles: [Profile] {
-        isFeatureEnabled(FeatureFlags.advancedModes)
+        let base = isFeatureEnabled(FeatureFlags.advancedModes)
             ? profiles
             : profiles.filter { Settings.level1ModeNames.contains($0.name) }
+        return base.filter { isModeEnabled($0) }
+    }
+
+    // MARK: - Per-mode enable + mode groups
+    /// Raw is never disable-able (it's the always-on fallback); any other mode is enabled unless off.
+    func isModeEnabled(_ p: Profile) -> Bool { p.name == "Raw" || !disabledModeIDs.contains(p.id.uuidString) }
+    func setModeEnabled(_ p: Profile, _ on: Bool) {
+        guard p.name != "Raw" else { return }
+        if on { disabledModeIDs.remove(p.id.uuidString) } else { disabledModeIDs.insert(p.id.uuidString) }
+    }
+    /// Activate a group: enable EXACTLY its modes (plus Raw), disable every other mode — so switching
+    /// workflow flips the whole active toolkit. If the active mode gets disabled, fall back to Raw.
+    func activateModeGroup(_ g: ModeGroup) {
+        let keep = Set(g.modeIDs.map { $0.uuidString })
+        disabledModeIDs = Set(profiles.filter { $0.name != "Raw" && !keep.contains($0.id.uuidString) }
+                                      .map { $0.id.uuidString })
+        if !isModeEnabled(activeProfile) {
+            activeProfileID = profiles.first { $0.name == "Raw" }?.id ?? activeProfileID
+        }
     }
 
     /// Verify the subscription against verba.run (token-authenticated) and update `isPro`.
@@ -753,6 +788,8 @@ final class Settings: ObservableObject {
             d.set(Array(seededFeatures), forKey: "enabledFeatures")
         }
         enabledFeatures = seededFeatures
+        disabledModeIDs = Set(d.stringArray(forKey: "disabledModeIDs") ?? [])
+        modeGroups = (d.data(forKey: "modeGroups")).flatMap { try? JSONDecoder().decode([ModeGroup].self, from: $0) } ?? []
         // Default NEW installs to Fully local (open-source, on-device, no account). Existing users keep
         // their persisted choice — this ?? only applies when nothing was ever saved.
         repromptBackend = RepromptBackend(rawValue: d.string(forKey: "repromptBackend") ?? "") ?? .localLLM

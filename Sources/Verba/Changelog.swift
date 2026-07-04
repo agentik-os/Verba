@@ -36,6 +36,12 @@ enum Changelog {
             date: "July 4, 2026", tag: "Today",
             summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
             entries: [
+                ChangelogEntry(version: "0.9.51",
+                    title: "Turn modes on and off, and group them",
+                    items: [
+                        "Each mode now has an on/off toggle in Modes, so if you keep dozens you can enable just the ones a workflow needs. Disabled modes are hidden from the picker but never deleted (Raw always stays).",
+                        "New mode groups: save your enabled modes as a group (Developer, Copywriting…) and activate the whole set in one tap.",
+                    ]),
                 ChangelogEntry(version: "0.9.50",
                     title: "Update button, feature shortcuts, and two fixes",
                     items: [

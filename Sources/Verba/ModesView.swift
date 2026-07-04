@@ -6,6 +6,8 @@ import UniformTypeIdentifiers
 struct ModesView: View {
     @ObservedObject var settings = Settings.shared
     @State private var selectedID: UUID?
+    @State private var showNewGroup = false
+    @State private var newGroupName = ""
     @State private var showGenerator = false
     @State private var genDescription = ""
     @State private var genBusy = false
@@ -33,6 +35,37 @@ struct ModesView: View {
                         .help(L("Describe a mode and let Verba build it"))
                 }
                 .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
+
+                // Mode GROUPS: tap a group to enable exactly its modes for a workflow (Developer,
+                // Copywriting…). The "+" saves the currently-enabled modes as a new group.
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(settings.modeGroups) { g in
+                            Button { withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { settings.activateModeGroup(g) } } label: {
+                                Label(g.name, systemImage: "rectangle.3.group")
+                                    .font(.caption.weight(.medium)).labelStyle(.titleAndIcon)
+                                    .padding(.horizontal, 10).padding(.vertical, 4)
+                                    .background(.softFill, in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .help(L("Activate this group: enable only its modes"))
+                            .contextMenu {
+                                Button(role: .destructive) { settings.modeGroups.removeAll { $0.id == g.id } } label: {
+                                    Label(L("Delete group"), systemImage: "trash")
+                                }
+                            }
+                        }
+                        Button { newGroupName = ""; showNewGroup = true } label: {
+                            Label(L("Group"), systemImage: "plus")
+                                .font(.caption.weight(.medium))
+                                .padding(.horizontal, 10).padding(.vertical, 4)
+                                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.18), lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                        .help(L("Save the currently-enabled modes as a group"))
+                    }
+                    .padding(.horizontal, 14).padding(.bottom, 8)
+                }
 
                 // EXACT same container as NotesView.sidebar: ScrollView + LazyVStack(spacing:4),
                 // padding h8/v4 — so the cards float with the same gap, not a contiguous List
@@ -80,6 +113,26 @@ struct ModesView: View {
         }
         .onAppear { if selectedID == nil { selectedID = settings.activeProfileID } }
         .sheet(isPresented: $showGenerator) { generatorSheet }
+        .sheet(isPresented: $showNewGroup) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text(L("New mode group")).font(.headline)
+                Text(L("Saves the modes you have enabled right now as a group. Activate it later to switch your whole toolkit in one tap.")).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                TextField(L("Group name (Developer, Copywriting…)"), text: $newGroupName).textFieldStyle(.roundedBorder)
+                HStack {
+                    Spacer()
+                    Button(L("Cancel")) { showNewGroup = false }.buttonStyle(.plain).foregroundStyle(.secondary)
+                    Button(L("Create")) {
+                        let ids = settings.profiles.filter { settings.isModeEnabled($0) && $0.name != "Raw" }.map(\.id)
+                        let name = newGroupName.trimmingCharacters(in: .whitespaces)
+                        if !name.isEmpty { settings.modeGroups.append(ModeGroup(name: name, modeIDs: ids)) }
+                        showNewGroup = false
+                    }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(newGroupName.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+            .padding(20).frame(width: 400)
+        }
         .confirmationDialog(L("Delete this built-in mode?"),
                             isPresented: Binding(get: { pendingDeleteID != nil },
                                                  set: { if !$0 { pendingDeleteID = nil } }),
@@ -144,7 +197,22 @@ struct ModesView: View {
                 }
             }
             Spacer(minLength: 0)
+            // Per-mode on/off: a disabled mode is hidden from the picker/menu/cycle but not deleted.
+            // Raw is the always-on fallback, so it has no toggle.
+            if !p.raw {
+                let on = settings.isModeEnabled(p)
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { settings.setModeEnabled(p, !on) }
+                } label: {
+                    Image(systemName: on ? "circle.inset.filled" : "circle")
+                        .font(.system(size: 13))
+                        .foregroundStyle(on ? AnyShapeStyle(.green) : AnyShapeStyle(.tertiary))
+                }
+                .buttonStyle(.plain)
+                .help(on ? L("Enabled — click to turn this mode off") : L("Disabled — click to turn this mode on"))
+            }
         }
+        .opacity(p.raw || settings.isModeEnabled(p) ? 1 : 0.45)
         .padding(.horizontal, 12).padding(.vertical, 9)
         .glassCard(selected: selected, cornerRadius: 12)
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
