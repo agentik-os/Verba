@@ -93,24 +93,31 @@ enum Wishlist {
     }
 
     static func upvote(_ id: String, _ done: @escaping () -> Void) {
-        ConvexClient.registerDevice(token: AuthToken.current)
-        post(["action": "upvote", "id": id, "uid": myUID, "secret": DeviceSecret.current]) { data in
-            DispatchQueue.main.async {
-                // Remember the toggle locally on success ("did I vote" no longer comes from the server).
-                if let data, let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   obj["ok"] as? Bool == true {
-                    toggleVoted(id)
+        // Register the device and WAIT for it to land BEFORE voting. registerDevice used to be
+        // fire-and-forget, so the vote raced ahead of registration and the server rejected it
+        // (requireDevice → 502) — the button appeared to do nothing. Chaining fixes the race.
+        ConvexClient.call("mutation", "auth:register",
+                          ["uid": myUID, "secret": DeviceSecret.current]) { _ in
+            post(["action": "upvote", "id": id, "uid": myUID, "secret": DeviceSecret.current]) { data in
+                DispatchQueue.main.async {
+                    // Remember the toggle locally on success ("did I vote" no longer comes from the server).
+                    if let data, let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       obj["ok"] as? Bool == true {
+                        toggleVoted(id)
+                    }
+                    done()
                 }
-                done()
             }
         }
     }
 
     static func comment(_ id: String, _ text: String, _ done: @escaping () -> Void) {
-        ConvexClient.registerDevice(token: AuthToken.current)
-        post(["action": "comment", "id": id, "uid": myUID, "secret": DeviceSecret.current,
-              "alias": Settings.shared.username, "text": text]) { _ in
-            DispatchQueue.main.async { done() }
+        ConvexClient.call("mutation", "auth:register",
+                          ["uid": myUID, "secret": DeviceSecret.current]) { _ in
+            post(["action": "comment", "id": id, "uid": myUID, "secret": DeviceSecret.current,
+                  "alias": Settings.shared.username, "text": text]) { _ in
+                DispatchQueue.main.async { done() }
+            }
         }
     }
 

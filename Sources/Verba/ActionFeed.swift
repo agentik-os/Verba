@@ -380,7 +380,8 @@ struct ActionFeedView: View {
                         Text(line)
                             .font(.system(size: 12))
                             .foregroundStyle(.secondary)
-                            .lineLimit(3).fixedSize(horizontal: false, vertical: true)
+                            .fixedSize(horizontal: false, vertical: true)   // show the FULL spoken request, never clip it
+                            .textSelection(.enabled)
                     }
                     if item.status == .failed, let err = item.errorText, !err.isEmpty {
                         Text(err).font(.system(size: 11)).foregroundStyle(.red)

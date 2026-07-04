@@ -21,6 +21,15 @@ const DAYS: Day[] = [
     summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
     entries: [
       {
+        version: "0.9.50",
+        title: "Update button, feature shortcuts, and two fixes",
+        items: [
+          "The in-app 'New version available' button now actually opens the updater (it was opening behind the app on this menu-bar app).",
+          "Open a feature on the Features page to see and change its keyboard shortcut(s), some features have more than one.",
+          "JARVIS now shows your full spoken request without cutting it off, and the wishlist upvote button works (it was racing ahead of device registration).",
+        ],
+      },
+      {
         version: "0.9.49",
         title: "A more polished Features page and setup",
         items: [

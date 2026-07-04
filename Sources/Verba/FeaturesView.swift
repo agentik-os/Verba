@@ -159,6 +159,7 @@ struct FeaturesView: View {
                 Label(f.requires, systemImage: "info.circle")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
+            shortcutSection(f)
             Spacer(minLength: 0)
             HStack {
                 if !f.gated {
@@ -176,6 +177,68 @@ struct FeaturesView: View {
             }
         }
         .padding(24)
-        .frame(width: 460, height: 400)
+        .frame(width: 460, height: 460)
+    }
+
+    /// A feature's keyboard shortcut(s) — editable, plus the built-in Fn combo. Some features have
+    /// several (Tasks = capture + today's glance), so this lists each with its own recorder.
+    @ViewBuilder private func shortcutSection(_ f: Feature) -> some View {
+        let rows = shortcutRows(f)
+        if !rows.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(L("Shortcuts")).font(.caption.weight(.semibold)).foregroundStyle(.secondary).textCase(.uppercase)
+                ForEach(rows, id: \.id) { r in
+                    HStack(spacing: 10) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(r.label).font(.callout)
+                            Text(L("Built-in: ") + r.builtin).font(.caption2).foregroundStyle(.tertiary)
+                        }
+                        Spacer()
+                        ShortcutRecorder(
+                            label: r.code == 0 ? L("Add a shortcut") : shortcutLabel(keyCode: r.code, modifiers: r.mods),
+                            onCapture: r.set)
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+        }
+    }
+
+    private struct ShortcutRow: Identifiable {
+        let id: String
+        let label: String
+        let builtin: String
+        let code: UInt32
+        let mods: UInt32
+        let set: (UInt32, UInt32) -> Void
+    }
+
+    private func shortcutRows(_ f: Feature) -> [ShortcutRow] {
+        let s = settings
+        switch f.key {
+        case FeatureFlags.jarvis:
+            return [ShortcutRow(id: "jarvis", label: L("Run JARVIS"), builtin: "Fn + X",
+                                code: s.actionModeKeyCode, mods: s.actionModeMods,
+                                set: { c, m in s.actionModeKeyCode = c; s.actionModeMods = m })]
+        case FeatureFlags.notes:
+            return [ShortcutRow(id: "note", label: L("Record a note"), builtin: "Fn + Z",
+                                code: s.noteRecordKeyCode, mods: s.noteRecordMods,
+                                set: { c, m in s.noteRecordKeyCode = c; s.noteRecordMods = m })]
+        case FeatureFlags.tasks:
+            return [
+                ShortcutRow(id: "todo", label: L("Capture a to-do"), builtin: "Fn + T",
+                            code: s.todoCaptureKeyCode, mods: s.todoCaptureMods,
+                            set: { c, m in s.todoCaptureKeyCode = c; s.todoCaptureMods = m }),
+                ShortcutRow(id: "glance", label: L("Today's to-dos"), builtin: "⌥ + Fn",
+                            code: s.todoGlanceKeyCode, mods: s.todoGlanceMods,
+                            set: { c, m in s.todoGlanceKeyCode = c; s.todoGlanceMods = m }),
+            ]
+        case FeatureFlags.transforms:
+            return [ShortcutRow(id: "transform", label: L("Transform selection"), builtin: "⌥ + X",
+                                code: UInt32(s.transformHotkeyCode), mods: UInt32(1 << 11) /* option */,
+                                set: { c, _ in s.transformHotkeyCode = Int(c) })]
+        default:
+            return []
+        }
     }
 }

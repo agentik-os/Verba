@@ -43,10 +43,15 @@ final class Updater: ObservableObject {
     }
 
     /// User-initiated check (menu / Settings): shows UI even if already up to date.
-    func checkForUpdates() { controller.updater.checkForUpdates() }
+    /// Verba is a menu-bar / accessory app, so we must ACTIVATE it first — otherwise Sparkle's
+    /// update window opens unfocused behind everything and it looks like the button did nothing.
+    func checkForUpdates() {
+        NSApp.activate(ignoringOtherApps: true)
+        controller.updater.checkForUpdates()
+    }
 
-    /// Install the found update — runs Sparkle's download/install/relaunch UI.
-    func installUpdate() { controller.updater.checkForUpdates() }
+    /// Install the found update — runs Sparkle's download/install/relaunch UI (brought to front).
+    func installUpdate() { checkForUpdates() }
 
     /// Silent background check — refreshes the menu indicator without a popup.
     func checkInBackground() { controller.updater.checkForUpdatesInBackground() }
