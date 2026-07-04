@@ -261,7 +261,9 @@ final class ActionAgentClient {
             planObj = try Self.firstJSON(await Self.runLLM(system: sysResolve, user: resolveMsg))
         }
 
-        // 4 — validate the proposed composio arguments against the real schemas; repair once.
+        // 4 — self-correct the plan SHAPE (weaker models flatten it), then validate the proposed
+        // composio arguments against the real schemas and repair once.
+        Self.normalizePlan(&planObj)
         await Self.repairInvalidActions(&planObj, schemas: schemas)
 
         // 5 — decode into the app's plan model (same JSON contract as before).
@@ -402,6 +404,43 @@ final class ActionAgentClient {
     }
 
     /// Validate every proposed composio action; on errors, one focused ON-DEVICE repair call.
+    /// Self-correct the plan's SHAPE before decode. Small local models routinely flatten the contract
+    /// (put type/tool/arguments directly on the action item instead of nesting under "action", use
+    /// type:"write" instead of "composio", or drop kind/label). Rather than error, we reshape those
+    /// common variants into the exact `{kind,label,action:{type:"composio",tool,arguments}}` the app
+    /// decodes — so a weaker engine still executes instead of failing.
+    private static func normalizePlan(_ plan: inout [String: Any]) {
+        if plan["proposedWriteActions"] == nil, let alt = plan["proposedActions"] {
+            plan["proposedWriteActions"] = alt
+        }
+        guard var items = plan["proposedWriteActions"] as? [[String: Any]] else { return }
+        // Fields that belong to the inner VerbaAction (never the wrapper).
+        let actionKeys = ["type", "tool", "arguments", "title", "start", "end", "due", "notes",
+                          "to", "subject", "body", "query", "name", "url", "script", "target", "input"]
+        for i in items.indices {
+            var it = items[i]
+            // 1 — lift a flattened action into `action` if the wrapper is missing one.
+            if it["action"] == nil {
+                var action: [String: Any] = [:]
+                for k in actionKeys where it[k] != nil { action[k] = it[k] }
+                if action["tool"] != nil || action["type"] != nil { it["action"] = action }
+            }
+            // 2 — any item carrying a composio `tool` IS a composio action, whatever type it claimed.
+            if var action = it["action"] as? [String: Any] {
+                let t = (action["type"] as? String)?.lowercased() ?? ""
+                if action["tool"] != nil, t != "composio" { action["type"] = "composio" }
+                it["action"] = action
+            }
+            // 3 — fill the wrapper fields the decoder requires.
+            if (it["kind"] as? String) == nil { it["kind"] = "composio" }
+            if (it["label"] as? String) == nil {
+                it["label"] = ((it["action"] as? [String: Any])?["tool"] as? String) ?? "Action"
+            }
+            items[i] = it
+        }
+        plan["proposedWriteActions"] = items
+    }
+
     private static func repairInvalidActions(_ plan: inout [String: Any], schemas: [String: Any]) async {
         guard var proposed = plan["proposedWriteActions"] as? [[String: Any]] else { return }
         for (i, p) in proposed.enumerated() {

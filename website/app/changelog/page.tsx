@@ -21,6 +21,13 @@ const DAYS: Day[] = [
     summary: "JARVIS is reliable with any engine, including your local model, no more 'took too long'.",
     entries: [
       {
+        version: "0.9.48",
+        title: "JARVIS self-corrects, even on smaller models",
+        items: [
+          "JARVIS now reshapes a slightly-off plan from a smaller local model into a valid one instead of failing, so a composed request (send an email AND add a calendar event) runs its multiple actions reliably whatever engine you picked.",
+        ],
+      },
+      {
         version: "0.9.47",
         title: "JARVIS runs on your engine, reliably",
         items: [
