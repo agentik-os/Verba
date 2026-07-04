@@ -11,7 +11,7 @@
   "dependencies": {
     "@clerk/nextjs": "6.12.0",
     "@clerk/themes": "^2.2.14",
-    "@composio/core": "^0.10.0",
+    "@composio/core": "^0.13.1",
     "@vercel/analytics": "^2.0.1",
     "convex": "^1.40.0",
     "js-sha256": "^0.11.1",
