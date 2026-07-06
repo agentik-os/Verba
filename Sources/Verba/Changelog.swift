@@ -36,6 +36,11 @@ enum Changelog {
             date: "July 4, 2026", tag: "Today",
             summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
             entries: [
+                ChangelogEntry(version: "0.9.54",
+                    title: "Tidier settings",
+                    items: [
+                        "Your OpenAI transcription key now lives in Dictation, with the engine that uses it, and AI rewriting shows only the one key your chosen backend needs. Cleaner, less confusing.",
+                    ]),
                 ChangelogEntry(version: "0.9.53",
                     title: "Raw dictation is free forever",
                     items: [
