@@ -839,21 +839,25 @@ struct DictionaryView: View {
                 }
                 VStack(alignment: .leading, spacing: 8) {
                     Text(L("Written")).font(.subheadline.weight(.semibold))
-                    TextField(correction ? L("The correct spelling Verba should write") : L("Word the transcriber should spell right"),
-                              text: $store.terms[idx].written).cleanField()
-                        .focused($focusedTerm, equals: store.terms[idx].id)
-                        // VER-49: Enter confirms this word and jumps to a fresh one (focused), so you
-                        // can add words back-to-back without reaching for the mouse.
-                        .onSubmit {
-                            if !store.terms[idx].written.trimmingCharacters(in: .whitespaces).isEmpty {
-                                Gamification.shared.flag(.usedDictionary)
-                                flashAdded()   // VER-23: acknowledge the add
-                                newWord()
-                            }
+                    // VER-34: a visible, mouse-clickable Add button beside the field — you no longer
+                    // have to know that Enter is what saves the word.
+                    HStack(spacing: 8) {
+                        TextField(correction ? L("The correct spelling Verba should write") : L("Word the transcriber should spell right"),
+                                  text: $store.terms[idx].written).cleanField()
+                            .focused($focusedTerm, equals: store.terms[idx].id)
+                            // VER-49: Enter confirms this word and jumps to a fresh one (focused), so you
+                            // can add words back-to-back without reaching for the mouse.
+                            .onSubmit { confirmTerm(idx) }
+                            .help(correction
+                                  ? L("The correct spelling Verba should write instead.")
+                                  : L("A vocabulary hint sent to the transcriber so it recognizes and spells this word."))
+                        Button { confirmTerm(idx) } label: {
+                            Label(L("Add"), systemImage: "plus.circle.fill").labelStyle(.titleAndIcon)
                         }
-                        .help(correction
-                              ? L("The correct spelling Verba should write instead.")
-                              : L("A vocabulary hint sent to the transcriber so it recognizes and spells this word."))
+                        .glassProminentButton().tint(.primary).controlSize(.regular)
+                        .disabled(store.terms[idx].written.trimmingCharacters(in: .whitespaces).isEmpty)
+                        .help(L("Save this word and add another (or press Enter)"))
+                    }
                 }
 
                 Text(correction
@@ -945,6 +949,15 @@ struct DictionaryView: View {
         store.terms.append(t)
         selectedID = t.id
         DispatchQueue.main.async { focusedTerm = t.id }   // focus after the row renders
+    }
+
+    /// VER-34: confirm the current term (from the Add button OR Enter), then open a fresh one.
+    private func confirmTerm(_ idx: Int) {
+        guard idx < store.terms.count,
+              !store.terms[idx].written.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        Gamification.shared.flag(.usedDictionary)
+        flashAdded()   // VER-23: acknowledge the add
+        newWord()
     }
 
     /// Remove every term with neither a written nor a spoken form (blank "New term" tiles).
