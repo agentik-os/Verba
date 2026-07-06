@@ -1672,7 +1672,7 @@ struct SettingsView: View {
     // MARK: - Local LLM (Ollama)
 
     @ViewBuilder private var localModelBlock: some View {
-        labeledField(L("Model"), $settings.localLLMModel, prompt: "qwen2.5:7b", width: 280)
+        labeledField(L("Model"), $settings.localLLMModel, prompt: "qwen3:8b", width: 280)
         if engineInstalling {
             HStack { ProgressView().controlSize(.small); Text(L("Setting up the local engine…")).font(.caption).foregroundStyle(.secondary) }
         } else if !ollamaUp {

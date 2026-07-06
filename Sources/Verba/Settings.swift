@@ -817,7 +817,17 @@ final class Settings: ObservableObject {
         apiKeyProvider = ApiKeyProvider(rawValue: d.string(forKey: "apiKeyProvider") ?? "") ?? .anthropic
         openAIModel = d.string(forKey: "openAIModel") ?? "gpt-4o"
         openRouterModel = d.string(forKey: "openRouterModel") ?? "anthropic/claude-3.7-sonnet"
-        localLLMModel = d.string(forKey: "localLLMModel") ?? "qwen2.5:7b"
+        // qwen3:8b is the default local model: newer than qwen2.5 with stronger tool-calling +
+        // reasoning (what JARVIS needs), same ~5GB footprint, runs well on Apple Silicon. (GLM-5.2 is
+        // a 756B flagship — impossible to run locally on a Mac.)
+        var lm = d.string(forKey: "localLLMModel") ?? "qwen3:8b"
+        // One-time migration: move users still on the OLD default (qwen2.5:7b, i.e. never customized)
+        // to qwen3:8b. Guarded by a flag so a deliberate later choice always sticks.
+        if !d.bool(forKey: "localModelMigratedToQwen3") {
+            if lm == "qwen2.5:7b" { lm = "qwen3:8b" }
+            d.set(true, forKey: "localModelMigratedToQwen3")
+        }
+        localLLMModel = lm
         overlayStyle = OverlayStyle(rawValue: d.string(forKey: "overlayStyle") ?? "") ?? .floating
         quipTone = QuipTone(rawValue: d.string(forKey: "quipTone") ?? "") ?? .geek
         language = d.string(forKey: "language") ?? ""

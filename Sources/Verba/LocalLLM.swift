@@ -311,6 +311,11 @@ enum LocalLLM {
         req.timeoutInterval = 180
         req.httpBody = try JSONSerialization.data(withJSONObject: [
             "model": model, "stream": false,
+            // think:false — qwen3 (our default) and other thinking models otherwise emit a
+            // <think>…</think> reasoning block. For reprompting AND JARVIS plan JSON we need clean,
+            // directly-parseable output, never visible chain-of-thought. Ollama ignores this field
+            // for non-thinking models, so it's safe across every local model.
+            "think": false,
             "messages": [["role": "system", "content": system], ["role": "user", "content": user]],
         ])
         let (data, resp): (Data, URLResponse)
@@ -321,6 +326,15 @@ enum LocalLLM {
             throw LLMError.http(body)
         }
         let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        return ((obj?["message"] as? [String: Any])?["content"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let content = (obj?["message"] as? [String: Any])?["content"] as? String ?? ""
+        return Self.stripThinking(content).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Belt-and-suspenders for thinking models (qwen3, glm…): even with think:false some builds still
+    /// emit a <think>…</think> block. Strip it so reprompt output and JARVIS plan JSON are clean.
+    private static func stripThinking(_ s: String) -> String {
+        var out = s.replacingOccurrences(of: "(?s)<think>.*?</think>", with: "", options: .regularExpression)
+        if let open = out.range(of: "<think>") { out = String(out[..<open.lowerBound]) }  // unclosed (truncated)
+        return out
     }
 }
