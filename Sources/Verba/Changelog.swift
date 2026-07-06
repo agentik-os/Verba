@@ -36,6 +36,11 @@ enum Changelog {
             date: "July 4, 2026", tag: "Today",
             summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
             entries: [
+                ChangelogEntry(version: "0.9.57",
+                    title: "Styles settings, redesigned",
+                    items: [
+                        "The Styles section in Settings now uses the same clean, single-column card layout as every other section, with an inline editor, instead of a cramped two-pane view.",
+                    ]),
                 ChangelogEntry(version: "0.9.56",
                     title: "Fix: number keys stopped working while Verba was open",
                     items: [

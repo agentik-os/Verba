@@ -74,6 +74,7 @@ struct SettingsView: View {
     @State private var anthropicKey = Keychain.anthropicKey ?? ""
     @State private var openRouterKey = Keychain.openRouterKey ?? ""
     @State private var keysSaved = false
+    @State private var selectedStyleID: UUID?   // Styles section: which style's editor is expanded
     @State private var verifying = false
     @State private var verifyMsg = ""
     // Restore-subscription field is detached from the live account identity (settings.proEmail):
@@ -186,6 +187,85 @@ struct SettingsView: View {
         .padding(.bottom, 2)
     }
 
+    // MARK: Styles — a Settings-NATIVE single-column layout (the old embed dropped the full two-pane
+    // StyleView in here, which looked broken: double "Styles" header, squished panes, empty gutters).
+    @ViewBuilder private var stylesDetail: some View {
+        card(L("Your styles"),
+             footer: L("A style is a reusable tone/format layer added on top of your mode when reprompting. Switch anytime with Fn + [ and Fn + ], or from the menu bar.")) {
+            ForEach(settings.styles) { st in
+                styleSettingsRow(st)
+                if st.id != settings.styles.last?.id { Divider().opacity(0.35) }
+            }
+            HStack(spacing: 14) {
+                Button {
+                    let st = Style(name: L("New style"), prompt: "")
+                    settings.styles.append(st)
+                    withAnimation { selectedStyleID = st.id }
+                } label: { Label(L("Add a style"), systemImage: "plus.circle.fill") }
+                    .buttonStyle(.borderless)
+                Spacer()
+                Button {
+                    settings.resetStylesToDefaults()
+                    selectedStyleID = nil
+                } label: { Label(L("Restore defaults"), systemImage: "arrow.counterclockwise") }
+                    .buttonStyle(.borderless).foregroundStyle(.secondary).font(.callout)
+            }
+            .padding(.top, 4)
+        }
+
+        // Inline editor for the expanded style (no second pane — it flows under the list).
+        if let id = selectedStyleID, let idx = settings.styles.firstIndex(where: { $0.id == id }) {
+            let isNormal = settings.styles[idx].builtin && settings.styles[idx].name == "Normal"
+            card(L("Edit style")) {
+                if isNormal {
+                    Text(L("“Normal” is neutral: it adds nothing, so your modes behave exactly as their own prompts define. Create a new style to add a tone or format layer."))
+                        .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                } else {
+                    labeledField(L("Name"), $settings.styles[idx].name, prompt: L("e.g. Formal, Concise, Friendly"))
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(L("Style prompt")).font(.subheadline.weight(.semibold))
+                        TextEditor(text: $settings.styles[idx].prompt)
+                            .font(.body).scrollContentBackground(.hidden).frame(minHeight: 120)
+                            .padding(8)
+                            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.primary.opacity(0.05)))
+                        Text(L("Layered on top of the mode’s own prompt when Verba rewrites your dictation."))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Button(role: .destructive) {
+                        withAnimation { selectedStyleID = nil }
+                        settings.styles.removeAll { $0.id == id }
+                        if settings.activeStyleID == id, let first = settings.styles.first { settings.activeStyleID = first.id }
+                    } label: { Label(L("Delete this style"), systemImage: "trash") }
+                        .buttonStyle(.borderless).foregroundStyle(.red)
+                }
+            }
+        }
+    }
+
+    private func styleSettingsRow(_ st: Style) -> some View {
+        let active = st.id == settings.activeStyleID
+        let expanded = st.id == selectedStyleID
+        return HStack(spacing: 10) {
+            Image(systemName: "paintbrush").font(.system(size: 13)).foregroundStyle(.secondary).frame(width: 16)
+            Text(st.name).font(.system(size: 13, weight: expanded ? .semibold : .medium)).lineLimit(1)
+            Spacer(minLength: 8)
+            if active {
+                HStack(spacing: 3) {
+                    Image(systemName: "checkmark.circle.fill").font(.system(size: 11))
+                    Text(L("Active")).font(.system(size: 10, weight: .semibold))
+                }.foregroundStyle(.green)
+            } else {
+                Button(L("Make active")) { settings.activeStyleID = st.id }
+                    .buttonStyle(.borderless).font(.system(size: 11, weight: .medium))
+            }
+            Image(systemName: expanded ? "chevron.up" : "chevron.right")
+                .font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
+        }
+        .padding(.vertical, 3)
+        .contentShape(Rectangle())
+        .onTapGesture { withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { selectedStyleID = expanded ? nil : st.id } }
+    }
+
     @ViewBuilder private var detail: some View {
         switch section {
         case .account:       accountDetail
@@ -194,7 +274,7 @@ struct SettingsView: View {
         case .action:        actionDetail
         case .output:        outputDetail
         case .customize: customizeDetail
-        case .styles: StyleView().frame(minHeight: 420)
+        case .styles: stylesDetail
         case .shortcuts: shortcutsDetail
         case .privacy:   privacyDetail
         case .updates:   updatesDetail
