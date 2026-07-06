@@ -752,6 +752,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         present(mainWC)
     }
 
+    /// ⌃⌥C — jump straight to Notes. Notes want the full editor (not a cramped glance), so this opens
+    /// the main window on the Notes section rather than a floating panel like Actions/To-dos.
+    @objc func openNotes() {
+        guard Settings.shared.isFeatureEnabled(FeatureFlags.notes) else { return }
+        openMain()
+        DispatchQueue.main.async { NotesController.shared.navSignal &+= 1 }
+    }
+
     /// A minimal main menu so standard text-editing shortcuts (⌘C/⌘V/⌘X/⌘A/⌘Z)
     /// work in our windows, accessory apps don't get one for free.
     private func installMainMenu() {
@@ -868,6 +876,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         // (Per-mode dedicated ⌃⌥1-6 shortcuts were removed — modes are switched via Fn+Tab,
         // Fn+1-9, the lone-⌥ tap, or the rebindable change-mode shortcut instead.)
+        //
+        // THREE ALWAYS-ON GLOBAL WIDGETS — reachable from anywhere, persistent + toggleable:
+        //   ⌃⌥X → Actions (JARVIS)   ⌃⌥Z → To-dos   ⌃⌥C → Notes
+        // These are the three features that live OUTSIDE the main Verba window. ⌃⌥ = control|option
+        // = 6144; keycodes X=7, Z=6, C=8. Registered every applyTriggers run (unregisterAll ran first).
+        let ctrlOpt: UInt32 = (1 << 12) | (1 << 11)   // Carbon controlKey | optionKey
+        HotKeys.shared.register(id: 12, keyCode: 7, modifiers: ctrlOpt) {
+            guard Settings.shared.isFeatureEnabled(FeatureFlags.jarvis) else { return }
+            ActionFeedController.shared.toggle()
+        }
+        HotKeys.shared.register(id: 13, keyCode: 6, modifiers: ctrlOpt) {
+            guard Settings.shared.isFeatureEnabled(FeatureFlags.tasks) else { return }
+            TodoGlanceController.shared.toggle()
+        }
+        HotKeys.shared.register(id: 14, keyCode: 8, modifiers: ctrlOpt) { [weak self] in
+            self?.openNotes()
+        }
         // Fn-as-primary needs an event tap (to consume the globe key + digit picks).
         if s.useFnAsPrimary {
             // If the tap can't be created, Accessibility/Input-Monitoring was revoked

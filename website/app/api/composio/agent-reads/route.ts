@@ -36,6 +36,42 @@ async function execTool(composio: any, slug: string, uid: string, args: Record<s
   return composio.tools.execute(slug, { userId: uid, arguments: args, ...(version ? { version } : {}) });
 }
 
+// Raw tool payloads are enormous (a calendar list repeats etag/htmlLink/iCalUID/creator/organizer/
+// reminders on EVERY event; Gmail carries full MIME payloads). Feeding that to a LOCAL model (qwen3)
+// for the resolve phase blew past its context and made simple asks ("what's my next event?") error.
+// Compact structurally BEFORE stringifying: drop known-noise keys, cap list length, clip long strings.
+// This keeps the meaningful fields (summary, start, end, subject, from, snippet, id) and makes the
+// resolve phase both far faster and reliable on-device.
+const NOISE_KEYS = new Set([
+  "etag", "htmlLink", "iCalUID", "kind", "sequence", "updated", "created", "creator", "organizer",
+  "reminders", "originalStartTime", "self", "accessRole", "defaultReminders", "nextPageToken",
+  "nextSyncToken", "logId", "display_url", "eventType", "recurringEventId", "conferenceData",
+  "extendedProperties", "hangoutLink", "colorId", "visibility", "transparency", "guestsCanModify",
+  "guestsCanInviteOthers", "guestsCanSeeOtherGuests", "privateCopy", "locked", "source", "gadget",
+  "anyoneCanAddSelf", "attendeesOmitted", "endTimeUnspecified", "attachments", "labelIds", "threadId",
+  "historyId", "internalDate", "payload", "sizeEstimate", "raw", "note", "timeZone",
+]);
+const MAX_ITEMS = 30;
+const MAX_STR = 500;
+function compact(v: unknown): unknown {
+  if (v === null || v === undefined) return undefined;
+  if (typeof v === "string") return v.length > MAX_STR ? v.slice(0, MAX_STR) + "…" : v;
+  if (typeof v !== "object") return v;
+  if (Array.isArray(v)) {
+    const out: unknown[] = v.slice(0, MAX_ITEMS).map(compact).filter((x) => x !== undefined);
+    if (v.length > MAX_ITEMS) out.push(`…(+${v.length - MAX_ITEMS} more, not shown)`);
+    return out;
+  }
+  const o: Record<string, unknown> = {};
+  for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+    if (NOISE_KEYS.has(k)) continue;
+    const c = compact(val);
+    if (c === undefined || c === "" || (Array.isArray(c) && c.length === 0)) continue;
+    o[k] = c;
+  }
+  return o;
+}
+
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: cors });
 }
@@ -73,11 +109,11 @@ export async function POST(req: NextRequest) {
   // Render each read result, capped — but NEVER cut mid-record silently (that seeds hallucinated
   // entries from dangling JSON). When over budget, truncate and append an explicit marker so the
   // resolve model knows the data is incomplete and must not invent the rest.
-  const PER_READ = 18000;
+  const PER_READ = 9000;
   const block = reads
     .map((r) => {
       if (!r.ok) return `• ${r.tool}: ERROR ${r.error}`;
-      const full = JSON.stringify(r.data);
+      const full = JSON.stringify(compact(r.data));
       if (full.length <= PER_READ) return `• ${r.tool}: ${full}`;
       return `• ${r.tool}: ${full.slice(0, PER_READ)}\n  …[TRUNCATED — the data above is incomplete; do NOT infer or invent any items beyond what is fully shown]`;
     })

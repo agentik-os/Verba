@@ -447,9 +447,8 @@ final class TodoGlanceController {
             if event.keyCode == 53 { self?.hide(); return nil }   // 53 = Esc
             return event
         }
-        clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            self?.hide()
-        }
+        // Persistent, toggleable widget (⌃⌥Z): don't vanish on an outside click. Closes on Esc, the
+        // close button, or the ⌃⌥Z toggle. (Matches the Actions widget.)
     }
 
     private func removeDismissMonitors() {

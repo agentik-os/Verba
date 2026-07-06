@@ -713,9 +713,9 @@ final class ActionFeedController {
             if event.keyCode == 53 { self?.hide(); return nil }   // 53 = Esc
             return event
         }
-        clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            self?.hide()
-        }
+        // The Actions widget is now a PERSISTENT, toggleable window (⌃⌥X): it must NOT vanish the
+        // moment you click into another app — that made it un-reopenable and lost the pending queue.
+        // It closes only on Esc, the close button, or the ⌃⌥X toggle. (No global click-away monitor.)
     }
 
     private func removeDismissMonitors() {
