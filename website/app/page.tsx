@@ -1263,7 +1263,7 @@ function Pricing() {
         <div className="card r-panel p-8">
           <h3 className="text-lg font-medium">Free</h3>
           <div className="mt-3 font-mono text-4xl font-semibold tnum">$0</div>
-          <p className="mt-1 text-sm muted">Raw dictation, free forever and unlimited. No card, ever. Pro unlocks every AI mode and feature.</p>
+          <p className="mt-1 text-sm muted">Unlimited raw dictation, free forever, for everyone. No card, ever. Pro unlocks everything else.</p>
           <ul className="mt-6 space-y-2.5 text-sm muted">
             {["Unlimited raw dictation, free forever", "On-device or cloud transcription", "No card, ever", "Pro unlocks every AI mode + feature"].map((b) => (
               <li key={b} className="flex gap-2.5"><span className="text-[var(--accent-line)]">·</span>{b}</li>
@@ -1278,20 +1278,20 @@ function Pricing() {
         {/* Pro, the ONE glass-budget moment among pricing: solid panel chrome */}
         <div ref={proRef} className="panel r-panel p-8" style={{ borderColor: "var(--border-warm)" }}>
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-white">Pro</h3>
+            <h3 className="text-lg font-medium">Pro</h3>
             <span className="flex items-center gap-1.5 rounded-full border pborder ptint px-2.5 py-1 text-xs pf-70">
               <span className="rec-dot" /> Most popular
             </span>
           </div>
-          <div className="mt-3 flex items-end gap-1 text-white">
+          <div className="mt-3 flex items-end gap-1">
             <span className="font-mono text-4xl font-semibold tnum">{PRICE[plan].amount}</span>
             <span className="mb-1 text-sm pf-50">{PRICE[plan].sub}</span>
           </div>
           <p className="mt-1 text-sm pf-50 tnum">{PRICE[plan].note} · 7-day trial, card required</p>
           <p className="mt-2 text-xs pf-50">Audio stays on your Mac · your own AI, no markup · cancel anytime.</p>
           <ul className="mt-6 space-y-2.5 text-sm pf-85">
-            {["Unlimited dictation", "All modes + custom modes", "Voice-command formatting", "Sync across your Macs", "Priority support"].map((b) => (
-              <li key={b} className="flex items-center gap-2.5"><span className="inline-flex h-4 w-4 items-center justify-center rounded-[4px] bg-white text-black"><MicGlyph size={8} /></span>{b}</li>
+            {["Every AI mode: Polish, Intent, Translate, Context, Prompt", "Notes: long recordings, structured for you", "Tasks: speak straight into a task manager", "JARVIS: act across 1,000+ connected apps by voice", "Snippets, Transforms and Styles", "Custom modes + editable system prompts", "Voice-command formatting", "Sync across your Macs", "Priority support"].map((b) => (
+              <li key={b} className="flex items-center gap-2.5"><span className="inline-flex h-4 w-4 items-center justify-center rounded-[4px] bg-[var(--fg)] text-[var(--bg)]"><MicGlyph size={8} /></span>{b}</li>
             ))}
           </ul>
           {isSignedIn ? (

@@ -87,7 +87,10 @@ export async function POST(req: NextRequest) {
   try {
     // OAuth (and unknown) → reused/BYO auth config + a browser redirect the user completes.
     if (style === "oauth" || (!SCHEME[style] && style !== "none")) {
-      const conn = await composio.connectedAccounts.link(auth.uid, await oauthAuthConfigId(composio, toolkit));
+      // allowMultiple: SDK 0.13+ rejects link() when the user already has a connection for this
+      // toolkit ("Multiple connected accounts found… use the allowMultiple flag") — which broke the
+      // Connect button for every app the user had already connected. Allow it so re-connecting works.
+      const conn = await composio.connectedAccounts.link(auth.uid, await oauthAuthConfigId(composio, toolkit), { allowMultiple: true });
       return NextResponse.json({ redirectUrl: conn.redirectUrl, id: conn.id }, { headers: cors });
     }
     // No-auth toolkits need no connected account at all — Composio refuses to even
@@ -106,7 +109,7 @@ export async function POST(req: NextRequest) {
       authScheme: SCHEME[style] as never,
       credentials,
     });
-    const conn = await composio.connectedAccounts.link(auth.uid, ac.id);
+    const conn = await composio.connectedAccounts.link(auth.uid, ac.id, { allowMultiple: true });
     // Credential auth has no redirect — it's active (or initializing) immediately.
     return NextResponse.json(
       { ok: true, id: conn.id, status: conn.status ?? "ACTIVE", redirectUrl: conn.redirectUrl ?? null },
