@@ -36,6 +36,11 @@ enum Changelog {
             date: "July 4, 2026", tag: "Today",
             summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
             entries: [
+                ChangelogEntry(version: "0.9.55",
+                    title: "Connecting an app never fails silently",
+                    items: [
+                        "Fixed the Connect button doing nothing for apps you'd already connected, and it now shows a clear message when an app can't be connected yet (a few, like X and Telegram, need their own credentials Composio doesn't provide).",
+                    ]),
                 ChangelogEntry(version: "0.9.54",
                     title: "Tidier settings",
                     items: [
