@@ -133,7 +133,7 @@ enum RepromptBackend: String, Codable, CaseIterable, Identifiable {
         case .auto:       return L("Automatic (Claude Code, else Verba)")
         case .verba:      return L("Verba (included, no key needed)")
         case .claudeCode: return L("Claude Code (Max/Pro plan)")
-        case .apiKey:     return L("Anthropic API key")
+        case .apiKey:     return L("My API key")
         case .openRouter: return L("OpenRouter (any model)")
         case .localLLM:   return L("Local model (Ollama, offline)")
         }
@@ -145,6 +145,21 @@ enum RepromptBackend: String, Codable, CaseIterable, Identifiable {
     var resolved: RepromptBackend {
         guard self == .auto else { return self }
         return ClaudeCode.isAvailable ? .claudeCode : .verba
+    }
+}
+
+/// Which provider the "My API key" backend talks to. Each has its own Keychain slot
+/// (Keychain.openAIKey / .anthropicKey / .openRouterKey) and its own model field.
+enum ApiKeyProvider: String, Codable, CaseIterable, Identifiable, Hashable {
+    case anthropic, openAI, openRouter
+    var id: String { rawValue }
+    /// Short label for the small provider-picker chips.
+    var label: String {
+        switch self {
+        case .anthropic:  return "Anthropic"
+        case .openAI:     return "OpenAI"
+        case .openRouter: return "OpenRouter"
+        }
     }
 }
 
@@ -458,7 +473,7 @@ final class Settings: ObservableObject {
 
     @Published var engine: TranscriptionEngine { didSet { d.set(engine.rawValue, forKey: "engine") } }
     @Published var localModel: String { didSet { d.set(localModel, forKey: "localModel") } }
-    @Published var claudeModel: String { didSet { d.set(claudeModel, forKey: "claudeModel") } }
+    @Published var claudeModel: String { didSet { d.set(claudeModel, forKey: "claudeModel"); VerbaAppearance.shared.syncSettingsChanged() } }
     // Chosen microphone (CoreAudio device UID). "" = follow the system default input.
     @Published var micUID: String { didSet { d.set(micUID, forKey: "micUID") } }
     // Sidebar items the user hid (NavItem raw values). Home / Modes / Settings are always shown.
@@ -472,9 +487,14 @@ final class Settings: ObservableObject {
     @Published var modeGroups: [ModeGroup] {
         didSet { if let data = try? JSONEncoder().encode(modeGroups) { d.set(data, forKey: "modeGroups") } }
     }
-    @Published var repromptBackend: RepromptBackend { didSet { d.set(repromptBackend.rawValue, forKey: "repromptBackend") } }
-    @Published var openRouterModel: String { didSet { d.set(openRouterModel, forKey: "openRouterModel") } }
-    @Published var localLLMModel: String { didSet { d.set(localLLMModel, forKey: "localLLMModel") } }
+    @Published var repromptBackend: RepromptBackend { didSet { d.set(repromptBackend.rawValue, forKey: "repromptBackend"); VerbaAppearance.shared.syncSettingsChanged() } }
+    /// Which provider "My API key" talks to (Anthropic / OpenAI / OpenRouter). The key itself
+    /// always stays local to the Mac in Keychain (Keychain.anthropicKey/.openAIKey/.openRouterKey);
+    /// only this CHOICE syncs, so a second Mac shows the same provider picked but re-enters its own key.
+    @Published var apiKeyProvider: ApiKeyProvider { didSet { d.set(apiKeyProvider.rawValue, forKey: "apiKeyProvider"); VerbaAppearance.shared.syncSettingsChanged() } }
+    @Published var openAIModel: String { didSet { d.set(openAIModel, forKey: "openAIModel"); VerbaAppearance.shared.syncSettingsChanged() } }
+    @Published var openRouterModel: String { didSet { d.set(openRouterModel, forKey: "openRouterModel"); VerbaAppearance.shared.syncSettingsChanged() } }
+    @Published var localLLMModel: String { didSet { d.set(localLLMModel, forKey: "localLLMModel"); VerbaAppearance.shared.syncSettingsChanged() } }
     @Published var overlayStyle: OverlayStyle { didSet { d.set(overlayStyle.rawValue, forKey: "overlayStyle") } }
     @Published var quipTone: QuipTone { didSet { d.set(quipTone.rawValue, forKey: "quipTone"); Quips.onToneChanged() } }
     @Published var language: String { didSet { d.set(language, forKey: "language") } }   // "" = auto-detect
@@ -793,6 +813,9 @@ final class Settings: ObservableObject {
         // Default NEW installs to Fully local (open-source, on-device, no account). Existing users keep
         // their persisted choice — this ?? only applies when nothing was ever saved.
         repromptBackend = RepromptBackend(rawValue: d.string(forKey: "repromptBackend") ?? "") ?? .localLLM
+        // Default provider is Anthropic (matches the pre-picker behaviour of "My API key").
+        apiKeyProvider = ApiKeyProvider(rawValue: d.string(forKey: "apiKeyProvider") ?? "") ?? .anthropic
+        openAIModel = d.string(forKey: "openAIModel") ?? "gpt-4o"
         openRouterModel = d.string(forKey: "openRouterModel") ?? "anthropic/claude-3.7-sonnet"
         localLLMModel = d.string(forKey: "localLLMModel") ?? "qwen2.5:7b"
         overlayStyle = OverlayStyle(rawValue: d.string(forKey: "overlayStyle") ?? "") ?? .floating

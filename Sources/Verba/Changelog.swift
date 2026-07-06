@@ -36,6 +36,13 @@ enum Changelog {
             date: "July 4, 2026", tag: "Today",
             summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
             entries: [
+                ChangelogEntry(version: "0.9.52",
+                    title: "Your AI engine, respected everywhere",
+                    items: [
+                        "Fully local now means fully local: Context mode no longer quietly used hosted Claude when you were signed in, it stays on your chosen engine (local models just can't read screenshots, so it says so).",
+                        "My API key now lets you pick the provider, OpenAI, Anthropic or OpenRouter, paste that key and choose a model. JARVIS and every mode use exactly the provider you picked.",
+                        "Your engine, model and provider choice now sync across your Macs (your API keys stay only in each Mac's Keychain).",
+                    ]),
                 ChangelogEntry(version: "0.9.51",
                     title: "Turn modes on and off, and group them",
                     items: [

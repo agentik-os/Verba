@@ -235,7 +235,8 @@ struct MainWindow: View {
         if settings.repromptBackend == .localLLM { return false }
         if ClaudeCode.isAvailable { return false }                  // Claude Code works
         if !settings.proEmail.isEmpty { return false }              // Verba hosted works (signed in)
-        if !(Keychain.anthropicKey ?? "").isEmpty { return false }  // API key works
+        if !(Keychain.anthropicKey ?? "").isEmpty { return false }  // API key (Anthropic) works
+        if !(Keychain.openAIKey ?? "").isEmpty { return false }     // API key (OpenAI) works
         if !(Keychain.openRouterKey ?? "").isEmpty { return false } // OpenRouter works
         return true
     }

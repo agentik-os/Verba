@@ -286,8 +286,20 @@ final class ActionAgentClient {
         case .localLLM:
             return try await LocalLLM.chat(system: system, user: user, model: Settings.shared.localLLMModel)
         case .apiKey:
-            if let key = Keychain.anthropicKey, !key.isEmpty {
-                return try await anthropicDirect(key: key, system: system, user: user)
+            // Honor the CHOSEN provider (Anthropic/OpenAI/OpenRouter), never assume Anthropic.
+            switch Settings.shared.apiKeyProvider {
+            case .anthropic:
+                if let key = Keychain.anthropicKey, !key.isEmpty {
+                    return try await anthropicDirect(key: key, system: system, user: user)
+                }
+            case .openAI:
+                if let key = Keychain.openAIKey, !key.isEmpty {
+                    return try await openAIDirect(key: key, system: system, user: user)
+                }
+            case .openRouter:
+                if let key = Keychain.openRouterKey, !key.isEmpty {
+                    return try await openRouterDirect(key: key, system: system, user: user)
+                }
             }
         case .openRouter:
             if let key = Keychain.openRouterKey, !key.isEmpty {
@@ -321,6 +333,27 @@ final class ActionAgentClient {
         let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
         let parts = (obj?["content"] as? [[String: Any]]) ?? []
         return parts.compactMap { ($0["type"] as? String) == "text" ? $0["text"] as? String : nil }.joined()
+    }
+
+    /// Direct OpenAI call on the user's own key.
+    private static func openAIDirect(key: String, system: String, user: String) async throws -> String {
+        var req = URLRequest(url: URL(string: "https://api.openai.com/v1/chat/completions")!)
+        req.httpMethod = "POST"
+        req.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "content-type")
+        req.timeoutInterval = 120
+        let chosen = Settings.shared.openAIModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        req.httpBody = try JSONSerialization.data(withJSONObject: [
+            "model": chosen.isEmpty ? "gpt-4o" : chosen,
+            "messages": [["role": "system", "content": system], ["role": "user", "content": user]],
+        ])
+        let (data, resp) = try await URLSession.shared.data(for: req)
+        let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(code) else { throw ActionAgentError.http(code, "") }
+        let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        let choices = (obj?["choices"] as? [[String: Any]]) ?? []
+        let msg = choices.first?["message"] as? [String: Any]
+        return msg?["content"] as? String ?? ""
     }
 
     /// Direct OpenRouter call on the user's own key.

@@ -310,6 +310,17 @@ final class VerbaAppearance: ObservableObject {
     // so a fresh sign-in or a new Mac restores the exact appearance the user had before.
 
     private var syncTask: DispatchWorkItem?
+    /// True while a cloud pull is being applied to Settings' reprompt fields, so the resulting
+    /// @Published didSet doesn't immediately bounce back out as a push (mirrors ConfigSync's
+    /// `applyingRemote` guard).
+    private var applyingRemoteSettings = false
+
+    /// Reprompt backend/model/provider keys (all plain UserDefaults.standard, no "verba.appr."
+    /// prefix) that piggyback on the SAME account-synced blob as Customize, so a backend/model
+    /// choice follows the user across Macs. The API keys themselves are NEVER included here —
+    /// they stay Keychain-local, per Mac, by design.
+    private static let repromptSyncKeys = ["repromptBackend", "claudeModel", "apiKeyProvider",
+                                           "openAIModel", "openRouterModel", "localLLMModel"]
 
     /// Stamp the local edit time immediately (last-write-wins). Done synchronously on
     /// every appearance change so a concurrent cloud pull during the 1.5s push debounce
@@ -319,7 +330,17 @@ final class VerbaAppearance: ObservableObject {
         UserDefaults.standard.set(now, forKey: "verba.appr.syncUpdated")
     }
 
-    /// Snapshot every appearance key (app + widget namespaces) into a JSON blob.
+    /// Called from Settings' repromptBackend/claudeModel/apiKeyProvider/openAIModel/
+    /// openRouterModel/localLLMModel didSets, so those choices sync the instant they change,
+    /// exactly like an appearance edit. No-op while a remote value is being applied (below).
+    func syncSettingsChanged() {
+        guard !applyingRemoteSettings else { return }
+        stampSyncEdit()
+        scheduleSyncPush()
+    }
+
+    /// Snapshot every appearance key (app + widget namespaces) plus the reprompt settings keys
+    /// into one JSON blob.
     private func snapshotBlob() -> String {
         var dict: [String: Any] = [:]
         for (k, v) in UserDefaults.standard.dictionaryRepresentation() where k.hasPrefix("verba.appr.") {
@@ -328,13 +349,17 @@ final class VerbaAppearance: ObservableObject {
         for (k, v) in VAppr.widget.dictionaryRepresentation() where k.hasPrefix("widget.appr.") {
             dict[k] = v
         }
+        for k in Self.repromptSyncKeys {
+            if let v = UserDefaults.standard.object(forKey: k) { dict[k] = v }
+        }
         guard JSONSerialization.isValidJSONObject(dict),
               let data = try? JSONSerialization.data(withJSONObject: dict),
               let s = String(data: data, encoding: .utf8) else { return "{}" }
         return s
     }
 
-    /// Write a pulled blob back into both namespaces, then re-apply live.
+    /// Write a pulled blob back into both namespaces plus Settings' reprompt fields, then
+    /// re-apply live.
     private func applyBlob(_ json: String) {
         guard let data = json.data(using: .utf8),
               let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
@@ -342,6 +367,20 @@ final class VerbaAppearance: ObservableObject {
             if k.hasPrefix("widget.appr.") { VAppr.widget.set(v, forKey: k) }
             else if k.hasPrefix("verba.appr.") { UserDefaults.standard.set(v, forKey: k) }
         }
+        // Route the reprompt keys through Settings' own @Published setters (not raw UserDefaults)
+        // so the change persists AND live-updates any open Settings window immediately.
+        applyingRemoteSettings = true
+        if let raw = dict["repromptBackend"] as? String, let b = RepromptBackend(rawValue: raw) {
+            Settings.shared.repromptBackend = b
+        }
+        if let m = dict["claudeModel"] as? String { Settings.shared.claudeModel = m }
+        if let raw = dict["apiKeyProvider"] as? String, let p = ApiKeyProvider(rawValue: raw) {
+            Settings.shared.apiKeyProvider = p
+        }
+        if let m = dict["openAIModel"] as? String { Settings.shared.openAIModel = m }
+        if let m = dict["openRouterModel"] as? String { Settings.shared.openRouterModel = m }
+        if let m = dict["localLLMModel"] as? String { Settings.shared.localLLMModel = m }
+        applyingRemoteSettings = false
         // Re-apply everything live (window appearance, glass, widget).
         objectWillChange.send()
         Self.applyToOpenWindows()

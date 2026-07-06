@@ -837,6 +837,12 @@ struct SettingsView: View {
             }
         } else if settings.repromptBackend == .localLLM {
             card(L("Local model (Ollama)")) { localModelBlock }
+        } else if settings.repromptBackend == .apiKey {
+            card(L("Provider")) {
+                chips(ApiKeyProvider.allCases, selected: settings.apiKeyProvider,
+                      label: { $0.label }, onPick: { settings.apiKeyProvider = $0 })
+            }
+            apiKeyProviderModelCard
         } else {
             card(L("Claude model")) {
                 chips(claudeModels.map { IdString($0) }, selected: IdString(settings.claudeModel),
@@ -853,11 +859,32 @@ struct SettingsView: View {
         // API keys (instant-save)
         card(L("API keys"),
              footer: L("Keys save automatically as you type, stored in your macOS Keychain.")) {
-            apiKeyField(L("OpenAI (cloud transcription)"), "sk-…", $openAIKey) { Keychain.openAIKey = $0 }
+            apiKeyField(L("OpenAI (transcription + reprompting)"), "sk-…", $openAIKey) { Keychain.openAIKey = $0 }
             apiKeyField(L("Anthropic (Claude reprompting)"), "sk-ant-…", $anthropicKey) { Keychain.anthropicKey = $0 }
             apiKeyField(L("OpenRouter (any writing model)"), "sk-or-…", $openRouterKey) { Keychain.openRouterKey = $0 }
             // Keys persist on every keystroke via apiKeyField's onChange (see footer) — no separate
             // "Save keys" button: it was a no-op whose "Saved" flash implied typing wasn't already saved.
+        }
+    }
+
+    /// The model field for whichever provider is picked under the "My API key" backend.
+    @ViewBuilder private var apiKeyProviderModelCard: some View {
+        switch settings.apiKeyProvider {
+        case .anthropic:
+            card(L("Claude model")) {
+                chips(claudeModels.map { IdString($0) }, selected: IdString(settings.claudeModel),
+                      label: { $0.id }, onPick: { settings.claudeModel = $0.id })
+            }
+        case .openAI:
+            card(L("OpenAI model"),
+                 footer: L("Any OpenAI chat model (gpt-4o, gpt-4.1, o3…). Add your key below.")) {
+                labeledField(L("Model id"), $settings.openAIModel, prompt: "gpt-4o", width: 280)
+            }
+        case .openRouter:
+            card(L("OpenRouter model"),
+                 footer: L("Any model on openrouter.ai (openai/gpt-4o, google/gemini-2.0-flash…). Add your key below.")) {
+                labeledField(L("Model id"), $settings.openRouterModel, prompt: "anthropic/claude-3.7-sonnet", width: 360)
+            }
         }
     }
 
@@ -890,9 +917,19 @@ struct SettingsView: View {
         case .auto:       return L("Claude Code if present, else Verba's included engine.")
         case .verba:      return L("Included, no key. Runs on Verba's servers.")
         case .claudeCode: return L("Runs on your Claude Max/Pro plan via the local CLI.")
-        case .apiKey:     return L("Pay-per-token with your Anthropic API key.")
+        case .apiKey:     return L("Pay-per-token with your own OpenAI, Anthropic, or OpenRouter key.")
         case .openRouter: return L("Any model on openrouter.ai with your key.")
         case .localLLM:   return L("Fully offline on your Mac via Ollama.")
+        }
+    }
+
+    /// Whether the Keychain slot for the given "My API key" provider is filled (reads the live
+    /// @State text, which mirrors Keychain via apiKeyField's onChange).
+    private func hasApiKey(for provider: ApiKeyProvider) -> Bool {
+        switch provider {
+        case .anthropic:  return !anthropicKey.trimmingCharacters(in: .whitespaces).isEmpty
+        case .openAI:     return !openAIKey.trimmingCharacters(in: .whitespaces).isEmpty
+        case .openRouter: return !openRouterKey.trimmingCharacters(in: .whitespaces).isEmpty
         }
     }
 
@@ -922,6 +959,14 @@ struct SettingsView: View {
                         : L("Claude Code not found. Install it and run `claude` once to sign in."),
                         system: ClaudeCode.isAvailable ? "checkmark.seal.fill" : "exclamationmark.triangle.fill",
                         tint: ClaudeCode.isAvailable ? .green : .orange)
+        case .apiKey:
+            if hasApiKey(for: settings.apiKeyProvider) {
+                statusLabel(String(format: L("Using your %@ key."), settings.apiKeyProvider.label),
+                            system: "checkmark.seal.fill", tint: .green)
+            } else {
+                statusLabel(String(format: L("Add your %@ key in the API keys section below."), settings.apiKeyProvider.label),
+                            system: "exclamationmark.triangle.fill", tint: .orange)
+            }
         default:
             EmptyView()
         }
