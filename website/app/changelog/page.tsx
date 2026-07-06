@@ -21,6 +21,13 @@ const DAYS: Day[] = [
     summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
     entries: [
       {
+        version: "0.9.56",
+        title: "Fix: number keys stopped working while Verba was open",
+        items: [
+          "Fixed a bad bug where the mode picker could stay armed after it closed, so Verba kept swallowing your number-key presses system-wide. Numbers type normally again.",
+        ],
+      },
+      {
         version: "0.9.55",
         title: "Connecting an app never fails silently",
         items: [

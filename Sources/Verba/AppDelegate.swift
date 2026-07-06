@@ -209,6 +209,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .removeDuplicates().receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.refreshUI() }
             .store(in: &cancellables)
+        // CRITICAL: keep FnTap.menuActive perfectly in sync with the picker's visibility. Several
+        // code paths close the picker via `overlay.model.menu = false` without also resetting
+        // FnTap.menuActive — leaving it stuck TRUE, which makes the Fn event tap SWALLOW every digit
+        // key system-wide (the user "can't type numbers while Verba is open"). Mirroring it here
+        // fixes that class of desync once and for all.
+        overlay.model.$menu
+            .removeDuplicates().receive(on: RunLoop.main)
+            .sink { open in FnTap.shared.menuActive = open }
+            .store(in: &cancellables)
         TodoReminders.shared.start()   // schedule "30 min before deadline" to-do reminders, keep them in sync
         WidgetBridge.shared.start()    // keep the WidgetKit "Today" snapshot in sync with the TodoStore
 
