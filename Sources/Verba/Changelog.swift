@@ -36,6 +36,12 @@ enum Changelog {
             date: "July 4, 2026", tag: "Today",
             summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
             entries: [
+                ChangelogEntry(version: "0.9.59",
+                    title: "Global widget shortcuts + faster, more reliable JARVIS",
+                    items: [
+                        "The Actions and To-do widgets no longer vanish when you click elsewhere, and you can open all three from anywhere: ⌃⌥X Actions, ⌃⌥Z To-dos, ⌃⌥C Notes.",
+                        "JARVIS is faster and more reliable on the local model: it now trims bulky app data before reasoning, so asks like \"what\u2019s my next event?\" work smoothly on-device.",
+                    ]),
                 ChangelogEntry(version: "0.9.58",
                     title: "Fully local by default, now on qwen3",
                     items: [

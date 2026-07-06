@@ -21,6 +21,14 @@ const DAYS: Day[] = [
     summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
     entries: [
       {
+        version: "0.9.59",
+        title: "Global widget shortcuts + faster, more reliable JARVIS",
+        items: [
+          "The Actions and To-do widgets no longer vanish when you click elsewhere, and you can open all three from anywhere: \u2303\u2325X Actions, \u2303\u2325Z To-dos, \u2303\u2325C Notes.",
+          "JARVIS is faster and more reliable on the local model: it trims bulky app data before reasoning, so asks like \u201cwhat\u2019s my next event?\u201d work smoothly on-device.",
+        ],
+      },
+      {
         version: "0.9.58",
         title: "Fully local by default, now on qwen3",
         items: [
