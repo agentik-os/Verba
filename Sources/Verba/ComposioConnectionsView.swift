@@ -89,6 +89,24 @@ struct ComposioConnectionsView: View {
     }
 
     /// "N apps you can connect · M connected" — flexes the breadth of the catalog.
+    /// Surfaces a failed connect instead of letting it fail silently (the old behavior — the button
+    /// did "nothing"). Toolkits with no Composio-managed auth (Twitter, Telegram, Shopify…) show the
+    /// clear "needs its own credentials" message the relay now returns.
+    @ViewBuilder private var errorBanner: some View {
+        if let err = store.lastError, !err.isEmpty {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange).font(.system(size: 12))
+                Text(err).font(.caption).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
+                Button { store.lastError = nil } label: { Image(systemName: "xmark").font(.system(size: 10)) }
+                    .buttonStyle(.plain).foregroundStyle(.secondary)
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+    }
+
     private var countLabel: some View {
         let total = allApps.count
         let connected = store.connections.values.filter { $0.uppercased() == "ACTIVE" }.count
@@ -134,6 +152,7 @@ struct ComposioConnectionsView: View {
                     searchField
                     filterBar
                     countLabel
+                    errorBanner
                     LazyVGrid(columns: cols, spacing: 10) {
                         ForEach(filtered) { app in card(app) }
                     }
@@ -143,6 +162,7 @@ struct ComposioConnectionsView: View {
                     header
                     searchField.padding(.horizontal, 24).padding(.bottom, 6)
                     filterBar.padding(.horizontal, 24).padding(.bottom, 6)
+                    errorBanner.padding(.horizontal, 24).padding(.bottom, 6)
                     ScrollView {
                         LazyVGrid(columns: cols, spacing: 12) {
                             ForEach(filtered) { app in card(app) }

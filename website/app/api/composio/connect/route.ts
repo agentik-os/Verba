@@ -117,6 +117,15 @@ export async function POST(req: NextRequest) {
     );
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Connection failed.";
+    // Some toolkits (Twitter, Telegram, Shopify…) have NO Composio-managed auth — connecting them
+    // needs the developer's own OAuth app. Return a clear, specific signal instead of a raw 502 so
+    // the app can tell the user plainly rather than appearing to do nothing.
+    if (/managed credentials|Default auth config not found/i.test(msg)) {
+      return NextResponse.json(
+        { error: "This app can't be connected yet — it needs its own credentials.", unsupported: true },
+        { status: 422, headers: cors },
+      );
+    }
     return NextResponse.json({ error: msg }, { status: 502, headers: cors });
   }
 }
