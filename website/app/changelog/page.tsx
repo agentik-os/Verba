@@ -21,6 +21,13 @@ const DAYS: Day[] = [
     summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
     entries: [
       {
+        version: "0.9.58",
+        title: "Fully local by default, now on qwen3",
+        items: [
+          "Verba now runs fully offline on your Mac by default (Ollama), on the newer qwen3 model, and every AI feature — including JARVIS, transforms and tools — works on-device with nothing leaving your Mac.",
+        ],
+      },
+      {
         version: "0.9.57",
         title: "Styles settings, redesigned",
         items: [
