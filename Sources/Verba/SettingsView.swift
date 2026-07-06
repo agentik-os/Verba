@@ -763,6 +763,13 @@ struct SettingsView: View {
                 }
             }
             engineLifecycle
+            // The OpenAI (cloud transcription) engine needs your OpenAI key — it lives HERE, with the
+            // engine that uses it, not in AI rewriting. (Same key is reused if you also pick OpenAI there.)
+            if engineTab == .openAI {
+                apiKeyField(L("OpenAI API key"), "sk-…", $openAIKey) { Keychain.openAIKey = $0 }
+                Text(L("Used for OpenAI cloud transcription. Saved in your macOS Keychain."))
+                    .font(.caption2).foregroundStyle(.tertiary)
+            }
         }
 
         card(L("Microphone"),
@@ -856,14 +863,31 @@ struct SettingsView: View {
                       help: settings.useSelectionContext ? L("If text is selected when you dictate, your words become an instruction on that selection, and the result replaces it.") : nil)
         }
 
-        // API keys (instant-save)
-        card(L("API keys"),
-             footer: L("Keys save automatically as you type, stored in your macOS Keychain.")) {
-            apiKeyField(L("OpenAI (transcription + reprompting)"), "sk-…", $openAIKey) { Keychain.openAIKey = $0 }
-            apiKeyField(L("Anthropic (Claude reprompting)"), "sk-ant-…", $anthropicKey) { Keychain.anthropicKey = $0 }
-            apiKeyField(L("OpenRouter (any writing model)"), "sk-or-…", $openRouterKey) { Keychain.openRouterKey = $0 }
-            // Keys persist on every keystroke via apiKeyField's onChange (see footer) — no separate
-            // "Save keys" button: it was a no-op whose "Saved" flash implied typing wasn't already saved.
+        // Only the reprompting key the CHOSEN backend actually uses (transcription's OpenAI key
+        // lives in Dictation ▸ engine, not here).
+        repromptKeyCard
+    }
+
+    /// The one API-key field the current reprompting backend needs — nothing more. Backends that
+    /// need no key (Verba managed, Claude subscription, Fully local) show no key card at all.
+    @ViewBuilder private var repromptKeyCard: some View {
+        let b = settings.repromptBackend
+        let footer = L("Saved automatically as you type, in your macOS Keychain.")
+        if b == .openRouter || (b == .apiKey && settings.apiKeyProvider == .openRouter) {
+            card(L("API key"), footer: footer) {
+                apiKeyField(L("OpenRouter"), "sk-or-…", $openRouterKey) { Keychain.openRouterKey = $0 }
+            }
+        } else if b == .apiKey && settings.apiKeyProvider == .openAI {
+            card(L("API key"), footer: footer) {
+                apiKeyField(L("OpenAI"), "sk-…", $openAIKey) { Keychain.openAIKey = $0 }
+                Text(L("Same OpenAI key as Dictation ▸ cloud transcription."))
+                    .font(.caption2).foregroundStyle(.tertiary)
+            }
+        } else if b == .apiKey || b == .auto {
+            // .apiKey→Anthropic, and .auto uses your Anthropic key as one of its fallbacks.
+            card(L("API key"), footer: footer) {
+                apiKeyField(L("Anthropic (Claude)"), "sk-ant-…", $anthropicKey) { Keychain.anthropicKey = $0 }
+            }
         }
     }
 
