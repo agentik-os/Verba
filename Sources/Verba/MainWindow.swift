@@ -387,7 +387,7 @@ struct MainWindow: View {
                     VStack(alignment: .leading, spacing: 1) {
                         Text(settings.username.isEmpty ? L("Not signed in") : settings.username)
                             .font(.caption.weight(.medium)).lineLimit(1).truncationMode(.middle)
-                        Text(settings.isPro ? L("Pro plan") : L("Free trial"))
+                        Text(settings.isPro ? L("Pro plan") : L("Free plan"))
                             .font(.caption2)
                             .foregroundStyle(.secondary)   // monochrome, discreet (no green) to match the design
                     }

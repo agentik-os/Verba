@@ -255,7 +255,7 @@ function Hero() {
           </a>
           <a href="#how" className="btn-ghost px-7 py-3">See how it works</a>
         </div>
-        <p className="anim-cta mt-4 font-mono text-[11px] tracking-wide muted tnum">Download free · 33 dictations in-app, no card · then a 7-day Pro trial, cancel anytime</p>
+        <p className="anim-cta mt-4 font-mono text-[11px] tracking-wide muted tnum">Download free · Unlimited raw dictation, free forever, no card · Pro unlocks every AI mode</p>
         <p className="anim-cta mt-2 font-mono text-[11px] tracking-wide muted tnum">Have Claude Code? Zero setup, no API key, no markup <span className="faint">· Apple Silicon · macOS 14+</span></p>
         <div className="anim-cta mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[13px] muted">
           {["Acts on what you say", "Your Claude sub, no key", "Runs offline", "Reads your screen", "Hour-long notes", "Translate live"].map((p) => (
@@ -443,7 +443,7 @@ function Bento() {
 
         <Reveal delay={60}><BentoStat big="99+" label="languages, on-device" sub="Whisper runs worldwide" /></Reveal>
         <Reveal delay={120}><BentoStat big="$9.99" label="a month, all in" sub="and you bring your own AI" /></Reveal>
-        <Reveal delay={180}><BentoStat big="33" label="free dictations, full Pro" sub="no card required" /></Reveal>
+        <Reveal delay={180}><BentoStat big="Free" label="raw dictation, unlimited forever" sub="no card, ever" /></Reveal>
         <Reveal delay={240}><BentoStat big="100%" label="works offline" sub="no internet required" /></Reveal>
 
         <Reveal delay={120} className="col-span-2">
@@ -832,7 +832,7 @@ function TranslateMode() {
 function WhyBest() {
   const edges = [
     ["Does what others can't", "Reads your screen (Context), takes hour-long structured Notes, translates live, and runs agentic actions (Calendar, Reminders, email drafts). Most rivals only transcribe."],
-    ["Cheaper, and honest about it", "$9.99/mo, or $7/mo billed annually, while most cloud tools run $15 to $17. And the trial is the real app: 33 dictations with every Pro feature, no card."],
+    ["Cheaper, and honest about it", "$9.99/mo, or $7/mo billed annually, while most cloud tools run $15 to $17. Raw dictation is free forever and unlimited, no card ever; Pro adds every AI mode and feature."],
     ["Bring your own AI", "Use your Anthropic key, OpenRouter, your existing Claude Code subscription with no key at all, or a fully local Ollama model. You're never locked into our markup."],
     ["Actually private", "On-device transcription with Parakeet and Whisper, your audio never leaves the Mac. API keys live in the macOS Keychain, and your history is yours to control: switch it off entirely or auto-delete it after 7, 30, or 90 days."],
     ["Works with no internet", "Parakeet ships inside the app and transcribes offline, instantly, in 25 languages. Pair it with a local LLM and the entire pipeline runs on your Mac."],
@@ -1263,9 +1263,9 @@ function Pricing() {
         <div className="card r-panel p-8">
           <h3 className="text-lg font-medium">Free</h3>
           <div className="mt-3 font-mono text-4xl font-semibold tnum">$0</div>
-          <p className="mt-1 text-sm muted">33 dictations free in-app, no card. When you want unlimited, start a Pro trial.</p>
+          <p className="mt-1 text-sm muted">Raw dictation, free forever and unlimited. No card, ever. Pro unlocks every AI mode and feature.</p>
           <ul className="mt-6 space-y-2.5 text-sm muted">
-            {["33 dictations to try, full Pro features", "On-device or cloud transcription", "All modes + voice formatting", "No card required"].map((b) => (
+            {["Unlimited raw dictation, free forever", "On-device or cloud transcription", "No card, ever", "Pro unlocks every AI mode + feature"].map((b) => (
               <li key={b} className="flex gap-2.5"><span className="text-[var(--accent-line)]">·</span>{b}</li>
             ))}
           </ul>

@@ -1407,8 +1407,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if todoCaptureRecording { resetOneShotFlags(); return }   // R3: don't leak editLast/action into the next run
         // Chained dictation: starting a new one while an earlier dictation is still processing.
         if SessionStore.shared.hasInflight { Gamification.shared.flag(.chainedDictation) }
-        // Free Pro-trial: block new dictations once the trial allowance is spent.
-        if Entitlement.freeLimitReached() { resetOneShotFlags(); showPaywall(); return }
+        // Raw dictation is FREE FOREVER and unlimited — it is never paywalled. Only the AI modes
+        // (Polish/Translate/Prompt/Intent/Context/custom) sit behind Pro once the free trial is spent.
+        if !Settings.shared.activeProfile.raw && Entitlement.freeLimitReached() {
+            resetOneShotFlags(); showPaywall(); return
+        }
         recorder.requestPermission { [weak self] ok in
             guard let self else { return }
             guard ok else {
@@ -2714,8 +2717,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         showGlassAlert(
             icon: "sparkles", tint: .primary,
-            title: "Your free trial is used up",
-            message: "You've used your \(Entitlement.freeTrialDictations) free Pro dictations. Upgrade to Verba Pro for unlimited dictation, $9.99/month.",
+            title: "Unlock the AI modes",
+            message: "Raw dictation is free forever and unlimited. Upgrade to Verba Pro to use Polish, Translate, Prompt and every other mode, plus Notes, Tasks and JARVIS, for $9.99/month.",
             buttons: [
                 .init(title: "Later", role: .cancel, action: {}),
                 .init(title: "I already subscribed") { [weak self] in

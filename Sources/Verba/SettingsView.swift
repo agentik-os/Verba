@@ -594,12 +594,12 @@ struct SettingsView: View {
             let used = Stats.shared.totalCount
             let limit = Entitlement.freeTrialDictations
             let exhausted = used >= limit
-            card(L("Free trial"),
-                 footer: "\(L("Free is a full-Pro trial of")) \(limit) \(L("dictations. Pro ($9.99/mo) unlocks unlimited dictation, editable system prompts and custom modes."))") {
+            card(L("Your plan"),
+                 footer: L("Raw dictation is free forever and unlimited. Pro ($9.99/mo) unlocks every AI mode (Polish, Translate, Prompt…), Notes, Tasks, JARVIS, editable system prompts and custom modes.")) {
                 if exhausted {
-                    // Trial used up: a clear upgrade state instead of a silently pinned bar.
+                    // AI modes locked: Raw stays free forever, Pro unlocks the rest.
                     HStack(spacing: 10) {
-                        statusLabel(L("Free trial used up. Upgrade for unlimited dictation."),
+                        statusLabel(L("Raw stays free forever. Upgrade to Pro for the AI modes."),
                                     system: "checkmark.circle.fill", tint: .secondary)
                         Spacer()
                         if let u = URL(string: Entitlement.pricingURL) {
@@ -681,7 +681,7 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(settings.isPro ? "Verba Pro" : L("Free plan")).font(.system(size: 17, weight: .bold))
                 Text(settings.isPro ? L("Unlimited dictation, custom modes, editable prompts.")
-                                    : L("A full-Pro trial. Upgrade for unlimited dictation."))
+                                    : L("Raw dictation free forever. Upgrade for the AI modes + features."))
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)

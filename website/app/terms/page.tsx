@@ -27,7 +27,7 @@ Some features (cloud sync, billing, JARVIS) require an account, authenticated vi
 
 ## 4. Subscriptions, Billing & Refunds
 
-- Verba offers a free tier of **33 dictations**. Continued use of paid features requires a subscription.
+- Verba offers a permanently free tier: unlimited raw dictation, forever, no card. Continued use of the paid AI features requires a subscription.
 - Paid plans are **$9.99 USD / month** or **$84 USD / year**, billed through **Stripe**.
 - Subscriptions **renew automatically** at the end of each billing period until cancelled. You can cancel at any time; cancellation takes effect at the end of the current paid period and you retain access until then.
 - Prices and plans may change on a prospective basis with notice; changes do not affect the period you have already paid for.

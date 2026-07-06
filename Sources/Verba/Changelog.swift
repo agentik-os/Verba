@@ -36,6 +36,12 @@ enum Changelog {
             date: "July 4, 2026", tag: "Today",
             summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
             entries: [
+                ChangelogEntry(version: "0.9.53",
+                    title: "Raw dictation is free forever",
+                    items: [
+                        "Raw dictation is now free forever and unlimited, no card, no trial clock. Press Fn and talk, as much as you want, for as long as you want.",
+                        "Verba Pro ($9.99/mo) unlocks everything else: every AI mode (Polish, Translate, Prompt, Intent, Context), plus Notes, Tasks, JARVIS, custom modes and editable prompts.",
+                    ]),
                 ChangelogEntry(version: "0.9.52",
                     title: "Your AI engine, respected everywhere",
                     items: [
