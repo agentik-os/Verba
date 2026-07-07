@@ -1246,10 +1246,6 @@ struct SettingsView: View {
                 chordRow(L("Next mode  (add ⇧ for previous)"), caps: ["Fn", "⇥"])
                 chordRow(L("Pick a mode by number"), caps: ["Fn", "1–9"])
                 chordRow(L("Next mode hands-free while recording"), caps: ["⌥"])
-                chordRecorderRow(L("Custom change-mode shortcut"),
-                                 has: settings.modePickerHasShortcut,
-                                 code: settings.modePickerKeyCode, mods: settings.modePickerMods,
-                                 target: .modePicker)
                 cardCaption(settings.modeGestureCycles
                     ? L("Fn + Tab cycles to the next mode even mid-dictation; turn the toggle off to open a numbered picker instead.")
                     : L("Fn + Tab opens a numbered picker; turn the toggle on to cycle straight to the next mode instead."))

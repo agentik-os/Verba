@@ -826,11 +826,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         // Global "open mode picker" shortcut. (Mode switching also lives on Fn+Tab and Fn+1-9;
         // ⌥+Fn now pops the to-do glance, not the picker.)
-        if s.modePickerHasShortcut {
-            HotKeys.shared.register(id: 2, keyCode: s.modePickerKeyCode, modifiers: s.modePickerMods) { [weak self] in
-                self?.changeMode()
-            }
-        }
+        // (The global "open mode picker" shortcut was removed — it was redundant with Fn+Tab / Fn+1-9
+        // and the ⌃⌥ combo confused users. Mode switching lives on Fn+Tab, Fn+1-9, and the lone-⌥ tap.)
         // Global "record a new note" shortcut (in addition to Fn + Z).
         if s.noteRecordHasShortcut {
             HotKeys.shared.register(id: 3, keyCode: s.noteRecordKeyCode, modifiers: s.noteRecordMods) { [weak self] in

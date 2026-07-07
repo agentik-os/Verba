@@ -891,6 +891,13 @@ final class Settings: ObservableObject {
         // No extra global change-mode shortcut by default: the built-in gesture is Fn + Tab.
         modePickerKeyCode = UInt32(d.object(forKey: "modePickerKeyCode") as? Int ?? 0)
         modePickerMods = UInt32(d.object(forKey: "modePickerMods") as? Int ?? 0)
+        // The global "open mode picker" shortcut was removed (redundant + confusing). Clear any binding
+        // a user had set, once, so it stops firing and stops colliding in conflict detection.
+        if !d.bool(forKey: "modePickerShortcutRetired") {
+            modePickerKeyCode = 0; modePickerMods = 0
+            d.set(0, forKey: "modePickerKeyCode"); d.set(0, forKey: "modePickerMods")
+            d.set(true, forKey: "modePickerShortcutRetired")
+        }
         modeGestureCycles = d.object(forKey: "modeGestureCycles") as? Bool ?? true
         todoGlanceEnabled = d.object(forKey: "todoGlanceEnabled") as? Bool ?? true
         rememberLastMode = d.object(forKey: "rememberLastMode") as? Bool ?? true

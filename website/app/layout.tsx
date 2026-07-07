@@ -163,12 +163,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <RefCapture />
           {children}
           <Analytics />
-          {/* Google Ads (gtag.js) — conversion tracking, AW-18293643888 */}
-          <Script src="https://www.googletagmanager.com/gtag/js?id=AW-18293643888" strategy="afterInteractive" />
-          <Script id="google-ads-gtag" strategy="afterInteractive">
+          {/* Google tag (gtag.js) — one load, both destinations: GA4 analytics (G-KGTS6B6WWP)
+              + Google Ads conversion tracking (AW-18293643888). */}
+          <Script src="https://www.googletagmanager.com/gtag/js?id=G-KGTS6B6WWP" strategy="afterInteractive" />
+          <Script id="google-gtag" strategy="afterInteractive">
             {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
+gtag('config', 'G-KGTS6B6WWP');
 gtag('config', 'AW-18293643888');`}
           </Script>
         </body>

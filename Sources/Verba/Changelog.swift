@@ -40,7 +40,8 @@ enum Changelog {
                     title: "Global widget shortcuts + faster, more reliable JARVIS",
                     items: [
                         "The Actions and To-do widgets no longer vanish when you click elsewhere, and you can open all three from anywhere: ⌃⌥X Actions, ⌃⌥Z To-dos, ⌃⌥C Notes.",
-                        "JARVIS is faster and more reliable on the local model: it now trims bulky app data before reasoning, so asks like \"what\u2019s my next event?\" work smoothly on-device.",
+                        "Removed the confusing extra mode-picker shortcut (mode switching stays on Fn+Tab and Fn+1-9).",
+                        "JARVIS is faster and more reliable on the local model: it now trims bulky app data before reasoning, so asks like your next event work smoothly on-device.",
                     ]),
                 ChangelogEntry(version: "0.9.58",
                     title: "Fully local by default, now on qwen3",

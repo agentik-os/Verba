@@ -25,6 +25,7 @@ const DAYS: Day[] = [
         title: "Global widget shortcuts + faster, more reliable JARVIS",
         items: [
           "The Actions and To-do widgets no longer vanish when you click elsewhere, and you can open all three from anywhere: \u2303\u2325X Actions, \u2303\u2325Z To-dos, \u2303\u2325C Notes.",
+          "Removed the confusing extra mode-picker shortcut (mode switching stays on Fn+Tab and Fn+1-9).",
           "JARVIS is faster and more reliable on the local model: it trims bulky app data before reasoning, so asks like \u201cwhat\u2019s my next event?\u201d work smoothly on-device.",
         ],
       },
