@@ -334,7 +334,7 @@ struct ActionFeedView: View {
             }
         }
         .padding(.horizontal, 18).padding(.vertical, 16)
-        .frame(minWidth: 470, maxWidth: 470, minHeight: 84, alignment: .topLeading)
+        .frame(minWidth: 520, maxWidth: 520, minHeight: 340, alignment: .topLeading)
         .glass(in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: store.items)
     }
@@ -636,6 +636,7 @@ final class ActionFeedController {
         p.isOpaque = false
         p.hasShadow = true
         p.ignoresMouseEvents = false   // Confirm/Cancel + clarification chips must be clickable
+        p.isMovableByWindowBackground = true   // draggable anywhere on the card
 
         let host = NSHostingController(rootView: ActionFeedView(onClose: { [weak self] in self?.hide() }))
         host.sizingOptions = [.preferredContentSize]
@@ -666,7 +667,10 @@ final class ActionFeedController {
         build()
         guard let panel, let screen = NSScreen.main else { return }
         panel.layoutIfNeeded()
-        let size = panel.contentView?.fittingSize ?? NSSize(width: 470, height: 160)
+        // Bigger + taller by default, and a shared width so Actions / To-dos / Notes match. Content
+        // still grows the height past the floor when there are many items.
+        let fit = panel.contentView?.fittingSize ?? NSSize(width: 520, height: 340)
+        let size = NSSize(width: 520, height: max(fit.height, 360))
         let vf = screen.visibleFrame
         centeringFrame = vf
         let frameSize = panel.frameRect(forContentRect: NSRect(origin: .zero, size: size)).size

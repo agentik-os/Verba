@@ -36,6 +36,12 @@ enum Changelog {
             date: "July 4, 2026", tag: "Today",
             summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
             entries: [
+                ChangelogEntry(version: "0.9.61",
+                    title: "No more accidental mode picker, and bigger movable widgets",
+                    items: [
+                        "Holding Control+Option no longer pops the mode picker (it clashed with the new Control+Option X/Z/C widget shortcuts). Mode switching stays on Fn+Tab and Fn+1-9.",
+                        "The Actions and To-do widgets are now bigger and taller by default, the same size as each other, and you can drag them anywhere on screen.",
+                    ]),
                 ChangelogEntry(version: "0.9.60",
                     title: "JARVIS acts noticeably faster",
                     items: [

@@ -210,7 +210,7 @@ struct TodoGlanceView: View {
             }
         }
         .padding(.horizontal, 18).padding(.vertical, 16)
-        .frame(minWidth: 470, maxWidth: 470, minHeight: 84, alignment: .topLeading)
+        .frame(minWidth: 520, maxWidth: 520, minHeight: 340, alignment: .topLeading)
         .glass(in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .onChange(of: session.openSeq) { _, _ in recentlyDone = []; completing = [] }   // fresh each open
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: completing)
@@ -369,6 +369,7 @@ final class TodoGlanceController {
         p.isOpaque = false
         p.hasShadow = true
         p.ignoresMouseEvents = false   // checkboxes must be clickable
+        p.isMovableByWindowBackground = true   // draggable anywhere on the card
         let host = NSHostingController(rootView: TodoGlanceView(
             onClose: { [weak self] in self?.hide() },
             onAddTodo: { [weak self] in
@@ -393,7 +394,9 @@ final class TodoGlanceController {
         GlanceSession.shared.openSeq += 1   // reset the per-session undo list on each fresh open
         guard let panel, let screen = NSScreen.main else { return }
         panel.layoutIfNeeded()
-        let size = panel.contentView?.fittingSize ?? NSSize(width: 300, height: 160)
+        // Match the Actions widget: shared 520 width + a taller default floor. Content grows past it.
+        let fit = panel.contentView?.fittingSize ?? NSSize(width: 520, height: 340)
+        let size = NSSize(width: 520, height: max(fit.height, 360))
         let vf = screen.visibleFrame
         centeringFrame = vf
         let frameSize = panel.frameRect(forContentRect: NSRect(origin: .zero, size: size)).size

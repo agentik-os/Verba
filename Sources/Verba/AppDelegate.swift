@@ -972,13 +972,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// ⌃⌥ held with nothing recording → show the numbered mode picker.
-    private func chordDown() {
-        guard state == .idle else { return }
-        // Menu bar only mode has no overlay; the picker is the menu-bar dropdown instead.
-        if Settings.shared.overlayStyle == .minimal { return }
-        showModeMenu()
-    }
+    /// ⌃⌥ held — NO LONGER opens the mode picker. That was redundant with Fn+Tab / Fn+1-9 and, worse,
+    /// it collided with the ⌃⌥X/Z/C widget shortcuts (pressing ⌃⌥ to hit X/Z/C popped the picker).
+    /// The chord is still DETECTED by ChordMonitor (to tell a ⌃⌥ chord from a lone ⌃ pause tap); it
+    /// simply performs no action on its own now.
+    private func chordDown() {}
 
     /// ⌃⌥ released.
     private func chordUp() {
