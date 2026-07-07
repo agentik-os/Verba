@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title: "Verba, the Mac Voice Agent | Private Dictation that Acts",
   // ≤160 chars so Google doesn't truncate it in the SERP.
   description:
-    "Verba is the private Mac voice agent: dictate and it acts across 1,000+ apps. On-device voice-to-text, reuse your Claude Code plan with no key. $9.99/mo.",
+    "Verba is the private Mac voice agent: dictate and it acts across 1,000+ apps. On-device voice-to-text, your data stays on your Mac. $9.99/mo.",
   metadataBase: new URL("https://verba.run"),
   alternates: { canonical: "/" },
   // Google Search Console — renders <meta name="google-site-verification" …>. Verifies a URL-prefix
@@ -22,12 +22,12 @@ export const metadata: Metadata = {
   keywords: [
     "Mac voice agent", "AI dictation Mac", "voice to text macOS", "dictation app for Mac",
     "Wispr Flow alternative", "speech to text Mac", "on-device dictation", "private dictation app",
-    "Jarvis for Mac", "voice to action Mac", "Claude Code voice", "dictate to Claude Code",
+    "Jarvis for Mac", "voice to action Mac", "private AI dictation", "secure voice to text Mac",
   ],
   openGraph: {
     title: "Verba, the Mac Voice Agent | Dictation that Acts",
     description:
-      "The private Mac voice agent: dictate and it acts across 1,000+ apps. On-device voice-to-text, AI cleanup, live translation. Reuse your Claude Code plan, no key. $9.99/mo.",
+      "The private Mac voice agent: dictate and it acts across 1,000+ apps. On-device voice-to-text, AI cleanup, live translation. Your data stays on your Mac. $9.99/mo.",
     url: "/",
     siteName: "Verba",
     type: "website",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Verba, the Mac Voice Agent | Dictation that Acts",
     description:
-      "The private Mac voice agent, dictation that acts on 1,000+ apps. On-device voice-to-text, reuse your Claude Code plan with no key.",
+      "The private Mac voice agent, dictation that acts on 1,000+ apps. On-device voice-to-text, your data stays on your Mac.",
   },
 };
 
@@ -51,7 +51,7 @@ const SITE_JSONLD = {
       applicationCategory: "UtilitiesApplication",
       operatingSystem: "macOS 14+",
       description:
-        "The private Mac voice agent: on-device voice-to-text and AI cleanup in any app, plus JARVIS, which acts on 1,000+ connected apps. Bring your own AI, including your Claude Code plan with no key.",
+        "The private Mac voice agent: on-device voice-to-text and AI cleanup in any app, plus JARVIS, which acts on 1,000+ connected apps. Your data stays on your Mac.",
       url: "https://verba.run",
       downloadUrl: "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg",
       softwareVersion: "0.9.29",
@@ -65,10 +65,10 @@ const SITE_JSONLD = {
       },
       creator: { "@type": "Person", name: "Gareth Simono" },
       featureList: [
-        "On-device voice-to-text (WhisperKit, NVIDIA Parakeet)",
+        "On-device voice-to-text, private by default",
         "AI rewriting in any app", "Live translation", "Reads your screen (Context mode)",
         "JARVIS voice agent acting on 1,000+ connected apps",
-        "Bring your own AI (Claude, OpenRouter, local Ollama)", "15 UI languages",
+        "Choose your own AI engine, your data stays on your Mac", "15 UI languages",
       ],
     },
     {

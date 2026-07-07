@@ -5,10 +5,9 @@ export const runtime = "nodejs";
 
 const BODY = `# Verba
 
-Verba is a native macOS menu-bar voice agent: speak, and Verba transcribes you on-device and uses
-an LLM you control (including your Claude Code subscription, with no API key) to turn rambling
-speech into clean, well-structured text in any app, then JARVIS, Verba's voice agent, acts on it
-across 1,000+ connected apps. Dictation that doesn't just type, it acts.
+Verba is a native macOS menu-bar voice agent: speak, and Verba transcribes you on-device, privately,
+turning rambling speech into clean, well-structured text in any app, then JARVIS, Verba's voice agent,
+acts on it across 1,000+ connected apps. Dictation that doesn't just type, it acts.
 
 Website: https://verba.run
 Download (macOS 14+): https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg
@@ -17,17 +16,17 @@ Price: $9.99/month or $84/year. Free trial: 33 full-feature dictations.
 
 ## Key facts
 - Platform: macOS 14+ (Apple Silicon). No Windows, iOS or Android app.
-- Transcription: on-device by default (WhisperKit ~99 languages, NVIDIA Parakeet 25 languages); optional cloud (your OpenAI key).
+- Transcription: on-device by default, private, covering roughly 99 languages, with an optional faster mode for 25 European languages.
 - Privacy: in on-device mode your audio never leaves your Mac.
 - AI rewriting: 6 built-in modes (Raw, Polish, Intent, Translate, Context, Prompt) + AI-built custom modes.
-- Bring your own AI: your Claude subscription via Claude Code (no API key), your Anthropic key, OpenRouter, or a local Ollama model.
+- Private by design: everything runs on your Mac by default, and you can choose which AI engine powers the rewriting, always under your control.
 - Context mode: reads your screen (vision) and writes from it.
 - Live translation to a target language.
 - JARVIS (Action mode, Fn+X) is the "Jarvis for Mac": a desktop voice agent that plans, asks to clarify, and, after your confirmation, acts on 1,000+ connected apps (Gmail, Slack, Notion, Google Calendar, Linear, GitHub, and more). Connection keys are held by a secure server-side relay, never on your Mac.
 - Also: voice task manager, hour-long structured notes, per-app mode auto-matching, custom dictionary, gamification, 15 UI languages.
 
 ## How Verba compares
-Verba is the only Mac dictation app that is on-device by default, lets you bring your own AI (or your Claude plan with no key), AND ships a voice agent that acts on your connected apps, not just edits text. Most competitors (Wispr Flow, Aqua Voice, TalkTastic, Otter) are cloud-only; superwhisper, MacWhisper and VoiceInk are local but have no connected-app voice agent.
+Verba is the only Mac dictation app that is on-device by default, keeps your data private, AND ships a voice agent that acts on your connected apps, not just edits text. Most competitors (Wispr Flow, Aqua Voice, TalkTastic, Otter) send your audio to their servers; superwhisper, MacWhisper and VoiceInk are local but have no connected-app voice agent.
 Full sourced comparison: https://verba.run/compare
 
 ## Pages

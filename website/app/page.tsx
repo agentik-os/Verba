@@ -246,7 +246,7 @@ function Hero() {
         </h1>
         <p className="anim-sub t-lead mt-7 max-w-xl">
           The private voice app for your Mac that doesn&apos;t just write what you say, it does it.
-          Dictate clean text into any app, reuse the Claude Code subscription you already pay for (no API key),
+          Dictate clean text into any app, use the AI plan you already pay for,
           and let JARVIS act across 1,000+ apps. Every step is planned on-device, and nothing happens until you confirm.
         </p>
         <div className="anim-cta mt-9 flex flex-wrap items-center gap-3">
@@ -256,9 +256,9 @@ function Hero() {
           <a href="#how" className="btn-ghost px-7 py-3">See how it works</a>
         </div>
         <p className="anim-cta mt-4 font-mono text-[11px] tracking-wide muted tnum">Download free · Unlimited raw dictation, free forever, no card · Pro unlocks every AI mode</p>
-        <p className="anim-cta mt-2 font-mono text-[11px] tracking-wide muted tnum">Have Claude Code? Zero setup, no API key, no markup <span className="faint">· Apple Silicon · macOS 14+</span></p>
+        <p className="anim-cta mt-2 font-mono text-[11px] tracking-wide muted tnum">Already have an AI plan? Zero setup, no markup <span className="faint">· Apple Silicon · macOS 14+</span></p>
         <div className="anim-cta mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[13px] muted">
-          {["Acts on what you say", "Your Claude sub, no key", "Runs offline", "Reads your screen", "Hour-long notes", "Translate live"].map((p) => (
+          {["Acts on what you say", "Private AI on your Mac", "Runs offline", "Reads your screen", "Hour-long notes", "Translate live"].map((p) => (
             <span key={p} className="flex items-center gap-2">
               <span className="h-1 w-1 rounded-full bg-[var(--accent-line)]" />{p}
             </span>
@@ -315,7 +315,7 @@ function SpeedProof() {
 /* PERSONAS, who it's for, in one line each. Benefit-led, talk once and move on. */
 function Personas() {
   const personas: { name: string; line: string }[] = [
-    { name: "Engineers", line: "Dictate a rambling thought into a clean Opus prompt in Cursor or Claude Code. Say \"create the issue, email the team\", confirm, done." },
+    { name: "Engineers", line: "Dictate a rambling thought into a clean prompt in Cursor or your coding tool. Say \"create the issue, email the team\", confirm, done." },
     { name: "Founders", line: "Clear the inbox, the doc, and the standup notes between meetings. Talk once, send clean, move on." },
     { name: "Writers", line: "Capture the draft at the speed you think it. An hour of voice becomes a structured document you can actually edit." },
     { name: "Support and ops", line: "Answer every ticket in your own tone, per app. Verba matches how you write in Slack, Mail, and Notion." },
@@ -328,7 +328,7 @@ function Personas() {
         <HeadCenter
           eyebrow="Who it's for"
           title="One key, for the way you actually work"
-          lead="Built first for Claude Code-native developers, Verba is the complete voice OS for anyone who thinks faster than they type. It doesn't just transcribe: it reads your screen, files your tasks, translates as you speak, and acts on what it hears."
+          lead="Built first for developers who live in the terminal, Verba is the complete voice OS for anyone who thinks faster than they type. It doesn't just transcribe: it reads your screen, files your tasks, translates as you speak, and acts on what it hears."
         />
       </Reveal>
       <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -395,7 +395,7 @@ function Jokes() {
     <section className="py-28">
       <Reveal>
         <HeadCenter
-          eyebrow="While Claude works"
+          eyebrow="While Verba works"
           index="09"
           title="Loading screens that make you smile"
           lead="While Verba rewrites your words, it shows you a one-liner. 17 humor themes, an Off switch, and never the same joke twice in a day."
@@ -424,7 +424,7 @@ function Bento() {
           index="06"
           anchor
           title="Your voice stays yours"
-          lead="Verba runs open speech models, Whisper and Parakeet, right on your Mac. Your audio is never uploaded, and nobody resells your words. Here is what that gets you."
+          lead="Verba runs private speech models right on your Mac. Your audio is never uploaded, and nobody resells your words. Here is what that gets you."
         />
       </Reveal>
 
@@ -436,13 +436,13 @@ function Bento() {
             <div>
               <div className="t-anchor tnum">0&nbsp;bytes</div>
               <p className="mt-3 font-medium">of audio leave your Mac</p>
-              <p className="mt-1.5 max-w-sm text-sm pf-55">On-device mode transcribes locally, so your audio never leaves the Mac. Transcripts go to your local history, which you can switch off or auto-delete. Cloud tools upload every word; Verba doesn't have to.</p>
+              <p className="mt-1.5 max-w-sm text-sm pf-55">On-device mode transcribes locally, so your audio never leaves the Mac. Transcripts go to your local history, which you can switch off or auto-delete. Other dictation tools send your audio to their servers; Verba doesn't have to.</p>
             </div>
           </div>
         </Reveal>
 
-        <Reveal delay={60}><BentoStat big="99+" label="languages, on-device" sub="Whisper runs worldwide" /></Reveal>
-        <Reveal delay={120}><BentoStat big="$9.99" label="a month, all in" sub="and you bring your own AI" /></Reveal>
+        <Reveal delay={60}><BentoStat big="99+" label="languages, on-device" sub="Runs worldwide" /></Reveal>
+        <Reveal delay={120}><BentoStat big="$9.99" label="a month, all in" sub="plus the AI you already use" /></Reveal>
         <Reveal delay={180}><BentoStat big="Free" label="raw dictation, unlimited forever" sub="no card, ever" /></Reveal>
         <Reveal delay={240}><BentoStat big="100%" label="works offline" sub="no internet required" /></Reveal>
 
@@ -450,8 +450,8 @@ function Bento() {
           <div className="card lift r-card flex h-full items-center gap-4 p-7">
             <Icon name="key" className="h-7 w-7 shrink-0 text-[var(--fg-dim)]" />
             <div>
-              <p className="font-medium">Bring your own AI account</p>
-              <p className="mt-1 text-sm muted">Anthropic key, OpenRouter, your Claude Code subscription, or a fully local Ollama model. You never pay a vendor markup.</p>
+              <p className="font-medium">Connect the AI account you already use</p>
+              <p className="mt-1 text-sm muted">Private AI on your Mac, or connect an AI account you already pay for, or run a fully local model. You never pay a vendor markup.</p>
             </div>
           </div>
         </Reveal>
@@ -460,7 +460,7 @@ function Bento() {
             <Icon name="bolt" className="h-7 w-7 shrink-0 text-[var(--fg-dim)]" />
             <div>
               <p className="font-medium">Modes, the right model each time</p>
-              <p className="mt-1 text-sm muted">Raw (verbatim), Polish (hears what you meant), Intent, Translate, Context (vision), and Prompt (turn what you say into an optimized AI prompt). Sonnet for intent, Opus for prompts. Edit any prompt, or describe a need and let AI build you a custom mode.</p>
+              <p className="mt-1 text-sm muted">Raw (verbatim), Polish (hears what you meant), Intent, Translate, Context (vision), and Prompt (turn what you say into an optimized AI prompt). Lighter AI for everyday modes, more capable AI for prompts. Edit any prompt, or describe a need and let AI build you a custom mode.</p>
             </div>
           </div>
         </Reveal>
@@ -544,7 +544,7 @@ function ContextMode() {
             <p className="eyebrow">Requirements</p>
             <ul className="mt-3 space-y-1.5 text-sm muted">
               <li className="flex gap-2"><span className="text-[var(--accent-line)]">·</span>macOS Screen Recording permission</li>
-              <li className="flex gap-2"><span className="text-[var(--accent-line)]">·</span>A vision-capable model: Anthropic API key or OpenRouter key</li>
+              <li className="flex gap-2"><span className="text-[var(--accent-line)]">·</span>A connected AI account that supports vision</li>
             </ul>
           </div>
         </div>
@@ -697,7 +697,7 @@ function LanguageDetection() {
       </div>
       <Reveal delay={80}>
         <p className="mt-6 text-center text-sm muted">
-          Whisper covers 99+ languages. Parakeet is optimized for 25 European languages.
+          On-device transcription covers 99+ languages, with a faster option optimized for 25 European languages.
           Use Intent mode to override: "en francais", "in English", "auf Deutsch".
         </p>
       </Reveal>
@@ -832,11 +832,11 @@ function TranslateMode() {
 function WhyBest() {
   const edges = [
     ["Does what others can't", "Reads your screen (Context), takes hour-long structured Notes, translates live, and runs agentic actions (Calendar, Reminders, email drafts). Most rivals only transcribe."],
-    ["Cheaper, and honest about it", "$9.99/mo, or $7/mo billed annually, while most cloud tools run $15 to $17. Raw dictation is free forever and unlimited, no card ever; Pro adds every AI mode and feature."],
-    ["Bring your own AI", "Use your Anthropic key, OpenRouter, your existing Claude Code subscription with no key at all, or a fully local Ollama model. You're never locked into our markup."],
-    ["Actually private", "On-device transcription with Parakeet and Whisper, your audio never leaves the Mac. API keys live in the macOS Keychain, and your history is yours to control: switch it off entirely or auto-delete it after 7, 30, or 90 days."],
-    ["Works with no internet", "Parakeet ships inside the app and transcribes offline, instantly, in 25 languages. Pair it with a local LLM and the entire pipeline runs on your Mac."],
-    ["Six modes, plus your own", "Raw, Polish, Intent, Translate, Context and Prompt, routed to Sonnet or Opus so you only pay for power where it matters. Edit any prompt, or describe a need and AI builds you a custom mode."],
+    ["Cheaper, and honest about it", "$9.99/mo, or $7/mo billed annually, while most other dictation apps run $15 to $17. Raw dictation is free forever and unlimited, no card ever; Pro adds every AI mode and feature."],
+    ["Private AI on your Mac", "Run AI privately on-device, or connect the AI account you already use, with no key needed at all. You're never locked into our markup."],
+    ["Actually private", "On-device transcription runs locally, your audio never leaves the Mac. Account credentials live in the macOS Keychain, and your history is yours to control: switch it off entirely or auto-delete it after 7, 30, or 90 days."],
+    ["Works with no internet", "The on-device engine ships inside the app and transcribes offline, instantly, in 25 languages. Pair it with a local AI model and the entire pipeline runs on your Mac."],
+    ["Six modes, plus your own", "Raw, Polish, Intent, Translate, Context and Prompt, routed to lighter or more capable AI so you only pay for power where it matters. Edit any prompt, or describe a need and AI builds you a custom mode."],
     ["It learns you", "Auto-learns your vocabulary from your edits, matches your writing tone per app, and remembers how you phrase things. It sounds like you, not a template."],
     ["One press, then done", "Tap Fn, talk, and clean text lands where your cursor is. Hands-free formatting, redo in another mode, edit the last result by voice. No app switching, ever."],
   ];
@@ -858,7 +858,7 @@ function WhyBest() {
             ["Shipping constantly", "40+ public releases and counting, all on the live changelog."],
             ["230+ achievements to earn", "1,000 levels, daily streaks and a live leaderboard, see your rank and percentile among everyone using Verba."],
             ["Works in every app", "If your cursor is there, Verba writes there. No window, no paste."],
-            ["Your AI, or fully offline", "Bring your own key or run on-device. No vendor markup, no uploads."],
+            ["Your AI, or fully offline", "Connect your own AI account or run on-device. No vendor markup, no uploads."],
           ].map(([t, d]) => (
             <div key={t} className="card r-card p-5">
               <p className="flex items-center gap-2 font-medium"><span className="rec-dot" />{t}</p>
@@ -890,11 +890,11 @@ function WhyBest() {
 function ModesModels() {
   const rows = [
     ["Raw", "No AI", "Verbatim transcription, no rewriting. Your words, exactly as spoken, cleaned up for punctuation only."],
-    ["Polish", "Sonnet 4.6", "Hears what you meant. It follows your self-corrections to the final version, drops the parts you took back, and writes finished prose, not a transcript of thinking out loud."],
-    ["Intent", "Sonnet 4.6", "State the goal at the start: \"turn this into a bug report\", \"rewrite as a formal email\". Verba follows your lead."],
-    ["Translate", "Sonnet 4.6", "Pick a target language once. Speak in any language and Verba writes it in the one you chose, every time."],
-    ["Context", "Sonnet 4.6", "Takes a screenshot of your screen and acts on what it sees, based on what you say. Reply to the email on screen, summarize a document, comment on a photo."],
-    ["Prompt", "Opus 4.8", "Turns what you say into an optimized prompt for any AI — ChatGPT, Claude, an image generator, or a coding agent like Cursor or Claude Code."],
+    ["Polish", "Standard AI", "Hears what you meant. It follows your self-corrections to the final version, drops the parts you took back, and writes finished prose, not a transcript of thinking out loud."],
+    ["Intent", "Standard AI", "State the goal at the start: \"turn this into a bug report\", \"rewrite as a formal email\". Verba follows your lead."],
+    ["Translate", "Standard AI", "Pick a target language once. Speak in any language and Verba writes it in the one you chose, every time."],
+    ["Context", "Standard AI", "Takes a screenshot of your screen and acts on what it sees, based on what you say. Reply to the email on screen, summarize a document, comment on a photo."],
+    ["Prompt", "Advanced AI", "Turns what you say into an optimized prompt for any AI tool: an image generator, a chat assistant, or a coding agent like Cursor."],
   ];
   return (
     <section className="py-28">
@@ -933,10 +933,10 @@ function CompareTeaser() {
         {/* THE INVERSION, the page's single light surface [G7] */}
         <div className="r-panel relative overflow-hidden border border-black/10 bg-[#f4f2ee] px-8 py-16 text-center text-[#0a0a0c] sm:px-12 sm:py-20" style={{ boxShadow: "var(--panel-shadow)" }}>
           <div className="mx-auto mb-7 w-fit"><MicMark size={40} glyph={20} /></div>
-          <h2 className="t-statement mx-auto max-w-3xl text-balance">Cloud tools upload your voice. Verba doesn't.</h2>
+          <h2 className="t-statement mx-auto max-w-3xl text-balance">Other dictation tools upload your voice. Verba doesn't.</h2>
           <p className="mx-auto mt-5 max-w-xl text-balance text-black/55">
-            The popular cloud dictation tools send every word to their servers, and most run $15 to $17 a month.
-            Verba runs on your Mac, lets you bring your own AI account, and costs $9.99.
+            The popular dictation tools send every word to their servers, and most run $15 to $17 a month.
+            Verba runs on your Mac, lets you connect the AI account you already use, and costs $9.99.
           </p>
           <Link href="/compare" className="mt-9 inline-flex items-center gap-2 rounded-[10px] bg-[#0a0a0c] px-7 py-3 font-medium text-white transition-opacity duration-150 hover:opacity-90">
             See the full comparison
@@ -959,10 +959,10 @@ function FeatureBlurbs() {
     { name: "Talk an hour, get a document", problem: "Long voice memos pile up as raw transcripts nobody wants to clean afterward.", example: "Open Notes, pick Meeting notes, talk for 40 minutes. Out comes a structured, tagged, editable markdown doc." },
     { name: "A task manager you just talk to", problem: "Capturing to-dos means stopping, opening an app, and typing the thing you already said out loud.", example: "\"Pay the invoice Friday at 6pm\" files a dated task. \"I bought the tomatoes\" ticks it off. By voice, no tapping." },
     { name: "Translate as you speak", problem: "Writing in a second language means drafting, copying into a translator, then pasting back. Three steps, every message.", example: "Pick a target language once. Speak French, Verba writes fluent English in place. Tone, names, and numbers preserved." },
-    { name: "Bring your own AI", problem: "Cloud dictation tools lock you into their model and charge a markup on every word.", example: "Use your Anthropic key, OpenRouter, your existing Claude Code plan with no key at all, or a fully local Ollama model." },
+    { name: "Private AI on your Mac", problem: "Other dictation tools lock you into their model and charge a markup on every word.", example: "Run AI privately on-device, or connect the AI account you already use, with no key needed at all." },
     { name: "It learns how you write", problem: "Generic rewriters flatten your voice into the same corporate template every time.", example: "Correct a word once and Verba remembers it. It matches your tone per app, so you in Slack still sounds like you." },
     { name: "Chain dictations, never wait", problem: "Other tools make you sit through processing before you can speak again.", example: "Fire off dictation after dictation: each one still working stacks up as a little chip above the pill, 10 or 20 at a time, and lands the moment it's ready." },
-    { name: "Runs fully offline", problem: "Cloud tools upload every word you speak and stop working the moment your connection drops.", example: "Parakeet ships inside the app and transcribes on-device, instantly, in 25 languages. Pair a local model and nothing leaves your Mac." },
+    { name: "Runs fully offline", problem: "Other tools upload every word you speak and stop working the moment your connection drops.", example: "The on-device engine ships inside the app and transcribes on-device, instantly, in 25 languages. Pair a local model and nothing leaves your Mac." },
   ];
   return (
     <section className="py-28">
@@ -999,9 +999,9 @@ function Features() {
     ["Your messy speech, cleaned up", "Verba reorders your thoughts, fixes punctuation, and removes the filler so a rambling voice note becomes a clean, ready-to-send message."],
     ["Keeps your voice", "Switch between modes for coding, work, and personal writing. Verba matches the right tone instead of flattening everything."],
     ["Hands-free formatting", "Say \"new line\", \"bullet point\", or \"scratch that\" and watch real formatting appear. Bold, headings, and lists paste through, ready to go."],
-    ["Three transcription engines", "Cloud (OpenAI gpt-4o-transcribe, fastest and most accurate), WhisperKit (local Whisper, all sizes including large-v3), and Parakeet (NVIDIA Parakeet TDT v3, multilingual, strong on EU languages). Parakeet ships inside the app, works offline instantly, and needs no API key."],
+    ["Three transcription engines", "An online engine (fastest and most accurate), an on-device engine (every size, including the largest and most accurate), and a lightweight on-device engine built for speed and strong on EU languages. The on-device engines ship inside the app, work offline instantly, and need no setup."],
     ["Private by default", "On-device mode runs entirely on your Mac and your audio never leaves the device. Transcripts are saved to your local history. Turn it off entirely or auto-delete entries after 7, 30, or 90 days in Settings. API keys live in your macOS Keychain."],
-    ["Flexible AI backends", "Use your Anthropic key, an OpenRouter key, your existing Claude Code subscription (no key needed), or a fully local Ollama model that runs offline. Verba can auto-install and start Ollama for you."],
+    ["Flexible AI options", "Connect the AI account you already use, or run a fully local AI model that works offline. Verba can auto-install and start a local AI model for you."],
     ["Recording indicator choices", "A floating glass pill (default), or Menu bar only (no overlay, the menu-bar icon turns into a red REC dot while recording). Pick the one that stays out of your way."],
     ["Auto-learn dictionary", "When you correct a word on the review screen, Verba remembers it and applies the fix automatically next time. Your vocabulary, learned silently."],
     ["Edit the last result by voice", "After a dictation, say \"make it shorter\", \"more formal\", or \"translate to English\" and Verba rewrites the result on the spot. No need to re-record."],
@@ -1265,7 +1265,7 @@ function Pricing() {
           <div className="mt-3 font-mono text-4xl font-semibold tnum">$0</div>
           <p className="mt-1 text-sm muted">Unlimited raw dictation, free forever, for everyone. No card, ever. Pro unlocks everything else.</p>
           <ul className="mt-6 space-y-2.5 text-sm muted">
-            {["Unlimited raw dictation, free forever", "On-device or cloud transcription", "No card, ever", "Pro unlocks every AI mode + feature"].map((b) => (
+            {["Unlimited raw dictation, free forever", "On-device or online transcription", "No card, ever", "Pro unlocks every AI mode + feature"].map((b) => (
               <li key={b} className="flex gap-2.5"><span className="text-[var(--accent-line)]">·</span>{b}</li>
             ))}
           </ul>
@@ -1372,22 +1372,22 @@ function Pricing() {
 function FAQ() {
   const qa = [
     ["Does it work in every app?", "Yes, Verba pastes into whatever you’re typing in: editors, browsers, chat apps, mail, notes. If your cursor is there, Verba can write there."],
-    ["Can it work offline?", "Yes. On-device transcription (Whisper or Parakeet) runs entirely on your Mac, no internet needed, and your audio never leaves the device."],
-    ["What languages does it understand?", "On-device Whisper covers ~99 languages worldwide. Parakeet is a faster option for 25 European languages. It writes back in the language you spoke."],
+    ["Can it work offline?", "Yes. On-device transcription runs entirely on your Mac, no internet needed, and your audio never leaves the device."],
+    ["What languages does it understand?", "On-device transcription covers ~99 languages worldwide, with a faster option for 25 European languages. It writes back in the language you spoke."],
     ["How do the AI modes work?", "Verba ships six modes: Raw (verbatim, no AI, the default), Polish (resolves your self-corrections), Intent, Translate, Context, and Prompt (turns what you say into an optimized prompt for any AI, including coding agents). Each mode is a system prompt that shapes how the model rewrites your speech. Context also takes a screenshot to ground the output in what is on your screen. You can edit any prompt, or just describe what you need and AI builds you a custom mode."],
-    ["Do I need an API key?", "No. Verba uses your Claude Code plan if it is installed (no API key needed). You can also bring your own Anthropic key, an OpenRouter key, or run a local Ollama model entirely offline. You never pay a markup on someone’s cloud."],
-    ["What is Context mode?", "Context mode takes a screenshot of your screen, analyzes it with a vision model, and writes based on what you say and what it sees. Say \"reply to this email\" and it drafts a reply to the message on screen. It requires macOS Screen Recording permission and a vision-capable model (Anthropic API key or OpenRouter key)."],
+    ["Do I need to set anything up?", "No. Verba can run fully private AI on-device, or connect the AI account you already use, with no extra setup. You never pay a markup on someone else's servers."],
+    ["What is Context mode?", "Context mode takes a screenshot of your screen, analyzes it with a vision model, and writes based on what you say and what it sees. Say \"reply to this email\" and it drafts a reply to the message on screen. It requires macOS Screen Recording permission and a connected AI account that supports vision."],
     ["Can it handle long recordings?", "Yes, talk for twenty minutes and Verba turns the whole thing into clean, well-ordered text."],
-    ["Is my data private?", "In on-device mode your audio never leaves your Mac. Transcripts are saved to your local history by default. You can turn history off entirely (nothing written, nothing synced) or auto-delete entries after 7, 30, or 90 days. When you sign in, your history, notes, and stats sync to your account so they follow you across Macs; signed out, nothing is uploaded. API keys live in your macOS Keychain, and you can delete all your cloud data at any time."],
+    ["Is my data private?", "In on-device mode your audio never leaves your Mac. Transcripts are saved to your local history by default. You can turn history off entirely (nothing written, nothing synced) or auto-delete entries after 7, 30, or 90 days. When you sign in, your history, notes, and stats sync to your account so they follow you across Macs; signed out, nothing is uploaded. API keys live in your macOS Keychain, and you can delete all your account data at any time."],
     ["Can Verba take notes?", "Yes. The Notes tab lets you record up to a full hour of speech and Verba turns it into a clean, structured document. Pick a format before you start: Clean note, Brain dump to outline, Summary, Meeting notes, Journal, Email, Code task, To-do list, or Article outline. Markdown is rendered (headings, bold, checkboxes). You can tag notes with #hashtags to file and filter them, edit the result in place, and copy it anywhere."],
     ["Can it create calendar events or reminders?", "Yes, with the Labs toggle on in Context mode. Say \"create an event tomorrow at 3pm\", \"remind me to call the bank\", or \"draft a reply to this email\" and Verba creates the Calendar event, Reminder, or email draft for you. It always asks you to confirm before doing anything."],
     ["Do my notes sync across my Macs?", "Yes. Notes are tied to your Verba account, so they follow you when you sign in on another Mac. No iCloud setup needed."],
     ["How does the Translate mode work?", "Pick a target language once in the Translate mode (English, French, Spanish, German, Italian, Portuguese, Dutch, Russian, Chinese, Japanese, Korean, Arabic, Hindi, Turkish, Polish). Then just speak in whatever language is natural to you and Verba writes the result in your chosen language, every time, preserving tone, names, numbers and code. You can also make a dedicated mode per language and auto-switch it by app."],
-    ["How much does Verba cost?", "Verba costs $9.99 per month or $84 per year (a saving versus monthly), billed securely through Stripe. New users get 33 free dictations to try it before subscribing, and you bring your own AI plan or key so there are no hidden token charges."],
-    ["Is Verba accurate, and how good is the transcription?", "Verba uses state-of-the-art on-device speech models (WhisperKit and Parakeet) for fast, high-accuracy voice-to-text on Apple Silicon Macs. Its AI cleanup layer then automatically fixes filler words, punctuation, and formatting in whatever app you're typing in, so the final text reads polished rather than raw."],
+    ["How much does Verba cost?", "Verba costs $9.99 per month or $84 per year (a saving versus monthly), billed securely through Stripe. New users get 33 free dictations to try it before subscribing, and you connect the AI plan you already use so there are no hidden token charges."],
+    ["Is Verba accurate, and how good is the transcription?", "Verba uses state-of-the-art on-device speech models for fast, high-accuracy voice-to-text on Apple Silicon Macs. Its AI cleanup layer then automatically fixes filler words, punctuation, and formatting in whatever app you're typing in, so the final text reads polished rather than raw."],
     ["Does Verba have a free trial or refund?", "Yes - Verba gives you 33 free dictations to try the full app with no payment required, so you can confirm it works for you before subscribing at $9.99/mo or $84/yr. Billing is handled through Stripe, so subscriptions can be managed and cancelled at any time."],
-    ["Does Verba work offline?", "Yes - in on-device mode Verba transcribes your voice locally using WhisperKit or Parakeet, so core dictation works without an internet connection and your audio never leaves your Mac. You only need a connection for cloud AI features like AI cleanup with a hosted model, live translation, or the JARVIS agent (local Ollama lets you run AI offline too)."],
-    ["Is my data and audio private with Verba?", "Yes - in on-device mode your audio never leaves your Mac, since transcription runs locally with WhisperKit or Parakeet. With JARVIS, the action plan is generated on your Mac by your own AI (your Claude plan, your key, or a local model), never a server key, and every action runs only after you confirm. The keys that connect your apps are held by a secure relay, never on your Mac, and you can run AI fully locally with Ollama for maximum privacy."],
+    ["Does Verba work offline?", "Yes - in on-device mode Verba transcribes your voice locally, so core dictation works without an internet connection and your audio never leaves your Mac. You only need a connection for AI features like AI cleanup with a hosted model, live translation, or the JARVIS agent (a fully local AI model lets you run AI offline too)."],
+    ["Is my data and audio private with Verba?", "Yes - in on-device mode your audio never leaves your Mac, since transcription runs entirely locally. With JARVIS, the action plan is generated on your Mac by your own AI (your own AI plan, your key, or a local model), never a server key, and every action runs only after you confirm. The keys that connect your apps are held by a secure relay, never on your Mac, and you can run AI fully locally for maximum privacy."],
     ["What can the JARVIS voice agent actually do?", "JARVIS is Verba's voice agent that takes action across 1,000+ connected apps - so you can speak commands to send emails, create calendar events, update tasks, and more without leaving your current app. It plans on your Mac with your own AI, shows you the steps, and only acts once you confirm. The keys that connect your apps are held by a secure relay, never on your Mac."],
   ];
   // FAQPage structured data, Google FAQ rich results + LLM/AI-search (GEO) citation.

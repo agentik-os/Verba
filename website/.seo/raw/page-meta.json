@@ -1,13 +1,13 @@
 {
   "url": "https://verba.run",
-  "title": "Verba \u2014 AI Dictation for Mac | Private Voice to Text, On-Device",
-  "meta_description": "Verba is the most complete AI dictation app for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and JARVIS \u2014 a voice agent that acts on 1,000+ connected apps. Private, BYO-AI, $9.99/mo.",
+  "title": "Verba: AI Dictation for Mac | Private Voice to Text, On-Device",
+  "meta_description": "Verba is the most complete AI dictation app for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and JARVIS, a voice agent that acts on 1,000+ connected apps. Private by design, $9.99/mo.",
   "canonical": "https://verba.run",
   "viewport": "width=device-width, initial-scale=1",
   "robots": null,
   "og": {
-    "title": "Verba \u2014 AI Dictation for Mac | Private Voice to Text",
-    "description": "On-device voice-to-text with AI cleanup, live translation, and JARVIS \u2014 a voice agent acting on 1,000+ apps. Private, BYO-AI, $9.99/mo.",
+    "title": "Verba: AI Dictation for Mac | Private Voice to Text",
+    "description": "On-device voice-to-text with AI cleanup, live translation, and JARVIS, a voice agent acting on 1,000+ apps. Private by design, $9.99/mo.",
     "site_name": "Verba",
     "locale": "en_US",
     "image:alt": "Verba. Speak it. Send it clean.",
@@ -19,8 +19,8 @@
   },
   "twitter": {
     "card": "summary_large_image",
-    "title": "Verba \u2014 AI Dictation for Mac | Private Voice to Text",
-    "description": "On-device voice-to-text with AI cleanup, live translation, and JARVIS \u2014 a voice agent acting on 1,000+ apps. Private, BYO-AI.",
+    "title": "Verba: AI Dictation for Mac | Private Voice to Text",
+    "description": "On-device voice-to-text with AI cleanup, live translation, and JARVIS, a voice agent acting on 1,000+ apps. Private by design.",
     "image:alt": "Verba. Speak it. Send it clean.",
     "image:type": "image/png",
     "image": "https://verba.run/opengraph-image?65330548e216059d",
@@ -36,7 +36,7 @@
           "name": "Verba",
           "applicationCategory": "UtilitiesApplication",
           "operatingSystem": "macOS 14+",
-          "description": "AI dictation for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and JARVIS \u2014 a voice agent that acts on 1,000+ connected apps.",
+          "description": "AI dictation for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and JARVIS, a voice agent that acts on 1,000+ connected apps.",
           "url": "https://verba.run",
           "downloadUrl": "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg",
           "offers": {
@@ -45,12 +45,12 @@
             "priceCurrency": "USD"
           },
           "featureList": [
-            "On-device voice-to-text (WhisperKit, NVIDIA Parakeet)",
+            "On-device voice-to-text, private by default",
             "AI rewriting in any app",
             "Live translation",
             "Reads your screen (Context mode)",
             "JARVIS voice agent acting on 1,000+ connected apps",
-            "Bring your own AI (Claude, OpenRouter, local Ollama)",
+            "Choose your own AI engine, your data stays on your Mac",
             "15 UI languages"
           ]
         },
@@ -79,7 +79,7 @@
           "name": "Can it work offline?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Yes. On-device transcription (Whisper or Parakeet) runs entirely on your Mac, no internet needed, and your audio never leaves the device."
+            "text": "Yes. On-device transcription runs entirely on your Mac, no internet needed, and your audio never leaves the device."
           }
         },
         {
@@ -87,7 +87,7 @@
           "name": "What languages does it understand?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "On-device Whisper covers ~99 languages worldwide. Parakeet is a faster option for 25 European languages. It writes back in the language you spoke."
+            "text": "On-device transcription covers about 99 languages worldwide, with a faster option for 25 European languages. It writes back in the language you spoke."
           }
         },
         {
@@ -103,7 +103,7 @@
           "name": "Do I need an API key?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "No. Verba uses your Claude Code plan if it is installed (no API key needed). You can also bring your own Anthropic key, an OpenRouter key, or run a local Ollama model entirely offline. You never pay a markup on someone\u2019s cloud."
+            "text": "No. Verba works out of the box, on-device. If you want more control, you can connect your own AI engine, that part is entirely optional, and your data stays private either way."
           }
         },
         {
@@ -111,7 +111,7 @@
           "name": "What is Context mode?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Context mode takes a screenshot of your screen, analyzes it with a vision model, and writes based on what you say and what it sees. Say \"reply to this email\" and it drafts a reply to the message on screen. It requires macOS Screen Recording permission and a vision-capable model (Anthropic API key or OpenRouter key)."
+            "text": "Context mode takes a screenshot of your screen, analyzes it with AI, and writes based on what you say and what it sees. Say \"reply to this email\" and it drafts a reply to the message on screen. It requires macOS Screen Recording permission and an AI engine capable of understanding images."
           }
         },
         {
@@ -127,7 +127,7 @@
           "name": "Is my data private?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "In on-device mode your audio never leaves your Mac. Transcripts are saved to your local history by default. You can turn history off entirely (nothing written, nothing synced) or auto-delete entries after 7, 30, or 90 days. When you sign in, your history, notes, and stats sync to your account so they follow you across Macs; signed out, nothing is uploaded. API keys live in your macOS Keychain, and you can delete all your cloud data at any time."
+            "text": "In on-device mode your audio never leaves your Mac. Transcripts are saved to your local history by default. You can turn history off entirely (nothing written, nothing synced) or auto-delete entries after 7, 30, or 90 days. When you sign in, your history, notes, and stats sync to your account so they follow you across Macs; signed out, nothing is uploaded. API keys live in your macOS Keychain, and you can delete all your synced data at any time."
           }
         },
         {
