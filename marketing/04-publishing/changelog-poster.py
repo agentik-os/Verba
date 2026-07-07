@@ -25,8 +25,19 @@ def load(p, default):
     except Exception:
         return default
 
-def zpost(text, platform):
+MEDIA_DIR = f"{BASE}/changelog-media"  # optional per-feature video: <id>.mp4
+
+def media_for(iid):
+    for ext in (".mp4", ".mov", ".webm"):
+        p = f"{MEDIA_DIR}/{iid}{ext}"
+        if os.path.isfile(p):
+            return p
+    return None
+
+def zpost(text, platform, media=None):
     cmd = ["omega-zernio", "post", "verba", "--text", text, "--platforms", platform, "--json"]
+    if media:
+        cmd += ["--media", media]
     if DRY:
         cmd.append("--dry-run")
     try:
@@ -56,17 +67,18 @@ def main():
 
     iid = nxt["id"]
     rec = posted.setdefault(iid, {})
-    log(f"{'[DRY] ' if DRY else ''}posting {iid} ({nxt.get('feature')})")
+    media = media_for(iid)
+    log(f"{'[DRY] ' if DRY else ''}posting {iid} ({nxt.get('feature')}){' +video' if media else ''}")
 
     # twitter
     if not rec.get("twitter", {}).get("ok"):
-        ok, resp = zpost(nxt["twitter"], "twitter")
+        ok, resp = zpost(nxt["twitter"], "twitter", media)
         rec["twitter"] = {"ok": ok, "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(), "resp": resp}
         log(f"  twitter: {'OK' if ok else 'FAIL'} :: {resp[:160]}")
     # reddit (title + body as content; owned profile @VerbaRun account)
     if not rec.get("reddit", {}).get("ok"):
         rtext = f"{nxt['reddit_title']}\n\n{nxt['reddit_body']}"
-        ok, resp = zpost(rtext, "reddit")
+        ok, resp = zpost(rtext, "reddit", media)
         rec["reddit"] = {"ok": ok, "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(), "resp": resp}
         log(f"  reddit: {'OK' if ok else 'FAIL'} :: {resp[:160]}")
 
