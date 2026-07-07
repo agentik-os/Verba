@@ -28,7 +28,8 @@ def load(p, default):
 MEDIA_DIR = f"{BASE}/changelog-media"  # optional per-feature video: <id>.mp4
 
 def media_for(iid):
-    for ext in (".mp4", ".mov", ".webm"):
+    # video preferred if present, else the feature illustration image (always required)
+    for ext in (".mp4", ".mov", ".webm", ".png", ".jpg", ".jpeg"):
         p = f"{MEDIA_DIR}/{iid}{ext}"
         if os.path.isfile(p):
             return p
@@ -68,7 +69,11 @@ def main():
     iid = nxt["id"]
     rec = posted.setdefault(iid, {})
     media = media_for(iid)
-    log(f"{'[DRY] ' if DRY else ''}posting {iid} ({nxt.get('feature')}){' +video' if media else ''}")
+    if not media:
+        # HARD RULE: every post must carry an illustrating picture/video. Never post text-only.
+        log(f"SKIP {iid} ({nxt.get('feature')}): no media in {MEDIA_DIR}/{iid}.(png|mp4). Waiting, not posting text-only.")
+        return
+    log(f"{'[DRY] ' if DRY else ''}posting {iid} ({nxt.get('feature')}) +{os.path.splitext(media)[1].lstrip('.')}")
 
     # twitter
     if not rec.get("twitter", {}).get("ok"):
