@@ -297,12 +297,25 @@ enum LocalLLM {
         let pullModel = {
             let m = Settings.shared.localLLMModel
             guard !m.isEmpty else { return }
-            pull(m, progress: { _ in }, done: { _ in })   // Ollama skips the download if already present
+            // Warm the model into memory once it's present, so the FIRST JARVIS action is instant
+            // instead of paying the multi-second cold-load of a 5GB model.
+            pull(m, progress: { _ in }, done: { _ in warm(m) })
         }
         ensureServer { up in
             if up { pullModel() }
             else { installBinary { ok in if ok { ensureServer { u in if u { pullModel() } } } } }
         }
+    }
+
+    /// Load a model into memory WITHOUT generating (empty prompt) + hold it for 30 min. Fire-and-forget:
+    /// turns the first real reprompt/JARVIS call from "load 5GB then answer" into just "answer".
+    static func warm(_ model: String) {
+        guard !model.isEmpty else { return }
+        var req = URLRequest(url: URL(string: "\(host)/api/generate")!)
+        req.httpMethod = "POST"; req.setValue("application/json", forHTTPHeaderField: "content-type")
+        req.timeoutInterval = 120
+        req.httpBody = try? JSONSerialization.data(withJSONObject: ["model": model, "prompt": "", "keep_alive": "30m"])
+        URLSession.shared.dataTask(with: req).resume()
     }
 
     static func chat(system: String, user: String, model: String) async throws -> String {
@@ -316,6 +329,13 @@ enum LocalLLM {
             // directly-parseable output, never visible chain-of-thought. Ollama ignores this field
             // for non-thinking models, so it's safe across every local model.
             "think": false,
+            // SPEED: keep the model resident in memory for 30 min so back-to-back JARVIS actions don't
+            // each pay the multi-second cold-load of a 5GB model (Ollama's default evicts after 5 min).
+            "keep_alive": "30m",
+            "options": [
+                "temperature": 0.2,     // low temp = faster, more deterministic plans/rewrites
+                "num_predict": 1024,    // bound generation — plans + rewrites are short; no runaway output
+            ],
             "messages": [["role": "system", "content": system], ["role": "user", "content": user]],
         ])
         let (data, resp): (Data, URLResponse)

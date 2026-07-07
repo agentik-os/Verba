@@ -36,6 +36,11 @@ enum Changelog {
             date: "July 4, 2026", tag: "Today",
             summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
             entries: [
+                ChangelogEntry(version: "0.9.60",
+                    title: "JARVIS acts noticeably faster",
+                    items: [
+                        "The local model now stays warm in memory and JARVIS bounds its output and runs its lookups in parallel, so actions fire without the cold-start wait (a repeat call dropped from ~5s to ~0.2s on the model side).",
+                    ]),
                 ChangelogEntry(version: "0.9.59",
                     title: "Global widget shortcuts + faster, more reliable JARVIS",
                     items: [

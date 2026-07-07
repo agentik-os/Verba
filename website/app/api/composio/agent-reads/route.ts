@@ -90,21 +90,22 @@ export async function POST(req: NextRequest) {
   }
 
   const steps = (Array.isArray(body.steps) ? body.steps : []).slice(0, MAX_READ_STEPS);
-  const reads: { tool: string; ok: boolean; data?: unknown; error?: string }[] = [];
-  for (const step of steps) {
-    const slug = (step?.tool ?? "").trim();
-    if (!slug) continue;
-    if (!isReadOnly(slug)) {
-      reads.push({ tool: slug, ok: false, error: "Refused: not a read-only tool." });
-      continue;
-    }
-    try {
-      const result = await execTool(composio, slug, auth.uid, step.args ?? {});
-      reads.push({ tool: slug, ok: true, data: result });
-    } catch (e) {
-      reads.push({ tool: slug, ok: false, error: e instanceof Error ? e.message : "Read failed." });
-    }
-  }
+  // SPEED: run the read steps CONCURRENTLY, not one-after-another. A multi-read plan ("check my
+  // calendar AND my unread emails") used to wait for each round-trip in series; now total latency is
+  // the slowest single read, not the sum. Order is preserved for the resolve block.
+  const reads: { tool: string; ok: boolean; data?: unknown; error?: string }[] = await Promise.all(
+    steps.map(async (step) => {
+      const slug = (step?.tool ?? "").trim();
+      if (!slug) return { tool: "", ok: false, error: "Empty tool." };
+      if (!isReadOnly(slug)) return { tool: slug, ok: false, error: "Refused: not a read-only tool." };
+      try {
+        const result = await execTool(composio, slug, auth.uid, step.args ?? {});
+        return { tool: slug, ok: true, data: result };
+      } catch (e) {
+        return { tool: slug, ok: false, error: e instanceof Error ? e.message : "Read failed." };
+      }
+    }),
+  );
 
   // Render each read result, capped — but NEVER cut mid-record silently (that seeds hallucinated
   // entries from dangling JSON). When over budget, truncate and append an explicit marker so the
