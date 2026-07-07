@@ -16,6 +16,9 @@ export const metadata: Metadata = {
     "Verba is the private Mac voice agent: dictate and it acts across 1,000+ apps. On-device voice-to-text, reuse your Claude Code plan with no key. $9.99/mo.",
   metadataBase: new URL("https://verba.run"),
   alternates: { canonical: "/" },
+  // Google Search Console — renders <meta name="google-site-verification" …>. Verifies a URL-prefix
+  // property (https://verba.run) without touching DNS (verba.run's DNS is at Hostinger).
+  verification: { google: "ea4RLgHnVgZ5IXz7vQEtNDqCOVCRiXxhA7TNJ2F9PMA" },
   keywords: [
     "Mac voice agent", "AI dictation Mac", "voice to text macOS", "dictation app for Mac",
     "Wispr Flow alternative", "speech to text Mac", "on-device dictation", "private dictation app",
