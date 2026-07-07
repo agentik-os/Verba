@@ -14,7 +14,7 @@ type Mode = {
 const MODES: Mode[] = [
   {
     name: "Context",
-    model: "Sonnet 4.6",
+    model: "AI",
     app: "Mail",
     said:
       "reply to this email say we'll have the proposal ready by friday and ask if they need a call",
@@ -23,7 +23,7 @@ const MODES: Mode[] = [
   },
   {
     name: "Coding",
-    model: "Opus 4.8",
+    model: "AI",
     app: "Cursor",
     said:
       "ok so uh the login button it doesn't work on mobile i think the onclick is wrong um and also make the spinner show while it loads",
@@ -32,7 +32,7 @@ const MODES: Mode[] = [
   },
   {
     name: "Intent",
-    model: "Sonnet 4.6",
+    model: "AI",
     app: "Notion",
     said:
       "turn this into bullet points of decisions we agreed to ship dark mode we postponed billing and we hire a designer in q3",
@@ -163,7 +163,7 @@ export default function LiveDemo() {
       </div>
 
       <p className="mt-4 text-center text-[13px] muted">
-        Context reads your screen. Every other mode routes to the right model: Haiku to polish, Sonnet for intent, Opus for code.
+        Context reads your screen. Every other mode routes to the right model for the job.
       </p>
     </div>
   );

@@ -6,9 +6,9 @@ type State = "idle" | "recording" | "working" | "done" | "error";
 
 const MODES = [
   { key: "flow", label: "Raw", model: "No AI", tip: "Raw dictation. Your exact words, transcribed with no AI rewriting." },
-  { key: "intent", label: "Intent", model: "Sonnet 4.6", tip: "Say how you want it handled first (e.g. make this bullet points), then the content. Verba obeys." },
-  { key: "coding", label: "Coding", model: "Opus 4.8", tip: "Turns rambling feedback into a precise prompt for a coding agent, keeping every detail." },
-  { key: "custom", label: "Custom", model: "Sonnet 4.6", tip: "Write your own instruction and test it live." },
+  { key: "intent", label: "Intent", model: "AI", tip: "Say how you want it handled first (e.g. make this bullet points), then the content. Verba obeys." },
+  { key: "coding", label: "Coding", model: "AI", tip: "Turns rambling feedback into a precise prompt for a coding agent, keeping every detail." },
+  { key: "custom", label: "Custom", model: "AI", tip: "Write your own instruction and test it live." },
 ];
 
 const DOWNLOAD_URL = "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg";

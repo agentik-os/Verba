@@ -67,7 +67,7 @@ export const competitors: Competitor[] = [
       "Verba transcribes on-device by default, so your audio stays on your Mac, even offline.",
       "$9.99/mo vs $15/mo, and the free trial is the full app: 33 dictations with every Pro feature.",
       "Bring your own AI account (Claude Code / your keys), heavy users don't subsidize a vendor's GPU bill.",
-      "Per-mode models: Opus for coding prompts, Haiku for quick polish, you control cost and quality.",
+      "Per-mode models routed automatically, you control cost and quality.",
     ],
     theirEdge: [
       "True cross-platform: Windows, iOS and Android apps today (Verba is macOS-only).",
@@ -192,7 +192,7 @@ export const competitors: Competitor[] = [
     ],
     verbaWins: [
       "On-device transcription keeps your audio private and works offline.",
-      "Bring your own model: route modes to Haiku, Sonnet or Opus as you like.",
+      "Bring your own model: route each mode to the model you like.",
       "A real trial: 33 dictations with every Pro feature, not a crippled preview.",
     ],
     theirEdge: [
