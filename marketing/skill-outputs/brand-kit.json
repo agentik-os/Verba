@@ -1,0 +1,67 @@
+{
+  "name": "Verba",
+  "site": "https://verba.run",
+  "logo": {
+    "path": "website/app/icon.png",
+    "use_in_video": false
+  },
+  "colors": {
+    "background": "#050507",
+    "foreground": "#f4f4f6",
+    "primary": "#f4ede0",
+    "accent": "#ff5a4d",
+    "muted": "rgba(244,244,246,0.56)",
+    "card": "#0c0c10",
+    "success": "#6ee7a8",
+    "amber": "[to confirm]",
+    "light_mode": {
+      "background": "#f6f6f7",
+      "foreground": "#0a0a0c",
+      "primary": "#1a1410",
+      "accent": "#e23b2e",
+      "muted": "rgba(10,10,12,0.56)",
+      "card": "#ffffff"
+    },
+    "legacy_logo_gradient": {
+      "indigo": "#6651F2",
+      "teal": "#33B3D9",
+      "note": "secondary gradient accents seen on the app icon/mark; dose sparingly, not part of the core UI palette"
+    },
+    "notes": "Dark is the default theme (color-scheme: dark; no data-theme attribute needed), light is opt-in via [data-theme=light]. Discipline: near-black monochrome + broken-white foreground. --accent (#f4ede0, warm off-white) is the ONLY signature accent and is used sparingly (a handful of times per screen). --rec (#ff5a4d dark / #e23b2e light) is the ONE living, saturated color on the whole site: the recording/listening dot. It also lives subliminally in panel shadow tints. Never let more than one vivid color appear per visual."
+  },
+  "type": {
+    "family": "-apple-system, BlinkMacSystemFont, Inter, system-ui, sans-serif",
+    "mono_family": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+    "weight_display": 600,
+    "weight_body": 400,
+    "letter_spacing_display": "normal",
+    "notes": "SF Pro / Apple system-font stack with Inter fallback. No exotic or decorative typefaces. Mono family reserved for code-like / structured UI elements (keystroke labels, timestamps), never for brand wordmark."
+  },
+  "voice": {
+    "register": "confident, candid, a little witty; pro-user, never salesy; Apple-native taste (macOS-feeling, Liquid Glass aesthetic, not enterprise SaaS)",
+    "person": "second-person direct address (you/your), first-person plural for the product (we build, it does)",
+    "do": [
+      "short declarative sentences, active voice (\"Speak it. Send it clean.\")",
+      "name the concrete outcome, not the mechanism (\"clean, structured, ready to send\" not the tool that produced it)",
+      "confirm-gated language for JARVIS (\"asks before it acts,\" \"shows you exactly what it will do,\" \"only acts once you confirm\")",
+      "on-device / private framing for anything about where audio and text are processed (never the word cloud)",
+      "concrete numbers when real (1,000+ connected apps, roughly 3x faster than typing)"
+    ],
+    "dont": [
+      "Parakeet, Qwen, Whisper, Claude, Claude Code, Anthropic, GPT, OpenAI, or any other underlying model/vendor name",
+      "the word cloud in any context (say the audio and text stay on the Mac / on-device)",
+      "reuse your AI / pay twice / bring your own key framing",
+      "leverage, unlock, revolutionary, next-gen, synergy, enterprise jargon",
+      "em dash or en dash punctuation anywhere in copy",
+      "invented metrics or unverified claims; use [to confirm] when a number is not sourced"
+    ],
+    "hard_rules": [
+      "Never name the underlying listening/dictation/AI tech (no Parakeet, Qwen, Whisper, Claude, Claude Code, Anthropic, GPT, OpenAI); never a reuse-your-AI / pay-twice / bring-your-own mechanic; never the word cloud (say data stays on the Mac).",
+      "Keep JARVIS as the confirm-gated action feature name.",
+      "Zero em dash and en dash anywhere.",
+      "No invented metrics; use [to confirm] if unknown."
+    ]
+  },
+  "source": "site: https://verba.run (homepage HTML + /_next/static/css/f3e14bb1fb4e0c59.css, fetched live) + /manifest.webmanifest; cross-checked against marketing/03-visual-identity/DA.md and .agents/product-marketing.md (Brand Voice section)",
+  "captured_at": "2026-07-07"
+}
