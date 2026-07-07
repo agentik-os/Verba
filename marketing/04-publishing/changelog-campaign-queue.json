@@ -1,0 +1,184 @@
+{
+  "campaign": "changelog-its-shipped",
+  "created": "2026-07-07",
+  "platforms": ["twitter", "reddit"],
+  "reddit_target": "owned profile u/VerbaRun only",
+  "items": [
+    {
+      "id": "f01",
+      "feature": "Verba launches",
+      "versions": "0.1.0",
+      "twitter": "The first version of Verba could do one thing: press Fn, talk, and your words type themselves wherever your cursor is. Fast, private, and it shipped the same day it was born.",
+      "reddit_title": "Verba's very first release: press a key, talk, get text. Here's where it all began.",
+      "reddit_body": "Verba started simple: hold Fn, speak, and your words appear right where you were typing. It launched the same day the idea was born, with on device transcription and a few core modes. Everything you use today grew from this one release."
+    },
+    {
+      "id": "f02",
+      "feature": "History syncs across your Macs",
+      "versions": "0.1.1 to 0.1.32",
+      "twitter": "Dictate on one Mac, find it on the next. Your history and stats now sync across every Mac signed into your account, so switching machines never means losing your words.",
+      "reddit_title": "Your dictation history now syncs across all your Macs",
+      "reddit_body": "If you use Verba on more than one Mac, your history, stats and totals now follow you. Start a dictation on your desktop, check your streak on your laptop, it's all the same account. No more starting from zero on a new machine."
+    },
+    {
+      "id": "f03",
+      "feature": "Auto-learning dictionary",
+      "versions": "0.1.1 to 0.1.32",
+      "twitter": "Correct a name once and Verba remembers it. The dictionary now learns from your own corrections automatically, so the same word gets written right every time after that, no manual entry needed.",
+      "reddit_title": "Verba's dictionary now learns your corrections automatically",
+      "reddit_body": "Fix a misspelled name or brand once in your dictation and Verba remembers the spelling from then on. It is a small thing that adds up fast if you dictate a lot of proper nouns, product names or jargon."
+    },
+    {
+      "id": "f04",
+      "feature": "Transcribe any audio file, WhatsApp included",
+      "versions": "0.1.62 to 0.1.66",
+      "twitter": "Drag a voice memo onto Verba and get clean text back. File transcription now handles WhatsApp voice notes too, so a forwarded audio message becomes something you can actually read and search.",
+      "reddit_title": "You can now drag and drop audio files, including WhatsApp voice notes, into Verba for transcription",
+      "reddit_body": "Beyond live dictation, Verba now transcribes audio files you drop onto it, including WhatsApp voice notes. Handy for turning a long forwarded voice message into text you can skim, search or paste somewhere else."
+    },
+    {
+      "id": "f05",
+      "feature": "Task Manager builds whole hierarchies by voice",
+      "versions": "0.1.67 to 0.1.80",
+      "twitter": "Say make a Cooking project with a Chocolate cake task and the full shopping list, and Verba builds the whole thing: project, task, and every sub-task, in one go. The Task Manager plans by voice now, not just captures.",
+      "reddit_title": "Verba's Task Manager can now build an entire project structure from one spoken request",
+      "reddit_body": "Ask for a project with a task and a list of sub-tasks in a single sentence and Verba creates the whole hierarchy at once: project, task, and every sub-task. It also added tags, a proper date and time picker, and a quick glance at today's tasks."
+    },
+    {
+      "id": "f06",
+      "feature": "Styles and Transforms reshape text anywhere",
+      "versions": "0.1.81 to 0.1.89",
+      "twitter": "Select any text in any app, say fix grammar or translate to English, and Verba just does it. Pair that with Styles, a tone and format layer you switch with one shortcut, and your voice reshapes text everywhere, not just while dictating.",
+      "reddit_title": "Transform any selected text by voice, in any app, plus a new Styles layer",
+      "reddit_body": "Highlight text anywhere on your Mac, say a short command like fix grammar or translate to English, and Verba rewrites it in place. Alongside that, Styles let you layer a tone or format on top of any mode and switch between them with a shortcut."
+    },
+    {
+      "id": "f07",
+      "feature": "Context mode reads your screen",
+      "versions": "0.1.96 to 0.2.0",
+      "twitter": "Context mode reads what is actually on your screen before it acts, so a request like summarize this makes sense of the thing you are looking at, not a guess. When something goes wrong now, it tells you the real reason too.",
+      "reddit_title": "Context mode genuinely reads your screen before acting",
+      "reddit_body": "Context mode looks at what is on your screen and uses it to shape its response, instead of working blind. It also got more transparent: when it cannot complete a request, it now tells you the actual reason instead of failing silently."
+    },
+    {
+      "id": "f08",
+      "feature": "Full control over your history",
+      "versions": "0.2.1 to 0.3.8",
+      "twitter": "Your history, your call. Turn it off completely so nothing is written down, or set it to auto delete after 7, 30 or 90 days. One button also wipes your synced history, notes, stats and leaderboard entry for good.",
+      "reddit_title": "New history controls: switch it off entirely, auto delete, or wipe everything with one click",
+      "reddit_body": "You can now turn history off completely so nothing is stored, set it to auto delete after 7, 30 or 90 days, or hit a single button that removes your synced history, notes, stats and leaderboard entry. Your data, on your terms."
+    },
+    {
+      "id": "f09",
+      "feature": "Polish mode debuts, numbers become digits",
+      "versions": "0.4.4 to 0.4.8",
+      "twitter": "New Polish mode follows your self corrections and writes the final version you meant, not a transcript of you thinking out loud. Numbers come out as digits too: eighty five becomes 85, three thirty becomes 3:30.",
+      "reddit_title": "New Polish mode writes what you meant, not what you said out loud",
+      "reddit_body": "Polish mode listens for your self corrections while you talk and follows them to the final version, turning rambling dictation into finished prose. It also converts spoken numbers into digits where that reads naturally, so eighty five becomes 85 and three thirty becomes 3:30."
+    },
+    {
+      "id": "f10",
+      "feature": "Achievements and gamification launch",
+      "versions": "0.4.9 to 0.5.2",
+      "twitter": "Verba turned into a game you can actually win: levels, XP, a daily words goal, weekly leagues from Bronze to Diamond, and badges for streaks and hours saved. Confetti included every time you level up.",
+      "reddit_title": "Verba now has a full Achievements system: levels, leagues, streaks and badges",
+      "reddit_body": "A new Achievements section tracks your level and XP, a daily words goal, your weekly league from Bronze to Diamond, and badges you unlock by dictating, switching modes and building streaks. You get a small celebration every time you level up or earn one."
+    },
+    {
+      "id": "f11",
+      "feature": "The whole app speaks your language",
+      "versions": "0.6.5 to 0.7.4",
+      "twitter": "The entire app now speaks your language, not just the transcription. Sidebar, settings, every mode and every tool, all translated. Pick your language once and the whole interface follows.",
+      "reddit_title": "The whole app is now translated, not just dictation",
+      "reddit_body": "Verba's interface, sidebar, settings, every mode and every tool now comes translated into your language, not only the text it transcribes. Choose your language and the entire app follows, currently across more than a dozen languages."
+    },
+    {
+      "id": "f12",
+      "feature": "Meet JARVIS, the voice agent for 1,000+ apps",
+      "versions": "0.7.5 to 0.9.4",
+      "twitter": "Meet JARVIS: say what you want however it comes out, remind me in 10 to grab the cake or I'm hungry cake in ten minutes, both land the same way. It connects to 1,000+ apps and acts, always asking first.",
+      "reddit_title": "Meet JARVIS, Verba's voice agent that connects to 1,000+ apps",
+      "reddit_body": "JARVIS understands what you actually mean, however you phrase it, resolves the details, and shows exactly what it will do before doing it. It can go multi step, reading your calendar to find a free hour and proposing the event, and connects to more than 1,000 apps like Gmail, Slack, Notion and Calendar. Nothing happens without your confirmation first."
+    },
+    {
+      "id": "f13",
+      "feature": "Lock any note with its own password",
+      "versions": "0.9.5 to 0.9.13",
+      "twitter": "Some notes deserve their own lock. You can now password protect any note individually, encrypted right on your Mac, so without the password there is no way to read it back.",
+      "reddit_title": "You can now lock individual notes with their own password",
+      "reddit_body": "Any note can now have its own password, encrypted on your Mac with a separate key per note. Without the password, that note cannot be read. Open it, enter the password, and it stays unlocked just for that session."
+    },
+    {
+      "id": "f14",
+      "feature": "New Prompt mode, auto-detects code vs general",
+      "versions": "0.9.31 to 0.9.35",
+      "twitter": "New Prompt mode turns rambling dictation into a clean, engineered prompt: task, context, constraints and output format, ready to paste anywhere. It figures out on its own whether you need a precise coding prompt or a general one.",
+      "reddit_title": "New Prompt mode writes a clean, structured prompt from your rambling dictation",
+      "reddit_body": "Prompt mode takes whatever you say and turns it into an optimized prompt with task, context, constraints and output format spelled out, ready to paste into any assistant or image generator. It auto detects whether you need a precise coding style prompt or a general one, so it is one mode instead of two."
+    },
+    {
+      "id": "f15",
+      "feature": "Switch your Translate language inline",
+      "versions": "0.9.32",
+      "twitter": "Translating into the wrong language mid task used to mean a trip to Settings. Now a small chip sits right on the recording pill, tap it, pick a language, and your next dictation lands there. It remembers your choice too.",
+      "reddit_title": "Switch your Translate output language without leaving the recording pill",
+      "reddit_body": "A small language chip now sits directly on the recording pill in Translate mode, so you can change the output language in one tap instead of opening Settings. Your choice sticks as the default until you change it again."
+    },
+    {
+      "id": "f16",
+      "feature": "Verba never cuts off your last word",
+      "versions": "0.9.36",
+      "twitter": "Release the trigger a beat early and your last word used to vanish. Verba now keeps listening for a brief silent moment after you stop, so the final word of your sentence is always caught.",
+      "reddit_title": "Verba no longer cuts off the last word of your sentence",
+      "reddit_body": "Verba now keeps the microphone open for a brief silent moment after you release the trigger, so even a slightly early release no longer costs you the final word. No more cut off or wrong endings on your dictations."
+    },
+    {
+      "id": "f17",
+      "feature": "New Features page, turn on Verba one power at a time",
+      "versions": "0.9.38 to 0.9.49",
+      "twitter": "New Features page: see everything Verba can do, grouped as Essentials, Advanced and Power, and switch each one on with a single tap. Verba also nudges you toward one new feature a day, never more, always dismissable.",
+      "reddit_title": "New Features page lets you turn Verba's capabilities on one at a time",
+      "reddit_body": "A new Features page shows everything Verba can do, organized as Essentials, Advanced and Power, with a detail card explaining what each one needs and a single tap to turn it on or off. As you use the app, it can gently suggest one feature you have not tried yet, at most once a day, always easy to dismiss."
+    },
+    {
+      "id": "f18",
+      "feature": "Fully local out of the box",
+      "versions": "0.9.45, 0.9.46, 0.9.58",
+      "twitter": "Verba now runs fully offline on your Mac by default. Your words never leave your device, and every AI feature, JARVIS included, works entirely on device with nothing sent anywhere. It installs itself, no setup needed.",
+      "reddit_title": "Verba now runs fully offline by default, nothing leaves your Mac",
+      "reddit_body": "Setup now recommends the fully local option first, and Verba installs everything it needs automatically: the on device transcription model and the private reprompting engine. Every AI feature, including JARVIS, now works entirely on your Mac with nothing sent anywhere, out of the box."
+    },
+    {
+      "id": "f19",
+      "feature": "Your chosen engine is respected everywhere",
+      "versions": "0.9.47, 0.9.52",
+      "twitter": "Pick your engine and Verba actually sticks to it. Context mode no longer quietly switches away from your choice, and JARVIS now plans on exactly the engine you picked, your on device model or your own key, every single time.",
+      "reddit_title": "Whatever AI engine you choose, Verba now respects it everywhere",
+      "reddit_body": "Your chosen engine now applies consistently across the app: Context mode no longer silently switches away from it, and JARVIS plans using exactly the engine you selected, whether that is a private on device model or your own key. Your engine, model and provider choice also now sync across your Macs."
+    },
+    {
+      "id": "f20",
+      "feature": "JARVIS self-corrects and gets faster",
+      "versions": "0.9.48, 0.9.59, 0.9.60",
+      "twitter": "JARVIS now reshapes a slightly off plan into a working one instead of failing, and it stays warm in memory so repeat actions fire almost instantly instead of making you wait through a cold start.",
+      "reddit_title": "JARVIS is now noticeably faster and self-corrects imperfect plans",
+      "reddit_body": "JARVIS can now reshape a slightly off plan into a valid one instead of failing outright, so composed requests with multiple steps run reliably. It also stays warm in memory and runs its lookups in parallel, so a repeat action fires almost instantly instead of waiting through a cold start."
+    },
+    {
+      "id": "f21",
+      "feature": "Turn modes on and off, group them into presets",
+      "versions": "0.9.51",
+      "twitter": "Keep dozens of modes but only see the ones you need. Every mode now has an on off toggle, and you can save a set as a group, Developer, Copywriting, whatever fits your workflow, then switch the whole set on in one tap.",
+      "reddit_title": "You can now turn individual modes on and off, and save groups of them",
+      "reddit_body": "Every mode now has its own on off toggle, so if you keep a large collection you can show only what a given workflow needs. You can also save your enabled modes as a named group and activate the whole set in one tap, without losing the ones you turned off."
+    },
+    {
+      "id": "f22",
+      "feature": "Raw dictation is free forever",
+      "versions": "0.9.53",
+      "twitter": "Raw dictation is now free forever, no card, no trial clock. Press Fn and talk, as much as you want, for as long as you want. Everything else, every AI mode, Notes, Tasks and JARVIS, lives in Verba Pro.",
+      "reddit_title": "Raw dictation is free forever, no trial, no card required",
+      "reddit_body": "Raw dictation is now free forever and unlimited, with no card and no trial clock. Press Fn and talk for as long as you want. Every AI mode, plus Notes, Tasks, JARVIS, custom modes and editable prompts, is part of Verba Pro."
+    }
+  ]
+}
