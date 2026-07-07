@@ -27,7 +27,10 @@ gradients, drifting AI blobs, glossy plastic 3D, smiling stock business people,
 emoji soup, more than ONE bright color in frame, the #f4ede0 accent drowned by
 other accents, decorative fonts outside SF Pro / Inter, eyebrows everywhere,
 a blurred / frosted product UI (Verba UI must be crisp and real), the word
-"Composio" anywhere, any invented feature, an inexact privacy claim
+"Composio" anywhere, any invented feature, an inexact privacy claim, the NAME
+of any underlying tech (Parakeet, Qwen, Whisper, Claude, Claude Code, Claude Max,
+Anthropic, GPT, OpenAI), the "reuse your paid Claude subscription / BYO-AI / no
+second bill" mechanic, the word "cloud" in any form
 ```
 
 ## 3. Anti-generic realism block (spec §4.2, append to any LENSED shot: Mac, hands, environment)
@@ -51,6 +54,16 @@ in frame, shot on Ricoh GR III or Canon AE-1, Kodak Gold 200 grain
 - **« Composio » n'apparaît JAMAIS**, les noms publics sont *JARVIS* et *connected apps*.
 - **Pas de personnes stock**, pas d'avatar humain récurrent, pas de fondateur synthétique (scene-led + honnêteté L2).
 - **Claim privacy exact :** « l'audio ne quitte jamais le Mac » / « on-device », jamais « uploads to our servers », « cloud-only », « we train on your data ».
+
+## R-SECRET-TECH (RÈGLE DURE) — la techno d'écoute / dictée / IA reste SECRÈTE
+On ne nomme **JAMAIS**, nulle part en public (posts organiques + ads, captions, texte sur image/vidéo, landing, emails, briefs, ce dashboard), la **technologie sous-jacente** du in (écoute/dictée/transcription) et du out (IA) :
+- **Interdits** : `Parakeet`, `Qwen`, `Whisper`, `Claude`, `Claude Code`, `Claude Max`, `Anthropic`, `GPT`, `OpenAI`, tout nom de modèle/fournisseur.
+- **Mécanique interdite** : « réutilise ton abonnement Claude Code / plan Claude », `BYO-AI`, « pas de 2e facture / 2e clé », « tu paies déjà Claude ». Ce wedge est secret.
+- **Le mot `cloud`** est banni sous toutes ses formes (même en négation « pas dans le cloud »).
+
+**À dire à la place** : Verba tourne sur des **modèles IA privés**, ta voix et tes mots restent **privés et safe, sur ton Mac / ton appareil** (« IA privée sur ton Mac », « tes mots restent à toi », « tes données ne quittent jamais ton appareil »). Un concurrent qui envoie l'audio ailleurs = « envoie ton audio sur leurs serveurs » (jamais « cloud »).
+
+**Exception CGU** : le détail technique peut, si vraiment nécessaire, figurer UNIQUEMENT dans les Conditions d'utilisation (jamais dans le marketing). Relire et purger chaque livrable avant publication.
 
 ## 5. Positive-phrasing note (spec §4)
 

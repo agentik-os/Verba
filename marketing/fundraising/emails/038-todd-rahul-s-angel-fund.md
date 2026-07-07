@@ -5,10 +5,10 @@ firm: Todd & Rahul's Angel Fund (Todd Goldberg & Rahul Vohra)
 contact_channel: https://www.toddandrahulangelfund.com/ (public pitch intake)
 contact_status: verified
 anchor: Superhuman (Rahul Vohra), Supabase, Mercury
-status: DRAFT — NON ENVOYE (attente GO/NO-GO operateur)
+status: DRAFT, NON ENVOYE (attente GO/NO-GO operateur)
 ---
 
-Objet : Verba — agent vocal Mac pour les power users productivité (pré-seed)
+Objet : Verba, agent vocal Mac pour les power users productivité (pré-seed)
 
 Bonjour Todd et Rahul,
 
@@ -21,4 +21,4 @@ Pré-revenus. La catégorie est validée à ~2 Md$ par Wispr Flow. Nous levons u
 Je postule via votre formulaire et reste disponible pour un échange si ça résonne. verba.run
 
 [Fondateur]
-Verba — verba.run
+Verba, verba.run

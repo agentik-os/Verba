@@ -1,0 +1,867 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verba Marketing HQ</title>
+<style>
+:root{
+  --bg:#08080b;--panel:#111117;--panel2:#17171f;--ink:#f2f2f6;--dim:rgba(242,242,246,.72);--muted:rgba(242,242,246,.5);--faint:rgba(242,242,246,.34);
+  --line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.15);--acc:#ff5a4d;--warm:#f4ede0;--good:#5ac37a;--gold:#f4c94d;--blue:#5aa9ff;
+  --sans:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",system-ui,sans-serif;--mono:ui-monospace,"SF Mono",Menlo,monospace;--maxw:1120px;
+}
+@media(prefers-color-scheme:light){:root{--bg:#f4f3f0;--panel:#fff;--panel2:#faf9f6;--ink:#0e0e12;--dim:rgba(14,14,18,.74);--muted:rgba(14,14,18,.54);--faint:rgba(14,14,18,.42);--line:rgba(14,14,18,.1);--line2:rgba(14,14,18,.18);--acc:#e23b2e;--warm:#7a5b3a}}
+:root[data-theme=dark]{--bg:#08080b;--panel:#111117;--panel2:#17171f;--ink:#f2f2f6;--dim:rgba(242,242,246,.72);--muted:rgba(242,242,246,.5);--faint:rgba(242,242,246,.34);--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.15)}
+:root[data-theme=light]{--bg:#f4f3f0;--panel:#fff;--panel2:#faf9f6;--ink:#0e0e12;--dim:rgba(14,14,18,.74);--muted:rgba(14,14,18,.54);--faint:rgba(14,14,18,.42);--line:rgba(14,14,18,.1);--line2:rgba(14,14,18,.18);--acc:#e23b2e;--warm:#7a5b3a}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+h1,h2,h3,h4{letter-spacing:-.02em;line-height:1.16;margin:0}.num{font-variant-numeric:tabular-nums}
+a{color:var(--warm);text-decoration:none;border-bottom:1px solid var(--line2)}a:hover{border-color:var(--acc)}
+code{font-family:var(--mono);font-size:.87em;background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+p{margin:0 0 12px}.mut{color:var(--muted)}.dim{color:var(--dim)}
+
+/* gate */
+#gate{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
+#gate .box{max-width:380px;width:100%;text-align:center}
+#gate .mic{width:54px;height:54px;border-radius:13px;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;margin-bottom:18px}
+#gate h1{font-size:26px;font-weight:600;margin:0 0 6px}#gate h1 .d{color:var(--acc)}
+#gate p{color:var(--muted);font-size:14px;margin:0 0 18px}
+#gate input{width:100%;background:var(--panel);border:1px solid var(--line2);color:var(--ink);border-radius:10px;padding:12px 14px;font:inherit;font-size:15px;text-align:center}
+#gate button{margin-top:10px;width:100%;background:var(--acc);color:#fff;border:none;border-radius:10px;padding:12px;font:inherit;font-weight:600;cursor:pointer}
+#gate .err{color:var(--acc);font-size:13px;margin-top:8px;min-height:16px}
+#app{display:none}
+
+.controls{position:fixed;top:16px;right:16px;z-index:100;display:flex;gap:8px;align-items:center}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.segbtn{background:transparent;border:none;color:var(--muted);border-radius:999px;padding:5px 13px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;line-height:1;transition:background .15s,color .15s}
+.segbtn.on{background:var(--acc);color:#fff}
+.ctrlbtn{background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:999px;width:34px;height:34px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.ctrlbtn:hover{color:var(--ink);border-color:var(--line2)}
+header{padding:40px 0 12px;position:relative}
+.kick{font-size:12px;text-transform:uppercase;letter-spacing:.2em;color:var(--faint);font-weight:600;padding-right:150px}
+.brand{display:flex;align-items:center;gap:12px;margin:14px 0 8px}
+.bmic{width:40px;height:40px;border-radius:10px;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
+h1.title{font-size:clamp(28px,4.6vw,42px);font-weight:600}h1.title .d{color:var(--acc)}
+.lede{color:var(--dim);font-size:16px;max-width:72ch;margin:8px 0 0}
+
+.tabs{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px solid var(--line);padding:8px 0}
+.tabs .w2{max-width:var(--maxw);margin:0 auto;padding:0 22px;display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs .w2::-webkit-scrollbar{display:none}
+.tab{background:transparent;border:1px solid transparent;color:var(--muted);border-radius:9px;padding:8px 12px;font:inherit;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;flex:0 0 auto}
+.tab[aria-selected=true]{background:var(--panel);border-color:var(--line2);color:var(--ink)}
+.tab .n{color:var(--acc);font-weight:700;margin-right:5px}
+
+.pv{display:none;padding:32px 0 72px}.pv.on{display:block}
+.seclabel{font-size:12px;text-transform:uppercase;letter-spacing:.18em;color:var(--acc);font-weight:700}
+h2{font-size:clamp(23px,3.3vw,32px);margin:11px 0 8px}
+.sub{color:var(--dim);font-size:15.5px;max-width:76ch;margin:0 0 22px}
+h3{font-size:19px;margin:32px 0 6px}h4{font-size:15.5px;margin:18px 0 3px}
+
+.grid{display:grid;gap:13px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:820px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:18px 20px}
+.card.acc{border-left:3px solid var(--acc)}
+.lnk{color:inherit;display:block}.lnk .t{color:var(--acc)}.lnk .arr{float:right;color:var(--faint)}
+.t{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--faint);font-weight:600;margin-bottom:7px}
+.big{font-size:28px;font-weight:600;letter-spacing:-.03em}.big small{font-size:13px;color:var(--muted);font-weight:500;letter-spacing:0}
+ul{margin:6px 0 14px;padding-left:0;list-style:none}
+li{position:relative;padding-left:21px;margin:6px 0;color:var(--dim);font-size:14.5px}
+li::before{content:"";position:absolute;left:4px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--acc)}
+li b{color:var(--ink)}
+ol{margin:8px 0 14px;padding-left:20px}ol li{padding-left:4px}ol li::before{display:none}
+.quote{border-left:2px solid var(--acc);padding:4px 0 4px 18px;margin:16px 0;font-size:clamp(17px,2.1vw,22px);font-weight:500;letter-spacing:-.02em;line-height:1.3}
+.quote .s{color:var(--muted)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;margin:14px 0}
+table{border-collapse:collapse;width:100%;min-width:660px;font-size:13.5px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.11em;color:var(--faint);font-weight:600;background:var(--panel2)}
+tr:last-child td{border-bottom:none}td b{color:var(--ink)}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid var(--line2);color:var(--muted);white-space:nowrap}
+.tag.a{color:var(--acc);border-color:var(--acc)}.tag.g{color:var(--good);border-color:var(--good)}.tag.b{color:var(--blue);border-color:var(--blue)}
+.script{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--warm);border-radius:10px;padding:13px 15px;margin:12px 0;font-size:13.5px;color:var(--dim);white-space:pre-wrap}
+.pill{display:inline-block;font-size:12px;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:4px 11px;margin:3px 4px 3px 0}
+.hr{height:1px;background:var(--line);margin:24px 0}
+.callout{border-radius:12px;padding:13px 17px;margin:14px 0;font-size:14.5px}
+.callout.do{background:rgba(90,195,122,.08);border:1px solid rgba(90,195,122,.28)}
+.callout.dont{background:rgba(255,90,77,.07);border:1px solid rgba(255,90,77,.26)}
+.callout.key{background:rgba(244,201,77,.07);border:1px solid rgba(244,201,77,.28)}
+.chk{display:flex;gap:11px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)}
+.chk:last-child{border-bottom:none}.chk input{margin-top:4px;width:17px;height:17px;accent-color:var(--acc);flex:0 0 auto;cursor:pointer}
+.chk label{color:var(--dim);font-size:14.5px;cursor:pointer}.chk label b{color:var(--ink)}
+.prog{margin-top:16px;display:flex;align-items:center;gap:12px}.progbar{flex:1;height:6px;border-radius:999px;background:var(--line);overflow:hidden;max-width:320px}.progbar i{display:block;height:100%;background:var(--good);width:0}.progtxt{font-size:12px;color:var(--muted)}
+.q{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line2);border-radius:13px;padding:16px 18px;margin:15px 0}
+.q .ql{font-size:11px;text-transform:uppercase;letter-spacing:.15em;color:var(--acc);font-weight:700}.q .qt{font-size:16px;font-weight:600;margin:5px 0 4px}.q .qh{color:var(--muted);font-size:13px;margin-bottom:9px}
+.q textarea{width:100%;min-height:70px;background:var(--bg);border:1px solid var(--line);border-radius:9px;color:var(--ink);font:inherit;font-size:14px;padding:9px 11px;resize:vertical}
+.ladder{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}@media(max-width:820px){.ladder{grid-template-columns:1fr 1fr}}
+.rung{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 16px;position:relative}
+.rung.here{border-color:var(--acc);border-width:1.5px}.rung .r{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint);font-weight:600}
+.rung .v{font-size:26px;font-weight:600;letter-spacing:-.03em}.rung .m{color:var(--muted);font-size:12.5px}
+footer{padding:24px 0 60px;color:var(--faint);font-size:12px;border-top:1px solid var(--line)}
+@media(max-width:640px){
+  .controls{top:10px;right:10px;gap:6px}.segbtn{padding:5px 11px;font-size:12px}.ctrlbtn{width:30px;height:30px;font-size:14px}
+
+  .wrap{padding:0 15px}.tabs .w2{padding:0 15px}
+  header{padding:26px 0 10px}
+  h1.title{font-size:25px}.brand{gap:10px}.bmic{width:34px;height:34px}
+  .lede{font-size:14px}
+  h2{font-size:21px}h3{font-size:16.5px;margin-top:24px}h4{font-size:14.5px}
+  .sub{font-size:14px}
+  .pv{padding:22px 0 56px}
+  .card{padding:15px 16px}
+  li,.chk label,.q textarea{font-size:14px}
+  table{min-width:0;font-size:12.5px}th,td{padding:9px 10px}
+  .tablewrap{border-radius:10px}
+  .ladder{grid-template-columns:1fr 1fr;gap:8px}.rung{padding:13px 14px}.rung .v{font-size:22px}
+  .big{font-size:23px}
+  .quote{font-size:17px;padding-left:14px}
+  .kick{font-size:11px;letter-spacing:.15em;padding-right:8px;margin-top:34px}
+  .pill{font-size:11px;padding:4px 9px}
+  .script{font-size:12.5px;padding:11px 12px}
+  .callout{padding:12px 14px;font-size:13.5px}
+  .prog{flex-wrap:wrap}
+}
+@media(max-width:400px){.ladder{grid-template-columns:1fr}h1.title{font-size:23px}}
+@media print{.toggle,.tabs,#gate{display:none}.pv{display:block!important}#app{display:block!important}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+[data-l]{display:block}
+body[data-lang=en] [data-l=fr]{display:none}
+body[data-lang=fr] [data-l=en]{display:none}
+
+</style></head><body data-lang="en">
+
+<!-- LOGIN GATE -->
+<div id="gate"><div class="box">
+  <div class="mic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3" fill="currentColor" stroke="none"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/></svg></div>
+  <h1>Verba Marketing HQ<span class="d">.</span></h1>
+  <p>Private. Enter the team passphrase to continue.</p>
+  <input id="gpass" type="password" placeholder="Passphrase" autocomplete="off">
+  <button onclick="tryGate()">Enter</button>
+  <div class="err" id="gerr"></div>
+</div></div>
+
+<div id="app">
+<div class="controls">
+  <div class="seg" role="group" aria-label="Language"><button id="langbtn" class="segbtn on" onclick="setLang('en')">EN</button><button id="langbtnfr" class="segbtn" onclick="setLang('fr')">FR</button></div>
+  <button class="ctrlbtn" title="Theme" aria-label="Toggle theme" onclick="var r=document.documentElement;r.setAttribute('data-theme',r.getAttribute('data-theme')==='light'?'dark':'light')">&#9681;</button>
+</div>
+
+<header><div class="wrap">
+  <div class="kick"><span data-l="en">Marketing HQ · strategy and execution, one dashboard · built on the full Verba strategy</span><span data-l="fr">Marketing HQ · stratégie et exécution, un seul tableau de bord · bâti sur toute la stratégie Verba</span></div>
+  <div class="brand"><div class="bmic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3" fill="currentColor" stroke="none"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/></svg></div>
+  <h1 class="title">Verba<span class="d">.</span> Marketing HQ</h1></div>
+  <p class="lede"><span data-l="en">The command center to take Verba from 23 to 1,000 paying users and rival Wispr Flow. The full 12-part strategy, the giants' playbook, a real growth-hacking arsenal, an experiment lab, the competitor teardown, and every connected channel, in one place. Your progress is saved in this browser.</span><span data-l="fr">Le centre de commande pour faire passer Verba de 23 à 1 000 utilisateurs payants et rivaliser avec Wispr Flow. Toute la stratégie en 12 parties, le playbook des géants, un vrai arsenal de growth hacking, un labo d'expériences, le décryptage du concurrent et chaque canal connecté, au même endroit. Votre progression est sauvegardée dans ce navigateur.</span></p>
+  <div class="prog"><div class="progbar"><i id="pbar"></i></div><span class="progtxt" id="ptxt"></span></div>
+</div></header>
+
+<div class="tabs"><div class="w2" role="tablist">
+  <button class="tab" role="tab" aria-selected="true" data-v="cmd"><span class="n">0</span><span data-l="en">Command</span><span data-l="fr">Commande</span></button>
+  <button class="tab" role="tab" aria-selected="false" data-v="strat"><span class="n">1</span><span data-l="en">Strategy</span><span data-l="fr">Stratégie</span></button>
+  <button class="tab" role="tab" aria-selected="false" data-v="giants"><span class="n">2</span><span data-l="en">Giants playbook</span><span data-l="fr">Playbook des géants</span></button>
+  <button class="tab" role="tab" aria-selected="false" data-v="buyer"><span class="n">3</span><span data-l="en">The buyer</span><span data-l="fr">L'acheteur</span></button>
+  <button class="tab" role="tab" aria-selected="false" data-v="arsenal"><span class="n">4</span><span data-l="en">Growth arsenal</span><span data-l="fr">Arsenal growth</span></button>
+  <button class="tab" role="tab" aria-selected="false" data-v="exp"><span class="n">5</span><span data-l="en">Experiments</span><span data-l="fr">Expériences</span></button>
+  <button class="tab" role="tab" aria-selected="false" data-v="wispr"><span class="n">6</span><span data-l="en">Wispr teardown</span><span data-l="fr">Décryptage Wispr</span></button>
+  <button class="tab" role="tab" aria-selected="false" data-v="chan"><span class="n">7</span><span data-l="en">Channels</span><span data-l="fr">Canaux</span></button>
+  <button class="tab" role="tab" aria-selected="false" data-v="plan"><span class="n">8</span><span data-l="en">90-day plan</span><span data-l="fr">Plan 90 jours</span></button>
+  <button class="tab" role="tab" aria-selected="false" data-v="metrics"><span class="n">9</span><span data-l="en">Metrics</span><span data-l="fr">Métriques</span></button>
+  <button class="tab" role="tab" aria-selected="false" data-v="lib"><span class="n">10</span><span data-l="en">Library</span><span data-l="fr">Bibliothèque</span></button>
+</div></div>
+
+<!-- 0 COMMAND -->
+<div class="pv on wrap" id="v-cmd"><div data-l="en">
+  <div class="seclabel">Command center</div>
+  <h2>Where we are, where we go, what to do now</h2>
+  <p class="sub">1,000 paying users is less than 0.05% of a $3.9B category growing 17% a year. Wispr Flow raised ~$2B and validated the demand for us. The problem is never market size. It is execution. This is the map.</p>
+  <div class="ladder">
+    <div class="rung here"><div class="r">Today</div><div class="v num">~23</div><div class="m">beta users. Real people, real emails.</div></div>
+    <div class="rung"><div class="r">Rung 1</div><div class="v num">100</div><div class="m">~760 EUR/mo · zero budget, by hand · gate: trial to paid over 6%</div></div>
+    <div class="rung"><div class="r">Rung 2</div><div class="v num">500</div><div class="m">~3,800 EUR/mo · loops + light paid · gate: referral k over 0.3</div></div>
+    <div class="rung"><div class="r">Rung 3</div><div class="v num">1,000</div><div class="m">~7,600 EUR/mo · then ads + funding</div></div>
+  </div>
+
+  <h3>The monetization plan: free now, paid later</h3>
+  <p class="sub">Deliberate choice: Verba runs a free bootstrap phase first. Free removes every ounce of friction at the exact moment you have zero brand and zero proof. It buys the fastest path to the loop, the testimonials, and the word of mouth. Then, at critical mass, you flip on paid. Revenue is delayed on purpose, users and proof are not.</p>
+  <div class="grid g3">
+    <div class="card acc"><div class="t">Phase 0 · Bootstrap (now)</div><p class="dim"><b>Free for everyone.</b> The only goal is active users, honest proof, and the share loop turning. Beta users stay <b>free for life</b> (already promised). No paywall in the way of growth.</p></div>
+    <div class="card"><div class="t">Phase 1 · Flip to paid (at the trigger)</div><p class="dim">At critical mass (target: ~1,000 active weekly users, a working loop, PMF signal), introduce the tiers: Explore free / Pro / Studio-Power / Founder-Lifetime. Grandfather the free-for-life cohort. New users monetize.</p></div>
+    <div class="card"><div class="t">Phase 2 · Full paid + scale</div><p class="dim">Once conversion is proven, tighten the free tier (usage-gated, not feature-gated), turn on retargeting, and raise price on new customers. This is when ads and funding make sense.</p></div>
+  </div>
+  <div class="callout key"><b>The one discipline that makes free-first safe:</b> set an explicit flip trigger (a user + retention threshold, e.g. 1,000 WAD and a Sean-Ellis PMF over 40%), and collect willingness-to-pay signal DURING the free phase (a "would you pay, how much" survey, a Van Westendorp on the Founder tier). Free is a growth lever, not a permanent business model. The strategy already warns: underpricing out of fear is a mistake, so the free phase must have a dated exit, not drift forever.</div>
+  <div class="callout dont"><b>The trap to avoid:</b> staying free so long that users never expect to pay and you never learn if they will. Free buys speed and proof, it does not validate a business. Flip when the trigger hits, not when it feels comfortable.</div>
+
+  <h3>The North Star (reject vanity)</h3>
+  <div class="callout key"><b>Voice actions completed and actually used, per active user per week.</b> A dictation pasted or sent, plus a confirmed-and-executed JARVIS action. Not downloads, not dictations launched, not accounts. Operating proxy: Weekly Active Dictators.</div>
+
+  <h3>The four growth engines</h3>
+  <div class="grid g4">
+    <div class="card acc"><div class="t">A · Founder in public</div><p class="mut">Daily X posts, raw MRR and installs, the command-of-the-day clip. Amplify every user clip. Cost: zero.</p></div>
+    <div class="card acc"><div class="t">B · The share-clip loop</div><p class="mut">The missing build, and the one that won 3 of the 4 giants. A one-tap "share this clip" after a confirmed JARVIS action, with a Made-with-Verba end-card.</p></div>
+    <div class="card acc"><div class="t">C · Community and launches</div><p class="mut">Show HN, AI-coding-tool subreddits, r/macapps, Lobsters, Product Hunt. Reply-jack viral threads within the hour.</p></div>
+    <div class="card acc"><div class="t">D · Product loops (coded)</div><p class="mut">Make referral "Free Month" + the leaderboard visible. Comparative SEO and GEO (/vs, /compare) that compounds on its own.</p></div>
+  </div>
+
+  <h3>The funnel by awareness (never send cold traffic to "Start trial")</h3>
+  <div class="tablewrap"><table><thead><tr><th>Stage</th><th>Awareness</th><th>What lives here</th></tr></thead><tbody>
+    <tr><td><b>TOFU</b></td><td>unaware, problem-aware</td><td>viral JARVIS clips, build-in-public, SEO "best Mac dictation" / "Wispr alternative", PH + HN</td></tr>
+    <tr><td><b>MOFU</b></td><td>solution-aware</td><td>/compare and /vs pages, pillar posts (the privacy math, the cost math), no-card trial, email teaser</td></tr>
+    <tr><td><b>BOFU</b></td><td>product / most-aware</td><td>33-dictation paywall, 7-day trial, annual nudge, the Founder / Lifetime drop</td></tr>
+  </tbody></table></div>
+
+  <div class="callout do"><b>The real bottleneck is Activation, not Acquisition.</b> The 33 free dictations must deliver the aha every time, and the first confirmed JARVIS action (the competitor-unique moment) must happen in under 5 minutes. Fix the leak before pouring in traffic.</div>
+
+  <h3>Do these first (the highest-leverage moves)</h3>
+  <div class="chk-list">
+    <div class="chk"><input type="checkbox" data-k="c-demo"><label><b>Record the canonical 60s JARVIS demo</b> + 4 cutdowns (Linear, Gmail, Slack, Calendar). The parent asset for every channel.</label></div>
+    <div class="chk"><input type="checkbox" data-k="c-loop"><label><b>Build the share-clip loop</b> (one-tap share after a confirmed action, Made-with-Verba end-card). The engine 3 of 4 giants won on.</label></div>
+    <div class="chk"><input type="checkbox" data-k="c-proof"><label><b>Collect 10 to 20 honest testimonials</b> from seeded testers. Zero public proof is the single biggest gap.</label></div>
+    <div class="chk"><input type="checkbox" data-k="c-funnel"><label><b>Instrument 3 events</b> (signup, aha, north star) and fix the biggest activation leak.</label></div>
+    <div class="chk"><input type="checkbox" data-k="c-x"><label><b>Start founder-in-public on X,</b> daily, the one channel where you learn every week.</label></div>
+  </div>
+</div><div data-l="fr"><div class="seclabel">Centre de commande</div>
+  <h2>Où nous en sommes, où nous allons, quoi faire maintenant</h2>
+  <p class="sub">1,000 utilisateurs payants, c'est moins de 0.05% d'une catégorie à $3.9B qui croît de 17% par an. Wispr Flow a levé environ $2B et a validé la demande pour nous. Le problème n'est jamais la taille du marché. C'est l'exécution. Voici la carte.</p>
+  <div class="ladder">
+    <div class="rung here"><div class="r">Aujourd'hui</div><div class="v num">~23</div><div class="m">utilisateurs beta. De vraies personnes, de vrais emails.</div></div>
+    <div class="rung"><div class="r">Palier 1</div><div class="v num">100</div><div class="m">~760 EUR/mois · budget zéro, à la main · seuil : essai vers payant au-dessus de 6%</div></div>
+    <div class="rung"><div class="r">Palier 2</div><div class="v num">500</div><div class="m">~3,800 EUR/mois · boucles + un peu de paid · seuil : k de parrainage au-dessus de 0.3</div></div>
+    <div class="rung"><div class="r">Palier 3</div><div class="v num">1,000</div><div class="m">~7,600 EUR/mois · puis publicité + levée de fonds</div></div>
+  </div>
+
+  <h3>Le plan de monétisation : gratuit maintenant, payant plus tard</h3>
+  <p class="sub">Choix délibéré : Verba lance d'abord une phase gratuite de bootstrap. Le gratuit supprime toute friction au moment précis où vous n'avez ni marque ni preuve. Il achète le chemin le plus rapide vers la boucle, les témoignages et le bouche à oreille. Puis, à la masse critique, vous basculez vers le payant. Le revenu est retardé volontairement, pas les utilisateurs ni la preuve.</p>
+  <div class="grid g3">
+    <div class="card acc"><div class="t">Phase 0 · Bootstrap (maintenant)</div><p class="dim"><b>Gratuit pour tout le monde.</b> Le seul objectif : des utilisateurs actifs, une preuve honnête, et la boucle de partage qui tourne. Les utilisateurs beta restent <b>gratuits à vie</b> (déjà promis). Aucun paywall ne freine la croissance.</p></div>
+    <div class="card"><div class="t">Phase 1 · Bascule vers le payant (au déclencheur)</div><p class="dim">À la masse critique (cible : ~1,000 utilisateurs actifs hebdo, une boucle qui fonctionne, un signal de PMF), introduisez les paliers : Explore gratuit / Pro / Studio-Power / Founder-Lifetime. La cohorte gratuite à vie conserve ses droits acquis. Les nouveaux utilisateurs monétisent.</p></div>
+    <div class="card"><div class="t">Phase 2 · Tout payant + scale</div><p class="dim">Une fois la conversion prouvée, resserrez le palier gratuit (limité par l'usage, pas par les fonctionnalités), activez le retargeting, et augmentez le prix pour les nouveaux clients. C'est là que la publicité et la levée de fonds prennent tout leur sens.</p></div>
+  </div>
+  <div class="callout key"><b>La seule discipline qui rend le gratuit-d'abord sûr :</b> fixez un déclencheur de bascule explicite (un seuil d'utilisateurs et de rétention, par exemple 1,000 WAD et un PMF Sean Ellis au-dessus de 40%), et collectez le signal de volonté de payer PENDANT la phase gratuite (un sondage « paieriez-vous, combien », un Van Westendorp sur le palier Founder). Le gratuit est un levier de croissance, pas un modèle économique permanent. La stratégie le dit déjà : sous-évaluer par peur est une erreur, la phase gratuite doit donc avoir une sortie datée, pas dériver indéfiniment.</div>
+  <div class="callout dont"><b>Le piège à éviter :</b> rester gratuit si longtemps que les utilisateurs ne s'attendent jamais à payer, et que vous n'apprenez jamais s'ils le feraient. Le gratuit achète de la vitesse et de la preuve, il ne valide pas un modèle économique. Basculez quand le déclencheur est atteint, pas quand cela semble confortable.</div>
+
+  <h3>Le North Star (rejeter les métriques de vanité)</h3>
+  <div class="callout key"><b>Actions vocales complétées et réellement utilisées, par utilisateur actif et par semaine.</b> Une dictée collée ou envoyée, plus une action JARVIS confirmée et exécutée. Pas les téléchargements, pas les dictées lancées, pas les comptes. Proxy opérationnel : Weekly Active Dictators.</div>
+
+  <h3>Les quatre moteurs de croissance</h3>
+  <div class="grid g4">
+    <div class="card acc"><div class="t">A · Le fondateur en public</div><p class="mut">Posts X quotidiens, MRR brut et installations, le clip de la commande du jour. Amplifiez chaque clip d'utilisateur. Coût : zéro.</p></div>
+    <div class="card acc"><div class="t">B · La boucle du clip partagé</div><p class="mut">Le build manquant, celui qui a fait gagner 3 des 4 géants. Un « partager ce clip » en un tap après une action JARVIS confirmée, avec un carton de fin Made-with-Verba.</p></div>
+    <div class="card acc"><div class="t">C · Communauté et lancements</div><p class="mut">Show HN, subreddits d'outils de code IA, r/macapps, Lobsters, Product Hunt. Répondez aux threads viraux dans l'heure.</p></div>
+    <div class="card acc"><div class="t">D · Boucles produit (déjà codées)</div><p class="mut">Rendez visibles le parrainage « Free Month » et le classement. Le SEO et le GEO comparatifs (/vs, /compare) qui composent tout seuls.</p></div>
+  </div>
+
+  <h3>L'entonnoir par niveau de conscience (n'envoyez jamais de trafic froid vers « Start trial »)</h3>
+  <div class="tablewrap"><table><thead><tr><th>Étape</th><th>Conscience</th><th>Ce qui vit ici</th></tr></thead><tbody>
+    <tr><td><b>TOFU</b></td><td>inconscient, conscient du problème</td><td>clips JARVIS viraux, build-in-public, SEO « best Mac dictation » / « Wispr alternative », PH + HN</td></tr>
+    <tr><td><b>MOFU</b></td><td>conscient de la solution</td><td>pages /compare et /vs, articles piliers (le calcul de la confidentialité, le calcul du coût), essai sans carte, teaser email</td></tr>
+    <tr><td><b>BOFU</b></td><td>conscient du produit / le plus conscient</td><td>paywall à 33 dictées, essai de 7 jours, relance vers l'annuel, le drop Founder / Lifetime</td></tr>
+  </tbody></table></div>
+
+  <div class="callout do"><b>Le vrai goulot d'étranglement, c'est l'Activation, pas l'Acquisition.</b> Les 33 dictées gratuites doivent délivrer le déclic à chaque fois, et la première action JARVIS confirmée (le moment unique face à la concurrence) doit arriver en moins de 5 minutes. Réparez la fuite avant d'y déverser du trafic.</div>
+
+  <h3>À faire en premier (les actions à plus fort effet de levier)</h3>
+  <div class="chk-list">
+    <div class="chk"><input type="checkbox" data-k="c-demo"><label><b>Enregistrez la démo JARVIS canonique de 60 secondes</b> + 4 versions courtes (Linear, Gmail, Slack, Calendar). L'asset mère pour tous les canaux.</label></div>
+    <div class="chk"><input type="checkbox" data-k="c-loop"><label><b>Construisez la boucle du clip partagé</b> (partage en un tap après une action confirmée, carton de fin Made-with-Verba). Le moteur qui a fait gagner 3 des 4 géants.</label></div>
+    <div class="chk"><input type="checkbox" data-k="c-proof"><label><b>Récoltez 10 à 20 témoignages honnêtes</b> auprès des testeurs recrutés. L'absence totale de preuve publique est le plus gros manque.</label></div>
+    <div class="chk"><input type="checkbox" data-k="c-funnel"><label><b>Instrumentez 3 événements</b> (inscription, déclic, north star) et réparez la plus grosse fuite d'activation.</label></div>
+    <div class="chk"><input type="checkbox" data-k="c-x"><label><b>Lancez le founder-in-public sur X,</b> tous les jours, le seul canal où vous apprenez chaque semaine.</label></div>
+  </div></div></div>
+
+<!-- 1 STRATEGY -->
+<div class="pv wrap" id="v-strat"><div data-l="en">
+  <div class="seclabel">Strategy</div>
+  <h2>The empty shelf: the first private voice agent for Mac</h2>
+  <p class="sub">The market files voice tools onto three occupied shelves: dictation that sends your audio away = Wispr Flow, local = Superwhisper, pure transcription = MacWhisper. Nobody owns the empty slot: private by default, safe on your Mac, and it acts. That empty shelf is Verba. Do not fight Wispr on its turf. Re-frame the category.</p>
+  <div class="quote">The private voice agent for your Mac. Speak it. Send it clean. And when you mean it, JARVIS does it, across your apps, only after you confirm.</div>
+
+  <h4>The substitution test (the cheapest, sharpest test)</h4>
+  <p>Swap "Verba" for "Wispr Flow" or "Superwhisper" on the homepage. On pure dictation it almost still reads true (the alarm signal). On JARVIS (say an intent, see the plan, confirm, it runs across 1,000+ apps) it reads clearly false, because no named competitor claims that territory. That gap is the whole strategy.</p>
+
+  <h3>Dunford's 5 components</h3>
+  <div class="grid g2">
+    <div class="card"><div class="t">Real alternatives (the true competitor is inertia)</div><ul><li>Typing</li><li>Dictating into Apple Notes with no cleanup</li><li>Subscribing to yet another AI app with its own account and its own bill</li><li>Opening 5 to 10 apps by hand to run a follow-up</li></ul></div>
+    <div class="card"><div class="t">Unique attributes (what only Verba has)</div><ul><li>Everything stays on the Mac, including action planning</li><li>Private AI models that keep every word safe, at a very low marginal cost</li><li>JARVIS plans, shows the step, waits for confirm, then acts on 1,000+ apps</li><li>6 modes, 3 engines, 99+ languages</li></ul></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><div class="t">The value</div><ul><li>Dictate the confidential word or client note without a second's hesitation</li><li>Nothing you say is ever exposed, on the record or off</li><li>The follow-up postponed for 3 days goes out in the time it takes to say it</li></ul></div>
+    <div class="card"><div class="t">Who cares most, and the category</div><ul><li><b>Segment:</b> the developer who already spends all day in an AI coding assistant on their Mac. Speed and privacy sell themselves.</li><li><b>Category:</b> not another dictation app. The private voice agent for Mac, the first credible "Jarvis for your Mac" because it actually acts.</li></ul></div>
+  </div>
+  <div class="callout key"><b>Join, do not create.</b> Never say "a new category of augmented productivity" (too expensive to teach). Say "the private voice agent for Mac": "voice" and "Mac" carry instant comprehension, "private" and "agent" carry the territory Wispr (sends your audio to their servers) and Superwhisper/MacWhisper (transcription only) cannot follow into without rebuilding.</div>
+
+  <h3>The 12-part strategy, condensed</h3>
+  <div class="tablewrap"><table><thead><tr><th>Part</th><th>The core call</th></tr></thead><tbody>
+    <tr><td><b>01 Foundations</b></td><td>6-block diagnostic. The lever is the weakest block furthest upstream (Strategy 7, Message 5, Channels 4, Conversion 4, Retention 2, Measurement 7). Ship a GEO baseline before launch.</td></tr>
+    <tr><td><b>02 Positioning</b></td><td>The empty shelf (above). Beachhead sequence, never inverted: the AI-coding-assistant developer, then privacy pros, operators, multilinguals, long-form.</td></tr>
+    <tr><td><b>03 Why they buy</b></td><td>JTBD per persona, dominant force differs. Verba's strongest anxiety answer (local, nothing uploaded) is underused. Reassure first, impress second.</td></tr>
+    <tr><td><b>04 Message and offer</b></td><td>Kill the "doesn't just X, it Y" AI-tell cadence. One Dunford value-prop per persona. Wow-moment measured under 5 min. Collect proof: the priority worksite.</td></tr>
+    <tr><td><b>05 Funnel and channels</b></td><td>Bottleneck is Activation, not Acquisition. 100% owned + earned to rung 500. Install the email list this week. Bullseye: 3 bounded channel tests.</td></tr>
+    <tr><td><b>06 Content, SEO, GEO</b></td><td>Verba has distribution but no discoverability. Build the /vs + /compare cluster (24 rivals x 10 personas) in waves. 20% make the mother-piece, 80% redistribute.</td></tr>
+    <tr><td><b>07 Paid, the multiplier</b></td><td>Not ready for cold prospecting. CAC ceiling ~20 EUR (payback, not ratio). Creative-as-targeting: never make an ad before an organic winner exists.</td></tr>
+    <tr><td><b>08 Pricing</b></td><td>Verba underprices out of fear (very low marginal cost). Move to a 4-tier ladder: Explore / Pro / Studio-Power / Founder-Lifetime. Van Westendorp test the Founder tier.</td></tr>
+    <tr><td><b>09 Partnerships and loops</b></td><td>Referral reward = product currency, never cash. Realistic k ~ 0.4 cuts CAC ~40%. Surface referral at peak value (right after a confirmed action), not a footer.</td></tr>
+    <tr><td><b>10 Selling</b></td><td>PLG, but sell by hand first to learn the language and manufacture proof. Two aha moments: first clean paste, and (the unique one) the first confirmed JARVIS action.</td></tr>
+    <tr><td><b>11 Measure and retention</b></td><td>North Star = voice actions used per active user per week. Early churn is worksite 1. ICE-scored: make referral visible (392), fix onboarding aha (378), ship the clip (160).</td></tr>
+    <tr><td><b>12 Sequence and 90-day plan</b></td><td>Positioning to Message to One channel to Conversion to Measure to Scale. The trap: jumping from Positioning straight to 16 accounts and launch, skipping Message and Conversion. X is the one channel where you learn weekly.</td></tr>
+  </tbody></table></div>
+</div><div data-l="fr"><div class="seclabel">Stratégie</div>
+  <h2>L'étagère vide : le premier agent vocal privé pour Mac</h2>
+  <p class="sub">Le marché range les outils vocaux sur trois étagères déjà occupées : dictée qui envoie votre audio ailleurs = Wispr Flow, local = Superwhisper, transcription pure = MacWhisper. Personne n'occupe la case vide : privé par défaut, en sécurité sur votre Mac, et qui agit. Cette étagère vide, c'est Verba. Ne combattez pas Wispr sur son terrain. Redéfinissez la catégorie.</p>
+  <div class="quote">L'agent vocal privé de votre Mac. Dites-le. Envoyez-le propre. Et quand vous le pensez vraiment, JARVIS le fait, dans toutes vos applications, seulement après votre confirmation.</div>
+
+  <h4>Le test de substitution (le test le plus simple, et le plus tranchant)</h4>
+  <p>Remplacez « Verba » par « Wispr Flow » ou « Superwhisper » sur la page d'accueil. Sur la dictée pure, la phrase reste presque vraie (le signal d'alarme). Sur JARVIS (énoncez une intention, voyez le plan, confirmez, ça s'exécute dans plus de 1 000 applications), elle devient clairement fausse, car aucun concurrent nommé ne revendique ce territoire. Cet écart, c'est toute la stratégie.</p>
+
+  <h3>Les 5 composantes de Dunford</h3>
+  <div class="grid g2">
+    <div class="card"><div class="t">Vraies alternatives (le vrai concurrent, c'est l'inertie)</div><ul><li>Taper au clavier</li><li>Dicter dans Apple Notes sans nettoyage</li><li>Payer un abonnement supplémentaire à une autre IA, avec son propre compte et sa propre facture</li><li>Ouvrir 5 à 10 applications à la main pour faire une relance</li></ul></div>
+    <div class="card"><div class="t">Attributs uniques (ce que Verba seul possède)</div><ul><li>Tout reste sur le Mac, y compris la planification des actions</li><li>Des modèles d'IA privés qui gardent chaque mot en sécurité, à un coût marginal très faible</li><li>JARVIS planifie, montre l'étape, attend la confirmation, puis agit sur plus de 1 000 applications</li><li>6 modes, 3 moteurs, plus de 99 langues</li></ul></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><div class="t">La valeur</div><ul><li>Dicter le mot confidentiel ou la note client sans une seconde d'hésitation</li><li>Ne jamais exposer ce que vous dites, en confidence comme au travail</li><li>La relance reportée depuis 3 jours part dans le temps qu'il faut pour la dire</li></ul></div>
+    <div class="card"><div class="t">Qui s'en soucie le plus, et la catégorie</div><ul><li><b>Segment :</b> le développeur qui passe déjà ses journées dans un assistant de code IA sur son Mac. La vitesse et la confidentialité se vendent toutes seules.</li><li><b>Catégorie :</b> pas une énième app de dictée. L'agent vocal privé pour Mac, le premier « Jarvis pour votre Mac » crédible, parce qu'il agit vraiment.</li></ul></div>
+  </div>
+  <div class="callout key"><b>Rejoignez, ne créez pas.</b> Ne dites jamais « une nouvelle catégorie de productivité augmentée » (trop coûteux à enseigner). Dites « l'agent vocal privé pour Mac » : « vocal » et « Mac » portent une compréhension immédiate, « privé » et « agent » portent le territoire que Wispr (envoie votre audio sur leurs serveurs) et Superwhisper/MacWhisper (transcription seule) ne peuvent suivre sans tout reconstruire.</div>
+
+  <h3>La stratégie en 12 parties, condensée</h3>
+  <div class="tablewrap"><table><thead><tr><th>Partie</th><th>Le choix clé</th></tr></thead><tbody>
+    <tr><td><b>01 Fondations</b></td><td>Diagnostic en 6 blocs. Le levier, c'est le bloc le plus faible, le plus en amont (Stratégie 7, Message 5, Canaux 4, Conversion 4, Rétention 2, Mesure 7). Livrez une base GEO avant le lancement.</td></tr>
+    <tr><td><b>02 Positionnement</b></td><td>L'étagère vide (ci-dessus). Séquence de tête de pont, jamais inversée : développeur sur assistant de code IA, puis professionnels de la confidentialité, opérateurs, multilingues, contenu long.</td></tr>
+    <tr><td><b>03 Pourquoi ils achètent</b></td><td>JTBD par persona, la force dominante change. La meilleure réponse de Verba à l'anxiété (local, rien n'est envoyé) est sous-exploitée. Rassurez d'abord, impressionnez ensuite.</td></tr>
+    <tr><td><b>04 Message et offre</b></td><td>Éliminez la cadence « ne se contente pas de X, il Y », signature typique de l'IA. Une proposition de valeur Dunford par persona. Moment wow mesuré en moins de 5 minutes. Collectez des preuves : le chantier prioritaire.</td></tr>
+    <tr><td><b>05 Tunnel et canaux</b></td><td>Le goulot d'étranglement, c'est l'Activation, pas l'Acquisition. 100 % détenu + gagné jusqu'au palier 500. Mettez en place la liste email cette semaine. Cible (bullseye) : 3 tests de canaux bornés.</td></tr>
+    <tr><td><b>06 Contenu, SEO, GEO</b></td><td>Verba a de la distribution mais pas de découvrabilité. Construisez le cluster /vs + /compare (24 rivaux x 10 personas) par vagues. 20 % pour créer la pièce mère, 80 % pour la redistribuer.</td></tr>
+    <tr><td><b>07 Payant, le multiplicateur</b></td><td>Pas encore prêt pour la prospection à froid. Plafond de CAC ~20 EUR (basé sur le retour sur investissement, pas un ratio). Le créatif comme ciblage : ne créez jamais une pub avant qu'un gagnant organique existe.</td></tr>
+    <tr><td><b>08 Prix</b></td><td>Verba se sous-évalue par peur (coût marginal très faible). Passez à une échelle à 4 paliers : Explore / Pro / Studio-Power / Founder-Lifetime. Testez le palier Founder avec Van Westendorp.</td></tr>
+    <tr><td><b>09 Partenariats et boucles</b></td><td>La récompense de parrainage, c'est de la monnaie produit, jamais du cash. Un k réaliste ~ 0,4 réduit le CAC d'environ 40 %. Affichez le parrainage au pic de valeur perçue (juste après une action confirmée), pas dans un pied de page.</td></tr>
+    <tr><td><b>10 Vente</b></td><td>PLG, mais vendez d'abord à la main pour apprendre le langage et fabriquer la preuve. Deux moments aha : le premier collage propre, et (le moment unique) la première action JARVIS confirmée.</td></tr>
+    <tr><td><b>11 Mesure et rétention</b></td><td>North Star = actions vocales utilisées par utilisateur actif et par semaine. Le churn précoce est le chantier n°1. Scoré ICE : rendre le parrainage visible (392), corriger l'aha de l'onboarding (378), livrer le clip (160).</td></tr>
+    <tr><td><b>12 Séquence et plan à 90 jours</b></td><td>Positionnement, puis Message, puis Un canal, puis Conversion, puis Mesure, puis Scale. Le piège : sauter du Positionnement directement aux 16 comptes et au lancement, en court-circuitant Message et Conversion. X est le canal unique où vous apprenez chaque semaine.</td></tr>
+  </tbody></table></div></div></div>
+
+<!-- 2 GIANTS -->
+<div class="pv wrap" id="v-giants"><div data-l="en">
+  <div class="seclabel">The giants playbook</div>
+  <h2>Copy what made Cursor, Lovable, Replit and Higgsfield explode</h2>
+  <p class="sub">Four products went from near-zero to nine-figure revenue in about a year, mostly without ads. They did not get lucky. They ran the same machine: every user output becomes an ad. Here is what they actually did, and the 10 laws translated into Verba moves.</p>
+  <div class="tablewrap"><table><thead><tr><th>Company</th><th>Result</th><th>The engine</th></tr></thead><tbody>
+    <tr><td><b>Cursor</b></td><td>~1M to 100M+ ARR in ~12 mo, ~36% free to paid, <b>0 EUR on ads to 200M+ ARR</b></td><td>A render moment seen under 5 min. Devs posted their own clips on X unprompted. Won the demanding "monks" first. Free gated by usage, never locked features.</td></tr>
+    <tr><td><b>Lovable</b></td><td>0 to 100M ARR in ~8 mo (record), J30 retention 85%, under 10% of revenue from paid</td><td>Founder posted raw revenue weekly on X. The "Built with Lovable" badge drove ~25,000 signups/month. #1 Product Hunt AND #1 Hacker News same day.</td></tr>
+    <tr><td><b>Replit</b></td><td>10M to 253M ARR in ~12 mo, 35M+ users</td><td>9M+ public "Made with Replit" projects, each a door in. "Vibe coding" clips became a viral format. Remixable templates, founder always present.</td></tr>
+    <tr><td><b>Higgsfield</b></td><td>~300M ARR in ~11 mo, 3B+ organic impressions from user videos</td><td>Each user output is an ad. Ships ~10 trend-jacking presets a day. Used paid seeding of 10k+ creators, but the mechanism is identical.</td></tr>
+  </tbody></table></div>
+
+  <h3>The 10 convergent laws, as Verba moves</h3>
+  <div class="grid g2">
+    <div class="card"><div class="t">1 · The product is the ad</div><p class="dim">Build the share-clip loop. <span class="mut">"Said it once. It got done. This is Verba."</span></p></div>
+    <div class="card"><div class="t">2 · Zero paid before proof</div><p class="dim">0 EUR budget to 100 paying users.</p></div>
+    <div class="card"><div class="t">3 · Wow moment under 5 min</div><p class="dim">Onboarding shows Raw then Intent, then pushes to a first confirmed action.</p></div>
+    <div class="card"><div class="t">4 · Founder in public, raw numbers</div><p class="dim">Daily X. <span class="mut">"Day 14: 31 paying users, up from 22. No filter."</span></p></div>
+    <div class="card"><div class="t">5 · Amplify every user win</div><p class="dim">Repost and comment on every user clip.</p></div>
+    <div class="card"><div class="t">6 · Win the power users first</div><p class="dim">Mac devs living in an AI coding assistant. <span class="mut">"Your words stay private, on your Mac, always. Verba turns your voice into its planner."</span></p></div>
+    <div class="card"><div class="t">7 · Free gated by usage, not features</div><p class="dim">Keep the 33 free dictations as a full trial: all 6 modes, all 3 engines, no card.</p></div>
+    <div class="card"><div class="t">8 · Launch moments</div><p class="dim">Show HN + Product Hunt the same day (28 July).</p></div>
+    <div class="card"><div class="t">9 · Manufacture UGC without budget</div><p class="dim">The "I said it, I did it" challenge. Lifetime license to the best 20 to 50 clips.</p></div>
+    <div class="card"><div class="t">10 · Ship velocity = reason to post</div><p class="dim">A recognizable daily format.</p></div>
+  </div>
+  <div class="callout key"><b>The #1 build, above everything:</b> the share-clip loop. Verba already has referral ("Free Month") and a public leaderboard coded, but invisible. What is missing is the loop that won 3 of the 4 giants: a one-tap "share this clip" appearing right after a confirmed JARVIS action, generating a 5 to 10s clip with a Made-with-Verba end-card and link. Nobody can copy it identically, because nobody else does both private dictation AND confirmed action on connected apps.</div>
+</div><div data-l="fr"><div class="seclabel">Le playbook des géants</div>
+  <h2>Copiez ce qui a fait exploser Cursor, Lovable, Replit et Higgsfield</h2>
+  <p class="sub">Quatre produits sont passés de presque zéro à un chiffre d'affaires à neuf chiffres en environ un an, presque sans publicité. Ce n'est pas de la chance. Ils ont fait tourner la même machine : chaque résultat produit par un utilisateur devient une publicité. Voici ce qu'ils ont vraiment fait, et les 10 lois traduites en actions Verba.</p>
+  <div class="tablewrap"><table><thead><tr><th>Entreprise</th><th>Résultat</th><th>Le moteur</th></tr></thead><tbody>
+    <tr><td><b>Cursor</b></td><td>d'environ 1M à plus de 100M ARR en environ 12 mois, environ 36% de conversion gratuit vers payant, <b>0 EUR de publicité pour plus de 200M ARR</b></td><td>Un moment de rendu vu en moins de 5 minutes. Les développeurs postaient leurs propres clips sur X sans qu'on le leur demande. A conquis les "moines" les plus exigeants en premier. Gratuit limité par l'usage, jamais par des fonctionnalités verrouillées.</td></tr>
+    <tr><td><b>Lovable</b></td><td>de 0 à 100M ARR en environ 8 mois (un record), rétention à J30 de 85%, moins de 10% du chiffre d'affaires vient du payant</td><td>Le fondateur postait le chiffre d'affaires brut chaque semaine sur X. Le badge "Built with Lovable" générait environ 25 000 inscriptions par mois. #1 Product Hunt ET #1 Hacker News le même jour.</td></tr>
+    <tr><td><b>Replit</b></td><td>de 10M à 253M ARR en environ 12 mois, plus de 35M d'utilisateurs</td><td>Plus de 9M de projets publics "Made with Replit", chacun une porte d'entrée. Les clips "vibe coding" sont devenus un format viral. Templates remixables, fondateur toujours présent.</td></tr>
+    <tr><td><b>Higgsfield</b></td><td>environ 300M ARR en environ 11 mois, plus de 3 milliards d'impressions organiques issues des vidéos utilisateurs</td><td>Chaque résultat utilisateur est une publicité. Sort environ 10 presets qui surfent sur les tendances par jour. A utilisé du seeding payant auprès de plus de 10 000 créateurs, mais le mécanisme reste identique.</td></tr>
+  </tbody></table></div>
+
+  <h3>Les 10 lois convergentes, en actions Verba</h3>
+  <div class="grid g2">
+    <div class="card"><div class="t">1 · Le produit est la publicité</div><p class="dim">Construisez la boucle du clip partageable. <span class="mut">"Je l'ai dit une fois. C'est fait. C'est ça, Verba."</span></p></div>
+    <div class="card"><div class="t">2 · Zéro publicité avant la preuve</div><p class="dim">0 EUR de budget jusqu'à 100 utilisateurs payants.</p></div>
+    <div class="card"><div class="t">3 · Le moment wahou en moins de 5 minutes</div><p class="dim">L'onboarding montre le Brut puis l'Intention, puis pousse vers une première action confirmée.</p></div>
+    <div class="card"><div class="t">4 · Fondateur transparent, chiffres bruts</div><p class="dim">X quotidien. <span class="mut">"Jour 14 : 31 utilisateurs payants, contre 22. Sans filtre."</span></p></div>
+    <div class="card"><div class="t">5 · Amplifiez chaque victoire utilisateur</div><p class="dim">Repartagez et commentez chaque clip utilisateur.</p></div>
+    <div class="card"><div class="t">6 · Conquérez d'abord les power users</div><p class="dim">Les développeurs Mac qui vivent dans un assistant de code IA. <span class="mut">"Vos mots restent privés, sur votre Mac, toujours. Verba transforme votre voix en son planificateur."</span></p></div>
+    <div class="card"><div class="t">7 · Gratuit limité par l'usage, pas par les fonctionnalités</div><p class="dim">Gardez les 33 dictées gratuites comme un essai complet : les 6 modes, les 3 moteurs, sans carte bancaire.</p></div>
+    <div class="card"><div class="t">8 · Les moments de lancement</div><p class="dim">Show HN et Product Hunt le même jour (28 juillet).</p></div>
+    <div class="card"><div class="t">9 · Fabriquez de l'UGC sans budget</div><p class="dim">Le défi "je l'ai dit, je l'ai fait". Licence à vie pour les 20 à 50 meilleurs clips.</p></div>
+    <div class="card"><div class="t">10 · La vitesse de sortie comme raison de poster</div><p class="dim">Un format quotidien reconnaissable.</p></div>
+  </div>
+  <div class="callout key"><b>Le chantier numéro 1, avant tout le reste :</b> la boucle du clip partageable. Verba a déjà le parrainage ("Free Month") et un classement public codés, mais invisibles. Ce qui manque, c'est la boucle qui a fait gagner 3 des 4 géants : un bouton "partager ce clip" en un tap, apparaissant juste après une action JARVIS confirmée, générant un clip de 5 à 10 secondes avec un carton de fin Made-with-Verba et un lien. Personne ne peut le copier à l'identique, parce que personne d'autre ne combine dictée privée ET action confirmée sur des applications connectées.</div></div></div>
+
+<!-- 3 BUYER -->
+<div class="pv wrap" id="v-buyer"><div data-l="en">
+  <div class="seclabel">The buyer</div>
+  <h2>Five personas, one at a time, and how to talk to each</h2>
+  <p class="sub">Win the beachhead (the AI-coding-assistant Mac dev) for the first 100 with dense word of mouth, then widen in fixed order. Selling to all five at once sells to none. Each persona has a different dominant force, so the hero line changes, the promise does not.</p>
+  <div class="tablewrap"><table><thead><tr><th>Persona</th><th>Job / trigger moment</th><th>Force</th><th>The angle the hero must name</th></tr></thead><tbody>
+    <tr><td><b>1. AI-coding-assistant Mac dev</b> <span class="tag a">beachhead, M1</span></td><td>typed the same instruction 3 times, "I should just be able to say it"; won't break flow to type</td><td>Pull</td><td>"Your words never leave your Mac. Verba turns them into JARVIS's plan, ready the instant you confirm."</td></tr>
+    <tr><td><b>2. Privacy pro</b> (lawyer, doctor, founder, journalist)</td><td>must dictate a sensitive detail, hesitates to type it into an app that sends it off their device</td><td>Anxiety (defuse)</td><td>"Dictate the client note with the detail you'd never type into an app that sends it off your device. It stays on your Mac."</td></tr>
+    <tr><td><b>3. Voice-first operator</b> (founder, PM)</td><td>ends a call knowing 6 follow-ups will be postponed</td><td>Push</td><td>"Say it once: reply to Sarah, the proposal is ready Friday. Glance, confirm, done."</td></tr>
+    <tr><td><b>4. Multilingual worker</b></td><td>thinks in one language, must write in another</td><td>Habit (break DeepL)</td><td>"Think in French. Send in English. Verba translates while you talk."</td></tr>
+    <tr><td><b>5. Long-form thinker</b></td><td>talked an hour, has only a raw recording</td><td>Pull</td><td>"Talk for an hour on your walk. Open your Mac to a clean, structured note."</td></tr>
+  </tbody></table></div>
+
+  <h3>The four forces behind every signup</h3>
+  <div class="grid g2">
+    <div class="card"><div class="t" style="color:var(--good)">Amplify: push + pull</div><ul><li><b>Push:</b> "I think faster than I type", flow breaks, hands tire.</li><li><b>Pull:</b> you talk, it is written clean, and it can do the task.</li></ul></div>
+    <div class="card"><div class="t" style="color:var(--acc)">Kill: anxiety + habit</div><ul><li><b>Anxiety:</b> "does my voice upload?", "another bill?", "an agent on my Gmail?!" Answer each: audio stays on your Mac, private by design, nothing acts without confirm.</li><li><b>Habit:</b> "Apple Dictation is fine". Show the hidden cost of the status quo.</li></ul></div>
+  </div>
+
+  <h4>Awareness to channel (Schwartz)</h4>
+  <p><span class="pill">Unaware / problem-aware -> viral X clip</span><span class="pill">Solution-aware -> Reddit</span><span class="pill">Solution / product-aware -> Show HN, PH</span><span class="pill">Product-aware -> SEO /vs</span><span class="pill">Most-aware -> retargeting</span></p>
+  <div class="callout do"><b>The research ritual:</b> 8 to 12 real switch interviews (people who recently adopted or dropped a dictation tool). Trace back to their first thought. Steal their exact words, that is your copy. Convert 10 to 20 into named testimonials.</div>
+
+  <div class="q" data-q="buyer-one"><div class="ql">Guided</div><div class="qt">Name one real beachhead person and the exact sentence they used about the problem.</div><textarea placeholder="e.g. Sam, builds a SaaS solo using AI coding tools, said: 'I hate that dictating uploads my audio and asks for another login'..."></textarea></div>
+</div><div data-l="fr"><div class="seclabel">L'acheteur</div>
+  <h2>Cinq personas, un à la fois, et comment parler à chacun</h2>
+  <p class="sub">Conquérez la tête de pont (dev Mac sur assistant de code IA) pour les 100 premiers grâce à un bouche à oreille dense, puis élargissez dans un ordre fixe. Vendre aux cinq à la fois, c'est ne vendre à personne. Chaque persona a une force dominante différente : la phrase d'accroche change, la promesse reste la même.</p>
+  <div class="tablewrap"><table><thead><tr><th>Persona</th><th>Job / moment déclencheur</th><th>Force</th><th>L'angle que l'accroche doit nommer</th></tr></thead><tbody>
+    <tr><td><b>1. Dev Mac sur assistant de code IA</b> <span class="tag a">tête de pont, M1</span></td><td>a tapé la même instruction 3 fois, « je devrais juste pouvoir le dire » ; refuse de casser son flow pour taper</td><td>Attraction</td><td>« Vos mots ne quittent jamais votre Mac. Verba les transforme en plan pour JARVIS, prêt dès que vous confirmez. »</td></tr>
+    <tr><td><b>2. Pro exigeant côté confidentialité</b> (avocat, médecin, fondateur, journaliste)</td><td>doit dicter un détail sensible, hésite à le taper dans une appli qui l'envoie hors de son appareil</td><td>Anxiété (à désamorcer)</td><td>« Dictez la note client avec le détail que vous ne taperiez jamais dans une appli qui l'envoie hors de votre appareil. Il reste sur votre Mac. »</td></tr>
+    <tr><td><b>3. Opérateur voix d'abord</b> (fondateur, PM)</td><td>termine un appel en sachant que 6 relances vont être repoussées</td><td>Poussée</td><td>« Dites-le une fois : répondre à Sarah, la proposition est prête vendredi. Un coup d'oeil, confirmez, c'est fait. »</td></tr>
+    <tr><td><b>4. Travailleur multilingue</b></td><td>pense dans une langue, doit écrire dans une autre</td><td>Habitude (détrôner DeepL)</td><td>« Pensez en français. Envoyez en anglais. Verba traduit pendant que vous parlez. »</td></tr>
+    <tr><td><b>5. Penseur en format long</b></td><td>a parlé une heure, n'a qu'un enregistrement brut</td><td>Attraction</td><td>« Parlez une heure pendant votre marche. Ouvrez votre Mac sur une note propre et structurée. »</td></tr>
+  </tbody></table></div>
+
+  <h3>Les quatre forces derrière chaque inscription</h3>
+  <div class="grid g2">
+    <div class="card"><div class="t" style="color:var(--good)">Amplifier : poussée + attraction</div><ul><li><b>Poussée :</b> « je pense plus vite que je ne tape », le flow se casse, les mains fatiguent.</li><li><b>Attraction :</b> vous parlez, c'est écrit proprement, et ça peut faire la tâche.</li></ul></div>
+    <div class="card"><div class="t" style="color:var(--acc)">Éliminer : anxiété + habitude</div><ul><li><b>Anxiété :</b> « ma voix part sur un serveur ? », « encore une facture ? », « un agent sur mon Gmail ?! » Répondez à chacune : l'audio reste sur votre Mac, privé par design, rien n'agit sans confirmation.</li><li><b>Habitude :</b> « la Dictée Apple, ça suffit ». Montrez le coût caché du statu quo.</li></ul></div>
+  </div>
+
+  <h4>Niveau de conscience vers canal (Schwartz)</h4>
+  <p><span class="pill">Inconscient / conscient du problème -> clip X viral</span><span class="pill">Conscient de la solution -> Reddit</span><span class="pill">Conscient solution / produit -> Show HN, PH</span><span class="pill">Conscient du produit -> SEO /vs</span><span class="pill">Le plus conscient -> retargeting</span></p>
+  <div class="callout do"><b>Le rituel de recherche :</b> 8 à 12 entretiens réels de bascule (des personnes ayant récemment adopté ou abandonné un outil de dictée). Remontez jusqu'à leur toute première pensée. Volez leurs mots exacts, c'est ça votre copy. Transformez 10 à 20 d'entre eux en témoignages nommés.</div>
+
+  <div class="q" data-q="buyer-one"><div class="ql">Guidé</div><div class="qt">Nommez une vraie personne de la tête de pont et la phrase exacte qu'elle a utilisée pour parler du problème.</div><textarea placeholder="ex. Sam, construit seul un SaaS avec des outils d'IA, a dit : « je déteste que dicter envoie mon audio et demande un compte de plus »..."></textarea></div></div></div>
+
+<!-- 4 ARSENAL -->
+<div class="pv wrap" id="v-arsenal"><div data-l="en">
+  <div class="seclabel">Growth arsenal</div>
+  <h2>The technique catalog, by funnel stage</h2>
+  <p class="sub">Real, battle-tested growth tactics, not fluff. Pick 2 to 3 per stage, run them hard, keep what compounds. The through-line for a zero-budget indie tool: find your one channel and exploit it relentlessly, and make every user output an ad.</p>
+
+  <h3>Acquisition</h3>
+  <div class="card"><ul>
+    <li><b>The share-clip / product-is-the-ad loop.</b> Every "whoa" moment becomes a one-tap shareable clip with a branded end-card. How Replit (9M public projects), Lovable (25k signups/mo from a badge), Cursor and Higgsfield grew. For Verba: the clip after a confirmed JARVIS action. <span class="tag a">highest leverage</span></li>
+    <li><b>Founder-led build-in-public.</b> Post daily on X: raw MRR, installs, ship logs, the command-of-the-day clip. Lovable's Anton posted revenue weekly. LinkedIn text posts from a personal founder account still get outsized organic reach in 2026.</li>
+    <li><b>Reply-jacking.</b> Reply with real value (or a demo clip) to viral threads in your niche within the first hour. Borrow the big account's audience for free.</li>
+    <li><b>Show HN + Product Hunt same day.</b> For a technical, local-first, no-lock-in product, a strong Show HN rivals PH. Line up your users and network. A #1 finish is a durable spike, not a foundation.</li>
+    <li><b>Reddit value-first seeding.</b> Comment-first (9:1 rule), warm the account, post honest "I built this, roast it" show-and-tells at each sub's tightest cadence. One comparable app drove ~47k monthly visits over 9 months purely through helpful comments. (Full plan in Channels.)</li>
+    <li><b>Signal-based cold outreach.</b> Mass cold email is dead (5% reply). Reach people only on a buying trigger (just tweeted about dictation pain, uses an AI coding tool publicly): 25 to 30% reply. Personal, one soft ask.</li>
+    <li><b>SEO + GEO comparison cluster.</b> /vs and /compare pages ("Verba vs Wispr", "Wispr alternative") for high-intent bottom-funnel searches, structured so AI answer engines cite Verba. Compounds for months.</li>
+    <li><b>Creator seeding without budget.</b> Free lifetime licenses + ready-made clips to 10 to 20 dev/Mac creators. Higgsfield paid for 10k creators; you replace cash with a lifetime-license challenge.</li>
+    <li><b>Newsjacking / trend-jacking.</b> Tie Verba to live moments (a major AI-tool release, a privacy scandal, a viral productivity debate). Higgsfield ships ~10 trend presets a day.</li>
+    <li><b>Community roots.</b> Become a known, helpful name in r/macapps, Mac-dev subreddits, and Cursor / AI-coding-tool Discords. Reputation compounds into distribution.</li>
+    <li><b>Micro-influencer whitelisting (later).</b> Once a clip format works organically, boost it as an ad from the creator's handle.</li>
+  </ul></div>
+
+  <h3>Activation (the real bottleneck)</h3>
+  <div class="card"><ul>
+    <li><b>Time-to-wow under 5 minutes.</b> First screen shows Raw, then pushes to Intent, then to a first confirmed JARVIS action. Defer every account field.</li>
+    <li><b>Usage-gated free tier.</b> 33 full-power dictations, no card, all modes and engines. Never lock features, gate on usage (Cursor's move).</li>
+    <li><b>The aha you engineer:</b> the first confirmed JARVIS action (competitor-unique). Instrument it. Shorten the path to it inside the first session.</li>
+    <li><b>Lead magnet to build the email list:</b> "5 voice phrases that replace a keyboard shortcut". The #1 owned asset to install now.</li>
+  </ul></div>
+
+  <h3>Retention and Referral</h3>
+  <div class="card"><ul>
+    <li><b>Referral in product currency, not cash.</b> "Free Month" (or the lifetime-share offer), surfaced at peak perceived value, right after a confirmed action. Realistic k ~ 0.4 cuts CAC ~40%.</li>
+    <li><b>The leaderboard + gamification.</b> 1,000 levels, badges, private leaderboard, already coded. Make progress shareable ("I hit Voice Immortal"). A viral surface.</li>
+    <li><b>Behavioral lifecycle email.</b> Trigger on behavior, not calendar: wake dormant users, nudge the first connected app, celebrate the first action.</li>
+    <li><b>Platform launches as retention events.</b> When Verba ships a new capability, every existing seat gets it free, turning launches into retention moments (Wispr's move on Windows/iOS).</li>
+  </ul></div>
+
+  <h3>Revenue</h3>
+  <div class="card"><ul>
+    <li><b>The 4-tier ladder:</b> Explore (free) / Pro / Studio-Power (high anchor, sells depth) / Founder-Lifetime (real capped cohort, launch FOMO).</li>
+    <li><b>Value-based pricing:</b> capture 10 to 30% of value created. Very low marginal cost, so underpricing is fear, not prudence.</li>
+    <li><b>Honest scarcity only:</b> a Founder cohort must really close. Fake urgency destroys the one asset you cannot rebuild, trust.</li>
+  </ul></div>
+</div><div data-l="fr"><div class="seclabel">Arsenal de croissance</div>
+  <h2>Le catalogue de techniques, par étape du funnel</h2>
+  <p class="sub">Des tactiques de croissance réelles, éprouvées au combat, pas du vent. Choisissez 2 à 3 tactiques par étape, exécutez-les à fond, gardez ce qui compose. Le fil rouge pour un outil indie à budget zéro : trouvez votre canal unique et exploitez-le sans relâche, et faites de chaque usage un contenu publicitaire.</p>
+
+  <h3>Acquisition</h3>
+  <div class="card"><ul>
+    <li><b>La boucle clip partageable / le produit est la pub.</b> Chaque moment "wahou" devient un clip partageable en un tap avec une carte de fin à la marque. Comment Replit (9M de projets publics), Lovable (25k inscriptions/mois grâce à un badge), Cursor et Higgsfield ont grandi. Pour Verba : le clip après une action JARVIS confirmée. <span class="tag a">levier le plus fort</span></li>
+    <li><b>Build in public porté par le fondateur.</b> Postez chaque jour sur X : MRR brut, installations, journaux de version, le clip commande du jour. Anton, de Lovable, publiait ses revenus chaque semaine. Les posts texte LinkedIn depuis un compte fondateur personnel obtiennent encore une portée organique disproportionnée en 2026.</li>
+    <li><b>Le reply jacking.</b> Répondez avec de la vraie valeur (ou un clip démo) aux threads viraux de votre niche dans l'heure qui suit. Empruntez gratuitement l'audience des gros comptes.</li>
+    <li><b>Show HN + Product Hunt le même jour.</b> Pour un produit technique, local first, sans verrouillage, un Show HN solide rivalise avec PH. Alignez vos utilisateurs et votre réseau. Une place de numéro 1 crée un pic durable, pas une fondation.</li>
+    <li><b>Semer sur Reddit en donnant de la valeur d'abord.</b> Commentaire d'abord (règle du 9:1), réchauffez le compte, publiez des "j'ai construit ça, démolissez le" honnêtes au rythme le plus strict de chaque sub. Une appli comparable a généré environ 47 000 visites mensuelles sur 9 mois, uniquement grâce à des commentaires utiles. (Plan complet dans Canaux.)</li>
+    <li><b>Prospection à froid basée sur des signaux.</b> L'email à froid de masse est mort (5% de réponse). Contactez les gens uniquement sur un déclencheur d'achat (vient de tweeter sur la douleur de la dictée, utilise un outil de code IA publiquement) : 25 à 30% de réponse. Personnel, une seule demande, en douceur.</li>
+    <li><b>Cluster de comparaison SEO + GEO.</b> Des pages /vs et /compare ("Verba vs Wispr", "alternative à Wispr") pour des recherches bas de funnel à forte intention, structurées pour que les moteurs de réponse IA citent Verba. Ça compose pendant des mois.</li>
+    <li><b>Semer chez les créateurs sans budget.</b> Licences à vie gratuites plus clips prêts à l'emploi pour 10 à 20 créateurs dev/Mac. Higgsfield a payé pour 10 000 créateurs, vous remplacez le cash par un défi licence à vie.</li>
+    <li><b>Newsjacking / trend jacking.</b> Reliez Verba à des moments d'actualité (une grande sortie d'outil IA, un scandale de vie privée, un débat viral sur la productivité). Higgsfield sort environ 10 presets de tendance par jour.</li>
+    <li><b>Racines communautaires.</b> Devenez un nom connu et utile sur r/macapps, les subreddits de devs Mac, et les Discord Cursor / outils IA. La réputation se transforme en distribution.</li>
+    <li><b>Whitelisting de micro-influenceurs (plus tard).</b> Une fois qu'un format de clip fonctionne organiquement, boostez-le en publicité depuis le compte du créateur.</li>
+  </ul></div>
+
+  <h3>Activation (le vrai goulot d'étranglement)</h3>
+  <div class="card"><ul>
+    <li><b>Le temps jusqu'au wahou sous les 5 minutes.</b> Le premier écran montre le Brut, puis pousse vers l'Intention, puis vers une première action JARVIS confirmée. Repoussez chaque champ de compte.</li>
+    <li><b>Un palier gratuit limité par l'usage.</b> 33 dictées à pleine puissance, sans carte, tous les modes et moteurs. Ne verrouillez jamais les fonctionnalités, limitez sur l'usage (le choix de Cursor).</li>
+    <li><b>Le "aha" que vous concevez :</b> la première action JARVIS confirmée (unique face à la concurrence). Instrumentez le. Raccourcissez le chemin vers ce moment dès la première session.</li>
+    <li><b>Le lead magnet pour bâtir la liste email :</b> "5 phrases vocales qui remplacent un raccourci clavier". L'actif détenu numéro 1 à installer maintenant.</li>
+  </ul></div>
+
+  <h3>Rétention et Recommandation</h3>
+  <div class="card"><ul>
+    <li><b>Le parrainage en monnaie produit, pas en cash.</b> "Free Month" (ou l'offre de partage à vie), affiché au pic de valeur perçue, juste après une action confirmée. Un k réaliste d'environ 0,4 réduit le CAC d'environ 40%.</li>
+    <li><b>Le classement + la gamification.</b> 1 000 niveaux, badges, classement privé, déjà codé. Rendez la progression partageable ("J'ai atteint Voice Immortal"). Une surface virale.</li>
+    <li><b>L'email de cycle de vie comportemental.</b> Déclenché sur le comportement, pas sur le calendrier : réveillez les utilisateurs dormants, relancez la première appli connectée, célébrez la première action.</li>
+    <li><b>Les lancements de plateforme comme événements de rétention.</b> Quand Verba lance une nouvelle capacité, chaque abonnement existant l'obtient gratuitement, transformant les lancements en moments de rétention (le coup de Wispr sur Windows/iOS).</li>
+  </ul></div>
+
+  <h3>Revenus</h3>
+  <div class="card"><ul>
+    <li><b>L'échelle à 4 paliers :</b> Explore (gratuit) / Pro / Studio-Power (ancre haute, vend la profondeur) / Founder-Lifetime (cohorte réelle et plafonnée, FOMO de lancement).</li>
+    <li><b>La tarification basée sur la valeur :</b> capturez 10 à 30% de la valeur créée. Coût marginal très faible, donc sous-tarifer relève de la peur, pas de la prudence.</li>
+    <li><b>La rareté honnête uniquement :</b> une cohorte Founder doit vraiment se clôturer. Une fausse urgence détruit l'actif que vous ne pouvez pas reconstruire : la confiance.</li>
+  </ul></div></div></div>
+
+<!-- 5 EXPERIMENTS -->
+<div class="pv wrap" id="v-exp"><div data-l="en">
+  <div class="seclabel">Experiment lab</div>
+  <h2>Run parallel A / B / C tests like a system</h2>
+  <p class="sub">Growth is not tricks, it is a testing machine: hypothesis, one variable, a metric, a decision rule, then double the winner and cut the loser. As a solo founder with tiny traffic, you lean on sequential tests and qualitative signal, not statistical significance. Prioritize with ICE (Impact x Confidence x Ease, 1 to 10 each).</p>
+
+  <h4>How to structure one experiment</h4>
+  <ol>
+    <li><b>Hypothesis:</b> "If we [change], then [metric] improves, because [reason]."</li>
+    <li><b>One variable</b> only. Everything else fixed.</li>
+    <li><b>Metric + decision rule</b> up front: "ship if reply rate over 15%, kill if under 8%."</li>
+    <li><b>Smallest valid sample.</b> Tiny traffic: run sequentially (2 weeks A, 2 weeks B) or judge qualitatively (5 user calls beat a 2% conversion delta).</li>
+    <li><b>Decide, log, move.</b> Keep a running log. The compounding is in the loop, not any one test.</li>
+  </ol>
+
+  <h3>The prioritized experiment backlog</h3>
+  <p class="mut">ICE-scored, highest first. The top three are the strategy's own scored bets. Check off as you run them.</p>
+  <div class="tablewrap"><table><thead><tr><th>#</th><th>Experiment (hypothesis)</th><th>Stage</th><th>Metric</th><th>ICE</th><th>Run</th></tr></thead><tbody>
+    <tr><td>1</td><td><b>Make referral visible</b> right after a confirmed action vs hidden in settings</td><td>Referral</td><td>referral coefficient k</td><td class="num"><b>392</b></td><td><input type="checkbox" data-k="e1"></td></tr>
+    <tr><td>2</td><td><b>Onboarding rebuilt to the JARVIS aha under 5 min</b> vs current</td><td>Activation</td><td>% reaching first confirmed action</td><td class="num"><b>378</b></td><td><input type="checkbox" data-k="e2"></td></tr>
+    <tr><td>3</td><td><b>Ship the share-clip loop</b> (one-tap clip + end-card)</td><td>Acquisition</td><td>clips shared/wk, installs per clip</td><td class="num"><b>160</b></td><td><input type="checkbox" data-k="e3"></td></tr>
+    <tr><td>4</td><td>Hook: "You think faster than you type" (pain) vs "Speak it. Send it clean." (product)</td><td>TOFU</td><td>3s retention on X/Reels</td><td class="num">high</td><td><input type="checkbox" data-k="e4"></td></tr>
+    <tr><td>5</td><td>Landing hero: reassure-first (privacy) vs impress-first (JARVIS 1,000 apps)</td><td>MOFU</td><td>trial start rate</td><td class="num">high</td><td><input type="checkbox" data-k="e5"></td></tr>
+    <tr><td>6</td><td>Reddit T1 "voice agent that acts" vs T2 "dictate to my AI dev tools, my setup"</td><td>Acquisition</td><td>upvotes, click-through, installs</td><td class="num">med</td><td><input type="checkbox" data-k="e6"></td></tr>
+    <tr><td>7</td><td>Cold email subject "your AI dev setup" vs "typing tax"</td><td>Acquisition</td><td>reply rate</td><td class="num">med</td><td><input type="checkbox" data-k="e7"></td></tr>
+    <tr><td>8</td><td>Paywall at 33 dictations vs 20 vs 50</td><td>Revenue</td><td>trial-to-paid, refusal rate</td><td class="num">med</td><td><input type="checkbox" data-k="e8"></td></tr>
+    <tr><td>9</td><td>Founder-Lifetime drop framing "100 seats, 3 days" vs open</td><td>Revenue</td><td>conversion in window</td><td class="num">med</td><td><input type="checkbox" data-k="e9"></td></tr>
+    <tr><td>10</td><td>CTA "Try it, no card" vs "Get my 33 free dictations"</td><td>MOFU</td><td>click rate</td><td class="num">low</td><td><input type="checkbox" data-k="e10"></td></tr>
+    <tr><td>11</td><td>X posting: raw-numbers post vs demo-clip post vs teardown post</td><td>TOFU</td><td>impressions, follows, profile clicks</td><td class="num">med</td><td><input type="checkbox" data-k="e11"></td></tr>
+    <tr><td>12</td><td>Weekly UGC contest ("best voice workflow wins lifetime") on vs off</td><td>Acquisition</td><td>clips generated/wk</td><td class="num">med</td><td><input type="checkbox" data-k="e12"></td></tr>
+    <tr><td>13</td><td>Lead magnet "5 voice phrases" vs "the private-AI cost calculator"</td><td>TOFU</td><td>email opt-ins</td><td class="num">med</td><td><input type="checkbox" data-k="e13"></td></tr>
+    <tr><td>14</td><td>/vs page proof: live GIF vs static table</td><td>MOFU</td><td>page-to-trial</td><td class="num">low</td><td><input type="checkbox" data-k="e14"></td></tr>
+    <tr><td>15</td><td>Annual nudge in-app: shown at aha vs at day 7</td><td>Revenue</td><td>annual mix</td><td class="num">low</td><td><input type="checkbox" data-k="e15"></td></tr>
+  </tbody></table></div>
+  <div class="callout do"><b>The weekly cadence:</b> run 2 to 3 experiments at once across different funnel stages so they do not interfere. Every Monday: read results, ship winners, kill losers, pick the next from the backlog.</div>
+</div><div data-l="fr"><div class="seclabel">Laboratoire d'expérimentation</div>
+  <h2>Menez des tests A/B/C en parallèle comme un système</h2>
+  <p class="sub">La croissance n'est pas une astuce, c'est une machine à tester : hypothèse, une seule variable, une métrique, une règle de décision, puis on double le gagnant et on coupe le perdant. En tant que fondateur solo avec un trafic minime, vous vous appuyez sur des tests séquentiels et le signal qualitatif, pas la significativité statistique. Priorisez avec ICE (Impact x Confiance x Facilité, de 1 à 10 chacun).</p>
+
+  <h4>Comment structurer une expérience</h4>
+  <ol>
+    <li><b>Hypothèse :</b> « Si nous [changement], alors [métrique] s'améliore, parce que [raison]. »</li>
+    <li><b>Une seule variable</b> à la fois. Tout le reste fixe.</li>
+    <li><b>Métrique + règle de décision</b> définies en amont : « on déploie si le taux de réponse dépasse 15%, on arrête si inférieur à 8%. »</li>
+    <li><b>Le plus petit échantillon valide.</b> Trafic minime : testez séquentiellement (2 semaines A, 2 semaines B) ou jugez qualitativement (5 appels utilisateurs valent mieux qu'un écart de conversion de 2%).</li>
+    <li><b>Décidez, notez, avancez.</b> Tenez un journal continu. L'effet cumulatif vient de la boucle, pas d'un test isolé.</li>
+  </ol>
+
+  <h3>Le backlog d'expériences priorisé</h3>
+  <p class="mut">Noté par ICE, du plus élevé au plus faible. Les trois premières sont les paris déjà notés par la stratégie. Cochez au fur et à mesure que vous les lancez.</p>
+  <div class="tablewrap"><table><thead><tr><th>#</th><th>Expérience (hypothèse)</th><th>Étape</th><th>Métrique</th><th>ICE</th><th>Faite</th></tr></thead><tbody>
+    <tr><td>1</td><td><b>Rendre le parrainage visible</b> juste après une action confirmée vs caché dans les réglages</td><td>Parrainage</td><td>coefficient de parrainage k</td><td class="num"><b>392</b></td><td><input type="checkbox" data-k="e1"></td></tr>
+    <tr><td>2</td><td><b>Onboarding reconstruit vers le déclic JARVIS en moins de 5 min</b> vs actuel</td><td>Activation</td><td>% atteignant la première action confirmée</td><td class="num"><b>378</b></td><td><input type="checkbox" data-k="e2"></td></tr>
+    <tr><td>3</td><td><b>Déployer la boucle de partage de clips</b> (clip en un tap + end-card)</td><td>Acquisition</td><td>clips partagés/sem, installs par clip</td><td class="num"><b>160</b></td><td><input type="checkbox" data-k="e3"></td></tr>
+    <tr><td>4</td><td>Accroche : « Vous pensez plus vite que vous ne tapez » (douleur) vs « Dites-le. Envoyez-le, propre. » (produit)</td><td>TOFU</td><td>rétention à 3s sur X/Reels</td><td class="num">haut</td><td><input type="checkbox" data-k="e4"></td></tr>
+    <tr><td>5</td><td>Hero de la landing : rassurer d'abord (confidentialité) vs impressionner d'abord (JARVIS 1 000 apps)</td><td>MOFU</td><td>taux de démarrage d'essai</td><td class="num">haut</td><td><input type="checkbox" data-k="e5"></td></tr>
+    <tr><td>6</td><td>Reddit T1 « un agent vocal qui agit » vs T2 « je dicte à mes outils IA, mon setup »</td><td>Acquisition</td><td>upvotes, taux de clic, installs</td><td class="num">moyen</td><td><input type="checkbox" data-k="e6"></td></tr>
+    <tr><td>7</td><td>Objet de cold email « votre setup IA » vs « la taxe du clavier »</td><td>Acquisition</td><td>taux de réponse</td><td class="num">moyen</td><td><input type="checkbox" data-k="e7"></td></tr>
+    <tr><td>8</td><td>Paywall à 33 dictations vs 20 vs 50</td><td>Revenu</td><td>essai vers payant, taux de refus</td><td class="num">moyen</td><td><input type="checkbox" data-k="e8"></td></tr>
+    <tr><td>9</td><td>Cadrage du drop Founder-Lifetime « 100 places, 3 jours » vs ouvert</td><td>Revenu</td><td>conversion dans la fenêtre</td><td class="num">moyen</td><td><input type="checkbox" data-k="e9"></td></tr>
+    <tr><td>10</td><td>CTA « Essayez, no card » vs « Obtenez mes 33 dictations gratuites »</td><td>MOFU</td><td>taux de clic</td><td class="num">bas</td><td><input type="checkbox" data-k="e10"></td></tr>
+    <tr><td>11</td><td>Post X : post chiffres bruts vs post clip démo vs post décorticage</td><td>TOFU</td><td>impressions, abonnements, clics profil</td><td class="num">moyen</td><td><input type="checkbox" data-k="e11"></td></tr>
+    <tr><td>12</td><td>Concours UGC hebdomadaire (« le meilleur workflow vocal gagne un lifetime ») activé vs désactivé</td><td>Acquisition</td><td>clips générés/sem</td><td class="num">moyen</td><td><input type="checkbox" data-k="e12"></td></tr>
+    <tr><td>13</td><td>Lead magnet « 5 phrases vocales » vs « le calculateur de coût IA privée »</td><td>TOFU</td><td>inscriptions email</td><td class="num">moyen</td><td><input type="checkbox" data-k="e13"></td></tr>
+    <tr><td>14</td><td>Preuve sur la page /vs : GIF en direct vs tableau statique</td><td>MOFU</td><td>page vers essai</td><td class="num">bas</td><td><input type="checkbox" data-k="e14"></td></tr>
+    <tr><td>15</td><td>Relance annuelle in-app : affichée au déclic vs au jour 7</td><td>Revenu</td><td>part de l'annuel</td><td class="num">bas</td><td><input type="checkbox" data-k="e15"></td></tr>
+  </tbody></table></div>
+  <div class="callout do"><b>La cadence hebdomadaire :</b> menez 2 à 3 expériences en même temps sur des étapes de funnel différentes pour qu'elles n'interfèrent pas. Chaque lundi : lisez les résultats, déployez les gagnants, arrêtez les perdants, choisissez la suivante dans le backlog.</div></div></div>
+
+<!-- 6 WISPR -->
+<div class="pv wrap" id="v-wispr"><div data-l="en">
+  <div class="seclabel">Competitor teardown</div>
+  <h2>How Wispr Flow grows, and the gaps to exploit</h2>
+  <p class="sub">Wispr Flow is the incumbent you re-frame against. They are strong, but their strength is on a shelf you deliberately do not stand on. Know exactly how they grow, then attack the seams.</p>
+  <div class="grid g2">
+    <div class="card"><div class="t">What is working for them</div><ul>
+      <li><b>PLG self-serve,</b> 14-day Pro trial, no card.</li>
+      <li><b>Product Hunt #1</b> of the day and the week at launch (Oct 2024).</li>
+      <li><b>Elite social proof:</b> Reid Hoffman "voicepilled" with a live demo, Marc Andreessen and Steve Wozniak using it. VCs adopting it as daily driver.</li>
+      <li><b>Affiliate program,</b> 25% per sale for a year (via Dub).</li>
+      <li><b>Guerrilla / experiential marketing</b> (SF + NYC street activation, "AI vs legacy tech").</li>
+      <li><b>Cross-platform expansion</b> (Windows, iPhone, Android) shipped free to existing seats: every launch is a retention event.</li>
+      <li><b>Momentum:</b> 40%+ MoM growth early 2026, ~$81M raised ($30M Series A, Menlo), power users dictating 70k+ words across 35+ apps.</li>
+    </ul></div>
+    <div class="card acc"><div class="t">The gaps Verba exploits</div><ul>
+      <li><b>Uploaded, not private.</b> Their audio goes to a server. Verba's never leaves the Mac. Own "private by default" completely, they cannot follow without rebuilding.</li>
+      <li><b>Transcribes, does not act.</b> No confirm-gated agent across 1,000+ apps. "It does it" is territory they do not claim.</li>
+      <li><b>One tool, not two.</b> Their dictation still leaves you to open another app to act on it. Verba does both in the same place.</li>
+      <li><b>Multi-platform = diluted.</b> Their Mac experience is not their whole focus. Be the best on Mac, deeply.</li>
+      <li><b>Well-funded = slower and safer.</b> You can be honest, weird, founder-present, and ship trend-jacking content daily. Underdog speed is a real edge.</li>
+    </ul></div>
+  </div>
+  <h4>Their pricing (know it to position, never to copy in organic)</h4>
+  <p class="mut">Free (2,000 words/week cap) · Pro $15/mo or $12/mo annual · Teams $12/user (3 min) · Enterprise quoted. Verba's angle is not "cheaper", it is "private + acts, and safe by design". Lead with the wedge, never the price.</p>
+  <div class="callout key"><b>The positioning move:</b> your /vs page title always names the qualified category: "Verba vs Wispr Flow: the private alternative that also takes action." You are not a cheaper Wispr. You are a different shelf.</div>
+</div><div data-l="fr"><div class="seclabel">Analyse concurrentielle</div>
+  <h2>Comment Wispr Flow grandit, et les failles à exploiter</h2>
+  <p class="sub">Wispr Flow est l'acteur historique face auquel vous vous repositionnez. Ils sont solides, mais leur force repose sur un terrain que vous refusez délibérément d'occuper. Comprenez précisément comment ils grandissent, puis attaquez les coutures.</p>
+  <div class="grid g2">
+    <div class="card"><div class="t">Ce qui marche pour eux</div><ul>
+      <li><b>PLG en self-serve,</b> essai Pro de 14 jours, sans carte bancaire.</li>
+      <li><b>Product Hunt #1</b> du jour et de la semaine au lancement (oct. 2024).</li>
+      <li><b>Preuve sociale de haut niveau :</b> Reid Hoffman "voicepilled" avec une démo live, Marc Andreessen et Steve Wozniak utilisateurs. Des VCs qui en font leur outil quotidien.</li>
+      <li><b>Programme d'affiliation,</b> 25% par vente pendant un an (via Dub).</li>
+      <li><b>Marketing guérilla / expérientiel</b> (activations de rue à SF et NYC, "AI vs legacy tech").</li>
+      <li><b>Expansion multiplateforme</b> (Windows, iPhone, Android) livrée gratuitement aux comptes existants : chaque lancement devient un événement de rétention.</li>
+      <li><b>Momentum :</b> plus de 40% de croissance mensuelle début 2026, environ 81 millions de dollars levés (30 millions de dollars en Series A, Menlo), des power users qui dictent plus de 70 000 mots sur plus de 35 apps.</li>
+    </ul></div>
+    <div class="card acc"><div class="t">Les failles que Verba exploite</div><ul>
+      <li><b>Envoyé au loin, pas privé.</b> Leur audio part vers un serveur. Celui de Verba ne quitte jamais le Mac. Possédez entièrement le "privé par défaut", ils ne peuvent pas suivre sans tout reconstruire.</li>
+      <li><b>Ça transcrit, ça n'agit pas.</b> Aucun agent à confirmation sur plus de 1 000 apps. "Ça le fait" est un territoire qu'ils ne revendiquent pas.</li>
+      <li><b>Un outil, pas deux.</b> Leur dictée vous oblige encore à ouvrir une autre appli pour agir. Verba fait les deux au même endroit.</li>
+      <li><b>Multiplateforme égale dilution.</b> Leur expérience Mac n'est pas leur seule priorité. Soyez les meilleurs sur Mac, en profondeur.</li>
+      <li><b>Bien financés égale plus lents et plus prudents.</b> Vous pouvez être honnête, décalé, présent en tant que fondateur, et publier du contenu qui surfe les tendances chaque jour. La vitesse du challenger est un vrai avantage.</li>
+    </ul></div>
+  </div>
+  <h4>Leur pricing (à connaître pour se positionner, jamais à copier en organique)</h4>
+  <p class="mut">Free (plafond de 2 000 mots/semaine) · Pro 15$/mois ou 12$/mois en annuel · Teams 12$/utilisateur (3 min) · Enterprise sur devis. L'angle de Verba n'est pas "moins cher", c'est "privé + agit, en sécurité par design". Portez le levier en avant, jamais le prix.</p>
+  <div class="callout key"><b>Le move de positionnement :</b> le titre de votre page /vs nomme toujours la catégorie qualifiée : "Verba vs Wispr Flow : l'alternative privée qui passe aussi à l'action." Vous n'êtes pas un Wispr moins cher. Vous êtes une autre étagère.</div></div></div>
+
+<!-- 7 CHANNELS -->
+<div class="pv wrap" id="v-chan"><div data-l="en">
+  <div class="seclabel">Channels and execution</div>
+  <h2>Every connected channel, and how to run it</h2>
+  <p class="sub">16 accounts are connected through the Zernio profile "verba". That is a republication engine, not channel mastery. The discipline: one channel where you truly learn each week (X), a manual high-signal channel (Reddit), and the rest as echo and reach. One executor publishes (the hub) so the single profile is never double-posted. Operator GO before every batch.</p>
+
+  <h3>The 16 connected accounts (via Zernio)</h3>
+  <div class="tablewrap"><table><thead><tr><th>Channel</th><th>Role</th><th>Mode</th><th>What to post</th></tr></thead><tbody>
+    <tr><td><b>X / Twitter</b> @verba_run</td><td>Beachhead home, the learning channel</td><td>AUTO + HUMAN</td><td>Build-in-public daily, founder threads, JARVIS clips, reply-jacking</td></tr>
+    <tr><td><b>Reddit</b> u/VerbaRun</td><td>Highest-signal earned, community</td><td class="tag a">HUMAN only</td><td>Value-first, one soft ask, at each sub's tightest cadence (see below)</td></tr>
+    <tr><td><b>YouTube</b> @verbarun</td><td>Demo authority, Shorts</td><td>AUTO + HUMAN</td><td>9:16 feature demos + long JARVIS walkthroughs</td></tr>
+    <tr><td><b>LinkedIn</b> @Verba.Run</td><td>Privacy pros, operators, founder reach</td><td>AUTO</td><td>"Here is what we shipped", founder-story posts</td></tr>
+    <tr><td><b>Instagram / TikTok</b> @verba.run</td><td>Demo reach, discovery</td><td>AUTO</td><td>9:16 Reels, real product motion, calm voiceover</td></tr>
+    <tr><td><b>Threads / Facebook</b></td><td>Overflow echo</td><td>AUTO</td><td>Trimmed X copy, feature cards</td></tr>
+    <tr><td><b>Telegram</b> @verbarun</td><td>Owned channel, superfans</td><td>AUTO</td><td>"Just shipped" announcements</td></tr>
+    <tr><td><b>Pinterest</b> @verbarun</td><td>Visual search, evergreen</td><td>AUTO</td><td>2:3 feature cards</td></tr>
+    <tr><td><b>Ads: xads, metaads, tiktokads, linkedinads, pinterestads, googleads</b></td><td>Paid multiplier</td><td class="tag">after proof (rung 2+)</td><td>Retarget /compare visitors, "Wispr alternative" search, boost organic winners</td></tr>
+  </tbody></table></div>
+  <div class="callout dont"><b>The trap named in the strategy:</b> 16 accounts is republication, not channel mastery. Do not mistake broadcasting for growth. X is where you learn. Reddit is where the beachhead is. Master those two before scaling the echo.</div>
+
+  <h3>The Reddit plan (the deep one)</h3>
+  <p>One account, u/VerbaRun, founder discloses. Sockpuppets = a fast sitewide ban. The real filter is the 9:1 rule: keep self-referential activity under 10%. Comment-first, always.</p>
+  <div class="tablewrap"><table><thead><tr><th>Tier</th><th>Subs (best fit first)</th><th>Cadence / rule</th></tr></thead><tbody>
+    <tr><td><b>Best fit</b></td><td>r/vibecoding (~301k, most tolerant), r/dictation (exact category, highest intent)</td><td>1 show / 1-2 wks</td></tr>
+    <tr><td><b>High</b></td><td>AI-coding-tool subreddits (showcase megathreads), r/SideProject, r/macapps (flagship: max 1/dev/30d, need 10 sub karma, official link only), r/MacOSApps, r/nativemacapps</td><td>each at its tightest cadence</td></tr>
+    <tr><td><b>Medium-high</b></td><td>r/cursor (self-promo capped 10%, never bash Cursor, flair)</td><td>1/~2wk</td></tr>
+    <tr><td><b>Reach, strict gates</b></td><td>r/apple (Self-promo Sundays only), r/Entrepreneur (Thank-You Thursday), r/webdev (Showoff Saturday), r/SaaS (weekly thread), r/macOS (value only)</td><td>designated threads only</td></tr>
+    <tr><td><b>Intent / credibility</b></td><td>r/RSI, r/accessibility, r/speechrecognition</td><td>value, then soft mention</td></tr>
+    <tr><td><b>Comment-only / weak</b></td><td>r/LocalLLaMA (needs a real local hook), r/productivity (mentions in comments), r/programming (banned AI content 2026)</td><td>comments only</td></tr>
+  </tbody></table></div>
+  <div class="callout do"><b>Anti-ban doctrine:</b> warm u/VerbaRun 30+ days and 100+ comment karma (10+ in r/macapps) before any promo; never 2 promo posts in one week account-wide; no identical crossposts (rewrite per sub); one soft ask; link placement by sub (comment / self-post body / designated thread); check for shadowbans (logged-out view). Weeks 1-2 = warmup, comments only.</div>
+  <h4>AUTO vs HUMAN (the honest boundary)</h4>
+  <p>No community sub safely permits automated self-promo, so AUTO is confined to the u/VerbaRun profile (5 self-posts/week: Mon Tip, Tue Thread-of-week, Wed Demo clip, Thu Build log, Fri Roundup). Every community-sub post is HUMAN, founder voice, one soft ask. Community cadence: 2 to 3 posts/week account-wide, comments unlimited and the main event.</p>
+</div><div data-l="fr"><div class="seclabel">Canaux et exécution</div>
+  <h2>Chaque canal connecté, et comment le faire tourner</h2>
+  <p class="sub">16 comptes sont connectés via le profil Zernio "verba". C'est un moteur de republication, pas une maîtrise des canaux. La discipline : un canal où l'on apprend vraiment chaque semaine (X), un canal manuel à fort signal (Reddit), et le reste comme écho et portée. Un seul exécuteur publie (le hub) pour que le profil unique ne soit jamais posté en double. GO opérateur avant chaque batch.</p>
+
+  <h3>Les 16 comptes connectés (via Zernio)</h3>
+  <div class="tablewrap"><table><thead><tr><th>Canal</th><th>Rôle</th><th>Mode</th><th>Quoi poster</th></tr></thead><tbody>
+    <tr><td><b>X / Twitter</b> @verba_run</td><td>Base d'attaque, le canal d'apprentissage</td><td>AUTO + HUMAN</td><td>Build-in-public quotidien, threads fondateur, clips JARVIS, reply-jacking</td></tr>
+    <tr><td><b>Reddit</b> u/VerbaRun</td><td>Signal le plus fort, gagné, communauté</td><td class="tag a">HUMAN only</td><td>Valeur d'abord, une demande discrète, au rythme le plus strict de chaque sub (voir plus bas)</td></tr>
+    <tr><td><b>YouTube</b> @verbarun</td><td>Autorité démo, Shorts</td><td>AUTO + HUMAN</td><td>Démos de fonctionnalités en 9:16 + longs tutoriels JARVIS</td></tr>
+    <tr><td><b>LinkedIn</b> @Verba.Run</td><td>Pros de la confidentialité, opérateurs, portée fondateur</td><td>AUTO</td><td>"Voici ce qu'on a livré", posts histoire fondateur</td></tr>
+    <tr><td><b>Instagram / TikTok</b> @verba.run</td><td>Portée démo, découverte</td><td>AUTO</td><td>Reels 9:16, vrai mouvement produit, voix off calme</td></tr>
+    <tr><td><b>Threads / Facebook</b></td><td>Écho de débordement</td><td>AUTO</td><td>Copy X raccourci, cartes fonctionnalités</td></tr>
+    <tr><td><b>Telegram</b> @verbarun</td><td>Canal détenu, superfans</td><td>AUTO</td><td>Annonces "Just shipped"</td></tr>
+    <tr><td><b>Pinterest</b> @verbarun</td><td>Recherche visuelle, evergreen</td><td>AUTO</td><td>Cartes fonctionnalités en 2:3</td></tr>
+    <tr><td><b>Ads : xads, metaads, tiktokads, linkedinads, pinterestads, googleads</b></td><td>Multiplicateur payant</td><td class="tag">après preuve (palier 2+)</td><td>Retargeter les visiteurs /compare, recherche "alternative à Wispr", booster les gagnants organiques</td></tr>
+  </tbody></table></div>
+  <div class="callout dont"><b>Le piège nommé dans la stratégie :</b> 16 comptes, c'est de la republication, pas une maîtrise des canaux. Ne confondez pas diffusion et croissance. X est le canal où l'on apprend. Reddit est la base d'attaque. Maîtrisez ces deux là avant d'élargir l'écho.</div>
+
+  <h3>Le plan Reddit (le détaillé)</h3>
+  <p>Un seul compte, u/VerbaRun, le fondateur se dévoile. Les sockpuppets valent un bannissement sitewide immédiat. Le vrai filtre, c'est la règle du 9:1 : gardez l'activité autoréférentielle sous 10 %. Toujours commentaire d'abord.</p>
+  <div class="tablewrap"><table><thead><tr><th>Niveau</th><th>Subs (le mieux adapté en premier)</th><th>Cadence / règle</th></tr></thead><tbody>
+    <tr><td><b>Meilleur fit</b></td><td>r/vibecoding (~301k, le plus tolérant), r/dictation (catégorie exacte, intention la plus forte)</td><td>1 démo / 1 à 2 sem.</td></tr>
+    <tr><td><b>Élevé</b></td><td>subreddits d'outils de code IA (showcase megathreads), r/SideProject, r/macapps (flagship : max 1/dev/30j, 10 karma de sub requis, lien officiel uniquement), r/MacOSApps, r/nativemacapps</td><td>chacun à sa cadence la plus stricte</td></tr>
+    <tr><td><b>Moyen-élevé</b></td><td>r/cursor (autopromo plafonnée à 10 %, ne jamais dénigrer Cursor, flair)</td><td>1/~2 sem.</td></tr>
+    <tr><td><b>Portée, portes strictes</b></td><td>r/apple (Self-promo Sundays uniquement), r/Entrepreneur (Thank-You Thursday), r/webdev (Showoff Saturday), r/SaaS (thread hebdo), r/macOS (valeur seulement)</td><td>threads désignés uniquement</td></tr>
+    <tr><td><b>Intention / crédibilité</b></td><td>r/RSI, r/accessibility, r/speechrecognition</td><td>valeur, puis mention discrète</td></tr>
+    <tr><td><b>Commentaire seul / faible</b></td><td>r/LocalLLaMA (besoin d'un vrai accroche local), r/productivity (mentions en commentaires), r/programming (contenu IA banni en 2026)</td><td>commentaires uniquement</td></tr>
+  </tbody></table></div>
+  <div class="callout do"><b>Doctrine anti-ban :</b> réchauffez u/VerbaRun pendant 30+ jours et 100+ karma de commentaires (10+ sur r/macapps) avant toute promo ; jamais 2 posts promo dans la même semaine, tous comptes confondus ; aucun crosspost identique (réécrivez pour chaque sub) ; une seule demande discrète ; placement du lien selon le sub (commentaire / corps du self-post / thread désigné) ; vérifiez les shadowbans (vue déconnectée). Semaines 1 à 2 : réchauffage, commentaires uniquement.</div>
+  <h4>AUTO vs HUMAN (la frontière honnête)</h4>
+  <p>Aucun sub communautaire n'autorise en toute sécurité l'autopromo automatisée, donc AUTO reste confiné au profil u/VerbaRun (5 self-posts/semaine : Tip du lundi, Thread-of-week du mardi, Clip démo du mercredi, Build log du jeudi, Récap du vendredi). Chaque post sur un sub communautaire est HUMAN, voix du fondateur, une demande discrète. Cadence communautaire : 2 à 3 posts/semaine tous comptes confondus, commentaires illimités et c'est l'essentiel.</p></div></div>
+
+<!-- 8 PLAN -->
+<div class="pv wrap" id="v-plan"><div data-l="en">
+  <div class="seclabel">The 90-day plan</div>
+  <h2>13 weeks, 23 to 1,000, with gates</h2>
+  <p class="sub">Every day: an AUTO action (engine prepares, you GO before publish) and a HUMAN action (founder, 30 min to 2h). The daily ritual (~25 min): validate the AUTO post, reply to yesterday's replies and DMs, comment on 3 to 5 dev posts (never pitch), reply-jack one viral thread with a clip, amplify every user mention.</p>
+
+  <h3>Month 1 · 0 to 100 · budget 0 EUR</h3>
+  <div class="card"><div class="chk"><input type="checkbox" data-k="p-w1"><label><b>Week 1, foundation:</b> make the funnel watertight (fix "33 dictations" copy, scrub privacy claim), instrument download/activate/paywall, pin the founder narrative on X, record the canonical 60s demo + 4 cutdowns, brief the share-clip loop, surface referral + leaderboard.</label></div>
+    <div class="chk"><input type="checkbox" data-k="p-w2"><label><b>Week 2, build the loop + proof:</b> blog "Private by design: what never leaves your Mac", seed 20 alpha testers, test the Founder SKU in Stripe, collect 10 honest quotes, end-to-end test in-app share, blog "Verba vs Wispr, honest".</label></div>
+    <div class="chk"><input type="checkbox" data-k="p-w3"><label><b>Week 3, pre-launch:</b> seed 20 creators (Founder license + "I said it, did it" challenge), prep Product Hunt + hunter, draft Show HN, Go/No-Go Thursday, schedule launch posts.</label></div>
+    <div class="chk"><input type="checkbox" data-k="p-w4"><label><b>Week 4, LAUNCH (28 July):</b> Product Hunt 00:01 PT + Show HN + X thread + LinkedIn, Founder tier live, 12h in comments. Wed: r/macapps "honest vs Wispr" + an AI-coding-subreddit PSA. Thank + repost every clip.</label></div>
+  </div>
+  <div class="callout key"><b>Gate to rung 2:</b> trial to paid over 6%, 10+ public quotes, at least 1 user clip drove a traceable install.</div>
+
+  <h3>Month 2 · 100 to 500 · 10 to 15 EUR/day optional after proof</h3>
+  <div class="card"><div class="chk"><input type="checkbox" data-k="p-m2a"><label>Turn the loop into a weekly UGC contest; first retargeting test (10 EUR/day on /compare, only if gate 1 cleared), measure CPA.</label></div>
+    <div class="chk"><input type="checkbox" data-k="p-m2b"><label>Live creator demos (3 to 5), scale retargeting to 15 EUR/day if CPA OK, double down on the channel bringing payers, case-study #1.</label></div></div>
+  <div class="callout key"><b>Gate to rung 3:</b> referral coefficient over 0.3, one clip format reproducibly over 20k views, retargeting ROI-positive.</div>
+
+  <h3>Month 3 · 500 to 1,000 · micro budget</h3>
+  <div class="card"><div class="chk"><input type="checkbox" data-k="p-m3a"><label>Activate the privacy-pro segment (SEO "private dictation for lawyers/doctors", 5 privacy newsletters, affiliate % via Dub), then voice-first operators ("Jarvis for Mac" pages).</label></div>
+    <div class="chk"><input type="checkbox" data-k="p-m3b"><label>Second Founder FOMO drop ("100 last seats, 3 days"), 1 to 2 newsletter sponsorships + a dev podcast, lifecycle email, 48h final push, Show HN "1,000 paying users, here's what worked".</label></div></div>
+  <div class="callout key"><b>Exit:</b> 1,000 payants (~7,600 EUR/mo). The real success signal: growth no longer depends on the founder's daily hand. Then the cycle to 2,000 to 5,000, with iOS to kill the "Mac only" objection.</div>
+
+  <div class="q" data-q="plan-num"><div class="ql">Commit</div><div class="qt">Your single weekly number for the next 4 weeks?</div><textarea placeholder="e.g. 20 new real conversations / week, or 5 new paying users / week"></textarea></div>
+  <div class="q" data-q="plan-block"><div class="ql">Commit</div><div class="qt">Your fixed daily marketing block, on the calendar?</div><textarea placeholder="I will spend ... every day at ... on this."></textarea></div>
+</div><div data-l="fr"><div class="seclabel">Le plan à 90 jours</div>
+  <h2>13 semaines, de 23 à 1 000, avec des jalons</h2>
+  <p class="sub">Chaque jour : une action AUTO (le moteur prépare, vous validez avant publication) et une action HUMAINE (fondateur, 30 min à 2h). Le rituel quotidien (environ 25 min) : valider le post AUTO, répondre aux réponses et DM d'hier, commenter 3 à 5 posts de devs (jamais de pitch), s'insérer dans un thread viral avec un clip, amplifier chaque mention utilisateur.</p>
+
+  <h3>Mois 1 · 0 à 100 · budget 0 EUR</h3>
+  <div class="card"><div class="chk"><input type="checkbox" data-k="p-w1"><label><b>Semaine 1, fondations :</b> rendre le tunnel étanche (corriger le texte « 33 dictées », nettoyer la promesse de confidentialité), instrumenter téléchargement/activation/paywall, ancrer le récit du fondateur sur X, enregistrer la démo canonique de 60 secondes + 4 déclinaisons courtes, briefer la boucle de clips partagés, mettre en avant le parrainage et le classement.</label></div>
+    <div class="chk"><input type="checkbox" data-k="p-w2"><label><b>Semaine 2, construire la boucle et la preuve :</b> article de blog « Privé par design : ce qui ne quitte jamais votre Mac », recruter 20 testeurs alpha, tester le SKU Founder dans Stripe, récolter 10 témoignages honnêtes, tester de bout en bout le partage in-app, article de blog « Verba vs Wispr, en toute honnêteté ».</label></div>
+    <div class="chk"><input type="checkbox" data-k="p-w3"><label><b>Semaine 3, avant lancement :</b> recruter 20 créateurs (licence Founder et défi « Je l'ai dit, je l'ai fait »), préparer Product Hunt et le hunter, rédiger le Show HN, Go/No-Go le jeudi, programmer les posts de lancement.</label></div>
+    <div class="chk"><input type="checkbox" data-k="p-w4"><label><b>Semaine 4, LANCEMENT (28 juillet) :</b> Product Hunt à 00:01 PT, Show HN, thread X et LinkedIn, offre Founder en ligne, 12h en réponse aux commentaires. Mercredi : r/macapps « honnête face à Wispr » et PSA sur un subreddit d'outils de code IA. Remercier et repartager chaque clip.</label></div>
+  </div>
+  <div class="callout key"><b>Jalon vers le palier 2 :</b> conversion essai vers payant supérieure à 6%, au moins 10 témoignages publics, au moins 1 clip utilisateur ayant généré une installation traçable.</div>
+
+  <h3>Mois 2 · 100 à 500 · 10 à 15 EUR/jour en option après preuve</h3>
+  <div class="card"><div class="chk"><input type="checkbox" data-k="p-m2a"><label>Transformer la boucle en concours UGC hebdomadaire ; premier test de retargeting (10 EUR/jour sur /compare, seulement si le jalon 1 est franchi), mesurer le CPA.</label></div>
+    <div class="chk"><input type="checkbox" data-k="p-m2b"><label>Démos en direct avec des créateurs (3 à 5), monter le retargeting à 15 EUR/jour si le CPA est bon, doubler la mise sur le canal qui apporte des payants, étude de cas n°1.</label></div></div>
+  <div class="callout key"><b>Jalon vers le palier 3 :</b> coefficient de parrainage supérieur à 0,3, un format de clip dépassant 20k vues de façon reproductible, retargeting au ROI positif.</div>
+
+  <h3>Mois 3 · 500 à 1 000 · micro budget</h3>
+  <div class="card"><div class="chk"><input type="checkbox" data-k="p-m3a"><label>Activer le segment privacy pro (SEO « dictée privée pour avocats/médecins », 5 newsletters privacy, % d'affiliation via Dub), puis les opérateurs voice first (pages « JARVIS pour Mac »).</label></div>
+    <div class="chk"><input type="checkbox" data-k="p-m3b"><label>Deuxième drop FOMO Founder (« 100 dernières places, 3 jours »), 1 à 2 sponsorings de newsletter et un podcast dev, email de lifecycle, poussée finale de 48h, Show HN « 1 000 utilisateurs payants, voici ce qui a marché ».</label></div></div>
+  <div class="callout key"><b>Sortie :</b> 1 000 payants (~7 600 EUR/mois). Le vrai signal de succès : la croissance ne dépend plus de la main quotidienne du fondateur. Puis le cycle vers 2 000 à 5 000, avec iOS pour tuer l'objection « réservé à Mac ».</div>
+
+  <div class="q" data-q="plan-num"><div class="ql">Engagement</div><div class="qt">Votre chiffre hebdomadaire unique pour les 4 prochaines semaines ?</div><textarea placeholder="ex. 20 nouvelles conversations réelles / semaine, ou 5 nouveaux utilisateurs payants / semaine"></textarea></div>
+  <div class="q" data-q="plan-block"><div class="ql">Engagement</div><div class="qt">Votre créneau marketing quotidien fixe, sur le calendrier ?</div><textarea placeholder="Je vais consacrer ... chaque jour, à ... heures, à ceci."></textarea></div></div></div>
+
+<!-- 9 METRICS -->
+<div class="pv wrap" id="v-metrics"><div data-l="en">
+  <div class="seclabel">Metrics</div>
+  <h2>What to measure, and the targets</h2>
+  <p class="sub">Every number below is a starting assumption to be replaced by real funnel data. Instrument three events (signup, aha, north star) and read one weekly screen: North Star, last-cohort retention, MRR, churn.</p>
+  <div class="grid g4">
+    <div class="card"><div class="t">Free to paid</div><div class="big num">7%</div><p class="mut">target 7 to 10%. Paywall refusal 20 to 30% among qualified = price about right.</p></div>
+    <div class="card"><div class="t">Blended ARPU</div><div class="big num">7.6<small> EUR/mo</small></div><p class="mut">underpriced given ~zero cost. Move to the 4-tier ladder.</p></div>
+    <div class="card"><div class="t">Gross margin</div><div class="big num">~90%</div><p class="mut">Private AI, near-zero inference cost.</p></div>
+    <div class="card"><div class="t">CAC ceiling</div><div class="big num">~20<small> EUR</small></div><p class="mut">payback-driven (the real bootstrapped limit), not the 46 EUR a 3:1 ratio implies.</p></div>
+  </div>
+  <h3>Gates and growth targets</h3>
+  <ul>
+    <li><b>Rung-1 gate:</b> trial to paid at least 6%; 10+ public testimonials; 1 clip drove a traceable install.</li>
+    <li><b>Rung-2 gate:</b> referral coefficient over 0.3 (modeled k ~ 0.4 cuts CAC ~40%); one clip format reproducibly over 20k views; retargeting ROI-positive.</li>
+    <li><b>PMF signal:</b> Sean Ellis test, at least 40% of active beachhead users "very disappointed" without Verba.</li>
+    <li><b>Clip-loop floor:</b> coefficient at least 0.2 before any paid amplification.</li>
+  </ul>
+  <h3>The client ladder (blended ~7.6 EUR/sub, 7% download to paid)</h3>
+  <p class="mut">Note: during the free bootstrap phase the operating metric is <b>active weekly users</b>, not MRR. This ladder is the revenue path that opens after the flip to paid (see the monetization plan on the Command tab).</p>
+  <div class="tablewrap"><table><thead><tr><th>Rung</th><th>Paying</th><th>MRR</th><th>Downloads needed</th></tr></thead><tbody>
+    <tr><td>1</td><td>100</td><td>~760 EUR/mo</td><td>~1,430</td></tr>
+    <tr><td>2</td><td>500</td><td>~3,800 EUR/mo</td><td>~7,150</td></tr>
+    <tr><td>3</td><td>1,000</td><td>~7,600 EUR/mo</td><td>~14,300</td></tr>
+    <tr><td>cap</td><td>2,000</td><td>~15,200 EUR/mo</td><td>~28,600</td></tr>
+  </tbody></table></div>
+  <p class="mut">12-month GTM objective: 5,000 to 15,000 EUR/mo recurring (~600 to 2,000 subscribers). Launch: Product Hunt + Show HN, 28 July 2026.</p>
+</div><div data-l="fr"><div class="seclabel">Metrics</div>
+  <h2>Ce qu'il faut mesurer, et les objectifs</h2>
+  <p class="sub">Chaque chiffre ci-dessous est une hypothèse de départ, à remplacer par les données réelles du funnel. Instrumentez trois événements (inscription, aha, north star) et lisez un seul écran chaque semaine : North Star, rétention de la dernière cohorte, MRR, churn.</p>
+  <div class="grid g4">
+    <div class="card"><div class="t">Gratuit vers payant</div><div class="big num">7%</div><p class="mut">objectif 7 à 10%. Refus de paywall de 20 à 30% parmi les qualifiés = prix à peu près juste.</p></div>
+    <div class="card"><div class="t">ARPU mixé</div><div class="big num">7.6<small> EUR/mois</small></div><p class="mut">sous-tarifé vu un coût quasi nul. Basculer vers l'échelle à 4 paliers.</p></div>
+    <div class="card"><div class="t">Marge brute</div><div class="big num">~90%</div><p class="mut">IA privée, coût d'inférence proche de zéro.</p></div>
+    <div class="card"><div class="t">Plafond CAC</div><div class="big num">~20<small> EUR</small></div><p class="mut">piloté par le payback (la vraie limite en bootstrap), pas les 46 EUR qu'impliquerait un ratio de 3:1.</p></div>
+  </div>
+  <h3>Portes et objectifs de croissance</h3>
+  <ul>
+    <li><b>Porte du palier 1 :</b> essai vers payant à au moins 6% ; 10+ témoignages publics ; 1 clip ayant généré une installation traçable.</li>
+    <li><b>Porte du palier 2 :</b> coefficient de parrainage supérieur à 0.3 (k modélisé ~ 0.4 réduit le CAC d'environ 40%) ; un format de clip dépassant durablement 20k vues ; ROI de retargeting positif.</li>
+    <li><b>Signal PMF :</b> test de Sean Ellis, au moins 40% des utilisateurs actifs de la tête de pont "très déçus" sans Verba.</li>
+    <li><b>Plancher de la boucle clips :</b> coefficient d'au moins 0.2 avant toute amplification payante.</li>
+  </ul>
+  <h3>L'échelle client (mixée ~7.6 EUR/abonné, 7% téléchargement vers payant)</h3>
+  <p class="mut">Note : pendant la phase de bootstrap gratuit, l'indicateur de pilotage est le <b>nombre d'utilisateurs actifs hebdomadaires</b>, pas le MRR. Cette échelle est le chemin de revenu qui s'ouvre après le basculement vers le payant (voir le plan de monétisation dans l'onglet Commande).</p>
+  <div class="tablewrap"><table><thead><tr><th>Palier</th><th>Payants</th><th>MRR</th><th>Téléchargements nécessaires</th></tr></thead><tbody>
+    <tr><td>1</td><td>100</td><td>~760 EUR/mois</td><td>~1,430</td></tr>
+    <tr><td>2</td><td>500</td><td>~3,800 EUR/mois</td><td>~7,150</td></tr>
+    <tr><td>3</td><td>1,000</td><td>~7,600 EUR/mois</td><td>~14,300</td></tr>
+    <tr><td>cap</td><td>2,000</td><td>~15,200 EUR/mois</td><td>~28,600</td></tr>
+  </tbody></table></div>
+  <p class="mut">Objectif GTM à 12 mois : 5,000 à 15,000 EUR/mois récurrents (~600 à 2,000 abonnés). Lancement : Product Hunt + Show HN, 28 juillet 2026.</p></div></div>
+
+
+<!-- 10 LIBRARY -->
+<div class="pv wrap" id="v-lib"><div data-l="en">
+  <div class="seclabel">Library</div>
+  <h2>Every deep dive, in one place</h2>
+  <p class="sub">This dashboard is the command center. Below are the full long-form documents behind it, each on its own page under this same site. They open in a new tab, so you keep your place here.</p>
+  <div class="grid g2">
+    <a class="card acc lnk" href="/marketing-os" target="_blank" rel="noopener"><div class="t">Marketing OS <span class="arr">Open &rsaquo;</span></div><p class="dim">The per-project marketing hub: overview, 90-day calendar, content library, the 16 channels, the shipped campaign, and the 365-day scale plan.</p></a>
+    <a class="card acc lnk" href="/strategy" target="_blank" rel="noopener"><div class="t">Full strategy, 12 parts <span class="arr">Open &rsaquo;</span></div><p class="dim">The complete marketing strategy in long form: foundations, positioning, why they buy, message and offer, funnel and channels, content, paid, pricing, loops, selling, retention, and the 90-day sequence.</p></a>
+    <a class="card acc lnk" href="/playbook" target="_blank" rel="noopener"><div class="t">Growth playbook <span class="arr">Open &rsaquo;</span></div><p class="dim">The giants' playbook expanded: what made Cursor, Lovable, Replit and Higgsfield explode, turned into concrete Verba moves.</p></a>
+    <a class="card acc lnk" href="/plan" target="_blank" rel="noopener"><div class="t">90-day plan <span class="arr">Open &rsaquo;</span></div><p class="dim">The full week-by-week 90-day growth plan, from 23 to 1,000 paying users, with the gates between each rung.</p></a>
+    <a class="card acc lnk" href="/reddit" target="_blank" rel="noopener"><div class="t">Reddit strategy <span class="arr">Open &rsaquo;</span></div><p class="dim">The deep Reddit plan: the right subs, the cadence per sub, the 9:1 rule and the full anti-ban doctrine.</p></a>
+    <a class="card acc lnk" href="/calendar" target="_blank" rel="noopener"><div class="t">90-day calendar <span class="arr">Open &rsaquo;</span></div><p class="dim">The 90-day editorial calendar to validate, post by post, ready to hand to the publishing engine.</p></a>
+    <a class="card acc lnk" href="/content" target="_blank" rel="noopener"><div class="t">Content preview <span class="arr">Open &rsaquo;</span></div><p class="dim">A visual preview of the content to be posted: the actual cards and scenes, laid out to review before publishing.</p></a>
+  </div>
+</div><div data-l="fr">
+  <div class="seclabel">Bibliothèque</div>
+  <h2>Tous les documents détaillés, au même endroit</h2>
+  <p class="sub">Ce dashboard est le centre de commande. Ci-dessous, les documents complets en format long qui le sous-tendent, chacun sur sa propre page du même site. Ils s'ouvrent dans un nouvel onglet, vous gardez votre place ici.</p>
+  <div class="grid g2">
+    <a class="card acc lnk" href="/marketing-os" target="_blank" rel="noopener"><div class="t">Marketing OS <span class="arr">Ouvrir &rsaquo;</span></div><p class="dim">Le hub marketing par projet : vue d'ensemble, calendrier 90 jours, bibliothèque de contenu, les 16 canaux, la campagne shipped et le plan de montée en charge sur 365 jours.</p></a>
+    <a class="card acc lnk" href="/strategy" target="_blank" rel="noopener"><div class="t">Full strategy, 12 parts <span class="arr">Ouvrir &rsaquo;</span></div><p class="dim">La stratégie marketing complète en format long : fondations, positionnement, pourquoi ils achètent, message et offre, funnel et canaux, contenu, paid, pricing, boucles, vente, rétention et la séquence 90 jours.</p></a>
+    <a class="card acc lnk" href="/playbook" target="_blank" rel="noopener"><div class="t">Growth playbook <span class="arr">Ouvrir &rsaquo;</span></div><p class="dim">Le playbook des géants en détail : ce qui a fait exploser Cursor, Lovable, Replit et Higgsfield, transformé en actions concrètes pour Verba.</p></a>
+    <a class="card acc lnk" href="/plan" target="_blank" rel="noopener"><div class="t">90-day plan <span class="arr">Ouvrir &rsaquo;</span></div><p class="dim">Le plan de croissance 90 jours semaine par semaine, de 23 à 1 000 utilisateurs payants, avec les gates entre chaque palier.</p></a>
+    <a class="card acc lnk" href="/reddit" target="_blank" rel="noopener"><div class="t">Reddit strategy <span class="arr">Ouvrir &rsaquo;</span></div><p class="dim">Le plan Reddit détaillé : les bons subs, la cadence par sub, la règle 9:1 et toute la doctrine anti-ban.</p></a>
+    <a class="card acc lnk" href="/calendar" target="_blank" rel="noopener"><div class="t">90-day calendar <span class="arr">Ouvrir &rsaquo;</span></div><p class="dim">Le calendrier éditorial 90 jours à valider, post par post, prêt à passer au moteur de publication.</p></a>
+    <a class="card acc lnk" href="/content" target="_blank" rel="noopener"><div class="t">Content preview <span class="arr">Ouvrir &rsaquo;</span></div><p class="dim">Un aperçu visuel du contenu à poster : les vraies cartes et scènes, mises en page pour review avant publication.</p></a>
+  </div>
+</div></div>
+
+<footer><div class="wrap"><span data-l="en">Verba Marketing HQ · built on the full 12-part Verba strategy, the giants playbook, the Reddit strategy and the 90-day plan · guardrails: English public copy, zero em dash, no organic pricing, Confirm visible in every JARVIS demo, "connected apps" never "Composio" · your answers save in this browser only.</span><span data-l="fr">Verba Marketing HQ · bâti sur toute la stratégie Verba en 12 parties, le playbook des géants, la stratégie Reddit et le plan 90 jours · garde-fous : copy public en anglais, zéro tiret cadratin, pas de prix en organique, Confirm visible dans chaque démo JARVIS, « apps connectées » jamais « Composio » · vos réponses sont sauvegardées dans ce navigateur uniquement.</span></div></footer>
+</div>
+
+<script>
+  // GATE
+  var PASS='verba2026';
+  function unlock(){document.getElementById('gate').style.display='none';document.getElementById('app').style.display='block';}
+  try{if(localStorage.getItem('verba_hq_unlocked')==='1')unlock();}catch(e){}
+  function tryGate(){var v=document.getElementById('gpass').value.trim().toLowerCase();
+    if(v===PASS){try{localStorage.setItem('verba_hq_unlocked','1')}catch(e){}unlock();}
+    else{document.getElementById('gerr').textContent='Wrong passphrase.';}}
+  document.getElementById('gpass').addEventListener('keydown',function(e){if(e.key==='Enter')tryGate();});
+  // TABS
+  var tabs=[].slice.call(document.querySelectorAll('.tab'));
+  var views={cmd:'v-cmd',strat:'v-strat',giants:'v-giants',buyer:'v-buyer',arsenal:'v-arsenal',exp:'v-exp',wispr:'v-wispr',chan:'v-chan',plan:'v-plan',metrics:'v-metrics',lib:'v-lib'};
+  tabs.forEach(function(t){t.addEventListener('click',function(){tabs.forEach(function(x){x.setAttribute('aria-selected','false')});t.setAttribute('aria-selected','true');Object.values(views).forEach(function(id){document.getElementById(id).classList.remove('on')});document.getElementById(views[t.dataset.v]).classList.add('on');window.scrollTo(0,0);})});
+  // LANG
+  function setLang(l){document.body.dataset.lang=l;try{localStorage.setItem('verba_hq_lang',l)}catch(e){}var en=document.getElementById('langbtn'),fr=document.getElementById('langbtnfr');if(en)en.classList.toggle('on',l==='en');if(fr)fr.classList.toggle('on',l==='fr');if(typeof prog==='function')prog();}
+  // PERSIST
+  var KEY='verba_hq_v1',store={};try{store=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}}
+  var boxes=[].slice.call(document.querySelectorAll('input[type=checkbox][data-k]'));
+  boxes.forEach(function(b){var k=b.dataset.k;if(store['c_'+k])b.checked=true;b.addEventListener('change',function(){store['c_'+k]=b.checked;boxes.forEach(function(o){if(o.dataset.k===k)o.checked=b.checked});save();prog();});});
+  [].slice.call(document.querySelectorAll('.q textarea')).forEach(function(ta){var q=ta.closest('.q').dataset.q;if(store['t_'+q])ta.value=store['t_'+q];ta.addEventListener('input',function(){store['t_'+q]=ta.value;[].slice.call(document.querySelectorAll('.q[data-q="'+q+'"] textarea')).forEach(function(o){if(o!==ta)o.value=ta.value});save();});});
+  function prog(){var seen={},d=0,t=0;boxes.forEach(function(b){var k=b.dataset.k;if(seen[k])return;seen[k]=1;t++;if(b.checked)d++;});var pb=document.getElementById('pbar'),pt=document.getElementById('ptxt');if(pb)pb.style.width=(t?Math.round(100*d/t):0)+'%';if(pt)pt.textContent=d+(document.body.dataset.lang==='fr'?(' sur '+t+' actions faites'):(' of '+t+' actions done'));}
+  prog();
+  (function(){var l='en';try{l=localStorage.getItem('verba_hq_lang')||'en'}catch(e){}setLang(l);})();
+</script>
+</body></html>

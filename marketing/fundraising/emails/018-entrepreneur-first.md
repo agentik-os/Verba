@@ -2,13 +2,13 @@
 id: "018"
 to: Entrepreneur First
 firm: Entrepreneur First
-contact_channel: public application (joinef.com — up to $250k pre-seed)
+contact_channel: public application (joinef.com, up to $250k pre-seed)
 contact_status: verified
 anchor: PolyAI (enterprise voice AI assistants; later backed by Khosla)
-status: DRAFT — NON ENVOYE (attente GO/NO-GO operateur)
+status: DRAFT, NON ENVOYE (attente GO/NO-GO operateur)
 ---
 
-Objet : Verba — voix native Mac, pre-seed, dans la continuité de PolyAI
+Objet : Verba, voix native Mac, pre-seed, dans la continuité de PolyAI
 
 Bonjour [Prenom],
 
@@ -22,4 +22,4 @@ Heureux d'échanger 20 minutes ou de soumettre une candidature formelle via join
 → verba.run
 
 [Fondateur]
-Verba — verba.run
+Verba, verba.run

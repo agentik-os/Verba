@@ -3,18 +3,18 @@ project: Verba
 layer: copy/video-messaging
 status: doctrine-output (mm-03 + mm-04 lenses)
 created: 2026-07-03
-governs: le SCRIPT des vidéos (voix off) — bénéfices/problème-solution, PAS la technique du moteur
+governs: le SCRIPT des vidéos (voix off), bénéfices/problème-solution, PAS la technique du moteur
 ---
-# Cadrage messaging vidéo — benefit-led (Marketing Mastery Parties 3 & 4)
+# Cadrage messaging vidéo, benefit-led (Marketing Mastery Parties 3 & 4)
 
 > Règle opérateur : la vidéo doit parler de **ce que ça apporte à l'utilisateur**, pas de ce que fait le moteur.
-> Fini « Whisper / Parakeet / 37 000 tools / schema coverage ». On vend une meilleure version de la journée du dev.
+> Fini le jargon moteur (noms de modèles, nombre d'outils, couverture technique). On vend une meilleure version de la journée du dev.
 
 ## 1. Diagnostic (mm-03 / mm-04)
-- **Cible** : dev Mac Claude Code-native. **Niveau de conscience : problem-aware → solution-aware.** Il SENT la friction de la frappe et sait que la dictée existe. Donc : **nommer la douleur + positionner la catégorie**, jamais lister des specs à un froid (l'erreur « features à un problem-aware »).
+- **Cible** : dev Mac qui code avec un assistant IA (workflow AI-coding). **Niveau de conscience : problem-aware → solution-aware.** Il SENT la friction de la frappe et sait que la dictée existe. Donc : **nommer la douleur + positionner la catégorie**, jamais lister des specs à un froid (l'erreur « features à un problem-aware »).
 - **Erreur en cours (corrigée)** : les vidéos v1-v5 parlaient moteur (pipeline on-device, 37 000 tools). C'est du Pull-seul technique à un public qui achète une **transformation**, pas une architecture.
 
-## 2. Le vrai job (JTBD — Christensen/Moesta)
+## 2. Le vrai job (JTBD, Christensen/Moesta)
 > « Quand je pense plus vite que je ne tape, aide-moi à sortir mes idées en texte propre (et à les exécuter) sans casser mon flow ni sacrifier ma confidentialité, pour que je reste dans le travail au lieu de me battre avec mon clavier. »
 - **Fonctionnel** : transformer la parole en texte propre + action, là où est le curseur.
 - **Émotionnel** : rester dans le flow, se sentir en contrôle, finir la journée sans être vidé par la frappe.
@@ -23,15 +23,15 @@ governs: le SCRIPT des vidéos (voix off) — bénéfices/problème-solution, PA
 ## 3. Les 4 forces (amplifier Push+Pull, désamorcer Anxiété+Habitude)
 - **Push** (douleur du présent) : « je pense plus vite que je tape » ; taper casse le flow ; fin de journée les mains mortes. → **on attaque par là** (aversion à la perte > désir).
 - **Pull** (futur meilleur) : tu parles, c'est écrit propre, et ça peut le FAIRE.
-- **Anxiété** (à désamorcer, c'est le levier négligé) : « ma voix part sur un serveur ? » → *ton audio ne quitte jamais ton Mac* ; « encore une facture IA ? » → *ton abo Claude que tu paies déjà* ; « un agent sur mon Gmail ?! » → *rien ne se fait sans ta confirmation*.
+- **Anxiété** (à désamorcer, c'est le levier négligé) : « ma voix part sur un serveur ? » → *ton audio ne quitte jamais ton Mac* ; « mes dictées sont stockées quelque part ? » → *historique local, off-switch et auto-prune, tu gardes le contrôle* ; « un agent sur mon Gmail ?! » → *rien ne se fait sans ta confirmation*.
 - **Habitude** : Apple Dictation « suffit », mémoire musculaire du clavier. → montrer le **coût caché du statu quo** (heures perdues, flow brisé).
 
 ## 4. Value proposition (Dunford)
 **Pour les devs Mac qui pensent plus vite qu'ils ne tapent, Verba est l'app vocale qui transforme ta parole en texte propre et en action partout sur ton Mac, contrairement aux outils de dictée qui se contentent de transcrire (et d'uploader ta voix).**
 
-## 5. Équation de valeur (Hormozi) — les 4 leviers à montrer
+## 5. Équation de valeur (Hormozi), les 4 leviers à montrer
 - **Résultat rêvé ↑** : parler et que ce soit fait, flow intact (pas « une IA de dictée »).
-- **Probabilité perçue ↑** : l'étape **Confirm** visible + ton propre Claude (tu gardes la main).
+- **Probabilité perçue ↑** : l'étape **Confirm** visible + une IA privée que tu contrôles (tu gardes la main).
 - **Délai ↓** : le texte tombe **là où est ton curseur**, tout de suite.
 - **Effort ↓** : une touche, zéro setup, zéro clé API.
 

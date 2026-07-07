@@ -5,10 +5,10 @@ firm: Shrug Capital (Niv Dror)
 contact_channel: warm intro
 contact_status: à vérifier
 anchor: Superhuman
-status: DRAFT — NON ENVOYE (attente GO/NO-GO operateur)
+status: DRAFT, NON ENVOYE (attente GO/NO-GO operateur)
 ---
 
-Objet : Verba — Superhuman vous a appris qu'un professionnel paie pour la vitesse
+Objet : Verba, Superhuman vous a appris qu'un professionnel paie pour la vitesse
 
 Bonjour Niv,
 
@@ -22,4 +22,4 @@ Disponible pour 20 minutes ?
 verba.run
 
 [Fondateur]
-Verba — verba.run
+Verba, verba.run

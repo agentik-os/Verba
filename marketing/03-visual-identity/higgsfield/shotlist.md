@@ -4,7 +4,7 @@ layer: visual-identity/higgsfield
 status: filled
 note: Aucune génération live en setup (R-VISUAL-ID). Soul? = non (scene/product-led, voir avatar-soul.md). Chaque shot = sans --soul-id.
 ---
-# Shot List — Verba
+# Shot List, Verba
 
 > Chaque génération image/vidéo planifiée, mappée à un pilier de contenu + un slot `04-publishing/calendar.json`.
 > Prompt ref = preset dans `preprompt.md`. Soul? = **non** partout (pas d'avatar). À générer après opt-in CLI Higgsfield.

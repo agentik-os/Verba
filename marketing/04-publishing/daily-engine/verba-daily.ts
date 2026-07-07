@@ -29,7 +29,7 @@ const MKT = join(HERE, "..", "..");                       // marketing/
 const OUT = join(HERE, "out");
 const ASSETS = join(HERE, "assets");
 const FONTDIR = join(process.env.HOME!, ".local", "share", "fonts", "verba");
-const CALENDAR = join(MKT, "05-calendar", "calendar-90d.json");
+const CALENDAR = join(MKT, "05-calendar", process.env.VERBA_CALENDAR || "calendar-90d-en.json");
 const STYLE = join(MKT, "06-branding", "VALIDATED-STYLE.md");
 const SENTLOG = join(HERE, "sent-log.json");
 const TMP = join("/tmp", "verba-daily-work");
@@ -39,6 +39,8 @@ const MODEL = "nano_banana_2";              // Nano Banana Pro (readable UI text
 
 const args = process.argv.slice(2);
 const PUBLISH = args.includes("--publish");
+// On-brand auto default: still image + text (product-UI in a STILL is allowed; on-screen UI in VIDEO is not, per brand law).
+const IMAGE_ONLY = args.includes("--image-only") || process.env.VERBA_IMAGE_ONLY === "1";
 const forceDate = argVal("--date");
 const forceDay = argVal("--day");
 function argVal(f: string): string | null { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : null; }
@@ -235,6 +237,13 @@ function mediaForNetwork(net: string, imgs: string[], video: string, dir: string
   const img1350 = imgs.find(f => f.includes("1080x1350")) || imgs[0];
   const img11 = imgs.find(f => f.includes("1x1")) || imgs[0];
   const img916 = imgs.find(f => f.includes("9x16")) || imgs[0];
+  // Image-only mode (or no video produced): post the on-brand still everywhere.
+  if (IMAGE_ONLY || !video) {
+    if (net === "pinterest") return { media: recompose(img11, 1080, 1620, dir, "pin-2x3.png"), kind: "image-2x3" };
+    if (net === "linkedin") return { media: img1350, kind: "image-4x5" };
+    if (net === "instagram" || net === "facebook") return { media: img1350, kind: "image-4x5" };
+    return { media: img11, kind: "image-1x1" };
+  }
   switch (net) {
     case "tiktok": case "youtube": case "threads": return { media: video, kind: "video-9x16" };
     case "instagram": case "facebook": return { media: video, kind: "video-9x16-reel" };
@@ -255,7 +264,7 @@ function recompose(src: string, w: number, h: number, dir: string, name: string)
 function publish(post: Post, imgs: string[], video: string, dir: string) {
   log("\n== PUBLISH (--publish) to connected organic networks ==");
   for (const net of NETWORKS) {
-    if (net === "reddit") { log(`  reddit: SKIP auto (community etiquette, post manually per zernio.md)`); continue; }
+    if (net === "reddit") { log(`  reddit: posting to brand PROFILE u/VerbaRun (safe auto, no subreddit rule). Community subs (r/macapps, r/ClaudeAI) stay MANUAL per the calendar.`); }
     const text = post.text.trim();
     assertNoDash("publish text " + net, text);
     const { media, kind } = mediaForNetwork(net, imgs, video, dir);
@@ -286,9 +295,14 @@ function main() {
   const imgs = genImage(pack, dir);
   log("  ->", imgs.map(f => f.split("/").pop()).join(", "));
 
-  log("\n[2/2] VIDEO (Motion-UI + VO Eric + tense-minimal music)");
-  const { file: video, dur } = genVideo(pack.script, dir);
-  log("  ->", video.split("/").pop(), `${dur}s`);
+  let video = ""; let dur = 0;
+  if (IMAGE_ONLY) {
+    log("\n[2/2] VIDEO skipped (--image-only: on-brand still image + text to all networks)");
+  } else {
+    log("\n[2/2] VIDEO (Motion-UI + VO Eric + tense-minimal music)");
+    const v = genVideo(pack.script, dir); video = v.file; dur = v.dur;
+    log("  ->", video.split("/").pop(), `${dur}s`);
+  }
 
   // write the batch manifest
   const manifest = {

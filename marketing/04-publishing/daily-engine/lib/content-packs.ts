@@ -67,8 +67,8 @@ const GENERIC: Pack = {
     s3: {
       html:
 `<div class="center" style="top:44%;text-align:center">
-  <div class="big" style="font-size:170px;line-height:1"><span class="w">9,99</span><span class="accent w" style="font-size:120px"> €</span></div>
-  <div class="line xs" id="s3eq" style="margin-top:28px;font-weight:600">More, for less.</div>
+  <div class="big" style="font-size:150px;line-height:1"><span class="w">Just</span> <span class="accent w">talk.</span></div>
+  <div class="line xs" id="s3eq" style="margin-top:28px;font-weight:600">It writes. It acts.</div>
   <div class="muted" id="s3sub" style="font-size:38px;margin-top:26px;font-weight:500">On-device. Your Claude sub. No key.</div>
 </div>`,
       ids: ["s3eq", "s3sub"],

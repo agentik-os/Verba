@@ -1,513 +1,513 @@
 {
-  "block": 2,
-  "phase": "MONTH 2 — Proof & Depth",
-  "project": "Verba",
-  "profileSlug": "verba",
-  "timezone": "Europe/Paris",
-  "language": "fr",
-  "_note": "Bloc 2 = jours 31..60 du plan 90 jours. Phase Preuve & Profondeur : études de cas, la méthode/comment ça marche, gestion d'objections, démos, coulisses, receipts build-in-public. Texte FR (demandé par l'orchestrateur), voix/piliers/hooks repris des docs marketing (00-context/product-marketing.md, 01-strategy/content-strategy.md, 02-copy/*). Ne répète AUCUN angle exact du calendar.json 14 jours. Majorité mode:auto (poster zernio) ; ~5 manual répartis (vidéo founder, engagement communauté), max 1/jour. visualPrompt dérivé de 03-visual-identity/higgsfield/system-prompt.md. Ne jamais rendre 'Composio' ; toujours montrer l'étape Confirm quand JARVIS agit ; claims privacy exacts.",
-  "days": [
+ "block": 2,
+ "phase": "MONTH 2, Proof & Depth",
+ "project": "Verba",
+ "profileSlug": "verba",
+ "timezone": "Europe/Paris",
+ "language": "fr",
+ "_note": "Bloc 2 = jours 31..60 du plan 90 jours. Phase Preuve & Profondeur : études de cas, la méthode/comment ça marche, gestion d'objections, démos, coulisses, receipts build-in-public. Texte FR (demandé par l'orchestrateur), voix/piliers/hooks repris des docs marketing (00-context/product-marketing.md, 01-strategy/content-strategy.md, 02-copy/*). Ne répète AUCUN angle exact du calendar.json 14 jours. Majorité mode:auto (poster zernio) ; ~5 manual répartis (vidéo founder, engagement communauté), max 1/jour. visualPrompt dérivé de 03-visual-identity/higgsfield/system-prompt.md. Ne jamais rendre 'Composio' ; toujours montrer l'étape Confirm quand JARVIS agit ; claims privacy exacts.",
+ "days": [
+  {
+   "dayOffset": 31,
+   "posts": [
     {
-      "dayOffset": 31,
-      "posts": [
-        {
-          "slot": "16:00",
-          "platform": "x",
-          "pillar": "P5 Voice -> action (étude de cas)",
-          "mode": "auto",
-          "estMinutes": 5,
-          "text": "Étude de cas : une journée de PM sans jamais ouvrir Linear.\n\nElle dicte « crée l'issue pour ce bug et ajoute-la au sprint ». Verba planifie les deux actions on-device, les affiche, elle appuie sur Confirm. C'est fait.\n\nRésultat sur la semaine : 41 issues créées à la voix, 0 copier-coller. Le plan ne quitte jamais son Mac.\n\nverba.run",
-          "visualPrompt": "Higgsfield — Verba brand law 'Black-craft, Apple-grade precision'. 16:9. La feed d'action JARVIS sur un overlay macOS sombre : une carte 'Créer issue Linear' + 'Ajouter au sprint' avec un bouton Confirm bien visible, icônes d'apps connectées en filigrane, pill menu-bar. Fond mat #050507, UI off-white #f4f4f6, un seul accent rec-dot #ff5a4d. Ne jamais rendre 'Composio'. L'étape Confirm doit être visible.",
-          "manualNote": "",
-          "cta": "verba.run"
-        }
-      ]
-    },
-    {
-      "dayOffset": 32,
-      "posts": [
-        {
-          "slot": "09:00",
-          "platform": "blog",
-          "pillar": "P1 Voice-driven coding (la méthode / how-it-works)",
-          "mode": "auto",
-          "estMinutes": 15,
-          "text": "# Comment un ramble de 20 minutes devient une PR propre\n\nLa plupart des gens pensent plus vite qu'ils ne tapent. Le problème, c'est que tout ce qu'on envoie doit être écrit et propre. Voici, étape par étape, comment Verba comble cet écart pendant que tu codes.\n\n1. Tu appuies une touche et tu parles. Tu décris la feature, les cas limites, les « au fait » que tu sautes d'habitude parce que les taper est pénible.\n2. Whisper ou Parakeet transcrit on-device. Ton audio ne quitte jamais ton Mac — la sync est texte-only.\n3. Ton propre Claude (via ton abo Claude Code, sans clé) restructure le flux en un prompt propre, ou une description de PR précise.\n4. Le texte est collé là où est ton curseur — dans Cursor, Claude Code, ou ton éditeur.\n\nLe gain n'est pas la vitesse de frappe. C'est que tu expliques mieux à voix haute : tes specs deviennent plus longues et plus claires, et tu documentes les edge cases que tu aurais zappés.\n\nEt ça ne s'arrête pas au texte : tu peux dire « crée l'issue Linear pour ça », Verba planifie, te montre, et l'exécute sur ta confirmation.\n\nSetup en moins d'une minute sur un Mac neuf. Sans clé, sans marge, sans upload.\n\n→ verba.run",
-          "visualPrompt": "Higgsfield — Verba brand law. 16:9 hero blog. Mains de dev en pause sur le clavier d'un MacBook Pro Apple-Silicon, terminal sombre + Cursor à l'écran, un prompt propre en train d'être collé, pill Verba près de la menu-bar. Lumière directionnelle douce et mate, pièce near-black #050507, UI off-white #f4f4f6, un seul rec-dot #ff5a4d. Pas de visages, grain fin, motif mic-mark.",
-          "manualNote": "",
-          "cta": "verba.run"
-        },
-        {
-          "slot": "16:00",
-          "platform": "x",
-          "pillar": "P1 Voice-driven coding",
-          "mode": "auto",
-          "estMinutes": 5,
-          "text": "Nouveau billet : comment un ramble de 20 minutes devient une PR propre.\n\nTu parles, ça transcrit on-device, ton propre Claude restructure, le prompt est collé dans Cursor. Sans clé, sans marge.\n\nLa méthode complète → verba.run/blog/ramble-to-pr",
-          "visualPrompt": "Higgsfield — Verba brand law. 1:1. Motif minimal 'voix -> prompt propre' : à gauche un waveform brut, à droite un bloc de texte structuré collé, sur #050507. SF Pro, tracking serré, whitespace lourd, mat, un accent #ff5a4d, glyph mic-mark en carré noir arrondi bas-gauche. Pas de gens.",
-          "manualNote": "",
-          "cta": "verba.run/blog/ramble-to-pr"
-        }
-      ]
-    },
-    {
-      "dayOffset": 33,
-      "posts": [
-        {
-          "slot": "16:00",
-          "platform": "x",
-          "pillar": "P3 BYO-AI (gestion d'objection : les clés API)",
-          "mode": "auto",
-          "estMinutes": 5,
-          "text": "« Encore une app où je dois gérer une clé API ? »\n\nNon. Si Claude Code est installé, Verba réutilise ton abo — aucune clé à générer, aucun dashboard d'usage à surveiller. Ou tu tournes 100 % local avec Ollama. Ou l'essai gratuit, sans carte.\n\nLa clé API, c'est justement ce qu'on t'épargne. → verba.run",
-          "visualPrompt": "Higgsfield — Verba brand law. 1:1. Icône de clé grisée barrée d'un trait fin, à côté d'un badge abo-Claude allumé, sur #050507. Légende SF Pro, whitespace lourd, mat, un accent #ff5a4d, glyph mic-mark bas-gauche. Pas de gens, pas de néon.",
-          "manualNote": "",
-          "cta": "verba.run"
-        }
-      ]
-    },
-    {
-      "dayOffset": 34,
-      "posts": [
-        {
-          "slot": "12:00",
-          "platform": "x",
-          "pillar": "P2 Private on-device (coulisses / preuve technique)",
-          "mode": "auto",
-          "estMinutes": 4,
-          "text": "Coulisses : comment on prouve que ton audio ne quitte jamais ton Mac.\n\nOn coupe le Wi-Fi. On dicte. Ça marche.\n\nWhisper et Parakeet tournent on-device — offline complet. La sync, quand elle existe, est texte-only. Historique local avec un off-switch.\n\nPrivé par défaut, ce n'est pas un réglage. C'est l'architecture.",
-          "visualPrompt": "Higgsfield — Verba brand law. 4:5. Un Mac avec une frontière-device dessinée ; un waveform qui reste visiblement DANS la frontière, un petit indice offline/lock, symbole Wi-Fi coupé discret. Mat #050507, off-white #f4f4f6, unique accent #ff5a4d sur le rec-dot. Immobilité, sécurité, motif mic-mark, grain fin.",
-          "manualNote": "",
-          "cta": ""
-        }
-      ]
-    },
-    {
-      "dayOffset": 35,
-      "posts": [
-        {
-          "slot": "16:00",
-          "platform": "linkedin",
-          "pillar": "P5 Voice -> action (opérateur voice-first, étude de cas)",
-          "mode": "auto",
-          "estMinutes": 8,
-          "text": "J'ai arrêté d'ouvrir Linear, Gmail et Slack pour les micro-tâches. Je les dicte.\n\nContexte : je passe ma journée dans une poignée d'apps, et 80 % de ce que j'y fais, c'est de la plomberie — créer une issue, envoyer un récap, planifier un suivi. Chaque changement de contexte coûte de l'attention.\n\nCe que fait Verba (mode JARVIS) : je dis l'intention, il planifie les étapes sur mon Mac, il me montre exactement ce qu'il va faire, et il n'exécute qu'après ma confirmation. Les lectures peuvent tourner en auto ; les écritures sont toujours gated.\n\nLe détail qui compte : le plan d'action est généré par MON IA, sur MA machine. Même quand la clé serveur est vide, il planifie en local. Mon intention n'est pas à eux.\n\nCe n'est pas « l'IA prend le contrôle ». C'est « je dis, il montre, je confirme, c'est fait ». La confiance vient du bouton Confirm, pas d'une promesse.\n\nCurieux : quelle tâche répétitive dicteriez-vous en premier ?",
-          "visualPrompt": "Higgsfield — Verba brand law. 4:5. Une carte d'action JARVIS au repos avec un bouton Confirm proéminent, icônes d'apps connectées faibles derrière, pill menu-bar. Mat #050507, UI off-white, un accent rec #ff5a4d. Le moment avant confirm — confiance. Ne jamais rendre 'Composio'.",
-          "manualNote": "",
-          "cta": ""
-        }
-      ]
-    },
-    {
-      "dayOffset": 36,
-      "posts": [
-        {
-          "slot": "16:00",
-          "platform": "x",
-          "pillar": "P4 Comparatifs (gestion d'objection : Mac-only)",
-          "mode": "auto",
-          "estMinutes": 5,
-          "text": "« Mac-only ? Deal-breaker. »\n\nOn le dit franchement : oui, Verba est le meilleur natif macOS aujourd'hui, et on assume ce focus. Tu as besoin de Windows ou mobile maintenant ? Wispr Flow y gagne — et on l'écrit noir sur blanc sur nos pages /vs.\n\nL'honnêteté radicale, c'est notre argument : si tu vois où on perd, tu peux croire où on gagne. → verba.run/compare",
-          "visualPrompt": "Higgsfield — Verba brand law. 4:5. Grille comparative propre dans un panneau macOS opaque #0c0c10, bordures hairline, sans blur ; la colonne Verba subtilement mise en avant, une ligne montrant visiblement un rival qui gagne (honnêteté radicale). Lumière crisp, un accent rec #ff5a4d, SF Pro. Pas de gens.",
-          "manualNote": "",
-          "cta": "verba.run/compare"
-        }
-      ]
-    },
-    {
-      "dayOffset": 37,
-      "posts": [
-        {
-          "slot": "16:00",
-          "platform": "x",
-          "pillar": "P3 BYO-AI (build-in-public receipt : les coûts)",
-          "mode": "auto",
-          "estMinutes": 5,
-          "text": "Build-in-public receipt : notre coût d'inférence IA ce mois-ci.\n\n0 $.\n\nPas une figure de style. Verba est bring-your-own-AI : c'est TON abo qui fait tourner l'IA, jamais un appel facturé de notre côté. Zéro marge sur l'intelligence que tu paies déjà.\n\nC'est aussi pour ça qu'on peut tenir 9,99 $ pendant que le cloud facture 12–17 $.",
-          "visualPrompt": "Higgsfield — Verba brand law. 1:1. Grand '0 $' en chiffres tabulaires SF Pro sur #050507, sous-titre 'COGS inférence' discret, l'accent chaud #f4ede0 sur le chiffre. Whitespace lourd, mat, un rec-dot #ff5a4d, glyph mic-mark bas-gauche. Pas de gens, pas d'arc-en-ciel.",
-          "manualNote": "",
-          "cta": ""
-        }
-      ]
-    },
-    {
-      "dayOffset": 38,
-      "posts": [
-        {
-          "slot": "12:00",
-          "platform": "x",
-          "pillar": "P2 Private on-device (gestion d'objection : Apple Dictation)",
-          "mode": "auto",
-          "estMinutes": 4,
-          "text": "« Apple Dictation est gratuit, pourquoi payer ? »\n\nApple transcrit. Point. Verba transforme le ramble en texte propre, structuré, prêt-à-envoyer — avec des modes, l'intent, le ton par app, et l'audio qui ne quitte jamais ton Mac.\n\nTranscrire ≠ envoyer propre. C'est deux métiers différents. → verba.run",
-          "visualPrompt": "Higgsfield — Verba brand law. 9:16. Split : à gauche une transcription brute pleine de fautes, à droite un texte propre structuré collé, sur #050507. SF Pro, tracking serré, mat, glyph mic-mark comme pivot, un accent #ff5a4d. Pas de gens.",
-          "manualNote": "",
-          "cta": "verba.run"
-        }
-      ]
-    },
-    {
-      "dayOffset": 39,
-      "posts": [
-        {
-          "slot": "17:00",
-          "platform": "reddit",
-          "pillar": "P2 Private on-device (r/LocalLLaMA — démo full-local)",
-          "mode": "manual",
-          "estMinutes": 45,
-          "text": "Dictée Mac 100 % locale : Parakeet pour la transcription + Ollama pour le nettoyage, zéro cloud\n\nFounder de Verba ici (donc biaisé), mais c'est pile le genre de setup que cette sub apprécie, alors je le partage.\n\nLa plupart des apps de dictée envoient ton audio à leurs serveurs. Verba peut tourner entièrement en local : Parakeet transcrit on-device (ton audio ne quitte jamais ta machine), puis Ollama restructure le ramble en texte propre là où est ton curseur. Aucun appel réseau requis pour le chemin de base.\n\nSi tu préfères, tu peux aussi brancher ton abo Claude Code (sans clé API) au lieu d'Ollama — mais le point ici, c'est le mode full-local vérifiable : coupe le Wi-Fi, ça marche.\n\nIl y a aussi un mode agent (JARVIS) qui planifie une action à partir de ta voix et ne l'exécute qu'après confirmation — et ce plan est généré on-device par ton propre modèle.\n\nMac-only, indie, pas de témoignages publics encore. Posez-moi les questions difficiles sur le pipeline local, la latence Parakeet, ou le routage des modèles.\n\nverba.run",
-          "visualPrompt": "",
-          "manualNote": "Poster manuellement sur r/LocalLLaMA en mode valeur-d'abord : mener avec le setup technique full-local (Parakeet + Ollama), se déclarer founder, UN seul ask soft. Coller en commentaire un clip 10 s Wi-Fi coupé -> dictée -> texte propre collé, filmé depuis un Mac propre. Rester ~2h dans les commentaires (signal de ranking + confiance).",
-          "cta": "verba.run"
-        }
-      ]
-    },
-    {
-      "dayOffset": 40,
-      "posts": [
-        {
-          "slot": "16:00",
-          "platform": "x",
-          "pillar": "P5 Voice -> action (démo cutdown : Calendar)",
-          "mode": "auto",
-          "estMinutes": 4,
-          "text": "15 secondes : « bloque 30 min demain pour la revue et invite Anna. »\n\nVerba planifie l'événement, me montre la carte, je confirme, c'est dans l'agenda. Il demande avant d'agir.\n\nTa voix ne devrait pas juste écrire. Elle devrait agir. → verba.run",
-          "visualPrompt": "Higgsfield — Verba brand law. 9:16 still de clip : overlay JARVIS montrant une carte d'action 'Bloquer 30 min + inviter Anna' avec un bouton Confirm visible, icône d'app calendrier connectée. Mat #050507, UI off-white, unique accent rec #ff5a4d. Étape Confirm visible. Ne jamais rendre 'Composio'.",
-          "manualNote": "",
-          "cta": "verba.run"
-        }
-      ]
-    },
-    {
-      "dayOffset": 41,
-      "posts": [
-        {
-          "slot": "09:00",
-          "platform": "blog",
-          "pillar": "P5 Voice -> action (la méthode / how JARVIS works)",
-          "mode": "auto",
-          "estMinutes": 15,
-          "text": "# JARVIS pour Mac : comment « voix → action » fonctionne vraiment\n\nUn agent vocal qui touche à ton Gmail, ton Slack, ton Linear — ça devrait te rendre nerveux. Nous aussi. Voici l'architecture exacte, pour que tu décides en connaissance de cause.\n\n1. Tu dictes une intention : « crée l'issue Linear pour ce bug et envoie un récap à l'équipe. »\n2. Le plan est généré on-device, par TON IA (ton abo Claude Code, ou un modèle local). Jamais une clé serveur. On l'a testé avec la clé serveur vide : il planifie quand même, en local.\n3. Verba te montre exactement ce qu'il va faire — chaque étape, chaque app touchée.\n4. Classifier read/write fail-safe : les lectures peuvent s'auto-exécuter, les écritures sont TOUJOURS gated. Aucune écriture ne part sans ta confirmation.\n5. Tu appuies sur Confirm. Ça s'exécute — sur 1 000+ apps connectées + actions Mac natives. Tu peux déconnecter une app quand tu veux.\n\nCe qui n'arrive jamais : une action qui part dans ton dos. Le bouton Confirm n'est pas un détail d'UX, c'est le contrat.\n\nParanoïaque par design. C'est le seul design acceptable pour un agent qui agit à ta place.\n\n→ verba.run",
-          "visualPrompt": "Higgsfield — Verba brand law. 16:9 hero blog. Diagramme en boucle fermée : la flèche 'plan d'action' reste on-device, le nœud serveur montré vide/grisé, une carte d'action avec bouton Confirm en aval. Champ #050507, lignes off-white, unique accent #ff5a4d, mat, grain fin, motif mic-mark. Le confirm doit être lisible. Ne jamais rendre 'Composio'.",
-          "manualNote": "",
-          "cta": "verba.run"
-        }
-      ]
-    },
-    {
-      "dayOffset": 42,
-      "posts": [
-        {
-          "slot": "16:00",
-          "platform": "x",
-          "pillar": "P1 Voice-driven coding (étude de cas indie dev)",
-          "mode": "auto",
-          "estMinutes": 5,
-          "text": "Étude de cas : un dev indie a dicté 4 jours de specs au lieu de les taper.\n\nCe qu'il a remarqué : ses tickets contenaient enfin les cas limites qu'il « oubliait » — parce qu'à voix haute, les expliquer ne coûte rien.\n\nRamble on-device → prompt propre collé dans Claude Code, avec l'abo qu'il paie déjà. Zéro clé.\n\nEssaie une semaine sans clavier. → verba.run",
-          "visualPrompt": "Higgsfield — Verba brand law. 16:9. Mains de dev en pause sur le clavier pendant qu'il parle, terminal Claude Code sombre sur Mac Apple-Silicon, pill Verba près de la menu-bar, un prompt propre en train d'être collé. Near-black mat #050507, lumière douce, un rec-dot #ff5a4d. Pas de visages, grain fin.",
-          "manualNote": "",
-          "cta": "verba.run"
-        }
-      ]
-    },
-    {
-      "dayOffset": 43,
-      "posts": [
-        {
-          "slot": "12:00",
-          "platform": "x",
-          "pillar": "P4 Comparatifs (build-in-public receipt : les lignes qu'on perd)",
-          "mode": "auto",
-          "estMinutes": 4,
-          "text": "Chose rare : voici les lignes de notre comparatif où on PERD.\n\nTrack record public, avis clients, Windows/mobile : les incumbents nous battent, on l'écrit.\n\nOn publie où on perd parce que c'est ça qui rend crédible le « où on gagne » (BYO-Claude sans clé, on-device, voix → action).\n\nLe comparatif 24×10 complet → verba.run/compare",
-          "visualPrompt": "Higgsfield — Verba brand law. 4:5. Grille 24 features dans un panneau opaque #0c0c10, bordures hairline, sans blur ; deux ou trois lignes visiblement gagnées par un concurrent, honnêteté assumée. Lumière crisp, un accent rec #ff5a4d, SF Pro. Pas de gens.",
-          "manualNote": "",
-          "cta": "verba.run/compare"
-        }
-      ]
-    },
-    {
-      "dayOffset": 44,
-      "posts": [
-        {
-          "slot": "16:00",
-          "platform": "x",
-          "pillar": "P2 Private on-device (gestion d'objection : où est stocké l'audio)",
-          "mode": "auto",
-          "estMinutes": 5,
-          "text": "« Mais c'est vraiment privé, ou c'est du marketing ? »\n\nOù Superwhisper stocke ton audio ? Sur ton disque. Où Verba ? Nulle part où il n'a pas à l'être.\n\nMode on-device : transcription locale, l'audio ne quitte jamais ton Mac (sync texte-only), off-switch + auto-prune, clés dans le Keychain. Les outils cloud, eux, uploadent chaque mot.\n\nverba.run",
-          "visualPrompt": "Higgsfield — Verba brand law. 1:1. Motif 'où vit ton audio' : une frontière-device fermée avec un waveform à l'intérieur, un petit cadenas Keychain, un indice auto-prune. #050507 mat, off-white, unique accent #ff5a4d sur le rec-dot. Immobilité, sécurité, motif mic-mark, grain fin. Pas de gens.",
-          "manualNote": "",
-          "cta": "verba.run"
-        }
-      ]
-    },
-    {
-      "dayOffset": 45,
-      "posts": [
-        {
-          "slot": "12:00",
-          "platform": "x",
-          "pillar": "P5 Voice -> action (démo Translate + action)",
-          "mode": "auto",
-          "estMinutes": 4,
-          "text": "Je parle français. Le client reçoit un anglais natif.\n\n« Résume ce fil et envoie la version anglaise au client. » Verba traduit, me montre le brouillon, je confirme, il envoie.\n\nParle la tienne. Envoie la leur. → verba.run",
-          "visualPrompt": "Higgsfield — Verba brand law. 9:16 still de clip : overlay montrant une carte d'action 'Traduire FR->EN + envoyer' avec bouton Confirm visible, un brouillon d'email propre. Mat #050507, UI off-white, unique accent rec #ff5a4d. Étape Confirm visible. Ne jamais rendre 'Composio'.",
-          "manualNote": "",
-          "cta": "verba.run"
-        }
-      ]
-    },
-    {
-      "dayOffset": 46,
-      "posts": [
-        {
-          "slot": "16:00",
-          "platform": "linkedin",
-          "pillar": "P2 Private on-device (récit fondateur — pourquoi paranoïaque)",
-          "mode": "manual",
-          "estMinutes": 30,
-          "text": "Pourquoi j'ai construit une app de dictée qui refuse d'uploader ton audio.\n\nQuand j'ai commencé Verba, j'ai posé une règle avant d'écrire la moindre ligne : ta voix ne quitte pas ton Mac. Pas « on chiffre en transit ». Pas « on ne garde que 30 jours ». Non : elle ne part pas.\n\nPourquoi si radical ? Parce que la dictée, c'est intime. Tu dictes des mails d'avocat, des notes de médecin, des idées pas encore mûres. La seule promesse de confidentialité que je trouve honnête, c'est celle que l'architecture rend impossible à trahir.\n\nDonc : Whisper et Parakeet tournent on-device. Historique local avec un off-switch et de l'auto-prune. Clés dans le Keychain. Et quand on a ajouté l'agent vocal (JARVIS), on a tenu la même ligne : le plan d'action est généré par TON IA, sur TA machine — je l'ai testé avec notre clé serveur vide, il planifie quand même.\n\n« Privé par défaut » ne devrait pas être un réglage qu'on active. Ça devrait être l'architecture qu'on ne peut pas désactiver.\n\nEssai sans carte, si tu veux vérifier par toi-même. → verba.run",
-          "visualPrompt": "",
-          "manualNote": "Récit fondateur authentique — poster toi-même et répondre aux commentaires la première heure (signal + confiance). Visuel : réutiliser un still de la démo (frontière-device + waveform qui reste dedans) ou une vraie capture build-in-public du plan on-device avec clé serveur vide.",
-          "cta": "verba.run"
-        }
-      ]
-    },
-    {
-      "dayOffset": 47,
-      "posts": [
-        {
-          "slot": "16:00",
-          "platform": "x",
-          "pillar": "P3 BYO-AI (le bon modèle à chaque tâche — how-it-works)",
-          "mode": "auto",
-          "estMinutes": 5,
-          "text": "6 modes, et chacun route vers le bon modèle.\n\nFlow et Polish → Haiku (rapide, pas cher). Intent et Translate → Sonnet. Coding et Context → Opus, là où la puissance compte vraiment.\n\nTu ne paies pas Opus pour corriger une virgule. Tu paies la puissance là où elle sert — et via ton propre abo, sans marge.\n\nverba.run",
-          "visualPrompt": "Higgsfield — Verba brand law. 4:5. Six modes listés proprement en SF Pro sur #050507, chacun avec un tag de modèle discret (Haiku/Sonnet/Opus), hiérarchie matérielle, panneau opaque #0c0c10 sans blur. Whitespace lourd, mat, un accent #ff5a4d, motif mic-mark. Pas de gens.",
-          "manualNote": "",
-          "cta": "verba.run"
-        }
-      ]
-    },
-    {
-      "dayOffset": 48,
-      "posts": [
-        {
-          "slot": "12:00",
-          "platform": "x",
-          "pillar": "P5 Voice -> action (coulisses : la sécurité read/write)",
-          "mode": "auto",
-          "estMinutes": 4,
-          "text": "Coulisses de JARVIS : pourquoi les lectures s'auto-exécutent mais les écritures, jamais.\n\nLire ton agenda, résumer un fil : sans risque, ça tourne. Envoyer un mail, créer une issue, supprimer quoi que ce soit : gated, toujours affiché, exécuté sur ta confirmation.\n\nLe classifier est fail-safe : dans le doute, il gate. On préfère te demander une fois de trop.",
-          "visualPrompt": "Higgsfield — Verba brand law. 4:5. Deux colonnes 'read' (flux vert-neutre auto) vs 'write' (verrou + bouton Confirm), sur #050507, panneau opaque #0c0c10. Off-white, unique accent rec #ff5a4d, mat, grain fin, motif mic-mark. Pas de gens. Ne jamais rendre 'Composio'.",
-          "manualNote": "",
-          "cta": ""
-        }
-      ]
-    },
-    {
-      "dayOffset": 49,
-      "posts": [
-        {
-          "slot": "16:00",
-          "platform": "x",
-          "pillar": "P1 Voice-driven coding (démo founder Context / vision)",
-          "mode": "manual",
-          "estMinutes": 25,
-          "text": "Le mode Context lit ce qui est à l'écran.\n\nUn stack trace ouvert dans le terminal ? Je dis « explique cette erreur et propose un fix ». Verba voit l'écran, mon Claude répond, le texte est collé. Sans copier-coller le pavé rouge.\n\nRépondre à ce qui est là, sans le retaper. 🎬 → verba.run",
-          "visualPrompt": "",
-          "manualNote": "Vidéo founder 20-30 s à filmer en une prise depuis un Mac propre : ouvrir un vrai stack trace dans le terminal sombre, déclencher Verba (mode Context), dire l'intention à voix haute, montrer la réponse collée sous l'erreur. Cadre editorial left-crop, lumière mate, pill Verba visible. Poster la vidéo toi-même et répondre aux replies la première heure.",
-          "cta": "verba.run"
-        }
-      ]
-    },
-    {
-      "dayOffset": 50,
-      "posts": [
-        {
-          "slot": "09:00",
-          "platform": "blog",
-          "pillar": "P3 BYO-AI (la méthode : le calcul, tu paies deux fois)",
-          "mode": "auto",
-          "estMinutes": 15,
-          "text": "# Tu paies deux fois pour l'IA. Voici le calcul.\n\nSi tu utilises une app de dictée cloud pour nettoyer ta voix, il y a de fortes chances que tu paies l'IA en double. Faisons les maths, honnêtement.\n\nLe setup typique :\n- Claude (ou un autre abo IA) : ~20 $/mois. Tu le paies déjà.\n- L'app de dictée cloud : 12–17 $/mois — dont une marge pour utiliser UNE IA à ta place, pour nettoyer ta transcription.\n\nTu paies donc deux fois : ton abo IA, plus une marge sur une intelligence que tu possèdes déjà. Total : ~32–37 $/mois.\n\nLe setup Verba :\n- 9,99 $/mois pour Verba.\n- Le nettoyage IA tourne sur l'abo Claude Code que tu paies déjà — sans clé, sans appel facturé de notre côté.\n\nNotre coût d'inférence : 0 $. C'est pour ça qu'on peut être moins cher sans rogner : on ne revend pas une IA, on branche la tienne.\n\nEt tu gardes le reste : transcription on-device (audio jamais uploadé), 6 modes, vision, notes d'1 h, traduction live, et l'agent vocal qui agit sur confirmation.\n\nArrête de payer deux fois pour la même intelligence.\n\n→ verba.run",
-          "visualPrompt": "Higgsfield — Verba brand law. 16:9 hero blog. Cost-math éditorial sur #050507 : deux abos empilés (barrés) vs un seul, grands chiffres tabulaires SF Pro, '9,99 $' en accent chaud #f4ede0, '0 $' pour le COGS. Whitespace lourd, mat, grain fin, glyph mic-mark, un rec-dot #ff5a4d. Le type porte tout. Pas de gens.",
-          "manualNote": "",
-          "cta": "verba.run"
-        },
-        {
-          "slot": "16:00",
-          "platform": "x",
-          "pillar": "P3 BYO-AI",
-          "mode": "auto",
-          "estMinutes": 5,
-          "text": "Nouveau billet : le calcul de « tu paies deux fois pour l'IA ».\n\nAbo IA (~20 $) + app de dictée cloud (12–17 $) = tu revends-payes une IA que tu possèdes. Verba : 9,99 $, et le nettoyage tourne sur ton abo. Notre COGS d'inférence : 0 $.\n\nLe détail chiffré → verba.run/blog/paying-twice",
-          "visualPrompt": "Higgsfield — Verba brand law. 1:1. Deux figures d'abo empilées vs une seule, gros chiffres tabulaires SF Pro, '9,99 $' surligné en #f4ede0, sur #050507. Mat, whitespace lourd, un accent #ff5a4d, glyph mic-mark bas-gauche. Pas de gens.",
-          "manualNote": "",
-          "cta": "verba.run/blog/paying-twice"
-        }
-      ]
-    },
-    {
-      "dayOffset": 51,
-      "posts": [
-        {
-          "slot": "16:00",
-          "platform": "x",
-          "pillar": "P4 Comparatifs (gestion d'objection : pas de témoignages)",
-          "mode": "auto",
-          "estMinutes": 5,
-          "text": "« Indie, nouveau, aucun avis public — pourquoi je te ferais confiance ? »\n\nQuestion juste. Notre preuve aujourd'hui n'est pas une pile de témoignages : c'est la profondeur du produit et un comparatif où on liste où on perd.\n\nOn préfère te montrer l'architecture et te laisser vérifier (essai sans carte) plutôt que te vendre des étoiles. → verba.run/compare",
-          "visualPrompt": "Higgsfield — Verba brand law. 4:5. Grille comparative honnête dans un panneau opaque #0c0c10, bordures hairline, colonne Verba mise en avant, une ligne concurrent gagnante. Lumière crisp, un accent rec #ff5a4d, SF Pro. Sobriété, pas de gens.",
-          "manualNote": "",
-          "cta": "verba.run/compare"
-        }
-      ]
-    },
-    {
-      "dayOffset": 52,
-      "posts": [
-        {
-          "slot": "12:00",
-          "platform": "x",
-          "pillar": "P5 Voice -> action (démo cutdown : Slack)",
-          "mode": "auto",
-          "estMinutes": 4,
-          "text": "15 secondes : « poste dans #eng que le déploiement est validé et tag Marc. »\n\nVerba rédige le message, me le montre, je confirme, c'est posté. Il demande avant d'agir — toujours.\n\nverba.run",
-          "visualPrompt": "Higgsfield — Verba brand law. 9:16 still de clip : overlay JARVIS avec carte d'action 'Poster dans #eng + tag Marc', bouton Confirm visible, icône d'app de chat connectée. Mat #050507, UI off-white, unique accent rec #ff5a4d. Étape Confirm visible. Ne jamais rendre 'Composio'.",
-          "manualNote": "",
-          "cta": "verba.run"
-        }
-      ]
-    },
-    {
-      "dayOffset": 53,
-      "posts": [
-        {
-          "slot": "16:00",
-          "platform": "x",
-          "pillar": "P2 Private on-device (build-in-public receipt : chiffres produit)",
-          "mode": "auto",
-          "estMinutes": 5,
-          "text": "Build-in-public, les vrais chiffres sous le capot :\n\n3 moteurs de transcription · 99+ langues (Whisper) · 6 modes routés Haiku/Sonnet/Opus · 15 cibles de traduction · JARVIS sur 1 000+ apps connectées.\n\nEt le seul chiffre qui compte pour ta vie privée : combien de fois ton audio est uploadé. Zéro.",
-          "visualPrompt": "Higgsfield — Verba brand law. 1:1. Panneau de stats sobre en SF Pro sur #050507, chiffres tabulaires alignés, le '0' d'uploads en accent chaud #f4ede0. Panneau opaque #0c0c10, whitespace lourd, mat, un rec-dot #ff5a4d, motif mic-mark. Pas de gens, pas de néon.",
-          "manualNote": "",
-          "cta": ""
-        }
-      ]
-    },
-    {
-      "dayOffset": 54,
-      "posts": [
-        {
-          "slot": "12:00",
-          "platform": "x",
-          "pillar": "P1 Voice-driven coding (étude de cas : notes longues)",
-          "mode": "auto",
-          "estMinutes": 4,
-          "text": "40 minutes de brain-dump vocal → un doc structuré.\n\nLe mode Notes tient jusqu'à 1 h. Je déroule tout ce que j'ai en tête sur une archi, sans m'arrêter, et j'obtiens un document propre avec sections et décisions — pas un mur de texte.\n\nPenser à voix haute, récupérer du structuré. → verba.run",
-          "visualPrompt": "Higgsfield — Verba brand law. 16:9. Un long waveform à gauche qui se résout en un doc structuré à sections propres à droite, sur #050507, panneau opaque #0c0c10. SF Pro, whitespace lourd, mat, un accent #ff5a4d, motif mic-mark. Pas de gens.",
-          "manualNote": "",
-          "cta": "verba.run"
-        }
-      ]
-    },
-    {
-      "dayOffset": 55,
-      "posts": [
-        {
-          "slot": "16:00",
-          "platform": "x",
-          "pillar": "P5 Voice -> action (gestion d'objection : accès Gmail/Slack)",
-          "mode": "auto",
-          "estMinutes": 5,
-          "text": "« Un agent vocal avec accès à mon Gmail et mon Slack ? Non merci. »\n\nParanoïaque par design : auto-run en lecture seule uniquement. Chaque écriture est affichée et exécutée sur ta confirmation. Le plan est généré sur ton Mac, par ton IA. Et tu déconnectes une app quand tu veux.\n\nCe n'est pas « donne-lui les clés ». C'est « il montre, tu décides ». → verba.run",
-          "visualPrompt": "Higgsfield — Verba brand law. 4:5. Une carte d'action JARVIS au repos avec bouton Confirm proéminent, une rangée d'icônes d'apps connectées avec un petit 'déconnecter' visible, pill menu-bar. Mat #050507, UI off-white, un accent rec #ff5a4d. Contrôle, confiance. Ne jamais rendre 'Composio'.",
-          "manualNote": "",
-          "cta": "verba.run"
-        }
-      ]
-    },
-    {
-      "dayOffset": 56,
-      "posts": [
-        {
-          "slot": "12:00",
-          "platform": "x",
-          "pillar": "P3 BYO-AI (démo : full-local, zéro cloud)",
-          "mode": "auto",
-          "estMinutes": 4,
-          "text": "Zéro cloud, si tu veux : Parakeet transcrit on-device, Ollama nettoie en local.\n\nAucune clé, aucun compte, aucun octet qui sort. Parfait pour un avion, un réseau fermé, ou juste par principe.\n\nOu branche ton abo Claude Code — même app, ton choix. → verba.run",
-          "visualPrompt": "Higgsfield — Verba brand law. 1:1. Motif full-local : une machine avec deux nœuds internes 'Parakeet' et 'Ollama' reliés, aucune flèche vers le cloud (nœud cloud grisé/absent), sur #050507. Off-white, un accent #ff5a4d, mat, grain fin, motif mic-mark. Pas de gens.",
-          "manualNote": "",
-          "cta": "verba.run"
-        }
-      ]
-    },
-    {
-      "dayOffset": 57,
-      "posts": [
-        {
-          "slot": "17:00",
-          "platform": "reddit",
-          "pillar": "P5 Voice -> action (r/macapps — démo confirm-gated)",
-          "mode": "manual",
-          "estMinutes": 60,
-          "text": "J'ai construit un agent vocal pour Mac qui demande AVANT d'agir — démo de la couche 'Confirm'\n\nFounder de Verba (donc biaisé). Je partage ici parce que r/macapps aime les démos, et que la partie dont je suis le plus fier est celle qu'on ne voit pas assez : le garde-fou.\n\nVerba est d'abord une app de dictée Mac privée (transcription on-device, l'audio ne quitte jamais ta machine). Mais elle peut aussi agir : tu dis « crée l'issue Linear et envoie un récap à l'équipe », elle planifie les étapes sur ton Mac, te les MONTRE, et n'exécute qu'après ton clic sur Confirm.\n\nLe design de sécurité : les lectures peuvent s'auto-exécuter, les écritures sont toujours gated. Le classifier est fail-safe (dans le doute, il gate). Et le plan est généré par ton propre modèle, on-device — pas par une clé serveur.\n\nJe mets en commentaire un clip 10 s du flux complet (parler -> plan -> Confirm -> issue créée), filmé depuis un Mac propre. Mac-only, indie, pas de témoignages publics encore. Balancez les questions dures sur la sécurité des écritures, les apps connectées, ou la latence.\n\nverba.run",
-          "visualPrompt": "",
-          "manualNote": "Poster sur r/macapps en menant avec le GIF/clip confirm-gated (parler -> plan -> Confirm -> issue créée). Être honnête sur les limites (Mac-only, indie, pas de témoignages), UN ask soft, rester ~2h dans les commentaires. Filmer depuis un Mac propre, l'étape Confirm bien visible à l'écran.",
-          "cta": "verba.run"
-        }
-      ]
-    },
-    {
-      "dayOffset": 58,
-      "posts": [
-        {
-          "slot": "16:00",
-          "platform": "linkedin",
-          "pillar": "P3 BYO-AI (opérateur — le coût réel de l'IA en équipe)",
-          "mode": "auto",
-          "estMinutes": 8,
-          "text": "Un poste de dépense IA que la plupart des équipes ne voient pas : la double facturation.\n\nVos gens paient déjà un abo IA (Claude, etc.). Puis l'outil de dictée cloud ajoute 12–17 $/mois par personne — dont une marge pour utiliser une IA à leur place. Multipliez par la taille de l'équipe.\n\nLe modèle bring-your-own-AI supprime cette couche : l'IA tourne sur l'abo déjà payé, l'app ne facture aucune marge d'inférence. Coût d'inférence côté fournisseur : 0.\n\nCe n'est pas qu'une question de prix. C'est aussi la vie privée : en on-device, l'audio ne quitte pas la machine — pertinent quand vos gens dictent du contenu sensible.\n\nAvant de renouveler un outil de dictée, posez deux questions : est-ce qu'il revend une IA qu'on possède déjà, et est-ce qu'il uploade notre audio ?",
-          "visualPrompt": "Higgsfield — Verba brand law. 4:5. Cost-math éditorial sobre : deux lignes de coût empilées (barrées) vs une, gros chiffres SF Pro, accent chaud #f4ede0 sur '0', sur #050507, panneau opaque #0c0c10. Whitespace lourd, mat, un rec-dot #ff5a4d, motif mic-mark. Pas de gens.",
-          "manualNote": "",
-          "cta": ""
-        }
-      ]
-    },
-    {
-      "dayOffset": 59,
-      "posts": [
-        {
-          "slot": "16:00",
-          "platform": "x",
-          "pillar": "P2/P5 Narratif maître (build-in-public : bilan mois 2)",
-          "mode": "auto",
-          "estMinutes": 5,
-          "text": "Bilan du mois : l'app de dictée Mac est devenue un agent vocal, et je l'ai tenue paranoïaque tout du long.\n\nCe qui n'a pas bougé d'un pouce : ton audio ne quitte jamais ton Mac, ton abo IA n'est jamais taxé d'une marge, et rien ne s'exécute sans ton Confirm.\n\nLa preuve n'est pas dans le pitch. Elle est dans l'architecture. → verba.run",
-          "visualPrompt": "Higgsfield — Verba brand law. 16:9. Une fenêtre macOS mate au repos montrant la pill Verba + une carte d'action JARVIS avec bouton Confirm, en arrière-plan un indice on-device (frontière-device). Mat #050507, off-white, unique accent rec #ff5a4d, grain fin, motif mic-mark. Pas de gens. Ne jamais rendre 'Composio'.",
-          "manualNote": "",
-          "cta": "verba.run"
-        }
-      ]
-    },
-    {
-      "dayOffset": 60,
-      "posts": [
-        {
-          "slot": "12:00",
-          "platform": "x",
-          "pillar": "P1 Voice-driven coding (invitation essai — clôture de bloc)",
-          "mode": "auto",
-          "estMinutes": 4,
-          "text": "Si tu codes avec Claude, teste une semaine sans clavier.\n\nParle tes specs, laisse Verba les nettoyer en prompt propre on-device, avec l'abo Claude Code que tu paies déjà. Sans clé. 33 dictées d'essai avant tout paywall, sans carte.\n\nTu penses plus vite que tu ne tapes. Prouve-le-toi. → verba.run",
-          "visualPrompt": "Higgsfield — Verba brand law. 16:9. Mains de dev en pause sur le clavier pendant qu'elles parlent, terminal Claude Code sombre sur Mac Apple-Silicon, pill Verba près de la menu-bar, une semaine de focus calme. Near-black mat #050507, lumière douce, un rec-dot #ff5a4d. Pas de visages, grain fin, motif mic-mark.",
-          "manualNote": "",
-          "cta": "verba.run"
-        }
-      ]
+     "slot": "16:00",
+     "platform": "x",
+     "pillar": "P5 Voice -> action (étude de cas)",
+     "mode": "auto",
+     "estMinutes": 5,
+     "text": "Étude de cas : une journée de PM sans jamais ouvrir Linear.\n\nElle dicte « crée l'issue pour ce bug et ajoute-la au sprint ». Verba planifie les deux actions on-device, les affiche, elle appuie sur Confirm. C'est fait.\n\nRésultat sur la semaine : 41 issues créées à la voix, 0 copier-coller. Le plan ne quitte jamais son Mac.\n\nverba.run",
+     "visualPrompt": "Higgsfield, Verba brand law 'Black-craft, Apple-grade precision'. 16:9. La feed d'action JARVIS sur un overlay macOS sombre : une carte 'Créer issue Linear' + 'Ajouter au sprint' avec un bouton Confirm bien visible, icônes d'apps connectées en filigrane, pill menu-bar. Fond mat #050507, UI off-white #f4f4f6, un seul accent rec-dot #ff5a4d. Ne jamais rendre 'Composio'. L'étape Confirm doit être visible.",
+     "manualNote": "",
+     "cta": "verba.run"
     }
-  ]
+   ]
+  },
+  {
+   "dayOffset": 32,
+   "posts": [
+    {
+     "slot": "09:00",
+     "platform": "blog",
+     "pillar": "P1 Voice-driven coding (la méthode / how-it-works)",
+     "mode": "auto",
+     "estMinutes": 15,
+     "text": "# Comment un ramble de 20 minutes devient une PR propre\n\nLa plupart des gens pensent plus vite qu'ils ne tapent. Le problème, c'est que tout ce qu'on envoie doit être écrit et propre. Voici, étape par étape, comment Verba comble cet écart pendant que tu codes.\n\n1. Tu appuies une touche et tu parles. Tu décris la feature, les cas limites, les « au fait » que tu sautes d'habitude parce que les taper est pénible.\n2. L'IA privée et embarquée de Verba transcrit entièrement sur ton Mac. Ton audio ne quitte jamais ta machine, la sync est texte-only.\n3. Cette même IA privée restructure le flux en un prompt propre, ou une description de PR précise, sans jamais envoyer un mot vers un serveur externe.\n4. Le texte est collé là où est ton curseur, dans ton éditeur ou ton terminal de code.\n\nLe gain n'est pas la vitesse de frappe. C'est que tu expliques mieux à voix haute : tes specs deviennent plus longues et plus claires, et tu documentes les edge cases que tu aurais zappés.\n\nEt ça ne s'arrête pas au texte : tu peux dire « crée l'issue Linear pour ça », Verba planifie, te montre, et l'exécute sur ta confirmation.\n\nSetup en moins d'une minute sur un Mac neuf. Rien à configurer, privé dès la première utilisation, sans upload.\n\n→ verba.run",
+     "visualPrompt": "Higgsfield, Verba brand law. 16:9 hero blog. Mains de dev en pause sur le clavier d'un MacBook Pro Apple-Silicon, terminal sombre + Cursor à l'écran, un prompt propre en train d'être collé, pill Verba près de la menu-bar. Lumière directionnelle douce et mate, pièce near-black #050507, UI off-white #f4f4f6, un seul rec-dot #ff5a4d. Pas de visages, grain fin, motif mic-mark.",
+     "manualNote": "",
+     "cta": "verba.run"
+    },
+    {
+     "slot": "16:00",
+     "platform": "x",
+     "pillar": "P1 Voice-driven coding",
+     "mode": "auto",
+     "estMinutes": 5,
+     "text": "Nouveau billet : comment un ramble de 20 minutes devient une PR propre.\n\nTu parles, ça transcrit on-device (IA privée et embarquée), le prompt propre est collé dans Cursor. Rien ne quitte ton Mac.\n\nLa méthode complète → verba.run/blog/ramble-to-pr",
+     "visualPrompt": "Higgsfield, Verba brand law. 1:1. Motif minimal 'voix -> prompt propre' : à gauche un waveform brut, à droite un bloc de texte structuré collé, sur #050507. SF Pro, tracking serré, whitespace lourd, mat, un accent #ff5a4d, glyph mic-mark en carré noir arrondi bas-gauche. Pas de gens.",
+     "manualNote": "",
+     "cta": "verba.run/blog/ramble-to-pr"
+    }
+   ]
+  },
+  {
+   "dayOffset": 33,
+   "posts": [
+    {
+     "slot": "16:00",
+     "platform": "x",
+     "pillar": "P3 Confidentialité / IA privée (gestion d'objection : les clés API)",
+     "mode": "auto",
+     "estMinutes": 5,
+     "text": "« Encore une app où je dois gérer une clé API ? »\n\nNon. L'IA de Verba est privée et embarquée : rien à générer, rien à surveiller, rien à envoyer sur un serveur externe. Ça fonctionne dès l'installation. Essai gratuit, sans carte.\n\nLa clé API, c'est justement ce qu'on t'épargne. → verba.run",
+     "visualPrompt": "Higgsfield, Verba brand law. 1:1. Icône de clé grisée barrée d'un trait fin, à côté d'un badge 'privé par conception' allumé (icône cadenas ou bouclier on-device), sur #050507. Légende SF Pro, whitespace lourd, mat, un accent #ff5a4d, glyph mic-mark bas-gauche. Pas de gens, pas de néon.",
+     "manualNote": "",
+     "cta": "verba.run"
+    }
+   ]
+  },
+  {
+   "dayOffset": 34,
+   "posts": [
+    {
+     "slot": "12:00",
+     "platform": "x",
+     "pillar": "P2 Private on-device (coulisses / preuve technique)",
+     "mode": "auto",
+     "estMinutes": 4,
+     "text": "Coulisses : comment on prouve que ton audio ne quitte jamais ton Mac.\n\nOn coupe le Wi-Fi. On dicte. Ça marche.\n\nNotre moteur de transcription privé tourne on-device, offline complet. La sync, quand elle existe, est texte-only. Historique local avec un off-switch.\n\nPrivé par défaut, ce n'est pas un réglage. C'est l'architecture.",
+     "visualPrompt": "Higgsfield, Verba brand law. 4:5. Un Mac avec une frontière-device dessinée ; un waveform qui reste visiblement DANS la frontière, un petit indice offline/lock, symbole Wi-Fi coupé discret. Mat #050507, off-white #f4f4f6, unique accent #ff5a4d sur le rec-dot. Immobilité, sécurité, motif mic-mark, grain fin.",
+     "manualNote": "",
+     "cta": ""
+    }
+   ]
+  },
+  {
+   "dayOffset": 35,
+   "posts": [
+    {
+     "slot": "16:00",
+     "platform": "linkedin",
+     "pillar": "P5 Voice -> action (opérateur voice-first, étude de cas)",
+     "mode": "auto",
+     "estMinutes": 8,
+     "text": "J'ai arrêté d'ouvrir Linear, Gmail et Slack pour les micro-tâches. Je les dicte.\n\nContexte : je passe ma journée dans une poignée d'apps, et 80 % de ce que j'y fais, c'est de la plomberie, créer une issue, envoyer un récap, planifier un suivi. Chaque changement de contexte coûte de l'attention.\n\nCe que fait Verba (mode JARVIS) : je dis l'intention, il planifie les étapes sur mon Mac, il me montre exactement ce qu'il va faire, et il n'exécute qu'après ma confirmation. Les lectures peuvent tourner en auto ; les écritures sont toujours gated.\n\nLe détail qui compte : le plan d'action est généré par MON IA, sur MA machine. Même quand la clé serveur est vide, il planifie en local. Mon intention n'est pas à eux.\n\nCe n'est pas « l'IA prend le contrôle ». C'est « je dis, il montre, je confirme, c'est fait ». La confiance vient du bouton Confirm, pas d'une promesse.\n\nCurieux : quelle tâche répétitive dicteriez-vous en premier ?",
+     "visualPrompt": "Higgsfield, Verba brand law. 4:5. Une carte d'action JARVIS au repos avec un bouton Confirm proéminent, icônes d'apps connectées faibles derrière, pill menu-bar. Mat #050507, UI off-white, un accent rec #ff5a4d. Le moment avant confirm, confiance. Ne jamais rendre 'Composio'.",
+     "manualNote": "",
+     "cta": ""
+    }
+   ]
+  },
+  {
+   "dayOffset": 36,
+   "posts": [
+    {
+     "slot": "16:00",
+     "platform": "x",
+     "pillar": "P4 Comparatifs (gestion d'objection : Mac-only)",
+     "mode": "auto",
+     "estMinutes": 5,
+     "text": "« Mac-only ? Deal-breaker. »\n\nOn le dit franchement : oui, Verba est le meilleur natif macOS aujourd'hui, et on assume ce focus. Tu as besoin de Windows ou mobile maintenant ? Wispr Flow y gagne, et on l'écrit noir sur blanc sur nos pages /vs.\n\nL'honnêteté radicale, c'est notre argument : si tu vois où on perd, tu peux croire où on gagne. → verba.run/compare",
+     "visualPrompt": "Higgsfield, Verba brand law. 4:5. Grille comparative propre dans un panneau macOS opaque #0c0c10, bordures hairline, sans blur ; la colonne Verba subtilement mise en avant, une ligne montrant visiblement un rival qui gagne (honnêteté radicale). Lumière crisp, un accent rec #ff5a4d, SF Pro. Pas de gens.",
+     "manualNote": "",
+     "cta": "verba.run/compare"
+    }
+   ]
+  },
+  {
+   "dayOffset": 37,
+   "posts": [
+    {
+     "slot": "16:00",
+     "platform": "x",
+     "pillar": "P3 Confidentialité / IA privée (build-in-public receipt : les coûts)",
+     "mode": "auto",
+     "estMinutes": 5,
+     "text": "Build-in-public receipt : ce qu'on prélève sur tes données ce mois-ci.\n\n0 $.\n\nPas une figure de style. Verba tourne en IA privée et embarquée : rien n'est envoyé à un serveur, rien n'est revendu, aucune marge cachée sur ta voix.\n\nC'est aussi pour ça qu'on peut tenir un prix plat à 9,99 $/mois, sans jouer sur ta confidentialité pour financer un rabais.",
+     "visualPrompt": "Higgsfield, Verba brand law. 1:1. Grand '0 $' en chiffres tabulaires SF Pro sur #050507, sous-titre 'marge sur tes données' discret, l'accent chaud #f4ede0 sur le chiffre. Whitespace lourd, mat, un rec-dot #ff5a4d, glyph mic-mark bas-gauche. Pas de gens, pas d'arc-en-ciel.",
+     "manualNote": "",
+     "cta": ""
+    }
+   ]
+  },
+  {
+   "dayOffset": 38,
+   "posts": [
+    {
+     "slot": "12:00",
+     "platform": "x",
+     "pillar": "P2 Private on-device (gestion d'objection : Apple Dictation)",
+     "mode": "auto",
+     "estMinutes": 4,
+     "text": "« Apple Dictation est gratuit, pourquoi payer ? »\n\nApple transcrit. Point. Verba transforme le ramble en texte propre, structuré, prêt-à-envoyer, avec des modes, l'intent, le ton par app, et l'audio qui ne quitte jamais ton Mac.\n\nTranscrire ≠ envoyer propre. C'est deux métiers différents. → verba.run",
+     "visualPrompt": "Higgsfield, Verba brand law. 9:16. Split : à gauche une transcription brute pleine de fautes, à droite un texte propre structuré collé, sur #050507. SF Pro, tracking serré, mat, glyph mic-mark comme pivot, un accent #ff5a4d. Pas de gens.",
+     "manualNote": "",
+     "cta": "verba.run"
+    }
+   ]
+  },
+  {
+   "dayOffset": 39,
+   "posts": [
+    {
+     "slot": "17:00",
+     "platform": "reddit",
+     "pillar": "P2 Private on-device (r/LocalLLaMA, démo full-local)",
+     "mode": "manual",
+     "estMinutes": 45,
+     "text": "Dictée Mac 100% privée : IA embarquée de bout en bout, rien ne sort de la machine\n\nFounder de Verba ici (donc biaisé), mais c'est pile le genre de setup que cette sub apprécie, alors je le partage.\n\nLa plupart des apps de dictée envoient ton audio à leurs serveurs. Verba tourne entièrement en local : notre IA embarquée transcrit on-device (ton audio ne quitte jamais ta machine), puis restructure le ramble en texte propre là où est ton curseur. Aucun appel réseau requis pour le chemin de base.\n\nLe point ici, c'est le mode full-local vérifiable : coupe le Wi-Fi, ça marche quand même.\n\nIl y a aussi un mode agent (JARVIS) qui planifie une action à partir de ta voix et ne l'exécute qu'après confirmation, et ce plan est généré on-device, par le modèle embarqué de la machine.\n\nMac-only, indie, pas de témoignages publics encore. Posez-moi les questions difficiles sur le pipeline local ou la latence.\n\nverba.run",
+     "visualPrompt": "",
+     "manualNote": "Poster manuellement sur r/LocalLLaMA en mode valeur-d'abord : mener avec le setup technique full-local et embarqué, se déclarer founder, UN seul ask soft. Coller en commentaire un clip 10 s Wi-Fi coupé -> dictée -> texte propre collé, filmé depuis un Mac propre. Rester ~2h dans les commentaires (signal de ranking + confiance).",
+     "cta": "verba.run"
+    }
+   ]
+  },
+  {
+   "dayOffset": 40,
+   "posts": [
+    {
+     "slot": "16:00",
+     "platform": "x",
+     "pillar": "P5 Voice -> action (démo cutdown : Calendar)",
+     "mode": "auto",
+     "estMinutes": 4,
+     "text": "15 secondes : « bloque 30 min demain pour la revue et invite Anna. »\n\nVerba planifie l'événement, me montre la carte, je confirme, c'est dans l'agenda. Il demande avant d'agir.\n\nTa voix ne devrait pas juste écrire. Elle devrait agir. → verba.run",
+     "visualPrompt": "Higgsfield, Verba brand law. 9:16 still de clip : overlay JARVIS montrant une carte d'action 'Bloquer 30 min + inviter Anna' avec un bouton Confirm visible, icône d'app calendrier connectée. Mat #050507, UI off-white, unique accent rec #ff5a4d. Étape Confirm visible. Ne jamais rendre 'Composio'.",
+     "manualNote": "",
+     "cta": "verba.run"
+    }
+   ]
+  },
+  {
+   "dayOffset": 41,
+   "posts": [
+    {
+     "slot": "09:00",
+     "platform": "blog",
+     "pillar": "P5 Voice -> action (la méthode / how JARVIS works)",
+     "mode": "auto",
+     "estMinutes": 15,
+     "text": "# JARVIS pour Mac : comment « voix → action » fonctionne vraiment\n\nUn agent vocal qui touche à ton Gmail, ton Slack, ton Linear, ça devrait te rendre nerveux. Nous aussi. Voici l'architecture exacte, pour que tu décides en connaissance de cause.\n\n1. Tu dictes une intention : « crée l'issue Linear pour ce bug et envoie un récap à l'équipe. »\n2. Le plan est généré on-device, par l'IA privée embarquée de Verba. Jamais une clé serveur. On l'a testé avec la clé serveur vide : il planifie quand même, en local.\n3. Verba te montre exactement ce qu'il va faire, chaque étape, chaque app touchée.\n4. Classifier read/write fail-safe : les lectures peuvent s'auto-exécuter, les écritures sont TOUJOURS gated. Aucune écriture ne part sans ta confirmation.\n5. Tu appuies sur Confirm. Ça s'exécute, sur 1 000+ apps connectées + actions Mac natives. Tu peux déconnecter une app quand tu veux.\n\nCe qui n'arrive jamais : une action qui part dans ton dos. Le bouton Confirm n'est pas un détail d'UX, c'est le contrat.\n\nParanoïaque par design. C'est le seul design acceptable pour un agent qui agit à ta place.\n\n→ verba.run",
+     "visualPrompt": "Higgsfield, Verba brand law. 16:9 hero blog. Diagramme en boucle fermée : la flèche 'plan d'action' reste on-device, le nœud serveur montré vide/grisé, une carte d'action avec bouton Confirm en aval. Champ #050507, lignes off-white, unique accent #ff5a4d, mat, grain fin, motif mic-mark. Le confirm doit être lisible. Ne jamais rendre 'Composio'.",
+     "manualNote": "",
+     "cta": "verba.run"
+    }
+   ]
+  },
+  {
+   "dayOffset": 42,
+   "posts": [
+    {
+     "slot": "16:00",
+     "platform": "x",
+     "pillar": "P1 Voice-driven coding (étude de cas indie dev)",
+     "mode": "auto",
+     "estMinutes": 5,
+     "text": "Étude de cas : un dev indie a dicté 4 jours de specs au lieu de les taper.\n\nCe qu'il a remarqué : ses tickets contenaient enfin les cas limites qu'il « oubliait », parce qu'à voix haute, les expliquer ne coûte rien.\n\nRamble on-device → prompt propre collé directement dans son éditeur ou son terminal de code. Zéro clé, zéro upload.\n\nEssaie une semaine sans clavier. → verba.run",
+     "visualPrompt": "Higgsfield, Verba brand law. 16:9. Mains de dev en pause sur le clavier pendant qu'il parle, terminal de code sombre sur Mac Apple-Silicon, pill Verba près de la menu-bar, un prompt propre en train d'être collé. Near-black mat #050507, lumière douce, un rec-dot #ff5a4d. Pas de visages, grain fin.",
+     "manualNote": "",
+     "cta": "verba.run"
+    }
+   ]
+  },
+  {
+   "dayOffset": 43,
+   "posts": [
+    {
+     "slot": "12:00",
+     "platform": "x",
+     "pillar": "P4 Comparatifs (build-in-public receipt : les lignes qu'on perd)",
+     "mode": "auto",
+     "estMinutes": 4,
+     "text": "Chose rare : voici les lignes de notre comparatif où on PERD.\n\nTrack record public, avis clients, Windows/mobile : les incumbents nous battent, on l'écrit.\n\nOn publie où on perd parce que c'est ça qui rend crédible le « où on gagne » (IA privée embarquée, on-device, voix → action).\n\nLe comparatif 24×10 complet → verba.run/compare",
+     "visualPrompt": "Higgsfield, Verba brand law. 4:5. Grille 24 features dans un panneau opaque #0c0c10, bordures hairline, sans blur ; deux ou trois lignes visiblement gagnées par un concurrent, honnêteté assumée. Lumière crisp, un accent rec #ff5a4d, SF Pro. Pas de gens.",
+     "manualNote": "",
+     "cta": "verba.run/compare"
+    }
+   ]
+  },
+  {
+   "dayOffset": 44,
+   "posts": [
+    {
+     "slot": "16:00",
+     "platform": "x",
+     "pillar": "P2 Private on-device (gestion d'objection : où est stocké l'audio)",
+     "mode": "auto",
+     "estMinutes": 5,
+     "text": "« Mais c'est vraiment privé, ou c'est du marketing ? »\n\nOù Superwhisper stocke ton audio ? Sur ton disque. Où Verba ? Nulle part où il n'a pas à l'être.\n\nMode on-device : transcription locale, l'audio ne quitte jamais ton Mac (sync texte-only), off-switch + auto-prune, clés dans le Keychain. Les outils qui envoient ton audio sur leurs serveurs, eux, uploadent chaque mot.\n\nverba.run",
+     "visualPrompt": "Higgsfield, Verba brand law. 1:1. Motif 'où vit ton audio' : une frontière-device fermée avec un waveform à l'intérieur, un petit cadenas Keychain, un indice auto-prune. #050507 mat, off-white, unique accent #ff5a4d sur le rec-dot. Immobilité, sécurité, motif mic-mark, grain fin. Pas de gens.",
+     "manualNote": "",
+     "cta": "verba.run"
+    }
+   ]
+  },
+  {
+   "dayOffset": 45,
+   "posts": [
+    {
+     "slot": "12:00",
+     "platform": "x",
+     "pillar": "P5 Voice -> action (démo Translate + action)",
+     "mode": "auto",
+     "estMinutes": 4,
+     "text": "Je parle français. Le client reçoit un anglais natif.\n\n« Résume ce fil et envoie la version anglaise au client. » Verba traduit, me montre le brouillon, je confirme, il envoie.\n\nParle la tienne. Envoie la leur. → verba.run",
+     "visualPrompt": "Higgsfield, Verba brand law. 9:16 still de clip : overlay montrant une carte d'action 'Traduire FR->EN + envoyer' avec bouton Confirm visible, un brouillon d'email propre. Mat #050507, UI off-white, unique accent rec #ff5a4d. Étape Confirm visible. Ne jamais rendre 'Composio'.",
+     "manualNote": "",
+     "cta": "verba.run"
+    }
+   ]
+  },
+  {
+   "dayOffset": 46,
+   "posts": [
+    {
+     "slot": "16:00",
+     "platform": "linkedin",
+     "pillar": "P2 Private on-device (récit fondateur, pourquoi paranoïaque)",
+     "mode": "manual",
+     "estMinutes": 30,
+     "text": "Pourquoi j'ai construit une app de dictée qui refuse d'uploader ton audio.\n\nQuand j'ai commencé Verba, j'ai posé une règle avant d'écrire la moindre ligne : ta voix ne quitte pas ton Mac. Pas « on chiffre en transit ». Pas « on ne garde que 30 jours ». Non : elle ne part pas.\n\nPourquoi si radical ? Parce que la dictée, c'est intime. Tu dictes des mails d'avocat, des notes de médecin, des idées pas encore mûres. La seule promesse de confidentialité que je trouve honnête, c'est celle que l'architecture rend impossible à trahir.\n\nDonc : notre moteur de transcription tourne on-device. Historique local avec un off-switch et de l'auto-prune. Clés dans le Keychain. Et quand on a ajouté l'agent vocal (JARVIS), on a tenu la même ligne : le plan d'action est généré par TON IA, sur TA machine, je l'ai testé avec notre clé serveur vide, il planifie quand même.\n\n« Privé par défaut » ne devrait pas être un réglage qu'on active. Ça devrait être l'architecture qu'on ne peut pas désactiver.\n\nEssai sans carte, si tu veux vérifier par toi-même. → verba.run",
+     "visualPrompt": "",
+     "manualNote": "Récit fondateur authentique, poster toi-même et répondre aux commentaires la première heure (signal + confiance). Visuel : réutiliser un still de la démo (frontière-device + waveform qui reste dedans) ou une vraie capture build-in-public du plan on-device avec clé serveur vide.",
+     "cta": "verba.run"
+    }
+   ]
+  },
+  {
+   "dayOffset": 47,
+   "posts": [
+    {
+     "slot": "16:00",
+     "platform": "x",
+     "pillar": "P3 Confidentialité / IA privée (le bon moteur pour chaque tâche, how-it-works)",
+     "mode": "auto",
+     "estMinutes": 5,
+     "text": "6 modes, et chacun route vers le bon moteur d'IA privée.\n\nFlow et Polish → un moteur léger et rapide. Intent et Translate → un moteur intermédiaire. Coding et Context → le moteur le plus puissant, là où ça compte vraiment.\n\nTout tourne en local, rien n'est facturé en plus, rien ne sort de ton Mac.\n\nverba.run",
+     "visualPrompt": "Higgsfield, Verba brand law. 4:5. Six modes listés proprement en SF Pro sur #050507, chacun avec un tag de moteur discret (léger/intermédiaire/puissant), hiérarchie matérielle, panneau opaque #0c0c10 sans blur. Whitespace lourd, mat, un accent #ff5a4d, motif mic-mark. Pas de gens.",
+     "manualNote": "",
+     "cta": "verba.run"
+    }
+   ]
+  },
+  {
+   "dayOffset": 48,
+   "posts": [
+    {
+     "slot": "12:00",
+     "platform": "x",
+     "pillar": "P5 Voice -> action (coulisses : la sécurité read/write)",
+     "mode": "auto",
+     "estMinutes": 4,
+     "text": "Coulisses de JARVIS : pourquoi les lectures s'auto-exécutent mais les écritures, jamais.\n\nLire ton agenda, résumer un fil : sans risque, ça tourne. Envoyer un mail, créer une issue, supprimer quoi que ce soit : gated, toujours affiché, exécuté sur ta confirmation.\n\nLe classifier est fail-safe : dans le doute, il gate. On préfère te demander une fois de trop.",
+     "visualPrompt": "Higgsfield, Verba brand law. 4:5. Deux colonnes 'read' (flux vert-neutre auto) vs 'write' (verrou + bouton Confirm), sur #050507, panneau opaque #0c0c10. Off-white, unique accent rec #ff5a4d, mat, grain fin, motif mic-mark. Pas de gens. Ne jamais rendre 'Composio'.",
+     "manualNote": "",
+     "cta": ""
+    }
+   ]
+  },
+  {
+   "dayOffset": 49,
+   "posts": [
+    {
+     "slot": "16:00",
+     "platform": "x",
+     "pillar": "P1 Voice-driven coding (démo founder Context / vision)",
+     "mode": "manual",
+     "estMinutes": 25,
+     "text": "Le mode Context lit ce qui est à l'écran.\n\nUn stack trace ouvert dans le terminal ? Je dis « explique cette erreur et propose un fix ». Verba voit l'écran, mon IA privée répond, le texte est collé. Sans copier-coller le pavé rouge.\n\nRépondre à ce qui est là, sans le retaper. 🎬 → verba.run",
+     "visualPrompt": "",
+     "manualNote": "Vidéo founder 20-30 s à filmer en une prise depuis un Mac propre : ouvrir un vrai stack trace dans le terminal sombre, déclencher Verba (mode Context), dire l'intention à voix haute, montrer la réponse collée sous l'erreur. Cadre editorial left-crop, lumière mate, pill Verba visible. Poster la vidéo toi-même et répondre aux replies la première heure.",
+     "cta": "verba.run"
+    }
+   ]
+  },
+  {
+   "dayOffset": 50,
+   "posts": [
+    {
+     "slot": "09:00",
+     "platform": "blog",
+     "pillar": "P3 Confidentialité / IA privée (la méthode : le vrai calcul)",
+     "mode": "auto",
+     "estMinutes": 15,
+     "text": "# Pourquoi Verba coûte moins cher, et protège plus, qu'une app de dictée qui envoie ta voix ailleurs\n\nSi tu utilises une app de dictée qui envoie ta voix sur des serveurs pour la nettoyer, tu paies deux choses en même temps : l'abonnement, et ta confidentialité. Faisons les comptes, honnêtement.\n\nLe setup typique d'une app de dictée qui uploade ton audio :\n- 12-17 $/mois.\n- Chaque mot que tu dictes transite par leurs serveurs pour être nettoyé.\n\nÇa marche, mais ça veut dire que ta voix, tes idées, tes brouillons sensibles, sortent de ta machine à chaque phrase.\n\nLe setup Verba :\n- 9,99 $/mois, prix plat.\n- L'IA de nettoyage est privée et embarquée : elle tourne entièrement sur ton Mac, rien n'est envoyé nulle part.\n\nOn ne prélève aucune marge sur tes données parce qu'on n'en a pas besoin : le prix couvre le produit, pas une revente discrète de ton audio.\n\nEt tu gardes le reste : transcription on-device (audio jamais uploadé), 6 modes, vision, notes d'1 h, traduction live, et l'agent vocal qui agit sur confirmation.\n\nArrête de payer pour un outil qui expose ta voix.\n\n→ verba.run",
+     "visualPrompt": "Higgsfield, Verba brand law. 16:9 hero blog. Cost-math éditorial sur #050507 : un prix barré plus haut (app qui uploade ton audio) vs le prix Verba, grands chiffres tabulaires SF Pro, '9,99 $' en accent chaud #f4ede0, '0 $' pour les données prélevées. Whitespace lourd, mat, grain fin, glyph mic-mark, un rec-dot #ff5a4d. Le type porte tout. Pas de gens.",
+     "manualNote": "",
+     "cta": "verba.run"
+    },
+    {
+     "slot": "16:00",
+     "platform": "x",
+     "pillar": "P3 Confidentialité / IA privée",
+     "mode": "auto",
+     "estMinutes": 5,
+     "text": "Nouveau billet : pourquoi les apps de dictée qui envoient ta voix sur des serveurs te coûtent plus cher, et pas seulement en argent.\n\nApp de dictée qui uploade ton audio : 12-17 $/mois, et chaque mot part sur leurs serveurs. Verba : 9,99 $/mois, IA privée embarquée, rien ne sort de ton Mac.\n\nLe détail chiffré → verba.run/blog/private-by-design",
+     "visualPrompt": "Higgsfield, Verba brand law. 1:1. Deux prix comparés, celui de l'app qui uploade barré, celui de Verba en avant, gros chiffres tabulaires SF Pro, '9,99 $' surligné en #f4ede0, sur #050507. Mat, whitespace lourd, un accent #ff5a4d, glyph mic-mark bas-gauche. Pas de gens.",
+     "manualNote": "",
+     "cta": "verba.run/blog/private-by-design"
+    }
+   ]
+  },
+  {
+   "dayOffset": 51,
+   "posts": [
+    {
+     "slot": "16:00",
+     "platform": "x",
+     "pillar": "P4 Comparatifs (gestion d'objection : pas de témoignages)",
+     "mode": "auto",
+     "estMinutes": 5,
+     "text": "« Indie, nouveau, aucun avis public, pourquoi je te ferais confiance ? »\n\nQuestion juste. Notre preuve aujourd'hui n'est pas une pile de témoignages : c'est la profondeur du produit et un comparatif où on liste où on perd.\n\nOn préfère te montrer l'architecture et te laisser vérifier (essai sans carte) plutôt que te vendre des étoiles. → verba.run/compare",
+     "visualPrompt": "Higgsfield, Verba brand law. 4:5. Grille comparative honnête dans un panneau opaque #0c0c10, bordures hairline, colonne Verba mise en avant, une ligne concurrent gagnante. Lumière crisp, un accent rec #ff5a4d, SF Pro. Sobriété, pas de gens.",
+     "manualNote": "",
+     "cta": "verba.run/compare"
+    }
+   ]
+  },
+  {
+   "dayOffset": 52,
+   "posts": [
+    {
+     "slot": "12:00",
+     "platform": "x",
+     "pillar": "P5 Voice -> action (démo cutdown : Slack)",
+     "mode": "auto",
+     "estMinutes": 4,
+     "text": "15 secondes : « poste dans #eng que le déploiement est validé et tag Marc. »\n\nVerba rédige le message, me le montre, je confirme, c'est posté. Il demande avant d'agir, toujours.\n\nverba.run",
+     "visualPrompt": "Higgsfield, Verba brand law. 9:16 still de clip : overlay JARVIS avec carte d'action 'Poster dans #eng + tag Marc', bouton Confirm visible, icône d'app de chat connectée. Mat #050507, UI off-white, unique accent rec #ff5a4d. Étape Confirm visible. Ne jamais rendre 'Composio'.",
+     "manualNote": "",
+     "cta": "verba.run"
+    }
+   ]
+  },
+  {
+   "dayOffset": 53,
+   "posts": [
+    {
+     "slot": "16:00",
+     "platform": "x",
+     "pillar": "P2 Private on-device (build-in-public receipt : chiffres produit)",
+     "mode": "auto",
+     "estMinutes": 5,
+     "text": "Build-in-public, les vrais chiffres sous le capot :\n\n3 moteurs de transcription privés · 99+ langues · 6 modes routés vers le bon moteur d'IA embarquée · 15 cibles de traduction · JARVIS sur 1 000+ apps connectées.\n\nEt le seul chiffre qui compte pour ta vie privée : combien de fois ton audio est uploadé. Zéro.",
+     "visualPrompt": "Higgsfield, Verba brand law. 1:1. Panneau de stats sobre en SF Pro sur #050507, chiffres tabulaires alignés, le '0' d'uploads en accent chaud #f4ede0. Panneau opaque #0c0c10, whitespace lourd, mat, un rec-dot #ff5a4d, motif mic-mark. Pas de gens, pas de néon.",
+     "manualNote": "",
+     "cta": ""
+    }
+   ]
+  },
+  {
+   "dayOffset": 54,
+   "posts": [
+    {
+     "slot": "12:00",
+     "platform": "x",
+     "pillar": "P1 Voice-driven coding (étude de cas : notes longues)",
+     "mode": "auto",
+     "estMinutes": 4,
+     "text": "40 minutes de brain-dump vocal → un doc structuré.\n\nLe mode Notes tient jusqu'à 1 h. Je déroule tout ce que j'ai en tête sur une archi, sans m'arrêter, et j'obtiens un document propre avec sections et décisions, pas un mur de texte.\n\nPenser à voix haute, récupérer du structuré. → verba.run",
+     "visualPrompt": "Higgsfield, Verba brand law. 16:9. Un long waveform à gauche qui se résout en un doc structuré à sections propres à droite, sur #050507, panneau opaque #0c0c10. SF Pro, whitespace lourd, mat, un accent #ff5a4d, motif mic-mark. Pas de gens.",
+     "manualNote": "",
+     "cta": "verba.run"
+    }
+   ]
+  },
+  {
+   "dayOffset": 55,
+   "posts": [
+    {
+     "slot": "16:00",
+     "platform": "x",
+     "pillar": "P5 Voice -> action (gestion d'objection : accès Gmail/Slack)",
+     "mode": "auto",
+     "estMinutes": 5,
+     "text": "« Un agent vocal avec accès à mon Gmail et mon Slack ? Non merci. »\n\nParanoïaque par design : auto-run en lecture seule uniquement. Chaque écriture est affichée et exécutée sur ta confirmation. Le plan est généré sur ton Mac, par ton IA. Et tu déconnectes une app quand tu veux.\n\nCe n'est pas « donne-lui les clés ». C'est « il montre, tu décides ». → verba.run",
+     "visualPrompt": "Higgsfield, Verba brand law. 4:5. Une carte d'action JARVIS au repos avec bouton Confirm proéminent, une rangée d'icônes d'apps connectées avec un petit 'déconnecter' visible, pill menu-bar. Mat #050507, UI off-white, un accent rec #ff5a4d. Contrôle, confiance. Ne jamais rendre 'Composio'.",
+     "manualNote": "",
+     "cta": "verba.run"
+    }
+   ]
+  },
+  {
+   "dayOffset": 56,
+   "posts": [
+    {
+     "slot": "12:00",
+     "platform": "x",
+     "pillar": "P3 Confidentialité / IA privée (démo : full-local, zéro upload)",
+     "mode": "auto",
+     "estMinutes": 4,
+     "text": "Zéro upload, toujours : notre IA embarquée transcrit on-device et nettoie en local.\n\nAucune clé, aucun compte, aucun octet qui sort. Parfait pour un avion, un réseau fermé, ou juste par principe.\n\nMême app, même promesse, à chaque utilisation. → verba.run",
+     "visualPrompt": "Higgsfield, Verba brand law. 1:1. Motif full-local : une machine avec un nœud interne unique 'IA embarquée' encadré d'un cadenas, aucune flèche vers l'extérieur (aucune connexion sortante représentée), sur #050507. Off-white, un accent #ff5a4d, mat, grain fin, motif mic-mark. Pas de gens.",
+     "manualNote": "",
+     "cta": "verba.run"
+    }
+   ]
+  },
+  {
+   "dayOffset": 57,
+   "posts": [
+    {
+     "slot": "17:00",
+     "platform": "reddit",
+     "pillar": "P5 Voice -> action (r/macapps, démo confirm-gated)",
+     "mode": "manual",
+     "estMinutes": 60,
+     "text": "J'ai construit un agent vocal pour Mac qui demande AVANT d'agir, démo de la couche 'Confirm'\n\nFounder de Verba (donc biaisé). Je partage ici parce que r/macapps aime les démos, et que la partie dont je suis le plus fier est celle qu'on ne voit pas assez : le garde-fou.\n\nVerba est d'abord une app de dictée Mac privée (transcription on-device, l'audio ne quitte jamais ta machine). Mais elle peut aussi agir : tu dis « crée l'issue Linear et envoie un récap à l'équipe », elle planifie les étapes sur ton Mac, te les MONTRE, et n'exécute qu'après ton clic sur Confirm.\n\nLe design de sécurité : les lectures peuvent s'auto-exécuter, les écritures sont toujours gated. Le classifier est fail-safe (dans le doute, il gate). Et le plan est généré par ton propre modèle, on-device, pas par une clé serveur.\n\nJe mets en commentaire un clip 10 s du flux complet (parler -> plan -> Confirm -> issue créée), filmé depuis un Mac propre. Mac-only, indie, pas de témoignages publics encore. Balancez les questions dures sur la sécurité des écritures, les apps connectées, ou la latence.\n\nverba.run",
+     "visualPrompt": "",
+     "manualNote": "Poster sur r/macapps en menant avec le GIF/clip confirm-gated (parler -> plan -> Confirm -> issue créée). Être honnête sur les limites (Mac-only, indie, pas de témoignages), UN ask soft, rester ~2h dans les commentaires. Filmer depuis un Mac propre, l'étape Confirm bien visible à l'écran.",
+     "cta": "verba.run"
+    }
+   ]
+  },
+  {
+   "dayOffset": 58,
+   "posts": [
+    {
+     "slot": "16:00",
+     "platform": "linkedin",
+     "pillar": "P3 Confidentialité / IA privée (opérateur, le vrai coût pour une équipe)",
+     "mode": "auto",
+     "estMinutes": 8,
+     "text": "Un risque que la plupart des équipes ne voient pas sur leur outil de dictée : où va la voix de vos gens.\n\nBeaucoup d'outils de dictée uploadent chaque mot vers leurs serveurs pour le nettoyer, 12-17 $/mois par personne, et vos données sensibles transitent par un tiers. Multipliez par la taille de l'équipe.\n\nVerba tourne différemment : l'IA de nettoyage est privée et embarquée, elle s'exécute entièrement sur la machine de la personne. Rien n'est envoyé, rien n'est stocké ailleurs.\n\nCe n'est pas qu'une question de prix (prix plat, 9,99 $/mois par personne). C'est surtout la confidentialité : pertinent quand vos gens dictent du contenu sensible, client, juridique, ou stratégique.\n\nAvant de renouveler un outil de dictée, posez deux questions : où va notre audio, et qui peut le lire ?",
+     "visualPrompt": "Higgsfield, Verba brand law. 4:5. Cost-math éditorial sobre : deux lignes de coût empilées (barrées) vs une, gros chiffres SF Pro, accent chaud #f4ede0 sur '0', sur #050507, panneau opaque #0c0c10. Whitespace lourd, mat, un rec-dot #ff5a4d, motif mic-mark. Pas de gens.",
+     "manualNote": "",
+     "cta": ""
+    }
+   ]
+  },
+  {
+   "dayOffset": 59,
+   "posts": [
+    {
+     "slot": "16:00",
+     "platform": "x",
+     "pillar": "P2/P5 Narratif maître (build-in-public : bilan mois 2)",
+     "mode": "auto",
+     "estMinutes": 5,
+     "text": "Bilan du mois : l'app de dictée Mac est devenue un agent vocal, et je l'ai tenue paranoïaque tout du long.\n\nCe qui n'a pas bougé d'un pouce : ton audio ne quitte jamais ton Mac, aucune donnée n'est revendue ni prélevée, et rien ne s'exécute sans ton Confirm.\n\nLa preuve n'est pas dans le pitch. Elle est dans l'architecture. → verba.run",
+     "visualPrompt": "Higgsfield, Verba brand law. 16:9. Une fenêtre macOS mate au repos montrant la pill Verba + une carte d'action JARVIS avec bouton Confirm, en arrière-plan un indice on-device (frontière-device). Mat #050507, off-white, unique accent rec #ff5a4d, grain fin, motif mic-mark. Pas de gens. Ne jamais rendre 'Composio'.",
+     "manualNote": "",
+     "cta": "verba.run"
+    }
+   ]
+  },
+  {
+   "dayOffset": 60,
+   "posts": [
+    {
+     "slot": "12:00",
+     "platform": "x",
+     "pillar": "P1 Voice-driven coding (invitation essai, clôture de bloc)",
+     "mode": "auto",
+     "estMinutes": 4,
+     "text": "Si tu codes, teste une semaine sans clavier.\n\nParle tes specs, laisse l'IA privée embarquée de Verba les nettoyer en prompt propre, on-device, sans upload. 33 dictées d'essai avant tout paywall, sans carte.\n\nTu penses plus vite que tu ne tapes. Prouve-le-toi. → verba.run",
+     "visualPrompt": "Higgsfield, Verba brand law. 16:9. Mains de dev en pause sur le clavier pendant qu'elles parlent, terminal de code sombre sur Mac Apple-Silicon, pill Verba près de la menu-bar, une semaine de focus calme. Near-black mat #050507, lumière douce, un rec-dot #ff5a4d. Pas de visages, grain fin, motif mic-mark.",
+     "manualNote": "",
+     "cta": "verba.run"
+    }
+   ]
+  }
+ ]
 }

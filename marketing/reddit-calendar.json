@@ -1,0 +1,472 @@
+[
+  {
+    "week": 1,
+    "day": "Mon",
+    "mode": "auto",
+    "target": "profile",
+    "type": "value",
+    "angle": "Pin an intro post: what Verba is, on-device dictation + voice agent, bring-your-own-Claude",
+    "ask": "Follow for build-in-public updates",
+    "linkPlacement": "profile"
+  },
+  {
+    "week": 1,
+    "day": "Tue",
+    "mode": "human",
+    "target": "r/ClaudeAI",
+    "type": "value",
+    "angle": "Warmup: answer 3-5 Claude Code workflow threads, genuinely helpful, no link",
+    "ask": "none",
+    "linkPlacement": "none"
+  },
+  {
+    "week": 1,
+    "day": "Wed",
+    "mode": "auto",
+    "target": "profile",
+    "type": "show",
+    "angle": "Demo clip: voice-driving Claude Code hands-free (15s)",
+    "ask": "none",
+    "linkPlacement": "post"
+  },
+  {
+    "week": 1,
+    "day": "Thu",
+    "mode": "human",
+    "target": "r/cursor",
+    "type": "value",
+    "angle": "Warmup: help on Cursor-on-Mac threads, no link, learn the flairs",
+    "ask": "none",
+    "linkPlacement": "none"
+  },
+  {
+    "week": 1,
+    "day": "Fri",
+    "mode": "human",
+    "target": "r/dictation",
+    "type": "question",
+    "angle": "Warmup: answer 'what dictation app should I use' threads, disclose, list alternatives",
+    "ask": "none",
+    "linkPlacement": "none"
+  },
+  {
+    "week": 2,
+    "day": "Mon",
+    "mode": "auto",
+    "target": "profile",
+    "type": "value",
+    "angle": "Tip: 3 macOS dictation shortcuts most devs miss",
+    "ask": "none",
+    "linkPlacement": "profile"
+  },
+  {
+    "week": 2,
+    "day": "Tue",
+    "mode": "human",
+    "target": "r/vibecoding",
+    "type": "value",
+    "angle": "Warmup: comment on 'I built' threads, build rapport, no link",
+    "ask": "none",
+    "linkPlacement": "none"
+  },
+  {
+    "week": 2,
+    "day": "Wed",
+    "mode": "auto",
+    "target": "profile",
+    "type": "show",
+    "angle": "Before/after clip: typing a prompt vs speaking it",
+    "ask": "none",
+    "linkPlacement": "post"
+  },
+  {
+    "week": 2,
+    "day": "Thu",
+    "mode": "human",
+    "target": "r/RSI",
+    "type": "value",
+    "angle": "Warmup: helpful answers under 'Question' posts, no product push yet",
+    "ask": "What is helping your wrists right now?",
+    "linkPlacement": "none"
+  },
+  {
+    "week": 2,
+    "day": "Sat",
+    "mode": "human",
+    "target": "r/MacOSApps",
+    "type": "show",
+    "angle": "First soft show-and-tell in the friendliest small sub, flair Dev Tools, disclose dev",
+    "ask": "Feedback on the on-device approach?",
+    "linkPlacement": "post"
+  },
+  {
+    "week": 3,
+    "day": "Tue",
+    "mode": "auto",
+    "target": "profile",
+    "type": "build",
+    "angle": "Build log: what shipped this week",
+    "ask": "none",
+    "linkPlacement": "profile"
+  },
+  {
+    "week": 3,
+    "day": "Wed",
+    "mode": "human",
+    "target": "r/vibecoding",
+    "type": "show",
+    "angle": "JALON: 'I built a Mac voice agent that types AND runs what you say, on-device' with demo (T1)",
+    "ask": "What would you voice-control first?",
+    "linkPlacement": "post"
+  },
+  {
+    "week": 3,
+    "day": "Sat",
+    "mode": "human",
+    "target": "r/SideProject",
+    "type": "show",
+    "angle": "[Launch] build-in-public journey, story first (T5)",
+    "ask": "Feedback on the voice-agent mode welcome",
+    "linkPlacement": "post"
+  },
+  {
+    "week": 4,
+    "day": "Mon",
+    "mode": "auto",
+    "target": "profile",
+    "type": "value",
+    "angle": "Tip of the week",
+    "ask": "none",
+    "linkPlacement": "profile"
+  },
+  {
+    "week": 4,
+    "day": "Wed",
+    "mode": "human",
+    "target": "r/ChatGPTCoding",
+    "type": "show",
+    "angle": "JALON: 'Project' post, dictation layer to voice-drive AI coding on Mac (T1/T4)",
+    "ask": "Do you type or speak your prompts?",
+    "linkPlacement": "post"
+  },
+  {
+    "week": 4,
+    "day": "Fri",
+    "mode": "human",
+    "target": "r/dictation",
+    "type": "show",
+    "angle": "Verba vs Dragon vs macOS Voice Control, honest on-device comparison",
+    "ask": "What do you use today?",
+    "linkPlacement": "post"
+  },
+  {
+    "week": 5,
+    "day": "Tue",
+    "mode": "auto",
+    "target": "profile",
+    "type": "show",
+    "angle": "Demo clip of a new voice-agent action",
+    "ask": "none",
+    "linkPlacement": "post"
+  },
+  {
+    "week": 5,
+    "day": "Wed",
+    "mode": "human",
+    "target": "r/ClaudeAI",
+    "type": "value",
+    "angle": "JALON: 'I dictate to Claude Code instead of typing, here is my CLAUDE.md + hooks' (T2)",
+    "ask": "Happy to share the full hooks config",
+    "linkPlacement": "comment"
+  },
+  {
+    "week": 5,
+    "day": "Thu",
+    "mode": "human",
+    "target": "r/ClaudeAI",
+    "type": "promo",
+    "angle": "Drop Verba into the pinned 'Built with Claude' Showcase Megathread",
+    "ask": "none",
+    "linkPlacement": "comment"
+  },
+  {
+    "week": 6,
+    "day": "Mon",
+    "mode": "auto",
+    "target": "profile",
+    "type": "value",
+    "angle": "Tip: hands-free git workflow",
+    "ask": "none",
+    "linkPlacement": "profile"
+  },
+  {
+    "week": 6,
+    "day": "Wed",
+    "mode": "human",
+    "target": "r/macapps",
+    "type": "show",
+    "angle": "JALON flagship: flaired 'I built Verba' self-post, official link only, 10+ sub karma earned (T8)",
+    "ask": "Feedback on the voice-agent mode?",
+    "linkPlacement": "post"
+  },
+  {
+    "week": 6,
+    "day": "Fri",
+    "mode": "human",
+    "target": "r/speechrecognition",
+    "type": "value",
+    "angle": "On-device STT latency and privacy vs cloud, Verba as example (T7)",
+    "ask": "How do others handle local STT latency?",
+    "linkPlacement": "comment"
+  },
+  {
+    "week": 7,
+    "day": "Tue",
+    "mode": "auto",
+    "target": "profile",
+    "type": "build",
+    "angle": "Build log: metric update",
+    "ask": "none",
+    "linkPlacement": "profile"
+  },
+  {
+    "week": 7,
+    "day": "Wed",
+    "mode": "human",
+    "target": "r/cursor",
+    "type": "value",
+    "angle": "JALON: 'Hands-free prompting in Cursor on Mac', flair Resources & Tips, never bash Cursor (T3)",
+    "ask": "Anyone else voice-driving Cursor?",
+    "linkPlacement": "comment"
+  },
+  {
+    "week": 7,
+    "day": "Fri",
+    "mode": "human",
+    "target": "r/RSI",
+    "type": "value",
+    "angle": "'Dev with RSI: the hands-free setup that let me keep coding' (T6)",
+    "ask": "What is helping your wrists right now?",
+    "linkPlacement": "comment"
+  },
+  {
+    "week": 8,
+    "day": "Mon",
+    "mode": "auto",
+    "target": "profile",
+    "type": "value",
+    "angle": "Tip of the week",
+    "ask": "none",
+    "linkPlacement": "profile"
+  },
+  {
+    "week": 8,
+    "day": "Wed",
+    "mode": "human",
+    "target": "r/accessibility",
+    "type": "question",
+    "angle": "JALON: feedback-seeking, 'a11y expert critique of our voice-control UX for motor impairment' (T6)",
+    "ask": "Would love an expert critique",
+    "linkPlacement": "post"
+  },
+  {
+    "week": 8,
+    "day": "Fri",
+    "mode": "human",
+    "target": "r/artificial",
+    "type": "show",
+    "angle": "'Built a macOS voice agent that acts on speech, not just transcribes', feedback framing (T4)",
+    "ask": "Feedback on the voice-agent concept?",
+    "linkPlacement": "post"
+  },
+  {
+    "week": 9,
+    "day": "Tue",
+    "mode": "auto",
+    "target": "profile",
+    "type": "show",
+    "angle": "Demo clip",
+    "ask": "none",
+    "linkPlacement": "post"
+  },
+  {
+    "week": 9,
+    "day": "Thu",
+    "mode": "human",
+    "target": "r/Entrepreneur",
+    "type": "value",
+    "angle": "JALON: journey post 'acquiring first paying users for a niche Mac tool', zero pitch",
+    "ask": "none",
+    "linkPlacement": "none"
+  },
+  {
+    "week": 9,
+    "day": "Thu",
+    "mode": "human",
+    "target": "r/Entrepreneur",
+    "type": "promo",
+    "angle": "Share Verba in the weekly 'Thank You Thursday' pinned thread (T10)",
+    "ask": "Open to feedback",
+    "linkPlacement": "comment"
+  },
+  {
+    "week": 9,
+    "day": "Sun",
+    "mode": "human",
+    "target": "r/apple",
+    "type": "show",
+    "angle": "JALON: Self-promotion Sunday self/text post, real substance, after 5+ non-promo contributions logged (T10)",
+    "ask": "none",
+    "linkPlacement": "post"
+  },
+  {
+    "week": 10,
+    "day": "Mon",
+    "mode": "auto",
+    "target": "profile",
+    "type": "value",
+    "angle": "Tip of the week",
+    "ask": "none",
+    "linkPlacement": "profile"
+  },
+  {
+    "week": 10,
+    "day": "Wed",
+    "mode": "human",
+    "target": "r/vibecoding",
+    "type": "show",
+    "angle": "JALON round 2: 'update, shipped new voice-agent actions', fresh title (T1)",
+    "ask": "What should I build next?",
+    "linkPlacement": "post"
+  },
+  {
+    "week": 10,
+    "day": "Fri",
+    "mode": "human",
+    "target": "r/SaaS",
+    "type": "value",
+    "angle": "Story-led founder post + drop Verba in the weekly feedback thread (T5)",
+    "ask": "none",
+    "linkPlacement": "comment"
+  },
+  {
+    "week": 11,
+    "day": "Tue",
+    "mode": "auto",
+    "target": "profile",
+    "type": "build",
+    "angle": "Build log",
+    "ask": "none",
+    "linkPlacement": "profile"
+  },
+  {
+    "week": 11,
+    "day": "Wed",
+    "mode": "human",
+    "target": "r/macOS",
+    "type": "value",
+    "angle": "JALON: 'How I set up fast on-device dictation for coding on macOS', disclose, value-only (T9)",
+    "ask": "none",
+    "linkPlacement": "comment"
+  },
+  {
+    "week": 11,
+    "day": "Thu",
+    "mode": "human",
+    "target": "r/nativemacapps",
+    "type": "show",
+    "angle": "Native macOS dictation + voice agent showcase (only if genuinely native)",
+    "ask": "none",
+    "linkPlacement": "post"
+  },
+  {
+    "week": 11,
+    "day": "Sat",
+    "mode": "human",
+    "target": "r/setups",
+    "type": "value",
+    "angle": "Organic 'my hands-free dev setup' photo/story, no pitch",
+    "ask": "none",
+    "linkPlacement": "none"
+  },
+  {
+    "week": 12,
+    "day": "Mon",
+    "mode": "auto",
+    "target": "profile",
+    "type": "value",
+    "angle": "Tip of the week",
+    "ask": "none",
+    "linkPlacement": "profile"
+  },
+  {
+    "week": 12,
+    "day": "Wed",
+    "mode": "human",
+    "target": "r/ChatGPTCoding",
+    "type": "question",
+    "angle": "JALON: 'Where do AI coding tools still drop you back to the keyboard?', mention Verba in-thread (T4)",
+    "ask": "Where does your flow break?",
+    "linkPlacement": "comment"
+  },
+  {
+    "week": 12,
+    "day": "Fri",
+    "mode": "human",
+    "target": "r/productivity",
+    "type": "value",
+    "angle": "Comment-only: answer dictation/voice tool asks, disclose + list alternatives (T9)",
+    "ask": "none",
+    "linkPlacement": "none"
+  },
+  {
+    "week": 12,
+    "day": "Sat",
+    "mode": "human",
+    "target": "r/webdev",
+    "type": "show",
+    "angle": "Showoff Saturday pinned thread: voice-driven dev tool (T10)",
+    "ask": "Open to feedback",
+    "linkPlacement": "comment"
+  },
+  {
+    "week": 13,
+    "day": "Tue",
+    "mode": "auto",
+    "target": "profile",
+    "type": "show",
+    "angle": "Demo clip",
+    "ask": "none",
+    "linkPlacement": "post"
+  },
+  {
+    "week": 13,
+    "day": "Wed",
+    "mode": "human",
+    "target": "r/LocalLLaMA",
+    "type": "value",
+    "angle": "JALON weakest-fit: technical on-device local STT post, 'nothing leaves the Mac', only with a real local hook, no launch tone (T7)",
+    "ask": "none",
+    "linkPlacement": "comment"
+  },
+  {
+    "week": 13,
+    "day": "Fri",
+    "mode": "human",
+    "target": "r/macapps",
+    "type": "show",
+    "angle": "Round 2 (30+ days since week 6): feature-update show-and-tell, official link only (T8)",
+    "ask": "Feedback on the new feature?",
+    "linkPlacement": "post"
+  },
+  {
+    "week": 13,
+    "day": "Sat",
+    "mode": "human",
+    "target": "r/ChatGPTCoding",
+    "type": "show",
+    "angle": "'Project' update post, fresh angle, direct link (T1)",
+    "ask": "Feedback welcome",
+    "linkPlacement": "post"
+  }
+]

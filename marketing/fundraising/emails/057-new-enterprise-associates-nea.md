@@ -5,10 +5,10 @@ firm: NEA
 contact_channel: warm intro
 contact_status: à vérifier
 anchor: Wispr Flow
-status: DRAFT — NON ENVOYE (attente GO/NO-GO operateur)
+status: DRAFT, NON ENVOYE (attente GO/NO-GO operateur)
 ---
 
-Objet : La suite logique de votre seed Wispr — voix vers action sur Mac
+Objet : La suite logique de votre seed Wispr, voix vers action sur Mac
 
 Bonjour [Prenom],
 
@@ -19,4 +19,4 @@ Wispr a validé la dictée ; nous validons l'action. Pré-revenus, nous levons u
 verba.run
 
 [Fondateur]
-Verba — verba.run
+Verba, verba.run

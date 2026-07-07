@@ -4,11 +4,11 @@ to: Point Nine
 firm: Point Nine Capital
 contact_channel: https://www.openvc.app/fund/Point%20Nine%20Capital
 contact_status: à vérifier
-anchor: Zendesk (early seed backer; consumerised enterprise UX) — also Typeform, Clio
-status: DRAFT — NON ENVOYE (attente GO/NO-GO operateur)
+anchor: Zendesk (early seed backer; consumerised enterprise UX), also Typeform, Clio
+status: DRAFT, NON ENVOYE (attente GO/NO-GO operateur)
 ---
 
-Objet : Verba — UX voix native sur Mac, dans la lignée de Typeform
+Objet : Verba, UX voix native sur Mac, dans la lignée de Typeform
 
 Bonjour [Prenom],
 
@@ -22,4 +22,4 @@ Un appel de 20 min pour vous montrer le produit ?
 → verba.run
 
 [Fondateur]
-Verba — verba.run
+Verba, verba.run

@@ -1,0 +1,729 @@
+<!doctype html><html lang=fr><head><meta charset=utf-8><meta name=viewport content="width=device-width, initial-scale=1"><title>Verba, Calendrier a valider (90 jours)</title><style>
+:root{--bg:#f4f3f0;--panel:#fff;--panel2:#f0efec;--ink:#0e0e12;--ink2:#4b4b52;--ink3:#6c6c74;--line:#e4e3de;--accent:#ff5a4d;--good:#1f7a4d;--warn:#9a6a00;--sans:-apple-system,BlinkMacSystemFont,"Inter",system-ui,sans-serif;--mono:ui-monospace,Menlo,monospace}
+@media(prefers-color-scheme:dark){:root{--bg:#08080b;--panel:#111117;--panel2:#15151b;--ink:#f2f2f6;--ink2:#a6a6b0;--ink3:#7c7c86;--line:#23232b;--accent:#ff5a4d;--good:#4fd08a;--warn:#e7b45a}}
+:root[data-theme=dark]{--bg:#08080b;--panel:#111117;--panel2:#15151b;--ink:#f2f2f6;--ink2:#a6a6b0;--ink3:#7c7c86;--line:#23232b;--accent:#ff5a4d;--good:#4fd08a;--warn:#e7b45a}
+:root[data-theme=light]{--bg:#f4f3f0;--panel:#fff;--panel2:#f0efec;--ink:#0e0e12;--ink2:#4b4b52;--ink3:#6c6c74;--line:#e4e3de;--accent:#ff5a4d;--good:#1f7a4d;--warn:#9a6a00}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.6}
+.wrap{max-width:820px;margin:0 auto;padding:0 20px}
+header{border-bottom:1px solid var(--line);position:sticky;top:0;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);z-index:5}
+header .wrap{padding:16px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.mk{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-weight:600;font-size:13px;color:var(--ink2)}
+.mk .sq{width:22px;height:22px;border-radius:6px;background:#050507;display:grid;place-items:center;color:#ff5a4d;border:1px solid #23232b;font-size:13px}
+h1{font-size:20px;margin:0}
+.sub{color:var(--ink2);font-size:13px;width:100%}
+.stats{display:flex;gap:8px;flex-wrap:wrap;width:100%;margin-top:4px}
+.stat{font-family:var(--mono);font-size:12px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:5px 9px;color:var(--ink2)}
+.stat b{color:var(--ink)}
+.toggle{margin-left:auto;font-family:var(--mono);font-size:12px;background:var(--panel);border:1px solid var(--line);color:var(--ink2);border-radius:999px;padding:6px 11px;cursor:pointer}
+main .wrap{padding:22px 20px 80px}
+h2{font-size:16px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:30px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--accent)}
+.post{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:10px 0;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.post.manual{border-left:3px solid var(--warn)}
+.post.auto{border-left:3px solid var(--good)}
+.phead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
+.day{font-family:var(--mono);font-weight:700;color:var(--accent)}
+.date{font-family:var(--mono);color:var(--ink3);font-size:12px}
+.chip{font-family:var(--mono);font-size:11px;font-weight:600;color:#fff;background:var(--c);border-radius:6px;padding:2px 8px}
+.b{font-family:var(--mono);font-size:10px;font-weight:700;border-radius:5px;padding:2px 7px}
+.b.auto{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good);border:1px solid color-mix(in srgb,var(--good) 40%,transparent)}
+.b.man{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent)}
+.slot{font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.ok{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink3);display:flex;align-items:center;gap:5px;cursor:pointer}
+.pill{font-family:var(--mono);font-size:11px;color:var(--ink3);margin:7px 0 4px}
+.posttext{white-space:pre-wrap;font-size:14.5px;color:var(--ink);margin-top:2px}
+.note{margin-top:8px;font-size:12.5px;color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent);border-radius:8px;padding:7px 10px}
+.cta{margin-top:6px;font-family:var(--mono);font-size:12px;color:var(--accent)}
+input:checked+*, .post:has(input:checked){}
+.post:has(input:checked){opacity:.55}
+</style></head><body>
+<style>
+#hqbar{position:fixed;top:0;left:0;right:0;height:52px;z-index:99999;display:flex;align-items:center;gap:14px;padding:0 20px;background:rgba(8,8,11,.82);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08);font-family:-apple-system,BlinkMacSystemFont,"Inter",system-ui,sans-serif}
+#hqbar a{text-decoration:none;border:none}
+#hqbar .hqbrand{display:flex;align-items:center;gap:9px;font-weight:600;font-size:15px;letter-spacing:-.01em;color:#f2f2f6}
+#hqbar .hqbrand .hqmic{width:24px;height:24px;border-radius:7px;background:#f4ede0;display:flex;align-items:center;justify-content:center;color:#08080b;font-size:12px}
+#hqbar .hqbrand .dot{color:#ff5a4d}
+#hqbar .hqsec{color:#8a8a92;font-size:12px;text-transform:uppercase;letter-spacing:.14em;font-weight:600}
+#hqbar .hqback{margin-left:auto;font-size:13px;font-weight:500;color:#c8c8ce;border:1px solid rgba(255,255,255,.16)!important;border-radius:999px;padding:7px 14px;transition:all .15s}
+#hqbar .hqback:hover{color:#ff5a4d;border-color:#ff5a4d!important}
+body{padding-top:52px!important}
+@media(prefers-color-scheme:light){#hqbar{background:rgba(244,243,240,.86);border-bottom-color:rgba(0,0,0,.1)}#hqbar .hqbrand{color:#0e0e12}#hqbar .hqback{color:#4a4a52;border-color:rgba(0,0,0,.14)!important}}
+:root[data-theme=light] #hqbar{background:rgba(244,243,240,.86);border-bottom-color:rgba(0,0,0,.1)}
+:root[data-theme=light] #hqbar .hqbrand{color:#0e0e12}
+:root[data-theme=dark] #hqbar{background:rgba(8,8,11,.82);border-bottom-color:rgba(255,255,255,.08)}
+:root[data-theme=dark] #hqbar .hqbrand{color:#f2f2f6}
+@media(max-width:640px){#hqbar{height:46px;padding:0 12px;gap:10px}#hqbar .hqsec{display:none}#hqbar .hqbrand{font-size:14px}body{padding-top:46px!important}}
+</style>
+<div id="hqbar">
+  <a class="hqbrand" href="https://verba-hq.vercel.app/"><span class="hqmic">V</span>Verba<span class="dot">.</span> Marketing HQ</a>
+  <span class="hqsec">90-day calendar</span>
+  <a class="hqback" href="https://verba-hq.vercel.app/">&larr; All docs</a>
+</div>
+<header><div class=wrap>
+<span class=mk><span class=sq>V</span> VERBA</span><h1 style="margin-left:4px">Calendrier 90 jours, a valider</h1>
+<div class=sub><b>Les 94 posts que je propose sur 90 jours. Challenge-moi.</b> Pour tout post a corriger, dis-moi <b>« J&lt;numero&gt; »</b> + ce qui cloche (angle, hook, plateforme, jour), je corrige le calendrier et je redeploie. 🙋 MANUEL = a poster a la main (communautes/founder), AUTO = par le moteur. Anglais, orientes solution.</div>
+<div class=stats><span class=stat><b>94</b> posts</span><span class=stat><b>81</b> auto</span><span class=stat><b>13</b> manuel</span><span class=stat>x: 72 · linkedin: 10 · blog: 7 · reddit: 5</span></div>
+</div></header>
+<main><div class=wrap><h2 id="m7">Juil 2026</h2>
+<div class="post auto">
+      <div class="phead"><span class="day">J1</span><span class="date">sam 4 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2 Dictee prive on-device</div>
+      <div class="posttext">Awkward question: does your dictation app upload your voice right now?<br><br>Most do. Every word ships straight to their servers.<br><br>We built Verba backwards. It runs privately on your Mac, your audio never leaves it. Local history, with a real off switch.<br><br>Speak freely. Private by default. Yours by design.</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J2</span><span class="date">dim 5 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree</div>
+      <div class="posttext">Your dictation app calls out to an AI you never see, and you have no idea what happens to your words once it does.<br><br>Verba works differently: the intelligence is built in, and it runs privately on your Mac. Nothing about what you say gets exposed in the process.<br><br>Private by design, not an upsell.</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J3</span><span class="date">lun 6 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P1 Voice-driven coding</div>
+      <div class="posttext">I think faster than I type. So I stopped typing.<br><br>My spec comes out loud and messy, Verba turns it into clean text on my Mac, pasted right where my cursor is, and none of it leaves my machine.<br><br>Say it. Send it clean.</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J4</span><span class="date">mar 7 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voix -&gt; action (JARVIS)</div>
+      <div class="posttext">Your voice shouldn&#x27;t just write. It should act.<br><br>Say &quot;create the Linear issue for this bug.&quot; JARVIS plans the action on your Mac, shows you exactly what it&#x27;s about to do, and only runs it once you confirm. Across 1,000+ connected apps.<br><br>It asks before it acts. Always.</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J5</span><span class="date">mer 8 juil</span> <span class="chip" style="--c:#0a66c2">linkedin</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2 Dictee prive on-device (récit fondateur)</div>
+      <div class="posttext">I built a dictation app that never uploads your audio. Here&#x27;s why.<br><br>Voice dictation has become ordinary. What hasn&#x27;t: most of these apps send every word you say to a server. Your voice, maybe the most personal thing you produce, becomes a line in someone else&#x27;s log.<br><br>That always bothered me. So with Verba, we flipped the default. By default, we send nothing.<br><br>, Transcription runs on your Mac. Your audio never leaves it, only text sync goes out, if you turn it on.<br>, History is local, with a real off switch and auto-prune.<br>, Keys live in the Keychain, not a file.<br>, Even JARVIS&#x27;s action planning runs on-device: your intent isn&#x27;t ours to keep.<br><br>&quot;Private by default&quot; shouldn&#x27;t be a setting buried in a menu. It should be the architecture.<br><br>Free trial, no card. → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J6</span><span class="date">jeu 9 juil</span> <span class="chip" style="--c:#8a8a94">blog</span> <span class="b auto">AUTO</span> <span class="slot">09:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2 Dictee prive on-device (hub SEO)</div>
+      <div class="posttext"># Private voice dictation on Mac: the complete guide<br><br>We dictate more and more: specs, emails, notes, messages. But almost nobody asks the real question: where does my voice go when I talk to my dictation app?<br><br>For most tools, the answer is simple and uncomfortable: your audio ships to their servers, every sentence. For a lawyer, a doctor, a journalist, or a founder dictating something sensitive, that&#x27;s not a detail. That&#x27;s the whole story.<br><br>Verba takes the problem from the other end. By default, your voice never leaves your Mac.<br><br>## What &quot;on-device&quot; actually means<br>Transcription runs locally, on your Apple Silicon chip. No audio upload: only the final text can sync, if you turn that on. Your history is local, with a real off switch and auto-prune, you decide what stays. Your keys live in the macOS Keychain, never a plain file.<br><br>## A simple test for your own app<br>Turn off Wi-Fi and dictate. If transcription stops, your audio was leaving your Mac. Verba keeps going: the engine lives on your machine.<br><br>## What about when AI cleans up your text?<br>Verba restructures your ramble into clean text with private intelligence built right in, no setup required. Either way, you choose where that intelligence runs.<br><br>## Even the agent stays private<br>When JARVIS acts on what you say (create an issue, draft an email), the plan is generated on your Mac, never a server. And nothing executes without your confirmation.<br><br>Private by default isn&#x27;t a checkbox. It&#x27;s how it&#x27;s built.<br><br>→ verba.run</div>
+      
+      <div class="cta">verba.run/blog/dictee-privee-mac</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J6</span><span class="date">jeu 9 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2 Dictee prive on-device</div>
+      <div class="posttext">A quick test for your dictation app: turn off Wi-Fi and talk.<br><br>If transcription stops, your audio was leaving your device.<br><br>Verba keeps going, the engine runs on your Mac. We wrote the complete guide to dictation that&#x27;s actually private → verba.run/blog/dictee-privee-mac</div>
+      
+      <div class="cta">verba.run/blog/dictee-privee-mac</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J7</span><span class="date">ven 10 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree</div>
+      <div class="posttext">Your dictation app doesn&#x27;t need to be a second AI subscription.<br><br>Verba has private intelligence built right in. You talk, it transcribes on-device, and the text lands clean right where your cursor is, nothing exposed along the way.<br><br>Private by design. → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post manual">
+      <div class="phead"><span class="day">J8</span><span class="date">sam 11 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b man">MANUEL</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P1 Voice-driven coding (thread founder)</div>
+      <div class="posttext">1/ I stopped writing my specs. I dictate them now. A week later, my whole coding flow changed, for the better. 🧵<br><br>2/ I think faster than I type. Out loud, my specs come out longer and clearer: I explain the edge cases I usually skip because typing them is a pain.<br><br>3/ Verba captures the ramble on-device, cleans it into a structured prompt, and pastes it straight into my editor. Nothing about it ever leaves my Mac.<br><br>4/ The click moment: 20 minutes of voice brain-dump becomes a clean PR description, without touching the keyboard.<br><br>5/ And it doesn&#x27;t stop at text anymore, I say &quot;create the Linear issue for this,&quot; Verba plans it, shows me, and runs it once I confirm.<br><br>6/ Private end to end: the audio never leaves my Mac. The plan is generated on my own machine, nothing sent off.<br><br>7/ Code for a living? Try a week without touching the keyboard. → verba.run</div>
+      <div class="note">🙋 Fil founder authentique, poster le thread toi-meme et repondre aux replies la premiere heure (signal + confiance). Visuel a joindre au tweet 1 : un clip/GIF reel de ton flow (mains en pause sur le clavier + prompt propre colle dans ton editeur de code), filme depuis ton Mac. Ne jamais nommer &#x27;Composio&#x27;.</div>
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J9</span><span class="date">dim 12 juil</span> <span class="chip" style="--c:#0a66c2">linkedin</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voix -&gt; action (opérateur)</div>
+      <div class="posttext">I stopped opening Linear to create issues.<br><br>I just say them. &quot;Create the issue for this bug, high priority, assign to Anna.&quot; My Mac plans the action, shows me exactly what it&#x27;s about to do, and runs it when I confirm.<br><br>What makes this actually usable at work isn&#x27;t magic, it&#x27;s the framework:<br><br>, Reads can run on their own; writes are always confirmed. Nothing executes behind your back.<br>, The plan is generated on my machine, by my own AI, never a server key.<br>, You disconnect an app whenever you want.<br><br>A voice agent with access to your Gmail, your Slack, your Linear can sound scary. That&#x27;s exactly why we built it paranoid: it asks before it acts.<br><br>The voice that executes, across 1,000+ connected apps → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J10</span><span class="date">lun 13 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P4 Comparatifs Mac (honnêteté radicale)</div>
+      <div class="posttext">Everyone claims &quot;best Mac dictation app,&quot; so we built an honest comparison across 24 features. We don&#x27;t win every line.<br><br>That&#x27;s the point. If you can see where we lose, you can believe where we win.<br><br>The full comparison → verba.run/compare</div>
+      
+      <div class="cta">verba.run/compare</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J11</span><span class="date">mar 14 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2 Dictee prive on-device</div>
+      <div class="posttext">Where does another popular dictation app store your audio? On your disk.<br><br>Where does Verba store yours? Nowhere it doesn&#x27;t have to be.<br><br>On-device transcription, local history with an off switch, audio that never leaves your Mac. Private by default. → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J12</span><span class="date">mer 15 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P1 Voice-driven coding</div>
+      <div class="posttext">The keyboard was the bottleneck in my brain.<br><br>I know what I want to build, writing it out cleanly is what slows me down. So now I just say it. Verba turns the ramble into a polished, ready-to-paste prompt, dropped straight into my editor.<br><br>Dictate your next spec → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post manual">
+      <div class="phead"><span class="day">J13</span><span class="date">jeu 16 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b man">MANUEL</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voix -&gt; action (démo, build-in-public)</div>
+      <div class="posttext">Recording the demo that shows what Verba actually does best.<br><br>One take, no cuts: I say &quot;create the Linear issue for this bug and send the team a recap.&quot; Verba plans both actions, shows them to me, I confirm. Done.<br><br>The Confirm button stays in every clip, that&#x27;s the whole trust argument. 🎬</div>
+      <div class="note">🙋 Post founder build-in-public authentique. Filmer et poster toi-meme un clip 20-30 s depuis un Mac propre : parler -&gt; plan affiche (2 actions) -&gt; bouton Confirmer bien visible -&gt; issue creee + mail envoye. L&#x27;etape Confirm doit rester a l&#x27;ecran (argument de confiance). Repondre aux replies la premiere heure (signal + confiance). Ne jamais montrer/nommer &#x27;Composio&#x27;.</div>
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J14</span><span class="date">ven 17 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree (narratif maître)</div>
+      <div class="posttext">The Mac dictation app that became a voice agent.<br><br>It transcribes on your Mac (nothing gets uploaded), cleans up your text with private AI built right in, and acts on what you say, after you confirm.<br><br>More privacy, less friction. → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J15</span><span class="date">sam 18 juil</span> <span class="chip" style="--c:#0a66c2">linkedin</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree (thought-leadership)</div>
+      <div class="posttext">An unpopular take on consumer AI: soon, nobody will accept an app that quietly uploads their voice just to answer a question.<br><br>Look at the dictation market. Almost everyone assumes their words are being sent somewhere to get cleaned up, and most never ask where.<br><br>Verba&#x27;s bet: the intelligence should run where your voice already lives, on your Mac, not on someone else&#x27;s server. Private by design, not an afterthought.<br><br>The next wave of tools won&#x27;t win by promising more AI. They&#x27;ll win by proving what never leaves your device.<br><br>→ verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J16</span><span class="date">dim 19 juil</span> <span class="chip" style="--c:#8a8a94">blog</span> <span class="b auto">AUTO</span> <span class="slot">09:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voix -&gt; action (hub émergent)</div>
+      <div class="posttext"># JARVIS for Mac: the voice that acts, explained<br><br>For ten years we&#x27;ve been promised a voice assistant that actually does things. Siri promised us Jarvis. We got a timer and the weather.<br><br>The problem was never understanding your sentence. The problem is trust: giving an assistant access to your email, your Slack, your Linear, and letting it act. Too much risk, not enough control.<br><br>Verba takes on the trust problem, not the magic trick.<br><br>## How JARVIS acts<br>You talk. JARVIS generates an action plan, on your Mac, with your AI. It shows you exactly what it plans to do: &quot;Create the Linear issue,&quot; &quot;Send the team recap.&quot; Nothing moves until you confirm.<br><br>## Why the Confirm button changes everything<br>An agent that&#x27;s actually useful at work can&#x27;t be one that improvises inside your tools. Verba&#x27;s framework is simple: reads can run on their own, writes are always confirmed. Nothing executes behind your back.<br><br>## Generated on your machine<br>The plan isn&#x27;t computed by a key on our server. It&#x27;s produced by your own AI, on your Mac, we even tested it with our server key empty: it still plans, locally. Your intent isn&#x27;t ours to keep.<br><br>## 1,000+ connected apps<br>Gmail, Slack, Linear, Calendar, and plenty more. Connect what you want, disconnect whenever you want.<br><br>Your voice shouldn&#x27;t just write. It should act, when you say so, and only then.<br><br>→ verba.run</div>
+      
+      <div class="cta">verba.run/blog/jarvis-pour-mac</div>
+    </div>
+<div class="post manual">
+      <div class="phead"><span class="day">J17</span><span class="date">lun 20 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b man">MANUEL</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2 Dictee prive on-device (build-in-public founder)</div>
+      <div class="posttext">I built this paranoid.<br><br>Every privacy decision in Verba defaults to &quot;don&#x27;t send it.&quot; Audio stays on-device. JARVIS&#x27;s action plan is generated by YOUR AI, on your machine, even when our server key is empty.<br><br>&quot;Private by default&quot; isn&#x27;t a checkbox. It&#x27;s the architecture.</div>
+      <div class="note">🙋 Post founder build-in-public, poster toi-meme et rester dans les replies. Joindre une capture reelle prouvant la planification on-device avec la cle serveur vide (le plan JARVIS se genere quand meme). Preuve &gt; slogan (R-CITE). Ne jamais nommer &#x27;Composio&#x27; ni surpromettre.</div>
+      
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J18</span><span class="date">mar 21 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P4 Comparatifs Mac / multilingue</div>
+      <div class="posttext">Speak your language. Send theirs.<br><br>I dictate in French, Verba pastes a native English message. 15 target languages, on-device transcription.<br><br>Dictation that translates while you talk → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J19</span><span class="date">mer 22 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P1 Voice-driven coding</div>
+      <div class="posttext">40 minutes of rambling → one structured doc.<br><br>I think out loud, in circles, out of order. Verba captures all of it on-device and hands back clean, organized notes, up to an hour in one take.<br><br>The draft in your head already existed. Verba puts it on the page. → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post manual">
+      <div class="phead"><span class="day">J20</span><span class="date">jeu 23 juil</span> <span class="chip" style="--c:#ff4500">reddit</span> <span class="b man">MANUEL</span> <span class="slot">17:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree (communaute Mac)</div>
+      <div class="posttext">Most Mac dictation apps quietly ship your voice to a server just to clean up the transcript. Mine doesn&#x27;t, no extra cost for skipping that.<br><br>I&#x27;m the founder of Verba (a native macOS menu-bar dictation app), so take this with the appropriate bias, but it&#x27;s a genuine category-of-one thing I wanted to share here.<br><br>Most dictation apps quietly ship your words to a server before they&#x27;ll clean up your transcript. Verba has private intelligence built right in instead. You talk, transcription happens on-device (your audio never leaves your Mac), and it restructures the ramble into clean text right where your cursor is. Nothing to generate, nothing extra to pay for that step.<br><br>There&#x27;s also a voice agent mode (JARVIS): you can say &quot;create the Linear issue and send the team a recap,&quot; it plans both actions, shows them to you, and only executes once you confirm.<br><br>Happy to answer anything: how the on-device privacy works, or the confirm-gated actions. Mac-only, indie, no public testimonials yet, ask me the hard questions.<br><br>verba.run</div>
+      <div class="note">🙋 Poster manuellement sur un forum Mac/productivite pertinent (ex: r/macapps) (mener valeur-d&#x27;abord, se declarer founder, UN seul ask soft). Rester ~2h dans les commentaires (signal de ranking + confiance). En commentaire : coller un GIF/clip 10 s de l&#x27;action Linear confirm-gated (parler -&gt; plan -&gt; Confirmer -&gt; issue creee), filme depuis un Mac propre. Ne jamais nommer &#x27;Composio&#x27; ni les moteurs sous-jacents.</div>
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J21</span><span class="date">ven 24 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voix -&gt; action</div>
+      <div class="posttext">Siri promised Jarvis. We shipped it, with a Confirm button.<br><br>Verba plans the action from your voice, shows it to you, and only runs it when you say go. 1,000+ connected apps. → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J22</span><span class="date">sam 25 juil</span> <span class="chip" style="--c:#0a66c2">linkedin</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2 Dictee prive on-device (privacy-first pros)</div>
+      <div class="posttext">To the lawyers, doctors, journalists, and founders dictating sensitive things: your dictation app is a compliance choice, not a gadget.<br><br>When you dictate a patient note, a case file, a source, or a strategic decision, the real question isn&#x27;t &quot;does it transcribe well.&quot; It&#x27;s &quot;where does that audio go.&quot;<br><br>For most tools, it goes to third-party servers, every sentence. You control neither retention, nor training, nor location.<br><br>Verba is built for the other answer: by default, audio never leaves your Mac. On-device transcription, local history with an off switch and auto-prune, keys in the Keychain. You decide what syncs, and it&#x27;s always text, never your voice.<br><br>Being honest also means naming the limits: Verba is Mac-only today, and young. Our proof is product depth and an architecture we stand behind line by line, not testimonials yet.<br><br>Private by default. Yours by design. → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J23</span><span class="date">dim 26 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P1 Voice-driven coding (build-in-public)</div>
+      <div class="posttext">The right model for the right task.<br><br>Verba routes your 6 modes to different tiers of intelligence under the hood. A quick message gets a fast pass. A code spec gets the deepest one. You pay for power where it matters, not a giant model to say hello.<br><br>Building in public, day after day. → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J24</span><span class="date">lun 27 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P4 Comparatifs Mac (honnêteté radicale)</div>
+      <div class="posttext">Mac-only? Honestly, yes.<br><br>Verba is the best native macOS dictation tool today. Need Windows or mobile right now? Wispr Flow wins there, we say so ourselves on our own /vs pages.<br><br>We&#x27;d rather tell you where we lose. → verba.run/compare</div>
+      
+      <div class="cta">verba.run/compare</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J25</span><span class="date">mar 28 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voix -&gt; action (Context/vision)</div>
+      <div class="posttext">Reply to the email on your screen without copy-pasting.<br><br>Context mode: Verba reads what&#x27;s on screen, understands the thread, and drafts your dictated reply directly in the right tone. You talk, it sees, you send.<br><br>Dictation with context → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J26</span><span class="date">mer 29 juil</span> <span class="chip" style="--c:#0a66c2">linkedin</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voix -&gt; action (thought-leadership catégorie)</div>
+      <div class="posttext">A new category of tool is being born, and it doesn&#x27;t have a settled name yet: the desktop voice agent.<br><br>For ten years, dictation stopped at text. You talk, it writes, and you do the rest by hand: open the app, click, fill in, send. Voice produced words, never actions.<br><br>That wall is coming down. The missing piece was never speech recognition, it&#x27;s been excellent for years. It was trust: how do you let an assistant act inside your real tools without letting it improvise in your Gmail.<br><br>The answer comes down to one word: confirmation. A voice agent you can actually use at work shows its plan before acting, lets reads run free but confirms every write, and generates that plan on your own machine, never a server.<br><br>That&#x27;s Verba&#x27;s bet, and it&#x27;s why we show the Confirm button in every demo: it&#x27;s not a UI detail, it&#x27;s the contract.<br><br>The market&#x27;s mental model is about to shift. Today: &quot;voice is for dictating.&quot; Tomorrow: &quot;voice is for doing.&quot; Whoever makes that safe first owns the category.<br><br>Your voice shouldn&#x27;t just write. It should act. → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J27</span><span class="date">jeu 30 juil</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree</div>
+      <div class="posttext">Zero of your words ever pass through our servers.<br><br>Verba&#x27;s intelligence runs privately, right on your Mac. Nothing about what you say gets uploaded to make it work.<br><br>Private by design, not an add-on. → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J28</span><span class="date">ven 31 juil</span> <span class="chip" style="--c:#8a8a94">blog</span> <span class="b auto">AUTO</span> <span class="slot">09:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P1 Voice-driven coding (hub)</div>
+      <div class="posttext"># Voice coding with AI: the 2026 setup<br><br>Vibe-coding has a blind spot: everyone talks about AI that writes the code, never about how you talk to it. And for a lot of devs, that channel is a keyboard, slow, tedious, and it discourages you from explaining the edge cases.<br><br>What if you dictated your prompts instead of typing them?<br><br>## Why voice changes vibe-coding<br>Out loud, your specs come out longer and clearer. You explain the edge cases you usually skip because typing them is a pain. A 20-minute brain-dump becomes a complete PR description, without touching the keyboard.<br><br>## The setup, in practice<br>1. Verba lives in your menu bar. You press a key, you talk.<br>2. Transcription happens on-device, your audio never leaves your Mac.<br>3. Private intelligence cleans the ramble into a structured, polished prompt, and pastes it straight into your editor.<br>4. No setup to manage, no dashboard to babysit, nothing uploaded along the way.<br><br>## And when you&#x27;re ready to act<br>Dictating the prompt is step one. Step two: &quot;create the Linear issue for this bug and assign it.&quot; Verba plans the action on your Mac, shows it to you, and runs it on your confirm. Your flow never leaves your voice.<br><br>## What you gain in a week<br>Richer specs, less keyboard fatigue, and a prompt history that finally looks like the way you think. Not your typing speed.<br><br>Code for a living? Try a week without the keyboard.<br><br>→ verba.run</div>
+      
+      <div class="cta">verba.run/blog/coder-a-la-voix-2026</div>
+    </div>
+<h2 id="m8">Aout 2026</h2>
+<div class="post manual">
+      <div class="phead"><span class="day">J29</span><span class="date">sam 1 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b man">MANUEL</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2 Dictee prive on-device (full-local)</div>
+      <div class="posttext">For anyone who wants zero exposure: Verba can run 100% local.<br><br>Transcription and cleanup both happen on your machine. Zero network calls, zero exposure, zero uploads. Your voice and your text never leave it.<br><br>Showing the full-local setup in the replies. 🧵</div>
+      <div class="note">🙋 Angle full-local pour r/LocalLLaMA + X. Poster toi-meme et, en reponse, montrer un setup reel avec le pipeline local complet (capture propre depuis le Mac : reseau coupe, dictee + nettoyage qui tournent quand meme en local). Rester dans les commentaires pour repondre aux devs (communaute exigeante, valeur-d&#x27;abord, un seul ask soft). Ne jamais surpromettre. Ne jamais nommer les moteurs sous-jacents.</div>
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J30</span><span class="date">dim 2 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree + narratif maître (récap awareness)</div>
+      <div class="posttext">One month building Verba in public. The pitch in three lines:<br><br>, Your voice shouldn&#x27;t leave your Mac. (on-device)<br>, Your words shouldn&#x27;t be exposed just to get cleaned up. (private by design)<br>, Your voice shouldn&#x27;t just write. It should act. (JARVIS, after you confirm)<br><br>Say it. Send it clean. → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J31</span><span class="date">lun 3 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voice -&gt; action (étude de cas)</div>
+      <div class="posttext">Case study: a PM&#x27;s whole day without opening Linear once.<br><br>She says, &quot;create the issue for this bug, add it to the sprint.&quot; Verba plans both actions on-device, shows her the cards, she hits Confirm. Done.<br><br>One week later: 41 issues created by voice, zero copy-paste. The plan never leaves her Mac.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J32</span><span class="date">mar 4 aout</span> <span class="chip" style="--c:#8a8a94">blog</span> <span class="b auto">AUTO</span> <span class="slot">09:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P1 Voice-driven coding (la méthode / how-it-works)</div>
+      <div class="posttext"># How a 20-minute ramble becomes a clean PR<br><br>Most people think faster than they type. The problem: everything you send has to be written and clean. Here&#x27;s exactly how Verba closes that gap while you code.<br><br>1. Hit a hotkey and talk. Describe the feature, the edge cases, the &quot;oh, also&quot; you usually skip because typing it is a pain.<br>2. Transcription happens on-device. Your audio never leaves your Mac, sync is text-only.<br>3. Private intelligence restructures the stream into a clean prompt, or a precise PR description.<br>4. The text lands wherever your cursor is: your editor, ready to go.<br><br>The win isn&#x27;t typing speed. It&#x27;s that you explain better out loud: your specs get longer and clearer, and you end up documenting the edge cases you&#x27;d have skipped.<br><br>And it doesn&#x27;t stop at text: say &quot;create the Linear issue for this,&quot; and Verba plans it, shows you, and runs it once you confirm.<br><br>Setup takes under a minute on a fresh Mac. Nothing to configure, nothing uploaded.<br><br>→ verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J32</span><span class="date">mar 4 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P1 Voice-driven coding</div>
+      <div class="posttext">New post: how a 20-minute ramble becomes a clean PR.<br><br>You talk, it transcribes on-device, private intelligence restructures it, the prompt lands right in your editor. Nothing uploaded, nothing to configure.<br><br>The full method → verba.run/blog/ramble-to-pr</div>
+      
+      <div class="cta">verba.run/blog/ramble-to-pr</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J33</span><span class="date">mer 5 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree (gestion d&#x27;objection : les clés API)</div>
+      <div class="posttext">Another app where I have to wrangle an API key?<br><br>Nope. Verba&#x27;s intelligence is built right in, nothing to generate, nothing to babysit. Or start the free trial, no card.<br><br>Setup complexity is exactly what we spare you. verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J34</span><span class="date">jeu 6 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2 Private on-device (coulisses / preuve technique)</div>
+      <div class="posttext">Behind the scenes: how we prove your audio never leaves your Mac.<br><br>We cut the Wi-Fi. We dictate. It still works.<br><br>Transcription runs on-device, fully offline. Sync, when it exists, is text-only. Local history with a real off switch.<br><br>Private by default isn&#x27;t a setting. It&#x27;s the architecture.</div>
+      
+      
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J35</span><span class="date">ven 7 aout</span> <span class="chip" style="--c:#0a66c2">linkedin</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voice -&gt; action (opérateur voice-first, étude de cas)</div>
+      <div class="posttext">I stopped opening Linear, Gmail, and Slack for micro-tasks. I say them now.<br><br>Context: I spend my day in a handful of apps, and 80 percent of what I do there is plumbing: create an issue, send a recap, schedule a follow-up. Every context switch costs attention.<br><br>What Verba does (JARVIS mode): I say the intent, it plans the steps on my Mac, shows me exactly what it&#x27;s about to do, and only executes after I confirm. Reads can run automatically; writes are always gated.<br><br>The detail that matters: the action plan is generated by MY AI, on MY machine. Even when the server key is empty, it still plans locally. My intent isn&#x27;t theirs to keep.<br><br>This isn&#x27;t &quot;the AI takes over.&quot; It&#x27;s &quot;I say it, it shows me, I confirm, it&#x27;s done.&quot; The trust comes from the Confirm button, not a promise.<br><br>Curious: which repetitive task would you dictate first?</div>
+      
+      
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J36</span><span class="date">sam 8 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P4 Comparatifs (gestion d&#x27;objection : Mac-only)</div>
+      <div class="posttext">Mac-only? Deal-breaker for some.<br><br>Fair, and we&#x27;ll say it straight: Verba is the best native Mac app today, and we own that focus. Need Windows or mobile right now? Wispr Flow wins there, and we say so in black and white on our own /vs pages.<br><br>Radical honesty is the argument: see where we lose, and you can trust where we win.<br><br>verba.run/compare</div>
+      
+      <div class="cta">verba.run/compare</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J37</span><span class="date">dim 9 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree (build-in-public receipt : les coûts)</div>
+      <div class="posttext">Build-in-public receipt: how many of your words touch our servers this month.<br><br>Zero.<br><br>Not a figure of speech. Verba&#x27;s intelligence runs privately, on your Mac. Nothing about what you say gets uploaded to make it work.<br><br>It&#x27;s also how we keep the app priced honestly while others charge extra for a round trip you never see.</div>
+      
+      
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J38</span><span class="date">lun 10 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2 Private on-device (gestion d&#x27;objection : Apple Dictation)</div>
+      <div class="posttext">Apple Dictation is free, why pay for anything?<br><br>Apple transcribes. Full stop. Verba turns the ramble into clean, structured, ready-to-send text, with modes, intent, per-app tone, and audio that never leaves your Mac.<br><br>Transcribing and sending clean are two different jobs. verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post manual">
+      <div class="phead"><span class="day">J39</span><span class="date">mar 11 aout</span> <span class="chip" style="--c:#ff4500">reddit</span> <span class="b man">MANUEL</span> <span class="slot">17:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2 Private on-device (r/LocalLLaMA, démo full-local)</div>
+      <div class="posttext">Title: 100% local Mac dictation, zero exposure, nothing leaves the machine<br><br>Founder of Verba here (so, biased), but this is exactly the kind of setup this sub tends to like, so sharing it.<br><br>Most dictation apps ship your audio to their servers. Verba can run fully local: transcription happens on-device (your audio never leaves your machine), then the cleanup step restructures the ramble into clean text and pastes it where your cursor is. No network call required for the base path.<br><br>The point here is the verifiable full-local mode: cut the Wi-Fi, it still works.<br><br>There&#x27;s also an agent mode (JARVIS) that plans an action from your voice and only executes after you confirm, and that plan is generated on-device too.<br><br>Mac-only, indie, no public testimonials yet. Ask me the hard questions about the local pipeline or latency.<br><br>verba.run</div>
+      <div class="note">🙋 Poster manuellement sur r/LocalLLaMA en mode valeur-d&#x27;abord : mener avec le setup technique full-local (pipeline local complet), se déclarer founder, UN seul ask soft. Coller en commentaire un clip 10 s Wi-Fi coupé -&gt; dictée -&gt; texte propre collé, filmé depuis un Mac propre. Rester ~2h dans les commentaires (signal de ranking + confiance). Ne jamais nommer les moteurs sous-jacents.</div>
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J40</span><span class="date">mer 12 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voice -&gt; action (démo cutdown : Calendar)</div>
+      <div class="posttext">15 seconds: &quot;block 30 minutes tomorrow for the review and invite Anna.&quot;<br><br>Verba plans the event, shows me the card, I confirm, it&#x27;s on the calendar. It asks before it acts.<br><br>Your voice shouldn&#x27;t just write. It should do. verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J41</span><span class="date">jeu 13 aout</span> <span class="chip" style="--c:#8a8a94">blog</span> <span class="b auto">AUTO</span> <span class="slot">09:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voice -&gt; action (la méthode / how JARVIS works)</div>
+      <div class="posttext"># JARVIS for Mac: how voice-to-action actually works<br><br>A voice agent touching your Gmail, your Slack, your Linear should make you nervous. It makes us nervous too. Here&#x27;s the exact architecture, so you can decide with full information.<br><br>1. You dictate an intent: &quot;create the Linear issue for this bug and send the team a recap.&quot;<br>2. The plan is generated on-device, by your own AI, entirely on your machine. Never a server key. We tested it with the server key empty: it still plans, locally.<br>3. Verba shows you exactly what it&#x27;s about to do, every step, every app touched.<br>4. Fail-safe read/write classifier: reads can auto-run, writes are ALWAYS gated. No write ever goes out without your confirmation.<br>5. You hit Confirm. It executes, across 1,000+ connected apps plus native Mac actions. Disconnect any app whenever you want.<br><br>What never happens: an action that runs behind your back. The Confirm button isn&#x27;t a UX detail, it&#x27;s the contract.<br><br>Paranoid by design. It&#x27;s the only acceptable design for an agent that acts on your behalf.<br><br>→ verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J42</span><span class="date">ven 14 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P1 Voice-driven coding (étude de cas indie dev)</div>
+      <div class="posttext">Case study: an indie dev dictated 4 days of specs instead of typing them.<br><br>What he noticed: his tickets finally had the edge cases he used to &quot;forget,&quot; because saying them out loud costs nothing.<br><br>On-device ramble to a clean prompt pasted straight into his editor, no setup required. Nothing exposed.<br><br>Try a keyboard-free week. verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J43</span><span class="date">sam 15 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P4 Comparatifs (build-in-public receipt : les lignes qu&#x27;on perd)</div>
+      <div class="posttext">Rare thing to see: here are the lines in our comparison where we LOSE.<br><br>Public track record, customer reviews, Windows and mobile: the incumbents beat us there, and we write it down.<br><br>We publish where we lose because that&#x27;s exactly what makes &quot;where we win&quot; credible (private by design, on-device, voice to action).<br><br>The full 24x10 comparison → verba.run/compare</div>
+      
+      <div class="cta">verba.run/compare</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J44</span><span class="date">dim 16 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2 Private on-device (gestion d&#x27;objection : où est stocké l&#x27;audio)</div>
+      <div class="posttext">Is this actually private, or just marketing?<br><br>Where does another popular dictation app store your audio? On your disk. Where does Verba? Nowhere it doesn&#x27;t have to be.<br><br>On-device mode: local transcription, audio that never leaves your Mac (text-only sync), an off switch plus auto-prune, keys in the Keychain. Most other tools upload every word.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J45</span><span class="date">lun 17 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voice -&gt; action (démo Translate + action)</div>
+      <div class="posttext">I speak French. The client gets native English.<br><br>&quot;Summarize this thread and send the client the English version.&quot; Verba translates, shows me the draft, I confirm, it sends.<br><br>Speak yours. Send theirs. verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post manual">
+      <div class="phead"><span class="day">J46</span><span class="date">mar 18 aout</span> <span class="chip" style="--c:#0a66c2">linkedin</span> <span class="b man">MANUEL</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2 Private on-device (récit fondateur, pourquoi paranoïaque)</div>
+      <div class="posttext">Why I built a dictation app that refuses to upload your audio.<br><br>When I started Verba, I set one rule before writing a single line of code: your voice doesn&#x27;t leave your Mac. Not &quot;we encrypt in transit.&quot; Not &quot;we only keep it for 30 days.&quot; No: it doesn&#x27;t leave.<br><br>Why so strict? Because dictation is intimate. You dictate lawyer emails, doctor notes, half-formed ideas. The only privacy promise I find honest is the one the architecture makes impossible to break.<br><br>So: transcription runs on-device. Local history with an off switch and auto-prune. Keys in the Keychain. And when we added the voice agent (JARVIS), we held the same line: the action plan is generated by your own AI, on your machine. I tested it with our server key empty, it still plans.<br><br>Private by default shouldn&#x27;t be a setting you flip on. It should be the architecture you can&#x27;t turn off.<br><br>No-card trial, if you want to check for yourself. → verba.run</div>
+      <div class="note">🙋 Récit fondateur authentique, poster toi-même et répondre aux commentaires la première heure (signal + confiance). Visuel : réutiliser un still de la démo (frontière-device + waveform qui reste dedans) ou une vraie capture build-in-public du plan on-device avec clé serveur vide.</div>
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J47</span><span class="date">mer 19 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree (le bon modèle à chaque tâche, how-it-works)</div>
+      <div class="posttext">6 modes, each routed to the right tier of intelligence.<br><br>Quick fixes get a fast, cheap pass. Translation gets a mid-tier model. Coding and Context get the deepest one, where the power actually matters.<br><br>You don&#x27;t pay premium prices to fix a comma. You pay for power where it counts.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J48</span><span class="date">jeu 20 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voice -&gt; action (coulisses : la sécurité read/write)</div>
+      <div class="posttext">Behind the scenes of JARVIS: why reads auto-run but writes never do.<br><br>Reading your calendar, summarizing a thread: no risk, it just runs. Sending an email, creating an issue, deleting anything: gated, always shown, executed only on your confirm.<br><br>The classifier is fail-safe: when in doubt, it gates. We&#x27;d rather ask once too often.</div>
+      
+      
+    </div>
+<div class="post manual">
+      <div class="phead"><span class="day">J49</span><span class="date">ven 21 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b man">MANUEL</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P1 Voice-driven coding (démo founder Context / vision)</div>
+      <div class="posttext">Context mode reads what&#x27;s on your screen.<br><br>A stack trace sitting in the terminal? I say &quot;explain this error and suggest a fix.&quot; Verba sees the screen, answers privately, the text lands pasted. No copying that wall of red text.<br><br>Answer what&#x27;s in front of you, without retyping it. verba.run</div>
+      <div class="note">🙋 Vidéo founder 20-30 s à filmer en une prise depuis un Mac propre : ouvrir un vrai stack trace dans le terminal sombre, déclencher Verba (mode Context), dire l&#x27;intention à voix haute, montrer la réponse collée sous l&#x27;erreur. Cadre editorial left-crop, lumière mate, pill Verba visible. Poster la vidéo toi-même et répondre aux replies la première heure.</div>
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J50</span><span class="date">sam 22 aout</span> <span class="chip" style="--c:#8a8a94">blog</span> <span class="b auto">AUTO</span> <span class="slot">09:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree (la méthode : ou va ta voix)</div>
+      <div class="posttext"># Where does the money (and your voice) actually go?<br><br>Most dictation apps quietly send your voice to a server to get it cleaned up. That round trip isn&#x27;t free, and it isn&#x27;t private either. Let&#x27;s look at what that actually costs you.<br><br>The typical setup:<br>- You dictate, your audio leaves your Mac.<br>- Somewhere on a server, an AI model cleans it up.<br>- You never see that step, and neither does anyone auditing where your words went.<br><br>The Verba setup:<br>- One bill for Verba.<br>- The cleanup runs privately, on your Mac. Nothing about what you say gets uploaded to make it work.<br><br>Our server cost for this: zero, because nothing runs there. That&#x27;s how we can charge less without cutting corners.<br><br>And you keep everything else: on-device transcription (audio never uploaded), 6 modes, vision, hour-long notes, live translation, and a voice agent that acts only after you confirm.<br><br>Stop paying for a round trip you never see.<br><br>→ verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J50</span><span class="date">sam 22 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree</div>
+      <div class="posttext">New post: where the money (and your voice) actually goes.<br><br>Most dictation apps send your voice off to get cleaned up, and quietly bill you for that round trip. Verba runs the cleanup privately, on your Mac. Our server cost for this: zero.<br><br>The full breakdown → verba.run/blog/where-your-voice-goes</div>
+      
+      <div class="cta">verba.run/blog/where-your-voice-goes</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J51</span><span class="date">dim 23 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P4 Comparatifs (gestion d&#x27;objection : pas de témoignages)</div>
+      <div class="posttext">Indie, new, no public reviews yet, why should I trust you?<br><br>Fair question. Our proof today isn&#x27;t a wall of testimonials, it&#x27;s product depth and a comparison page that lists where we lose.<br><br>We&#x27;d rather show you the architecture and let you verify it yourself (no-card trial) than sell you stars.<br><br>verba.run/compare</div>
+      
+      <div class="cta">verba.run/compare</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J52</span><span class="date">lun 24 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voice -&gt; action (démo cutdown : Slack)</div>
+      <div class="posttext">15 seconds: &quot;post in #eng that the deploy is approved and tag Marc.&quot;<br><br>Verba drafts the message, shows it to me, I confirm, it&#x27;s posted. It asks before it acts, every time.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J53</span><span class="date">mar 25 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2 Private on-device (build-in-public receipt : chiffres produit)</div>
+      <div class="posttext">Build-in-public, the real numbers under the hood:<br><br>3 transcription engines. 99+ languages supported. 6 modes routed across different tiers of intelligence. 15 translate targets. JARVIS across 1,000+ connected apps.<br><br>And the only number that matters for your privacy: how many times your audio gets uploaded. Zero.</div>
+      
+      
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J54</span><span class="date">mer 26 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P1 Voice-driven coding (étude de cas : notes longues)</div>
+      <div class="posttext">40 minutes of voice brain-dump becomes a structured doc.<br><br>Notes mode holds up to an hour. I unload everything in my head about an architecture, no stopping, and get back a clean document with sections and decisions, not a wall of text.<br><br>Think out loud. Get structure back. verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J55</span><span class="date">jeu 27 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voice -&gt; action (gestion d&#x27;objection : accès Gmail/Slack)</div>
+      <div class="posttext">A voice agent with access to my Gmail and Slack? No thanks.<br><br>Paranoid by design: auto-run is read-only, period. Every write is shown to you and only executes on your confirm. The plan is generated on your Mac, by your own AI. Disconnect any app whenever you want.<br><br>This isn&#x27;t &quot;hand over the keys.&quot; It&#x27;s &quot;it shows you, you decide.&quot;<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J56</span><span class="date">ven 28 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree (démo : full-local, zéro exposition)</div>
+      <div class="posttext">Zero exposure, if that&#x27;s what you want: transcription and cleanup both run on-device, fully local.<br><br>Nothing to configure, no account, nothing leaves. Great on a plane, on a locked-down network, or just on principle.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post manual">
+      <div class="phead"><span class="day">J57</span><span class="date">sam 29 aout</span> <span class="chip" style="--c:#ff4500">reddit</span> <span class="b man">MANUEL</span> <span class="slot">17:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voice -&gt; action (r/macapps, démo confirm-gated)</div>
+      <div class="posttext">Title: Built a Mac voice agent that asks BEFORE it acts, demo of the Confirm layer<br><br>Founder of Verba here (so, biased). Sharing because r/macapps likes real demos, and the part I&#x27;m proudest of is the one people notice least: the guardrail.<br><br>Verba starts as a private Mac dictation app (on-device transcription, audio never leaves your machine). But it can also act: say &quot;create the Linear issue and send the team a recap,&quot; and it plans the steps on your Mac, SHOWS them to you, and only executes once you click Confirm.<br><br>The safety design: reads can auto-run, writes are always gated. The classifier is fail-safe (when unsure, it gates). And the plan is generated by your own model, on-device, never a server key.<br><br>Dropping a 10-second clip of the full flow in the comments (talk, plan, Confirm, issue created), filmed on a clean Mac. Mac-only, indie, no public testimonials yet. Ask me the hard questions about write safety, connected apps, or latency.<br><br>verba.run</div>
+      <div class="note">🙋 Poster sur r/macapps en menant avec le GIF/clip confirm-gated (parler -&gt; plan -&gt; Confirm -&gt; issue créée). Être honnête sur les limites (Mac-only, indie, pas de témoignages), UN ask soft, rester ~2h dans les commentaires. Filmer depuis un Mac propre, l&#x27;étape Confirm bien visible à l&#x27;écran.</div>
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J58</span><span class="date">dim 30 aout</span> <span class="chip" style="--c:#0a66c2">linkedin</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree (opérateur, le coût réel de l&#x27;IA en équipe)</div>
+      <div class="posttext">A line item most teams never notice: where their people&#x27;s voices actually go.<br><br>Most dictation tools ship every sentence to a server to get it cleaned up. Multiply that across a team, and you&#x27;ve got a lot of sensitive material leaving the building, per seat, every day.<br><br>Verba&#x27;s model removes that layer entirely: the cleanup runs privately, on-device, nothing billed for a round trip that never happens.<br><br>It isn&#x27;t only about price. It&#x27;s also privacy: audio never leaves the machine, which matters when your people are dictating sensitive material.<br><br>Before renewing a dictation tool, ask one question: where does our audio actually go?</div>
+      
+      
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J59</span><span class="date">lun 31 aout</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2/P5 Narratif maître (build-in-public : bilan mois 2)</div>
+      <div class="posttext">Month recap: the Mac dictation app became a voice agent, and I kept it paranoid the whole way.<br><br>What hasn&#x27;t moved an inch: your audio never leaves your Mac, your AI sub never gets taxed with a markup, and nothing executes without your Confirm.<br><br>The proof isn&#x27;t in the pitch. It&#x27;s in the architecture.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<h2 id="m9">Sept 2026</h2>
+<div class="post auto">
+      <div class="phead"><span class="day">J60</span><span class="date">mar 1 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P1 Voice-driven coding (invitation essai, clôture de bloc)</div>
+      <div class="posttext">If you code for a living, try a keyboard-free week.<br><br>Speak your specs, let Verba clean them into a tidy prompt, entirely on-device. Nothing to configure. 33 free dictations before any paywall, no card.<br><br>You think faster than you type. Prove it to yourself.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J61</span><span class="date">mer 2 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2/P5 Narratif maître (ouverture Mois 3, bilan momentum)</div>
+      <div class="posttext">Month 3. The Mac dictation app became a voice agent, shipped, and stuck.<br><br>We&#x27;re past &#x27;does it work&#x27; and into &#x27;why isn&#x27;t this your setup yet.&#x27;<br><br>Three things never moved: your audio never leaves your Mac, your AI sub never gets taxed, nothing runs without your Confirm.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J62</span><span class="date">jeu 3 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P4 Best Mac dictation (temoignage, premiere review)</div>
+      <div class="posttext">The first review we keep coming back to:<br><br>&#x27;I installed Verba to dictate my specs. Three days later I stopped typing Slack messages too. The paste is clean, and I never had to configure a thing.&#x27;<br><br>We don&#x27;t win every line on our /vs pages yet. But that path, speak it, paste it clean, we&#x27;ve got that one locked.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J63</span><span class="date">ven 4 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P1 Voice-driven coding (offre, invitation dev)</div>
+      <div class="posttext">If you vibe-code for a living, here&#x27;s the simplest deal we can offer.<br><br>Speak your next spec. Verba cleans it into a tidy prompt, entirely on-device. Nothing to configure. 33 free dictations before any paywall, no card.<br><br>If it doesn&#x27;t change your flow in a week, uninstall it. But give it a real week.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J64</span><span class="date">sam 5 sept</span> <span class="chip" style="--c:#8a8a94">blog</span> <span class="b auto">AUTO</span> <span class="slot">09:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P4 Best Mac dictation (BOFU, le comparatif honnete comme conversion)</div>
+      <div class="posttext"># The best Mac dictation app in 2026? We wrote the comparison that doesn&#x27;t let us win every line<br><br>Most &#x27;X vs Y&#x27; pages are written so the brand wins. Ours isn&#x27;t.<br><br>On `/compare`, we put Verba against 9 other tools across 24 criteria. Some rows we lose, and we leave them red. Wispr Flow has Windows and mobile today, we don&#x27;t. Some tools are great one-shot transcribers if that&#x27;s all you want. We say so.<br><br>Where Verba wins is where nobody else checks all three boxes at once:<br>1. **Private intelligence built in, nothing to configure.** You don&#x27;t pay extra for a round trip you never see.<br>2. **Private by default.** Transcription runs on-device, your audio never leaves your Mac (sync is text only), off switch, keys in the Keychain.<br>3. **It acts.** JARVIS plans an action from your voice and only executes after you confirm, across 1,000+ connected apps.<br><br>Here&#x27;s why we publish our own weaknesses: it&#x27;s the only comparison you can actually trust. A table that wins everywhere teaches you nothing.<br><br>Look at the full comparison, choose with your eyes open, and if the right call for you isn&#x27;t Verba today, we&#x27;ll have told you.<br><br>→ verba.run/compare</div>
+      
+      <div class="cta">verba.run/compare</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J64</span><span class="date">sam 5 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P4 Best Mac dictation (relais blog)</div>
+      <div class="posttext">We wrote the &#x27;best Mac dictation app&#x27; comparison that doesn&#x27;t let us win every line.<br><br>24 criteria, 10 brands, our weak spots left in red. If the right call for you isn&#x27;t Verba, you&#x27;ll see it.<br><br>The full comparison → verba.run/compare</div>
+      
+      <div class="cta">verba.run/compare</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J65</span><span class="date">dim 6 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree (offre, la math en une ligne)</div>
+      <div class="posttext">The math, in one line:<br><br>A dictation tool that ships your voice off to a server just to clean it up is charging you for a trip you never see.<br><br>Verba: the cleanup runs privately, on your Mac. Nothing uploaded, nothing billed for it.<br><br>Private by design. → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J66</span><span class="date">lun 7 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voice -&gt; action (démo week-end, un cas concret)</div>
+      <div class="posttext">Saturday, one sentence:<br><br>&#x27;Summarize this thread and create the follow-up task.&#x27;<br><br>JARVIS reads the screen, plans both steps on-device, shows me exactly what it&#x27;ll do. I read it, I hit Confirm. Done, without opening a single app.<br><br>Confirm stays on screen every time. That&#x27;s the whole argument. → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J67</span><span class="date">mar 8 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2 Private on-device (dimanche, la phrase qui recadre)</div>
+      <div class="posttext">Your dictation app keeps a log. Most of them, it lives on their servers.<br><br>Verba keeps one too. It lives on your Mac, with an off switch and auto-prune, and your audio never leaves the machine (sync is text only).<br><br>The difference isn&#x27;t in the pitch. It&#x27;s in where your words actually live.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J68</span><span class="date">mer 9 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voice -&gt; action (build-in-public, chiffre post-lancement honnete)</div>
+      <div class="posttext">Build-in-public, post-launch week: the number that matters to us isn&#x27;t downloads.<br><br>It&#x27;s how many people reach their first dictation, then their first JARVIS Confirm. That second jump is the real test, that&#x27;s where &#x27;dictation app&#x27; turns into &#x27;voice agent.&#x27;<br><br>This week we&#x27;re optimizing that jump, not the vanity metric. We&#x27;ll tell you what we learn.</div>
+      
+      
+    </div>
+<div class="post manual">
+      <div class="phead"><span class="day">J69</span><span class="date">jeu 10 sept</span> <span class="chip" style="--c:#ff4500">reddit</span> <span class="b man">MANUEL</span> <span class="slot">09:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2 Private on-device (communaute Mac, valeur-d&#x27;abord, offre communaute)</div>
+      <div class="posttext">PSA: your Mac dictation app probably uploads every word you say. Mine doesn&#x27;t, and I built it that way on purpose.<br><br>Founder of Verba here (so take that with a grain of salt), but this is exactly the kind of setup that fits this community, so I&#x27;m sharing it, not selling it.<br><br>How it works: you hit a hotkey, you talk, transcription happens on-device (your audio never leaves your Mac), then private intelligence restructures the ramble into clean text pasted right where your cursor is. Nothing to configure, nothing uploaded.<br><br>What I think is fair to flag: Mac-only, indie, and you can verify local mode by killing your Wi-Fi for the transcription path. There&#x27;s also an agent mode (JARVIS) that plans an action from your voice and only executes after you confirm, and that plan is generated on-device too, not on a server.<br><br>Ask me the hard questions: how the routing works, latency, what stays local. I&#x27;ll be in the comments.<br><br>verba.run</div>
+      <div class="note">🙋 Poster manuellement sur un forum Mac/productivite pertinent (ex: r/macapps) en mode valeur-d&#x27;abord: mener avec l&#x27;angle vie privee comme categorie-d&#x27;un ultra-pertinente pour la communaute, se declarer founder, UN seul lien soft en fin. Coller en commentaire un clip 15 s: appui touche -&gt; parole -&gt; collage propre dans l&#x27;editeur, sans jamais montrer de cle ni nommer les moteurs sous-jacents. Rester ~2h dans les commentaires pour repondre aux questions techniques (signal de ranking + confiance). Ne jamais ecrire &#x27;Composio&#x27;; parler de &#x27;JARVIS / apps connectees&#x27;.</div>
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J70</span><span class="date">ven 11 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P1 Voice-driven coding (temoignage dev)</div>
+      <div class="posttext">A dev wrote in:<br><br>&#x27;20 minutes of rambling about a feature turns into a clean prompt pasted right into my editor. What used to take me three rewrites, I say once now.&#x27;<br><br>That&#x27;s the whole wedge: your best thinking comes out loud and messy. Verba closes the gap to clean text, nothing to configure, nothing exposed.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J71</span><span class="date">sam 12 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voice -&gt; action (offre, invitation opérateur)</div>
+      <div class="posttext">Living in Gmail, Slack, Linear, Calendar all day?<br><br>Stop opening each app for a 10-second action. Say it instead. JARVIS plans it, shows you exactly what it&#x27;ll do, and acts only after you confirm, across 1,000+ connected apps.<br><br>Reads run automatically, read-only. Every write shown and confirmed. Paranoid by design.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J72</span><span class="date">dim 13 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree (objection, la peur des clés API)</div>
+      <div class="posttext">&#x27;Another app where I have to manage API keys?&#x27;<br><br>No. Verba&#x27;s intelligence is built right in, nothing to generate, nothing to manage. Or try it free, no card.<br><br>Key management is exactly the friction we removed. You press, you talk, it&#x27;s clean.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J73</span><span class="date">lun 14 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P4 Best Mac dictation (week-end, speak-vs-type)</div>
+      <div class="posttext">Typing a clean spec: slow, crossed-out lines, three passes.<br><br>Dictating it with Verba: you talk for 15 seconds, clean text lands pasted.<br><br>Apple Dictation transcribes. Verba turns the ramble into structured, ready-to-send text, in the app&#x27;s own tone. That&#x27;s the difference between written and finished.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J74</span><span class="date">mar 15 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2 Private on-device (dimanche, pour les pros sensibles)</div>
+      <div class="posttext">Lawyer, doctor, journalist, founder: your voice carries things that should never pass through a third-party server.<br><br>Verba&#x27;s on-device mode: transcription runs locally, your audio never leaves your Mac (sync is text only), off switch and auto-prune on history, keys live in the Keychain.<br><br>Speak freely. → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post manual">
+      <div class="phead"><span class="day">J75</span><span class="date">mer 16 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b man">MANUEL</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voice -&gt; action (build-in-public, video founder démo)</div>
+      <div class="posttext">One take, no cuts: I say &#x27;create the Linear issue for this bug and send the team a summary.&#x27; JARVIS plans both, shows me exactly what it&#x27;ll do, I hit Confirm. Done.<br><br>The Confirm button is there every time, on purpose. An agent that acts on your voice has to ask first. Watch the latency, watch the plan, judge for yourselves. 🎬</div>
+      <div class="note">🙋 Filmer une video founder de 20-30 s en une seule prise depuis un Mac propre: ouvrir un vrai bug dans le terminal sombre, dicter la phrase, laisser la feed JARVIS afficher les deux actions planifiees, montrer clairement le bouton Confirm, appuyer, montrer l&#x27;issue creee. Publier la video native sur X (pas de lien externe dans le post), rester ~1h a repondre aux commentaires. Le Confirm doit rester visible tout du long; ne jamais montrer ni prononcer &#x27;Composio&#x27; (dire &#x27;apps connectees&#x27;).</div>
+      
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J76</span><span class="date">jeu 17 sept</span> <span class="chip" style="--c:#0a66c2">linkedin</span> <span class="b auto">AUTO</span> <span class="slot">09:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2/P3 (opérateur, le vrai coût IA d&#x27;une équipe, angle scale)</div>
+      <div class="posttext">A line item most teams only notice after the fact: where their people&#x27;s voices actually go, every single day.<br><br>Most dictation tools ship every sentence to a server to get it cleaned up. Multiply that by headcount, and that&#x27;s a lot of sensitive material leaving the building.<br><br>Verba&#x27;s model removes that layer: cleanup runs privately, on-device, nothing billed for a round trip that never happens. And because transcription stays on the machine, your people&#x27;s audio never leaves their Mac, a compliance argument, not just a convenience one.<br><br>At team scale, this stops being a tool preference. It becomes a budget line and a privacy posture.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J77</span><span class="date">ven 18 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree (offre, Founder&#x27;s Edition, urgence honnete)</div>
+      <div class="posttext">We&#x27;re keeping one launch door open: the Founder&#x27;s Edition, a lifetime license, one payment, capped at the first 200 spots.<br><br>No fake urgency here. There&#x27;s a real counter: once the 200 are gone, the offer closes and we won&#x27;t run it again. We&#x27;re a bit past the halfway mark.<br><br>If Verba is already your daily setup, this is the best deal you&#x27;ll ever see. If not, the free trial, no card, is still open.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J78</span><span class="date">sam 19 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P1 Voice-driven coding (blog relais + how-to)</div>
+      <div class="posttext">New guide: dictate your specs without typing a word.<br><br>Ramble for 20 minutes, get back a polished prompt pasted clean into your editor, entirely on-device. Nothing to configure, nothing exposed.<br><br>The how-to → verba.run/blog/dictate-specs-by-voice</div>
+
+      <div class="cta">verba.run/blog/dictate-specs-by-voice</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J79</span><span class="date">dim 20 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voice -&gt; action (communaute, appel à cas d&#x27;usage)</div>
+      <div class="posttext">Question for everyone running JARVIS daily:<br><br>What action do you dictate the most? Creating an issue, sending a summary, scheduling an event, replying to the email on screen?<br><br>We&#x27;re building the next shortcuts from your answers. Tell us, the best cases land in a dedicated thread (with credit).<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J80</span><span class="date">lun 21 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P4 Best Mac dictation (week-end, Notes &amp; Translate, profondeur produit)</div>
+      <div class="posttext">What Verba does that &#x27;a dictation app&#x27; doesn&#x27;t:<br><br>Notes, 40 minutes of rambling become a structured doc.<br>Context, reply to the email on screen with no copy-paste (it reads your screen).<br>Translate, speak French, send native English.<br><br>Six modes, the right model for every task. You spend the power where it counts.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J81</span><span class="date">mar 22 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree (dimanche, full local, pour les puristes)</div>
+      <div class="posttext">Zero exposure, really: transcription and cleanup both run on-device, fully local. Kill your Wi-Fi, it still works.<br><br>Full-local mode is verifiable, not a slogan.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J82</span><span class="date">mer 23 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voice -&gt; action (sécurité, le confirm comme feature de confiance)</div>
+      <div class="posttext">The question we get most about JARVIS: &#x27;A voice agent with access to my Gmail and Slack, seriously?&#x27;<br><br>By design: reads run automatically, read-only only. Every write is shown, then executed on your confirm. The plan is generated on your Mac by your own AI, never a server key. Disconnect any app whenever you want.<br><br>This isn&#x27;t &#x27;trust us.&#x27; It&#x27;s &#x27;look before you tap.&#x27;<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post manual">
+      <div class="phead"><span class="day">J83</span><span class="date">jeu 24 sept</span> <span class="chip" style="--c:#ff4500">reddit</span> <span class="b man">MANUEL</span> <span class="slot">09:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voice -&gt; action (r/macapps, démo confirm-gated, communaute)</div>
+      <div class="posttext">I built a Mac dictation app that can also execute actions by voice, and it always asks before it acts<br><br>Founder here, so take that as bias. Leading with the demo because that&#x27;s what this sub actually wants.<br><br>The core: hit a hotkey, talk, Verba transcribes on-device (your audio never leaves your Mac) and pastes clean text right where your cursor is. The newer part is JARVIS: you say &#x27;create the Linear issue for this bug and send the team a summary,&#x27; it plans the steps, shows you exactly what it&#x27;ll do, and only executes once you hit Confirm. Reads run automatically, read-only. Every write is confirmed. The plan is generated on-device by your own model.<br><br>Honest about the limits: Mac-only, indie, still early on public testimonials. AI cleanup runs privately, on-device, no accounts to juggle.<br><br>GIF in the comments: talk, plan shown, Confirm, issue created. Ask me the hard questions, app coverage, latency, or the read/write safety model.<br><br>verba.run</div>
+      <div class="note">🙋 Poster manuellement sur r/macapps en menant avec le GIF/clip confirm-gated (parler -&gt; plan -&gt; Confirm -&gt; issue creee), filme depuis un Mac propre. Se declarer founder, etre honnete sur Mac-only + indie + peu de temoignages, UN seul lien soft. Rester ~2h dans les commentaires (signal de ranking + confiance). Le Confirm doit etre visible dans le clip; ne jamais ecrire &#x27;Composio&#x27; (dire &#x27;apps connectees&#x27;).</div>
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J84</span><span class="date">ven 25 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P4 Best Mac dictation (temoignage, switch depuis un concurrent)</div>
+      <div class="posttext">A user who switched told us why:<br><br>&#x27;I was paying for a tool that uploaded my voice every time. Verba does the job better, and nothing leaves my Mac. Privacy was the reason.&#x27;<br><br>We don&#x27;t win every line on the comparison. But when private and it-acts are what matter, that&#x27;s us.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J85</span><span class="date">sam 26 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P3 IA privee integree (referral, la boucle de croissance, honnete)</div>
+      <div class="posttext">The easiest way to get Verba for less: share it.<br><br>Everyone who signs up with your link gives you a free month. No dark patterns, no forced invite spam, just a link, to give to someone who&#x27;ll actually use it.<br><br>If the tool is good, the best ad is you saying so. We reward you for that.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J86</span><span class="date">dim 27 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P1 Voice-driven coding (build-in-public, ce qu&#x27;on shippe cette semaine)</div>
+      <div class="posttext">This week we&#x27;re shipping for devs who code by voice:<br><br>Auto-learned technical vocabulary (your variable names, your libs, your acronyms stop getting mangled) and a Coding mode routed to our deepest tier of intelligence that keeps the prompt dense without over-cleaning it.<br><br>We build where you already are. Tell us what&#x27;s still clunky in the voice-to-code flow.</div>
+      
+      
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J87</span><span class="date">lun 28 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voice -&gt; action (week-end, Translate + action, cas multilingue)</div>
+      <div class="posttext">A real case from an EU operator:<br><br>He dictates in French, &#x27;reply to this client in English and schedule the follow-up for Tuesday.&#x27; Verba translates into native English, JARVIS plans the event, shows him the plan, he confirms.<br><br>Speak yours. Send theirs. Let your voice handle the rest. → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post auto">
+      <div class="phead"><span class="day">J88</span><span class="date">mar 29 sept</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">12:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2 Private on-device (dimanche, la promesse exacte)</div>
+      <div class="posttext">We&#x27;re exact about privacy, because vague is just marketing:<br><br>In on-device mode, transcription is local and your audio never leaves your Mac. Sync is text only. History has an off switch and auto-prune. Keys live in the Keychain.<br><br>We don&#x27;t say &#x27;nothing is ever written to disk.&#x27; We say what&#x27;s exactly true.<br><br>verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div>
+<div class="post manual">
+      <div class="phead"><span class="day">J89</span><span class="date">mer 30 sept</span> <span class="chip" style="--c:#0a66c2">linkedin</span> <span class="b man">MANUEL</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P5 Voice -&gt; action (récit fondateur, communaute + confiance)</div>
+      <div class="posttext">I spent the last month listening to people who actually use JARVIS, not the ones who just like the concept.<br><br>A pattern showed up: the first time they hit Confirm and a real action happens, an issue created, an email sent, something shifts. &#x27;Dictation app&#x27; becomes &#x27;it acts for me.&#x27; And the moment isn&#x27;t the agent&#x27;s magic. It&#x27;s the Confirm button. Seeing the plan before it happens is what makes the agent usable without fear.<br><br>A lot of voice agents chase &#x27;it does everything on its own.&#x27; We made the opposite bet: it does a lot, but it asks first. The plan is generated on your Mac by your own model, reads are read-only by default, every write is confirmed.<br><br>If you&#x27;re building agentic products: trust doesn&#x27;t come from autonomy. It comes from the moment of control you leave the user.<br><br>Happy to talk in the comments, I&#x27;ll answer myself for the first hour.<br><br>verba.run</div>
+      <div class="note">🙋 Recit fondateur authentique, poster toi-meme sur LinkedIn et repondre aux commentaires la premiere heure (signal + confiance). Visuel: capture reelle d&#x27;une carte d&#x27;action JARVIS avec le bouton Confirm bien visible, ou photo sobre d&#x27;un Mac au repos (pas de stock). Ton reflechi, pas vendeur; le point-cle = &#x27;la confiance vient du controle, pas de l&#x27;autonomie&#x27;. Ne jamais ecrire &#x27;Composio&#x27; (dire &#x27;apps connectees&#x27;).</div>
+      <div class="cta">verba.run</div>
+    </div>
+<h2 id="m10">Oct 2026</h2>
+<div class="post auto">
+      <div class="phead"><span class="day">J90</span><span class="date">jeu 1 oct</span> <span class="chip" style="--c:#1d9bf0">x</span> <span class="b auto">AUTO</span> <span class="slot">16:00</span><label class="ok"><input type="checkbox">valide</label></div>
+      <div class="pill">P2/P5 Narratif maître (bilan Mois 3, clôture de bloc + invitation)</div>
+      <div class="posttext">Three months in: the Mac dictation app became a voice agent, it shipped, and it found its people.<br><br>What never changed: your audio never leaves your Mac, nothing you say gets exposed to make the AI work, nothing runs without your Confirm.<br><br>What grew: the use cases you brought us. Next month builds on them.<br><br>If you haven&#x27;t tried it yet, 33 free dictations, no card. → verba.run</div>
+      
+      <div class="cta">verba.run</div>
+    </div></div></main>
+<div style="text-align:center;padding:32px 0;border-top:1px solid rgba(255,255,255,.08);margin-top:40px"><a href="https://verba-hq.vercel.app/" style="color:#ff5a4d;font-size:14px;text-decoration:none">&larr; Back to Verba Marketing HQ</a></div>
+</body></html>

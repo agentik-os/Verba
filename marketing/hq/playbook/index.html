@@ -1,0 +1,518 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verba, Growth Playbook</title>
+<style>
+:root{
+  --bg:#08080b;--panel:#111117;--panel2:#191920;--ink:#f2f2f6;--dim:rgba(242,242,246,.72);--muted:rgba(242,242,246,.5);--faint:rgba(242,242,246,.36);
+  --line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.16);--acc:#ff5a4d;--warm:#f4ede0;--good:#5ac37a;
+  --sans:-apple-system,BlinkMacSystemFont,"Inter",system-ui,sans-serif;--mono:ui-monospace,"SF Mono",Menlo,monospace;--maxw:1080px;
+}
+@media(prefers-color-scheme:light){:root{--bg:#f4f3f0;--panel:#fff;--panel2:#faf9f6;--ink:#0e0e12;--dim:rgba(14,14,18,.74);--muted:rgba(14,14,18,.54);--faint:rgba(14,14,18,.42);--line:rgba(14,14,18,.1);--line2:rgba(14,14,18,.18);--acc:#ff5a4d;--warm:#7a5b3a}}
+:root[data-theme=dark]{--bg:#08080b;--panel:#111117;--panel2:#191920;--ink:#f2f2f6;--dim:rgba(242,242,246,.72);--muted:rgba(242,242,246,.5);--faint:rgba(242,242,246,.36);--line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.16)}
+:root[data-theme=light]{--bg:#f4f3f0;--panel:#fff;--panel2:#faf9f6;--ink:#0e0e12;--dim:rgba(14,14,18,.74);--muted:rgba(14,14,18,.54);--faint:rgba(14,14,18,.42);--line:rgba(14,14,18,.1);--line2:rgba(14,14,18,.18);--acc:#ff5a4d;--warm:#7a5b3a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+h1,h2,h3,h4{letter-spacing:-.02em;line-height:1.15;margin:0}
+.num{font-variant-numeric:tabular-nums}
+a{color:var(--warm);text-decoration:none;border-bottom:1px solid var(--line2)}a:hover{border-color:var(--acc)}
+code{font-family:var(--mono);font-size:.88em;background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+
+header{padding:44px 0 14px;position:relative}
+.kick{font-size:12px;text-transform:uppercase;letter-spacing:.2em;color:var(--faint);font-weight:600}
+h1{font-size:clamp(30px,5vw,46px);font-weight:600;margin:12px 0 6px}h1 .d{color:var(--acc)}
+.lede{color:var(--dim);font-size:17px;max-width:70ch;margin:10px 0 0}
+.toggle{position:absolute;top:22px;right:22px;background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:999px;padding:8px 14px;font:inherit;font-size:13px;cursor:pointer}
+.prog{margin-top:18px;display:flex;align-items:center;gap:12px}
+.progbar{flex:1;height:7px;border-radius:999px;background:var(--line);overflow:hidden;max-width:340px}
+.progbar i{display:block;height:100%;background:var(--good);width:0%}
+.progtxt{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+.tabs{position:sticky;top:0;z-index:30;background:var(--bg);border-bottom:1px solid var(--line);padding:9px 0}
+.tabs .w2{max-width:var(--maxw);margin:0 auto;padding:0 22px;display:flex;gap:5px;flex-wrap:wrap}
+.tab{background:transparent;border:1px solid transparent;color:var(--muted);border-radius:9px;padding:8px 13px;font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;white-space:nowrap}
+.tab[aria-selected=true]{background:var(--panel);border-color:var(--line2);color:var(--ink)}
+.tab .n{color:var(--acc);font-weight:700;margin-right:6px}
+
+.pv{display:none;padding:34px 0 70px}.pv.on{display:block}
+.seclabel{font-size:12px;text-transform:uppercase;letter-spacing:.18em;color:var(--acc);font-weight:700}
+h2{font-size:clamp(24px,3.4vw,34px);margin:12px 0 8px}
+.sub{color:var(--dim);font-size:15.5px;max-width:74ch;margin:0 0 22px}
+h3{font-size:20px;margin:34px 0 6px}
+h4{font-size:16px;margin:20px 0 4px;color:var(--ink)}
+p{margin:0 0 12px}.mut{color:var(--muted)}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:14px 0}
+.card.acc{border-left:3px solid var(--acc)}
+.grid{display:grid;gap:14px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:800px){.g2,.g3{grid-template-columns:1fr}}
+.t{font-size:11px;text-transform:uppercase;letter-spacing:.15em;color:var(--faint);font-weight:600;margin-bottom:8px}
+
+ul{margin:6px 0 14px;padding-left:0;list-style:none}
+li{position:relative;padding-left:22px;margin:7px 0;color:var(--dim)}
+li::before{content:"";position:absolute;left:4px;top:10px;width:6px;height:6px;border-radius:50%;background:var(--acc)}
+li b{color:var(--ink)}
+ol{margin:8px 0 14px;padding-left:20px}ol li{padding-left:4px;color:var(--dim)}ol li::before{display:none}
+
+/* guided question */
+.q{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line2);border-radius:14px;padding:18px 20px;margin:16px 0}
+.q .ql{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--acc);font-weight:700}
+.q .qt{font-size:17px;font-weight:600;margin:6px 0 4px}
+.q .qh{color:var(--muted);font-size:13.5px;margin-bottom:10px}
+.q textarea{width:100%;min-height:74px;background:var(--bg);border:1px solid var(--line);border-radius:9px;color:var(--ink);font:inherit;font-size:14px;padding:10px 12px;resize:vertical}
+.q textarea:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+
+/* checklist */
+.chk{display:flex;gap:11px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)}
+.chk:last-child{border-bottom:none}
+.chk input{margin-top:4px;width:17px;height:17px;accent-color:var(--acc);flex:0 0 auto;cursor:pointer}
+.chk label{color:var(--dim);font-size:14.5px;cursor:pointer}
+.chk label b{color:var(--ink)}
+
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;margin:14px 0}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:13.5px}
+th,td{text-align:left;padding:12px 15px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint);font-weight:600;background:var(--panel2)}
+tr:last-child td{border-bottom:none}td b{color:var(--ink)}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid var(--line2);color:var(--muted)}
+.tag.a{color:var(--acc);border-color:var(--acc)}
+
+.script{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--warm);border-radius:10px;padding:14px 16px;margin:12px 0;font-size:14px;color:var(--dim);white-space:pre-wrap}
+.pill{display:inline-block;font-size:12px;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:4px 11px;margin:3px 4px 3px 0}
+.kbd{font-family:var(--mono);font-size:12px;background:var(--panel2);border:1px solid var(--line2);border-bottom-width:2px;border-radius:5px;padding:1px 6px}
+.hr{height:1px;background:var(--line);margin:26px 0}
+.callout{border-radius:12px;padding:14px 18px;margin:14px 0;font-size:14.5px}
+.callout.do{background:rgba(90,195,122,.08);border:1px solid rgba(90,195,122,.3)}
+.callout.dont{background:rgba(255,90,77,.07);border:1px solid rgba(255,90,77,.28)}
+footer{padding:26px 0 60px;color:var(--faint);font-size:12.5px;border-top:1px solid var(--line)}
+@media print{.toggle,.tabs{display:none}.pv{display:block!important}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head><body>
+<style>
+#hqbar{position:fixed;top:0;left:0;right:0;height:52px;z-index:99999;display:flex;align-items:center;gap:14px;padding:0 20px;background:rgba(8,8,11,.82);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08);font-family:-apple-system,BlinkMacSystemFont,"Inter",system-ui,sans-serif}
+#hqbar a{text-decoration:none;border:none}
+#hqbar .hqbrand{display:flex;align-items:center;gap:9px;font-weight:600;font-size:15px;letter-spacing:-.01em;color:#f2f2f6}
+#hqbar .hqbrand .hqmic{width:24px;height:24px;border-radius:7px;background:#f4ede0;display:flex;align-items:center;justify-content:center;color:#08080b;font-size:12px}
+#hqbar .hqbrand .dot{color:#ff5a4d}
+#hqbar .hqsec{color:#8a8a92;font-size:12px;text-transform:uppercase;letter-spacing:.14em;font-weight:600}
+#hqbar .hqback{margin-left:auto;font-size:13px;font-weight:500;color:#c8c8ce;border:1px solid rgba(255,255,255,.16)!important;border-radius:999px;padding:7px 14px;transition:all .15s}
+#hqbar .hqback:hover{color:#ff5a4d;border-color:#ff5a4d!important}
+body{padding-top:52px!important}
+@media(prefers-color-scheme:light){#hqbar{background:rgba(244,243,240,.86);border-bottom-color:rgba(0,0,0,.1)}#hqbar .hqbrand{color:#0e0e12}#hqbar .hqback{color:#4a4a52;border-color:rgba(0,0,0,.14)!important}}
+:root[data-theme=light] #hqbar{background:rgba(244,243,240,.86);border-bottom-color:rgba(0,0,0,.1)}
+:root[data-theme=light] #hqbar .hqbrand{color:#0e0e12}
+:root[data-theme=dark] #hqbar{background:rgba(8,8,11,.82);border-bottom-color:rgba(255,255,255,.08)}
+:root[data-theme=dark] #hqbar .hqbrand{color:#f2f2f6}
+@media(max-width:640px){#hqbar{height:46px;padding:0 12px;gap:10px}#hqbar .hqsec{display:none}#hqbar .hqbrand{font-size:14px}body{padding-top:46px!important}}
+</style>
+<div id="hqbar">
+  <a class="hqbrand" href="https://verba-hq.vercel.app/"><span class="hqmic">V</span>Verba<span class="dot">.</span> Marketing HQ</a>
+  <span class="hqsec">Growth playbook</span>
+  <a class="hqback" href="https://verba-hq.vercel.app/">&larr; All docs</a>
+</div>
+
+<header><div class="wrap">
+  <div class="kick">Verba growth playbook · marketing from zero, do it yourself, no budget</div>
+  <h1>From 23 to 100 to 1,000<span class="d">.</span></h1>
+  <p class="lede">A guided workbook, not a lecture. It walks you question by question through building Verba's whole marketing: who to talk to, what to say, how to reach them with zero budget, and every real trick people use on Reddit, X, cold email and beyond. Your checkboxes and answers are saved in this browser as you go.</p>
+  <div class="prog"><div class="progbar"><i id="pbar"></i></div><span class="progtxt" id="ptxt">0 of 0 actions done</span></div>
+</div></header>
+
+<div class="tabs"><div class="w2" role="tablist">
+  <button class="tab" role="tab" aria-selected="true" data-v="start"><span class="n">0</span>Start here</button>
+  <button class="tab" role="tab" aria-selected="false" data-v="buyer"><span class="n">1</span>Your buyer</button>
+  <button class="tab" role="tab" aria-selected="false" data-v="message"><span class="n">2</span>Your message</button>
+  <button class="tab" role="tab" aria-selected="false" data-v="p100"><span class="n">3</span>0 to 100</button>
+  <button class="tab" role="tab" aria-selected="false" data-v="outreach"><span class="n">4</span>Outreach and Apollo</button>
+  <button class="tab" role="tab" aria-selected="false" data-v="p1000"><span class="n">5</span>100 to 1,000</button>
+  <button class="tab" role="tab" aria-selected="false" data-v="stack"><span class="n">6</span>Tool stack</button>
+  <button class="tab" role="tab" aria-selected="false" data-v="plan"><span class="n">7</span>Your 30-day plan</button>
+</div></div>
+
+<!-- ============ 0 START ============ -->
+<div class="pv on wrap" id="v-start">
+  <div class="seclabel">Start here</div>
+  <h2>The mindset before the tactics</h2>
+  <p class="sub">You have no budget and no marketing background. Good news: for a product like Verba, that is not a handicap. The first 1,000 users of almost every indie tool came from a founder doing unscalable, personal things by hand. Your unfair advantage is that you can talk to every single user like a human. Big companies cannot.</p>
+
+  <div class="grid g3">
+    <div class="card"><div class="t">Where you are</div><p style="font-size:30px;font-weight:600;margin:0" class="num">23</p><p class="mut" style="margin:2px 0 0">users today. Real people, real emails. You already emailed them.</p></div>
+    <div class="card acc"><div class="t">Goal 1</div><p style="font-size:30px;font-weight:600;margin:0" class="num">100</p><p class="mut" style="margin:2px 0 0">All by hand. No ads. Pure hustle and word of mouth. This tab 3 is your map.</p></div>
+    <div class="card"><div class="t">Goal 2, then invest</div><p style="font-size:30px;font-weight:600;margin:0" class="num">1,000</p><p class="mut" style="margin:2px 0 0">Turn on loops and light paid. At 1k, ads and funding make sense (tab 5).</p></div>
+  </div>
+
+  <h3>The five laws of zero-budget growth</h3>
+  <div class="card">
+    <ul>
+      <li><b>Do things that do not scale.</b> DM people one by one. Reply to every comment. Hand-write emails. At 23 to 100, personal beats clever every time.</li>
+      <li><b>Give before you ask.</b> Help in a thread, answer a question, ship a useful thing. People help those who helped them first (reciprocity). Never lead with the sell.</li>
+      <li><b>Go where your buyer already is.</b> You do not need "an audience". You need to show up in the 5 rooms where Mac developers already hang out and be useful there.</li>
+      <li><b>The demo is the marketing.</b> Verba is visually provable in 3 seconds: you talk, it does it. A clip beats a paragraph. Lead with the show, not the tell.</li>
+      <li><b>Honesty is the strategy.</b> "I am an indie dev, here is my thing, here is where it is weak" outperforms polished hype with this audience. Radical honesty builds the trust that converts.</li>
+    </ul>
+  </div>
+
+  <div class="callout do"><b>The one number that matters now:</b> conversations, not impressions. Track how many real people you talked to this week (DMs, comments, emails, calls). At your stage, 20 good conversations beats 20,000 views.</div>
+
+  <div class="q" data-q="north-star">
+    <div class="ql">Guided question</div>
+    <div class="qt">Why does Verba deserve to exist? Write the one sentence you would say to a stranger in an elevator.</div>
+    <div class="qh">Not features. The change it makes in someone's day. This becomes the spine of everything.</div>
+    <textarea placeholder="Verba is for ... who ... it lets them ... unlike ... which ..."></textarea>
+  </div>
+
+  <h3>How to use this playbook</h3>
+  <ol>
+    <li>Read <b>tab 1 and 2</b> once (your buyer and your message). Everything else depends on them.</li>
+    <li>Live in <b>tab 3 (0 to 100)</b> for the next month. Do the checklists, one channel at a time.</li>
+    <li>Use <b>tab 4</b> when you are ready to reach people who are not in your network yet (cold email, Apollo).</li>
+    <li>Open <b>tab 5</b> only once you pass 100. Do not scale what is not yet working.</li>
+    <li>Fill <b>tab 7</b> as your living 30-day plan. Check boxes as you go, the bar up top fills.</li>
+  </ol>
+</div>
+
+<!-- ============ 1 BUYER ============ -->
+<div class="pv wrap" id="v-buyer">
+  <div class="seclabel">Your buyer</div>
+  <h2>Who you are talking to, and how to talk to each</h2>
+  <p class="sub">Marketing is not "reaching everyone". It is reaching the right narrow person with the right words. Verba wins one audience first (the beachhead), then widens. Selling to all five at once means selling to none.</p>
+
+  <h3>The rule: win the beachhead first</h3>
+  <p>Your first 100 come almost entirely from one group: <b>Mac developers who vibe-code with AI coding agents</b>. They type all day, they hang out in findable places, and Verba's privacy wedge, private AI that keeps every word on your Mac, is built for them. Do not dilute. Every post, DM and email for the next month speaks to this one person.</p>
+
+  <div class="tablewrap"><table>
+    <thead><tr><th>Persona</th><th>The real job (what they hire Verba for)</th><th>How to talk to them (the entry angle)</th><th>Where they are</th></tr></thead>
+    <tbody>
+      <tr><td><b>1. The AI coding native</b><br><span class="tag a">beachhead, start here</span></td><td>"When I code with an AI agent, let me dictate a precise spec instead of typing paragraphs."</td><td>"The voice layer for developers who code with AI. Private by design. Speak the spec, it types it clean at your cursor, and your agent does the work."</td><td>Hacker News, r/macapps, r/LocalLLaMA, X dev scene, Cursor and AI coding Discords, YouTube dev</td></tr>
+      <tr><td><b>2. The privacy-first pro</b> (lawyer, doctor, founder, journalist)</td><td>"When I dictate sensitive things, keep my audio on my machine."</td><td>"Dictation whose audio never leaves your Mac. Local, with a real off switch. Even the AI runs on your device."</td><td>Niche newsletters, prosumer Mac press, LinkedIn, privacy communities</td></tr>
+      <tr><td><b>3. The voice-first operator</b> (founder, PM, exec)</td><td>"When I say plan, send, file, do it, after showing me what."</td><td>"Say it, confirm, it is done, across 1,000+ apps. A calm agent that asks before it acts."</td><td>YouTube productivity, X indie-founder, r/productivity, productivity newsletters</td></tr>
+      <tr><td><b>4. The multilingual knowledge worker</b> (EU, LatAm)</td><td>"Let me think in my language and write in theirs."</td><td>"Speak your language, write in theirs, live. 15 languages."</td><td>Localized SEO, regional creators</td></tr>
+      <tr><td><b>5. The long-form thinker</b> (writer, PM, researcher)</td><td>"Let me talk for an hour and get a clean document."</td><td>"Talk for an hour, get a structured document."</td><td>PKM communities (Obsidian, Notion), writing circles</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>The four forces behind every signup</h3>
+  <p>Anyone deciding whether to try Verba is pulled by two forces and held back by two. Your job: amplify the first two, kill the last two.</p>
+  <div class="grid g2">
+    <div class="card"><div class="t" style="color:var(--good)">Push and pull (amplify)</div>
+      <ul><li><b>Push (their pain):</b> "I think faster than I type", typing breaks flow, hands tired at end of day.</li><li><b>Pull (your promise):</b> you talk, it is written clean, and it can even do the task.</li></ul></div>
+    <div class="card"><div class="t" style="color:var(--acc)">Anxiety and habit (kill)</div>
+      <ul><li><b>Anxiety:</b> "does my voice get uploaded?", "is this actually private?", "an agent on my Gmail?!". Answer each: audio stays on the Mac, your words never leave your device, nothing acts without confirm.</li><li><b>Habit:</b> "Apple Dictation is fine", muscle memory. Show the hidden cost of the status quo.</li></ul></div>
+  </div>
+
+  <div class="q" data-q="beachhead-one"><div class="ql">Guided question</div><div class="qt">Describe ONE real person in your beachhead. A name, what they build, where they hang out, what frustrates them.</div><div class="qh">If you cannot picture one real human, you do not know your buyer yet. Go find three and talk to them.</div><textarea placeholder="e.g. Sam, 28, builds a SaaS solo with Cursor and an AI coding agent on a MacBook, lives on X and r/LocalLLaMA, hates that dictating to his Mac uploads his audio to someone else's servers..."></textarea></div>
+  <div class="q" data-q="buyer-words"><div class="ql">Guided question</div><div class="qt">In their exact words, how do they describe the problem? Steal phrases from real reviews and threads.</div><div class="qh">The best copy is not written, it is overheard. Read Wispr, Superwhisper, MacWhisper reviews and Reddit threads, collect the exact sentences people use.</div><textarea placeholder='"I just want to ramble and get a clean message", "I do not want my voice sitting on a server I do not control", "I want dictation that stays private"...'></textarea></div>
+</div>
+
+<!-- ============ 2 MESSAGE ============ -->
+<div class="pv wrap" id="v-message">
+  <div class="seclabel">Your message</div>
+  <h2>What to say so it lands in three seconds</h2>
+  <p class="sub">Copy does not create desire, it channels desire that already exists. People already want to type less and keep their privacy. Your job is to point that existing want at Verba, in clear words, benefit first.</p>
+
+  <h3>The one positioning line (use it everywhere)</h3>
+  <div class="card acc"><p style="font-size:18px;color:var(--ink);margin:0">For Mac developers who think faster than they type, Verba turns speech into clean text and action anywhere on the Mac, unlike dictation tools that only transcribe, and upload your voice.</p></div>
+
+  <h3>The three messages you repeat (never more)</h3>
+  <div class="grid g3">
+    <div class="card"><div class="t">Private by default</div><p class="mut">Your voice never leaves your Mac. On-device, real off switch. Even the JARVIS plan runs locally.</p></div>
+    <div class="card"><div class="t">Private AI, low cost</div><p class="mut">Verba runs private AI models right on your Mac. Your words stay yours, and the cost to you stays very low.</p></div>
+    <div class="card"><div class="t">Voice to action</div><p class="mut">Say it, confirm, it is done, across 1,000+ apps. It acts, it does not just edit.</p></div>
+  </div>
+
+  <h3>How to write a hook that stops the scroll</h3>
+  <p>Every post, email subject, and video opens with a hook. Good hooks are <b>useful, urgent, unique, or ultra-specific</b>. Lead with the pain (loss aversion beats desire for a cold audience).</p>
+  <div class="callout do"><b>Hooks that work for Verba:</b> "You think faster than you type." · "Your dictation app uploads your voice right now. Verba does not." · "Code with an AI agent already? Now you can dictate all day too, fully private, on your Mac." · "I have not typed a Slack message in two weeks."</div>
+  <div class="callout dont"><b>Hooks that flop:</b> "Introducing Verba, the future of voice." · "We are excited to announce..." · anything about you instead of them.</div>
+
+  <h3>The PAS structure for any post or email</h3>
+  <ol>
+    <li><b>Problem:</b> name their pain in their words. "You think faster than you type."</li>
+    <li><b>Agitate:</b> the hidden cost. "So all day you translate ideas into keystrokes. Flow breaks, hands tire."</li>
+    <li><b>Solve:</b> the relief. "Verba flips it. You talk, clean text lands at your cursor, and it can do the task."</li>
+    <li><b>Proof:</b> disarm doubt. "Audio never leaves your Mac. Nothing happens without your confirm."</li>
+    <li><b>One CTA:</b> "Try it, no card. verba.run"</li>
+  </ol>
+
+  <div class="q" data-q="msg-hook"><div class="ql">Guided question</div><div class="qt">Write 5 hooks for your beachhead. Pain-first, specific, no hype.</div><textarea placeholder="1.&#10;2.&#10;3.&#10;4.&#10;5."></textarea></div>
+  <div class="q" data-q="msg-elevator"><div class="ql">Guided question</div><div class="qt">Fill the positioning line for Verba in your own words. Show it to a dev friend for 5 seconds, then ask "what is it and who is it for?"</div><textarea placeholder="For ... who ... Verba is the ... that ... unlike ... which ..."></textarea></div>
+</div>
+
+<!-- ============ 3  0 to 100 ============ -->
+<div class="pv wrap" id="v-p100">
+  <div class="seclabel">Playbook, 0 to 100</div>
+  <h2>Getting your first 100, by hand, with zero budget</h2>
+  <p class="sub">This is the whole game right now. Work these channels one at a time, top to bottom. Do not spread thin. Pick the top two, go deep for two weeks, keep what works. Check the boxes, the progress bar up top fills.</p>
+
+  <h3>A. Reddit, the highest-signal room for you</h3>
+  <p>Reddit is where your exact buyer complains about the exact problem. It is also ruthless about self-promotion. Play it right and one good post brings 20 to 50 real users. Play it wrong and you get banned. The trick is <b>value first, pitch almost never</b>.</p>
+  <h4>The subs to live in</h4>
+  <p><span class="pill">r/macapps</span><span class="pill">r/LocalLLaMA</span><span class="pill">r/productivity</span><span class="pill">r/MacOS</span><span class="pill">r/vibecoding</span><span class="pill">r/SideProject</span><span class="pill">r/artificial</span></p>
+  <h4>The tricks that actually work</h4>
+  <ul>
+    <li><b>Warm up the account first.</b> A brand-new account posting a link dies. Spend a week just commenting helpfully. Get some karma. Look like a human, not a billboard.</li>
+    <li><b>The "I built this, roast it" post.</b> Indie, honest, a GIF of the demo, name a real weakness ("Mac only, no testimonials yet"). Humility earns upvotes and comments. Ask for feedback, not signups.</li>
+    <li><b>Answer the pain, mention the tool once.</b> Search each sub for "dictation", "Wispr", "Superwhisper", "voice to text". Reply with genuine help. Mention Verba once, softly, only if it truly fits. Link in a comment, not the title.</li>
+    <li><b>Lead with the demo GIF.</b> "Speak, it types clean, then it creates the Linear issue, after I confirm." Show the confirm step. Visual proof beats claims.</li>
+    <li><b>Post at peak US morning</b> (roughly 9 to 11am ET) on weekdays. Reply to <b>every</b> comment within the first 2 hours, it drives the algorithm.</li>
+    <li><b>Never say "upvote".</b> Never post and vanish. Never astroturf with fake accounts, it gets you banned and burns trust.</li>
+  </ul>
+  <div class="script"><b>Reddit post template (r/macapps):</b>
+Title: I built a Mac dictation app that never uploads your audio, and can act on what you say. Would love your honest feedback.
+
+Body: I am an indie dev. I kept being bothered that dictation apps send your voice to a server, so I built Verba: private AI models run on-device, your audio never leaves the Mac. It cleans up the text and it can do actions like "create a Linear issue", but it always shows a Confirm step first.
+
+Honest limits: Mac only, still early, no big testimonials yet. Here is a 15s demo [GIF]. What would make you actually switch from what you use now?</div>
+  <div class="chk-list">
+    <div class="chk"><input type="checkbox" data-k="r-warm"><label>Warm up the Reddit account: comment helpfully in the 8 subs for a week, no links</label></div>
+    <div class="chk"><input type="checkbox" data-k="r-monitor"><label>Set up keyword monitoring (F5Bot, free) for "dictation, Wispr, Superwhisper, Mac voice to text"</label></div>
+    <div class="chk"><input type="checkbox" data-k="r-post1"><label>Post the honest "roast it" demo in r/macapps, stay 2 hours answering</label></div>
+    <div class="chk"><input type="checkbox" data-k="r-post2"><label>Post the "private AI, your words never leave your Mac" angle in r/LocalLLaMA</label></div>
+  </div>
+
+  <div class="hr"></div>
+
+  <h3>B. X / Twitter, build in public</h3>
+  <p>X is where you build a small, loyal following of exactly your buyer, in public, over weeks. You are not chasing virality. You are earning 100 true fans who root for you and share.</p>
+  <h4>The tricks</h4>
+  <ul>
+    <li><b>Build in public daily.</b> Ship logs, the demo, the honest struggle, small wins. "Day 12: made cold-start to first dictation under 60s." People follow journeys, not products.</li>
+    <li><b>The reply strategy (borrow audiences).</b> Reply with real value to bigger accounts your buyer follows (AI coding, Cursor, indie-hacker and Mac-dev accounts). A great reply on a big thread gets seen by thousands of the right people, for free.</li>
+    <li><b>Post the demo clips.</b> The JARVIS demo, the speak-vs-type split, always native video, always with the Confirm step visible.</li>
+    <li><b>Warm DMs, one soft ask.</b> When someone engages or fits perfectly, DM them personally: "saw you code with an AI agent, built a private voice thing for exactly that workflow, want a free lifetime license to try?"</li>
+    <li><b>Engage 20 min a day.</b> Comment on 5 posts of your ICP with value. Consistency compounds.</li>
+    <li><b>Quote-tweet with insight,</b> do not just retweet. Add a take. That is how you get noticed by the author.</li>
+  </ul>
+  <div class="script"><b>Warm DM template:</b>
+Hey [name], saw your thread on building with an AI coding agent. I made Verba, a Mac dictation app that runs private AI on-device and keeps your audio there too. Since you clearly live in the terminal, I would love to give you a free lifetime license, no strings, just curious what you think. Want the link?</div>
+  <div class="chk-list">
+    <div class="chk"><input type="checkbox" data-k="x-bip"><label>Post build-in-public daily for 2 weeks (ship logs, demo, honest updates)</label></div>
+    <div class="chk"><input type="checkbox" data-k="x-reply"><label>Reply with value to 5 ICP posts a day (the borrow-audience move)</label></div>
+    <div class="chk"><input type="checkbox" data-k="x-dm"><label>Send 5 warm, personal DMs a week with a free lifetime license offer</label></div>
+    <div class="chk"><input type="checkbox" data-k="x-demo"><label>Post the JARVIS demo clip and the speak-vs-type clip</label></div>
+  </div>
+
+  <div class="hr"></div>
+
+  <h3>C. Hacker News and Lobsters</h3>
+  <ul>
+    <li><b>Show HN.</b> Title: "Show HN: Verba, on-device Mac dictation with private AI built in". Post ~8 to 10am ET. Be in the comments all day, technical and humble. HN loves privacy, local-first, and no-lock-in, all your strengths. Lead with those.</li>
+    <li><b>Answer every comment,</b> especially the critical ones, with grace. The thread quality is the marketing.</li>
+    <li><b>Lobsters</b> (invite-only) if you can get in: smaller but very high signal for local-first, dev tools.</li>
+  </ul>
+  <div class="chk"><input type="checkbox" data-k="hn"><label>Prepare and post a Show HN, block a full day to answer comments</label></div>
+
+  <div class="hr"></div>
+
+  <h3>D. Direct outreach, the unscalable superpower</h3>
+  <p>This is the single highest-converting thing you can do at 23 to 100, and nobody does it because it feels slow. Reach out to real humans, one at a time, and ask for feedback (not a sale).</p>
+  <ul>
+    <li><b>Warm network first.</b> Every friend, ex-colleague, and community you are already in. "Built a thing, would your 5 min feedback help me?" is a soft, honest ask people say yes to.</li>
+    <li><b>Ask for the share, explicitly.</b> Your beta email already did this (free-for-life if they share with 5 to 10). Follow up with the ones who love it: "who are 3 devs who would like this?"</li>
+    <li><b>The "feedback not sale" frame</b> lowers the wall. People love to give opinions. Many opinion-givers become users, then advocates.</li>
+    <li><b>Seed 10 to 20 trusted testers</b> with free lifetime licenses in exchange for one honest quote. Those quotes are the proof you are missing.</li>
+  </ul>
+  <div class="chk-list">
+    <div class="chk"><input type="checkbox" data-k="d-network"><label>List 30 people in your warm network, message 10 this week for feedback</label></div>
+    <div class="chk"><input type="checkbox" data-k="d-seed"><label>Seed 10 to 20 testers with free lifetime licenses, ask each for one honest one-line quote</label></div>
+    <div class="chk"><input type="checkbox" data-k="d-testi"><label>Collect and publish the first 3 testimonials on the site and in posts</label></div>
+  </div>
+
+  <div class="hr"></div>
+
+  <h3>E. Communities and the demo asset</h3>
+  <ul>
+    <li><b>Discords and Slacks:</b> Cursor, AI coding, indie hackers, Mac dev groups. Be a helpful member for a while, then share when relevant. Same value-first etiquette as Reddit.</li>
+    <li><b>Record the canonical 60s JARVIS demo</b> plus 15s cutdowns. This one asset feeds every channel: Reddit GIF, X clip, Show HN, email, the site. It is the highest-leverage thing on your whole list. Do it first.</li>
+    <li><b>Product Hunt</b> when you have a bit of proof (testimonials, a polished page). It is a spike, not a foundation. Line up your network to support launch day. Aim it at the 100 to 1,000 phase.</li>
+  </ul>
+  <div class="chk-list">
+    <div class="chk"><input type="checkbox" data-k="c-demo"><label>Record the canonical 60s JARVIS demo + 3 to 4 cutdowns (the parent asset)</label></div>
+    <div class="chk"><input type="checkbox" data-k="c-discord"><label>Join 3 relevant Discords, be helpful for a week, then share the demo where it fits</label></div>
+  </div>
+
+  <div class="callout do"><b>Two-week focus:</b> pick <b>Reddit + direct outreach</b> as your first two. They are the highest signal for the beachhead and need zero audience. Add X build-in-public in parallel because it compounds slowly. Ignore everything else until 100.</div>
+</div>
+
+<!-- ============ 4 OUTREACH + APOLLO ============ -->
+<div class="pv wrap" id="v-outreach">
+  <div class="seclabel">Cold outreach and lead gen</div>
+  <h2>Reaching people who are not in your network yet</h2>
+  <p class="sub">Once warm channels are running, cold email lets you reach exactly-right people at scale, for free, if you do it personal and small. This is also how you seed creators, newsletters and partners. Golden rule: this is not spam. Small batches, real personalization, one soft ask, easy opt-out.</p>
+
+  <h3>Build the list with Apollo (free tier + API)</h3>
+  <p><a href="https://apollo.io" target="_blank" rel="noopener">Apollo.io</a> has a free plan with monthly credits and an API. It is a database of people and companies you can filter precisely, then export verified emails.</p>
+  <h4>How to use it</h4>
+  <ol>
+    <li>Free account. Define your ICP as a search: titles like <code>Founder</code>, <code>Software Engineer</code>, <code>Indie Hacker</code>, <code>iOS/macOS Developer</code>; keywords like <code>Cursor</code>, <code>AI coding</code>, <code>indie hacker</code>; location; company size (small, indie).</li>
+    <li>Use the free monthly credits to reveal verified emails. Export to CSV. Stay within the free limit, quality over volume.</li>
+    <li>For automation, the <b>Apollo API</b> (<code>POST /v1/mixed_people/search</code> and <code>/people/match</code>) pulls the same data programmatically. Keep the key in your secrets file, never in the repo. Small daily pulls stay inside the free tier.</li>
+    <li>Feed the CSV into your sender (you already have Resend from <code>updates@verba.run</code>, verified).</li>
+  </ol>
+  <div class="script"><b>Apollo API (sketch):</b>
+curl -X POST https://api.apollo.io/v1/mixed_people/search \
+  -H "Content-Type: application/json" \
+  -d '{ "api_key": "YOUR_KEY",
+        "person_titles": ["software engineer","founder","indie hacker"],
+        "q_keywords": "AI coding agent Cursor Mac",
+        "person_locations": ["United States"],
+        "page": 1, "per_page": 25 }'
+# then enrich emails with /v1/people/match, export to CSV, send with Resend.</div>
+  <div class="callout dont"><b>Never</b> import a bought or scraped list into Resend and blast it. It torches your domain reputation and it is often illegal. Small, targeted, personal, with a real unsubscribe. And never reuse a client list from one project for another (that rule you already learned).</div>
+
+  <h3>The cold email that gets replies</h3>
+  <p>Short. Personal. Looks like a human wrote it to one person. Subject 2 to 4 words, lowercase, internal-looking. Lead with them, one clear ask, easy out.</p>
+  <div class="script"><b>Cold email, developer:</b>
+Subject: your dev setup
+
+Hey [First name], noticed you build with an AI coding agent. I made Verba, a Mac dictation app that runs private AI on your Mac and keeps your audio on-device, and it can act on what you say after a confirm. Since you clearly type a lot, thought it might save you real time.
+
+Free to try, no card. Worth a look? verba.run
+Not relevant? Just reply "no" and I will not write again.</div>
+  <h4>The sequences (each is 3 short touches)</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Sequence</th><th>Target</th><th>The ask</th><th>Subject lines</th></tr></thead>
+    <tbody>
+      <tr><td><b>A. Creators</b></td><td>dev, Mac, productivity YouTubers and X accounts</td><td>free lifetime license + a demo clip, no paid ask</td><td>"your dictation video", "the jarvis clip", "last one on this"</td></tr>
+      <tr><td><b>B. Newsletters</b></td><td>niche Mac and dev newsletters</td><td>a free feature or a cheap sponsor slot later</td><td>"sponsor slot", "re: sponsor slot"</td></tr>
+      <tr><td><b>C. Partners and bundles</b></td><td>Setapp, indie-Mac bundles, Raycast</td><td>a bundle or integration conversation</td><td>"quick idea", "verba x [them]"</td></tr>
+      <tr><td><b>D. Direct ICP</b></td><td>Apollo list of AI coding / Mac devs</td><td>try it, feedback</td><td>"your dev setup", "typing tax"</td></tr>
+    </tbody>
+  </table></div>
+  <div class="chk-list">
+    <div class="chk"><input type="checkbox" data-k="o-apollo"><label>Create Apollo free account, save an ICP search, export a first small CSV (25 to 50)</label></div>
+    <div class="chk"><input type="checkbox" data-k="o-personalize"><label>Personalize each email (first name + one specific detail), send in small batches</label></div>
+    <div class="chk"><input type="checkbox" data-k="o-creators"><label>Run sequence A: seed 10 to 20 creators with free licenses and the demo clip</label></div>
+    <div class="chk"><input type="checkbox" data-k="o-unsub"><label>Add a real unsubscribe and reply-to on every send (deliverability + respect)</label></div>
+  </div>
+</div>
+
+<!-- ============ 5  100 to 1000 ============ -->
+<div class="pv wrap" id="v-p1000">
+  <div class="seclabel">Playbook, 100 to 1,000</div>
+  <h2>Turning the hustle into loops that compound</h2>
+  <p class="sub">At 100 users with real testimonials and a working message, you switch from pushing (manual outreach) to loops (each user brings the next). Only now does light paid and funding make sense. Do not open this tab before 100.</p>
+
+  <h3>Growth loops to turn on</h3>
+  <div class="grid g2">
+    <div class="card"><div class="t">Referral loop</div><p class="mut">You already started it: free for life if they share with 5 to 10. Formalize it with a referral link and a "free month" reward. Every happy user recruits the next.</p></div>
+    <div class="card"><div class="t">The leaderboard and gamification</div><p class="mut">1,000 levels, badges, a private leaderboard. Make progress shareable ("I hit Voice Immortal"). The game becomes a viral surface.</p></div>
+    <div class="card"><div class="t">Demo-is-the-product</div><p class="mut">Every user's "whoa" moment is a clip waiting to be shared. Make sharing a clip one tap.</p></div>
+    <div class="card"><div class="t">SEO and GEO</div><p class="mut">Ship honest /vs and /compare pages for 9 rivals ("Wispr alternative", "Mac dictation"). Structure content so AI assistants cite Verba as the answer. Compounds for months.</p></div>
+  </div>
+
+  <h3>Scale the channels that worked</h3>
+  <ul>
+    <li><b>Product Hunt launch.</b> "The dictation app that became a voice agent." Line up your 100 users + network for launch day. A top-5 finish is a durable spike.</li>
+    <li><b>Creator seeding at volume.</b> 10 to 20 dev and Mac creators with free licenses and ready-made clips. One good video is worth thousands of impressions.</li>
+    <li><b>Content engine.</b> Turn the canonical demo into a weekly cadence: feature clips, comparison posts, the build-in-public story. Distribution beats production.</li>
+    <li><b>Community roots.</b> Become a known, helpful name in r/macapps, r/LocalLLaMA, the Discords. Reputation compounds.</li>
+  </ul>
+
+  <h3>Only now: light paid, and funding</h3>
+  <div class="card acc">
+    <ul>
+      <li><b>Paid, as a multiplier not a crutch.</b> Retarget people who visited /compare or /vs. Search ads on "Wispr alternative", "Mac dictation", "voice to text Mac". Because your marginal cost per user is very low, even a modest lifetime value supports it. Start with 10 to 20 EUR a day, kill what does not return.</li>
+      <li><b>Creative is the targeting.</b> Test many hooks cheaply, scale the 1 in 10 that works. The demo clips are your best ad.</li>
+      <li><b>Funding, when the loops prove out.</b> At 1,000 users with retention and a working referral loop, you have a story: a validated 2B category, a category-of-one wedge, very low marginal cost, and organic traction. That is when a small raise accelerates rather than masks. Not before.</li>
+    </ul>
+  </div>
+  <div class="chk-list">
+    <div class="chk"><input type="checkbox" data-k="k-referral"><label>Ship a real referral link + reward loop</label></div>
+    <div class="chk"><input type="checkbox" data-k="k-ph"><label>Run the Product Hunt launch with your users and network lined up</label></div>
+    <div class="chk"><input type="checkbox" data-k="k-vs"><label>Publish honest /vs pages for the top rivals (SEO + GEO)</label></div>
+    <div class="chk"><input type="checkbox" data-k="k-paid"><label>At 1k: start retargeting + search ads, 10 to 20 EUR/day, measured</label></div>
+  </div>
+</div>
+
+<!-- ============ 6 STACK ============ -->
+<div class="pv wrap" id="v-stack">
+  <div class="seclabel">Tool stack</div>
+  <h2>Everything you need, mostly free</h2>
+  <p class="sub">You do not need paid tools to reach 1,000. Here is the zero to low budget stack, mapped to each job.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Job</th><th>Tool</th><th>Cost</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>Find leads (ICP)</td><td>Apollo (free tier + API)</td><td>free</td><td>Titles + keywords + company size. Small daily pulls.</td></tr>
+      <tr><td>Send email</td><td>Resend, from updates@verba.run</td><td>free tier</td><td>Domain already verified. Personalize, small batches.</td></tr>
+      <tr><td>Schedule social</td><td>your Zernio setup</td><td>in place</td><td>Publish to all connected networks from one place.</td></tr>
+      <tr><td>Keyword alerts</td><td>F5Bot</td><td>free</td><td>Email you when "Wispr", "Mac dictation" etc. appear on Reddit / HN.</td></tr>
+      <tr><td>Analytics</td><td>Plausible or PostHog</td><td>free tier</td><td>Track first-dictation activation and the funnel, not vanity views.</td></tr>
+      <tr><td>Demo clips</td><td>screen record + your own editing pipeline</td><td>free</td><td>The canonical JARVIS demo feeds every channel.</td></tr>
+      <tr><td>Link + referral</td><td>Dub.co</td><td>free tier</td><td>Short links, click tracking, referral attribution.</td></tr>
+      <tr><td>Scheduling calls</td><td>Cal.com</td><td>free</td><td>For user feedback calls, the highest-signal research.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout do"><b>The only thing worth paying for early</b> is your time. Automating outreach with a paid tool before you know your message works is a waste. Do it by hand until it converts, then automate the winner.</div>
+</div>
+
+<!-- ============ 7 PLAN ============ -->
+<div class="pv wrap" id="v-plan">
+  <div class="seclabel">Your plan</div>
+  <h2>The 30-day plan to go from 23 to 100</h2>
+  <p class="sub">A concrete month. Fill the answers, check the boxes as you go. Everything saves in this browser. Adjust to your reality, but do not skip week 1, the demo asset is the foundation of all the rest.</p>
+
+  <div class="card"><h4>Week 1, foundation</h4>
+    <div class="chk"><input type="checkbox" data-k="w1-demo"><label><b>Record the canonical 60s JARVIS demo</b> + 3 cutdowns (the parent asset for every channel)</label></div>
+    <div class="chk"><input type="checkbox" data-k="w1-testi"><label>Message your warm network + seed 10 testers, ask each for one honest quote</label></div>
+    <div class="chk"><input type="checkbox" data-k="w1-warm"><label>Warm up the Reddit account, start build-in-public on X</label></div>
+    <div class="chk"><input type="checkbox" data-k="w1-f5"><label>Set up F5Bot keyword alerts</label></div>
+  </div>
+  <div class="card"><h4>Week 2, first posts</h4>
+    <div class="chk"><input type="checkbox" data-k="w2-reddit"><label>Post the honest demo in r/macapps and r/LocalLLaMA, stay 2h each</label></div>
+    <div class="chk"><input type="checkbox" data-k="w2-dm"><label>Send 10 warm DMs with free lifetime licenses</label></div>
+    <div class="chk"><input type="checkbox" data-k="w2-reply"><label>Reply with value to 5 ICP posts a day on X</label></div>
+    <div class="chk"><input type="checkbox" data-k="w2-quotes"><label>Publish your first 3 testimonials on the site</label></div>
+  </div>
+  <div class="card"><h4>Week 3, outreach + Show HN</h4>
+    <div class="chk"><input type="checkbox" data-k="w3-apollo"><label>Build a small Apollo list, send 25 to 50 personal cold emails</label></div>
+    <div class="chk"><input type="checkbox" data-k="w3-hn"><label>Post a Show HN, answer comments all day</label></div>
+    <div class="chk"><input type="checkbox" data-k="w3-creators"><label>Seed 10 creators with free licenses + the demo clip</label></div>
+  </div>
+  <div class="card"><h4>Week 4, double down</h4>
+    <div class="chk"><input type="checkbox" data-k="w4-review"><label>Review what worked: which channel brought the most real users?</label></div>
+    <div class="chk"><input type="checkbox" data-k="w4-repeat"><label>Repeat the winning channel twice as hard, drop the rest</label></div>
+    <div class="chk"><input type="checkbox" data-k="w4-100"><label>Hit 100 users, then open tab 5</label></div>
+  </div>
+
+  <div class="q" data-q="plan-goal"><div class="ql">Commit</div><div class="qt">What is your single weekly target for the next 4 weeks? (e.g. "20 new real conversations per week")</div><textarea placeholder="My weekly number is..."></textarea></div>
+  <div class="q" data-q="plan-block"><div class="ql">Commit</div><div class="qt">When will you do this, on your calendar? Marketing dies without a fixed daily block.</div><textarea placeholder="I will spend ... every day at ... on outreach and posting."></textarea></div>
+
+  <div class="callout do"><b>The weekly ritual (30 min, every Monday):</b> look at your one number (new real conversations), read what got the most response, double the winner, cut the loser. That loop, repeated, is the entire job.</div>
+</div>
+
+<footer><div class="wrap">Verba growth playbook · built on the Verba strategy, personas, and campaign · your answers and checkboxes are saved in this browser only (localStorage), nothing is uploaded.</div></footer>
+
+<script>
+  // tabs
+  var tabs=[].slice.call(document.querySelectorAll('.tab'));
+  var views={start:'v-start',buyer:'v-buyer',message:'v-message',p100:'v-p100',outreach:'v-outreach',p1000:'v-p1000',stack:'v-stack',plan:'v-plan'};
+  tabs.forEach(function(t){t.addEventListener('click',function(){
+    tabs.forEach(function(x){x.setAttribute('aria-selected','false')});t.setAttribute('aria-selected','true');
+    Object.values(views).forEach(function(id){document.getElementById(id).classList.remove('on')});
+    document.getElementById(views[t.dataset.v]).classList.add('on');window.scrollTo(0,0);
+  })});
+  // persistence
+  var LS=window.localStorage, KEY='verba_playbook_v1';
+  var store={};try{store=JSON.parse(LS.getItem(KEY)||'{}')}catch(e){}
+  function save(){try{LS.setItem(KEY,JSON.stringify(store))}catch(e){}}
+  // checkboxes
+  var boxes=[].slice.call(document.querySelectorAll('input[type=checkbox][data-k]'));
+  boxes.forEach(function(b){
+    if(store['c_'+b.dataset.k])b.checked=true;
+    b.addEventListener('change',function(){store['c_'+b.dataset.k]=b.checked;save();updateProg();});
+  });
+  // textareas
+  [].slice.call(document.querySelectorAll('.q textarea')).forEach(function(ta){
+    var q=ta.closest('.q').dataset.q;
+    if(store['t_'+q])ta.value=store['t_'+q];
+    ta.addEventListener('input',function(){store['t_'+q]=ta.value;save();});
+  });
+  function updateProg(){
+    var done=boxes.filter(function(b){return b.checked}).length, tot=boxes.length;
+    document.getElementById('pbar').style.width=(tot?Math.round(100*done/tot):0)+'%';
+    document.getElementById('ptxt').textContent=done+' of '+tot+' actions done';
+  }
+  updateProg();
+</script>
+<div style="text-align:center;padding:32px 0;border-top:1px solid rgba(255,255,255,.08);margin-top:40px"><a href="https://verba-hq.vercel.app/" style="color:#ff5a4d;font-size:14px;text-decoration:none">&larr; Back to Verba Marketing HQ</a></div>
+</body></html>
