@@ -36,6 +36,11 @@ enum Changelog {
             date: "July 4, 2026", tag: "Today",
             summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
             entries: [
+                ChangelogEntry(version: "0.9.63",
+                    title: "Everyone on the newer local model, auto-installed",
+                    items: [
+                        "Fresh installs auto-download the local transcription engine (Parakeet) and the local AI model (qwen3) during onboarding, no manual step. Anyone still on the older model is moved to qwen3 automatically, even across synced Macs.",
+                    ]),
                 ChangelogEntry(version: "0.9.62",
                     title: "Learn the shortcuts as you browse",
                     items: [

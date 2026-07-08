@@ -379,7 +379,7 @@ final class VerbaAppearance: ObservableObject {
         }
         if let m = dict["openAIModel"] as? String { Settings.shared.openAIModel = m }
         if let m = dict["openRouterModel"] as? String { Settings.shared.openRouterModel = m }
-        if let m = dict["localLLMModel"] as? String { Settings.shared.localLLMModel = m }
+        if let m = dict["localLLMModel"] as? String { Settings.shared.localLLMModel = (m == "qwen2.5:7b" ? "qwen3:8b" : m) }   // never let a stale blob re-introduce the old default
         applyingRemoteSettings = false
         // Re-apply everything live (window appearance, glass, widget).
         objectWillChange.send()
