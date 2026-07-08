@@ -36,6 +36,11 @@ enum Changelog {
             date: "July 4, 2026", tag: "Today",
             summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
             entries: [
+                ChangelogEntry(version: "0.9.62",
+                    title: "Learn the shortcuts as you browse",
+                    items: [
+                        "Every tool and library page now shows its keyboard shortcuts at the bottom, with a one-tap button to change them in Settings. Discover and rebind shortcuts without hunting for them.",
+                    ]),
                 ChangelogEntry(version: "0.9.61",
                     title: "No more accidental mode picker, and bigger movable widgets",
                     items: [

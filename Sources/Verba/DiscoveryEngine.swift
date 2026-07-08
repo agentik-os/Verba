@@ -10,6 +10,10 @@ final class DiscoveryEngine: ObservableObject {
     @Published private(set) var hint: Hint?
     /// Bumped when the user taps a hint's CTA — MainWindow observes it and opens the Features page.
     @Published var openFeaturesSignal = 0
+    /// Bumped by a page's shortcut-hint bar "Change in Settings" button. MainWindow navigates to
+    /// Settings; SettingsView reads `wantShortcuts` on appear to jump straight to the Shortcuts section.
+    @Published var openShortcutsSignal = 0
+    var wantShortcuts = false
 
     struct Hint: Identifiable, Equatable {
         let id: String        // == the suggested feature key

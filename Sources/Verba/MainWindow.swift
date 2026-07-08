@@ -157,6 +157,7 @@ struct MainWindow: View {
             if !on, selection == .notes { selection = .home }
         }
         .onChange(of: discovery.openFeaturesSignal) { _, _ in selection = .features }   // hint CTA → Features
+        .onChange(of: discovery.openShortcutsSignal) { _, _ in selection = .settings }  // a page's "Change shortcuts" → Settings
         .onChange(of: settings.enabledFeatures) { _, _ in
             // Disabling a feature hides its tab; if you're viewing it, fall back to the Features page.
             let gated: [NavItem: String] = [
@@ -413,6 +414,19 @@ struct MainWindow: View {
 
     @ViewBuilder
     private func detail(_ item: NavItem) -> some View {
+        VStack(spacing: 0) {
+            pageBody(item)
+            // Surface this feature's keyboard shortcuts at the bottom of its page so users learn them
+            // by browsing, with a one-tap jump to Settings ▸ Shortcuts to rebind them.
+            if let hints = item.shortcutHints {
+                Divider().opacity(0.35)
+                ShortcutHintBar(hints: hints)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func pageBody(_ item: NavItem) -> some View {
         switch item {
         case .home: HomeView()
         case .features: FeaturesView()
@@ -435,5 +449,57 @@ struct MainWindow: View {
         case .freeMonth: FreeMonthView()
         case .settings: SettingsView().frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+    }
+}
+
+// MARK: - Shortcut hints on Tools/Library pages (learn the shortcuts by browsing)
+
+extension NavItem {
+    /// Shortcuts to surface at the bottom of this page. nil = no bar for this page.
+    var shortcutHints: [(label: String, keys: [String])]? {
+        switch self {
+        case .notes:         return [("Record a note", ["Fn", "Z"]), ("Open Notes", ["⌃", "⌥", "C"])]
+        case .todos:         return [("Capture a to-do", ["Fn", "T"]), ("Today's glance", ["⌥", "Fn"]), ("Open To-dos", ["⌃", "⌥", "Z"])]
+        case .transforms:    return [("Transform the selection", ["⌥", "X"])]
+        case .modes:         return [("Next mode", ["Fn", "⇥"]), ("Pick a mode by number", ["Fn", "1–9"])]
+        case .connectedApps: return [("Speak an action (JARVIS)", ["Fn", "X"]), ("Open Actions", ["⌃", "⌥", "X"])]
+        case .style:         return [("Next style", ["Fn", "]"]), ("Previous style", ["Fn", "["])]
+        default:             return nil
+        }
+    }
+}
+
+/// Compact learn-by-browsing bar under a feature's page: its shortcut(s) as key chips + a jump to
+/// Settings ▸ Shortcuts to rebind them.
+struct ShortcutHintBar: View {
+    let hints: [(label: String, keys: [String])]
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "keyboard").font(.system(size: 12)).foregroundStyle(.secondary)
+            ForEach(Array(hints.enumerated()), id: \.offset) { idx, hint in
+                HStack(spacing: 5) {
+                    ForEach(hint.keys, id: \.self) { k in
+                        Text(k)
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(.softFill, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                    }
+                    Text(hint.label).font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+                if idx < hints.count - 1 { Text("·").font(.system(size: 11)).foregroundStyle(.tertiary) }
+            }
+            Spacer(minLength: 8)
+            Button {
+                DiscoveryEngine.shared.wantShortcuts = true
+                DiscoveryEngine.shared.openShortcutsSignal &+= 1
+            } label: {
+                Label("Change in Settings", systemImage: "slider.horizontal.3").font(.system(size: 11))
+            }
+            .buttonStyle(.borderless).foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 18).padding(.vertical, 9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.primary.opacity(0.035))
     }
 }

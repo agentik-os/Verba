@@ -124,6 +124,11 @@ struct SettingsView: View {
         }
         .frame(minWidth: 720, maxWidth: .infinity, minHeight: 520, maxHeight: .infinity)
         .tint(.primary)
+        // A page's "Change in Settings" shortcut button navigates here (via openShortcutsSignal) →
+        // jump straight to the Shortcuts section.
+        .onAppear {
+            if DiscoveryEngine.shared.wantShortcuts { DiscoveryEngine.shared.wantShortcuts = false; section = .shortcuts }
+        }
         .onReceive(permPoll) { _ in
             micGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
             axGranted = Output.accessibilityTrusted
