@@ -442,3 +442,29 @@ details[open] > .faq-body { animation: rise-in .25s var(--ease-out) both; }
 .ptint10{background:rgba(255,255,255,0.10);}[data-theme="light"] .ptint10{background:rgba(10,10,20,0.06);}
 .pborder{border-color:rgba(255,255,255,0.10);}[data-theme="light"] .pborder{border-color:rgba(10,10,20,0.10);}
 .pborder30{border-color:rgba(255,255,255,0.30);}[data-theme="light"] .pborder30{border-color:rgba(10,10,20,0.22);}
+
+/* Blog article body: theme-aware prose for Outrank-authored HTML (/blog/[slug]).
+   All colors ride the CSS vars so it adapts to light/dark like the rest of the site. */
+.article-body { color: var(--fg-dim); font-size: 1.0625rem; line-height: 1.75; }
+.article-body > :first-child { margin-top: 0; }
+.article-body h2 { color: var(--fg); font-size: 1.6rem; font-weight: 600; letter-spacing: -0.02em; margin: 2.4rem 0 0.9rem; }
+.article-body h3 { color: var(--fg); font-size: 1.25rem; font-weight: 600; letter-spacing: -0.01em; margin: 1.9rem 0 0.7rem; }
+.article-body h4 { color: var(--fg); font-size: 1.05rem; font-weight: 600; margin: 1.5rem 0 0.5rem; }
+.article-body p { margin: 1.1rem 0; }
+.article-body a { color: var(--fg); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--border-strong); }
+.article-body a:hover { text-decoration-color: var(--fg); }
+.article-body ul, .article-body ol { margin: 1.1rem 0; padding-left: 1.4rem; }
+.article-body ul { list-style: disc; }
+.article-body ol { list-style: decimal; }
+.article-body li { margin: 0.45rem 0; }
+.article-body li::marker { color: var(--muted); }
+.article-body strong { color: var(--fg); font-weight: 600; }
+.article-body img { border-radius: 1rem; border: 1px solid var(--border); margin: 1.6rem 0; max-width: 100%; height: auto; }
+.article-body blockquote { border-left: 2px solid var(--border-strong); margin: 1.4rem 0; padding: 0.2rem 0 0.2rem 1.1rem; color: var(--muted); }
+.article-body code { background: var(--tint-strong); border: 1px solid var(--border); border-radius: 6px; padding: 0.1rem 0.4rem; font-size: 0.9em; }
+.article-body pre { background: var(--tint); border: 1px solid var(--border); border-radius: 0.9rem; padding: 1.1rem 1.2rem; overflow-x: auto; margin: 1.4rem 0; }
+.article-body pre code { background: none; border: none; padding: 0; }
+.article-body hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
+.article-body table { width: 100%; border-collapse: collapse; margin: 1.4rem 0; display: block; overflow-x: auto; }
+.article-body th, .article-body td { border: 1px solid var(--border); padding: 0.6rem 0.8rem; text-align: left; }
+.article-body th { color: var(--fg); font-weight: 600; background: var(--tint); }

@@ -178,4 +178,18 @@ export default defineSchema({
     })),
     updated: v.number(),
   }).index("by_uid", ["uid"]).index("by_alias", ["alias"]),
+
+  blog_articles: defineTable({   // articles pushed by Outrank.so via the /api/outrank-webhook receiver
+    outrankId: v.string(),       // Outrank's article id — the dedupe/upsert key
+    slug: v.string(),            // URL slug → /blog/<slug>
+    title: v.string(),
+    contentHtml: v.string(),     // rendered body (Outrank content_html, else markdown→html)
+    contentMarkdown: v.optional(v.string()),
+    metaDescription: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    tags: v.array(v.string()),
+    createdAt: v.optional(v.string()),   // ISO timestamp from Outrank (publish date)
+    receivedAt: v.number(),              // when our webhook first stored it (ms)
+    updatedAt: v.number(),               // last time the webhook rewrote it (ms)
+  }).index("by_slug", ["slug"]).index("by_outrankId", ["outrankId"]),
 });
