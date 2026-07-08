@@ -36,6 +36,12 @@ enum Changelog {
             date: "July 4, 2026", tag: "Today",
             summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
             entries: [
+                ChangelogEntry(version: "0.9.65",
+                    title: "See every background task, and results land where you started",
+                    items: [
+                        "Run things in parallel and watch them: a to-do being added, a note transcribing, a JARVIS action, all show as little live chips that tick green when done.",
+                        "Each dictation now delivers back to the app and field where you started it, so two dictations aimed at two different windows each land in the right place.",
+                    ]),
                 ChangelogEntry(version: "0.9.64",
                     title: "Full-screen to-do reminders",
                     items: [

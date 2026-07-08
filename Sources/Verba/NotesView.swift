@@ -38,6 +38,7 @@ struct NotesView: View {
     @State private var status = ""
     @State private var recordError = ""     // legible, persistent "couldn't record" banner (cleared on success / dismiss)
     @State private var work: Task<Void, Never>?
+    @State private var activityToken: UUID?     // bottom-right activity chip for this note's transcribe→organize
     @State private var filterTag: String?
     @State private var expandedTags: Set<String> = []   // Bear-style tag tree: which parent tags are open
     // Per-note password lock
@@ -1131,6 +1132,9 @@ struct NotesView: View {
 
     private func transcribe(_ url: URL) {
         busy = true; status = L("Transcribing…")
+        // Activity chip (multitask visibility): this note is transcribing (then organizing) in the
+        // background, so the user can watch it alongside any other in-flight work.
+        activityToken = ActivityCenter.shared.begin(kind: .note, label: L("Transcribing note…"))
         work = Task {
             do {
                 let s = Settings.shared
@@ -1151,6 +1155,7 @@ struct NotesView: View {
                     await MainActor.run {
                         busy = false; status = ""; appendMode = false
                         recordError = L("Didn't catch anything — try recording again.")
+                        if let t = activityToken { ActivityCenter.shared.drop(t); activityToken = nil }
                     }
                     return
                 }
@@ -1170,7 +1175,10 @@ struct NotesView: View {
                 applyFormat()
             } catch {
                 if Task.isCancelled { return }
-                await MainActor.run { busy = false; status = "\(L("Transcription failed:")) \(error.localizedDescription)" }
+                await MainActor.run {
+                    busy = false; status = "\(L("Transcription failed:")) \(error.localizedDescription)"
+                    if let t = activityToken { ActivityCenter.shared.finish(t, ok: false, resultLabel: L("Note failed")); activityToken = nil }
+                }
             }
         }
     }
@@ -1178,6 +1186,7 @@ struct NotesView: View {
     private func applyFormat() {
         guard !transcript.isEmpty else { return }
         busy = true; status = "\(L("Organizing into")) \(format.name)…"
+        if let t = activityToken { ActivityCenter.shared.update(t, label: L("Organizing note…")) }
         // Snapshot the intent on the main actor so the system prompt always reflects what the user
         // typed RIGHT NOW (the live text is the single source of truth — no separate applied flag).
         let intentSnapshot = intentText
@@ -1194,10 +1203,14 @@ struct NotesView: View {
                     editorText = out; busy = false; status = ""
                     autosaveTask?.cancel(); autosaveTask = nil
                     autosaveCommit()   // persist the finished note immediately (no debounce wait)
+                    if let t = activityToken { ActivityCenter.shared.finish(t, ok: true, resultLabel: L("Note ready")); activityToken = nil }
                 }
             } catch {
                 if Task.isCancelled { return }
-                await MainActor.run { busy = false; status = "\(L("Couldn't organize:")) \(error.localizedDescription)" }
+                await MainActor.run {
+                    busy = false; status = "\(L("Couldn't organize:")) \(error.localizedDescription)"
+                    if let t = activityToken { ActivityCenter.shared.finish(t, ok: false, resultLabel: L("Note failed")); activityToken = nil }
+                }
             }
         }
     }

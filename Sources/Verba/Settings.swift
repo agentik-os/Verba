@@ -526,6 +526,13 @@ final class Settings: ObservableObject {
     @Published var suppressFnPopup: Bool { didSet { d.set(suppressFnPopup, forKey: "suppressFnPopup"); FnSystemPref.reapply() } }
     @Published var disableInputSwitcher: Bool { didSet { d.set(disableInputSwitcher, forKey: "disableInputSwitcher"); FnSystemPref.reapply() } }
     @Published var autoPaste: Bool { didSet { d.set(autoPaste, forKey: "autoPaste") } }
+    // Deliver each dictation back into the app/field it was STARTED in, even if the user moved to
+    // another app while it processed (parallel dictations each land where they began). Off → the
+    // result drops to the Sessions list when the origin app is no longer frontmost.
+    @Published var routeResultToOrigin: Bool { didSet { d.set(routeResultToOrigin, forKey: "routeResultToOrigin") } }
+    // Show the small bottom-right stack of activity chips for concurrent background operations
+    // (a dictation processing, a to-do saving, a note transcribing, a JARVIS action running).
+    @Published var showActivityToasts: Bool { didSet { d.set(showActivityToasts, forKey: "showActivityToasts") } }
     @Published var copyToClipboard: Bool { didSet { d.set(copyToClipboard, forKey: "copyToClipboard") } }
     @Published var richTextPaste: Bool { didSet { d.set(richTextPaste, forKey: "richTextPaste") } }
     @Published var reviewBeforeSend: Bool { didSet { d.set(reviewBeforeSend, forKey: "reviewBeforeSend") } }
@@ -834,6 +841,8 @@ final class Settings: ObservableObject {
         quipTone = QuipTone(rawValue: d.string(forKey: "quipTone") ?? "") ?? .geek
         language = d.string(forKey: "language") ?? ""
         autoPaste = d.object(forKey: "autoPaste") as? Bool ?? true
+        routeResultToOrigin = d.object(forKey: "routeResultToOrigin") as? Bool ?? true
+        showActivityToasts = d.object(forKey: "showActivityToasts") as? Bool ?? true
         // VER-24: off by default — auto-paste now restores the prior clipboard instead of leaving
         // the dictation on it. Users who want every dictation copied can enable this.
         copyToClipboard = d.object(forKey: "copyToClipboard") as? Bool ?? false

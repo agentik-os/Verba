@@ -63,6 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                                     // before its (now-stale) paste lands in a since-changed frontmost field
     private var todoCaptureRecording = false   // a voice "add to-do" capture is recording
     private var todoCaptureTask: Task<Void, Never>?
+    private var todoActivityToken: UUID?       // activity chip for the in-flight to-do capture
     private var noteLevelTimer: Timer?         // drives the shared overlay's waveform while a note records (NotesView owns the recorder)
     // Set when stopTodoCapture() runs from the bare-Fn half of a Fn+T/§ stop chord; swallows the
     // T/§-keyDown's startTodoCapture() that follows on the same chord so it doesn't restart capture.
@@ -220,6 +221,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .store(in: &cancellables)
         TodoReminders.shared.start()   // schedule "30 min before deadline" to-do reminders, keep them in sync
         WidgetBridge.shared.start()    // keep the WidgetKit "Today" snapshot in sync with the TodoStore
+        ActivityToastsController.shared.start()   // bottom-right chips for concurrent background ops + JARVIS bridge
 
         // Re-apply hotkeys when the primary shortcut, profiles, or Fn option change.
         // Every rebindable Carbon target must be observed here — otherwise rebinding/clearing it in
@@ -629,6 +631,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         overlay.model.recording = false
         overlay.model.title = "Adding to your tasks…"
         overlay.show()
+        // Activity chip: the transcription + routing of this to-do runs in the background.
+        todoActivityToken = ActivityCenter.shared.begin(kind: .todo, label: L("Adding to-do…"))
         todoCaptureTask?.cancel()
         todoCaptureTask = Task { [weak self] in
             // R12: a to-do capture's buffer is never stored or redone — delete it when this
@@ -705,6 +709,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         todoCaptureTask = nil
         TodoCaptureController.shared.capturing = false
         TodoCaptureController.shared.lastError = error
+        // Resolve the activity chip for this capture (if one was started for the processing phase).
+        if let token = todoActivityToken {
+            ActivityCenter.shared.finish(token, ok: error == nil, resultLabel: error == nil ? success : L("To-do failed"))
+            todoActivityToken = nil
+        }
         overlay.model.recording = false
         overlay.model.paused = false
         if let error {
@@ -1573,6 +1582,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         SessionStore.shared.start(session)
         let url = ctx.audioURL
         let bundleID = ctx.capturedBundleID
+        // Activity chip (multitask visibility): this dictation is now processing in the background.
+        // Its live label tracks the pipeline's status; it resolves in the success/fail/cancel branches.
+        let activityToken = ActivityCenter.shared.begin(
+            kind: .dictation,
+            label: ctx.actionMode ? L("Processing command…") : L("Transcribing…"))
         sessionTasks[session.id] = Task {
             do {
                 // Hard ceiling so a hung transcription/reprompt backend can't spin forever.
@@ -1581,6 +1595,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         DispatchQueue.main.async {
                             guard let self else { return }
                             session.status = s.lowercased().contains("transcrib") ? .transcribing : .processing
+                            ActivityCenter.shared.update(activityToken, label: s)
                             // The processing pill follows the LATEST Session's status line.
                             if self.isLatestInflight(session) { self.statusLine = s; self.refreshUI() }
                         }
@@ -1591,21 +1606,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     // Close the TOCTOU window: cancelEverything() clears sessionTasks (and marks the
                     // session .cancelled) on the main thread. If an Esc landed between the check above
                     // and this hop, the session is no longer tracked → drop it (no paste, no listing).
-                    guard self.sessionTasks[session.id] != nil else { self.purgeAudio(ctx.audioURL); return }
+                    guard self.sessionTasks[session.id] != nil else { self.purgeAudio(ctx.audioURL); ActivityCenter.shared.drop(activityToken); return }
                     self.sessionTasks[session.id] = nil
                     self.finish(ctx: ctx, result: result)
+                    ActivityCenter.shared.finish(activityToken, ok: true, resultLabel: L("Done"))
                 }
             } catch is CancellationError {
                 // user cancelled, handled by cancelEverything()
-                await MainActor.run { self.purgeAudio(ctx.audioURL) }   // R12: cancelled → buffer never needed again
+                await MainActor.run { self.purgeAudio(ctx.audioURL); ActivityCenter.shared.drop(activityToken) }   // R12: cancelled → buffer never needed again
             } catch {
                 VerbaLog.app.error("session \(session.id.uuidString, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")   // R14
                 if Task.isCancelled { return }
                 await MainActor.run {
-                    guard self.sessionTasks[session.id] != nil else { self.purgeAudio(ctx.audioURL); return }
+                    guard self.sessionTasks[session.id] != nil else { self.purgeAudio(ctx.audioURL); ActivityCenter.shared.drop(activityToken); return }
                     self.sessionTasks[session.id] = nil
                     self.failSession(session, error: error, latestShowsOverlay: true)
                     self.purgeAudio(ctx.audioURL)   // R12: a failed run's buffer is never reused (redo keeps lastAudioURL)
+                    // A silent/too-short capture is a non-event (failSession drops it) — drop the chip
+                    // too; a real failure flips it to a brief ✗ (the pill still shows the full reason).
+                    let m = error.localizedDescription.lowercased()
+                    var benign = m.contains("300ms") || m.contains("too short") || m.contains("invalid audio")
+                    if case TranscribeError.empty = error { benign = true }
+                    if benign { ActivityCenter.shared.drop(activityToken) }
+                    else { ActivityCenter.shared.finish(activityToken, ok: false, resultLabel: L("Failed")) }
                 }
             }
         }
@@ -1727,6 +1750,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
         }()
 
+        // Feature 2 — route back to origin: when the captured app is NOT frontmost (a parallel
+        // dictation whose result landed while the user moved on), and the user opted in, we can
+        // re-activate the ORIGINAL app + restore its focused field + paste there instead of dropping
+        // to Sessions. Gate it on the origin app still being ALIVE — if it's gone, Output.paste would
+        // fall back to pasting into whatever's frontmost now (app B), which is exactly the wrong-app
+        // paste we must never do. Dead origin (or routing off) → the old Sessions-list behavior.
+        let canRouteToOrigin: Bool = {
+            guard Settings.shared.routeResultToOrigin, !safeToAutoPaste,
+                  let pid = ctx.capturedTarget?.pid,
+                  let app = NSRunningApplication(processIdentifier: pid), !app.isTerminated
+            else { return false }
+            return true
+        }()
+
         // Side-effect result (e.g. "add to dictionary" on a selection): there is nothing to paste —
         // the dictation performed an action. Finalize the session and flash a brief confirmation
         // WITHOUT replacing the user's selection. (Checked before action/text delivery.)
@@ -1815,9 +1852,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     Output.promptAccessibility()
                     self.notify("Copied to clipboard", "Grant Accessibility to enable auto-paste.")
                 }
+            } else if Settings.shared.autoPaste && canRouteToOrigin {
+                // The user moved to another app while this dictation processed. Route the result back
+                // into the app/field it was STARTED in (re-activate the origin, restore its focused
+                // element, then ⌘V there) so parallel dictations each land in the right place. If
+                // Accessibility isn't granted, Output.paste returns false and we can't safely target a
+                // background app — leave it on the clipboard + in Sessions rather than paste into B.
+                if Output.paste(text, rich: rich, target: ctx.capturedTarget) {
+                    session.autoPasted = true
+                    self.lastDelivered = text
+                    self.lastDeliveredBundle = ctx.capturedBundleID
+                } else {
+                    Output.copyToClipboard(text, rich: rich, keepTrailingNewline: keepNL)
+                }
             } else if Settings.shared.autoPaste {
-                // Auto-paste is on but the user is in a different app now — copy to the clipboard
-                // (no focus hijack) and leave it in the Sessions list to paste when ready.
+                // Auto-paste is on but the user is in a different app now (routing off, or the origin
+                // app is gone) — copy to the clipboard (no focus hijack) and leave it in the Sessions
+                // list to paste when ready.
                 Output.copyToClipboard(text, rich: rich, keepTrailingNewline: keepNL)
             } else if Settings.shared.copyToClipboard {
                 Output.copyToClipboard(text, rich: rich, keepTrailingNewline: keepNL)

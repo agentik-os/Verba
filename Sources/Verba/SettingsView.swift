@@ -1087,6 +1087,10 @@ struct SettingsView: View {
         card(L("Paste & formatting"),
              footer: L("Formatting pastes as real bold/headings/lists in apps that support it; plain fields get clean text.")) {
             toggleRow(L("Auto-paste into the active field"), $settings.autoPaste)
+            if settings.autoPaste {
+                toggleRow(L("Deliver each dictation where you started it"), $settings.routeResultToOrigin,
+                          help: L("If you move to another app while a dictation is still processing, Verba pastes the result back into the app and field you started in — so parallel dictations each land in the right place. Needs Accessibility. If it can't restore the original field, the result waits in Sessions instead of going to the wrong app."))
+            }
             toggleRow(L("Copy to clipboard"), $settings.copyToClipboard)
             toggleRow(L("Paste with formatting (render Markdown)"), $settings.richTextPaste)
             toggleRow(L("Review / edit before sending"), $settings.reviewBeforeSend)
@@ -1189,6 +1193,8 @@ struct SettingsView: View {
                       help: L("Adds “Edit last by voice…” to the menu, speak a change (“make it shorter”, “more formal”…) and Verba rewrites your last result."))
             toggleRow(L("Agentic actions in Context mode"), $settings.agenticActions,
                       help: L("In Context mode, turn spoken commands into Calendar events, Reminders, or email drafts — it always asks you to confirm first."))
+            toggleRow(L("Show background activity toasts"), $settings.showActivityToasts,
+                      help: L("A small stack of chips in the bottom-right corner shows what's running in the background — a dictation processing, a to-do saving, a note transcribing, a JARVIS action — each with a spinner that flips to ✓ when done, then fades."))
             Text(L("Tip: hold Fn + X anytime for Action mode — speak a command (run a Shortcut, open an app, play music, message someone) and Verba confirms before it acts. No toggle needed."))
                 .font(.caption).foregroundStyle(.secondary)
         }
