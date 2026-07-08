@@ -1,176 +1,214 @@
 {
-  "campaign": "value-content",
-  "created": "2026-07-08",
-  "platforms": ["twitter", "linkedin"],
-  "note": "no link in body (link lives in bio); reach comes from the engagement layer",
-  "items": [
-    {
-      "id": "v01",
-      "pillar": "competitor",
-      "twitter": "Wispr Flow turns speech into text fast, no argument there. Verba does the same, but your audio stays on your Mac instead of going to their servers, and once you confirm, JARVIS can act on it. Worth knowing where your voice actually goes before you dictate, right?",
-      "card_title": "Where Does Your Voice Actually Go?",
-      "card_sub": "Verba processes audio on your Mac. Wispr Flow sends it to their servers."
-    },
-    {
-      "id": "v02",
-      "pillar": "jtbd_tip",
-      "twitter": "Next standup, don't type your update, say it. Open Verba, talk through what you shipped yesterday like you're telling a teammate, and you'll have a clean written update before your coffee's done. What's the one meeting you'd rather talk through than type?",
-      "card_title": "Say Your Standup, Don't Type It",
-      "card_sub": "Talk through yesterday's work and get a clean update before your coffee's done."
-    },
-    {
-      "id": "v03",
-      "pillar": "build_in_public",
-      "twitter": "We debated making JARVIS act the instant it hears you, no confirm step. We chose to make it wait for your yes every time, even though it's slower. An email sent by mistake costs more than a second of friction. Would you rather it be fast or be sure?",
-      "card_title": "Why JARVIS Waits For Your Yes",
-      "card_sub": "Slower by a second, but nothing acts without your confirm. That was the choice."
-    },
-    {
-      "id": "v04",
-      "pillar": "privacy",
-      "twitter": "Your voice says things your typed messages never would, the venting, the draft you'd never send. Verba keeps that on your Mac instead of routing it through someone else's servers. Would you dictate more freely if you knew nothing left your device?",
-      "card_title": "Say What You'd Never Type",
-      "card_sub": "Verba keeps your voice on your Mac, not routed through someone else's servers."
-    },
-    {
-      "id": "v05",
-      "pillar": "competitor",
-      "twitter": "Superwhisper is solid if all you need is text on screen. Verba adds one more step: after you confirm, JARVIS can turn dictation into an actual action, an email sent, a task created. Do you want your voice tool to stop at text, or keep going?",
-      "card_title": "Text Is Not The Finish Line",
-      "card_sub": "Superwhisper stops at text. Verba lets JARVIS act after you confirm."
-    },
-    {
-      "id": "v06",
-      "pillar": "jtbd_tip",
-      "twitter": "Hardest email of the day: take it on a walk instead of staring at a blank doc. Talk it out loud like you're explaining it to a friend, then open your Mac to a full draft waiting for you. Ever notice how much clearer you think when you're moving?",
-      "card_title": "Walk It Out, Then Open A Draft",
-      "card_sub": "Talk through the hard email on a walk. Come back to a full draft waiting."
-    },
-    {
-      "id": "v07",
-      "pillar": "build_in_public",
-      "twitter": "Keeping everything on your Mac instead of sending audio off to be processed means we don't get the easy shortcuts a big server farm gives you. It's a harder path to build on, and we picked it anyway. What would you give up for the sake of privacy?",
-      "card_title": "The Harder Path, On Purpose",
-      "card_sub": "Keeping audio on your Mac instead of sending it off took more work. We chose it anyway."
-    },
-    {
-      "id": "v08",
-      "pillar": "privacy",
-      "twitter": "On device isn't a slogan, it's where processing actually happens, on the machine in front of you, not a data center somewhere. That's the difference between Verba and tools that send your audio to their servers first. Does that change what you'd say out loud?",
-      "card_title": "On Device Is A Place, Not A Slogan",
-      "card_sub": "Processing happens on the machine in front of you, not a data center somewhere."
-    },
-    {
-      "id": "v09",
-      "pillar": "competitor",
-      "twitter": "MacWhisper is built for transcribing files, meetings, interviews, and it does that well. Verba is built for the moment you're typing right now, live dictation plus JARVIS acting on it once you confirm. Which one matches what you actually do all day?",
-      "card_title": "Built For Live Dictation, Not Files",
-      "card_sub": "MacWhisper transcribes recordings. Verba dictates and acts in the moment."
-    },
-    {
-      "id": "v10",
-      "pillar": "jtbd_tip",
-      "twitter": "After a call, don't rebuild your notes from memory an hour later. While it's fresh, dictate the three decisions and two follow ups out loud, and you're done before you've even closed the laptop. How much do meeting notes usually lose by the time you write them?",
-      "card_title": "Dictate Notes While They're Fresh",
-      "card_sub": "Say the decisions and follow ups right after the call, before memory fades."
-    },
-    {
-      "id": "v11",
-      "pillar": "build_in_public",
-      "twitter": "Verba is Mac only, and that was a real tradeoff, not an accident. Going deep on one platform instead of spreading across three let us make dictation feel native instead of bolted on. Do you trust a tool more when it's built for one place and done right?",
-      "card_title": "Mac Only Was A Tradeoff We Chose",
-      "card_sub": "One platform, done deep, instead of three platforms done thin."
-    },
-    {
-      "id": "v12",
-      "pillar": "privacy",
-      "twitter": "Client details, a draft termination letter, a diagnosis you're processing out loud, that's the stuff people dictate. Verba keeps it on your Mac instead of sending it to someone else's servers. What's something you'd only ever say, never type?",
-      "card_title": "The Stuff People Only Say Out Loud",
-      "card_sub": "Client details, hard drafts, private thoughts stay on your Mac, nowhere else."
-    },
-    {
-      "id": "v13",
-      "pillar": "competitor",
-      "twitter": "Aqua Voice works across your browser and apps, which is convenient. Verba stays native to your Mac on purpose, so your audio never has to leave the machine to get processed. Is that convenience worth sending your voice off device?",
-      "card_title": "Native Beats Cross App",
-      "card_sub": "Aqua Voice spans your browser. Verba stays on your Mac by design."
-    },
-    {
-      "id": "v14",
-      "pillar": "jtbd_tip",
-      "twitter": "Before you open your task list, dump everything in your head out loud for sixty seconds, the nagging stuff, the half formed ideas, all of it. Sort it after. Talking is faster than typing when your brain is this full. Where do your loose threads usually go to die?",
-      "card_title": "Dump Your Head Before You Plan",
-      "card_sub": "Say everything nagging you out loud first. Sort it after. Faster than typing."
-    },
-    {
-      "id": "v15",
-      "pillar": "build_in_public",
-      "twitter": "Some accents and fast talkers still trip Verba up more than we'd like, and we're not going to pretend otherwise. We're working through it case by case instead of shipping a vague promise. What's the one dictation habit of yours that breaks most tools?",
-      "card_title": "Some Accents Still Trip Us Up",
-      "card_sub": "We're fixing it case by case instead of promising something vague."
-    },
-    {
-      "id": "v16",
-      "pillar": "privacy",
-      "twitter": "No account needed, nothing stored anywhere but your own Mac. We built it that way so there's nothing to breach and nothing to hand over even if someone asked. What would you actually use voice for if you trusted it completely?",
-      "card_title": "Nothing To Breach, Nothing To Hand Over",
-      "card_sub": "No account needed. Nothing stored anywhere but your own Mac."
-    },
-    {
-      "id": "v17",
-      "pillar": "competitor",
-      "twitter": "Willow Voice focuses on clean, quiet dictation, and that's a real strength. Verba keeps that same calm approach, then adds a confirm step before JARVIS can act on anything you said. Should a dictation tool ask before it acts, or just hand you text and stop?",
-      "card_title": "Calm Dictation, Then A Confirm Step",
-      "card_sub": "Willow Voice keeps it quiet. Verba adds a pause before JARVIS acts."
-    },
-    {
-      "id": "v18",
-      "pillar": "jtbd_tip",
-      "twitter": "Writing a hard message, the one you keep rewriting? Say the blunt version out loud first, then edit down from something honest. It's easier to soften real words than invent careful ones. Which is harder for you, saying it or writing it?",
-      "card_title": "Say The Blunt Version First",
-      "card_sub": "Speak the honest draft, then edit it down. Easier than typing something careful."
-    },
-    {
-      "id": "v19",
-      "pillar": "build_in_public",
-      "twitter": "No accounts, no sign up wall, no tracking dashboard. We built it that way on purpose, even though it makes our own analytics harder to see. We'd rather know less about you and earn trust than know everything and lose it. Does that tradeoff seem right to you?",
-      "card_title": "No Accounts, No Tracking, On Purpose",
-      "card_sub": "We'd rather know less about you and earn trust than know everything."
-    },
-    {
-      "id": "v20",
-      "pillar": "privacy",
-      "twitter": "JARVIS only acts after you confirm, right on your Mac, not after a round trip to someone else's servers. Fewer places for something to go wrong, fewer places for your data to sit. Do you check what happens to your voice after you stop talking?",
-      "card_title": "The Confirm Happens On Your Mac",
-      "card_sub": "No round trip to someone else's servers before JARVIS acts."
-    },
-    {
-      "id": "v21",
-      "pillar": "competitor",
-      "twitter": "Most dictation apps, Wispr Flow included, stop the moment your words hit the screen. Verba keeps going after that: you confirm, then JARVIS can send the email, create the task, whatever you actually meant to do next. Where does your current tool leave you stuck?",
-      "card_title": "After The Text, What Happens Next?",
-      "card_sub": "Most dictation apps stop at words. Verba's JARVIS can act on them."
-    },
-    {
-      "id": "v22",
-      "pillar": "jtbd_tip",
-      "twitter": "Good ideas hit at bad times, mid chore, mid commute, hands full. Say it the second it shows up instead of hoping you remember by the time you sit down. How many good ideas have you lost just waiting to get to a keyboard?",
-      "card_title": "Capture Ideas The Second They Hit",
-      "card_sub": "Mid chore, mid commute, hands full, say it now instead of hoping you remember."
-    },
-    {
-      "id": "v23",
-      "pillar": "build_in_public",
-      "twitter": "A user told us confirming every JARVIS action felt slow for simple stuff, so we shipped a lighter confirm for low risk actions and kept the full stop for anything that sends or deletes. Small change, real difference daily. What's slowing you down that shouldn't be?",
-      "card_title": "A Small Fix From Real Feedback",
-      "card_sub": "Lighter confirm for low risk actions, full stop for anything that sends or deletes."
-    },
-    {
-      "id": "v24",
-      "pillar": "privacy",
-      "twitter": "Mid sentence you change your mind, restart, say something you didn't mean. That should stay private, processed on your own Mac and nowhere else. Tools that send audio to their servers can't promise that. What would you say if you knew it never left your device?",
-      "card_title": "Even Mid Sentence Mistakes Stay Private",
-      "card_sub": "Processed on your own Mac and nowhere else, always."
-    }
-  ]
+ "campaign": "value-content",
+ "created": "2026-07-08",
+ "platforms": [
+  "twitter",
+  "linkedin"
+ ],
+ "note": "no link in body (link lives in bio); reach comes from the engagement layer",
+ "items": [
+  {
+   "id": "v01",
+   "pillar": "competitor",
+   "twitter": "Wispr Flow turns speech into text fast, no argument there. Verba does the same, but your audio stays on your Mac instead of going to their servers, and once you confirm, JARVIS can act on it. Worth knowing where your voice actually goes before you dictate, right?",
+   "card_title": "Where Does Your Voice Actually Go?",
+   "card_sub": "Verba processes audio on your Mac. Wispr Flow sends it to their servers."
+  },
+  {
+   "id": "v02",
+   "pillar": "jtbd_tip",
+   "twitter": "Next standup, don't type your update, say it. Open Verba, talk through what you shipped yesterday like you're telling a teammate, and you'll have a clean written update before your coffee's done. What's the one meeting you'd rather talk through than type?",
+   "card_title": "Say Your Standup, Don't Type It",
+   "card_sub": "Talk through yesterday's work and get a clean update before your coffee's done."
+  },
+  {
+   "id": "v03",
+   "pillar": "build_in_public",
+   "twitter": "We debated making JARVIS act the instant it hears you, no confirm step. We chose to make it wait for your yes every time, even though it's slower. An email sent by mistake costs more than a second of friction. Would you rather it be fast or be sure?",
+   "card_title": "Why JARVIS Waits For Your Yes",
+   "card_sub": "Slower by a second, but nothing acts without your confirm. That was the choice."
+  },
+  {
+   "id": "v04",
+   "pillar": "privacy",
+   "twitter": "Your voice says things your typed messages never would, the venting, the draft you'd never send. Verba keeps that on your Mac instead of routing it through someone else's servers. Would you dictate more freely if you knew nothing left your device?",
+   "card_title": "Say What You'd Never Type",
+   "card_sub": "Verba keeps your voice on your Mac, not routed through someone else's servers."
+  },
+  {
+   "id": "v05",
+   "pillar": "competitor",
+   "twitter": "Superwhisper is solid if all you need is text on screen. Verba adds one more step: after you confirm, JARVIS can turn dictation into an actual action, an email sent, a task created. Do you want your voice tool to stop at text, or keep going?",
+   "card_title": "Text Is Not The Finish Line",
+   "card_sub": "Superwhisper stops at text. Verba lets JARVIS act after you confirm."
+  },
+  {
+   "id": "v06",
+   "pillar": "jtbd_tip",
+   "twitter": "Hardest email of the day: take it on a walk instead of staring at a blank doc. Talk it out loud like you're explaining it to a friend, then open your Mac to a full draft waiting for you. Ever notice how much clearer you think when you're moving?",
+   "card_title": "Walk It Out, Then Open A Draft",
+   "card_sub": "Talk through the hard email on a walk. Come back to a full draft waiting."
+  },
+  {
+   "id": "v07",
+   "pillar": "build_in_public",
+   "twitter": "Keeping everything on your Mac instead of sending audio off to be processed means we don't get the easy shortcuts a big server farm gives you. It's a harder path to build on, and we picked it anyway. What would you give up for the sake of privacy?",
+   "card_title": "The Harder Path, On Purpose",
+   "card_sub": "Keeping audio on your Mac instead of sending it off took more work. We chose it anyway."
+  },
+  {
+   "id": "v08",
+   "pillar": "privacy",
+   "twitter": "On device isn't a slogan, it's where processing actually happens, on the machine in front of you, not a data center somewhere. That's the difference between Verba and tools that send your audio to their servers first. Does that change what you'd say out loud?",
+   "card_title": "On Device Is A Place, Not A Slogan",
+   "card_sub": "Processing happens on the machine in front of you, not a data center somewhere."
+  },
+  {
+   "id": "v09",
+   "pillar": "competitor",
+   "twitter": "MacWhisper is built for transcribing files, meetings, interviews, and it does that well. Verba is built for the moment you're typing right now, live dictation plus JARVIS acting on it once you confirm. Which one matches what you actually do all day?",
+   "card_title": "Built For Live Dictation, Not Files",
+   "card_sub": "MacWhisper transcribes recordings. Verba dictates and acts in the moment."
+  },
+  {
+   "id": "v10",
+   "pillar": "jtbd_tip",
+   "twitter": "After a call, don't rebuild your notes from memory an hour later. While it's fresh, dictate the three decisions and two follow ups out loud, and you're done before you've even closed the laptop. How much do meeting notes usually lose by the time you write them?",
+   "card_title": "Dictate Notes While They're Fresh",
+   "card_sub": "Say the decisions and follow ups right after the call, before memory fades."
+  },
+  {
+   "id": "v11",
+   "pillar": "build_in_public",
+   "twitter": "Verba is Mac only, and that was a real tradeoff, not an accident. Going deep on one platform instead of spreading across three let us make dictation feel native instead of bolted on. Do you trust a tool more when it's built for one place and done right?",
+   "card_title": "Mac Only Was A Tradeoff We Chose",
+   "card_sub": "One platform, done deep, instead of three platforms done thin."
+  },
+  {
+   "id": "v12",
+   "pillar": "privacy",
+   "twitter": "Client details, a draft termination letter, a diagnosis you're processing out loud, that's the stuff people dictate. Verba keeps it on your Mac instead of sending it to someone else's servers. What's something you'd only ever say, never type?",
+   "card_title": "The Stuff People Only Say Out Loud",
+   "card_sub": "Client details, hard drafts, private thoughts stay on your Mac, nowhere else."
+  },
+  {
+   "id": "v13",
+   "pillar": "competitor",
+   "twitter": "Aqua Voice works across your browser and apps, which is convenient. Verba stays native to your Mac on purpose, so your audio never has to leave the machine to get processed. Is that convenience worth sending your voice off device?",
+   "card_title": "Native Beats Cross App",
+   "card_sub": "Aqua Voice spans your browser. Verba stays on your Mac by design."
+  },
+  {
+   "id": "v14",
+   "pillar": "jtbd_tip",
+   "twitter": "Before you open your task list, dump everything in your head out loud for sixty seconds, the nagging stuff, the half formed ideas, all of it. Sort it after. Talking is faster than typing when your brain is this full. Where do your loose threads usually go to die?",
+   "card_title": "Dump Your Head Before You Plan",
+   "card_sub": "Say everything nagging you out loud first. Sort it after. Faster than typing."
+  },
+  {
+   "id": "v15",
+   "pillar": "build_in_public",
+   "twitter": "Some accents and fast talkers still trip Verba up more than we'd like, and we're not going to pretend otherwise. We're working through it case by case instead of shipping a vague promise. What's the one dictation habit of yours that breaks most tools?",
+   "card_title": "Some Accents Still Trip Us Up",
+   "card_sub": "We're fixing it case by case instead of promising something vague."
+  },
+  {
+   "id": "v16",
+   "pillar": "privacy",
+   "twitter": "No account needed, nothing stored anywhere but your own Mac. We built it that way so there's nothing to breach and nothing to hand over even if someone asked. What would you actually use voice for if you trusted it completely?",
+   "card_title": "Nothing To Breach, Nothing To Hand Over",
+   "card_sub": "No account needed. Nothing stored anywhere but your own Mac."
+  },
+  {
+   "id": "v17",
+   "pillar": "competitor",
+   "twitter": "Willow Voice focuses on clean, quiet dictation, and that's a real strength. Verba keeps that same calm approach, then adds a confirm step before JARVIS can act on anything you said. Should a dictation tool ask before it acts, or just hand you text and stop?",
+   "card_title": "Calm Dictation, Then A Confirm Step",
+   "card_sub": "Willow Voice keeps it quiet. Verba adds a pause before JARVIS acts."
+  },
+  {
+   "id": "v18",
+   "pillar": "jtbd_tip",
+   "twitter": "Writing a hard message, the one you keep rewriting? Say the blunt version out loud first, then edit down from something honest. It's easier to soften real words than invent careful ones. Which is harder for you, saying it or writing it?",
+   "card_title": "Say The Blunt Version First",
+   "card_sub": "Speak the honest draft, then edit it down. Easier than typing something careful."
+  },
+  {
+   "id": "v19",
+   "pillar": "build_in_public",
+   "twitter": "No accounts, no sign up wall, no tracking dashboard. We built it that way on purpose, even though it makes our own analytics harder to see. We'd rather know less about you and earn trust than know everything and lose it. Does that tradeoff seem right to you?",
+   "card_title": "No Accounts, No Tracking, On Purpose",
+   "card_sub": "We'd rather know less about you and earn trust than know everything."
+  },
+  {
+   "id": "v20",
+   "pillar": "privacy",
+   "twitter": "JARVIS only acts after you confirm, right on your Mac, not after a round trip to someone else's servers. Fewer places for something to go wrong, fewer places for your data to sit. Do you check what happens to your voice after you stop talking?",
+   "card_title": "The Confirm Happens On Your Mac",
+   "card_sub": "No round trip to someone else's servers before JARVIS acts."
+  },
+  {
+   "id": "v21",
+   "pillar": "competitor",
+   "twitter": "Most dictation apps, Wispr Flow included, stop the moment your words hit the screen. Verba keeps going after that: you confirm, then JARVIS can send the email, create the task, whatever you actually meant to do next. Where does your current tool leave you stuck?",
+   "card_title": "After The Text, What Happens Next?",
+   "card_sub": "Most dictation apps stop at words. Verba's JARVIS can act on them."
+  },
+  {
+   "id": "v22",
+   "pillar": "jtbd_tip",
+   "twitter": "Good ideas hit at bad times, mid chore, mid commute, hands full. Say it the second it shows up instead of hoping you remember by the time you sit down. How many good ideas have you lost just waiting to get to a keyboard?",
+   "card_title": "Capture Ideas The Second They Hit",
+   "card_sub": "Mid chore, mid commute, hands full, say it now instead of hoping you remember."
+  },
+  {
+   "id": "v23",
+   "pillar": "build_in_public",
+   "twitter": "A user told us confirming every JARVIS action felt slow for simple stuff, so we shipped a lighter confirm for low risk actions and kept the full stop for anything that sends or deletes. Small change, real difference daily. What's slowing you down that shouldn't be?",
+   "card_title": "A Small Fix From Real Feedback",
+   "card_sub": "Lighter confirm for low risk actions, full stop for anything that sends or deletes."
+  },
+  {
+   "id": "v24",
+   "pillar": "privacy",
+   "twitter": "Mid sentence you change your mind, restart, say something you didn't mean. That should stay private, processed on your own Mac and nowhere else. Tools that send audio to their servers can't promise that. What would you say if you knew it never left your device?",
+   "card_title": "Even Mid Sentence Mistakes Stay Private",
+   "card_sub": "Processed on your own Mac and nowhere else, always."
+  },
+  {
+   "id": "v25",
+   "pillar": "shipped",
+   "twitter": "First launch just works. Verba sets up its private on-device AI for you, with a progress bar so you always know where it is. No config, nothing to fetch by hand. What is the last app that made setup this painless?",
+   "card_title": "Your private AI sets itself up",
+   "card_sub": "First launch installs it for you, with a progress bar. No config, nothing to fetch by hand."
+  },
+  {
+   "id": "v26",
+   "pillar": "shipped",
+   "twitter": "Verba now shows every background task as it runs, and the result lands exactly where you started typing. No hunting for where your text went. How much time do you lose app-hopping after you dictate?",
+   "card_title": "See every task, results come back to you",
+   "card_sub": "Background work is visible, and the output lands right where you started."
+  },
+  {
+   "id": "v27",
+   "pillar": "shipped",
+   "twitter": "Full-screen reminders you cannot ignore. Verba puts the follow-up you said out loud front and center, so it actually happens. What is the task you keep postponing?",
+   "card_title": "Full-screen reminders that land",
+   "card_sub": "The follow-up you said out loud, front and center until it is done."
+  },
+  {
+   "id": "v28",
+   "pillar": "shipped",
+   "twitter": "Verba just upgraded everyone's private on-device AI automatically. Faster, sharper, nothing for you to do. Would you rather your tools update themselves, or ask you every time?",
+   "card_title": "Your on-device AI, upgraded for you",
+   "card_sub": "Faster and sharper, installed automatically. Nothing for you to do."
+  },
+  {
+   "id": "v29",
+   "pillar": "shipped",
+   "twitter": "Learn Verba's shortcuts without a manual. It teaches you the right hotkey as you go, so control X, Z and C become muscle memory fast. Do you actually use the shortcuts in your tools, or click everything?",
+   "card_title": "Learn the shortcuts as you go",
+   "card_sub": "Verba teaches you the right hotkey in context. Muscle memory, fast."
+  }
+ ]
 }
