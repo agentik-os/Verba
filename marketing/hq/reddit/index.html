@@ -61,6 +61,20 @@
 </style>
 </head>
 <body>
+<style id="verba-lang-css">
+[data-l]{display:block}
+body[data-lang="en"] [data-l="fr"]{display:none}
+body[data-lang="fr"] [data-l="en"]{display:none}
+#verba-langsel{position:fixed;bottom:18px;right:18px;z-index:99999;display:inline-flex;gap:2px;background:rgba(17,17,23,.92);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:4px;box-shadow:0 4px 16px rgba(0,0,0,.3);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font-family:-apple-system,BlinkMacSystemFont,"Inter",system-ui,sans-serif}
+#verba-langsel button{background:transparent;border:none;color:#c8c8ce;border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;line-height:1}
+#verba-langsel button.on{background:#ff5a4d;color:#fff}
+@media print{#verba-langsel{display:none}}
+</style>
+<div id="verba-langsel" role="group" aria-label="Language"><button id="vlg-en" class="on" onclick="vLang('en')">EN</button><button id="vlg-fr" onclick="vLang('fr')">FR</button></div>
+<script>
+function vLang(l){document.body.dataset.lang=l;try{localStorage.setItem('verba_lang',l)}catch(e){}var e=document.getElementById('vlg-en'),f=document.getElementById('vlg-fr');if(e)e.classList.toggle('on',l==='en');if(f)f.classList.toggle('on',l==='fr');}
+(function(){var l='en';try{l=localStorage.getItem('verba_lang')||'en'}catch(e){}vLang(l);})();
+</script>
 <style>
 #hqbar{position:fixed;top:0;left:0;right:0;height:52px;z-index:99999;display:flex;align-items:center;gap:14px;padding:0 20px;background:rgba(8,8,11,.82);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08);font-family:-apple-system,BlinkMacSystemFont,"Inter",system-ui,sans-serif}
 #hqbar a{text-decoration:none;border:none}
@@ -83,6 +97,7 @@ body{padding-top:52px!important}
   <span class="hqsec">Reddit strategy</span>
   <a class="hqback" href="https://verba-hq.vercel.app/">&larr; All docs</a>
 </div>
+<div data-l="en">
 <div class="bar"><div class="in">
   <span class="tag">Strategie Reddit</span>
   <span class="tag">Max reach, zero ban</span>
@@ -93,11 +108,11 @@ body{padding-top:52px!important}
 <h1 id="verba-on-reddit-maximum-reach-zero-ban">Verba on Reddit: Maximum
 Reach, Zero Ban</h1>
 <p><strong>Account:</strong> u/VerbaRun (brand, connected via publisher)
-· <strong>Product:</strong> verba.run, a paid macOS dictation +
+&middot; <strong>Product:</strong> verba.run, a paid macOS dictation +
 voice-agent app that types AND acts on what you say (on-device, private
-AI models, your words never leave your Mac) · <strong>Beachhead:</strong> AI
+AI models, your words never leave your Mac) &middot; <strong>Beachhead:</strong> AI
 coding tool developers on Mac (Cursor and similar), plus Mac power-users
-and privacy-conscious pros · <strong>Date:</strong> 2026-07-03</p>
+and privacy-conscious pros &middot; <strong>Date:</strong> 2026-07-03</p>
 <blockquote>
 <p><strong>Method caveat (R-CITE honesty):</strong> Reddit blocks
 automated fetching of its raw rules widget from datacenter IPs (403 on
@@ -139,7 +154,7 @@ table</h2>
 <tr class="odd">
 <td><strong>r/vibecoding</strong></td>
 <td>~301k</td>
-<td>Most tolerant of the set. “I built X” show-and-tell with a download
+<td>Most tolerant of the set. "I built X" show-and-tell with a download
 link is the native format; a paid on-device macOS app (Shacam) hit 130+
 upvotes. Flairs loose. Still respect ~9:1.</td>
 <td>Yes, outbound product links accepted + upvoted</td>
@@ -150,18 +165,18 @@ upvotes. Flairs loose. Still respect ~9:1.</td>
 <tr class="even">
 <td><strong>r/ChatGPTCoding</strong></td>
 <td>~388k</td>
-<td>Most promo-tolerant “serious” coding sub. “Project”-flaired posts
+<td>Most promo-tolerant "serious" coding sub. "Project"-flaired posts
 with direct commercial links survive. Rules nominally point promo to a
 thread, but standalone Project posts succeed.</td>
 <td>Yes</td>
-<td>“Project” launch OR “Discussion” value post</td>
+<td>"Project" launch OR "Discussion" value post</td>
 <td>1 promo / ~2 wks</td>
 <td>High</td>
 </tr>
 <tr class="odd">
 <td><strong>r/SideProject</strong></td>
 <td>~180k</td>
-<td>Self-promo encouraged, it is the sub’s purpose. No 9:1 enforcement,
+<td>Self-promo encouraged, it is the sub&rsquo;s purpose. No 9:1 enforcement,
 but a bare link is spam: must tell the build story.</td>
 <td>Yes, expected (link the live product)</td>
 <td>[Launch] build-in-public journey</td>
@@ -190,7 +205,7 @@ to the monthly megathread. Dev flair required (Lifetime &gt;
 Subscription &gt; Free).</td>
 <td>Yes, but download link must point to official source (verba.run or
 Mac App Store), no shorteners/affiliates/redirects</td>
-<td>Flaired “I built” show-and-tell self-post</td>
+<td>Flaired "I built" show-and-tell self-post</td>
 <td>1 / 30 days</td>
 <td>High</td>
 </tr>
@@ -203,7 +218,7 @@ of activity</strong> (explicit). No duplicate posts/surveys.
 about pricing/performance/competitors, so never bash Cursor. Flair
 required.</td>
 <td>Yes</td>
-<td>Value/workflow post (“hands-free prompting in Cursor on Mac”)</td>
+<td>Value/workflow post ("hands-free prompting in Cursor on Mac")</td>
 <td>1 value / few wks</td>
 <td>Medium-high</td>
 </tr>
@@ -212,7 +227,7 @@ required.</td>
 <td>~766k</td>
 <td>Open-weights/local-first culture, hostile to closed paid promo whose
 audio leaves the device. Self-promo ~10%, direct non-clickbait links
-only. A “60-day cooldown / Share Your Startup megathread” claim
+only. A "60-day cooldown / Share Your Startup megathread" claim
 circulating online is <strong>fabricated</strong>, do not rely on it.</td>
 <td>Yes (open repo/model links are the norm)</td>
 <td>Technical on-device/private post only, no paid launch</td>
@@ -232,7 +247,7 @@ hard product pushes.</td>
 <tr class="odd">
 <td><strong>r/macOS</strong></td>
 <td>~1.1M</td>
-<td>Promo-hostile, discussion-first. Pure “check out my app” link drops
+<td>Promo-hostile, discussion-first. Pure "check out my app" link drops
 removed. <em>(Exact rule LOWER CONFIDENCE, confirm live.)</em></td>
 <td>Technically yes, but risky; text post safer</td>
 <td>Value/discussion self-post, disclose you built it</td>
@@ -276,7 +291,7 @@ first.</td>
 <td><strong>r/programming</strong></td>
 <td>~6.9M</td>
 <td>Strictest. Link-aggregator for substantive technical articles only;
-“I built X” and product posts removed/banned. 1:9 enforced. Banned all
+"I built X" and product posts removed/banned. 1:9 enforced. Banned all
 AI/LLM content in 2026.</td>
 <td>Link submissions only, external technical articles</td>
 <td>Genuine engineering deep-dive on your own blog, product
@@ -310,18 +325,18 @@ paid closed app reads as spam.</td>
 <td>Health/support, no promo thread. Product mention only inside a
 helpful answer. <em>(Rule characterized.)</em></td>
 <td>Yes (risky if link-only)</td>
-<td>Value/story (“dev with RSI, my hands-free setup”)</td>
+<td>Value/story ("dev with RSI, my hands-free setup")</td>
 <td>1 value / 3-4 wks</td>
 <td>Intent, gentle</td>
 </tr>
 <tr class="odd">
 <td><strong>r/accessibility</strong></td>
 <td>~20k</td>
-<td>Practitioner community, sharp on “accessibility-washing.”
+<td>Practitioner community, sharp on "accessibility-washing."
 Feedback-seeking framing beats promo. <em>(Rule
 characterized.)</em></td>
 <td>Yes, common</td>
-<td>Discussion or “critique our voice-control a11y” post</td>
+<td>Discussion or "critique our voice-control a11y" post</td>
 <td>1 / month</td>
 <td>Credibility</td>
 </tr>
@@ -330,7 +345,7 @@ characterized.)</em></td>
 <td>~1-2k</td>
 <td>Niche, lightly moderated, exact category = highest intent.</td>
 <td>Yes</td>
-<td>Show-and-tell / comparison; answer “what app should I use?”
+<td>Show-and-tell / comparison; answer "what app should I use?"
 threads</td>
 <td>1 / few wks</td>
 <td>Highest intent</td>
@@ -347,7 +362,7 @@ threads</td>
 <tr class="even">
 <td><strong>r/SaaS</strong></td>
 <td>~742k</td>
-<td>“Promotion ok, but don’t mention unless relevant/helpful.” Feedback
+<td>"Promotion ok, but don&rsquo;t mention unless relevant/helpful." Feedback
 goes in the weekly pinned thread. Tightening toward once-per-60-days
 promo limit (Apr 2026).</td>
 <td>Yes but link-drops discouraged</td>
@@ -359,7 +374,7 @@ promo limit (Apr 2026).</td>
 <td><strong>r/Entrepreneur</strong></td>
 <td>~5.2M</td>
 <td>Standalone promo/URL drops = permanent ban. <strong>All promotion
-goes in the weekly “Thank You Thursday” thread.</strong></td>
+goes in the weekly "Thank You Thursday" thread.</strong></td>
 <td>No (in-context support only)</td>
 <td>Pure value/journey posts + Thursday thread for promo</td>
 <td>Value ~weekly, promo Thursday only</td>
@@ -369,7 +384,7 @@ goes in the weekly “Thank You Thursday” thread.</strong></td>
 <td><strong>r/artificial</strong></td>
 <td>~1.3M</td>
 <td>Self-promo ~10%, be an active member first. Showcase allowed if
-framed as “here’s what we built, feedback?”</td>
+framed as "here&rsquo;s what we built, feedback?"</td>
 <td>Yes within 10%</td>
 <td>Show-and-tell framed as feedback on the voice-agent angle</td>
 <td>1 showcase / 3-4 wks</td>
@@ -378,7 +393,7 @@ framed as “here’s what we built, feedback?”</td>
 <tr class="odd">
 <td><strong>r/webdev</strong></td>
 <td>~3.3M</td>
-<td>“No self-promotion or advertising,” including subtle comment promo.
+<td>"No self-promotion or advertising," including subtle comment promo.
 Showcases restricted to <strong>Showoff Saturday</strong> thread; flair
 required.</td>
 <td>No standalone promo</td>
@@ -389,9 +404,9 @@ required.</td>
 <tr class="even">
 <td><strong>r/setups</strong></td>
 <td>~172k</td>
-<td>Enthusiast audience; organic “my setup” posts, not promotion.</td>
+<td>Enthusiast audience; organic "my setup" posts, not promotion.</td>
 <td>Yes (photo/story)</td>
-<td>Organic “my hands-free dev setup” story</td>
+<td>Organic "my hands-free dev setup" story</td>
 <td>Occasional, organic</td>
 <td>Soft</td>
 </tr>
@@ -403,10 +418,10 @@ r/VibeCodeDevs (~57k), r/AskVibecoders (~35k), r/vibecodingcommunity
 crosspost.</p>
 <p><strong>Sources:</strong> r/macapps <a
 href="https://reddifier.com/free-subreddit-analysis-tool/r/macapps">reddifier</a>
-· <a href="https://gummysearch.com/r/macapps/">gummysearch</a> · <a
+&middot; <a href="https://gummysearch.com/r/macapps/">gummysearch</a> &middot; <a
 href="https://upvote.net/blog/macapps-reddit-analysis">upvote.net</a>;
 r/apple <a href="https://libredd.it/r/apple/wiki/rules/">libreddit rules
-mirror</a> · <a
+mirror</a> &middot; <a
 href="https://painonsocial.com/companies/apple">painonsocial</a>;
 r/macOS <a
 href="https://mktclarity.com/blogs/news/list-subreddits-promotion">mktclarity</a>;
@@ -435,7 +450,7 @@ href="https://www.mediafa.st/marketing-on-rsideproject">mediafa.st</a> +
 <a
 href="https://shipwithai.substack.com/p/4-steps-to-promote-your-side-project">shipwithai</a>;
 r/programming <a
-href="https://www.tomshardware.com/tech-industry/artificial-intelligence/the-largest-programming-community-on-reddit-just-banned-all-content-related-to-ai-llms-r-programming-is-prioritizing-only-high-quality-discussions-about-ai">Tom’s
+href="https://www.tomshardware.com/tech-industry/artificial-intelligence/the-largest-programming-community-on-reddit-just-banned-all-content-related-to-ai-llms-r-programming-is-prioritizing-only-high-quality-discussions-about-ai">Tom&rsquo;s
 Hardware AI ban</a> + <a
 href="https://www.replyagent.ai/blog/reddit-self-promotion-rules-naturally-mention-product">replyagent</a>;
 r/opensource <a
@@ -468,28 +483,24 @@ href="https://gummysearch.com/r/setups/">gummysearch</a>.</p>
 <h2 id="anti-ban-doctrine-the-non-negotiables">2. Anti-ban doctrine (the
 non-negotiables)</h2>
 <ol type="1">
-<li><strong>Warm up u/VerbaRun before any promo.</strong> Reddit’s
+<li><strong>Warm up u/VerbaRun before any promo.</strong> Reddit&rsquo;s
 AutoModerator pre-filters on account age and karma. Target: <strong>30+
 days old, 100+ comment karma</strong> platform-wide, and <strong>10+
 karma inside r/macapps specifically</strong> (its hard gate) before the
 first promo post there. Spend weeks 1-2 commenting genuinely, zero
-links. Sources: <a
-href="https://www.conbersa.ai/learn/reddit-self-promotion-rules">conbersa</a>,
-<a
-href="https://karmaguy.io/en/blog/reddit-self-promotion-rules">karmaguy</a>.</li>
+links. Sources: <a href="https://www.conbersa.ai/learn/reddit-self-promotion-rules">conbersa</a>,
+<a href="https://karmaguy.io/en/blog/reddit-self-promotion-rules">karmaguy</a>.</li>
 <li><strong>The 9:1 (90/10) rule is the real filter.</strong> Reddit
 retired the rigid wording but mods enforce it by scanning your history.
 Keep self-referential activity <strong>under 10%</strong> of everything
 u/VerbaRun does. Nine genuine helpful comments per one promotional link.
-A history that is all-Verba is the #1 removal trigger. Source: <a
-href="https://www.teract.ai/resources/reddit-subreddit-marketing-2026">teract.ai</a>.</li>
+A history that is all-Verba is the #1 removal trigger. Source: <a href="https://www.teract.ai/resources/reddit-subreddit-marketing-2026">teract.ai</a>.</li>
 <li><strong>Comment-first presence.</strong> Value lives in comments,
-not posts. Answer “what dictation app / how do I go hands-free / RSI
-setup / hands-free AI coding” threads with a genuinely useful answer,
+not posts. Answer "what dictation app / how do I go hands-free / RSI
+setup / hands-free AI coding" threads with a genuinely useful answer,
 disclose you built Verba, and <strong>list alternatives</strong> so it
 does not read as a pitch. This alone drove a comparable productivity app
-~47k monthly visits over 9 months. Source: <a
-href="https://hashmeta.com/insights/case-study-reddit-seo-traffic-growth">hashmeta</a>.</li>
+~47k monthly visits over 9 months. Source: <a href="https://hashmeta.com/insights/case-study-reddit-seo-traffic-growth">hashmeta</a>.</li>
 <li><strong>Spacing and rate limits.</strong> Never two promo posts in
 one week across the whole account. Per sub, respect the tightest
 documented cadence (r/macapps: once/30 days). Space community posts 2-4
@@ -500,10 +511,10 @@ near-identical link blasts trip spam detection and are explicitly
 bannable in r/cursor. Rewrite the title and lead for every sub; rotate
 subs rather than blast one launch to six at once the same day.</li>
 <li><strong>Vary titles and angles.</strong> Same product, different
-door: workflow tip for r/artificial, “I built this” for r/vibecoding, RSI
+door: workflow tip for r/artificial, "I built this" for r/vibecoding, RSI
 story for r/RSI, on-device engineering for r/LocalLLaMA.</li>
 <li><strong>One account only.</strong> u/VerbaRun. Sockpuppet upvoting
-or a second “happy customer” account is vote manipulation and a fast
+or a second "happy customer" account is vote manipulation and a fast
 sitewide ban. Founders post as themselves and disclose.</li>
 <li><strong>Link placement by sub.</strong> Where a sub bans or punishes
 promo links: put the link in a <strong>comment</strong> (r/artificial,
@@ -520,7 +531,7 @@ on r/macapps).</li>
 <code>reddit.com/user/VerbaRun</code>, if your posts are invisible
 logged-out you are shadowbanned. Check
 <code>reddit.com/r/ShadowBan</code> tooling monthly. Watch for posts
-stuck at “1 upvote, 0 comments, no impressions” (removed-by-filter
+stuck at "1 upvote, 0 comments, no impressions" (removed-by-filter
 signal). If a post vanishes, it is likely AutoMod, not a ban: message
 the mods politely, do not repost.</li>
 </ol>
@@ -530,7 +541,7 @@ the mods politely, do not repost.</li>
 automate daily via the publisher)</h3>
 <p><strong>The honest boundary (L2):</strong> no community subreddit
 safely permits fully automated, scheduled self-promotion. Every
-“welcoming” sub still wants a human story and scans post history. So
+"welcoming" sub still wants a human story and scans post history. So
 automation is confined to the one surface that breaks no sub rule:
 <strong>the u/VerbaRun profile.</strong> Self-posts on your own profile
 need no subreddit, trip no ratio rule, and are visible to your profile
@@ -547,11 +558,11 @@ poll or an open question to followers) - Never more than 1 profile
 post/day. This is the always-on drumbeat that makes the account look
 human and active between community posts, and it is 100%
 publisher-schedulable. - The profile also hosts the canonical link so
-that in strict subs you can say “setup is on my profile” instead of
+that in strict subs you can say "setup is on my profile" instead of
 dropping a URL.</p>
 <p><strong>Designated promo threads are borderline-auto but scheduled by
-hand.</strong> r/Entrepreneur “Thank You Thursday,” r/webdev “Showoff
-Saturday,” and the r/artificial Showcase Megathread
+hand.</strong> r/Entrepreneur "Thank You Thursday," r/webdev "Showoff
+Saturday," and the r/artificial Showcase Megathread
 are recurring slots. You can schedule a reminder, but the comment itself
 should be written fresh each time. Treat as HUMAN-lite.</p>
 <h3 id="human-hand-done-value-first-founder-voice">HUMAN (hand-done,
@@ -578,45 +589,45 @@ elapsed), repeat the winners.</li>
 <hr />
 <h2 id="content-templates-title-body-outline-link-placement">4. Content
 templates (title + body outline + link placement)</h2>
-<p><strong>T1. “I built” show-and-tell (r/vibecoding, r/MacOSApps,
+<p><strong>T1. "I built" show-and-tell (r/vibecoding, r/MacOSApps,
 r/nativemacapps)</strong> - Title:
 <code>I built a Mac voice agent that types AND runs what you say, fully on-device</code>
-- Body: the itch (typing prompts all day gave my wrists hell) → what it
+- Body: the itch (typing prompts all day gave my wrists hell) &rarr; what it
 does (dictation + it acts: opens apps, runs commands, drives your coding
-agent) → the honest differentiators (on-device/private, your words never
-leave your Mac) → 15s demo GIF → pricing stated plainly → “I’m the dev,
-happy to answer anything.” - One soft ask: <em>“What is the first thing
-you would voice-control?”</em> - Link: <strong>in post</strong>
+agent) &rarr; the honest differentiators (on-device/private, your words never
+leave your Mac) &rarr; 15s demo GIF &rarr; pricing stated plainly &rarr; "I&rsquo;m the dev,
+happy to answer anything." - One soft ask: <em>"What is the first thing
+you would voice-control?"</em> - Link: <strong>in post</strong>
 (verba.run).</p>
 <p><strong>T2. Workflow value post (r/artificial)</strong> - Title:
 <code>The private voice setup I use on my Mac instead of typing every prompt</code>
 - Body: the workflow, the exact config snippet and hooks, why on-device
 matters for code you never want to leave your machine, Verba named as
 the tool that drives it. Teaches even if they never buy. - One soft ask:
-<em>“Happy to share the full hooks config if useful.”</em> - Link:
-<strong>in a comment</strong> (or “on my profile”); also drop the tool
-into the subreddit’s pinned Showcase Megathread separately.</p>
+<em>"Happy to share the full hooks config if useful."</em> - Link:
+<strong>in a comment</strong> (or "on my profile"); also drop the tool
+into the subreddit&rsquo;s pinned Showcase Megathread separately.</p>
 <p><strong>T3. Cursor-on-Mac workflow (r/cursor)</strong> - Title:
 <code>Hands-free prompting in Cursor on Mac: an on-device dictation layer</code>
 - Body: how you voice-drive Cursor, latency numbers, privacy note, flair
 as Resources &amp; Tips. <strong>Never</strong> compare against Cursor
-pricing or bash it (misinformation rule). - One soft ask: <em>“Anyone
-else voice-driving Cursor? Curious what breaks for you.”</em> - Link:
+pricing or bash it (misinformation rule). - One soft ask: <em>"Anyone
+else voice-driving Cursor? Curious what breaks for you."</em> - Link:
 <strong>in a comment</strong>.</p>
 <p><strong>T4. Cross-tool discussion bait (r/ChatGPTCoding,
 r/artificial)</strong> - Title:
 <code>Where do AI coding tools still drop you back to the keyboard?</code>
 - Body: name the real workflow gap (you can prompt an agent but you
 still type it), invite answers, then mention Verba in-thread as how you
-closed it for yourself. - One soft ask: <em>“What is the step where your
-flow still breaks?”</em> - Link: <strong>in a comment</strong>,
+closed it for yourself. - One soft ask: <em>"What is the step where your
+flow still breaks?"</em> - Link: <strong>in a comment</strong>,
 in-thread.</p>
 <p><strong>T5. Build-in-public launch journey (r/SideProject,
 r/SaaS)</strong> - Title:
 <code>[Launch] Verba: on-device dictation + voice agent for devs. 6 months of building solo</code>
 - Body: milestone (users/revenue if real), 2 hard technical challenges,
 one lesson, the ask. Story first, product third. - One soft ask:
-<em>“Feedback on the voice-agent mode especially welcome.”</em> - Link:
+<em>"Feedback on the voice-agent mode especially welcome."</em> - Link:
 <strong>in post</strong> (r/SideProject) / <strong>weekly feedback
 thread</strong> (r/SaaS).</p>
 <p><strong>T6. RSI / hands-free story (r/RSI, r/accessibility)</strong>
@@ -625,26 +636,26 @@ thread</strong> (r/SaaS).</p>
 - Body: the injury, what you tried (Dragon, macOS Voice Control), where
 they fell short, the setup that worked, Verba disclosed as the tool you
 built out of your own need. Substance first, no pitch. - One soft ask
-(r/RSI): <em>“What is helping your wrists right now?”</em> /
-(r/accessibility): <em>“Would love an a11y expert critique of the
-voice-control UX.”</em> - Link: <strong>in a comment</strong>.</p>
+(r/RSI): <em>"What is helping your wrists right now?"</em> /
+(r/accessibility): <em>"Would love an a11y expert critique of the
+voice-control UX."</em> - Link: <strong>in a comment</strong>.</p>
 <p><strong>T7. On-device engineering post (r/LocalLLaMA,
 r/speechrecognition)</strong> - Title:
 <code>Running low-latency on-device speech-to-text on Apple Silicon: what I learned</code>
 - Body: real engineering, latency/accuracy numbers, why the audio never
 leaves the Mac, local model choices, Verba as the concrete example. Must
-stand as a technical read. - One soft ask: <em>none, or “curious how
-others handle local STT latency.”</em> - Link: <strong>in a
+stand as a technical read. - One soft ask: <em>none, or "curious how
+others handle local STT latency."</em> - Link: <strong>in a
 comment</strong> (r/LocalLLaMA is hostile to a link-forward paid
 post).</p>
 <p><strong>T8. Flaired Mac app show-and-tell (r/macapps)</strong> -
 Title:
 <code>I built Verba: fast on-device dictation + a voice agent, for developers on Mac</code>
 - Body: problem-first (system dictation is slow and sends your voice to
-someone else’s servers), what makes it native/on-device, disclose you
+someone else&rsquo;s servers), what makes it native/on-device, disclose you
 are the dev, official verba.run link only. Set the correct paid flair (Subscription or Lifetime).
-Requires 10+ sub karma first. - One soft ask: <em>“Feedback on the
-voice-agent mode?”</em> - Link: <strong>in post</strong>, official
+Requires 10+ sub karma first. - One soft ask: <em>"Feedback on the
+voice-agent mode?"</em> - Link: <strong>in post</strong>, official
 source only.</p>
 <p><strong>T9. Pure value / methodology post (r/productivity,
 r/macOS)</strong> - Title:
@@ -655,10 +666,10 @@ asks. On r/macOS frame as a macOS setup guide. - One soft ask: <em>none
 none</strong> (mention in replies if asked).</p>
 <p><strong>T10. Designated-thread promo (r/Entrepreneur Thursday,
 r/webdev Saturday, r/apple Sunday)</strong> - Title/body: fit the
-thread’s format. r/apple Sunday must be a <strong>self/text
+thread&rsquo;s format. r/apple Sunday must be a <strong>self/text
 post</strong> with real substance (only after 5+ non-promo contributions
 that month). r/Entrepreneur and r/webdev go in the pinned weekly thread
-as a comment. - One soft ask: <em>“Open to feedback.”</em> - Link:
+as a comment. - One soft ask: <em>"Open to feedback."</em> - Link:
 <strong>in the thread comment</strong> (r/Entrepreneur, r/webdev) /
 <strong>in the self-post body as text</strong> (r/apple).</p>
 <hr />
@@ -667,7 +678,7 @@ as a comment. - One soft ask: <em>“Open to feedback.”</em> - Link:
 <li><strong>AUTO profile:</strong> 5 self-posts/week, every week,
 publisher-scheduled.</li>
 <li><strong>HUMAN community:</strong> 2-3 posts/week max across the
-whole account, each in a different sub, each respecting that sub’s
+whole account, each in a different sub, each respecting that sub&rsquo;s
 tightest cadence. Comments are unlimited and are the main event.</li>
 <li><strong>Per-sub ceilings honored:</strong> r/macapps once/30d,
 r/artificial + r/cursor once/2-3wk, r/SaaS + r/Entrepreneur promo
@@ -738,13 +749,13 @@ placement.</p>
 caller</h3>
 <ul>
 <li><strong>Deliverable is this markdown message</strong> (per the
-explicit instruction, “Return a clean markdown report… This is the whole
-deliverable”). No file written, no artifact published, nothing
+explicit instruction, "Return a clean markdown report&hellip; This is the whole
+deliverable"). No file written, no artifact published, nothing
 committed.</li>
 <li><strong>Two honest boundaries flagged (L2):</strong> (1) No
 community subreddit safely permits automated scheduled self-promo, so
 AUTO is confined to the u/VerbaRun profile plus hand-written entries in
-designated recurring threads; everything else is HUMAN. (2) Reddit’s raw
+designated recurring threads; everything else is HUMAN. (2) Reddit&rsquo;s raw
 rules widget is IP-blocked from this environment; every rule claim is
 sourced from live-feed mirrors, rule databases, and 2026 policy guides,
 and the strict subs (r/programming, r/apple, r/macOS, r/cursor,
@@ -792,5 +803,734 @@ core calendar as opportunistic rather than scheduled.</li>
 })();
 </script>
 <div style="text-align:center;padding:32px 0;border-top:1px solid rgba(255,255,255,.08);margin-top:40px"><a href="https://verba-hq.vercel.app/" style="color:#ff5a4d;font-size:14px;text-decoration:none">&larr; Back to Verba Marketing HQ</a></div>
+</div>
+<div data-l="fr">
+<div class="bar"><div class="in">
+  <span class="tag">Stratégie Reddit</span>
+  <span class="tag">Portée maximale, zéro bannissement</span>
+</div></div>
+<div class="layout">
+  <nav class="toc" aria-label="Sommaire"><div class="lbl">Sommaire</div><div></div></nav>
+  <main class="article">
+<h1>Verba sur Reddit : portée maximale, zéro bannissement</h1>
+<p><strong>Compte :</strong> u/VerbaRun (marque, connecté via l&rsquo;outil de
+publication) &middot; <strong>Produit :</strong> verba.run, une application macOS
+payante de dictée + agent vocal qui tape ET agit selon ce que vous dites
+(sur l&rsquo;appareil, modèles IA privés, vos mots ne quittent jamais votre Mac)
+&middot; <strong>Cible de départ :</strong> développeurs d&rsquo;outils de code IA sur
+Mac (Cursor et similaires), plus les power users Mac et les
+professionnels soucieux de confidentialité &middot; <strong>Date :</strong>
+2026-07-03</p>
+<blockquote>
+<p><strong>Réserve de méthode (honnêteté R-CITE) :</strong> Reddit bloque
+la récupération automatisée de son widget de règles brutes depuis des IP
+de datacenter (403 sur chaque route). Les constats ci-dessous viennent de
+flux de subs en direct lus via un miroir Redlib dans un vrai navigateur
+(safereddit.com, capture le 2026-07-03), de bases de règles tierces, des
+compteurs de membres GummySearch, et de guides de politique 2026. Chaque
+affirmation porte une URL source. Quand le texte exact de la barre
+latérale n&rsquo;était pas récupérable, c&rsquo;est signalé et la recommandation
+s&rsquo;appuie sur la réalité opérationnelle observée (ce que les modérateurs
+épinglent, ce qui survit). <strong>Avant le premier post dans un sub
+strict (r/programming, r/apple, r/macOS, r/cursor, r/LocalLLaMA), ouvrez
+son <code>about/rules</code> en direct depuis un navigateur connecté pour
+confirmer.</strong></p>
+</blockquote>
+<hr />
+<h2>1. Tableau de renseignement sur les subreddits</h2>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 14%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Subreddit</th>
+<th>Membres (2026)</th>
+<th>Règle d&rsquo;autopromotion</th>
+<th>Posts avec lien ?</th>
+<th>Meilleur type de post pour Verba</th>
+<th>Cadence sûre</th>
+<th>Adéquation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>r/vibecoding</strong></td>
+<td>~301k</td>
+<td>Le plus tolérant du lot. Le format "j&rsquo;ai construit X" avec un lien
+de téléchargement est natif ici ; une application macOS payante sur
+l&rsquo;appareil (Shacam) a dépassé 130 votes positifs. Flairs peu stricts.
+Respecter quand même le ratio ~9:1.</td>
+<td>Oui, les liens produit externes sont acceptés et votés positivement</td>
+<td>Lancement en démonstration avec démo</td>
+<td>1 démonstration / 1-2 sem.</td>
+<td><strong>Le meilleur</strong></td>
+</tr>
+<tr class="even">
+<td><strong>r/ChatGPTCoding</strong></td>
+<td>~388k</td>
+<td>Le sub de code "sérieux" le plus tolérant à la promo. Les posts avec
+le flair "Project" et un lien commercial direct passent bien. Les règles
+renvoient nominalement la promo vers un fil dédié, mais les posts
+Project autonomes fonctionnent.</td>
+<td>Oui</td>
+<td>Lancement "Project" OU post de valeur "Discussion"</td>
+<td>1 promo / ~2 sem.</td>
+<td>Élevée</td>
+</tr>
+<tr class="odd">
+<td><strong>r/SideProject</strong></td>
+<td>~180k</td>
+<td>L&rsquo;autopromotion est encouragée, c&rsquo;est la raison d&rsquo;être du sub. Pas de
+ratio 9:1 imposé, mais un lien nu est du spam : il faut raconter
+l&rsquo;histoire de la construction.</td>
+<td>Oui, attendu (lien vers le produit en ligne)</td>
+<td>[Lancement] parcours de construction en public</td>
+<td>1 / 3-4 sem.</td>
+<td>Élevée</td>
+</tr>
+<tr class="even">
+<td><strong>r/artificial</strong></td>
+<td>~986k</td>
+<td>Le mégathread Showcase épinglé + le flair correspondant = le canal de
+promo autorisé. Modération lourde pilotée par IA ; pas de posts de
+lancement/lien directs.</td>
+<td>Oui, mais les posts texte/self l&rsquo;emportent</td>
+<td>Post de valeur/workflow + dépôt dans le mégathread Showcase</td>
+<td>1 touche promo / 2-3 sem.</td>
+<td>Forte portée</td>
+</tr>
+<tr class="odd">
+<td><strong>r/macapps</strong></td>
+<td>~236k</td>
+<td>Autopromotion peu fréquente : <strong>max une fois par développeur /
+30 jours</strong> (une fois par appli/30j pour les développeurs établis
+avec flair). Divulgation obligatoire. <strong>10 karma</strong> avant de
+promouvoir en commentaire. Trust &amp; Transparency Initiative (mise à
+jour le 2026-06-17) : les développeurs non qualifiés sont limités au
+mégathread mensuel. Flair développeur requis (Lifetime &gt; Abonnement
+&gt; Gratuit).</td>
+<td>Oui, mais le lien de téléchargement doit pointer vers la source
+officielle (verba.run ou le Mac App Store), aucun raccourcisseur/lien
+affilié/redirection</td>
+<td>Post self "j&rsquo;ai construit" avec flair</td>
+<td>1 / 30 jours</td>
+<td>Élevée</td>
+</tr>
+<tr class="even">
+<td><strong>r/cursor</strong></td>
+<td>~144k</td>
+<td>Géré par l&rsquo;équipe Cursor, ~11 règles publiées. <strong>Autopromotion
+plafonnée à 10 % de l&rsquo;activité</strong> (explicite). Pas de posts en
+double ni de sondages. <strong>Règle anti-désinformation</strong> : les
+modérateurs retirent les affirmations inexactes sur le prix, la
+performance ou les concurrents, donc ne jamais dénigrer Cursor. Flair
+requis.</td>
+<td>Oui</td>
+<td>Post de valeur/workflow ("prompts mains libres dans Cursor sur
+Mac")</td>
+<td>1 valeur / quelques sem.</td>
+<td>Moyenne à élevée</td>
+</tr>
+<tr class="odd">
+<td><strong>r/LocalLLaMA</strong></td>
+<td>~766k</td>
+<td>Culture open-weights/local-first, hostile à la promo payante fermée
+dont l&rsquo;audio quitte l&rsquo;appareil. Autopromotion ~10 %, liens directs non
+racoleurs uniquement. Une affirmation de "cooldown de 60 jours /
+mégathread Share Your Startup" qui circule en ligne est
+<strong>fabriquée</strong>, à ne pas suivre.</td>
+<td>Oui (les liens de dépôt/modèle ouverts sont la norme)</td>
+<td>Post technique sur l&rsquo;appareil/privé uniquement, pas de lancement
+payant</td>
+<td>1 / mois SI accroche locale authentique</td>
+<td>Faible</td>
+</tr>
+<tr class="even">
+<td><strong>r/LLMDevs</strong></td>
+<td>~174k</td>
+<td>Pas de fil showcase ; beaucoup de discussion/plaintes. Faible
+tolérance aux poussées produit directes.</td>
+<td>Oui</td>
+<td>Post de valeur/discussion uniquement, pas de poussée produit</td>
+<td>1 / mois</td>
+<td>Faible</td>
+</tr>
+<tr class="odd">
+<td><strong>r/macOS</strong></td>
+<td>~1,1 M</td>
+<td>Hostile à la promo, discussion d&rsquo;abord. Les simples dépôts de lien
+"regardez mon appli" sont retirés. <em>(Règle exacte CONFIANCE FAIBLE, à
+confirmer en direct.)</em></td>
+<td>Techniquement oui, mais risqué ; un post texte est plus sûr</td>
+<td>Post self de valeur/discussion, en divulguant que vous l&rsquo;avez
+construit</td>
+<td>1 / 1-2 mois</td>
+<td>Valeur uniquement</td>
+</tr>
+<tr class="even">
+<td><strong>r/MacOSApps</strong></td>
+<td>~21k</td>
+<td>Accueillant ; l&rsquo;objectif est de partager des applis macOS
+gratuites/pas chères/Lifetime. Modération légère. Divulguer + flair (Dev
+Tools / Productivity).</td>
+<td>Oui</td>
+<td>Post self de démonstration ou lien avec flair</td>
+<td>1 / 30 jours</td>
+<td>Gain facile</td>
+</tr>
+<tr class="odd">
+<td><strong>r/nativemacapps</strong></td>
+<td>~1k</td>
+<td>Tout petit sub de découverte pour les applis 100 % natives (pas
+d&rsquo;Electron). ICP parfait <strong>si Verba est authentiquement natif
+(Swift/AppKit/SwiftUI)</strong>. Faible risque de bannissement. <em>(Règle
+CONFIANCE FAIBLE.)</em></td>
+<td>Oui (supposé)</td>
+<td>Démonstration d&rsquo;appli native</td>
+<td>Une fois, puis à chaque nouvelle version</td>
+<td>Parfait pour la niche</td>
+</tr>
+<tr class="even">
+<td><strong>r/apple</strong></td>
+<td>~3,2 M+</td>
+<td><strong>Autopromotion le dimanche uniquement</strong>, développeurs
+uniquement, doit être un <strong>post self/texte</strong> (pas un lien),
+règle des 10 %, exige d&rsquo;abord <strong>5+ contributions non
+promotionnelles dans le mois écoulé</strong>.</td>
+<td>Non pour la promo (post self uniquement)</td>
+<td>Post self du dimanche avec un vrai contenu de fond</td>
+<td>Coup de portée rare</td>
+<td>Portée, strict</td>
+</tr>
+<tr class="odd">
+<td><strong>r/programming</strong></td>
+<td>~6,9 M</td>
+<td>Le plus strict. Agrégateur de liens pour articles techniques de fond
+uniquement ; les posts "j&rsquo;ai construit X" et les posts produit sont
+retirés/bannis. Ratio 1:9 appliqué. A banni tout contenu IA/LLM en
+2026.</td>
+<td>Uniquement des soumissions de liens, articles techniques externes</td>
+<td>Vrai article d&rsquo;ingénierie de fond sur votre propre blog, produit
+mentionné en passant</td>
+<td>1 article / quelques mois, rare</td>
+<td>Risque élevé</td>
+</tr>
+<tr class="even">
+<td><strong>r/opensource</strong></td>
+<td>~358k</td>
+<td>Autopromotion limitée autorisée ; le projet doit être authentiquement
+open-source. Une appli payante fermée est perçue comme du spam.</td>
+<td>Oui (lien du dépôt + contexte)</td>
+<td>Seulement si vous rendez un composant open-source</td>
+<td>1 / mois lié à une sortie OSS</td>
+<td>Faible sauf si OSS</td>
+</tr>
+<tr class="odd">
+<td><strong>r/productivity</strong></td>
+<td>~2,4 M+</td>
+<td>Anti-spam strict ; les posts promo sont retirés. Les mentions
+d&rsquo;appli vivent en <strong>commentaire</strong> avec divulgation +
+alternatives.</td>
+<td>Non (discussion d&rsquo;abord)</td>
+<td>Mentions contextuelles en commentaire + posts de pure méthodologie</td>
+<td>Commentaires plutôt que posts, mentions &lt;10 %</td>
+<td>Commentaire uniquement</td>
+</tr>
+<tr class="even">
+<td><strong>r/RSI</strong></td>
+<td>~6k</td>
+<td>Santé/soutien, pas de fil promo. Mention du produit seulement à
+l&rsquo;intérieur d&rsquo;une réponse utile. <em>(Règle caractérisée.)</em></td>
+<td>Oui (risqué si lien seul)</td>
+<td>Valeur/histoire ("développeur avec des TMS, mon setup mains
+libres")</td>
+<td>1 valeur / 3-4 sem.</td>
+<td>Intention, en douceur</td>
+</tr>
+<tr class="odd">
+<td><strong>r/accessibility</strong></td>
+<td>~20k</td>
+<td>Communauté de praticiens, vigilante sur l&rsquo;"accessibility-washing".
+Le cadrage "recherche de retours" l&rsquo;emporte sur la promo. <em>(Règle
+caractérisée.)</em></td>
+<td>Oui, courant</td>
+<td>Discussion ou post "critiquez notre a11y de contrôle vocal"</td>
+<td>1 / mois</td>
+<td>Crédibilité</td>
+</tr>
+<tr class="even">
+<td><strong>r/dictation</strong></td>
+<td>~1-2k</td>
+<td>Niche, modération légère, catégorie exacte = intention d&rsquo;achat la
+plus forte.</td>
+<td>Oui</td>
+<td>Démonstration / comparaison ; répondre aux fils "quelle appli
+utiliser ?"</td>
+<td>1 / quelques sem.</td>
+<td>Intention la plus forte</td>
+</tr>
+<tr class="odd">
+<td><strong>r/speechrecognition</strong></td>
+<td>~3k</td>
+<td>Petit sub technique sur la reconnaissance vocale, sert bien l&rsquo;angle
+sur l&rsquo;appareil.</td>
+<td>Oui</td>
+<td>Post technique sur la confidentialité/latence de la reconnaissance
+vocale sur l&rsquo;appareil</td>
+<td>1 / quelques sem.</td>
+<td>Technique</td>
+</tr>
+<tr class="even">
+<td><strong>r/SaaS</strong></td>
+<td>~742k</td>
+<td>"Promo acceptée, mais ne mentionnez que si pertinent/utile." Les
+retours vont dans le fil hebdomadaire épinglé. Resserrement vers une
+limite de promo une fois tous les 60 jours (avril 2026).</td>
+<td>Oui mais les dépôts de lien sont découragés</td>
+<td>Post de fondateur porté par une histoire + fil de retours
+hebdomadaire</td>
+<td>Promo ouverte ~1 / 2 mois</td>
+<td>Portée fondateur</td>
+</tr>
+<tr class="odd">
+<td><strong>r/Entrepreneur</strong></td>
+<td>~5,2 M</td>
+<td>Un dépôt de promo/URL isolé = bannissement définitif. <strong>Toute
+promotion passe dans le fil hebdomadaire "Thank You Thursday".</strong></td>
+<td>Non (soutien contextuel uniquement)</td>
+<td>Posts de valeur/parcours purs + fil du jeudi pour la promo</td>
+<td>Valeur ~hebdomadaire, promo le jeudi uniquement</td>
+<td>Portée, strict</td>
+</tr>
+<tr class="even">
+<td><strong>r/artificial</strong></td>
+<td>~1,3 M</td>
+<td>Autopromotion ~10 %, être d&rsquo;abord un membre actif. Le showcase est
+autorisé s&rsquo;il est cadré comme "voici ce qu&rsquo;on a construit, vos
+retours ?"</td>
+<td>Oui dans la limite des 10 %</td>
+<td>Démonstration cadrée comme une demande de retour sur l&rsquo;angle agent
+vocal</td>
+<td>1 démonstration / 3-4 sem.</td>
+<td>Portée IA</td>
+</tr>
+<tr class="odd">
+<td><strong>r/webdev</strong></td>
+<td>~3,3 M</td>
+<td>"Pas d&rsquo;autopromotion ni de publicité", y compris la promo discrète
+en commentaire. Les showcases sont limités au fil <strong>Showoff
+Saturday</strong> ; flair requis.</td>
+<td>Pas de promo isolée</td>
+<td>Showoff Saturday + réponses vraiment utiles</td>
+<td>Fil du samedi uniquement</td>
+<td>Portée, strict</td>
+</tr>
+<tr class="even">
+<td><strong>r/setups</strong></td>
+<td>~172k</td>
+<td>Public de passionnés ; posts organiques "mon setup", pas de
+promotion.</td>
+<td>Oui (photo/histoire)</td>
+<td>Histoire organique "mon setup dev mains libres"</td>
+<td>Occasionnel, organique</td>
+<td>Doux</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Multiplicateurs dérivés pour le coup vibecoding :</strong>
+r/VibeCodeDevs (~57k), r/AskVibecoders (~35k), r/vibecodingcommunity
+(~8k). Réutilisez l&rsquo;angle avec un titre neuf, jamais le crosspost
+identique.</p>
+<p><strong>Sources :</strong> r/macapps <a
+href="https://reddifier.com/free-subreddit-analysis-tool/r/macapps">reddifier</a>
+&middot; <a href="https://gummysearch.com/r/macapps/">gummysearch</a> &middot; <a
+href="https://upvote.net/blog/macapps-reddit-analysis">upvote.net</a>;
+r/apple <a href="https://libredd.it/r/apple/wiki/rules/">libreddit rules
+mirror</a> &middot; <a
+href="https://painonsocial.com/companies/apple">painonsocial</a>;
+r/macOS <a
+href="https://mktclarity.com/blogs/news/list-subreddits-promotion">mktclarity</a>;
+r/MacOSApps + r/nativemacapps <a
+href="https://gummysearch.com/r/MacOSApps/">gummysearch</a>, <a
+href="https://gummysearch.com/r/nativemacapps/">gummysearch</a>;
+r/artificial, flux en direct via <a
+href="https://safereddit.com/r/artificial">safereddit</a> + <a
+href="https://gummysearch.com/r/artificial/">gummysearch</a> + <a
+href="https://www.aibuilderclub.com/blog/best-reddit-communities-ai-builders-2026">aibuilderclub</a>;
+r/cursor <a
+href="https://foundationinc.co/lab/cursor-branded-subreddit/">foundationinc</a>
++ <a href="https://gummysearch.com/r/cursor/">gummysearch</a> + <a
+href="https://syften.com/blog/startup-subreddits/">syften</a>;
+r/ChatGPTCoding <a
+href="https://safereddit.com/r/ChatGPTCoding">safereddit</a> + <a
+href="https://tereza-tizkova.medium.com/best-subreddits-for-sharing-your-project-517c433442f9">Tereza
+Tizkova</a>; r/LocalLLaMA <a
+href="https://safereddit.com/r/LocalLLaMA">safereddit</a> + <a
+href="https://gummysearch.com/r/LocalLLaMA/">gummysearch</a>;
+r/vibecoding <a
+href="https://safereddit.com/r/vibecoding">safereddit</a> + <a
+href="https://saascity.io/blog/best-subreddits-promote-startup-2026">saascity</a>;
+r/SideProject <a
+href="https://www.mediafa.st/marketing-on-rsideproject">mediafa.st</a> +
+<a
+href="https://shipwithai.substack.com/p/4-steps-to-promote-your-side-project">shipwithai</a>;
+r/programming <a
+href="https://www.tomshardware.com/tech-industry/artificial-intelligence/the-largest-programming-community-on-reddit-just-banned-all-content-related-to-ai-llms-r-programming-is-prioritizing-only-high-quality-discussions-about-ai">Tom&rsquo;s
+Hardware AI ban</a> + <a
+href="https://www.replyagent.ai/blog/reddit-self-promotion-rules-naturally-mention-product">replyagent</a>;
+r/opensource <a
+href="https://tereza-tizkova.medium.com/best-subreddits-for-sharing-your-project-517c433442f9">Tereza
+Tizkova</a> + <a
+href="https://thehiveindex.com/communities/r-opensource/">thehiveindex</a>;
+r/productivity <a
+href="https://hashmeta.com/insights/case-study-reddit-seo-traffic-growth">hashmeta
+case study</a> + <a
+href="https://www.wisp.blog/blog/how-to-plug-your-productservices-with-comments-on-reddit-without-breaking-self-promotion-rules">wisp.blog</a>;
+r/RSI + r/accessibility + r/dictation + r/speechrecognition <a
+href="https://gummysearch.com/r/RSI/">gummysearch</a>, <a
+href="https://gummysearch.com/r/accessibility/">gummysearch</a>, <a
+href="https://www.conbersa.ai/learn/reddit-self-promotion-rules">conbersa</a>;
+r/SaaS <a
+href="https://soar.sh/blog/r-saas-rules-decoded-mod-enforcement">soar.sh
+mod enforcement</a> + <a
+href="https://redditmaster.com/subreddit-rules/saas">redditmaster</a>;
+r/Entrepreneur <a
+href="https://redditagency.com/subreddits/r/entrepreneur">redditagency</a>;
+r/artificial <a
+href="https://linkeddit.com/blog/best-subreddits-for-ai-marketing-2026">linkeddit</a>;
+r/webdev <a
+href="https://redditmaster.com/subreddit-rules/webdev">redditmaster</a>
++ <a
+href="https://www.teract.ai/resources/reddit-subreddit-marketing-2026">teract.ai</a>;
+r/setups <a
+href="https://gummysearch.com/r/setups/">gummysearch</a>.</p>
+<hr />
+<h2>2. Doctrine anti-bannissement (les non-négociables)</h2>
+<ol type="1">
+<li><strong>Faire chauffer u/VerbaRun avant toute promo.</strong>
+L&rsquo;AutoModerator de Reddit pré-filtre selon l&rsquo;âge du compte et le karma.
+Objectif : <strong>30+ jours d&rsquo;ancienneté, 100+ karma de commentaire</strong>
+sur toute la plateforme, et <strong>10+ karma dans r/macapps
+spécifiquement</strong> (son verrou strict) avant le premier post promo
+là-bas. Passer les semaines 1-2 à commenter sincèrement, zéro lien.
+Sources : <a href="https://www.conbersa.ai/learn/reddit-self-promotion-rules">conbersa</a>,
+<a href="https://karmaguy.io/en/blog/reddit-self-promotion-rules">karmaguy</a>.</li>
+<li><strong>La règle 9:1 (90/10) est le vrai filtre.</strong> Reddit a
+retiré la formulation rigide mais les modérateurs l&rsquo;appliquent en
+scannant votre historique. Gardez l&rsquo;activité auto-référentielle
+<strong>sous les 10 %</strong> de tout ce que fait u/VerbaRun. Neuf
+commentaires réellement utiles pour un lien promotionnel. Un historique
+tout-Verba est le déclencheur de suppression numéro 1. Source :
+<a href="https://www.teract.ai/resources/reddit-subreddit-marketing-2026">teract.ai</a>.</li>
+<li><strong>Priorité au commentaire.</strong> La valeur vit dans les
+commentaires, pas dans les posts. Répondez aux fils "quelle appli de
+dictée / comment passer mains libres / setup RSI / codage IA mains
+libres" par une réponse réellement utile, divulguez que vous avez
+construit Verba, et <strong>listez des alternatives</strong> pour que ça
+ne ressemble pas à un pitch. Rien que cela a apporté à une appli de
+productivité comparable ~47k visites mensuelles en 9 mois. Source :
+<a href="https://hashmeta.com/insights/case-study-reddit-seo-traffic-growth">hashmeta</a>.</li>
+<li><strong>Espacement et limites de cadence.</strong> Jamais deux posts
+promo en une semaine sur l&rsquo;ensemble du compte. Par sub, respectez la
+cadence documentée la plus stricte (r/macapps : une fois/30 jours).
+Espacez les posts communautaires de 2 à 4 jours. Postez de la valeur
+dans la fenêtre mar-jeu 8h-11h ET sur les subs de makers.</li>
+<li><strong>Pas de crossposts identiques.</strong> Les posts en double et
+les envois de liens quasi identiques déclenchent la détection anti-spam
+et sont explicitement bannissables sur r/cursor. Réécrivez le titre et
+l&rsquo;accroche pour chaque sub ; faites tourner les subs plutôt que de
+diffuser un lancement à six subs d&rsquo;un coup le même jour.</li>
+<li><strong>Varier titres et angles.</strong> Même produit, porte
+différente : astuce workflow pour r/artificial, "j&rsquo;ai construit ça" pour
+r/vibecoding, histoire RSI pour r/RSI, ingénierie sur l&rsquo;appareil pour
+r/LocalLLaMA.</li>
+<li><strong>Un seul compte.</strong> u/VerbaRun. Voter avec un faux-nez
+ou un second compte "client satisfait" est de la manipulation de vote et
+vaut un bannissement rapide sur tout le site. Les fondateurs postent en
+leur nom propre et divulguent.</li>
+<li><strong>Placement du lien selon le sub.</strong> Là où un sub bannit
+ou pénalise les liens promo : mettre le lien en
+<strong>commentaire</strong> (r/artificial, r/cursor, r/LocalLLaMA,
+r/SaaS), dans le <strong>corps du post self</strong> en texte et non en
+URL (r/apple, r/macOS), dans le <strong>fil désigné</strong>
+(r/Entrepreneur le jeudi, r/webdev le samedi, r/artificial Showcase), ou
+<strong>uniquement sur le profil</strong> (r/productivity,
+r/programming où un lien produit n&rsquo;a jamais sa place). Là où les posts
+promo sont bienvenus (r/vibecoding, r/ChatGPTCoding, r/SideProject,
+r/macapps, r/MacOSApps), le lien peut aller dans le post, en pointant
+toujours vers verba.run ou le Mac App Store, jamais un
+raccourcisseur/lien affilié/redirection (retiré automatiquement sur
+r/macapps).</li>
+<li><strong>Détecter les shadowbans tôt.</strong> Déconnectez-vous et
+ouvrez <code>reddit.com/user/VerbaRun</code>, si vos posts sont
+invisibles déconnecté vous êtes shadowban. Vérifiez l&rsquo;outil
+<code>reddit.com/r/ShadowBan</code> chaque mois. Surveillez les posts
+bloqués à "1 vote positif, 0 commentaire, aucune impression" (signal de
+retrait par filtre). Si un post disparaît, c&rsquo;est probablement
+l&rsquo;AutoMod, pas un bannissement : contactez poliment les modérateurs, ne
+repostez pas.</li>
+</ol>
+<hr />
+<h2>3. Le moteur : AUTO vs HUMAIN</h2>
+<h3>AUTO (sûr à automatiser quotidiennement via l&rsquo;outil de
+publication)</h3>
+<p><strong>La limite honnête (L2) :</strong> aucun subreddit
+communautaire n&rsquo;autorise en toute sécurité une autopromotion planifiée
+et entièrement automatisée. Chaque sub "accueillant" veut quand même une
+histoire humaine et scanne l&rsquo;historique des posts. L&rsquo;automatisation se
+limite donc à la seule surface qui n&rsquo;enfreint aucune règle de sub :
+<strong>le profil u/VerbaRun.</strong> Les posts self sur votre propre
+profil n&rsquo;exigent aucun subreddit, ne déclenchent aucune règle de ratio,
+et sont visibles par vos abonnés de profil et via la recherche.</p>
+<p><strong>Cadence du profil (à automatiser) :</strong> - <strong>5
+posts / semaine</strong>, un par jour ouvré, thématisés : - <strong>Lun :
+astuce</strong> (une micro-astuce macOS/dictée/agent vocal, sans lien,
+ou lien sur le profil) - <strong>Mar : fil de la semaine</strong>
+(reposter/développer votre meilleur commentaire communautaire de la
+semaine en note autonome) - <strong>Mer : clip de démo</strong>
+(enregistrement d&rsquo;écran de 10-20s en train de piloter votre agent de
+code à la voix) - <strong>Jeu : journal de construction</strong> (ce qui
+a été livré, une métrique honnête de build-in-public) - <strong>Ven :
+récap / question</strong> (un sondage ou une question ouverte aux
+abonnés) - Jamais plus d&rsquo;1 post de profil/jour. C&rsquo;est le tambour
+permanent qui rend le compte humain et actif entre les posts
+communautaires, et c&rsquo;est 100 % planifiable via l&rsquo;outil de publication. -
+Le profil héberge aussi le lien canonique afin que, sur les subs
+stricts, vous puissiez dire "le setup est sur mon profil" plutôt que de
+déposer une URL.</p>
+<p><strong>Les fils promo désignés sont à la limite de l&rsquo;auto mais
+planifiés à la main.</strong> r/Entrepreneur "Thank You Thursday",
+r/webdev "Showoff Saturday", et le mégathread Showcase de r/artificial
+sont des créneaux récurrents. Vous pouvez programmer un rappel, mais le
+commentaire lui-même doit être écrit à neuf à chaque fois. À traiter
+comme du HUMAIN-léger.</p>
+<h3>HUMAIN (fait à la main, valeur d&rsquo;abord, voix du fondateur)</h3>
+<p>Chaque post sur un sub communautaire est humain. Le fondateur
+l&rsquo;écrit, divulgue son auteur, mène par la valeur, et fait
+<strong>exactement une demande douce.</strong> La carte à 90 jours
+ci-dessous assigne chaque sub strict/communautaire à une semaine JALON
+précise afin qu&rsquo;aucun sub ne soit touché plus souvent que sa règle ne
+l&rsquo;autorise. Ordre de priorité par portée contre risque :</p>
+<ol type="1">
+<li><strong>Tête de pont d&rsquo;abord (semaines 3-5) :</strong> r/vibecoding,
+r/ChatGPTCoding, r/SideProject, r/artificial. Tolérance la plus élevée +
+ICP exact.</li>
+<li><strong>Cœur Mac + outils dev (semaines 6-8) :</strong> r/macapps
+(le porte-drapeau une fois/30 jours), r/cursor, r/speechrecognition,
+r/RSI, r/accessibility, r/artificial.</li>
+<li><strong>Coups de portée à portes strictes (semaines 9-12) :</strong>
+r/apple (dimanche), r/Entrepreneur (jeudi), r/SaaS, r/macOS,
+r/nativemacapps, r/setups, r/webdev (samedi), r/productivity
+(commentaires).</li>
+<li><strong>Deuxième cycle + adéquation la plus faible en dernier
+(semaine 13+) :</strong> r/LocalLLaMA (seulement avec une vraie accroche
+locale), r/macapps round 2 (30 jours écoulés), répéter les gagnants.</li>
+</ol>
+<hr />
+<h2>4. Modèles de contenu (titre + plan du corps + emplacement du
+lien)</h2>
+<p><strong>T1. Démonstration "j&rsquo;ai construit" (r/vibecoding,
+r/MacOSApps, r/nativemacapps)</strong> - Titre :
+<code>I built a Mac voice agent that types AND runs what you say, fully on-device</code>
+- Corps : la douleur de départ (taper des prompts toute la journée m&rsquo;a
+détruit les poignets) &rarr; ce que ça fait (dictée + ça agit : ouvre des
+applis, lance des commandes, pilote votre agent de code) &rarr; les vrais
+différenciateurs (sur l&rsquo;appareil/privé, vos mots ne quittent jamais
+votre Mac) &rarr; GIF de démo de 15s &rarr; prix indiqué clairement &rarr; "je suis
+le développeur, ravi de répondre à tout." - Une demande douce :
+<em>"What is the first thing you would voice-control?"</em> - Lien :
+<strong>dans le post</strong> (verba.run).</p>
+<p><strong>T2. Post de valeur sur le workflow (r/artificial)</strong> -
+Titre : <code>The private voice setup I use on my Mac instead of typing every prompt</code>
+- Corps : le workflow, l&rsquo;extrait de config exact et les hooks, pourquoi
+l&rsquo;appareil compte pour du code que vous ne voulez jamais voir quitter
+votre machine, Verba nommé comme l&rsquo;outil qui pilote tout ça. Enseigne
+même s&rsquo;ils n&rsquo;achètent jamais. - Une demande douce : <em>"Happy to share
+the full hooks config if useful."</em> - Lien : <strong>en
+commentaire</strong> (ou "sur mon profil") ; déposer aussi l&rsquo;outil dans
+le mégathread Showcase épinglé du subreddit, séparément.</p>
+<p><strong>T3. Workflow Cursor sur Mac (r/cursor)</strong> - Titre :
+<code>Hands-free prompting in Cursor on Mac: an on-device dictation layer</code>
+- Corps : comment vous pilotez Cursor à la voix, chiffres de latence,
+note sur la confidentialité, flair Resources &amp; Tips.
+<strong>Ne jamais</strong> comparer au prix de Cursor ni le dénigrer
+(règle anti-désinformation). - Une demande douce : <em>"Anyone else
+voice-driving Cursor? Curious what breaks for you."</em> - Lien :
+<strong>en commentaire</strong>.</p>
+<p><strong>T4. Amorce de discussion inter-outils (r/ChatGPTCoding,
+r/artificial)</strong> - Titre :
+<code>Where do AI coding tools still drop you back to the keyboard?</code>
+- Corps : nommer le vrai manque du workflow (vous pouvez prompter un
+agent mais vous devez encore le taper), inviter les réponses, puis
+mentionner Verba dans le fil comme la façon dont vous l&rsquo;avez comblé pour
+vous-même. - Une demande douce : <em>"What is the step where your flow
+still breaks?"</em> - Lien : <strong>en commentaire</strong>, dans le
+fil.</p>
+<p><strong>T5. Parcours de lancement build-in-public (r/SideProject,
+r/SaaS)</strong> - Titre :
+<code>[Launch] Verba: on-device dictation + voice agent for devs. 6 months of building solo</code>
+- Corps : jalon (utilisateurs/revenu si réel), 2 défis techniques
+difficiles, une leçon, la demande. Histoire d&rsquo;abord, produit en
+troisième. - Une demande douce : <em>"Feedback on the voice-agent mode
+especially welcome."</em> - Lien : <strong>dans le post</strong>
+(r/SideProject) / <strong>fil de retours hebdomadaire</strong>
+(r/SaaS).</p>
+<p><strong>T6. Histoire TMS/RSI et mains libres (r/RSI,
+r/accessibility)</strong> - Titre :
+<code>Dev with RSI: the hands-free setup that let me keep coding</code>
+- Corps : la blessure, ce que vous avez essayé (Dragon, macOS Voice
+Control), où ça a été insuffisant, le setup qui a marché, Verba divulgué
+comme l&rsquo;outil que vous avez construit par nécessité personnelle. Le
+fond d&rsquo;abord, pas de pitch. - Une demande douce (r/RSI) : <em>"What is
+helping your wrists right now?"</em> / (r/accessibility) : <em>"Would
+love an a11y expert critique of the voice-control UX."</em> - Lien :
+<strong>en commentaire</strong>.</p>
+<p><strong>T7. Post d&rsquo;ingénierie sur l&rsquo;appareil (r/LocalLLaMA,
+r/speechrecognition)</strong> - Titre :
+<code>Running low-latency on-device speech-to-text on Apple Silicon: what I learned</code>
+- Corps : vraie ingénierie, chiffres de latence/précision, pourquoi
+l&rsquo;audio ne quitte jamais le Mac, choix de modèles locaux, Verba comme
+exemple concret. Doit tenir comme une lecture technique. - Une demande
+douce : <em>aucune, ou "curious how others handle local STT
+latency."</em> - Lien : <strong>en commentaire</strong> (r/LocalLLaMA
+est hostile à un post payant orienté lien).</p>
+<p><strong>T8. Démonstration d&rsquo;appli Mac avec flair (r/macapps)</strong>
+- Titre :
+<code>I built Verba: fast on-device dictation + a voice agent, for developers on Mac</code>
+- Corps : problème d&rsquo;abord (la dictée système est lente et envoie votre
+voix aux serveurs de quelqu&rsquo;un d&rsquo;autre), ce qui la rend native/sur
+l&rsquo;appareil, divulguer que vous êtes le développeur, lien officiel
+verba.run uniquement. Mettre le bon flair payant (Abonnement ou
+Lifetime). Exige 10+ karma sur le sub d&rsquo;abord. - Une demande douce :
+<em>"Feedback on the voice-agent mode?"</em> - Lien : <strong>dans le
+post</strong>, source officielle uniquement.</p>
+<p><strong>T9. Post de pure valeur / méthodologie (r/productivity,
+r/macOS)</strong> - Titre :
+<code>How voice dictation cut my context-switching while coding</code> -
+Corps : la méthode et les résultats, Verba absent ou divulgué seulement
+si on le demande. Sur r/macOS, cadrer comme un guide de setup macOS. -
+Une demande douce : <em>aucune (la méthodologie se suffit à
+elle-même).</em> - Lien : <strong>profil uniquement / aucun</strong>
+(mentionner en réponse si on le demande).</p>
+<p><strong>T10. Promo dans le fil désigné (r/Entrepreneur le jeudi,
+r/webdev le samedi, r/apple le dimanche)</strong> - Titre/corps : coller
+au format du fil. r/apple le dimanche doit être un <strong>post
+self/texte</strong> avec un vrai contenu de fond (seulement après 5+
+contributions non promotionnelles ce mois-ci). r/Entrepreneur et
+r/webdev vont dans le fil hebdomadaire épinglé, en commentaire. - Une
+demande douce : <em>"Open to feedback."</em> - Lien : <strong>dans le
+commentaire du fil</strong> (r/Entrepreneur, r/webdev) / <strong>dans le
+corps du post self en texte</strong> (r/apple).</p>
+<hr />
+<h2>5. Récapitulatif des cadences</h2>
+<ul>
+<li><strong>Profil AUTO :</strong> 5 posts self/semaine, chaque semaine,
+planifiés via l&rsquo;outil de publication.</li>
+<li><strong>Communauté HUMAIN :</strong> 2-3 posts/semaine max sur tout
+le compte, chacun sur un sub différent, chacun respectant la cadence la
+plus stricte de ce sub. Les commentaires sont illimités et restent
+l&rsquo;essentiel.</li>
+<li><strong>Plafonds par sub respectés :</strong> r/macapps une
+fois/30j, r/artificial + r/cursor une fois/2-3 sem., r/SaaS +
+r/Entrepreneur promo une fois/~2 mois, r/programming un article une
+fois/quelques mois (et seulement si vous publiez vraiment un post
+d&rsquo;ingénierie réel, sinon le sauter entièrement).</li>
+<li><strong>Semaines de chauffe 1-2 :</strong> zéro promo, commentaires
+uniquement, construire du karma.</li>
+</ul>
+<hr />
+<h2>6. Le calendrier Reddit à 90 jours</h2>
+<p>Les semaines 1-2 sont la chauffe (commentaires, pas de promo). Les
+semaines 3-13 sont des semaines JALON, chacune posant un ou deux subs
+stricts/communautaires à sa cadence autorisée, avec le tambour permanent
+du profil AUTO en toile de fond. Chaque entrée HUMAIN porte exactement
+une demande douce et un emplacement de lien explicite.</p>
+<pre class="json"><code>[
+  {&quot;week&quot;:1,&quot;day&quot;:&quot;Mon&quot;,&quot;mode&quot;:&quot;auto&quot;,&quot;target&quot;:&quot;profile&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;Pin an intro post: what Verba is, on-device dictation + voice agent, private by design&quot;,&quot;ask&quot;:&quot;Follow for build-in-public updates&quot;,&quot;linkPlacement&quot;:&quot;profile&quot;},
+  {&quot;week&quot;:1,&quot;day&quot;:&quot;Tue&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/artificial&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;Warmup: answer 3-5 AI coding workflow threads, genuinely helpful, no link&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;none&quot;},
+  {&quot;week&quot;:1,&quot;day&quot;:&quot;Wed&quot;,&quot;mode&quot;:&quot;auto&quot;,&quot;target&quot;:&quot;profile&quot;,&quot;type&quot;:&quot;show&quot;,&quot;angle&quot;:&quot;Demo clip: voice-driving my coding agent hands-free (15s)&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;post&quot;},
+  {&quot;week&quot;:1,&quot;day&quot;:&quot;Thu&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/cursor&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;Warmup: help on Cursor-on-Mac threads, no link, learn the flairs&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;none&quot;},
+  {&quot;week&quot;:1,&quot;day&quot;:&quot;Fri&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/dictation&quot;,&quot;type&quot;:&quot;question&quot;,&quot;angle&quot;:&quot;Warmup: answer &#39;what dictation app should I use&#39; threads, disclose, list alternatives&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;none&quot;},
+  {&quot;week&quot;:2,&quot;day&quot;:&quot;Mon&quot;,&quot;mode&quot;:&quot;auto&quot;,&quot;target&quot;:&quot;profile&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;Tip: 3 macOS dictation shortcuts most devs miss&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;profile&quot;},
+  {&quot;week&quot;:2,&quot;day&quot;:&quot;Tue&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/vibecoding&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;Warmup: comment on &#39;I built&#39; threads, build rapport, no link&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;none&quot;},
+  {&quot;week&quot;:2,&quot;day&quot;:&quot;Wed&quot;,&quot;mode&quot;:&quot;auto&quot;,&quot;target&quot;:&quot;profile&quot;,&quot;type&quot;:&quot;show&quot;,&quot;angle&quot;:&quot;Before/after clip: typing a prompt vs speaking it&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;post&quot;},
+  {&quot;week&quot;:2,&quot;day&quot;:&quot;Thu&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/RSI&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;Warmup: helpful answers under &#39;Question&#39; posts, no product push yet&quot;,&quot;ask&quot;:&quot;What is helping your wrists right now?&quot;,&quot;linkPlacement&quot;:&quot;none&quot;},
+  {&quot;week&quot;:2,&quot;day&quot;:&quot;Sat&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/MacOSApps&quot;,&quot;type&quot;:&quot;show&quot;,&quot;angle&quot;:&quot;First soft show-and-tell in the friendliest small sub, flair Dev Tools, disclose dev&quot;,&quot;ask&quot;:&quot;Feedback on the on-device approach?&quot;,&quot;linkPlacement&quot;:&quot;post&quot;},
+  {&quot;week&quot;:3,&quot;day&quot;:&quot;Tue&quot;,&quot;mode&quot;:&quot;auto&quot;,&quot;target&quot;:&quot;profile&quot;,&quot;type&quot;:&quot;build&quot;,&quot;angle&quot;:&quot;Build log: what shipped this week&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;profile&quot;},
+  {&quot;week&quot;:3,&quot;day&quot;:&quot;Wed&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/vibecoding&quot;,&quot;type&quot;:&quot;show&quot;,&quot;angle&quot;:&quot;JALON: &#39;I built a Mac voice agent that types AND runs what you say, on-device&#39; with demo (T1)&quot;,&quot;ask&quot;:&quot;What would you voice-control first?&quot;,&quot;linkPlacement&quot;:&quot;post&quot;},
+  {&quot;week&quot;:3,&quot;day&quot;:&quot;Sat&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/SideProject&quot;,&quot;type&quot;:&quot;show&quot;,&quot;angle&quot;:&quot;[Launch] build-in-public journey, story first (T5)&quot;,&quot;ask&quot;:&quot;Feedback on the voice-agent mode welcome&quot;,&quot;linkPlacement&quot;:&quot;post&quot;},
+  {&quot;week&quot;:4,&quot;day&quot;:&quot;Mon&quot;,&quot;mode&quot;:&quot;auto&quot;,&quot;target&quot;:&quot;profile&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;Tip of the week&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;profile&quot;},
+  {&quot;week&quot;:4,&quot;day&quot;:&quot;Wed&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/ChatGPTCoding&quot;,&quot;type&quot;:&quot;show&quot;,&quot;angle&quot;:&quot;JALON: &#39;Project&#39; post, dictation layer to voice-drive AI coding on Mac (T1/T4)&quot;,&quot;ask&quot;:&quot;Do you type or speak your prompts?&quot;,&quot;linkPlacement&quot;:&quot;post&quot;},
+  {&quot;week&quot;:4,&quot;day&quot;:&quot;Fri&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/dictation&quot;,&quot;type&quot;:&quot;show&quot;,&quot;angle&quot;:&quot;Verba vs Dragon vs macOS Voice Control, honest on-device comparison&quot;,&quot;ask&quot;:&quot;What do you use today?&quot;,&quot;linkPlacement&quot;:&quot;post&quot;},
+  {&quot;week&quot;:5,&quot;day&quot;:&quot;Tue&quot;,&quot;mode&quot;:&quot;auto&quot;,&quot;target&quot;:&quot;profile&quot;,&quot;type&quot;:&quot;show&quot;,&quot;angle&quot;:&quot;Demo clip of a new voice-agent action&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;post&quot;},
+  {&quot;week&quot;:5,&quot;day&quot;:&quot;Wed&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/artificial&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;JALON: &#39;The private voice setup I use instead of typing every prompt, here is my config + hooks&#39; (T2)&quot;,&quot;ask&quot;:&quot;Happy to share the full hooks config&quot;,&quot;linkPlacement&quot;:&quot;comment&quot;},
+  {&quot;week&quot;:5,&quot;day&quot;:&quot;Thu&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/artificial&quot;,&quot;type&quot;:&quot;promo&quot;,&quot;angle&quot;:&quot;Drop Verba into the subreddit&#39;s pinned Showcase Megathread&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;comment&quot;},
+  {&quot;week&quot;:6,&quot;day&quot;:&quot;Mon&quot;,&quot;mode&quot;:&quot;auto&quot;,&quot;target&quot;:&quot;profile&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;Tip: hands-free git workflow&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;profile&quot;},
+  {&quot;week&quot;:6,&quot;day&quot;:&quot;Wed&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/macapps&quot;,&quot;type&quot;:&quot;show&quot;,&quot;angle&quot;:&quot;JALON flagship: flaired &#39;I built Verba&#39; self-post, official link only, 10+ sub karma earned (T8)&quot;,&quot;ask&quot;:&quot;Feedback on the voice-agent mode?&quot;,&quot;linkPlacement&quot;:&quot;post&quot;},
+  {&quot;week&quot;:6,&quot;day&quot;:&quot;Fri&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/speechrecognition&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;On-device STT latency and privacy vs sending audio to someone else&#39;s servers, Verba as example (T7)&quot;,&quot;ask&quot;:&quot;How do others handle local STT latency?&quot;,&quot;linkPlacement&quot;:&quot;comment&quot;},
+  {&quot;week&quot;:7,&quot;day&quot;:&quot;Tue&quot;,&quot;mode&quot;:&quot;auto&quot;,&quot;target&quot;:&quot;profile&quot;,&quot;type&quot;:&quot;build&quot;,&quot;angle&quot;:&quot;Build log: metric update&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;profile&quot;},
+  {&quot;week&quot;:7,&quot;day&quot;:&quot;Wed&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/cursor&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;JALON: &#39;Hands-free prompting in Cursor on Mac&#39;, flair Resources &amp; Tips, never bash Cursor (T3)&quot;,&quot;ask&quot;:&quot;Anyone else voice-driving Cursor?&quot;,&quot;linkPlacement&quot;:&quot;comment&quot;},
+  {&quot;week&quot;:7,&quot;day&quot;:&quot;Fri&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/RSI&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;&#39;Dev with RSI: the hands-free setup that let me keep coding&#39; (T6)&quot;,&quot;ask&quot;:&quot;What is helping your wrists right now?&quot;,&quot;linkPlacement&quot;:&quot;comment&quot;},
+  {&quot;week&quot;:8,&quot;day&quot;:&quot;Mon&quot;,&quot;mode&quot;:&quot;auto&quot;,&quot;target&quot;:&quot;profile&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;Tip of the week&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;profile&quot;},
+  {&quot;week&quot;:8,&quot;day&quot;:&quot;Wed&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/accessibility&quot;,&quot;type&quot;:&quot;question&quot;,&quot;angle&quot;:&quot;JALON: feedback-seeking, &#39;a11y expert critique of our voice-control UX for motor impairment&#39; (T6)&quot;,&quot;ask&quot;:&quot;Would love an expert critique&quot;,&quot;linkPlacement&quot;:&quot;post&quot;},
+  {&quot;week&quot;:8,&quot;day&quot;:&quot;Fri&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/artificial&quot;,&quot;type&quot;:&quot;show&quot;,&quot;angle&quot;:&quot;&#39;Built a macOS voice agent that acts on speech, not just transcribes&#39;, feedback framing (T4)&quot;,&quot;ask&quot;:&quot;Feedback on the voice-agent concept?&quot;,&quot;linkPlacement&quot;:&quot;post&quot;},
+  {&quot;week&quot;:9,&quot;day&quot;:&quot;Tue&quot;,&quot;mode&quot;:&quot;auto&quot;,&quot;target&quot;:&quot;profile&quot;,&quot;type&quot;:&quot;show&quot;,&quot;angle&quot;:&quot;Demo clip&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;post&quot;},
+  {&quot;week&quot;:9,&quot;day&quot;:&quot;Thu&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/Entrepreneur&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;JALON: journey post &#39;acquiring first paying users for a niche Mac tool&#39;, zero pitch&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;none&quot;},
+  {&quot;week&quot;:9,&quot;day&quot;:&quot;Thu&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/Entrepreneur&quot;,&quot;type&quot;:&quot;promo&quot;,&quot;angle&quot;:&quot;Share Verba in the weekly &#39;Thank You Thursday&#39; pinned thread (T10)&quot;,&quot;ask&quot;:&quot;Open to feedback&quot;,&quot;linkPlacement&quot;:&quot;comment&quot;},
+  {&quot;week&quot;:9,&quot;day&quot;:&quot;Sun&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/apple&quot;,&quot;type&quot;:&quot;show&quot;,&quot;angle&quot;:&quot;JALON: Self-promotion Sunday self/text post, real substance, after 5+ non-promo contributions logged (T10)&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;post&quot;},
+  {&quot;week&quot;:10,&quot;day&quot;:&quot;Mon&quot;,&quot;mode&quot;:&quot;auto&quot;,&quot;target&quot;:&quot;profile&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;Tip of the week&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;profile&quot;},
+  {&quot;week&quot;:10,&quot;day&quot;:&quot;Wed&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/vibecoding&quot;,&quot;type&quot;:&quot;show&quot;,&quot;angle&quot;:&quot;JALON round 2: &#39;update, shipped new voice-agent actions&#39;, fresh title (T1)&quot;,&quot;ask&quot;:&quot;What should I build next?&quot;,&quot;linkPlacement&quot;:&quot;post&quot;},
+  {&quot;week&quot;:10,&quot;day&quot;:&quot;Fri&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/SaaS&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;Story-led founder post + drop Verba in the weekly feedback thread (T5)&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;comment&quot;},
+  {&quot;week&quot;:11,&quot;day&quot;:&quot;Tue&quot;,&quot;mode&quot;:&quot;auto&quot;,&quot;target&quot;:&quot;profile&quot;,&quot;type&quot;:&quot;build&quot;,&quot;angle&quot;:&quot;Build log&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;profile&quot;},
+  {&quot;week&quot;:11,&quot;day&quot;:&quot;Wed&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/macOS&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;JALON: &#39;How I set up fast on-device dictation for coding on macOS&#39;, disclose, value-only (T9)&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;comment&quot;},
+  {&quot;week&quot;:11,&quot;day&quot;:&quot;Thu&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/nativemacapps&quot;,&quot;type&quot;:&quot;show&quot;,&quot;angle&quot;:&quot;Native macOS dictation + voice agent showcase (only if genuinely native)&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;post&quot;},
+  {&quot;week&quot;:11,&quot;day&quot;:&quot;Sat&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/setups&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;Organic &#39;my hands-free dev setup&#39; photo/story, no pitch&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;none&quot;},
+  {&quot;week&quot;:12,&quot;day&quot;:&quot;Mon&quot;,&quot;mode&quot;:&quot;auto&quot;,&quot;target&quot;:&quot;profile&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;Tip of the week&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;profile&quot;},
+  {&quot;week&quot;:12,&quot;day&quot;:&quot;Wed&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/ChatGPTCoding&quot;,&quot;type&quot;:&quot;question&quot;,&quot;angle&quot;:&quot;JALON: &#39;Where do AI coding tools still drop you back to the keyboard?&#39;, mention Verba in-thread (T4)&quot;,&quot;ask&quot;:&quot;Where does your flow break?&quot;,&quot;linkPlacement&quot;:&quot;comment&quot;},
+  {&quot;week&quot;:12,&quot;day&quot;:&quot;Fri&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/productivity&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;Comment-only: answer dictation/voice tool asks, disclose + list alternatives (T9)&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;none&quot;},
+  {&quot;week&quot;:12,&quot;day&quot;:&quot;Sat&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/webdev&quot;,&quot;type&quot;:&quot;show&quot;,&quot;angle&quot;:&quot;Showoff Saturday pinned thread: voice-driven dev tool (T10)&quot;,&quot;ask&quot;:&quot;Open to feedback&quot;,&quot;linkPlacement&quot;:&quot;comment&quot;},
+  {&quot;week&quot;:13,&quot;day&quot;:&quot;Tue&quot;,&quot;mode&quot;:&quot;auto&quot;,&quot;target&quot;:&quot;profile&quot;,&quot;type&quot;:&quot;show&quot;,&quot;angle&quot;:&quot;Demo clip&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;post&quot;},
+  {&quot;week&quot;:13,&quot;day&quot;:&quot;Wed&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/LocalLLaMA&quot;,&quot;type&quot;:&quot;value&quot;,&quot;angle&quot;:&quot;JALON weakest-fit: technical on-device local STT post, &#39;nothing leaves the Mac&#39;, only with a real local hook, no launch tone (T7)&quot;,&quot;ask&quot;:&quot;none&quot;,&quot;linkPlacement&quot;:&quot;comment&quot;},
+  {&quot;week&quot;:13,&quot;day&quot;:&quot;Fri&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/macapps&quot;,&quot;type&quot;:&quot;show&quot;,&quot;angle&quot;:&quot;Round 2 (30+ days since week 6): feature-update show-and-tell, official link only (T8)&quot;,&quot;ask&quot;:&quot;Feedback on the new feature?&quot;,&quot;linkPlacement&quot;:&quot;post&quot;},
+  {&quot;week&quot;:13,&quot;day&quot;:&quot;Sat&quot;,&quot;mode&quot;:&quot;human&quot;,&quot;target&quot;:&quot;r/ChatGPTCoding&quot;,&quot;type&quot;:&quot;show&quot;,&quot;angle&quot;:&quot;&#39;Project&#39; update post, fresh angle, direct link (T1)&quot;,&quot;ask&quot;:&quot;Feedback welcome&quot;,&quot;linkPlacement&quot;:&quot;post&quot;}
+]</code></pre>
+<hr />
+<h3>Notes de livraison pour l&rsquo;appelant</h3>
+<ul>
+<li><strong>Le livrable est ce message markdown</strong> (selon
+l&rsquo;instruction explicite, "Return a clean markdown report&hellip; This is
+the whole deliverable"). Aucun fichier écrit, aucun artifact publié,
+rien commité.</li>
+<li><strong>Deux limites honnêtes signalées (L2) :</strong> (1) Aucun
+subreddit communautaire n&rsquo;autorise en toute sécurité une autopromotion
+planifiée automatisée, donc l&rsquo;AUTO se limite au profil u/VerbaRun plus
+des entrées écrites à la main dans les fils récurrents désignés ; tout
+le reste est HUMAIN. (2) Le widget de règles brutes de Reddit est
+bloqué par IP depuis cet environnement ; chaque affirmation de règle
+vient de miroirs de flux en direct, de bases de règles et de guides de
+politique 2026, et les subs stricts (r/programming, r/apple, r/macOS,
+r/cursor, r/LocalLLaMA) devraient avoir leur barre latérale en direct
+confirmée depuis un navigateur connecté avant le premier post.</li>
+<li><strong>Deux dépendances conditionnelles à vérifier :</strong>
+r/nativemacapps ne fonctionne que si Verba est authentiquement natif
+(pas d&rsquo;Electron) ; r/opensource et r/programming ne sont viables que si
+vous publiez un vrai article technique ou rendez un composant
+open-source, donc ils ont été laissés hors du calendrier principal, en
+opportuniste plutôt qu&rsquo;en planifié.</li>
+<li>Zéro tiret cadratin/demi-cadratin nulle part dans le texte
+(R-NODASH).</li>
+</ul>
+  </main>
+</div>
+<div class="foot">Verba, stratégie marketing complète. Généré le 3 juillet 2026 par la machine marketing OmegaOS (doctrine Marketing Mastery, 12 parties, plus playbook des géants). Auto-hébergé en local, accès Tailscale. Chaque recommandation est à confronter à la donnée funnel réelle (L1).</div>
+<div style="text-align:center;padding:32px 0;border-top:1px solid rgba(255,255,255,.08);margin-top:40px"><a href="https://verba-hq.vercel.app/" style="color:#ff5a4d;font-size:14px;text-decoration:none">&larr; Retour à Verba Marketing HQ</a></div>
+</div>
 </body>
 </html>

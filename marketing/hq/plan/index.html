@@ -148,6 +148,20 @@
 </style>
 </head>
 <body>
+<style id="verba-lang-css">
+[data-l]{display:block}
+body[data-lang="en"] [data-l="fr"]{display:none}
+body[data-lang="fr"] [data-l="en"]{display:none}
+#verba-langsel{position:fixed;bottom:18px;right:18px;z-index:99999;display:inline-flex;gap:2px;background:rgba(17,17,23,.92);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:4px;box-shadow:0 4px 16px rgba(0,0,0,.3);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font-family:-apple-system,BlinkMacSystemFont,"Inter",system-ui,sans-serif}
+#verba-langsel button{background:transparent;border:none;color:#c8c8ce;border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;line-height:1}
+#verba-langsel button.on{background:#ff5a4d;color:#fff}
+@media print{#verba-langsel{display:none}}
+</style>
+<div id="verba-langsel" role="group" aria-label="Language"><button id="vlg-en" class="on" onclick="vLang('en')">EN</button><button id="vlg-fr" onclick="vLang('fr')">FR</button></div>
+<script>
+function vLang(l){document.body.dataset.lang=l;try{localStorage.setItem('verba_lang',l)}catch(e){}var e=document.getElementById('vlg-en'),f=document.getElementById('vlg-fr');if(e)e.classList.toggle('on',l==='en');if(f)f.classList.toggle('on',l==='fr');}
+(function(){var l='en';try{l=localStorage.getItem('verba_lang')||'en'}catch(e){}vLang(l);})();
+</script>
 <style>
 #hqbar{position:fixed;top:0;left:0;right:0;height:52px;z-index:99999;display:flex;align-items:center;gap:14px;padding:0 20px;background:rgba(8,8,11,.82);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08);font-family:-apple-system,BlinkMacSystemFont,"Inter",system-ui,sans-serif}
 #hqbar a{text-decoration:none;border:none}
@@ -170,7 +184,7 @@ body{padding-top:52px!important}
   <span class="hqsec">90-day plan</span>
   <a class="hqback" href="https://verba-hq.vercel.app/">&larr; All docs</a>
 </div>
-
+<div data-l="en">
 <header class="hero">
   <div class="wrap">
     <div class="eyebrow" style="margin-top:18px">Operational growth plan</div>
@@ -747,4 +761,558 @@ body{padding-top:52px!important}
 </main>
 
 <div style="text-align:center;padding:32px 0;border-top:1px solid rgba(255,255,255,.08);margin-top:40px"><a href="https://verba-hq.vercel.app/" style="color:#ff5a4d;font-size:14px;text-decoration:none">&larr; Back to Verba Marketing HQ</a></div>
+</div>
+<div data-l="fr">
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow" style="margin-top:18px">Plan de croissance op&eacute;rationnel</div>
+    <h1>De 0 &agrave; 1 000 utilisateurs payants en 90 jours</h1>
+    <p class="sub">La strat&eacute;gie compl&egrave;te, le plan jour par jour (humain plus automatis&eacute;), et le playbook repris de Cursor, Lovable, Replit et Higgsfield. Budget de d&eacute;part quasi nul, croissance port&eacute;e par le produit.</p>
+    <div class="meta">
+      <span class="chip"><b>Projet</b> Verba (verba.run)</span>
+      <span class="chip"><b>Horizon</b> 13 semaines, Jour 1 = lun. 7 juil. 2026</span>
+      <span class="chip"><b>&Eacute;toile polaire</b> 100 &rarr; 500 &rarr; 1 000 utilisateurs payants</span>
+      <span class="chip"><b>Version</b> 3 juil. 2026</span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <a href="#tldr">L'essentiel</a>
+    <a href="#assets">Ce qu'on a d&eacute;j&agrave;</a>
+    <a href="#playbook">Comment ils ont explos&eacute;</a>
+    <a href="#strategy">Strat&eacute;gie Verba</a>
+    <a href="#ladder">L'&eacute;chelle 100-500-1000</a>
+    <a href="#plan">Plan 90 jours</a>
+    <a href="#engine">Moteur auto vs humain</a>
+    <a href="#kpi">KPI et budget</a>
+    <a href="#sources">Sources</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<section>
+  <span class="snum">01</span>
+  <h2>L'essentiel en une page</h2>
+  <p class="lead">Verba est d&eacute;j&agrave; un vrai produit en ligne, dans une cat&eacute;gorie valid&eacute;e &agrave; 2 Mds$ (Wispr Flow). Le probl&egrave;me n'est pas le march&eacute;, c'est la <strong>distribution</strong>. Les quatre fus&eacute;es que nous copions (Cursor, Lovable, Replit, Higgsfield) ont toutes fait la m&ecirc;me chose : <strong>le produit lui-m&ecirc;me est la publicit&eacute;</strong>, une croissance 100% organique avant toute d&eacute;pense publicitaire, un fondateur qui construit en public avec des chiffres bruts. Nous appliquons ce mod&egrave;le &agrave; un prix accessible.</p>
+
+  <h4>L'objectif : une &eacute;chelle, pas un chiffre lointain</h4>
+  <div class="grid g4">
+    <div class="stat"><div class="k">Palier 1</div><div class="v tnum">100 <small>utilisateurs payants</small></div><div class="d">~760 &euro;/mois, ~1 430 t&eacute;l&eacute;chargements &agrave; 7%</div></div>
+    <div class="stat"><div class="k">Palier 2</div><div class="v tnum">500 <small>utilisateurs payants</small></div><div class="d">~3 800 &euro;/mois, ~7 150 t&eacute;l&eacute;chargements</div></div>
+    <div class="stat"><div class="k">Palier 3</div><div class="v tnum">1 000 <small>utilisateurs payants</small></div><div class="d">~7 600 &euro;/mois, ~14 300 t&eacute;l&eacute;chargements</div></div>
+    <div class="stat"><div class="k">Plafond cible</div><div class="v tnum">2 000 <small>utilisateurs payants</small></div><div class="d">~15 200 &euro;/mois, marge quasi pure (IA priv&eacute;e locale, co&ucirc;t marginal tr&egrave;s faible)</div></div>
+  </div>
+  <p class="src" style="margin-top:10px">Hypoth&egrave;ses : revenu mixte d'environ 7,60 &euro;/abonnement/mois (mensuel plus annuel), conversion t&eacute;l&eacute;chargement vers payant de 7% (sc&eacute;nario de base, l'essai forc&eacute; de 33 dict&eacute;es vise 7 &agrave; 10%), co&ucirc;t marginal d'inf&eacute;rence tr&egrave;s faible (traitement priv&eacute; sur l'appareil). Ces chiffres remplacent la formule de vanit&eacute; par un objectif atteignable : 1 000 utilisateurs payants repr&eacute;sentent moins de 0,05% de la cat&eacute;gorie.</p>
+
+  <div class="call">
+    <div class="t">La strat&eacute;gie en une phrase</div>
+    <p style="margin:0">Conqu&eacute;rir le d&eacute;veloppeur Mac qui vit dans le terminal et dans les agents IA en &eacute;tant la seule appli de dict&eacute;e qui <strong>agit</strong> (JARVIS : dicter, confirmer, c'est fait), transformer chaque d&eacute;mo &laquo; je l'ai dit, c'est fait &raquo; en <strong>boucle de partage auto-r&eacute;plicante</strong>, construire en public avec des chiffres bruts, et ne payer de la publicit&eacute; qu'une fois la conversion prouv&eacute;e.</p>
+  </div>
+
+  <h4>Les 5 non-n&eacute;gociables (tir&eacute;s des 4 fus&eacute;es)</h4>
+  <div class="grid g2">
+    <div class="card flat"><strong>1. Le produit, c'est la pub.</strong> Nous construisons la boucle &laquo; partager le clip &raquo; (g&eacute;n&eacute;rique de fin &laquo; Fait avec Verba &raquo;). Sans elle, on rame ; avec elle, chaque client en am&egrave;ne 2 &agrave; 3 autres.</div>
+    <div class="card flat"><strong>2. Z&eacute;ro publicit&eacute; payante avant le palier des 100.</strong> Cursor a atteint 200 M$ d'ARR sans d&eacute;penser un centime en publicit&eacute;. Nous m&eacute;ritons d'abord le playbook de fa&ccedil;on organique.</div>
+    <div class="card flat"><strong>3. Le fondateur publie chaque jour.</strong> Des chiffres bruts (MRR, installations, clip du jour) sur X, et nous amplifions chaque clip d'utilisateur.</div>
+    <div class="card flat"><strong>4. On conqui&egrave;rt d'abord les &laquo; moines &raquo;.</strong> Les utilisateurs intensifs des outils IA en ligne de commande, &agrave; fond, avant d'&eacute;largir. Ce sont eux qui &eacute;vang&eacute;lisent.</div>
+  </div>
+  <div class="card flat" style="margin-top:14px"><strong>5. Des moments de lancement.</strong> Product Hunt plus Show HN le m&ecirc;me jour (28 juil.), puis un second drop FOMO (offre Fondateur, places limit&eacute;es) au palier des 500. Chaque moment est un acc&eacute;l&eacute;rateur, pas la strat&eacute;gie.</div>
+</section>
+
+<section>
+  <span class="snum">02</span>
+  <h2>Ce que nous avons d&eacute;j&agrave; (l'inventaire honn&ecirc;te)</h2>
+  <p class="lead">Une immense longueur d'avance : le produit, le positionnement, une identit&eacute; visuelle valid&eacute;e et un moteur de contenu automatis&eacute; sont d&eacute;j&agrave; en place. Il ne manque qu'une seule pi&egrave;ce majeure, et c'est la plus importante.</p>
+
+  <div class="grid g2">
+    <div class="card">
+      <h4 style="margin-top:0">D&eacute;j&agrave; construit et valid&eacute;</h4>
+      <ul>
+        <li><strong>Produit en ligne</strong> sur verba.run : dict&eacute;e sur l'appareil (IA priv&eacute;e embarqu&eacute;e, rien ne quitte le Mac), 6 modes, JARVIS (la voix passe &agrave; l'action, plus de 1 000 applis), IA priv&eacute;e int&eacute;gr&eacute;e, aucune configuration technique requise, 14 langues.</li>
+        <li><strong>Positionnement SSOT</strong> r&eacute;dig&eacute; et arbitr&eacute; (product-marketing.md) : 3 piliers, 5 personas, la cat&eacute;gorie &laquo; la voix qui agit &raquo;.</li>
+        <li><strong>Identit&eacute; visuelle valid&eacute;e</strong> par l'op&eacute;rateur : plan deep-tech quasi noir plus un accent rouge, moteur vid&eacute;o Seedance 2.0 (UGC fa&ccedil;on micro-trottoir), format promo &eacute;prouv&eacute; (&laquo; parfait, c'est top &raquo;).</li>
+        <li><strong>Moteur de contenu automatis&eacute;</strong> (<span class="mono">verba-daily.ts</span>) : g&eacute;n&egrave;re une image (Higgsfield nano_banana_2) plus une vid&eacute;o (voix off ElevenLabs plus sous-titres) 2 fois par jour, publie via <span class="mono">omega-zernio</span> (15 comptes connect&eacute;s dont @verba_run).</li>
+        <li><strong>Calendrier de 90 jours</strong> d&eacute;j&agrave; r&eacute;dig&eacute; (94 posts), le garde-fou R-NODASH cod&eacute; dans le moteur.</li>
+        <li><strong>Boucles de croissance d&eacute;j&agrave; cod&eacute;es</strong> : parrainage &laquo; Mois gratuit &raquo;, classement public, gamification &agrave; 100 niveaux. Cod&eacute;es mais <em>pas encore visibles</em>.</li>
+        <li><strong>Essai &agrave; valeur forc&eacute;e</strong> : 33 dict&eacute;es gratuites puis paywall (d&eacute;j&agrave; dans l'appli).</li>
+      </ul>
+    </div>
+    <div class="card" style="border-color:var(--accent)">
+      <h4 style="margin-top:0;color:var(--accent)">Ce qui manque (priorit&eacute; de build n&deg;1)</h4>
+      <ul>
+        <li><strong>La boucle &laquo; partager le clip &raquo; (n&deg;1).</strong> Les 4 fus&eacute;es ont toutes gagn&eacute; gr&acirc;ce &agrave; &ccedil;a : leur production porte un badge et se repartage. Verba a le parrainage et le classement, mais pas encore le bouton &laquo; partager ta d&eacute;mo voix vers action &raquo; avec le g&eacute;n&eacute;rique de fin &laquo; Fait avec Verba &raquo; plus un lien. C'est le build le plus rentable des 90 jours.</li>
+        <li><strong>L'offre Fondateur / &agrave; vie</strong> dans Stripe : n'existe pas encore (seuls le mensuel plus l'annuel sont en ligne). &Agrave; construire et tester avant le lancement, c'est le levier FOMO.</li>
+        <li><strong>Instrumentation du tunnel de bout en bout</strong> : t&eacute;l&eacute;chargement, activation, premi&egrave;re action, paywall, essai, paiement. On ne peut pas scaler ce qu'on ne mesure pas.</li>
+        <li><strong>Preuve pr&eacute;coce</strong> : z&eacute;ro t&eacute;moignage public. Premi&egrave;re t&acirc;che : produire 10 &agrave; 20 citations honn&ecirc;tes de testeurs.</li>
+        <li><strong>2 corrections de copy</strong> : l'endpoint <span class="mono">api/try</span> affiche encore &laquo; 10 000 mots &raquo; ; l'all&eacute;gation de confidentialit&eacute; doit rester exacte (historique local par d&eacute;faut).</li>
+      </ul>
+    </div>
+  </div>
+  <div class="call warn">
+    <div class="t">R&egrave;gle op&eacute;rateur (L0)</div>
+    <p style="margin:0">Le tag AUTO dans les calendriers signifie <strong>pr&eacute;parer</strong>, pas publier. Rien ne part sans le GO explicite de l'op&eacute;rateur. Le plan ci-dessous suit cette r&egrave;gle : chaque jour, le moteur pr&eacute;pare le post, l'humain valide avant publication.</p>
+  </div>
+</section>
+
+<section>
+  <span class="snum">03</span>
+  <h2>Comment Cursor, Lovable, Replit et Higgsfield ont explos&eacute;</h2>
+  <p class="lead">Quatre trajectoires, un seul sch&eacute;ma. Aucune n'a achet&eacute; sa croissance au d&eacute;part. Toutes ont transform&eacute; le produit en machine de distribution. Voici les faits, puis le sch&eacute;ma commun, puis la traduction pour Verba.</p>
+
+  <div class="tblwrap">
+    <table>
+      <thead><tr><th>Entreprise</th><th>Vitesse</th><th>Levier n&deg;1</th><th>Payant vs organique</th><th>La boucle</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Cursor</strong><br><span class="src">&Eacute;diteur de code IA</span></td><td>~1 M$ &agrave; 100 M$ d'ARR en ~12 mois ; ~360 k utilisateurs payants, ~36% de conversion gratuit vers payant</td><td>Un moment &laquo; wow &raquo; en moins de 5 minutes, puis des clips de devs viraux sur X</td><td><strong>100% organique</strong>, 0$ de publicit&eacute; jusqu'&agrave; plus de 200 M$ d'ARR</td><td>Production visible partag&eacute;e, un pair l'essaie, adoption ascendante</td></tr>
+        <tr><td><strong>Lovable</strong><br><span class="src">texte vers appli</span></td><td>0 &agrave; 100 M$ d'ARR en ~8 mois (record) ; 85% de r&eacute;tention au jour 30</td><td>Fondateur qui construit en public (Osika publie l'ARR brut) plus le badge &laquo; Built with Lovable &raquo;</td><td><strong>Quasi 100% organique</strong>, moins de 10% de la premi&egrave;re ann&eacute;e venait du payant</td><td>Chaque appli publi&eacute;e porte le badge plus un bouton &laquo; remix &raquo;, ~25 k inscriptions par mois attribu&eacute;es &agrave; &ccedil;a</td></tr>
+        <tr><td><strong>Replit</strong><br><span class="src">dev plus agent IA</span></td><td>Agent (sept. 2024) : 10 M$ &agrave; 253 M$ d'ARR en ~12 mois ; plus de 35 M d'utilisateurs</td><td>La boucle &laquo; made with Replit &raquo; (plus de 9 M de Repls publics) plus des clips de vibe-coding</td><td><strong>Tr&egrave;s majoritairement organique</strong>, aucune &eacute;quipe growth d&eacute;di&eacute;e</td><td>Une appli publique et partageable, la preuve que c'est facile, inscription, fork</td></tr>
+        <tr><td><strong>Higgsfield</strong><br><span class="src">vid&eacute;o IA</span></td><td>0 &agrave; ~300 M$ d'ARR en ~11 mois ; plus de 15 M d'utilisateurs, ~4,5 M de vid&eacute;os par jour</td><td>Seeding de cr&eacute;ateurs (plus de 10 000 cr&eacute;ateurs) plus trend-jacking (10 presets par jour)</td><td><strong>Port&eacute; par la distribution</strong>, premier commercial embauch&eacute; &agrave; 50 M$ d'ARR (mais seeding payant)</td><td>Tendance, preset en un clic, les cr&eacute;ateurs inondent X/TikTok, &laquo; comment t'as fait &ccedil;a ? &raquo;, inscription</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Le sch&eacute;ma commun : 10 lois</h3>
+  <ol class="lawlist">
+    <li><b>La production, c'est la pub.</b> Code, appli, vid&eacute;o : chaque artefact partag&eacute; est une pub gratuite qui se repartage. C'est le levier n&deg;1 pour trois des quatre. <em>Verba : le clip &laquo; je l'ai dit, c'est fait &raquo;.</em></li>
+    <li><b>Z&eacute;ro pub avant que &ccedil;a convertisse.</b> Cursor a d&eacute;pens&eacute; 0$ jusqu'&agrave; 200 M$ d'ARR, Lovable moins de 10% la premi&egrave;re ann&eacute;e. La publicit&eacute; vient apr&egrave;s, pour amplifier une machine qui fonctionne d&eacute;j&agrave;.</li>
+    <li><b>Un moment &laquo; wow &raquo; ultra rapide.</b> Moins de 5 minutes chez Cursor. Le produit doit d&eacute;clencher un choc qui donne envie d'en parler. <em>Verba : premi&egrave;re dict&eacute;e en moins de 60 secondes (parcours sans friction, sans configuration) plus une premi&egrave;re action confirm&eacute;e.</em></li>
+    <li><b>Fondateur en public, chiffres bruts.</b> Osika publie l'ARR, Masad (470 k abonn&eacute;s) publie sans arr&ecirc;t, Mashrabov annonce les drops. Publier, c'est le haut du tunnel.</li>
+    <li><b>Amplifier les victoires des utilisateurs.</b> La nuance Cursor : des fondateurs discrets qui repartagent chaque clip d'utilisateur au lieu de contr&ocirc;ler le r&eacute;cit.</li>
+    <li><b>Conqu&eacute;rir les &laquo; moines &raquo; en premier.</b> Cursor a optimis&eacute; pour les power users actifs 4 &agrave; 5 jours par semaine, pas pour un DAU de vanit&eacute;. Une base restreinte qui &eacute;vang&eacute;lise donne de la cr&eacute;dibilit&eacute; &agrave; tout le reste.</li>
+    <li><b>Limiter le gratuit sur l'usage, pas les fonctionnalit&eacute;s.</b> Le power user atteint naturellement sa limite et upgrade de lui-m&ecirc;me (36% chez Cursor). <em>Verba : les 33 dict&eacute;es, d&eacute;j&agrave; en place.</em></li>
+    <li><b>Des moments de lancement.</b> Lovable a atteint la 1re place sur Product Hunt ET la 1re place sur Hacker News le m&ecirc;me jour. Un pic concentr&eacute; vaut mieux qu'un filet r&eacute;gulier.</li>
+    <li><b>Fabriquer de l'UGC.</b> Les concours de Lovable, les bounties de Replit, le programme &laquo; Earn &raquo; de Higgsfield. Des challenges qui poussent les gens &agrave; produire la preuve &agrave; ta place.</li>
+    <li><b>La vitesse de ship, ce sont des raisons de publier.</b> Higgsfield ship 4 &agrave; 7 fois par semaine, Lovable publie chaque jour (&laquo; beeswarming &raquo;). Une cadence quotidienne vaut mieux qu'un seul lancement peaufin&eacute;.</li>
+  </ol>
+
+  <div class="call good">
+    <div class="t">L'insight qui change tout pour Verba</div>
+    <p style="margin:0">Verba a d&eacute;j&agrave; le moteur de contenu (lois 9 et 10), l'essai forc&eacute; (loi 7), la niche (loi 6), et de quoi lancer (loi 8). Ce qui <strong>manque et d&eacute;bloque tout</strong>, c'est la loi n&deg;1 : la boucle de partage. Higgsfield a pay&eacute; 10 000 cr&eacute;ateurs ; nous, sans budget, remplacons le cash par un <strong>challenge &laquo; fais ton clip je-l'ai-dit-c'est-fait &raquo;</strong> avec des licences &agrave; vie offertes &agrave; 20 &agrave; 50 cr&eacute;ateurs de d&eacute;part. Le clip, c'est la pub, chaque r&eacute;ponse &laquo; attends, t'as fait comment ? &raquo; am&egrave;ne l'inscription suivante.</p>
+  </div>
+</section>
+
+<section>
+  <span class="snum">04</span>
+  <h2>La strat&eacute;gie Verba mise &agrave; jour</h2>
+  <p class="lead">M&ecirc;me &eacute;toile polaire qu'avant (revenu r&eacute;current, marge quasi pure), mais rec&acirc;bl&eacute;e autour de la boucle de partage et de l'&eacute;chelle clients. Quatre moteurs qui composent, z&eacute;ro d&eacute;pense payante au d&eacute;part.</p>
+
+  <div class="grid g2">
+    <div class="card">
+      <h4 style="margin-top:0">Moteur A, Fondateur en public (le haut du tunnel)</h4>
+      <p style="margin:0">Gareth publie chaque jour sur X : MRR brut, nombre d'installations, &laquo; commande du jour &raquo; (clip). Un r&eacute;cit fondateur &eacute;pingl&eacute; : &laquo; un dev qui construit un agent vocal priv&eacute;, en public &raquo;. Nous amplifions chaque clip d'utilisateur (la le&ccedil;on Cursor). Co&ucirc;t : 0.</p>
+    </div>
+    <div class="card">
+      <h4 style="margin-top:0">Moteur B, La boucle de partage (le c&oelig;ur)</h4>
+      <p style="margin:0">Le clip &laquo; je l'ai dit, c'est fait &raquo; dans <strong>un format reconnaissable et reproductible</strong> (&eacute;cran partag&eacute; : la voix, puis le Mac agit, m&ecirc;me grammaire de sous-titres). Un par jour, chacun surfant sur un pain point du moment (email, code, Slack). Le bouton &laquo; partager &raquo; dans l'appli avec le g&eacute;n&eacute;rique de fin &laquo; Fait avec Verba &raquo; referme la boucle.</p>
+    </div>
+    <div class="card">
+      <h4 style="margin-top:0">Moteur C, Communaut&eacute; et lancements (les pics)</h4>
+      <p style="margin:0">Show HN, r/macapps, Lobsters, Product Hunt, les communaut&eacute;s de devs IA agentique. La t&ecirc;te de pont vit l&agrave;. Reply-jacker les fils viraux type &laquo; je d&eacute;teste taper &raquo; ou &laquo; agent IA &raquo; avec un clip brut dans l'heure. &Eacute;tiquette communautaire stricte (fondateur, honn&ecirc;te, une seule demande discr&egrave;te).</p>
+    </div>
+    <div class="card">
+      <h4 style="margin-top:0">Moteur D, Les boucles produit d&eacute;j&agrave; cod&eacute;es (le composeur)</h4>
+      <p style="margin:0">Rendre <strong>visible</strong> le parrainage &laquo; Mois gratuit &raquo; (feuille de partage plus lien ?ref) et le classement partageable (&laquo; j'ai &eacute;conomis&eacute; 14h ce mois-ci avec Verba &raquo;). Plus le SEO/GEO comparatif (/vs, /compare 24x10) qui compose tout seul.</p>
+    </div>
+  </div>
+
+  <h3>Philosophie budg&eacute;taire : quasi nul, puis chirurgical</h3>
+  <div class="grid g3">
+    <div class="stat"><div class="k">Palier 0 &agrave; 100</div><div class="v" style="font-size:26px">0 &euro;</div><div class="d">100% organique. Fondateur plus communaut&eacute; plus seeding. Comme Cursor.</div></div>
+    <div class="stat"><div class="k">Palier 100 &agrave; 500</div><div class="v" style="font-size:26px">10-15 &euro;<small>/jour</small></div><div class="d">Tester le retargeting sur /compare, <em>uniquement</em> si la conversion essai vers payant est prouv&eacute;e. On coupe si &ccedil;a ne marche pas.</div></div>
+    <div class="stat"><div class="k">Palier 500 &agrave; 1000</div><div class="v" style="font-size:26px">micro</div><div class="d">Sponsoriser 1 &agrave; 2 newsletters dev cibl&eacute;es, % d'affiliation cr&eacute;ateurs. Toujours secondaire par rapport &agrave; l'organique.</div></div>
+  </div>
+  <p class="src" style="margin-top:8px">R&egrave;gle d'or (identique dans les 4 comparables) : la publicit&eacute; <strong>amplifie</strong> une conversion prouv&eacute;e, elle n'en fabrique jamais une. Un euro d&eacute;pens&eacute; avant le palier des 100 est un euro qui cache un tunnel perc&eacute;.</p>
+</section>
+
+<section>
+  <span class="snum">05</span>
+  <h2>L'&eacute;chelle clients, 0 &rarr; 100 &rarr; 500 &rarr; 1 000</h2>
+  <p class="lead">Chaque palier a un objectif unique, un levier dominant, une porte de sortie (la preuve n&eacute;cessaire pour passer au suivant) et un budget. On ne passe au palier suivant que si la porte est franchie.</p>
+
+  <div class="grid g3">
+    <div class="card">
+      <div class="eyebrow">Palier 1, Mois 1</div>
+      <h3 style="margin:6px 0">0 &agrave; 100 utilisateurs payants</h3>
+      <p><strong>Objectif :</strong> 100 vrais fans, conquis &agrave; la main. &Ccedil;a ne scale pas, on le fait quand m&ecirc;me.</p>
+      <p><strong>Levier :</strong> fondateur en public plus seeding manuel de la t&ecirc;te de pont plus le lancement PH/Show HN.</p>
+      <p><strong>Canaux :</strong> X, r/macapps, HN, communaut&eacute;s Discord de devs IA agentique.</p>
+      <p><strong>Porte de sortie :</strong> essai vers payant &ge; 6%, 10+ citations honn&ecirc;tes, la boucle clip fonctionne (1 clip d'utilisateur g&eacute;n&egrave;re &ge; 1 installation).</p>
+      <p style="margin:0"><strong>Budget :</strong> 0 &euro;.</p>
+    </div>
+    <div class="card">
+      <div class="eyebrow">Palier 2, Mois 2</div>
+      <h3 style="margin:6px 0">100 &agrave; 500 utilisateurs payants</h3>
+      <p><strong>Objectif :</strong> la boucle porte la croissance, pas seulement la main du fondateur.</p>
+      <p><strong>Levier :</strong> boucle de partage amorc&eacute;e plus concours UGC hebdomadaires plus SEO qui compose plus d&eacute;mos cr&eacute;ateurs.</p>
+      <p><strong>Canaux :</strong> les m&ecirc;mes plus des cr&eacute;ateurs YouTube/X, newsletters, concours viraux.</p>
+      <p><strong>Porte de sortie :</strong> coefficient de parrainage &gt; 0,3, un format de clip &agrave; plus de 20 k vues reproduit, retargeting &agrave; ROI positif.</p>
+      <p style="margin:0"><strong>Budget :</strong> 10 &agrave; 15 &euro;/jour (optionnel, apr&egrave;s preuve).</p>
+    </div>
+    <div class="card">
+      <div class="eyebrow">Palier 3, Mois 3</div>
+      <h3 style="margin:6px 0">500 &agrave; 1 000 utilisateurs payants</h3>
+      <p><strong>Objectif :</strong> &eacute;largir au-del&agrave; des d&eacute;veloppeurs, ajouter des moments FOMO.</p>
+      <p><strong>Levier :</strong> segments d'&eacute;largissement (pros de la confidentialit&eacute;, op&eacute;rateurs voice-first) plus affiliation plus un second drop.</p>
+      <p><strong>Canaux :</strong> newsletters sponsoris&eacute;es cibl&eacute;es, podcasts, SEO multi-segments, cr&eacute;ateurs affili&eacute;s.</p>
+      <p><strong>Porte de sortie :</strong> 1 000 utilisateurs payants, un moteur qui compose sans l'intervention quotidienne du fondateur, un plan &agrave; 90-180 jours vers 2 &agrave; 5 k.</p>
+      <p style="margin:0"><strong>Budget :</strong> micro (sponsoriser 1 &agrave; 2 newsletters).</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <span class="snum">06</span>
+  <h2>Le plan &agrave; 90 jours, jour par jour</h2>
+  <p class="lead">Chaque jour comporte une action <span class="auto">automatis&eacute;e</span> (le moteur pr&eacute;pare, l'op&eacute;rateur valide) et une action <span class="human">humaine</span> (le fondateur, 30 minutes &agrave; 2 heures). Le rituel quotidien fixe ci-dessous s'applique chaque jour et n'est pas r&eacute;p&eacute;t&eacute; dans les tableaux ; les tableaux montrent la t&acirc;che sp&eacute;cifique du jour. <strong>Remarque (orient&eacute;e solution) :</strong> les sujets de contenu sont cadr&eacute;s par le b&eacute;n&eacute;fice utilisateur et le moment de sa journ&eacute;e (le probl&egrave;me r&eacute;solu), jamais par la technologie. La colonne AUTO nomme donc chaque post par sa SOLUTION.</p>
+
+  <div class="card" style="border-color:var(--accent)">
+    <h4 style="margin-top:0;color:var(--accent)">Rituel quotidien fixe, ~25 min, chaque jour</h4>
+    <ol style="margin:0">
+      <li><strong>Valider (GO)</strong> le post AUTO du jour avant publication (garde-fou L0).</li>
+      <li><strong>R&eacute;pondre</strong> &agrave; toutes les r&eacute;ponses et DM d'hier sur X (en moins d'1 heure si possible), sur un ton franc de fondateur.</li>
+      <li><strong>Engager</strong> : laisser des commentaires utiles sur 3 &agrave; 5 posts de devs IA agentique ou de comptes productivit&eacute; Mac. Ne jamais vendre.</li>
+      <li><strong>Reply-jacker</strong> : 1 fil viral pertinent (&laquo; je d&eacute;teste taper &raquo;, &laquo; agent IA &raquo;, &laquo; vibe coding &raquo;) avec un clip Verba brut.</li>
+      <li><strong>Amplifier</strong> : repartager ou citer chaque clip, mention ou avis utilisateur (la le&ccedil;on Cursor).</li>
+    </ol>
+  </div>
+
+  <div class="legend" style="margin-top:16px">
+    <span><span class="dot" style="background:var(--auto)"></span> <span class="tag a">AUTO</span> moteur / syst&egrave;me</span>
+    <span><span class="dot" style="background:var(--human)"></span> <span class="tag h">HUMAIN</span> fondateur</span>
+    <span><span class="dot" style="background:var(--accent)"></span> <span class="tag m">JALON</span> moment cl&eacute;</span>
+  </div>
+
+  <div class="week">
+    <div class="weekhead"><span class="wn">MOIS 1</span><span class="wt">Fondations et les 100 premiers fans (0 &rarr; 100 utilisateurs payants)</span><span class="goalpill">Palier 1</span></div>
+  </div>
+
+  <div class="week">
+    <div class="weekhead"><span class="wn">S1</span><span class="wt">Colmater le tunnel et activer le build-in-public</span><span class="wd">7-13 juil.</span></div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Jour</th><th>AUTO</th><th>HUMAIN (t&acirc;che du jour)</th></tr></thead>
+      <tbody>
+        <tr><td class="day">Lun 7</td><td class="auto">Sujet du post : coder plus vite, sans clavier, pr&eacute;par&eacute; plus tunnel instrument&eacute; (&eacute;v&eacute;nements t&eacute;l&eacute;chargement/activation/paywall)</td><td class="human">Corriger les 2 trous de copy : <span class="mono">api/try</span> vers &laquo; 33 dict&eacute;es &raquo;, nettoyer l'all&eacute;gation de confidentialit&eacute;. <span class="tag m">JALON</span></td></tr>
+        <tr><td class="day">Mar 8</td><td class="auto">Post, dicter sans crainte (priv&eacute;) (priv&eacute;, sur l'appareil) plus pages /vs actualis&eacute;es (syst&egrave;me SEO)</td><td class="human">R&eacute;diger et &eacute;pingler le r&eacute;cit fondateur sur X (&laquo; je construis un agent vocal priv&eacute;, en public &raquo;). Publier le premier chiffre brut (installations &agrave; ce jour).</td></tr>
+        <tr><td class="day">Mer 9</td><td class="auto">Sujet du post : arr&ecirc;te d'envoyer ta voix ailleurs</td><td class="human">ENREGISTRER la d&eacute;mo canonique de 60 secondes (voix vers action, &eacute;tape Confirmer visible) plus 4 d&eacute;clinaisons de 15 secondes chacune (Linear/Gmail/Slack/Calendar). L'asset m&egrave;re. <span class="tag m">JALON</span></td></tr>
+        <tr><td class="day">Jeu 10</td><td class="auto">Sujet du post : dis-le une fois, c'est fait plus le clip d&eacute;clinaison Linear mont&eacute; par le moteur</td><td class="human">Lancer le brief dev : construire la boucle &laquo; partager le clip &raquo; (g&eacute;n&eacute;rique de fin &laquo; Fait avec Verba &raquo; plus lien ?ref). D&eacute;finir les KPI de l'&eacute;chelle dans un dashboard.</td></tr>
+        <tr><td class="day">Ven 11</td><td class="auto">Sujet du post : une voix, tout ton workflow</td><td class="human">Rendre le parrainage et le classement visibles (affich&eacute;s apr&egrave;s la 10e dict&eacute;e). Publier le clip d&eacute;mo de 60 secondes sur X avec un fil d'accroche.</td></tr>
+        <tr><td class="day">Sam 12</td><td class="auto">1 post auto l&eacute;ger du week-end plus monitoring</td><td class="human">Passage valeur d'abord dans les communaut&eacute;s de devs IA agentique : r&eacute;pondre aux questions dict&eacute;e/voix, sans vendre. Identifier 30 devs &agrave; seeder.</td></tr>
+        <tr><td class="day">Dim 13</td><td class="auto">1 post auto du week-end plus digest de m&eacute;triques</td><td class="human">Bilan S1 (30 min) : tunnel colmat&eacute; ? d&eacute;mo pr&ecirc;te ? &Eacute;crire les 3 priorit&eacute;s pour S2. Se reposer.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="week">
+    <div class="weekhead"><span class="wn">S2</span><span class="wt">Construire la boucle et fabriquer une preuve pr&eacute;coce</span><span class="wd">14-20 juil.</span></div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Jour</th><th>AUTO</th><th>HUMAIN (t&acirc;che du jour)</th></tr></thead>
+      <tbody>
+        <tr><td class="day">Lun 14</td><td class="auto">Post, coder plus vite sans clavier plus le moteur g&eacute;n&egrave;re le premier clip au &laquo; format reconnaissable &raquo; (&eacute;cran partag&eacute;)</td><td class="human">Publier l'article de blog fondateur n&deg;1 &laquo; Ta voix ne quitte jamais ton Mac &raquo;. Seeding alpha : remettre le build &agrave; 20 testeurs de confiance.</td></tr>
+        <tr><td class="day">Mar 15</td><td class="auto">Post, dicter sans crainte (priv&eacute;) plus /compare 24x10 v&eacute;rifi&eacute;</td><td class="human">Tester le SKU licence Fondateur dans Stripe (achat test plus entitlement plus attribution ?ref). Ne rien publier sur le prix.</td></tr>
+        <tr><td class="day">Mer 16</td><td class="auto">Post, ta voix ne quitte jamais ton Mac plus clip du jour</td><td class="human">Relancer les 20 testeurs alpha : r&eacute;colter 1 citation honn&ecirc;te d'une ligne plus l'autorisation. Viser 10 citations.</td></tr>
+        <tr><td class="day">Jeu 17</td><td class="auto">Sujet du post : dis-le une fois, c'est fait plus la d&eacute;clinaison Gmail</td><td class="human">Shipper la boucle clip (build livr&eacute; ?) : tester le partage dans l'appli de bout en bout, v&eacute;rifier le g&eacute;n&eacute;rique de fin plus le lien. <span class="tag m">JALON</span></td></tr>
+        <tr><td class="day">Ven 18</td><td class="auto">Post, une voix pour tout ton workflow plus le digest hebdo pr&eacute;par&eacute;</td><td class="human">Publier la mise &agrave; jour hebdo build-in-public avec des chiffres bruts (installations, premi&egrave;res citations). Publier l'article de blog fondateur n&deg;2 &laquo; Verba vs Wispr, honn&ecirc;tement &raquo;.</td></tr>
+        <tr><td class="day">Sam 19</td><td class="auto">1 post auto plus monitoring</td><td class="human">Passage valeur d'abord sur Lobsters ou un Discord dev IA/Cursor. Lister 20 cr&eacute;ateurs dev/Mac &agrave; seeder.</td></tr>
+        <tr><td class="day">Dim 20</td><td class="auto">1 post auto plus digest</td><td class="human">Bilan S2 : boucle clip en ligne ? 10 citations ? SKU Fondateur pr&ecirc;t ? Pr&eacute;parer le kit de lancement. Se reposer.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="week">
+    <div class="weekhead"><span class="wn">S3</span><span class="wt">Pr&eacute;-lancement : seeder les cr&eacute;ateurs et pr&eacute;parer les moments</span><span class="wd">21-27 juil.</span></div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Jour</th><th>AUTO</th><th>HUMAIN (t&acirc;che du jour)</th></tr></thead>
+      <tbody>
+        <tr><td class="day">Lun 21</td><td class="auto">Post, coder plus vite sans clavier plus clip du jour (trend-jack code)</td><td class="human">Seeder 20 cr&eacute;ateurs : licence Fondateur plus clip d&eacute;mo, le challenge &laquo; fais ton je-l'ai-dit-c'est-fait &raquo;, aucune demande payante. <span class="tag m">JALON</span></td></tr>
+        <tr><td class="day">Mar 22</td><td class="auto">Post, dicter sans crainte (priv&eacute;) plus pages SEO cas d'usage (&laquo; voix vers texte pour d&eacute;veloppeurs &raquo;) en ligne</td><td class="human">Pr&eacute;parer les assets Product Hunt : galerie, tagline, premier commentaire, choisir un hunter. Teaser la liste d'attente sur X.</td></tr>
+        <tr><td class="day">Mer 23</td><td class="auto">Post, ta voix ne quitte jamais ton Mac plus clip du jour</td><td class="human">R&eacute;diger le post Show HN (&laquo; Show HN : Verba, l'appli de dict&eacute;e Mac qui agit sur ce que tu dis &raquo;). Relancer les cr&eacute;ateurs seed&eacute;s.</td></tr>
+        <tr><td class="day">Jeu 24</td><td class="auto">Post, dis-le une fois, c'est fait plus la d&eacute;clinaison Slack</td><td class="human"><strong>Go / No-Go sur le lancement</strong> : activation en moins de 60s OK, SKU Fondateur test&eacute;, citations pr&ecirc;tes, boucle en ligne. Valider l'offre Fondateur pour publication. <span class="tag m">JALON</span></td></tr>
+        <tr><td class="day">Ven 25</td><td class="auto">Post, une voix pour tout ton workflow plus le digest hebdo</td><td class="human">Mise &agrave; jour hebdo build-in-public. Planifier les posts de lancement (fil X, Reddit, LinkedIn). Brief final aux cr&eacute;ateurs pour amplifier le jour J.</td></tr>
+        <tr><td class="day">Sam 26</td><td class="auto">1 post teaser auto &laquo; quelque chose arrive mardi &raquo;</td><td class="human">Dernier passage communaut&eacute; avant lancement, chauffer r/macapps et les communaut&eacute;s de devs IA agentique (&ecirc;tre pr&eacute;sent, ne pas vendre).</td></tr>
+        <tr><td class="day">Dim 27</td><td class="auto">1 post teaser auto plus assets de lancement en file d'attente</td><td class="human">Repos strat&eacute;gique plus une r&eacute;p&eacute;tition du runbook de lancement heure par heure. Coucher t&ocirc;t.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="week">
+    <div class="weekhead"><span class="wn">S4</span><span class="wt">SEMAINE DE LANCEMENT, franchir les 100 utilisateurs payants</span><span class="wd">28 juil. - 3 ao&ucirc;t</span></div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Jour</th><th>AUTO</th><th>HUMAIN (t&acirc;che du jour)</th></tr></thead>
+      <tbody>
+        <tr><td class="day">Mar 28</td><td class="auto">Assets de lancement pouss&eacute;s sur les 15 comptes (apr&egrave;s GO) plus la boucle clip active</td><td class="human"><strong>LANCEMENT.</strong> Product Hunt (00h01 PT) plus Show HN plus fil X plus LinkedIn. Offre Fondateur publi&eacute;e. Rester dans les commentaires pendant 12 heures. <span class="tag m">JALON</span></td></tr>
+        <tr><td class="day">Mer 29</td><td class="auto">Repartager les meilleurs moments PH/HN plus amplifier les clips cr&eacute;ateurs</td><td class="human">r/macapps &laquo; Verba vs Wispr honn&ecirc;tement (l&agrave; o&ugrave; Wispr gagne) &raquo; plus communaut&eacute;s de devs IA agentique, PSA &laquo; ta voix ne quitte jamais ton Mac &raquo;. Rester 2 heures dans chacune. <span class="tag m">JALON</span></td></tr>
+        <tr><td class="day">Jeu 30</td><td class="auto">Post r&eacute;cap &laquo; on a lanc&eacute; &raquo; plus un digest de chiffres jour 1-2</td><td class="human">R&eacute;pondre &agrave; chaque avis. Remercier et repartager chaque clip d'utilisateur. Envoyer une citation presse aux m&eacute;dias Mac ind&eacute;s.</td></tr>
+        <tr><td class="day">Ven 31</td><td class="auto">Post, dis-le une fois, c'est fait plus le post build-in-public &laquo; chiffres du lancement &raquo; pr&eacute;par&eacute;</td><td class="human">Publier les chiffres bruts du lancement (installations, utilisateurs payants, meilleur clip). Relancer les cr&eacute;ateurs pour leur clip.</td></tr>
+        <tr><td class="day">Sam, 1 ao&ucirc;t</td><td class="auto">1 post auto plus monitoring</td><td class="human">Passage Lobsters &laquo; comment s'est pass&eacute; le lancement &raquo; (honn&ecirc;te). R&eacute;colter de nouveaux t&eacute;moignages.</td></tr>
+        <tr><td class="day">Dim 2</td><td class="auto">1 post auto plus digest hebdo</td><td class="human">Bilan du lancement : les 100 utilisateurs payants sont-ils franchis ? Conversion essai vers payant ? Porte du palier 1 franchie ? &Eacute;crire le plan S5.</td></tr>
+        <tr><td class="day">Lun 3</td><td class="auto">Post, coder plus vite sans clavier plus la boucle clip qui tourne &agrave; son rythme</td><td class="human">Publier &laquo; 1 semaine apr&egrave;s le lancement &raquo; : ce qui a march&eacute;, ce qu'on corrige. Prioriser le format de clip gagnant.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="call good"><div class="t">Porte du palier 1</div><p style="margin:0">Passer &agrave; S5 uniquement si : essai vers payant &ge; 6%, 10+ citations publiques, et au moins un clip d'utilisateur a g&eacute;n&eacute;r&eacute; une installation tra&ccedil;able. Sinon, rester en mode fondateur plus communaut&eacute; et it&eacute;rer sur l'activation avant d'ajouter du volume.</p></div>
+  </div>
+
+  <div class="week">
+    <div class="weekhead"><span class="wn">MOIS 2</span><span class="wt">La boucle porte la croissance (100 &rarr; 500 utilisateurs payants)</span><span class="goalpill">Palier 2</span></div>
+  </div>
+
+  <div class="week">
+    <div class="weekhead"><span class="wn">S5</span><span class="wt">Transformer la boucle en concours UGC hebdomadaire</span><span class="wd">4-10 ao&ucirc;t</span></div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Jour</th><th>AUTO</th><th>HUMAIN (t&acirc;che du jour)</th></tr></thead>
+      <tbody>
+        <tr><td class="day">Lun 4</td><td class="auto">Post, dicter sans crainte (priv&eacute;) plus le format de clip gagnant (on double la mise)</td><td class="human">Lancer le concours hebdo : &laquo; le meilleur workflow vocal gagne une licence &agrave; vie plus un repartage &raquo;. Fil d'annonce plus hashtag. <span class="tag m">JALON</span></td></tr>
+        <tr><td class="day">Mar 5</td><td class="auto">Post, ta voix ne quitte jamais ton Mac plus 3 nouvelles pages SEO cas d'usage en ligne</td><td class="human">Test micro-pub : 10 &euro;/jour de retargeting sur les visiteurs /compare (seulement si la porte du palier 1 est franchie). Mesurer le CPA.</td></tr>
+        <tr><td class="day">Mer 6</td><td class="auto">Post, coder plus vite sans clavier plus le clip du concours mis en avant</td><td class="human">Repartager les meilleures participations au concours. Relancer les cr&eacute;ateurs pour qu'ils publient leurs d&eacute;mos.</td></tr>
+        <tr><td class="day">Jeu 7</td><td class="auto">Sujet du post : dis-le une fois, c'est fait plus la d&eacute;clinaison Calendar</td><td class="human">Contacter 10 newsletters dev/Mac (relation d'abord, offrir une licence, pas de spam). Passage valeur dans les communaut&eacute;s de devs IA agentique.</td></tr>
+        <tr><td class="day">Ven 8</td><td class="auto">Post, une voix pour tout ton workflow plus la mise &agrave; jour hebdo build-in-public (jalon MRR)</td><td class="human">Publier le jalon MRR plus &laquo; X clients en Y jours &raquo;. Annoncer le gagnant du concours, repartager son clip.</td></tr>
+        <tr><td class="day">Sam 9</td><td class="auto">1 post auto plus monitoring</td><td class="human">Passage communaut&eacute; plus collecte de t&eacute;moignages. Analyser quel format de clip performe.</td></tr>
+        <tr><td class="day">Dim 10</td><td class="auto">1 post auto plus digest</td><td class="human">Bilan S5 : CPA du test pub ? coefficient de parrainage ? &Eacute;crire S6. Se reposer.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="week">
+    <div class="weekhead"><span class="wn">S6</span><span class="wt">D&eacute;mos cr&eacute;ateurs en direct et amplification de ce qui marche</span><span class="wd">11-17 ao&ucirc;t</span></div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Jour</th><th>AUTO</th><th>HUMAIN (t&acirc;che du jour)</th></tr></thead>
+      <tbody>
+        <tr><td class="day">Lun 11</td><td class="auto">Post, coder plus vite sans clavier plus concours semaine 2 lanc&eacute; automatiquement</td><td class="human">Coordonner 3 &agrave; 5 d&eacute;mos cr&eacute;ateurs &agrave; publier cette semaine. Repartager chacune. <span class="tag m">JALON</span></td></tr>
+        <tr><td class="day">Mar 12</td><td class="auto">Post, dicter sans crainte (priv&eacute;) plus retargeting mont&eacute; &agrave; 15 &euro;/jour si le CPA est bon</td><td class="human">Analyser : quels canaux am&egrave;nent des utilisateurs payants ? Doubler la mise sur le gagnant, couper le reste.</td></tr>
+        <tr><td class="day">Mer 13</td><td class="auto">Post, ta voix ne quitte jamais ton Mac plus un clip cr&eacute;ateur amplifi&eacute;</td><td class="human">Reply-jacker 2 gros fils &laquo; agent IA Mac &raquo; avec un clip brut. Relancer les newsletters.</td></tr>
+        <tr><td class="day">Jeu 14</td><td class="auto">Post, dis-le une fois, c'est fait plus une nouvelle d&eacute;clinaison th&eacute;matique</td><td class="human">Publier un article de blog cas d'usage (&laquo; la dict&eacute;e pour les workflows de d&eacute;veloppeurs &raquo;). Passage valeur sur Lobsters.</td></tr>
+        <tr><td class="day">Ven 15</td><td class="auto">Post, une voix pour tout ton workflow plus la mise &agrave; jour hebdo build-in-public</td><td class="human">Jalon MRR plus gagnant du concours. Interviewer 2 clients pour une mini &eacute;tude de cas.</td></tr>
+        <tr><td class="day">Sam 16</td><td class="auto">1 post auto plus monitoring</td><td class="human">R&eacute;colter et repartager des clips. Identifier un second format de clip &agrave; tester.</td></tr>
+        <tr><td class="day">Dim 17</td><td class="auto">1 post auto plus digest</td><td class="human">Bilan S6 : en bonne voie vers 500 ? &Eacute;crire S7.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="week">
+    <div class="weekhead"><span class="wn">S7</span><span class="wt">SEO qui compose et newsletters</span><span class="wd">18-24 ao&ucirc;t</span></div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Jour</th><th>AUTO</th><th>HUMAIN (t&acirc;che du jour)</th></tr></thead>
+      <tbody>
+        <tr><td class="day">Lun 18</td><td class="auto">Post, coder plus vite sans clavier plus concours semaine 3 plus nouvelles pages /vs</td><td class="human">Placer 1 &agrave; 2 mentions en newsletter (licence de seeding n&eacute;goci&eacute;e en S5). Repartager le concours.</td></tr>
+        <tr><td class="day">Mar 19</td><td class="auto">Post, dicter sans crainte (priv&eacute;) plus le retargeting continue</td><td class="human">Publier l'&eacute;tude de cas client n&deg;1. Relancer les cr&eacute;ateurs restants.</td></tr>
+        <tr><td class="day">Mer 20</td><td class="auto">Post, ta voix ne quitte jamais ton Mac plus clip du jour</td><td class="human">Passage valeur sur r/productivity ou r/MacOS. Tester une nouvelle accroche de fil.</td></tr>
+        <tr><td class="day">Jeu 21</td><td class="auto">Post, dis-le une fois, c'est fait plus une d&eacute;clinaison</td><td class="human">Reply-jacker plus amplifier les clips utilisateurs. Optimiser la page d'onboarding &agrave; partir des donn&eacute;es du tunnel.</td></tr>
+        <tr><td class="day">Ven 22</td><td class="auto">Post, une voix pour tout ton workflow plus la mise &agrave; jour hebdo build-in-public</td><td class="human">Jalon MRR. Annoncer le gagnant. Publier un fil &laquo; ce que j'ai appris en vendant une appli Mac &agrave; 9,99$ &raquo;.</td></tr>
+        <tr><td class="day">Sam 23</td><td class="auto">1 post auto plus monitoring</td><td class="human">R&eacute;colter des t&eacute;moignages plus repartager. Pr&eacute;parer le second format de clip.</td></tr>
+        <tr><td class="day">Dim 24</td><td class="auto">1 post auto plus digest</td><td class="human">Bilan S7. &Eacute;crire S8 (pouss&eacute;e finale vers 500).</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="week">
+    <div class="weekhead"><span class="wn">S8</span><span class="wt">Pouss&eacute;e finale vers 500</span><span class="wd">25-31 ao&ucirc;t</span></div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Jour</th><th>AUTO</th><th>HUMAIN (t&acirc;che du jour)</th></tr></thead>
+      <tbody>
+        <tr><td class="day">Lun 25</td><td class="auto">Post, coder plus vite sans clavier plus le concours semaine 4</td><td class="human">Point d'&eacute;tape : &agrave; combien de 500 ? Concentrer l'effort sur le canal n&deg;1 (probablement clips plus communaut&eacute;).</td></tr>
+        <tr><td class="day">Mar 26</td><td class="auto">Post, dicter sans crainte (priv&eacute;) plus retargeting</td><td class="human">Relancer tous les cr&eacute;ateurs pour une pouss&eacute;e coordonn&eacute;e cette semaine.</td></tr>
+        <tr><td class="day">Mer 27</td><td class="auto">Post, ta voix ne quitte jamais ton Mac plus clip du jour</td><td class="human">Reply-jack agressif plus amplification. Passage HN s'il y a un angle &laquo; Show HN update : 500 utilisateurs &raquo;.</td></tr>
+        <tr><td class="day">Jeu 28</td><td class="auto">Post, dis-le une fois, c'est fait plus une d&eacute;clinaison</td><td class="human">Publier l'&eacute;tude de cas n&deg;2. Tester un rappel dans l'appli vers le plan annuel (r&eacute;tention).</td></tr>
+        <tr><td class="day">Ven 29</td><td class="auto">Post, une voix pour tout ton workflow plus la mise &agrave; jour hebdo build-in-public</td><td class="human">Jalon MRR plus &laquo; 2 mois, X clients &raquo;. Gagnant du concours mensuel.</td></tr>
+        <tr><td class="day">Sam 30</td><td class="auto">1 post auto plus monitoring</td><td class="human">R&eacute;colter plus repartager. Identifier les segments d'&eacute;largissement &agrave; activer (pros de la confidentialit&eacute;).</td></tr>
+        <tr><td class="day">Dim 31</td><td class="auto">1 post auto plus digest mensuel</td><td class="human">Bilan mois 2 : les 500 sont-ils franchis ? Porte du palier 2 franchie ? &Eacute;crire le plan du mois 3.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="call good"><div class="t">Porte du palier 2</div><p style="margin:0">Passer au mois 3 uniquement si : coefficient de parrainage &gt; 0,3, un format de clip reproductible &agrave; plus de 20 k vues, et un retargeting &agrave; ROI positif. Sinon, concentrer l'effort sur la boucle avant d'&eacute;largir les segments.</p></div>
+  </div>
+
+  <div class="week">
+    <div class="weekhead"><span class="wn">MOIS 3</span><span class="wt">&Eacute;largir et composer (500 &rarr; 1 000 utilisateurs payants)</span><span class="goalpill">Palier 3</span></div>
+  </div>
+
+  <div class="week">
+    <div class="weekhead"><span class="wn">S9</span><span class="wt">Activer le segment pros de la confidentialit&eacute;</span><span class="wd">1-7 sept.</span></div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Jour</th><th>AUTO</th><th>HUMAIN (t&acirc;che du jour)</th></tr></thead>
+      <tbody>
+        <tr><td class="day">Lun 1</td><td class="auto">Sujet du post : dicter du contenu sensible sans risque (pros) plus pages SEO &laquo; dict&eacute;e priv&eacute;e pour avocats/m&eacute;decins &raquo;</td><td class="human">Lancer le message segment 1 : pros de la confidentialit&eacute;. Nouvel angle de clip &laquo; ton audio ne quitte jamais ton Mac &raquo;. <span class="tag m">JALON</span></td></tr>
+        <tr><td class="day">Mar 2</td><td class="auto">Post, ta voix ne quitte jamais ton Mac plus retargeting multi-segments</td><td class="human">Contacter 5 newsletters confidentialit&eacute;/juridique/m&eacute;dical (relation d'abord).</td></tr>
+        <tr><td class="day">Mer 3</td><td class="auto">Post, coder plus vite sans clavier plus clip du jour</td><td class="human">Mettre en place le programme d'affiliation cr&eacute;ateurs (Dub, lien attribu&eacute;). Int&eacute;grer 3 cr&eacute;ateurs affili&eacute;s.</td></tr>
+        <tr><td class="day">Jeu 4</td><td class="auto">Post, dis-le une fois, c'est fait plus une d&eacute;clinaison</td><td class="human">Passage LinkedIn (audience pro) plus la communaut&eacute; confidentialit&eacute;. Reply-jacker les fils confidentialit&eacute;.</td></tr>
+        <tr><td class="day">Ven 5</td><td class="auto">Post, une voix pour tout ton workflow plus la mise &agrave; jour hebdo build-in-public</td><td class="human">Jalon MRR. Le concours hebdo continue. Interviewer un client pro pour une &eacute;tude de cas.</td></tr>
+        <tr><td class="day">Sam 6</td><td class="auto">1 post auto plus monitoring</td><td class="human">R&eacute;colter plus repartager. Pr&eacute;parer le second drop FOMO (S11).</td></tr>
+        <tr><td class="day">Dim 7</td><td class="auto">1 post auto plus digest</td><td class="human">Bilan S9. &Eacute;crire S10.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="week">
+    <div class="weekhead"><span class="wn">S10</span><span class="wt">Segment op&eacute;rateurs voice-first et affiliation &agrave; pleine vitesse</span><span class="wd">8-14 sept.</span></div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Jour</th><th>AUTO</th><th>HUMAIN (t&acirc;che du jour)</th></tr></thead>
+      <tbody>
+        <tr><td class="day">Lun 8</td><td class="auto">Sujet du post : dis-le une fois, c'est fait (op&eacute;rateurs) plus pages SEO &laquo; Jarvis pour Mac &raquo;</td><td class="human">Lancer le message segment 2 : fondateurs/PM qui vivent dans Gmail/Slack. Clip &laquo; dis-le une fois, &ccedil;a fait tout &raquo;. <span class="tag m">JALON</span></td></tr>
+        <tr><td class="day">Mar 9</td><td class="auto">Post, coder plus vite sans clavier plus liens d'affiliation en ligne</td><td class="human">Recruter 5 cr&eacute;ateurs affili&eacute;s de plus. Suivre les conversions d'affiliation.</td></tr>
+        <tr><td class="day">Mer 10</td><td class="auto">Post, ta voix ne quitte jamais ton Mac plus clip du jour</td><td class="human">Passage sur r/productivity plus newsletters productivit&eacute;. Reply-jacker les fils &laquo; assistant IA &raquo;.</td></tr>
+        <tr><td class="day">Jeu 11</td><td class="auto">Post, dicter sans crainte (priv&eacute;) plus une d&eacute;clinaison</td><td class="human">Publier un fil comparatif &laquo; 3 mois de build-in-public : les chiffres &raquo;. La transparence, c'est la confiance.</td></tr>
+        <tr><td class="day">Ven 12</td><td class="auto">Post, une voix pour tout ton workflow plus la mise &agrave; jour hebdo build-in-public</td><td class="human">Jalon MRR. Gagnant du concours. Teaser le drop FOMO de la semaine prochaine.</td></tr>
+        <tr><td class="day">Sam 13</td><td class="auto">1 post auto plus monitoring</td><td class="human">Pr&eacute;parer les assets du second drop (offre Fondateur, places limit&eacute;es). R&eacute;colter des clips.</td></tr>
+        <tr><td class="day">Dim 14</td><td class="auto">1 post auto plus digest</td><td class="human">Bilan S10. Finaliser le runbook du drop FOMO. Se reposer.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="week">
+    <div class="weekhead"><span class="wn">S11</span><span class="wt">Second moment : drop FOMO (Fondateur, places limit&eacute;es)</span><span class="wd">15-21 sept.</span></div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Jour</th><th>AUTO</th><th>HUMAIN (t&acirc;che du jour)</th></tr></thead>
+      <tbody>
+        <tr><td class="day">Lun 15</td><td class="auto">Assets du drop pouss&eacute;s (apr&egrave;s GO) sur les 15 comptes</td><td class="human"><strong>DROP FOMO :</strong> &laquo; offre Fondateur, 100 derni&egrave;res places, 3 jours seulement &raquo;. Annonce fondateur en premier sur X. <span class="tag m">JALON</span></td></tr>
+        <tr><td class="day">Mar 16</td><td class="auto">Post de rappel urgence plus un compteur de places</td><td class="human">Relancer les cr&eacute;ateurs affili&eacute;s pour amplifier le drop. R&eacute;pondre en continu.</td></tr>
+        <tr><td class="day">Mer 17</td><td class="auto">Post &laquo; derni&egrave;res 24h &raquo; plus clips utilisateurs amplifi&eacute;s</td><td class="human">Pouss&eacute;e finale sur le drop, une mise &agrave; jour honn&ecirc;te sur r/macapps. Cl&ocirc;turer ce soir.</td></tr>
+        <tr><td class="day">Jeu 18</td><td class="auto">Post r&eacute;cap du drop plus un digest de chiffres</td><td class="human">Bilan du drop : places vendues, MRR/cash g&eacute;n&eacute;r&eacute;. Remercier et repartager.</td></tr>
+        <tr><td class="day">Ven 19</td><td class="auto">Post, une voix pour tout ton workflow plus la mise &agrave; jour hebdo build-in-public</td><td class="human">Jalon MRR post-drop. Publier les chiffres bruts du drop (transparence).</td></tr>
+        <tr><td class="day">Sam 20</td><td class="auto">1 post auto plus monitoring</td><td class="human">R&eacute;colter plus repartager. Contacter 2 podcasts dev/ind&eacute; pour une apparition.</td></tr>
+        <tr><td class="day">Dim 21</td><td class="auto">1 post auto plus digest</td><td class="human">Bilan S11 : &agrave; combien de 1 000 ? &Eacute;crire S12.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="week">
+    <div class="weekhead"><span class="wn">S12</span><span class="wt">Sponsoring de newsletters cibl&eacute;es et podcasts</span><span class="wd">22-28 sept.</span></div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Jour</th><th>AUTO</th><th>HUMAIN (t&acirc;che du jour)</th></tr></thead>
+      <tbody>
+        <tr><td class="day">Lun 22</td><td class="auto">Post, coder plus vite sans clavier plus placement newsletter n&deg;1 (sponsoring payant, micro)</td><td class="human">Activer 1 &agrave; 2 sponsorings de newsletters dev cibl&eacute;es. Mesurer le CPA versus l'organique. <span class="tag m">JALON</span></td></tr>
+        <tr><td class="day">Mar 23</td><td class="auto">Post, ta voix ne quitte jamais ton Mac plus retargeting</td><td class="human">Enregistrer/publier un podcast dev-ind&eacute; (l'histoire du build-in-public).</td></tr>
+        <tr><td class="day">Mer 24</td><td class="auto">Post, dicter sans crainte (priv&eacute;) plus clip du jour</td><td class="human">Passage communaut&eacute; plus amplification. Analyser le ROI du sponsoring.</td></tr>
+        <tr><td class="day">Jeu 25</td><td class="auto">Post, dis-le une fois, c'est fait plus une d&eacute;clinaison</td><td class="human">Publier l'&eacute;tude de cas n&deg;3 (segment d'&eacute;largissement). Relancer les affili&eacute;s.</td></tr>
+        <tr><td class="day">Ven 26</td><td class="auto">Post, une voix pour tout ton workflow plus la mise &agrave; jour hebdo build-in-public</td><td class="human">Jalon MRR. Gagnant du concours mensuel. Fil &laquo; presque 1 000 clients &raquo;.</td></tr>
+        <tr><td class="day">Sam 27</td><td class="auto">1 post auto plus monitoring</td><td class="human">R&eacute;colter plus repartager. Pr&eacute;parer l'email de r&eacute;tention/lifecycle.</td></tr>
+        <tr><td class="day">Dim 28</td><td class="auto">1 post auto plus digest</td><td class="human">Bilan S12. &Eacute;crire la semaine finale plus le plan &agrave; 90-180 jours.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="week">
+    <div class="weekhead"><span class="wn">S13</span><span class="wt">Consolider, retenir, franchir les 1 000</span><span class="wd">29 sept. - 5 oct.</span></div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Jour</th><th>AUTO</th><th>HUMAIN (t&acirc;che du jour)</th></tr></thead>
+      <tbody>
+        <tr><td class="day">Lun 29</td><td class="auto">Post, coder plus vite sans clavier plus email lifecycle actif (onboarding plus winback)</td><td class="human">D&eacute;ployer la s&eacute;quence email de r&eacute;tention (activation, premi&egrave;re action, winback essai). <span class="tag m">JALON</span></td></tr>
+        <tr><td class="day">Mar 30</td><td class="auto">Post, dicter sans crainte (priv&eacute;) plus retargeting</td><td class="human">Pouss&eacute;e finale vers 1 000 : coordonner cr&eacute;ateurs plus concours plus clips sur 48 heures.</td></tr>
+        <tr><td class="day">Mer, 1 oct.</td><td class="auto">Post, ta voix ne quitte jamais ton Mac plus clip du jour</td><td class="human">Reply-jack plus amplification maximale. Passage HN &laquo; Show HN : 1000 utilisateurs payants, voici ce qui a march&eacute; &raquo;.</td></tr>
+        <tr><td class="day">Jeu 2</td><td class="auto">Post, dis-le une fois, c'est fait plus une d&eacute;clinaison</td><td class="human">Interviewer 3 clients pour la r&eacute;tro publique. V&eacute;rifier la sant&eacute; du churn.</td></tr>
+        <tr><td class="day">Ven 3</td><td class="auto">Post, une voix pour tout ton workflow plus le post build-in-public &laquo; 90 jours &raquo; pr&eacute;par&eacute;</td><td class="human">Publier la r&eacute;tro des 90 jours avec tous les chiffres bruts. Remercier la communaut&eacute;. <span class="tag m">JALON</span></td></tr>
+        <tr><td class="day">Sam 4</td><td class="auto">1 post auto plus monitoring</td><td class="human">Collecte finale. Documenter ce qui a march&eacute; et ce qui a &eacute;chou&eacute; pour le prochain cycle.</td></tr>
+        <tr><td class="day">Dim 5</td><td class="auto">Digest complet des 90 jours</td><td class="human">Bilan final : les 1 000 sont-ils franchis ? &Eacute;crire le plan &agrave; 90-180 jours vers 2 000 &agrave; 5 000. Le moteur doit composer sans intervention quotidienne.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="call good"><div class="t">Porte du palier 3, sortie du plan</div><p style="margin:0">1 000 utilisateurs payants (~7 600 &euro;/mois). Le vrai signal de r&eacute;ussite : la croissance ne d&eacute;pend plus de la main quotidienne du fondateur. La boucle de partage, le SEO et les affili&eacute;s composent tout seuls. Vient ensuite le cycle &agrave; 90-180 jours (2 000 puis 5 000), avec iOS pour tuer l'objection &laquo; Mac seulement &raquo;.</p></div>
+  </div>
+</section>
+
+<section>
+  <span class="snum">07</span>
+  <h2>Le moteur automatis&eacute; face &agrave; l'humain</h2>
+  <p class="lead">Ce qui tourne tout seul, et les portes humaines qu'on ne d&eacute;l&egrave;gue jamais. L'automatisation produit le volume ; l'humain produit la confiance et le jugement.</p>
+  <div class="grid g2">
+    <div class="card">
+      <h4 style="margin-top:0;color:var(--auto)">Automatis&eacute; (le moteur pr&eacute;pare, puis publie apr&egrave;s le GO)</h4>
+      <ul>
+        <li><span class="mono">verba-daily.ts</span> : image Higgsfield (nano_banana_2) plus vid&eacute;o (voix off ElevenLabs Eric plus sous-titres plus musique), 2 fois par jour, le garde-fou R-NODASH cod&eacute; en dur.</li>
+        <li>Publication multi-r&eacute;seaux via <span class="mono">omega-zernio</span> (15 comptes, formats adapt&eacute;s par r&eacute;seau). Reddit reste manuel (&eacute;tiquette).</li>
+        <li>Pages SEO/GEO : /vs (9 concurrents), /compare (24x10), cas d'usage, JSON-LD, llms.txt. Une fois en ligne, elles composent toutes seules.</li>
+        <li>Boucles produit : parrainage &laquo; Mois gratuit &raquo;, classement, gamification, la boucle &laquo; partager le clip &raquo; une fois construite.</li>
+        <li>Publicit&eacute;s de retargeting (palier 2+), email lifecycle (S13), digests de m&eacute;triques quotidiens.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="margin-top:0;color:var(--human)">Humain (jamais d&eacute;l&eacute;gu&eacute; &agrave; l'automatisation)</h4>
+      <ul>
+        <li><strong>Le GO de publication (L0)</strong> : rien ne part sans l'approbation de l'op&eacute;rateur.</li>
+        <li>Les mises &agrave; jour build-in-public du fondateur (chiffres bruts, r&eacute;cit, ton).</li>
+        <li>Engagement communautaire : r&eacute;ponses, DM, reply-jacking, amplification des clips utilisateurs.</li>
+        <li>Posts Reddit/HN (&eacute;tiquette : s'identifier comme fondateur, &ecirc;tre honn&ecirc;te, une seule demande discr&egrave;te, ne jamais poster et disparaitre).</li>
+        <li>Seeding cr&eacute;ateurs et alpha, collecte de citations, &eacute;tudes de cas.</li>
+        <li>Enregistrement des d&eacute;mos canoniques (l'asset m&egrave;re qui alimente ~30 posts).</li>
+        <li>D&eacute;cisions de porte entre paliers (couper ou doubler la mise selon les donn&eacute;es).</li>
+      </ul>
+    </div>
+  </div>
+  <div class="call warn"><div class="t">Garde-fous de publication (&agrave; v&eacute;rifier avant chaque post)</div><p style="margin:0">Anglais uniquement pour le copy publiable, z&eacute;ro prix dans le contenu organique (sauf le drop Fondateur approuv&eacute;), jamais d'&eacute;cran/UI visible dans les vid&eacute;os UGC (r&egrave;gle de marque), une &eacute;tape <strong>Confirmer</strong> visible dans chaque d&eacute;mo JARVIS, noms publics <em>JARVIS</em> et <em>applis connect&eacute;es</em> (jamais &laquo; Composio &raquo;), une all&eacute;gation de confidentialit&eacute; exacte (historique local par d&eacute;faut), z&eacute;ro tiret cadratin.</p></div>
+</section>
+
+<section>
+  <span class="snum">08</span>
+  <h2>KPI, rituels et budget</h2>
+  <div class="grid g3">
+    <div class="card">
+      <h4 style="margin-top:0">&Eacute;toile polaire plus tunnel</h4>
+      <ul>
+        <li><strong>&Eacute;toile polaire :</strong> Weekly Active Dictators (WAD).</li>
+        <li>t&eacute;l&eacute;chargement &rarr; activation %</li>
+        <li>activation &rarr; paywall %</li>
+        <li>paywall vers essai %, essai vers payant %</li>
+        <li>MRR, utilisateurs payants, churn, % de mix annuel</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="margin-top:0">KPI de croissance (les nouveaux)</h4>
+      <ul>
+        <li><strong>Coefficient de parrainage</strong> (installations parrain&eacute;es / utilisateur actif), cible &gt; 0,3</li>
+        <li><strong>Clips partag&eacute;s par semaine</strong> et installations tra&ccedil;ables par clip</li>
+        <li>% d'utilisateurs actifs avec &ge; 1 appli connect&eacute;e, temps jusqu'&agrave; la premi&egrave;re action confirm&eacute;e</li>
+        <li>CPA de retargeting versus LTV (palier 2+)</li>
+        <li>Installations attribu&eacute;es aux cr&eacute;ateurs / affili&eacute;s</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="margin-top:0">Rituels</h4>
+      <ul>
+        <li><strong>Quotidien :</strong> le rituel de 25 minutes plus le GO de publication.</li>
+        <li><strong>Hebdomadaire (dim.) :</strong> bilan du tunnel, gagnant du concours, priorit&eacute;s de la semaine suivante.</li>
+        <li><strong>Mensuel :</strong> bilan de cohorte plus canaux versus la porte de palier.</li>
+        <li><strong>Garde-fou :</strong> la marge brute reste tr&egrave;s &eacute;lev&eacute;e (IA priv&eacute;e locale), jamais d'inf&eacute;rence factur&eacute;e.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Budget total &agrave; 90 jours</h3>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Poste</th><th>Palier 1 (mois 1)</th><th>Palier 2 (mois 2)</th><th>Palier 3 (mois 3)</th></tr></thead>
+    <tbody>
+      <tr><td>Publicit&eacute; (retargeting /compare)</td><td class="tnum">0 &euro;</td><td class="tnum">~300-450 &euro;</td><td class="tnum">~300-450 &euro;</td></tr>
+      <tr><td>Sponsoring newsletter</td><td class="tnum">0 &euro;</td><td class="tnum">0 &euro;</td><td class="tnum">~200-500 &euro;</td></tr>
+      <tr><td>Seeding cr&eacute;ateurs</td><td>Licences offertes (0 cash)</td><td>Licences plus % d'affiliation</td><td>% d'affiliation sur les ventes</td></tr>
+      <tr><td>Outils (Higgsfield/ElevenLabs/zernio)</td><td colspan="3">D&eacute;j&agrave; en place, plafonn&eacute; &agrave; ~300$/mois (config projet), surtout le moteur image/vid&eacute;o</td></tr>
+      <tr><td><strong>Cash marketing incr&eacute;mental</strong></td><td class="tnum"><strong>~0 &euro;</strong></td><td class="tnum"><strong>~300-450 &euro;</strong></td><td class="tnum"><strong>~500-950 &euro;</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p class="src" style="margin-top:8px">Cash incr&eacute;mental total sur 90 jours : moins de ~1 500 &euro;, et seulement une fois la conversion prouv&eacute;e. Exactement le mod&egrave;le des 4 fus&eacute;es : l'organique fabrique la croissance, la publicit&eacute; ne fait que l'amplifier.</p>
+</section>
+
+<section>
+  <span class="snum">09</span>
+  <h2>Sources</h2>
+  <h4>Playbooks de croissance (recherche du 3 juil. 2026, cit&eacute;e)</h4>
+  <ul class="src">
+    <li><strong>Cursor :</strong> news.aakashg.com/p/how-cursor-grows &middot; thegtmnewsletter.substack.com (4M to 2B ARR) &middot; productgrowth.blog/p/how-cursor-ai-hacked-growth &middot; research.contrary.com/company/cursor</li>
+    <li><strong>Lovable :</strong> lennysnewsletter.com/p/building-lovable-anton-osika &middot; techcrunch.com (200M ARR, nov 2025) &middot; the-ai-corner.com (0 to 400M ARR playbook) &middot; productgrowth.blog/p/how-lovable-dev-hacked-their-growth &middot; milkandcookies.studio</li>
+    <li><strong>Replit :</strong> productgrowth.blog/p/how-replit-hacked-its-growth &middot; sacra.com/research/replit-at-253m-arr &middot; growthunhinged.com/p/replit-growth-journey &middot; craftventures.com/articles/inside-replit-breakout-growth</li>
+    <li><strong>Higgsfield :</strong> productgrowth.blog/p/higgsfield-growth-teardown &middot; chiefaiofficer.com/higgsfield-ai-video-1-3b-valuation-growth &middot; sacra.com/c/higgsfield &middot; higgsfield.ai/blog</li>
+  </ul>
+  <h4>Contexte Verba (d&eacute;p&ocirc;t interne)</h4>
+  <ul class="src">
+    <li>marketing/EXECUTIVE-SUMMARY.md &middot; 00-context/product-marketing.md (SSOT) &middot; gtm-strategy.md &middot; launch-strategy.md</li>
+    <li>05-calendar/calendar-90d.md &middot; 04-publishing/daily-engine/verba-daily.ts &middot; project.config.json &middot; HANDOFF-MARKETING-MACHINE.md</li>
+  </ul>
+  <p class="foot">G&eacute;n&eacute;r&eacute; le 3 juil. 2026 par la machine marketing OmegaOS (R-MARKETING, R-ARTIFACT). P&eacute;rim&egrave;tre : Verba uniquement. Chaque affirmation de croissance est cit&eacute;e ; les paliers et budgets sont des hypoth&egrave;ses explicites &agrave; remplacer par de vraies donn&eacute;es de tunnel (L1 : le runtime est la seule v&eacute;rit&eacute;).</p>
+
+  <div class="recap">
+    <strong>R&eacute;sum&eacute; :</strong> un plan de croissance &agrave; 90 jours pour Verba, model&eacute; sur les 4 fus&eacute;es (Cursor, Lovable, Replit, Higgsfield) : le produit, c'est la pub (la boucle de partage reste &agrave; construire, priorit&eacute; n&deg;1), z&eacute;ro pub avant 100 clients, fondateur qui construit en public avec des chiffres bruts, un lancement Product Hunt plus Show HN le 28 juil. &Eacute;chelle : 0 &agrave; 100 (mois 1, budget 0$) &agrave; 500 (mois 2, micro-pub apr&egrave;s preuve) &agrave; 1 000 (mois 3, &eacute;largissement plus affiliation plus un drop FOMO). Un plan complet jour par jour, humain plus automatis&eacute;, avec un rituel quotidien fixe et des portes entre paliers. Livr&eacute; en artifact live plus PDF.
+  </div>
+</section>
+
+</main>
+
+<div style="text-align:center;padding:32px 0;border-top:1px solid rgba(255,255,255,.08);margin-top:40px"><a href="https://verba-hq.vercel.app/" style="color:#ff5a4d;font-size:14px;text-decoration:none">&larr; Retour au QG Marketing Verba</a></div>
+</div>
 </body></html>
