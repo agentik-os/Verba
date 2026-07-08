@@ -28,10 +28,12 @@ export default function Home() {
     <main className="relative mx-auto max-w-6xl px-6">
       <SiteNav />
       <Hero />
+      <Moat />
+      <JarvisAction />
       <SpeedProof />
       <LogosStrip />
       <Personas />
-      <JarvisAction />
+      <Testimonials />
       <TryNow />
       <FeatureGrid />
       <GrowsWithYou />
@@ -46,6 +48,95 @@ export default function Home() {
       <FAQ />
       <SiteFooter />
     </main>
+  );
+}
+
+/* THE MOAT — Private · Acts · Confirms, the one combination no rival holds together.
+   Cloud writers only write text and upload your voice; the closest agentic rival acts
+   but is cloud with no confirm gate. This 3-pillar block states the through-line plainly,
+   high on the page. The confirm proof itself lives in the JARVIS section right below. */
+function Moat() {
+  const pillars = [
+    { tag: "Private", title: "It runs on your Mac", body: "Your speech is transcribed on-device, so your audio never leaves your Mac. Nothing is uploaded, and nobody resells your words." },
+    { tag: "Acts", title: "It does the thing, in 1,000+ apps", body: "Not just clean text. Send the email, create the event, post to Slack or Notion. Real actions across the apps you already use." },
+    { tag: "Confirms", title: "Only when you say so", body: "It shows you exactly what it will do, then waits. Nothing happens until you confirm. You are always the one who presses go." },
+  ];
+  return (
+    <section id="moat" className="py-16">
+      <Reveal>
+        <HeadCenter
+          eyebrow="Private · Acts · Confirms"
+          title="The only voice agent that does all three"
+          lead="Most voice tools make you pick two. Private, but it only writes text. Or it acts, but your voice goes to the cloud with no way to say no. Verba is on-device, acts across your apps, and always asks before it acts."
+        />
+      </Reveal>
+      <div className="mx-auto mt-12 grid max-w-5xl gap-3 sm:grid-cols-3">
+        {pillars.map((p, i) => (
+          <Reveal key={p.tag} delay={i * 60}>
+            <div className="card lift r-card flex h-full flex-col p-6">
+              <div className="flex items-center gap-2.5">
+                <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--fg)] text-[var(--bg)]">
+                  <MicGlyph size={10} />
+                </span>
+                <p className="mono-meta">{p.tag}</p>
+              </div>
+              <h3 className="mt-3 font-medium">{p.title}</h3>
+              <p className="mt-1.5 text-sm muted">{p.body}</p>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* SOCIAL PROOF — testimonials. The scaffold is wired and styled; QUOTES is intentionally
+   empty until we have REAL, attributed user quotes. Add entries to QUOTES to switch the
+   grid on. NEVER ship invented names or made-up quotes here — the empty state is an honest
+   invite, not fake praise. */
+function Testimonials() {
+  const QUOTES: { quote: string; name: string; role: string }[] = [
+    // Real quotes go here, e.g.:
+    // { quote: "I stopped typing emails. I just talk and confirm.", name: "Full Name", role: "Role, Company" },
+  ];
+  return (
+    <section id="testimonials" className="py-28">
+      <Reveal>
+        <HeadCenter
+          eyebrow="Social proof"
+          title="What people say"
+          lead="Real, attributed quotes from people who use Verba every day land here."
+        />
+      </Reveal>
+      {QUOTES.length > 0 ? (
+        <div className="mx-auto mt-12 grid max-w-5xl gap-3 sm:grid-cols-3">
+          {QUOTES.map((q, i) => (
+            <Reveal key={i} delay={i * 60}>
+              <figure className="card r-card flex h-full flex-col p-6">
+                <blockquote className="text-sm leading-relaxed pf-90">&ldquo;{q.quote}&rdquo;</blockquote>
+                <figcaption className="mt-4 flex items-center gap-2.5">
+                  <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--fg)] text-[var(--bg)]"><MicGlyph size={10} /></span>
+                  <span className="text-sm"><span className="font-medium">{q.name}</span> <span className="muted">· {q.role}</span></span>
+                </figcaption>
+              </figure>
+            </Reveal>
+          ))}
+        </div>
+      ) : (
+        /* Honest empty state until real quotes exist — an invite, not invented praise. */
+        <Reveal delay={60}>
+          <div className="mx-auto mt-10 max-w-2xl">
+            <div className="card r-card flex flex-col items-center gap-4 p-8 text-center sm:flex-row sm:justify-between sm:text-left">
+              <div>
+                <p className="font-medium">Using Verba? We&apos;d love your story.</p>
+                <p className="mt-1 text-sm muted">Tell us what changed when you started talking instead of typing. Real quotes, with your name, go right here.</p>
+              </div>
+              <a href="https://t.me/verbarun" target="_blank" rel="noopener" className="btn-ghost shrink-0 px-6 py-3">Share your story</a>
+            </div>
+          </div>
+        </Reveal>
+      )}
+    </section>
   );
 }
 
@@ -238,17 +329,27 @@ function Hero() {
       <div className="relative">
         <div className="anim-h1 mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--tint)] px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide muted">
           <MicGlyph size={12} />
-          For macOS · Apple Silicon
+          Private · Acts · Confirms
         </div>
         <h1 className="anim-h1 t-display text-balance">
-          Speak it.<br />
-          <span className="text-[var(--fg-dim)]">Send it clean.</span>
+          Speak it. It acts.<br />
+          <span className="text-[var(--fg-dim)]">Only when you say so.</span>
         </h1>
         <p className="anim-sub t-lead mt-7 max-w-xl">
-          The private voice app for your Mac that doesn&apos;t just write what you say, it does it.
-          Dictate clean text into any app, use the AI plan you already pay for,
-          and let JARVIS act across 1,000+ apps. Every step is planned on-device, and nothing happens until you confirm.
+          The private voice agent for your Mac. Talk, and it acts across 1,000+ apps: send the email,
+          create the event, post to Slack. Your audio never leaves your Mac, and it always shows you
+          the action and waits for you to confirm before anything happens.
         </p>
+        {/* Privacy + control claims, first-class near the hero. These are the two things
+            cloud voice tools cannot honestly say (audio stays local; you approve first). */}
+        <div className="anim-sub mt-6 flex flex-wrap gap-2 text-[12px]">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--tint)] px-3 py-1.5 muted">
+            <span className="rec-dot" /> On-device, nothing uploaded
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--tint)] px-3 py-1.5 muted">
+            <span aria-hidden>✓</span> It asks before it acts
+          </span>
+        </div>
         <div className="anim-cta mt-9 flex flex-wrap items-center gap-3">
           <a href={DOWNLOAD_URL} className="btn-primary px-7 py-3">
             Download for free
@@ -258,7 +359,7 @@ function Hero() {
         <p className="anim-cta mt-4 font-mono text-[11px] tracking-wide muted tnum">Download free · Unlimited raw dictation, free forever, no card · Pro unlocks every AI mode</p>
         <p className="anim-cta mt-2 font-mono text-[11px] tracking-wide muted tnum">Already have an AI plan? Zero setup, no markup <span className="faint">· Apple Silicon · macOS 14+</span></p>
         <div className="anim-cta mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[13px] muted">
-          {["Acts on what you say", "Private AI on your Mac", "Runs offline", "Reads your screen", "Hour-long notes", "Translate live"].map((p) => (
+          {["Acts across 1,000+ apps", "Reads your screen", "Hour-long notes", "Translate live", "Runs offline", "Learns your voice"].map((p) => (
             <span key={p} className="flex items-center gap-2">
               <span className="h-1 w-1 rounded-full bg-[var(--accent-line)]" />{p}
             </span>
