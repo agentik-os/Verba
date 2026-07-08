@@ -514,6 +514,11 @@ final class Settings: ObservableObject {
     @Published var todoReminders: Bool {
         didSet { d.set(todoReminders, forKey: "todoReminders"); TodoReminders.shared.onSettingChanged(enabled: todoReminders) }
     }
+    /// Full-screen take-over reminder card (in addition to the macOS notification), and whether it
+    /// auto-dismisses after N seconds or waits for a manual close.
+    @Published var fullScreenReminders: Bool { didSet { d.set(fullScreenReminders, forKey: "fullScreenReminders") } }
+    @Published var reminderAutoClose: Bool { didSet { d.set(reminderAutoClose, forKey: "reminderAutoClose") } }
+    @Published var reminderAutoCloseSeconds: Double { didSet { d.set(reminderAutoCloseSeconds, forKey: "reminderAutoCloseSeconds") } }
     @Published var soundsEnabled: Bool { didSet { d.set(soundsEnabled, forKey: "soundsEnabled") } }
     @Published var soundVolume: Double { didSet { d.set(soundVolume, forKey: "soundVolume") } }   // 0...1
     // Fn-key behaviour: by default Verba takes over the globe key so macOS doesn't pop the
@@ -879,6 +884,9 @@ final class Settings: ObservableObject {
         notesTabEnabled = d.object(forKey: "notesTabEnabled") as? Bool ?? true
         todosTabEnabled = d.object(forKey: "todosTabEnabled") as? Bool ?? true
         todoReminders = d.object(forKey: "todoReminders") as? Bool ?? true
+        fullScreenReminders = d.object(forKey: "fullScreenReminders") as? Bool ?? true
+        reminderAutoClose = d.object(forKey: "reminderAutoClose") as? Bool ?? true
+        reminderAutoCloseSeconds = d.object(forKey: "reminderAutoCloseSeconds") as? Double ?? 8
         soundsEnabled = d.object(forKey: "soundsEnabled") as? Bool ?? true
         soundVolume = d.object(forKey: "soundVolume") as? Double ?? 0.8
         suppressFnPopup = d.object(forKey: "suppressFnPopup") as? Bool ?? true

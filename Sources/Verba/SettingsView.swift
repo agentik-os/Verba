@@ -1163,6 +1163,20 @@ struct SettingsView: View {
                       help: L("Capture tasks and sub-tasks by voice, sorted into projects. Ask the agent to build a whole list from a spoken request."))
             toggleRow(L("To-do reminders (30 min before a deadline)"), $settings.todoReminders,
                       help: L("Posts a local notification 30 minutes before a to-do's deadline. Needs notification permission."))
+            toggleRow(L("Full-screen reminder card"), $settings.fullScreenReminders,
+                      help: L("When a reminder fires, take over the whole screen with a large card you can check off — hard to miss. Shown in addition to the notification."))
+            if settings.fullScreenReminders {
+                toggleRow(L("Close it automatically"), $settings.reminderAutoClose,
+                          help: settings.reminderAutoClose ? nil : L("The card stays until you close it manually (Mark done, Dismiss, or click away)."))
+                if settings.reminderAutoClose {
+                    HStack {
+                        Text(L("Auto-close after")).font(.system(size: 13))
+                        Spacer()
+                        Stepper("\(Int(settings.reminderAutoCloseSeconds)) s", value: $settings.reminderAutoCloseSeconds, in: 3...30, step: 1)
+                            .fixedSize()
+                    }
+                }
+            }
             toggleRow(L("Smart formatting per app"), $settings.smartFormatting,
                       help: L("Rich text/markdown in apps that render it (Mail, Notion, Notes…), plain text in code editors and terminals."))
             toggleRow(L("Redo last dictation in another mode"), $settings.redoEnabled,

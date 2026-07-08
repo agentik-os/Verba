@@ -52,6 +52,38 @@ final class TodoReminders: ObservableObject {
         }
         refreshAuthStatus()
         reconcile()
+        // In-app watcher for the FULL-SCREEN reminder card (separate from the OS notification): scan
+        // every 20s for a due reminder and take over the screen once per task.
+        fullScreenTimer = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { [weak self] _ in self?.checkFullScreenDue() }
+        checkFullScreenDue()
+    }
+
+    private var fullScreenTimer: Timer?
+    private var firedFullScreen = Set<UUID>()
+
+    /// Show the full-screen card for any task whose reminder moment has arrived (deadline − lead),
+    /// once each, within a 1-hour catch-up window. No-op unless the setting is on.
+    private func checkFullScreenDue() {
+        guard Settings.shared.todoReminders, Settings.shared.fullScreenReminders else { return }
+        let now = Date()
+        for project in TodoStore.shared.projects {
+            for task in project.tasks {
+                consider(id: task.id, title: task.title, deadline: task.deadline, done: task.done,
+                         project: project.name, sub: false, now: now)
+                for s in task.subtasks {
+                    consider(id: s.id, title: s.title, deadline: s.deadline, done: s.done,
+                             project: project.name, sub: true, now: now)
+                }
+            }
+        }
+    }
+
+    private func consider(id: UUID, title: String, deadline: Date?, done: Bool, project: String, sub: Bool, now: Date) {
+        guard !done, let deadline, !firedFullScreen.contains(id) else { return }
+        let fireAt = deadline.addingTimeInterval(-Self.leadMinutes)
+        guard now >= fireAt, now <= deadline.addingTimeInterval(3600) else { return }   // in the reminder window
+        firedFullScreen.insert(id)
+        TaskReminderOverlay.shared.show(.init(taskID: id, isSubtask: sub, title: title, project: project, due: deadline))
     }
 
     /// Refresh `notificationsAllowed` from the system's current authorization state.

@@ -21,6 +21,13 @@ const DAYS: Day[] = [
     summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
     entries: [
       {
+        version: "0.9.64",
+        title: "Full-screen to-do reminders",
+        items: [
+          "When a to-do reminder fires, Verba can now take over the whole screen with a large card showing what to do, a Mark-done button, and a Dismiss. It auto-closes after a few seconds, or stays until you close it manually. Configure it in Settings.",
+        ],
+      },
+      {
         version: "0.9.63",
         title: "Everyone on the newer local model, auto-installed",
         items: [
