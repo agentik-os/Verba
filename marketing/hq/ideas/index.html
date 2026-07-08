@@ -26,6 +26,22 @@ p,li{color:var(--dim);font-size:15px}b{color:var(--ink)}
 .callout{border-radius:12px;padding:13px 17px;margin:16px 0;font-size:14.5px;background:rgba(90,195,122,.08);border:1px solid rgba(90,195,122,.3)}
 .foot{margin-top:46px;padding-top:16px;border-top:1px solid var(--line);color:var(--faint);font-size:12px}
 </style>
+</head><body>
+<style id="verba-lang-css">
+[data-l]{display:block}
+body[data-lang="en"] [data-l="fr"]{display:none}
+body[data-lang="fr"] [data-l="en"]{display:none}
+#verba-langsel{position:fixed;bottom:18px;right:18px;z-index:99999;display:inline-flex;gap:2px;background:rgba(17,17,23,.92);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:4px;box-shadow:0 4px 16px rgba(0,0,0,.3);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font-family:-apple-system,BlinkMacSystemFont,"Inter",system-ui,sans-serif}
+#verba-langsel button{background:transparent;border:none;color:#c8c8ce;border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;line-height:1}
+#verba-langsel button.on{background:#ff5a4d;color:#fff}
+@media print{#verba-langsel{display:none}}
+</style>
+<div id="verba-langsel" role="group" aria-label="Language"><button id="vlg-en" class="on" onclick="vLang('en')">EN</button><button id="vlg-fr" onclick="vLang('fr')">FR</button></div>
+<script>
+function vLang(l){document.body.dataset.lang=l;try{localStorage.setItem('verba_lang',l)}catch(e){}var e=document.getElementById('vlg-en'),f=document.getElementById('vlg-fr');if(e)e.classList.toggle('on',l==='en');if(f)f.classList.toggle('on',l==='fr');}
+(function(){var l='en';try{l=localStorage.getItem('verba_lang')||'en'}catch(e){}vLang(l);})();
+</script>
+<div data-l="en">
 <div class="wrap">
 <div class="kick">Verba - product strategy - voice is the next interface</div>
 <h1>100 ways to own the voice market<span class="d">.</span></h1>
@@ -869,4 +885,852 @@ p,li{color:var(--dim);font-size:15px}b{color:var(--ink)}
 </div>
 </div>
 <div class="foot">Verba, 100 feature ideas to own the voice market - generated from the competitor teardown (9 rivals, 236 features) + Verba positioning (private on-device, JARVIS confirm-gated action). Messaging stays private-models-only, zero em dash. A backlog to prioritize, not a commitment. 2026-07-09.</div>
-</div></body></html>
+</div>
+</div>
+<div data-l="fr">
+<div class="wrap">
+<div class="kick">Verba - stratégie produit - la voix est la prochaine interface</div>
+<h1>100 idées pour dominer le marché de la voix<span class="d">.</span></h1>
+<p class="lede">La voix devient la façon par défaut de dire aux ordinateurs quoi faire. Le gagnant ne sera pas le transcripteur le plus rapide, ce sera celui à qui vous faites confiance avec votre voix et que vous laissez agir en votre nom. C'est Verba : privé sur votre Mac, et il n'agit qu'après votre confirmation. Voici 100 fonctionnalités concrètes pour atteindre cet avenir en premier, chacune avec pourquoi elle compte, comment elle fonctionne, à quoi elle sert, et l'avantage qu'elle procure.</p>
+<div class="statrow">
+<div class="stat"><div class="n">100</div><div class="l">idées de fonctionnalités</div></div>
+<div class="stat"><div class="n">10</div><div class="l">thèmes stratégiques</div></div>
+<div class="stat"><div class="n">86</div><div class="l">paris leapfrog + moat</div></div>
+<div class="stat"><div class="n">19</div><div class="l">gains rapides (effort S)</div></div>
+</div>
+<p style="font-size:13px;color:var(--muted)">Légende, avantage : <span class="tag moat">moat</span> seul Verba peut le faire, <span class="tag leapfrog">leapfrog</span> en avance sur les rivaux, <span class="tag parity">parity</span> attendu par tous. Effort : <span class="tag S">S</span> petit, <span class="tag M">M</span> moyen, <span class="tag L">L</span> grand.</p>
+<div class="callout"><b>Meilleurs paris à lancer maintenant</b> (élargir le moat ou le leapfrog, effort petit à moyen) : Rembobinage en direct, Filtre à hésitations avec curseur, Mode voix code, Moteur de ponctuation par intention, Mémoire des corrections, Aperçu d'action en direct, Fenêtre d'annulation en un mot, Cartes de suggestion proactive.</div>
+<h2>Dictée et compréhension nouvelle génération</h2>
+<div class="grid">
+<div class="idea">
+<div class="top"><span class="num">001</span><div class="nm">Rembobinage en direct</div></div>
+<div class="f"><b>POURQUOI</b> <span>Le voix-first ne gagne que si l'on n'a jamais à s'arrêter pour se corriger soi-même. La plupart des outils de dictée figent le texte dès qu'on marque une pause, si bien qu'un faux départ ou un mot mal choisi devient une corvée de nettoyage manuel, ce qui pousse discrètement les gens à revenir au clavier.</span></div>
+<div class="f"><b>COMMENT</b> <span>Verba conserve un court tampon glissant d'audio brut et de texte provisoire juste derrière le curseur visible. Dites une formule de correction comme annule ça ou je voulais dire, et Verba rembobine le tampon, réécoute ce qui précède, et réécrit silencieusement la dernière proposition sur place, sans boîte de dialogue, sans différence surlignée.</span></div>
+<div class="f"><b>POUR</b> <span>Vous dictez un email à un client, vous vous trompez de nom, vous le remarquez en pleine phrase, et vous vous corrigez simplement à voix haute au lieu de vous arrêter pour sélectionner et retaper.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les concurrents traitent la correction comme un mode d'édition séparé. Verba la traite comme faisant partie du fait de parler, si bien que le texte reste propre sans que vos mains ne touchent jamais le clavier. L'IA privée sur l'appareil signifie que le tampon de rembobinage ne quitte jamais votre Mac.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">002</span><div class="nm">Filtre à hésitations avec curseur</div></div>
+<div class="f"><b>POURQUOI</b> <span>La parole réelle est pleine de euh, de mots répétés et de faux départs. Un filtre unique pour tout le monde les laisse tel quel (résultat peu professionnel) ou en supprime trop (perd le sens réel, comme une répétition volontaire pour insister).</span></div>
+<div class="f"><b>COMMENT</b> <span>Un curseur unique et visible, du brut au poli. Le modèle de langage de Verba note chaque hésitation par type (remplissage, répétition, faux départ, autocorrection) avec une confiance qu'elle change le sens, puis applique le seuil du curseur en direct pendant que vous parlez, pas en traitement différé après coup.</span></div>
+<div class="f"><b>POUR</b> <span>Passer d'un message Slack rapide (brut, on garde sa voix) à un rapport formel (poli, on retire chaque hésitation) sans ouvrir un menu de réglages à chaque fois.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les rivaux proposent exactement un seul style de nettoyage figé. Un curseur réglable, par document, avec retour instantané, est un niveau de contrôle qu'aucun d'eux n'expose, et il tourne entièrement sur votre Mac, si bien que vos habitudes de parole ne sont jamais profilées ailleurs que sur l'appareil.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag S">effort S</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">003</span><div class="nm">Mode voix code</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les développeurs forment l'une des audiences voix-first à plus forte valeur, mais les outils de dictée transcrivent la parole du code comme de la prose : ils entendent underscore comme le mot underscore, pas comme un caractère réel, et massacrent le camelCase et les parenthèses.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un mode détecté ou activé manuellement qui associe la syntaxe parlée (snake case, camel case, parenthèse ouvrante, fonction fléchée, point) à des caractères et symboles littéraux, garde les identifiants non autocorrigés face aux mots du dictionnaire, et comprend assez bien les vocabulaires de mots-clés courants pour deviner la casse selon le contexte.</span></div>
+<div class="f"><b>POUR</b> <span>Dicter un nom de fonction, un message de commit git, ou un commentaire de code directement dans son éditeur sans jamais basculer sur le clavier à mi-chemin.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Aucun outil de dictée grand public ne traite la parole du code comme un mode à part entière. Posséder les développeurs comme audience de niche, en privé et sur l'appareil, est un avantage que les applications de dictée grand public n'ont aucune raison de construire.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">004</span><div class="nm">Verrouillage chuchotement et bruit ambiant</div></div>
+<div class="f"><b>POURQUOI</b> <span>Le voix-first doit fonctionner partout, pas seulement dans un bureau calme. Les gens dictent en open-space, dans un train, tard le soir quand ils ne peuvent que chuchoter, et c'est exactement là que la qualité de dictée s'effondre aujourd'hui.</span></div>
+<div class="f"><b>COMMENT</b> <span>Une pré-analyse acoustique classe l'entrée comme chuchotement, faible rapport signal-bruit, ou parole normale, et bascule vers un profil de décodage adapté, associé à un court enregistrement initial où Verba apprend l'acoustique spécifique de votre chuchotement et l'empreinte sonore habituelle de vos pièces courantes.</span></div>
+<div class="f"><b>POUR</b> <span>Dicter une note sensible dans un bureau partagé à 6h sans réveiller personne, ou rédiger dans un café bruyant sans se répéter trois fois.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>La plupart des outils se dégradent discrètement dans ces conditions précises sans jamais expliquer pourquoi. Verba détecte le mode et s'y adapte à la fois, livrant un texte utilisable là où les concurrents livrent du bruit, le tout traité en privé sur le Mac.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">005</span><div class="nm">Capture de réunion avec reconnaissance des locuteurs</div></div>
+<div class="f"><b>POURQUOI</b> <span>La dictée longue durée n'est pas seulement une personne qui parle, c'est souvent vous en train de raconter une réunion ou de relire un enregistrement. Des transcriptions plates, sans savoir qui a dit quoi, forcent un nettoyage manuel qui efface la majeure partie du temps gagné par la voix.</span></div>
+<div class="f"><b>COMMENT</b> <span>Une diarisation des locuteurs sur l'appareil étiquette les tours de parole par empreinte vocale (pas une identité, juste des étiquettes cohérentes comme Locuteur 1, Locuteur 2), et Verba vous laisse dire assigne ça à Sarah une fois, après quoi JARVIS peut agir sur les tours étiquetés, comme transformer les actions confiées par une personne précise en tâches après votre confirmation.</span></div>
+<div class="f"><b>POUR</b> <span>Dicter des notes pendant ou après un appel à deux ou trois personnes, et obtenir une transcription qui sépare déjà qui s'est engagé à quoi.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les outils de dictée grand public supposent un seul locuteur. Combiner la diarisation avec le modèle de confirmation de JARVIS transforme une transcription de réunion en suivis structurés, un enchaînement que les rivaux ne relient pas de bout en bout, le tout sans que l'audio ne quitte jamais le Mac.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">006</span><div class="nm">Moteur de ponctuation par intention</div></div>
+<div class="f"><b>POURQUOI</b> <span>La ponctuation issue de la dictée aujourd'hui est soit dictée à voix haute (lourd, casse le flux), soit insérée automatiquement selon les pauses (fausse une fois sur deux, car la durée d'une pause ne signale pas de façon fiable un point plutôt qu'une virgule ou un point d'interrogation).</span></div>
+<div class="f"><b>COMMENT</b> <span>Un modèle de prosodie et de syntaxe lit ensemble la courbe de hauteur, le tempo et la structure de la phrase, pas seulement la durée des pauses, pour décider entre point, virgule, point d'interrogation, ou incise entre parenthèses, et il apprend votre rythme de parole personnel au fil du temps, si bien que les schémas pause courte mais nouvelle idée sont ponctués correctement pour vous spécifiquement.</span></div>
+<div class="f"><b>POUR</b> <span>Dicter un long email structuré avec plusieurs sous-clauses et le voir ressortir correctement ponctué sans jamais dire le mot virgule.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>La plupart des outils utilisent un seuil de pause générique qui se trompe pour les personnes qui parlent vite ou avec un rythme marqué. Un modèle qui s'adapte à votre cadence personnelle, sur l'appareil, obtient mesurablement moins d'erreurs de ponctuation avec le temps, d'une façon qu'un modèle partagé, unique pour tous, réglé sur un locuteur moyen, ne peut égaler.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">007</span><div class="nm">Changement de langue en cours de phrase</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les locuteurs multilingues mélangent naturellement les langues au sein d'une même phrase (une expression française dans un email anglais, un terme technique anglais dans une note espagnole), et une dictée verrouillée sur une seule langue massacre l'expression étrangère ou force un basculement manuel maladroit.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un identifiant de langue en continu tourne par groupe de mots, pas par session, en basculant le modèle de reconnaissance actif en cours d'énoncé sans redémarrage, et un glossaire personnel vous permet d'épingler certains mots ou noms pour qu'ils s'affichent toujours dans une langue donnée, quel que soit le contexte environnant.</span></div>
+<div class="f"><b>POUR</b> <span>Écrire un email bilingue, glisser une expression étrangère ou le nom d'une personne dans son orthographe d'origine, et continuer dans sa langue principale sans arrêter la dictée.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>La plupart des outils forcent une seule langue verrouillée par session. Un basculement en temps réel, groupe de mots par groupe de mots, associé à un glossaire épinglé, est une expérience nettement meilleure pour la grande population multilingue que les concurrents traitent comme un cas marginal.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">008</span><div class="nm">Sens de la structure pour les textes longs</div></div>
+<div class="f"><b>POURQUOI</b> <span>Dicter un long document (un rapport, une proposition, un brouillon de blog) à voix haute tend à produire un mur de texte sans coupure, car le langage parlé ne signale pas naturellement les changements de paragraphe, les titres ou les listes comme le fait la frappe avec retour visuel.</span></div>
+<div class="f"><b>COMMENT</b> <span>Verba suit les changements de sujet et les indices structurels (nouveau paragraphe, premier point, en résumé) sur l'ensemble de la session, pas seulement la phrase en cours, et propose des sauts de paragraphe, des titres et des listes numérotées au fur et à mesure, présentés comme de légères suggestions en ligne que vous pouvez accepter d'un mot ou ignorer en continuant à parler.</span></div>
+<div class="f"><b>POUR</b> <span>Dicter un premier brouillon complet de rapport d'un bout à l'autre et obtenir en retour quelque chose qui se lit déjà comme un document structuré, au lieu d'un seul gros paragraphe qu'il faut découper à la main.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les outils de dictée optimisent pour les énoncés courts ; la structure des textes longs est largement ignorée. Posséder ce cas d'usage est un manque évident chez les concurrents, et le faire avec des suggestions visibles et confirmables colle à l'éthique de Verba, où l'on confirme avant chaque changement.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">009</span><div class="nm">Mémoire des corrections</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les outils de dictée vous font corriger la même erreur encore et encore (un nom mal entendu, un mauvais homophone, un terme technique précis) car ils n'ont aucune mémoire d'une session à l'autre. Cette friction répétée est exactement ce qui tue discrètement la confiance dans la voix comme entrée principale.</span></div>
+<div class="f"><b>COMMENT</b> <span>Chaque correction manuelle que vous faites (tapée ou dictée) est enregistrée localement avec le texte mal entendu d'origine et votre correction, et une couche légère de personnalisation sur l'appareil replie ces corrections dans la pondération de la reconnaissance, si bien qu'un nom corrigé une fois est bien entendu les dix fois suivantes.</span></div>
+<div class="f"><b>POUR</b> <span>Vous corrigez votre nom de famille inhabituel ou un nom de produit de niche une fois, et chaque session de dictée par la suite le reconnaît correctement sans que vous répétiez la correction.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>La plupart des outils traitent chaque session comme une page blanche. Une personnalisation persistante, privée, sur l'appareil, qui s'accumule au fil des semaines d'usage, est un avantage qui se renforce plus l'utilisateur reste sur Verba, un levier de rétention qu'aucun modèle sans mémoire au premier lancement n'offre.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">010</span><div class="nm">Macros vocales confirmées</div></div>
+<div class="f"><b>POURQUOI</b> <span>L'étape suivante après une dictée propre est de transformer un schéma vocal récurrent en une action reproductible, exactement là où la position de Verba (privé, capable d'agir, soumis à confirmation) n'a pas de rival : les concurrents se contentent soit de transcrire, soit d'agir automatiquement sans point de contrôle visible.</span></div>
+<div class="f"><b>COMMENT</b> <span>Verba remarque quand vous dictez plusieurs fois le même schéma structuré (un point quotidien, un email de statut, un format de note précis) et propose de l'enregistrer comme macro vocale nommée. Prononcer le nom de la macro plus tard remplit la structure et la confie à JARVIS comme une étape normale de confirmation avant action, sans jamais contourner la confirmation.</span></div>
+<div class="f"><b>POUR</b> <span>Dire point quotidien et voir Verba rédiger votre habituelle mise à jour en trois parties, puis confirmer avant que JARVIS ne la publie ou ne l'envoie.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Aucun concurrent ne combine qualité de transcription et couche d'exécution qui n'agit qu'après confirmation, si bien que cette fonctionnalité n'est réalisable que sur le modèle de confiance déjà en place chez Verba. C'est l'expression la plus claire de la thèse selon laquelle voix-first doit aussi être sécurité-first.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+</div>
+<h2>Actions vocales JARVIS et automatisation agentique</h2>
+<div class="grid">
+<div class="idea">
+<div class="top"><span class="num">011</span><div class="nm">Missions enchaînées</div></div>
+<div class="f"><b>POURQUOI</b> <span>L'avenir de la voix n'est pas une seule commande, c'est une séquence d'intentions parlées, comme on briefe un véritable assistant en une seule respiration.</span></div>
+<div class="f"><b>COMMENT</b> <span>JARVIS analyse une seule demande parlée en un plan ordonné d'étapes au niveau des applications (ouvrir, remplir, envoyer, classer, planifier), montre le plan entier sous forme d'aperçu lisible avant de toucher quoi que ce soit, puis exécute étape par étape avec une seule confirmation pour toute la chaîne.</span></div>
+<div class="f"><b>POUR</b> <span>Dites une seule fois : rédige la facture à partir des notes de cet appel, enregistre-la dans le dossier du client, et mets un rappel de suivi sur le calendrier pour vendredi. JARVIS construit le plan en trois étapes, vous confirmez une fois, il exécute les trois.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les rivaux imposent une commande par tour ou confient toute la session à un agent serveur sans aperçu. Verba vous laisse briefer comme un humain et voir le plan complet avant que quoi que ce soit ne se passe, sur votre Mac.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">012</span><div class="nm">Aperçu d'action en direct</div></div>
+<div class="f"><b>POURQUOI</b> <span>La confirmation systématique ne construit la confiance que si l'utilisateur peut réellement voir ce qui va changer, pas seulement approuver une description vague.</span></div>
+<div class="f"><b>COMMENT</b> <span>Avant d'exécuter, JARVIS affiche un aperçu façon comparaison : le corps exact de l'email, les champs exacts de l'événement calendrier, le renommage exact du fichier, côte à côte avec l'état actuel, si bien que confirmer veut dire confirmer ce que vous avez vu.</span></div>
+<div class="f"><b>POUR</b> <span>Demandez à JARVIS de reformuler et d'envoyer une réponse. Au lieu d'une confiance aveugle, vous voyez le message sortant rendu exactement comme il sera envoyé, et pouvez corriger une ligne à la voix avant de confirmer.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les assistants concurrents agissent sur un serveur sans avant/après visible ; d'autres n'ont aucune couche d'action du tout. Un véritable aperçu transforme la confirmation d'un simple tampon en un contrôle réel.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">013</span><div class="nm">Fenêtre d'annulation en un mot</div></div>
+<div class="f"><b>POURQUOI</b> <span>Confirmer avant n'est que la moitié de la confiance, annuler après en est l'autre moitié, surtout pour les actions à conséquences réelles.</span></div>
+<div class="f"><b>COMMENT</b> <span>Après chaque action confirmée, JARVIS conserve une courte fenêtre réversible, en gardant l'état antérieur à l'action (ancienne version du fichier, brouillon non envoyé, entrée de calendrier précédente), si bien qu'un annule prononcé revient instantanément en arrière, avec un compte à rebours visible pour que l'utilisateur sache que la fenêtre se referme.</span></div>
+<div class="f"><b>POUR</b> <span>Vous confirmez un renommage groupé de fichiers, puis vous réalisez que le motif était faux. Dites annule dans la fenêtre impartie et chaque fichier renommé revient à son état d'origine, sans nettoyage manuel.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Aucun des assistants concurrents n'offre une véritable couche d'annulation pour les actions vocales. Cela transforme chaque action en une expérience à faible risque plutôt qu'en une porte à sens unique.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">014</span><div class="nm">Exécuteur de tâches en arrière-plan</div></div>
+<div class="f"><b>POURQUOI</b> <span>Toutes les actions n'exigent pas votre présence, certaines devraient tourner discrètement pendant que vous continuez à parler ou partez, puis vous rendre compte une fois terminé.</span></div>
+<div class="f"><b>COMMENT</b> <span>Après confirmation, les actions longues ou multi-étapes (conversions de fichiers volumineuses, renommages en masse, collectes de recherche multi-applications) passent à un exécuteur en arrière-plan avec un indicateur d'état, et JARVIS annonce proactivement la fin ou un blocage, à la voix ou par notification.</span></div>
+<div class="f"><b>POUR</b> <span>Confirmez une demande de rassembler et d'organiser toutes les factures PDF du dernier trimestre dans un seul dossier. Continuez à travailler pendant que ça tourne, recevez un signal vocal une fois terminé ou si un fichier est verrouillé.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les outils concurrents bloquent jusqu'à la fin ou perdent la trace une fois lancés. Le modèle confirmer puis passer en arrière-plan de Verba vous garde productif sans perdre le garde-fou de sécurité.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">015</span><div class="nm">Chaînes de relais entre applications</div></div>
+<div class="f"><b>POURQUOI</b> <span>Le vrai travail vit dans plusieurs applications à la fois, un assistant vocal qui n'agit que dans une seule application résout une version jouet du problème.</span></div>
+<div class="f"><b>COMMENT</b> <span>JARVIS maintient un contexte partagé au-delà des frontières d'applications (la personne, le document, la date, le montant), si bien qu'une seule demande parlée peut extraire des données d'une application et agir dans une autre sans que vous ayez à répéter les détails.</span></div>
+<div class="f"><b>POUR</b> <span>Dites : prends les chiffres de ce tableur et mets-les dans l'email client que je suis en train de rédiger. JARVIS lit le contexte du tableur, rédige l'email avec les chiffres insérés, vous montre le brouillon, puis l'envoie sur confirmation.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les concurrents outillés pour développeurs agissent dans une seule cible scriptée ; les produits serveur ne partagent pas de contexte applicatif en direct sur le Mac. Cette chaîne n'est possible que parce que Verba voit déjà tout votre Mac en privé.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">016</span><div class="nm">Cartes de suggestion proactive</div></div>
+<div class="f"><b>POURQUOI</b> <span>Le meilleur assistant remarque parfois avant que vous ne demandiez, mais ne doit jamais agir sans que vous le disiez, cette frontière est tout le modèle de confiance.</span></div>
+<div class="f"><b>COMMENT</b> <span>JARVIS surveille les schémas récurrents dans votre texte dicté et l'usage de vos applications (même formulation de suivi, même rapport hebdomadaire, même rappel que vous redemandez sans cesse) et fait apparaître une carte de suggestion discrète et ignorable qui propose de la mettre en place, sans jamais l'exécuter automatiquement.</span></div>
+<div class="f"><b>POUR</b> <span>Après la troisième semaine où vous dictez le même format de mise à jour de statut, JARVIS propose : vous voulez que je rédige ça chaque vendredi et que je le garde en attente de votre confirmation ? Un geste met en place le schéma, rien ne s'exécute sans vous.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les assistants côté serveur qui agissent proactivement sautent complètement la confirmation, brisant la confiance ; Verba suggère proactivement mais n'agit jamais proactivement, gardant intacte la promesse centrale de son avantage.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">017</span><div class="nm">Macros d'action nommées</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les utilisateurs avancés veulent condenser toute une chaîne en un seul mot, comme un raccourci clavier condense un chemin de menu.</span></div>
+<div class="f"><b>COMMENT</b> <span>Une fois qu'une chaîne multi-étapes a été exécutée et confirmée, JARVIS propose de l'enregistrer comme macro vocale nommée avec des espaces réservés pour les parties qui changent, invocable par une courte phrase par la suite, toujours soumise à confirmation à chaque exécution.</span></div>
+<div class="f"><b>POUR</b> <span>Après avoir construit une fois la chaîne bilan client (notes vers facture, facture vers dossier, suivi vers calendrier), dites lance bilan client pour Dana la fois suivante et JARVIS remplit l'espace réservé et affiche le même aperçu.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Aucun des concurrents ne laisse une chaîne parlée devenir une brique réutilisable et toujours sûre. Cela transforme Verba en une couche de programmation vocale pour votre propre flux de travail, pas seulement un assistant à usage unique.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">018</span><div class="nm">Confirmation à niveaux de risque</div></div>
+<div class="f"><b>POURQUOI</b> <span>Toutes les actions n'ont pas le même poids, traiter un renommage de fichier et un paiement de la même façon soit agace à force de trop confirmer, soit protège trop peu sur celles qui comptent vraiment.</span></div>
+<div class="f"><b>COMMENT</b> <span>JARVIS classe chaque action dans un niveau de risque (lecture seule, réversible local, orienté vers l'extérieur, destructif) au moment de planifier, et adapte l'expérience de confirmation en conséquence : un simple geste pour le réversible local, une relecture vocale complète avant confirmation pour l'orienté extérieur ou le destructif.</span></div>
+<div class="f"><b>POUR</b> <span>Renommer un fichier local reçoit une confirmation rapide en un geste ; envoyer un email à un client ou supprimer un dossier reçoit une relecture vocale complète avant de pouvoir continuer.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les concurrents qui agissent utilisent un seul niveau de confiance uniforme pour tout. La confirmation à niveaux rend la sécurité proportionnelle, si bien que Verba paraît rapide sur les petites choses et prudent sur celles qui comptent réellement.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">019</span><div class="nm">Journal d'audit des actions</div></div>
+<div class="f"><b>POURQUOI</b> <span>Un assistant qui agit dans toutes vos applications a besoin d'une mémoire consultable, sinon la confiance dans le mécanisme de confirmation s'érode dès la première fois que quelque chose semble anormal.</span></div>
+<div class="f"><b>COMMENT</b> <span>Chaque action confirmée est enregistrée localement sur le Mac avec ce qui a été demandé, ce qui a été prévisualisé, ce qui a été confirmé, et ce qui a changé, consultable et interrogeable à la voix ou via une simple vue chronologique, sans jamais quitter l'appareil.</span></div>
+<div class="f"><b>POUR</b> <span>Demandez à JARVIS qu'as-tu fait pour moi hier et obtenez une chronologie parlée ou visuelle de chaque action confirmée, avec la possibilité d'entrer dans n'importe laquelle et de l'annuler directement depuis le journal.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les journaux d'un agent côté serveur vivent sur l'infrastructure de quelqu'un d'autre, ou n'existent tout simplement pas pour l'utilisateur. Un journal d'audit privé et local rend le mécanisme de confirmation vérifiable, pas seulement promis.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">020</span><div class="nm">Place de marché des macros vocales (synchronisation privée)</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les chaînes que les gens construisent pour leur propre flux de travail ont de la valeur, et les partager (sans jamais partager de données privées) multiplie l'avantage sur toute une base d'utilisateurs.</span></div>
+<div class="f"><b>COMMENT</b> <span>Les macros d'action nommées peuvent être exportées comme modèle uniquement structurel (étapes et espaces réservés, zéro donnée personnelle) et importées par un autre utilisateur de Verba, qui remplit ensuite ses propres espaces réservés et revoit le même aperçu soumis à confirmation avant la première exécution.</span></div>
+<div class="f"><b>POUR</b> <span>Un freelance construit une chaîne bilan client hebdomadaire, exporte le modèle, un collègue l'importe, y branche ses propres noms de clients et dossiers, et confirme la première exécution pour se l'approprier.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Aucun concurrent n'a de format de chaîne d'actions réutilisable et partageable, encore moins un qui n'expédie aucune donnée privée par conception. Cela transforme les flux de travail individuels des utilisateurs avancés en un effet de bibliothèque cumulatif propre à Verba.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag L">effort L</span></div>
+</div>
+</div>
+<h2>Confidentialité, confiance et sécurité</h2>
+<div class="grid">
+<div class="idea">
+<div class="top"><span class="num">021</span><div class="nm">Détection automatique du mode sensible</div></div>
+<div class="f"><b>POURQUOI</b> <span>La voix est l'entrée la plus intime qu'une personne donne à un ordinateur, si bien qu'au moment même où quelqu'un dit un détail médical, un salaire, ou une affaire juridique à voix haute, la confiance doit visiblement se resserrer. Aucun rival dans le cloud ne peut promettre cela puisque son audio a déjà quitté la pièce.</span></div>
+<div class="f"><b>COMMENT</b> <span>La détection de langage sur l'appareil repère des catégories (santé, finance, juridique, RH) dans la transcription en direct et bascule la session dans un état visuel verrouillé (interface assombrie, petit badge de cadenas) avec des réglages plus stricts par défaut : pas de sauvegarde automatique dans l'historique, pas d'action JARVIS sans une confirmation explicite supplémentaire.</span></div>
+<div class="f"><b>POUR</b> <span>Dicter un symptôme à rechercher, discuter d'une augmentation, réfléchir à voix haute à un testament ou une rupture, rédiger tout ce que vous ne voudriez pas voir en capture d'écran.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les utilisateurs sentent l'application les protéger à la seconde précise où cela compte, les concurrents qui diffusent l'audio vers un serveur ne peuvent pas rendre cette affirmation crédible, même s'ils le voulaient.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">022</span><div class="nm">Verrouillage par note avec Touch ID</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les gens s'autocensurent autour des assistants vocaux parce que tout paraît également exposé. Donner à une seule note un vrai verrou transforme Verba en un endroit où les gens font confiance pour leurs pensées vraiment privées, ce qui est le levier émotionnel que les outils dans le cloud ne peuvent pas offrir.</span></div>
+<div class="f"><b>COMMENT</b> <span>Toute note ou transcription peut être verrouillée individuellement, chiffrée au repos sur l'appareil, et protégée par Touch ID ou le mot de passe du Mac ; les notes verrouillées sont exclues de la recherche, de Spotlight, et du contexte de JARVIS jusqu'à ce qu'elles soient déverrouillées.</span></div>
+<div class="f"><b>POUR</b> <span>Un compte-rendu de thérapie, une idée de startup avant d'être déposée, une entrée de journal privé, une note sur quelqu'un d'autre qui ne devrait pas ressortir dans des conversations sans rapport.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Une confidentialité réelle protégée par le matériel, par élément, pas un réglage de compte ; un rival qui envoie l'audio vers des serveurs ne peut pas offrir de verrouillage biométrique local d'une note individuelle.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag S">effort S</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">023</span><div class="nm">Masquage automatique à la dictée</div></div>
+<div class="f"><b>POURQUOI</b> <span>La peur derrière l'entrée vocale n'est pas abstraite, c'est et si cette phrase précise avec mon numéro de carte ou l'école de mon enfant finissait quelque part. Le masquage automatique transforme cette peur en un filet de sécurité visible.</span></div>
+<div class="f"><b>COMMENT</b> <span>La détection de motifs et d'entités sur l'appareil scanne le texte nettoyé à la recherche de numéros de téléphone, de numéros de carte, d'adresses, et de noms marqués comme sensibles, puis propose un masquage en un geste (affiché comme des puces floutées) avant que la note ne soit enregistrée ou traitée par JARVIS.</span></div>
+<div class="f"><b>POUR</b> <span>Lire un numéro de carte à voix haute pour remplir un formulaire, dicter une note qui mentionne l'école ou l'adresse d'un enfant, rédiger un message avec les données personnelles de quelqu'un d'autre.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Protège l'utilisateur de son propre futur lui-même et d'une exposition accidentelle, un concurrent basé sur un serveur a déjà vu les données brutes avant qu'aucun masquage ne puisse s'appliquer.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">024</span><div class="nm">Registre d'activité local</div></div>
+<div class="f"><b>POURQUOI</b> <span>La confiance se construit par la preuve, pas par des promesses. Un journal visible et inviolable de ce que JARVIS a fait exactement après chaque confirmation transforme nous respectons votre vie privée d'un slogan marketing en quelque chose que l'utilisateur peut vérifier lui-même.</span></div>
+<div class="f"><b>COMMENT</b> <span>Chaque action confirmée de JARVIS (fichier ouvert, message envoyé, application déclenchée) écrit une entrée signée et horodatée dans un registre local uniquement, stocké dans le stockage protégé par le trousseau du Mac, consultable et exportable mais jamais transmis nulle part.</span></div>
+<div class="f"><b>POUR</b> <span>Revoir ce qui s'est passé après une session de dictée chargée, confirmer qu'une action n'a touché que ce qui a été approuvé, remettre un appareil à l'IT pour un contrôle de conformité.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Donne aux utilisateurs et aux acheteurs en entreprise un journal d'audit qu'il est physiquement impossible pour un concurrent dans le cloud d'offrir sans exposer aussi ce même journal à ses propres serveurs.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">025</span><div class="nm">Export du passeport de données en un geste</div></div>
+<div class="f"><b>POURQUOI</b> <span>Une vraie propriété signifie qu'un utilisateur peut tenir tout son historique de données dans sa main et partir à tout moment. Cette seule garantie est le signal de confiance le plus fort qu'un outil privé puisse donner.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un seul bouton regroupe toutes les notes, transcriptions et réglages dans une archive chiffrée et protégée par mot de passe, écrite directement sur le disque, avec un tout effacer équivalent en un geste qui efface le stockage sur l'appareil et confirme par une somme de contrôle.</span></div>
+<div class="f"><b>POUR</b> <span>Changer de Mac, satisfaire un audit de données personnel, prouver à un collègue sceptique ou à un service IT que rien n'est retenu en otage sur un serveur quelque part.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Portabilité et suppression complètes et vérifiables en quelques secondes ; les concurrents dont les données vivent sur leurs serveurs ne peuvent pas offrir un effacement instantané, complet, contrôlé par l'utilisateur.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag S">effort S</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">026</span><div class="nm">Carte de confiance au premier lancement</div></div>
+<div class="f"><b>POURQUOI</b> <span>L'histoire de confidentialité doit se ressentir dans les dix premières secondes, avant même que l'utilisateur n'ait tapé un mot, sinon elle ne prend jamais. Une carte visible et concrète bat un paragraphe de texte réglementaire que personne ne lit.</span></div>
+<div class="f"><b>COMMENT</b> <span>Au premier lancement, et disponible à tout moment depuis les réglages, une seule carte montre des faits simples avec de vrais chiffres quand c'est possible (ce qui reste sur ce Mac, ce qui ne le quitte jamais, ce pour quoi JARVIS a besoin d'une confirmation) avec un point de statut en direct qui devient vert une fois vérifié, sans jargon juridique.</span></div>
+<div class="f"><b>POUR</b> <span>Le moment du tout premier lancement, un ami sceptique qui regarde par-dessus votre épaule, une vérification rapide avant de dicter quelque chose de sensible.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Concret et vérifiable bat une page de politique de confidentialité ; la version honnête de cette carte chez un concurrent dans le cloud devrait admettre que l'audio quitte l'appareil, ce qui est tout le levier.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag S">effort S</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">027</span><div class="nm">Session invité avec effacement automatique</div></div>
+<div class="f"><b>POURQUOI</b> <span>Partager un Mac, un stand de démonstration, ou un ordinateur professionnel avec quelqu'un d'autre ne devrait jamais signifier laisser une trace de sa voix. Une session qui disparaît de façon prouvable transforme une anxiété normale en un non-problème.</span></div>
+<div class="f"><b>COMMENT</b> <span>Une session invité en un geste tourne entièrement en mémoire avec un traitement sur l'appareil, n'écrit rien sur le disque, et affiche un compte à rebours visible ou une action explicite terminer et effacer qui vide les transcriptions gardées en mémoire vive dès qu'elle se termine.</span></div>
+<div class="f"><b>POUR</b> <span>Faire une démonstration de Verba à un collègue, confier son Mac à un membre de sa famille, utiliser un appareil professionnel partagé sans laisser d'historique de dictée derrière soi.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Une session qui ne touche vraiment jamais le disque n'est crédible que sur l'appareil ; le mode privé d'un rival dans le cloud signifie quand même que l'audio a transité par ses serveurs, quelles que soient ses affirmations locales.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag S">effort S</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">028</span><div class="nm">Coffre de confirmation pour les actions irréversibles</div></div>
+<div class="f"><b>POURQUOI</b> <span>La promesse de JARVIS est qu'il n'agit qu'après votre confirmation, donc le moment de confirmation lui-même devrait ressembler à une porte de coffre-fort, pas à une notification éphémère, en particulier pour tout ce qui ne peut pas être annulé.</span></div>
+<div class="f"><b>COMMENT</b> <span>Les actions classées comme irréversibles (envoyer, supprimer, publier, payer) passent par un écran de confirmation distinct et plus lourd montrant exactement ce qui va se passer en langage clair, avec une courte pause impossible à passer avant que le bouton de confirmation ne s'active.</span></div>
+<div class="f"><b>POUR</b> <span>Envoyer un message dicté dans la précipitation, supprimer un fichier à la voix, approuver toute action de JARVIS avec une conséquence réelle.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Fait de l'étape de confirmation un véritable rituel de sécurité plutôt qu'une formalité, approfondissant le levier de confiance selon lequel JARVIS n'agit jamais seul, quelque chose qu'un assistant dans le cloud pressé par la vitesse ralentit rarement pour offrir.</span></div>
+<div class="tags"><span class="tag parity">parity</span><span class="tag S">effort S</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">029</span><div class="nm">Indicateur d'isolement réseau</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les gens ne peuvent pas voir la confidentialité, ils ne peuvent voir que des indicateurs. Un signal permanent et honnête qu'aucun audio ne quitte la machine transforme un choix architectural invisible en quelque chose que l'utilisateur surveille de ses propres yeux.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un petit indicateur toujours visible dans la barre de menus affiche un état d'activité réseau spécifique à Verba, restant plat et vert pendant la dictée pour prouver visuellement qu'aucun flux audio sortant n'est en cours, avec une vue de détail en un clic sur ce qui a transmis ou non exactement.</span></div>
+<div class="f"><b>POUR</b> <span>Réassurance pendant toute session de dictée, en particulier durant les premières semaines de construction de confiance avec un nouvel utilisateur, ou lors d'une démonstration du produit à un prospect sceptique.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Un signal vivant et vérifiable bat une affirmation écrite, et c'est une fonctionnalité qu'un concurrent dans le cloud ne peut structurellement pas proposer honnêtement puisque son indicateur devrait montrer une véritable activité réseau.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">030</span><div class="nm">Rapport de confidentialité entreprise</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les acheteurs en entreprise ne font pas confiance aux adjectifs, ils font confiance aux documents. Un rapport de confidentialité généré et concret transforme l'architecture sur l'appareil de Verba en quelque chose qu'une équipe de sécurité peut réellement approuver.</span></div>
+<div class="f"><b>COMMENT</b> <span>Une commande génère un rapport clair à partir du registre d'activité local et de l'état des réglages : quelles catégories de données existent localement, réglages de rétention, usage du verrouillage et du masquage, résumé de l'architecture où aucune donnée ne quitte l'appareil, exportable en document pour une revue d'achat ou de conformité.</span></div>
+<div class="f"><b>POUR</b> <span>Passer une revue de sécurité d'entreprise, donner à l'IT ce qu'il lui faut pour approuver un déploiement à l'échelle de l'entreprise, rassurer un responsable de conformité sans un long cycle de questionnaire fournisseur.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Transforme l'architecture sur l'appareil en un atout prêt pour l'achat ; les concurrents dans le cloud vendant au même marché entreprise doivent divulguer quelque part dans un rapport équivalent que des données quittent l'appareil, ce qui sape leur propre argumentaire.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+</div>
+<h2>Personnalisation et apprentissage sur l'appareil</h2>
+<div class="grid">
+<div class="idea">
+<div class="top"><span class="num">031</span><div class="nm">Nettoyage par empreinte vocale</div></div>
+<div class="f"><b>POURQUOI</b> <span>Le voix-first exige que l'étape de nettoyage sonne comme l'utilisateur, pas comme un éditeur générique. Constat de personnalisation : chacun a une cadence, un schéma d'hésitations, et une forme de phrase qui se répète d'un jour à l'autre.</span></div>
+<div class="f"><b>COMMENT</b> <span>Verba construit un profil de nettoyage privé sur le Mac à partir des dictées passées de l'utilisateur : quelles hésitations il utilise réellement, la longueur habituelle de ses phrases, ses transitions favorites. Chaque futur passage de nettoyage est noté par rapport à ce profil au lieu d'un ensemble de règles génériques fixe. Toutes les données du profil restent dans un stockage local sur le Mac.</span></div>
+<div class="f"><b>POUR</b> <span>Pour qu'un email ou une note nettoyée se lise encore comme quelque chose que l'utilisateur aurait écrit, pas une version générique aplatie.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Le nettoyage devient plus précis plus quelqu'un utilise Verba, et il ne touche jamais un modèle partagé ou générique de la bonne écriture. Les concurrents proposent un seul style de nettoyage statique pour chaque utilisateur.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">032</span><div class="nm">Mémoire de ton par application</div></div>
+<div class="f"><b>POURQUOI</b> <span>La même personne écrit de façon complètement différente dans un chat professionnel, un email client, et un texto à un ami. Un réglage de ton unique et global rate complètement cette réalité.</span></div>
+<div class="f"><b>COMMENT</b> <span>Verba étiquette chaque dictée avec l'application de destination et, quand c'est disponible, le destinataire, puis garde un petit profil de ton local par application et par contact (formalité, habitudes de ponctuation, style de salutation et de signature). Le nettoyage choisit automatiquement le profil correspondant. Tout est stocké et associé sur le Mac.</span></div>
+<div class="f"><b>POUR</b> <span>Dicter la même pensée une fois et la voir nettoyée dans le bon registre, que ce soit dans un outil professionnel, une application de messagerie, ou une application de notes.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Aucun basculement manuel de ton n'est nécessaire, et le comportement s'accumule avec l'usage. Les concurrents appliquent un seul ton partout ou demandent à l'utilisateur de choisir un style à chaque fois.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">033</span><div class="nm">Mémoire vocale par contact</div></div>
+<div class="f"><b>POURQUOI</b> <span>La personnalisation la plus fine ne se situe pas au niveau de l'application, mais au niveau de la relation : la façon dont quelqu'un écrit à son manager diffère de la façon dont il écrit à son frère ou sa sœur.</span></div>
+<div class="f"><b>COMMENT</b> <span>En s'appuyant sur la mémoire de ton par application, Verba garde une légère couche d'ajustement par contact, apprise à partir des corrections que l'utilisateur apporte après le nettoyage pour les messages à cette personne précise, stockée localement et jamais synchronisée hors du Mac.</span></div>
+<div class="f"><b>POUR</b> <span>Un message dicté à une personne précise revient en sonnant comme la façon dont l'utilisateur parle réellement à cette personne, pas un nettoyage générique indifférent au contact.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Donne l'impression que Verba connaît les relations de l'utilisateur sans jamais les voir quitter l'appareil. Rien sur le marché ne personnalise aujourd'hui par destinataire individuel.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">034</span><div class="nm">Coffre de vocabulaire personnel</div></div>
+<div class="f"><b>POURQUOI</b> <span>Chaque professionnel a un dictionnaire privé : noms de code de projet, noms de collègues, acronymes, termes produit. Le nettoyage vocal générique massacre constamment ces mots.</span></div>
+<div class="f"><b>COMMENT</b> <span>Verba garde un coffre local croissant de noms propres et de jargon, construit à partir des schémas de correction que l'utilisateur fait au fil du temps (un mot massacré suivi de la même correction manuelle répétée finit par être promu dans le coffre). Le coffre ne vit que sur le Mac et alimente directement le passage de nettoyage.</span></div>
+<div class="f"><b>POUR</b> <span>Dicter une mise à jour technique pleine de noms de projet et d'acronymes ressort correctement orthographiée et capitalisée sans que l'utilisateur ait à la corriger à chaque fois.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>La précision sur le vocabulaire propre de l'utilisateur ne cesse de grimper au lieu de rester plate. Les concurrents s'appuient sur des dictionnaires génériques qui n'apprennent jamais les mots de l'utilisateur individuel.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">035</span><div class="nm">Apprentissage adaptatif des raccourcis</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les flux de travail voix-first devraient s'accélérer avec la répétition, de la même façon qu'un raccourci physique le fait, mais presque rien dans les outils vocaux n'apprend réellement les formulations répétées de l'utilisateur.</span></div>
+<div class="f"><b>COMMENT</b> <span>Verba remarque quand la même phrase parlée mène de façon fiable à la même action JARVIS confirmée (par exemple une phrase récurrente qui déclenche toujours la même ouverture d'application ou le même envoi de message), et propose de la transformer en un raccourci d'un ou plusieurs mots. Toute la détection de schéma et le stockage des raccourcis restent sur le Mac, et chaque raccourci exige toujours la confirmation JARVIS normale.</span></div>
+<div class="f"><b>POUR</b> <span>Les actions fréquentes comme démarrer une routine précise, ouvrir un projet précis, ou envoyer un message récurrent deviennent plus rapides au fil des semaines d'usage normal.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Le produit s'accélère spécifiquement selon la façon dont cet utilisateur parle, pas une liste de commandes fixe que tout le monde doit mémoriser. Les concurrents proposent une grammaire de commandes statique qui ne s'adapte jamais.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">036</span><div class="nm">Boucle de mémoire des corrections</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les utilisateurs corrigent déjà à la main le résultat de nettoyage de Verba aujourd'hui, et cette correction est un signal riche qui est le plus souvent jeté après l'édition.</span></div>
+<div class="f"><b>COMMENT</b> <span>Verba garde un journal local des paires avant-nettoyage et après-édition-utilisateur, regroupe les schémas de correction récurrents, et replie discrètement les plus courants dans les futurs passages de nettoyage. Aucune donnée de correction ne quitte jamais le Mac.</span></div>
+<div class="f"><b>POUR</b> <span>La poignée d'habitudes de nettoyage que l'utilisateur écrase toujours (une expression qu'il n'utilise jamais, un choix de mise en forme qu'il annule toujours) cesse d'avoir besoin d'être corrigée du tout.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Verba s'améliore visiblement, spécifiquement pour cet utilisateur, plus il l'utilise et le corrige, construisant un vrai coût de changement. Les concurrents traitent chaque session comme un nouveau départ sans mémoire des éditions passées.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">037</span><div class="nm">Carnet de connaissances privé</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les gens dictent constamment des faits sur leur propre vie et leur travail (une échéance, une préférence, une décision) puis doivent les réénoncer de mémoire chaque fois qu'ils en ont de nouveau besoin.</span></div>
+<div class="f"><b>COMMENT</b> <span>Verba maintient un carnet privé, sur l'appareil, qui capture les faits que l'utilisateur énonce en passant pendant une dictée normale (préférences déclarées, noms récurrents, décisions prises), indexé localement pour que JARVIS puisse s'en souvenir plus tard quand c'est pertinent pour une nouvelle demande, toujours après une étape de confirmation pour tout ce sur quoi il agit.</span></div>
+<div class="f"><b>POUR</b> <span>Demander à JARVIS d'agir sur quelque chose et le voir déjà se souvenir d'un contexte énoncé des jours plus tôt, comme un horaire de réunion préféré ou une décision prise lors d'une dictée antérieure.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Une mémoire à long terme privée qui ne quitte jamais le Mac devient la raison de rester, puisque reconstruire cette mémoire ailleurs signifie repartir de zéro. Les assistants avec une mémoire côté serveur ne peuvent pas égaler cette histoire de confidentialité.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">038</span><div class="nm">Empreinte d'écriture par type de document</div></div>
+<div class="f"><b>POURQUOI</b> <span>Le même utilisateur écrit un rapport, une note rapide, et un message avec une structure et un rythme différents, et un profil d'écriture unique aplatit les trois en un seul style.</span></div>
+<div class="f"><b>COMMENT</b> <span>Verba détecte le type de résultat produit (note longue, message court, liste structurée, email) selon le contexte et garde un profil de style local séparé par type de document, chacun appris à partir de la façon dont l'utilisateur a édité ce type de résultat auparavant.</span></div>
+<div class="f"><b>POUR</b> <span>Un rapport dicté revient structuré comme les rapports passés de l'utilisateur, tandis qu'une note rapide dictée reste courte et décontractée, sans jamais changer un réglage.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>La structure du résultat correspond automatiquement à l'intention, ce qu'un seul profil de style plat ne peut pas faire. Les concurrents appliquent un seul style d'écriture quel que soit ce qui est produit.</span></div>
+<div class="tags"><span class="tag parity">parity</span><span class="tag S">effort S</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">039</span><div class="nm">Minutage sensible aux habitudes</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les gens ont un rythme dans leur journée, et un assistant qui comprend ce rythme peut agir de façon plus utile au bon moment au lieu de traiter chaque demande de la même façon, indépendamment du moment où elle survient.</span></div>
+<div class="f"><b>COMMENT</b> <span>Verba apprend, à partir des propres habitudes d'usage de l'utilisateur sur le Mac, les moments et contextes où certains types de demandes surviennent habituellement (un bilan quotidien dicté, une routine matinale), et utilise ce schéma seulement pour rendre les suggestions et la formulation de JARVIS plus pertinentes à ce moment-là, jamais pour agir sans confirmation.</span></div>
+<div class="f"><b>POUR</b> <span>Une dictée donnée à l'heure habituelle de fin de journée est traitée avec les bonnes hypothèses (ton de bilan, destinations probables) au lieu d'un traitement générique.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>L'assistant semble accordé au rythme réel de l'utilisateur au lieu d'être aveugle au contexte. Les concurrents n'ont aucune notion du rythme personnel de l'utilisateur.</span></div>
+<div class="tags"><span class="tag parity">parity</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">040</span><div class="nm">Correction automatique calibrée par confiance</div></div>
+<div class="f"><b>POURQUOI</b> <span>Toutes les suggestions de nettoyage ne méritent pas le même niveau de confiance, et un système de personnalisation devrait apprendre quels types d'édition cet utilisateur précis garde toujours ou annule toujours.</span></div>
+<div class="f"><b>COMMENT</b> <span>Verba suit, par catégorie d'édition (correction grammaticale, adoucissement du ton, changement de ponctuation, réécriture structurelle), la fréquence à laquelle cet utilisateur accepte plutôt qu'annule cette catégorie, et ajuste l'agressivité de son application pour chaque catégorie à l'avenir, le tout calculé et stocké localement sur le Mac.</span></div>
+<div class="f"><b>POUR</b> <span>Un utilisateur qui annule toujours les réécritures agressives mais garde les corrections grammaticales obtient exactement cet équilibre appliqué automatiquement, sans curseur d'agressivité global.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>L'agressivité du nettoyage se règle elle-même par utilisateur et par catégorie d'édition, un niveau d'autocalibration que les outils de nettoyage statiques ne tentent pas. Les concurrents utilisent un seul niveau d'agressivité fixe pour chaque utilisateur.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+</div>
+<h2>Flux de travail, automatisation et intégrations</h2>
+<div class="grid">
+<div class="idea">
+<div class="top"><span class="num">041</span><div class="nm">Macros vocales</div></div>
+<div class="f"><b>POURQUOI</b> <span>L'avenir voix-first signifie que les gens ne taperont pas leurs flux de travail dans un écran de création, ils diront simplement ce qu'ils font toujours et attendront que JARVIS s'en souvienne. Les outils d'automatisation aujourd'hui mettent la friction dans la création, pas dans l'exécution.</span></div>
+<div class="f"><b>COMMENT</b> <span>Vous réalisez une tâche une fois à la voix, une séquence d'étapes à travers des applications connectées. JARVIS remarque la séquence, la nettoie en une macro reproductible avec un nom que vous choisissez, et propose de l'enregistrer. La prochaine fois, dites le nom de la macro et JARVIS exécute les mêmes étapes après votre confirmation.</span></div>
+<div class="f"><b>POUR</b> <span>Dire lance mon lancement du lundi récupère votre calendrier, rédige une mise à jour de statut, et la publie, le tout depuis une seule phrase.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les utilisateurs obtiennent de l'automatisation sans jamais ouvrir un créateur de flux de travail. Les concurrents exigent de glisser des nœuds dans un éditeur visuel ; Verba construit la macro à partir de la chose que vous avez déjà faite, en direct, sur votre Mac.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">042</span><div class="nm">Routines récurrentes</div></div>
+<div class="f"><b>POURQUOI</b> <span>Un assistant privé qui ne fait que réagir est un outil de chat ; un qui s'exécute lui-même selon un horaire est un JARVIS. Les gens veulent régler une routine une fois et l'oublier.</span></div>
+<div class="f"><b>COMMENT</b> <span>Attachez une macro parlée à un horaire (quotidien, jours de semaine, une heure fixe, ou relatif à votre calendrier comme une heure avant votre première réunion). JARVIS exécute la routine à cette heure, prépare les actions à travers les applications connectées, et demande une confirmation avant que quoi que ce soit d'irréversible ne se passe ; les étapes en lecture seule peuvent s'exécuter discrètement avec un court résumé après coup.</span></div>
+<div class="f"><b>POUR</b> <span>Une routine de bilan matinal quotidien rassemble les messages de la nuit à travers les applications connectées et lit un résumé parlé avant votre première réunion.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Transforme Verba d'un outil de demande-réponse en un opérateur permanent en arrière-plan, privé et sur l'appareil, sans rien qui retienne votre emploi du temps.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">043</span><div class="nm">Règles de déclenchement</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les automatisations les plus précieuses sont celles que vous ne demandez jamais, elles surviennent parce que quelque chose d'autre s'est produit en premier. L'automatisation voix-first devrait réagir aux événements, pas seulement aux commandes.</span></div>
+<div class="f"><b>COMMENT</b> <span>Vous décrivez une règle en langage simple, comme quand un message de mon comptable arrive, rédige une réponse et lis-la moi pour confirmation. JARVIS surveille l'application connectée concernée pour cet événement et, quand il se déclenche, prépare l'action et demande votre confirmation avant d'agir.</span></div>
+<div class="f"><b>POUR</b> <span>Les emails financiers, les invitations calendrier, ou les changements de tableau de tâches génèrent chacun une action proposée au lieu d'une vérification manuelle.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Remplace le tableau de bord toujours ouvert des outils de déclenchement par une règle parlée privée que vous réglez une fois et ne vérifiez plus jamais.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">044</span><div class="nm">Échange de flux de travail</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les écosystèmes les plus précieux sont ceux que les utilisateurs construisent les uns pour les autres. Les flux de travail d'un assistant privé devraient être partageables comme le sont les applications, sans jamais partager les données qui y ont transité.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un utilisateur qui a construit un flux de travail utile (une macro, une règle de déclenchement, ou une routine) peut publier ses étapes et sa structure, dépouillées de toute donnée personnelle, comme modèle. D'autres utilisateurs parcourent les modèles par cas d'usage et en installent un avec une confirmation parlée, puis connectent leurs propres applications et comptes.</span></div>
+<div class="f"><b>POUR</b> <span>Un utilisateur construit un flux d'intégration client ; toute une communauté de freelances installe le modèle et le personnalise en quelques minutes au lieu de le construire de zéro.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Un écosystème de flux de travail vocaux construits par les utilisateurs devient l'avantage propre de Verba, la structure se diffuse tandis que les données personnelles restent toujours locales au Mac de chaque utilisateur.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">045</span><div class="nm">Chaînes de relais</div></div>
+<div class="f"><b>POURQUOI</b> <span>Le vrai travail vit rarement dans une seule application. Le vrai travail à accomplir consiste à faire circuler une pensée à travers plusieurs outils en séquence, et aujourd'hui cela signifie changer de fenêtre encore et encore.</span></div>
+<div class="f"><b>COMMENT</b> <span>Une seule commande parlée fait circuler une tâche à travers plusieurs applications connectées dans l'ordre, la sortie d'une étape alimentant la suivante. JARVIS présente la chaîne complète, la relit une fois, et demande une seule confirmation pour exécuter tout le relais.</span></div>
+<div class="f"><b>POUR</b> <span>Dire prends ce mémo vocal, transforme-le en document, partage-le avec mon partenaire de design, et ajoute une tâche de relecture s'exécute comme un seul relais au lieu de quatre étapes séparées.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les utilisateurs obtiennent un pipeline multi-application depuis une seule phrase ; les concurrents doivent câbler chaque étape manuellement dans une automatisation séparée.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">046</span><div class="nm">Flux de travail à embranchements</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les vraies routines contiennent des jugements, si c'est urgent appelle, sinon envoie un email. Un outil de flux de travail qui ne peut exécuter que des lignes droites force les gens à revenir au triage manuel.</span></div>
+<div class="f"><b>COMMENT</b> <span>En construisant une macro ou une routine à la voix, vous pouvez énoncer une condition, comme si la réponse mentionne une échéance, marque-la comme priorité haute. JARVIS garde la condition comme un embranchement et l'évalue en privé sur votre Mac à chaque exécution du flux de travail, choisissant le chemin correspondant avant de demander confirmation.</span></div>
+<div class="f"><b>POUR</b> <span>Une routine de boîte de réception support rédige une réponse rapide et modèle pour les questions simples et un brouillon plus long et personnalisé pour les questions complexes, choisissant seule le bon embranchement.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Apporte du jugement, pas seulement de la répétition, si bien que les flux de travail gèrent de vraies variations au lieu de se briser à la première exception.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">047</span><div class="nm">Confirmation en relais d'équipe</div></div>
+<div class="f"><b>POURQUOI</b> <span>L'automatisation au sein d'un foyer ou d'une petite équipe a souvent besoin de l'accord d'une deuxième personne avant de partir. L'automatisation voix-first devrait le permettre sans se transformer en outil de discussion de groupe.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un flux de travail peut nommer une étape qui se met en pause et demande à une personne précise de confirmer à la voix ou par une simple approbation avant que JARVIS ne continue. Le flux de travail attend, puis reprend les étapes restantes une fois que cette personne confirme.</span></div>
+<div class="f"><b>POUR</b> <span>Un flux d'approbation de facture rédige la facture, se met en pause pour la confirmation d'un cofondateur, puis l'envoie via l'application connectée une fois approuvée.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Apporte une responsabilité à plusieurs personnes à l'automatisation personnelle sans exporter de données privées vers un tableau de bord partagé, le Mac de chaque personne reste privé.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">048</span><div class="nm">Relecture de flux de travail</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les gens font davantage confiance à l'automatisation une fois qu'ils peuvent voir exactement ce qu'elle a fait. Un assistant qui agit à travers un millier d'applications connectées a besoin d'une piste claire autant qu'il a besoin de vitesse.</span></div>
+<div class="f"><b>COMMENT</b> <span>Chaque exécution de flux de travail est enregistrée étape par étape, ce qui a été lu, ce qui a été rédigé, ce que vous avez confirmé. Vous pouvez demander à JARVIS de rejouer la routine matinale d'hier et réentendre ou relire la séquence, puis éditer n'importe quelle étape et réenregistrer le flux de travail avec la correction.</span></div>
+<div class="f"><b>POUR</b> <span>Repérer un flux de travail qui a récupéré le mauvais calendrier et corriger cette seule étape à la voix au lieu de reconstruire toute la routine.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Rend l'automatisation auditable et améliorable sur place ; les concurrents traitent une exécution comme une boîte noire une fois déclenchée.</span></div>
+<div class="tags"><span class="tag parity">parity</span><span class="tag S">effort S</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">049</span><div class="nm">Écoute d'indices ambiants</div></div>
+<div class="f"><b>POURQUOI</b> <span>Le déclencheur le plus naturel pour un flux de travail vocal est une phrase que vous dites déjà pendant votre journée, pas une commande spéciale réservée à l'automatisation.</span></div>
+<div class="f"><b>COMMENT</b> <span>Avec votre permission, JARVIS remarque quand vous dites une phrase liée à un flux de travail enregistré pendant un usage normal, un indice naturel plutôt qu'une commande stricte, et propose de l'exécuter : on dirait que c'est l'heure de la routine matinale, tu veux que je la lance ? Un simple non ou l'ignorer annule ; un oui exécute le flux de confirmation habituel.</span></div>
+<div class="f"><b>POUR</b> <span>Dire on arrête pour aujourd'hui incite naturellement JARVIS à proposer le flux de travail de fin de journée au lieu que vous vous souveniez de la phrase exacte.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>L'automatisation donne l'impression d'être comprise plutôt que commandée, et elle n'agit jamais sans votre oui explicite.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">050</span><div class="nm">Extracteur d'habitudes</div></div>
+<div class="f"><b>POURQUOI</b> <span>La plupart des utilisateurs ne construiront jamais leur premier flux de travail depuis un créateur vierge. Le plus grand déclic vient de JARVIS qui remarque un schéma avant même que l'utilisateur ne pense à automatiser.</span></div>
+<div class="f"><b>COMMENT</b> <span>JARVIS remarque en privé quand vous demandez les mêmes quelques étapes à travers des applications connectées plus de deux fois et propose de transformer le schéma en un flux de travail nommé, en vous montrant les étapes exactes qu'il a remarquées avant que vous ne confirmiez l'enregistrement.</span></div>
+<div class="f"><b>POUR</b> <span>Après que vous ayez demandé trois fois séparément de récupérer les tâches du jour et de vous les lire, JARVIS propose d'enregistrer ça comme une routine permanente.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Supprime entièrement le problème de démarrage à froid de l'automatisation, le flux de travail trouve l'utilisateur au lieu que l'utilisateur trouve le créateur de flux de travail.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+</div>
+<h2>Collaboration, équipes et entreprise</h2>
+<div class="grid">
+<div class="idea">
+<div class="top"><span class="num">051</span><div class="nm">Dictionnaires d'équipe partagés</div></div>
+<div class="f"><b>POURQUOI</b> <span>Dans un futur voix-first, chaque coéquipier parle les mêmes termes de domaine (noms de produits, acronymes, noms de clients) et JARVIS devrait bien les reconnaître pour tout le monde, pas réapprendre par personne. Les acheteurs en entreprise ne peuvent aujourd'hui obtenir un vocabulaire partagé sans envoyer la voix à un serveur.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un fichier de dictionnaire géré par un administrateur se synchronise entre les Mac du même réseau ou via les outils de synchronisation de fichiers déjà utilisés par l'entreprise. Toute correction qu'un utilisateur fait peut être promue par un administrateur dans la liste partagée, puis chaque machine l'applique localement au moment de la transcription.</span></div>
+<div class="f"><b>POUR</b> <span>Les équipes juridiques prononçant des noms de clients, les équipes d'ingénierie prononçant des noms de projets internes, les équipes commerciales prononçant des références produit, tous transcrits correctement dès le premier jour.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Précision de transcription à l'échelle de l'organisation sans jamais centraliser l'audio vocal. Certains concurrents lient le vocabulaire partagé à leur serveur, ce que les équipes réglementées ne peuvent pas approuver.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">052</span><div class="nm">Guide de style d'équipe</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les entreprises ont besoin d'une voix de marque cohérente à travers le contenu écrit de chaque employé. Aujourd'hui, cette cohérence exige un outil d'écriture cloud partagé, ce qui est un refus catégorique pour les équipes soucieuses de confidentialité.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un administrateur définit un profil de style (règles de ton, expressions interdites, conventions de mise en forme) comme un fichier de configuration local distribué à chaque Mac. JARVIS l'applique pendant le passage de nettoyage de texte avant d'afficher l'étape de confirmation.</span></div>
+<div class="f"><b>POUR</b> <span>Les équipes support écrivant des réponses client cohérentes, le marketing rédigeant un texte conforme à la marque, les dirigeants gardant un ton formel dans leurs emails.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Voix de marque cohérente à l'échelle de l'entreprise avec un fichier de configuration entièrement auditable, sur l'appareil, au lieu d'une base de style cloud partagée qu'exigent les concurrents.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag S">effort S</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">053</span><div class="nm">Console d'administration du parc</div></div>
+<div class="f"><b>POURQUOI</b> <span>L'IT doit gérer Verba sur des centaines de Mac comme n'importe quel logiciel d'entreprise : version, santé, statut de politique. Mais il doit être structurellement impossible que cette console voie de la voix brute.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un processus compagnon local rapporte la version installée, le statut de synchronisation, et la version du dictionnaire à une console d'administration. Seules ces métadonnées quittent jamais l'appareil ; l'audio et les transcriptions ne le font jamais.</span></div>
+<div class="f"><b>POUR</b> <span>Les équipes IT gérant de 50 à 2000 postes, vérifiant la santé du déploiement, poussant des mises à jour de configuration depuis un seul écran.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Donne à l'IT la visibilité de parc que l'achat exige, tandis que l'architecture elle-même garantit que la voix ne peut jamais fuiter, une combinaison que les concurrents basés serveur ne peuvent pas promettre structurellement.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">054</span><div class="nm">SSO et provisionnement d'annuaire</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les acheteurs en entreprise ne déploieront aucun outil à l'échelle de l'entreprise sans fédération d'identité. C'est aujourd'hui un manque qui bloque purement et simplement l'achat.</span></div>
+<div class="f"><b>COMMENT</b> <span>Intégrer l'attribution de licence et le provisionnement de postes avec le fournisseur d'identité existant de l'entreprise. Le Mac vérifie un jeton signé localement pour débloquer la licence ; identité et systèmes vocaux ne se touchent jamais.</span></div>
+<div class="f"><b>POUR</b> <span>Intégration et sortie automatiques du personnel, gestion centralisée des postes à grande échelle.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Lève une exigence d'achat difficile tout en gardant intacte l'histoire de confidentialité, puisque les vérifications d'identité et le traitement vocal restent entièrement séparés.</span></div>
+<div class="tags"><span class="tag parity">parity</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">055</span><div class="nm">Mode conformité avec journal d'audit local</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les secteurs réglementés doivent prouver ce que JARVIS a fait et quand, sans jamais enregistrer ce qui a été dit. Aucun concurrent ne peut offrir cela parce que ses journaux d'action vivent sur un serveur aux côtés du contenu.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un journal local et inviolable enregistre uniquement les métadonnées d'action (horodatage, type d'action, si l'utilisateur a confirmé), jamais le texte ou l'audio sous-jacent. Exportable pour une revue de conformité.</span></div>
+<div class="f"><b>POUR</b> <span>Les équipes santé, juridique, et finance qui ont besoin d'une piste d'audit défendable pour chaque action automatisée que JARVIS entreprend.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Satisfait les responsables de conformité avec un enregistrement qui ne peut structurellement pas faire fuiter de contenu, un avantage durable face aux concurrents basés serveur dont les journaux incluent le matériel sensible lui-même.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">056</span><div class="nm">Bibliothèque de flux de travail partagée</div></div>
+<div class="f"><b>POURQUOI</b> <span>Une fois qu'une personne construit un excellent flux de travail vocal JARVIS, comme consigner des notes d'appel dans le CRM, toute l'équipe devrait l'obtenir instantanément au lieu de le réinventer.</span></div>
+<div class="f"><b>COMMENT</b> <span>Les flux de travail sont des fichiers locaux portables et signés qu'un administrateur peut publier dans une bibliothèque d'équipe, distribuée via la synchronisation de fichiers déjà utilisée par l'entreprise. Chacun exige toujours la propre confirmation de l'utilisateur avant d'agir.</span></div>
+<div class="f"><b>POUR</b> <span>Standardiser des actions courantes comme la prise de rendez-vous, la création de tickets, et les récapitulatifs de réunion à travers un service.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>La productivité à l'échelle de l'organisation s'accumule rapidement sans marché de flux de travail hébergé sur serveur, puisque chaque installation exécute la même automatisation localement.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">057</span><div class="nm">Permissions JARVIS par rôle</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les équipes de sécurité veulent limiter quelles actions JARVIS chaque rôle peut déclencher, pas donner à chaque employé un accès par défaut à chaque intégration.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un administrateur attribue des périmètres d'action par rôle dans un fichier de politique local, par exemple les stagiaires peuvent rédiger un email mais pas en envoyer un. Le périmètre est appliqué sur l'appareil avant même que la boîte de dialogue de confirmation n'apparaisse.</span></div>
+<div class="f"><b>POUR</b> <span>Limiter le rayon d'impact sur les équipes finance ou juridique, satisfaire une revue de sécurité avant le déploiement.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les équipes de sécurité obtiennent un contrôle granulaire tandis que Verba garde une visibilité serveur nulle sur qui a fait quoi, une combinaison que les concurrents ne peuvent pas égaler.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">058</span><div class="nm">Synchronisation chiffrée de pair à pair</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les équipes veulent que les dictionnaires, les guides de style, et les flux de travail restent à jour sur chaque machine sans qu'aucune entreprise n'ait à mettre en place une nouvelle infrastructure serveur à sécuriser.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un protocole de synchronisation chiffré ne déplace que la configuration (jamais la voix ou les transcriptions) directement entre les Mac du réseau local ou via le stockage existant de l'entreprise, résolvant les conflits localement.</span></div>
+<div class="f"><b>POUR</b> <span>Les petites et moyennes équipes sans infrastructure IT dédiée qui veulent quand même un état d'équipe partagé et à jour.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Cohérence de niveau entreprise sans aucune nouvelle infrastructure à sécuriser, supprimant l'objection de coût et de risque qui bloque les plus petites équipes IT dans l'approbation de nouveaux serveurs.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">059</span><div class="nm">Statistiques d'usage agrégées</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les administrateurs ont besoin de chiffres d'adoption et de retour sur investissement pour justifier le renouvellement, mais ne doivent jamais voir le contenu des conversations, ce qui est le compromis que chaque concurrent basé serveur impose aujourd'hui.</span></div>
+<div class="f"><b>COMMENT</b> <span>Chaque Mac agrège localement des compteurs comme les minutes parlées, les actions confirmées, et le taux d'erreur, puis n'envoie que les chiffres agrégés, dépouillés de tout texte, à la console d'administration selon un calendrier que l'administrateur contrôle.</span></div>
+<div class="f"><b>POUR</b> <span>Mesurer l'adoption, construire des rapports de retour sur investissement pour la direction, ajuster la taille des licences au renouvellement.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Livre le tableau de bord analytique que l'achat attend avec une garantie de confidentialité plus forte que n'importe quel concurrent, puisque le contenu brut est structurellement exclu de ce qui quitte l'appareil.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">060</span><div class="nm">Pack de déploiement entreprise en un clic</div></div>
+<div class="f"><b>POURQUOI</b> <span>L'IT doit pousser un nouveau logiciel vers des centaines de Mac en une seule action, pas l'installer machine par machine. C'est une exigence d'entreprise standard que Verba ne remplit pas encore.</span></div>
+<div class="f"><b>COMMENT</b> <span>Empaqueter Verba comme un installeur signé compatible avec les outils standards de gestion d'appareils Mac, préchargé avec le dictionnaire, le guide de style, et la politique de permissions de l'organisation dès le premier lancement.</span></div>
+<div class="f"><b>POUR</b> <span>Déployer Verba à l'échelle de l'entreprise en une seule action IT au lieu d'installations individuelles.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Supprime le dernier blocage d'achat, la déployabilité à grande échelle, et complète l'argumentaire : entièrement déployable, entièrement privé, la voix ne quitte jamais le Mac.</span></div>
+<div class="tags"><span class="tag parity">parity</span><span class="tag M">effort M</span></div>
+</div>
+</div>
+<h2>Plateforme et écosystème</h2>
+<div class="grid">
+<div class="idea">
+<div class="top"><span class="num">061</span><div class="nm">Verba pour iPhone : continuité de poche</div></div>
+<div class="f"><b>POURQUOI</b> <span>L'avenir voix-first signifie que la capture se passe partout où la pensée survient, pas seulement à un bureau. Rester limité au Mac est un plafond dur sur la fréquence à laquelle Verba peut être utile dans une journée.</span></div>
+<div class="f"><b>COMMENT</b> <span>Une application iOS compagnon fait tourner le même moteur privé sur l'appareil, adapté au matériel du téléphone. Une session démarrée sur le Mac peut basculer vers l'iPhone via votre propre réseau local, et inversement, sans que rien ne quitte vos propres appareils.</span></div>
+<div class="f"><b>POUR</b> <span>Capturer une note en entrant dans une réunion, dicter une réponse loin du bureau, demander à JARVIS de rédiger quelque chose en déplacement et le confirmer plus tard sur le Mac.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Transforme Verba d'un outil de bureau en une couche disponible toute la journée. Les assistants limités au Mac ou qui expédient la dictée vers un serveur ne peuvent pas égaler un relais privé de la poche au bureau.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">062</span><div class="nm">Verba Watch : capture instantanée</div></div>
+<div class="f"><b>POURQUOI</b> <span>Le meilleur moment vocal est celui que vous avez failli ne pas enregistrer. Une montre supprime l'étape de sortir un téléphone ou un ordinateur avant que la pensée ne disparaisse.</span></div>
+<div class="f"><b>COMMENT</b> <span>Une application montre minimale avec une capture par lever-de-poignet-pour-parler ou par tape unique, diffusant l'audio vers l'iPhone ou le Mac appairé pour le nettoyage, avec la confirmation JARVIS présentée par une vibration plus une carte à consulter d'un regard.</span></div>
+<div class="f"><b>POUR</b> <span>Capturer une pensée en pleine marche, régler un rappel en cuisinant, déclencher une action JARVIS rapide sans jamais regarder un écran avec un clavier.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Personne n'offre aujourd'hui une véritable boucle privée du poignet au texte propre. La plupart des dictées sur montre expédient l'audio brut vers un serveur avant même que vous ne voyiez le texte.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">063</span><div class="nm">Verba SDK : la couche vocale privée</div></div>
+<div class="f"><b>POURQUOI</b> <span>L'avenir voix-first n'est pas une seule application, c'est une couche sur laquelle chaque application peut s'appuyer. Laisser des développeurs externes construire sur le modèle parler-nettoyer-confirmer de Verba multiplie la surface bien plus vite que la propre feuille de route de Verba ne pourrait jamais le faire seule.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un cadre local signé que d'autres applications Mac et iOS intègrent, exposant parler et récupérer du texte propre et proposer une action puis attendre la confirmation comme des appels système, isolés par application pour qu'aucune application ne voie les données d'une autre.</span></div>
+<div class="f"><b>POUR</b> <span>Une application de notes obtient une dictée propre gratuitement. Un gestionnaire de tâches obtient des actions confirmées à la voix sans construire son propre pipeline. Une application tierce hérite du modèle de confidentialité de Verba au lieu de le réinventer.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Construit un véritable avantage par verrouillage d'écosystème et effets de réseau. Un concurrent devrait ouvrir tout son pipeline à des développeurs externes pour rattraper le retard, et aucun ne l'a fait.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">064</span><div class="nm">Verba dans le navigateur</div></div>
+<div class="f"><b>POURQUOI</b> <span>Une énorme part de la frappe quotidienne se passe dans des onglets de navigateur : emails, formulaires, documents. Une application confinée aux surfaces natives rate l'essentiel de la journée réelle.</span></div>
+<div class="f"><b>COMMENT</b> <span>Une extension de navigateur légère qui parle au même moteur sur l'appareil via une connexion locale et injecte le texte nettoyé directement dans le champ actif, avec la confirmation JARVIS bloquant tout ce qui envoie ou soumet.</span></div>
+<div class="f"><b>POUR</b> <span>Dicter une réponse dans un webmail, remplir un formulaire à la voix, rédiger dans un outil de document basé navigateur, le tout nettoyé et confirmé avant que quoi que ce soit ne quitte le champ.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Étend la voix privée à la surface unique par laquelle passe chaque journée de travail, sans que l'audio ou le texte ne touche jamais un tiers, contrairement à la dictée native du navigateur qui expédie généralement vers un serveur.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">065</span><div class="nm">Verba natif dans Raccourcis</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les utilisateurs avancés automatisent déjà leur Mac et leur iPhone avec Raccourcis. Devenir une action Raccourcis de premier ordre transforme chaque automatisation qu'un utilisateur a déjà construite en un déclencheur vocal.</span></div>
+<div class="f"><b>COMMENT</b> <span>Exposer la capture, le nettoyage, et l'action JARVIS avec confirmation comme des actions natives de Raccourcis et des intentions système, si bien que toute automatisation peut démarrer depuis, ou appeler, une étape parlée.</span></div>
+<div class="f"><b>POUR</b> <span>Un raccourci qui transcrit un mémo vocal en une note nettoyée et la classe automatiquement, ou une commande parlée qui déclenche toute une automatisation multi-étapes.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>S'appuie sur une habitude d'automatisation que les utilisateurs ont déjà au lieu d'en enseigner une nouvelle. Les assistants sans intégration profonde à Raccourcis restent coincés comme une île.</span></div>
+<div class="tags"><span class="tag parity">parity</span><span class="tag S">effort S</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">066</span><div class="nm">Continuité entre appareils, restée privée</div></div>
+<div class="f"><b>POURQUOI</b> <span>Le voix-first signifie que la même pensée en cours devrait pouvoir être reprise depuis n'importe quel appareil à portée de main, mais une telle commodité signifie habituellement qu'un serveur se cache discrètement au milieu.</span></div>
+<div class="f"><b>COMMENT</b> <span>Les appareils que vous possédez se découvrent sur votre propre réseau et reflètent directement l'état de la session entre eux : dictée en cours, confirmations JARVIS en attente, rien n'est acheminé via l'infrastructure de qui que ce soit d'autre.</span></div>
+<div class="f"><b>POUR</b> <span>Commencer à dicter un message sur la Watch, le terminer et le confirmer sur le Mac. Laisser une action JARVIS en attente et l'approuver plus tard depuis l'iPhone.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Offre une commodité multi-appareils sans le compromis de confidentialité que fait discrètement la synchronisation de chaque concurrent.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">067</span><div class="nm">Verba pour CarPlay</div></div>
+<div class="f"><b>POURQUOI</b> <span>Conduire est l'un des moments vocaux à plus forte valeur qui soient, et le moment précis où taper est réellement dangereux.</span></div>
+<div class="f"><b>COMMENT</b> <span>Une interface CarPlay avec une capture appuyer pour parler grande et sûre d'un coup d'œil, et une carte de confirmation JARVIS, le nettoyage tournant sur l'iPhone appairé pendant tout ce temps.</span></div>
+<div class="f"><b>POUR</b> <span>Dicter un message ou une note en pleine conduite, confirmer une action JARVIS d'un coup d'œil et d'un tap, les mains ne quittant jamais le volant.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>La plupart des assistants vocaux embarqués expédient directement vers un serveur. Un pipeline privé au volant est une différence réelle et visible pour quiconque se soucie de savoir où va sa voix.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">068</span><div class="nm">Couche de dictée à l'échelle du système</div></div>
+<div class="f"><b>POURQUOI</b> <span>En ce moment, Verba est une application qu'on ouvre. Le mouvement de plateforme le plus important est de devenir la couche de dictée sous chaque application du Mac, la chose qui répond quand on appuie sur la touche micro n'importe où.</span></div>
+<div class="f"><b>COMMENT</b> <span>S'enregistrer comme fournisseur de dictée du système pour que tout champ de texte dans toute application passe par le nettoyage de Verba, l'étape de confirmation JARVIS continuant de bloquer tout ce qui agit.</span></div>
+<div class="f"><b>POUR</b> <span>Dicter dans le mail, le chat, un éditeur de code, partout où un curseur clignote, avec le même pipeline propre et privé à chaque fois, sans jamais ouvrir Verba du tout.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Transforme Verba en infrastructure plutôt qu'en destination, l'application qui tourne partout et n'est visible nulle part jusqu'à ce que ça compte.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">069</span><div class="nm">Place de marché des actions JARVIS</div></div>
+<div class="f"><b>POURQUOI</b> <span>Le modèle confirmer-puis-agir de JARVIS n'est utile qu'à hauteur de la liste d'actions qu'il connaît. Une place de marché permet à tout un écosystème d'ajouter de nouvelles actions plus vite qu'aucune équipe seule ne pourrait les écrire.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un format de plugin vérifié où des développeurs externes définissent de nouvelles actions JARVIS, chacune toujours bloquée derrière la même étape de confirmation visible, installée localement et isolée pour qu'aucun plugin ne puisse voir les données d'un autre plugin.</span></div>
+<div class="f"><b>POUR</b> <span>Un plugin qui laisse JARVIS classer une note de frais, un autre qui rédige une invitation calendrier, un autre qui déclenche une scène domotique, chacun s'arrêtant toujours pour votre confirmation.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Accumule l'utilité grâce à des développeurs externes tout en gardant intacte l'étape de confirmation non négociable, une combinaison qu'une feuille de route de concurrent fermée ne peut égaler en vitesse.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">070</span><div class="nm">L'iPad comme centre de commande vocal</div></div>
+<div class="f"><b>POURQUOI</b> <span>L'iPad se situe entre le téléphone et le Mac, une surface toujours consultable d'un regard avec un plus grand écran et un stylet, idéale pour passer en revue toute une journée de confirmations JARVIS en attente au lieu de les traiter une par une.</span></div>
+<div class="f"><b>COMMENT</b> <span>Une application iPad complète avec support d'écran partagé qui affiche les confirmations JARVIS en attente comme une file que vous pouvez examiner, éditer en ligne, et approuver ou refuser par lots.</span></div>
+<div class="f"><b>POUR</b> <span>S'asseoir avec l'iPad à la fin d'un créneau de temps, passer en revue tout ce qui est arrivé, corriger tout texte mal entendu, puis approuver ou refuser chaque action.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Donne à Verba une surface de revue et d'approbation visible et modifiable que la plupart des assistants sautent entièrement en agissant immédiatement sans jamais montrer de file.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+</div>
+<h2>Expérience, accessibilité et plaisir d'usage</h2>
+<div class="grid">
+<div class="idea">
+<div class="top"><span class="num">071</span><div class="nm">L'effet waouh de la première minute</div></div>
+<div class="f"><b>POURQUOI</b> <span>Le voix-first ne gagne que si le tout premier essai ressemble à de la magie, pas à un assistant de configuration. La plupart des outils de dictée gâchent la première session avec des permissions et des menus, si bien que l'utilisateur n'atteint jamais le moment où le produit gagne réellement sa confiance.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un parcours guidé de soixante secondes : un seul écran de permission micro, puis Verba demande immédiatement à l'utilisateur de simplement parler de n'importe quoi pendant dix secondes, nettoie le texte en direct à l'écran, et montre une comparaison avant-après avec une petite animation de plaisir. Aucun écran de réglages avant cette première victoire.</span></div>
+<div class="f"><b>POUR</b> <span>L'intégration du nouvel utilisateur, la session critique qui décide si quelqu'un garde l'application.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les concurrents chargent la configuration en premier ; Verba charge la récompense en premier, si bien que l'activation se produit avant que l'utilisateur n'ait la moindre chance de partir.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">072</span><div class="nm">Affichage vivant</div></div>
+<div class="f"><b>POURQUOI</b> <span>Une superposition de dictée qui montre seulement une forme d'onde statique ressemble à un utilitaire, pas à un compagnon. La voix est émotionnelle et continue, donc l'affichage devrait visuellement respirer avec la parole de l'utilisateur pour que parler au Mac semble vivant.</span></div>
+<div class="f"><b>COMMENT</b> <span>La superposition flottante utilise une forme douce qui pulse et s'étend selon l'énergie vocale, change doucement de couleur entre écoute, nettoyage, et états prêts, et se stabilise à l'instant où la parole s'arrête. Tout le rendu reste sur le Mac, aucun aller-retour réseau n'est nécessaire pour animer.</span></div>
+<div class="f"><b>POUR</b> <span>L'affichage de dictée toujours actif utilisé pendant chaque session vocale, en particulier la rédaction longue durée.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Transforme un utilitaire en arrière-plan en une présence visible et rassurante que l'utilisateur consulte d'un regard pour se rassurer, contre les barres de progression plates ou les points clignotants des concurrents.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">073</span><div class="nm">Anneau de confirmation</div></div>
+<div class="f"><b>POURQUOI</b> <span>JARVIS agissant au nom de l'utilisateur est puissant mais effrayant si l'étape de confirmation est une boîte de dialogue enfouie. Un geste de confirmation visible et satisfaisant construit la confiance dans les actions autonomes au lieu de faire chercher un bouton à l'utilisateur.</span></div>
+<div class="f"><b>COMMENT</b> <span>Avant qu'une action JARVIS ne s'exécute, un anneau apparaît autour de l'affichage que l'utilisateur complète en maintenant une touche ou en disant une courte phrase de confirmation, se remplissant visiblement comme un compte à rebours. Relâcher trop tôt annule, le compléter valide, et le texte exact de l'action reste entièrement lisible sous l'anneau pendant tout ce temps.</span></div>
+<div class="f"><b>POUR</b> <span>Chaque moment d'action JARVIS, de l'envoi d'un message à l'ouverture d'une application au nom de l'utilisateur.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Rend l'étape de confirmation obligatoire délibérée et rassurante plutôt qu'une interruption, si bien que les utilisateurs font confiance à l'autonomie au lieu de la désactiver.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag S">effort S</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">074</span><div class="nm">Séries de jours d'usage vocal</div></div>
+<div class="f"><b>POURQUOI</b> <span>La formation d'habitude est ce qui transforme un outil nouveau en un réflexe quotidien. Les gens construisent des habitudes autour d'une progression ressentie, donc Verba devrait célébrer discrètement un usage constant sans se transformer en application de productivité harcelante.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un petit compteur privé suit les jours d'usage et le nombre total de mots nettoyés, affiché seulement quand l'utilisateur ouvre un simple panneau de statistiques, avec quelques moments jalons de bon goût comme une série d'une semaine ou un total de mots franchissant un chiffre rond. Pas de classement, pas de pression sociale, pas de notifications qui supplient l'utilisateur de revenir.</span></div>
+<div class="f"><b>POUR</b> <span>La rétention à long terme et la construction d'habitude une fois le premier effet waouh estompé.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Construit un sentiment privé de maîtrise et de progression qui garde l'usage quotidien engageant, sans la mécanique de série culpabilisante qui rend d'autres applications d'habitude punitives.</span></div>
+<div class="tags"><span class="tag parity">parity</span><span class="tag S">effort S</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">075</span><div class="nm">Mode un seul interrupteur</div></div>
+<div class="f"><b>POURQUOI</b> <span>Pour les personnes qui ne peuvent pas utiliser un clavier ou une souris de façon fiable, un outil vocal qui suppose encore un peu de frappe ou de clic n'est pas réellement accessible, c'est juste une frappe plus rapide. La véritable accessibilité signifie que toute l'application, y compris les réglages, peut être pilotée par la voix et un seul interrupteur.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un mode d'accessibilité dédié remplace chaque menu et écran de réglages par une liste linéaire navigable à la voix, lue à voix haute un élément à la fois, avancée ou sélectionnée avec un seul interrupteur physique ou un seul mot parlé comme suivant ou sélectionner. Chaque étape de confirmation dans ce mode est relue à voix haute avant de valider.</span></div>
+<div class="f"><b>POUR</b> <span>Les utilisateurs avec des handicaps moteurs sévères, la SLA, ou une mobilité limitée des mains qui dépendent d'un accès par interrupteur ou d'un contrôle vocal exclusif de l'ordinateur.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>La plupart des outils de dictée ne sont accessibles qu'en apparence parce qu'ils ont encore besoin d'une souris pour être configurés ; une application réellement pilotable par un seul interrupteur ouvre Verba à une population que les concurrents excluent structurellement.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">076</span><div class="nm">Relecture à voix haute</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les personnes qui ne peuvent pas facilement se relire visuellement, y compris certains utilisateurs dyslexiques ou malvoyants, ont besoin que l'étape de confirmation passe par leurs oreilles, pas seulement par leurs yeux. Voix en entrée, voix en sortie referme la boucle comme le ferait un véritable assistant humain.</span></div>
+<div class="f"><b>COMMENT</b> <span>Avant de valider un texte nettoyé ou une action JARVIS, Verba peut relire le résultat final à voix haute sur demande, d'une voix naturelle, puis attendre un oui parlé ou le geste de confirmation visible avant de continuer. La relecture est activée par défaut dans le profil d'accessibilité et optionnelle ailleurs.</span></div>
+<div class="f"><b>POUR</b> <span>Les utilisateurs dyslexiques, malvoyants, ou quiconque rédige mains libres et veut repérer des erreurs à l'oreille.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Referme la boucle pour les utilisateurs qui ne peuvent pas s'appuyer sur une relecture visuelle, un cas d'usage que les concurrents ignorent parce que leur étape de confirmation est purement visuelle.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">077</span><div class="nm">Correction à la voix</div></div>
+<div class="f"><b>POURQUOI</b> <span>Tendre la main vers un clavier pour corriger un seul mot faux brise toute la promesse voix-first et est souvent physiquement impossible pour le public d'accessibilité que Verba devrait le mieux servir. Les corrections doivent se faire de la même façon que les mots sont arrivés, en parlant.</span></div>
+<div class="f"><b>COMMENT</b> <span>L'utilisateur prononce une correction naturelle comme change le deuxième mot pour autre chose ou annule cette dernière phrase, et Verba analyse l'instruction par rapport au tampon de texte nettoyé récent et l'applique en ligne, montrant le changement brièvement surligné avant qu'il ne se stabilise.</span></div>
+<div class="f"><b>POUR</b> <span>Corriger des erreurs de dictée et des mots mal entendus sans jamais toucher un clavier ou un trackpad.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Garde toute la boucle de rédaction et de correction en voix uniquement de bout en bout, là où les concurrents supposent discrètement que l'utilisateur tendra la main vers un clavier pour corriger les erreurs.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">078</span><div class="nm">Pause en douceur</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les personnes qui bégaient, souffrent d'apraxie de la parole, ou de conditions vocales liées à la fatigue ne parlent pas en flux continus et fluides, et un outil de dictée qui punit les pauses en coupant ou en massacrant le texte les exclut activement. L'accessibilité ici signifie que la patience est une fonctionnalité conçue, pas un accident.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un affordance de pause visible laisse l'utilisateur maintenir une touche ou utiliser un signal parlé pour geler l'écoute sans terminer la session, et l'étape de nettoyage de Verba est réglée pour traiter les longues pauses, les faux départs, et les mots répétés comme une entrée normale à lisser plutôt que des erreurs à signaler.</span></div>
+<div class="f"><b>POUR</b> <span>Les utilisateurs qui bégaient, souffrent d'apraxie, ou de fatigue vocale et ont besoin d'une dictée qui ne suppose pas une parole fluide et continue.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Sert directement une population que la plupart des outils de dictée conçoivent implicitement contre, en supposant une parole fluide et ininterrompue, transformant un manque d'accessibilité négligé en une base d'utilisateurs fidèle.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">079</span><div class="nm">Mémoire de mes mots</div></div>
+<div class="f"><b>POURQUOI</b> <span>La dictée générique massacre constamment les noms, surnoms, et le vocabulaire personnel qui comptent le plus pour une personne donnée, ce qui est épuisant pour tout le monde et particulièrement décourageant pour les utilisateurs qui luttent déjà pour communiquer. Une mémoire de mots privée et personnelle donne l'impression que l'outil connaît vraiment l'utilisateur.</span></div>
+<div class="f"><b>COMMENT</b> <span>Verba garde une petite liste privée sur le Mac des noms, lieux, et expressions que l'utilisateur corrige ou confirme à répétition, et biaise silencieusement le futur nettoyage vers ces mots sans demander à l'utilisateur de gérer un dictionnaire. La liste reste entièrement sur l'appareil et est visible et modifiable sur un seul écran simple.</span></div>
+<div class="f"><b>POUR</b> <span>Quiconque a des noms distinctifs, du jargon, ou des expressions personnelles dans sa parole quotidienne, et particulièrement précieux pour la fatigue de correction répétée.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Devient plus personnel et plus précis plus longtemps quelqu'un l'utilise, un avantage cumulatif que les concurrents sans mémoire personnelle sur l'appareil ne peuvent égaler sans envoyer de données hors du Mac.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">080</span><div class="nm">Mode concentration calme</div></div>
+<div class="f"><b>POURQUOI</b> <span>Une superposition chargée et dense en informations peut être accablante pour les utilisateurs neurodivergents ou quiconque dans un moment de forte anxiété, sapant le sentiment d'aisance que la voix devrait avoir. Le plaisir pour ce public signifie du calme visuel, pas plus de retour.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un mode concentration en un geste réduit l'affichage à un seul indicateur de respiration douce et au texte nettoyé, cache le compte de mots, les minuteurs, et l'interface secondaire, et ralentit toute animation à un rythme plus calme. L'étape de confirmation pour les actions JARVIS reste entièrement visible même dans ce mode épuré.</span></div>
+<div class="f"><b>POUR</b> <span>Les utilisateurs neurodivergents, les moments sensibles à l'anxiété, ou quiconque veut une interface plus calme en dictant.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Offre un mode réellement plus calme plutôt qu'une seule interface chargée fixe pour tout le monde, une forme d'accessibilité que les concurrents traitent comme un problème de conception unique pour tous.</span></div>
+<div class="tags"><span class="tag parity">parity</span><span class="tag S">effort S</span></div>
+</div>
+</div>
+<h2>Verticales et profils spécifiques</h2>
+<div class="grid">
+<div class="idea">
+<div class="top"><span class="num">081</span><div class="nm">Rédacteur de commit vocal</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les développeurs vivent dans un flux de codage assisté et détestent lever les mains du clavier pour écrire un message de commit ou une description de PR ; le dire à voix haute est plus rapide et correspond à la façon dont ils racontent déjà leurs propres changements.</span></div>
+<div class="f"><b>COMMENT</b> <span>Prononcez un résumé de ce que vous venez de changer et pourquoi. JARVIS rédige un message de commit conventionnel et une description de PR à partir de vos mots et du diff déjà ouvert dans l'éditeur, puis l'affiche pour confirmation avant que quoi que ce soit ne soit écrit ou poussé.</span></div>
+<div class="f"><b>POUR</b> <span>Transformer une explication parlée d'un changement de code en un commit et une PR propres et relisables sans taper.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Plus rapide que taper un message à la main, et le raisonnement reste privé sur le Mac au lieu de faire un aller-retour via un assistant hébergé qui lit tout votre dépôt.</span></div>
+<div class="tags"><span class="tag parity">parity</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">082</span><div class="nm">Mode canard en plastique</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les développeurs déboguent mieux à voix haute, en expliquant le problème à un auditeur imaginaire ; un agent vocal privé qui écoute réellement et reflète en retour est une amélioration naturelle de cette habitude.</span></div>
+<div class="f"><b>COMMENT</b> <span>Dites quel est le bug et ce que vous avez essayé. JARVIS transcrit et le nettoie en un énoncé de problème structuré (symptôme, attendu, essayé, suspect), enregistré comme une note que vous pouvez coller dans un ticket ou garder comme votre propre journal de réflexion.</span></div>
+<div class="f"><b>POUR</b> <span>Transformer un flot de pensée de débogage parlé en un compte-rendu de problème organisé.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Aucun code ni trace d'erreur ne quitte jamais le Mac pendant que vous réfléchissez à voix haute au bug propriétaire d'un client, contrairement aux outils de chat qui envoient tout à un serveur.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag S">effort S</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">083</span><div class="nm">Mode dictée confidentielle (privilège avocat-client)</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les avocats dictent constamment des mémos, des notes clients, et des stratégies de dossier, mais le privilège signifie que les mots ne peuvent jamais passer par un serveur tiers. C'est l'exigence la plus difficile de la profession et elle décide en quel outil ils font confiance.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un mode verrouillé qui désactive tout chemin réseau pour cette session, filigrane le document résultant comme confidentiel, et nettoie la dictée (mots de remplissage, faux départs, mise en forme des citations) entièrement sur le Mac. JARVIS confirme avant toute exportation ou action de partage.</span></div>
+<div class="f"><b>POUR</b> <span>Dicter des communications client confidentielles et une stratégie de dossier avec une garantie prouvable d'absence de réseau.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les outils vocaux concurrents acheminent l'audio par un serveur par conception, ce qui est disqualifiant pour le travail confidentiel ; un mode honnêtement privé est le facteur décisif pour cet acheteur.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">084</span><div class="nm">Résumé de déposition et d'appel client</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les avocats passent des heures dans des dépositions et des appels clients et ont besoin d'un résumé propre et défendable rapidement, mais ne peuvent pas utiliser un outil de transcription cloud pour des affaires confidentielles.</span></div>
+<div class="f"><b>COMMENT</b> <span>Enregistrez localement, énoncez un bref cadrage (ceci est la déposition Doe, concentre-toi sur les aveux de responsabilité), et JARVIS produit un résumé structuré, des horodatages, et des actions de suivi, le tout traité sur le Mac et confirmé avant l'enregistrement dans le dossier du dossier.</span></div>
+<div class="f"><b>POUR</b> <span>Obtenir un résumé utilisable d'un long enregistrement confidentiel sans envoyer d'audio nulle part.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Égale le résultat des services de transcription que les gens paient déjà, moins l'exposition de confidentialité, ce qui pour le travail juridique n'est pas un plus mais une exigence stricte.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">085</span><div class="nm">Scribe de notes cliniques</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les cliniciens passent plus de temps à taper des notes qu'avec les patients, et les données patient sont la catégorie d'information la plus sensible qu'une personne puisse confier à un logiciel ; tout ce qui est dans le cloud est rédhibitoire pour de nombreux cabinets.</span></div>
+<div class="f"><b>COMMENT</b> <span>Énoncez le résumé de la consultation (ou laissez-le tourner passivement pendant la visite avec un statut d'enregistrement clairement affiché à l'écran), et JARVIS le structure en une note propre (subjectif, objectif, évaluation, plan) formatée selon le modèle existant du cabinet, restant entièrement sur le Mac sans rien de transmis.</span></div>
+<div class="f"><b>POUR</b> <span>Réduire le temps de documentation après chaque consultation patient sans toucher un service de transcription hébergé.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Répond directement à la raison pour laquelle les cliniciens évitent la plupart des outils vocaux : un traitement privé sur l'appareil où les données patient ne quittent jamais la machine est le plus grand avantage face aux produits de transcription cloud.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">086</span><div class="nm">Rédacteur de points investisseurs</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les fondateurs écrivent des points mensuels aux investisseurs dans l'urgence en jonglant avec dix autres choses ; parler des faits marquants du mois est plus rapide que de partir d'une page blanche.</span></div>
+<div class="f"><b>COMMENT</b> <span>Énoncez les victoires, les échecs, les demandes, et les indicateurs du mois dans n'importe quel ordre. JARVIS les organise selon le format standard de mise à jour du fondateur (points forts, indicateurs, demandes, points faibles), nettoyé et prêt à relire avant l'envoi.</span></div>
+<div class="f"><b>POUR</b> <span>Produire une mise à jour investisseurs ou conseil d'administration soignée à partir de quelques minutes de parole au lieu d'une heure d'écriture.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Plus rapide que rédiger de zéro, et les vrais chiffres et difficultés de l'entreprise restent sur le propre Mac du fondateur au lieu d'un assistant de rédaction hébergé.</span></div>
+<div class="tags"><span class="tag parity">parity</span><span class="tag S">effort S</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">087</span><div class="nm">De la réunion aux actions, confirmées</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les fondateurs et opérateurs enchaînent les réunions et les actions se perdent entre les appels ; la capture vocale juste après une réunion, pendant que c'est encore frais, bat la reconstitution de notes plus tard.</span></div>
+<div class="f"><b>COMMENT</b> <span>Après un appel, énoncez un bref récapitulatif des décisions et des responsables. JARVIS extrait les actions avec les responsables et des échéances approximatives, et sur confirmation peut créer les rappels calendrier ou les entrées de tâche via les outils déjà utilisés par l'opérateur.</span></div>
+<div class="f"><b>POUR</b> <span>Ne jamais perdre une décision ou un responsable d'une réunion parce que les notes n'ont jamais été écrites.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Le modèle confirmer-avant-agir signifie que JARVIS peut réellement créer des tâches et des rappels, pas seulement transcrire, ce que les simples applications de dictée ne font pas.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">088</span><div class="nm">Récapitulatif d'appel vers le CRM</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les commerciaux perdent des affaires à cause d'une mauvaise prise de notes ; le moment juste après un appel est celui où les détails sont les plus frais, et les taper dans un CRM ressemble à une corvée qu'on saute.</span></div>
+<div class="f"><b>COMMENT</b> <span>Énoncez un récapitulatif de 30 secondes juste après un appel (étape, objections, prochaine étape, estimation de date de clôture). JARVIS le nettoie en champs prêts pour le CRM et, sur confirmation, consigne l'activité et met à jour l'affaire via le CRM connecté du commercial.</span></div>
+<div class="f"><b>POUR</b> <span>Garder le CRM précis sans que le commercial n'ouvre jamais un formulaire.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Supprime le plus gros point de friction du flux de travail commercial, la consignation des notes, tout en gardant les détails de l'affaire traités localement jusqu'à ce que l'écriture confirmée ait lieu.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">089</span><div class="nm">Du plan vocal au brouillon</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les rédacteurs et créateurs réfléchissent mieux à voix haute qu'ils ne tapent un premier brouillon ; parler d'une idée capture la voix naturelle et le rythme qu'une page blanche tue.</span></div>
+<div class="f"><b>COMMENT</b> <span>Divaguez sur le texte : argument, exemples, notes de ton. JARVIS le nettoie en un plan structuré et un premier brouillon approximatif dans les propres mots du rédacteur (pas réécrit en prose générique), prêt à éditer.</span></div>
+<div class="f"><b>POUR</b> <span>Dépasser la page blanche en transformant une réflexion parlée en un premier brouillon exploitable.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Préserve la formulation et la cadence réelles du rédacteur au lieu de les aplatir en prose générique d'IA, et l'idée non publiée ne quitte jamais le Mac avant que le rédacteur ne soit prêt à la partager.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">090</span><div class="nm">Capture de notes pendant la lecture</div></div>
+<div class="f"><b>POURQUOI</b> <span>Les étudiants et chercheurs lisent des documents denses et veulent capturer des pensées et des questions sans rompre leur concentration pour taper ; énoncer une réaction est plus rapide et plus naturel en pleine lecture.</span></div>
+<div class="f"><b>COMMENT</b> <span>Énoncez une réaction, une question, ou un lien en lisant. JARVIS horodate et nettoie chaque note, l'étiquette à la source si elle est nommée, et compile un journal d'étude ou de littérature courant par projet.</span></div>
+<div class="f"><b>POUR</b> <span>Constituer un ensemble propre de notes d'étude ou de matériel de revue de littérature sans s'arrêter pour taper.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Capture plus rapide que taper en pleine lecture, et pour les utilisateurs en situation de handicap ayant des difficultés de lecture ou motrices, la capture vocale de notes est souvent la seule option confortable, ce que la plupart des outils d'étude ne prennent pas en charge du tout.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag S">effort S</span></div>
+</div>
+</div>
+<h2>Croissance, viralité et monétisation</h2>
+<div class="grid">
+<div class="idea">
+<div class="top"><span class="num">091</span><div class="nm">Clip d'action confirmée</div></div>
+<div class="f"><b>POURQUOI</b> <span>La confiance voix-first se construit sur la preuve, pas sur des démonstrations ; une vraie action JARVIS confirmée est la publicité la plus forte que Verba puisse produire, et elle se produit organiquement chaque jour.</span></div>
+<div class="f"><b>COMMENT</b> <span>Après que l'utilisateur confirme une action JARVIS, Verba génère automatiquement un court clip (forme d'onde vocale plus le changement d'écran résultant) avec une carte de fin fait avec Verba, un geste pour enregistrer ou partager vers n'importe quelle application.</span></div>
+<div class="f"><b>POUR</b> <span>Partager une vraie victoire automatisée (un email rédigé et envoyé, un calendrier vidé) sur les réseaux sociaux ou un canal d'équipe au lieu de la décrire avec des mots.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les concurrents montrent des vidéos de démonstration scriptées ; Verba montre une vraie preuve confirmée issue d'un usage ordinaire, transformant l'usage quotidien en distribution à coût nul.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">092</span><div class="nm">Crédits de parrainage</div></div>
+<div class="f"><b>POURQUOI</b> <span>Un assistant vocal privé se propage par la confiance personnelle, pas par la publicité, donc la récompense de parrainage devrait ressembler à une monnaie qui vaut la peine d'être collectée, pas une remise ponctuelle.</span></div>
+<div class="f"><b>COMMENT</b> <span>Chaque ami invité qui confirme sa première action JARVIS accorde aux deux parties des minutes d'usage supplémentaires ou un déblocage de fonctionnalité, suivi comme un solde de crédit visible dans l'application qui peut être dépensé ou conservé.</span></div>
+<div class="f"><b>POUR</b> <span>Augmenter une allocation de minutes personnelle sans payer, tandis que Verba grandit par des invitations personnelles répétées plutôt que par de la publicité.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Une monnaie visible entraîne un comportement d'invitation répété ; une remise fixe ne pousse qu'une seule invitation et est facile à copier.</span></div>
+<div class="tags"><span class="tag parity">parity</span><span class="tag S">effort S</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">093</span><div class="nm">Série de confirmations</div></div>
+<div class="f"><b>POURQUOI</b> <span>Le voix-first ne devient l'entrée par défaut qu'une fois que c'est une habitude quotidienne, et une série visible transforme une habitude privée en une petite compétition partageable.</span></div>
+<div class="f"><b>COMMENT</b> <span>Verba compte les jours consécutifs avec au moins une action confirmée et affiche un compteur de série privé, avec un classement optionnel visible seulement des amis invités ou d'une équipe.</span></div>
+<div class="f"><b>POUR</b> <span>Les utilisateurs quotidiens et les petites équipes qui veulent une responsabilisation amicale pour continuer à utiliser la voix comme leur façon par défaut d'agir.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Une série plus un classement optionnel donne une raison quotidienne d'ouvrir Verba et d'inviter des amis dans le même classement, une boucle que la plupart des outils de dictée ne construisent jamais.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag S">effort S</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">094</span><div class="nm">Place de marché des flux de travail</div></div>
+<div class="f"><b>POURQUOI</b> <span>La prochaine étape du voix-first n'est pas une seule commande mais une routine reproductible en plusieurs étapes, et le moyen le plus rapide de constituer une bibliothèque de celles-ci est de laisser les utilisateurs publier les leurs.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un utilisateur empaquette une séquence d'actions JARVIS confirmées en un flux de travail nommé, le publie dans un catalogue partagé, et d'autres utilisateurs l'installent en un geste ; le créateur gagne une part chaque fois que d'autres l'utilisent.</span></div>
+<div class="f"><b>POUR</b> <span>Les utilisateurs avancés construisant une routine de boîte de réception matinale ou une routine de bilan de réunion que d'autres peuvent adopter instantanément au lieu de construire de zéro.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Les flux de travail générés par les utilisateurs accumulent la bibliothèque du produit plus vite qu'une équipe interne ne pourrait le faire seule, et les paiements aux créateurs transforment les utilisateurs actifs en une équipe de croissance et de contenu non rémunérée.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">095</span><div class="nm">Espaces de travail d'équipe</div></div>
+<div class="f"><b>POURQUOI</b> <span>Une fois qu'une personne fait confiance à Verba sur son propre Mac, la surface de revenu suivante et naturelle est d'amener des collègues sur les mêmes routines tout en gardant intacte la promesse de conception privée.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un palier équipe ajoute une bibliothèque de flux de travail partagée et un journal de confirmation partagé pour les administrateurs, facturé par poste, tandis que la propre voix et le contenu de chaque coéquipier restent locaux à son propre Mac.</span></div>
+<div class="f"><b>POUR</b> <span>Les petites équipes ou fondateurs qui veulent une routine JARVIS cohérente à travers l'entreprise sans renoncer à la confidentialité sur l'appareil.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Revenu d'expansion par poste au sein d'une même entreprise, plus une boucle naturelle de bouche-à-oreille quand un coéquipier convaincu invite les autres.</span></div>
+<div class="tags"><span class="tag parity">parity</span><span class="tag L">effort L</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">096</span><div class="nm">Pass à vie fondateur</div></div>
+<div class="f"><b>POURQUOI</b> <span>Un palier à vie précoce et limité transforme les premiers convaincus en propriétaires qui parlent du produit parce qu'ils sont arrivés avant tout le monde.</span></div>
+<div class="f"><b>COMMENT</b> <span>Proposer un nombre limité et publiquement décompté de licences à vie à un prix fixe unique, avec un badge fondateur affiché sur les clips partagés et les pages publiques.</span></div>
+<div class="f"><b>POUR</b> <span>Les premiers adoptants et la presse qui veulent verrouiller leur accès et être visiblement parmi les premiers soutiens.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Crée une urgence et une histoire qui vaut la peine d'être racontée, et l'argent d'avance finance la croissance précoce avant que le revenu d'abonnement ne monte en puissance, un levier qu'un concurrent uniquement mensuel n'a pas.</span></div>
+<div class="tags"><span class="tag parity">parity</span><span class="tag S">effort S</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">097</span><div class="nm">Déblocage par invitation</div></div>
+<div class="f"><b>POURQUOI</b> <span>Le défenseur le plus convaincant est quelqu'un qui a eu besoin de l'invitation d'un ami pour débloquer une fonctionnalité qu'il voulait, transformant un verrou en un mécanisme de croissance au lieu d'un simple mur payant.</span></div>
+<div class="f"><b>COMMENT</b> <span>Un petit ensemble d'actions JARVIS avancées (par exemple une routine multi-application) reste verrouillé jusqu'à ce qu'un utilisateur atteigne un nombre d'invitations, affiché comme une barre de progression claire vers le déblocage.</span></div>
+<div class="f"><b>POUR</b> <span>Les utilisateurs qui veulent la routine avancée mais n'ont pas payé, leur donnant un chemin gratuit qui exige d'inviter de vrais amis.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Transforme le verrouillage de fonctionnalité d'un simple mur payant en un mécanisme de croissance, ajoutant de nouvelles installations sans brader le palier payant.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">098</span><div class="nm">Défi de routine hebdomadaire</div></div>
+<div class="f"><b>POURQUOI</b> <span>Une invitation publique récurrente donne à toute la communauté une raison de créer et de partager des clips le même jour, accumulant la portée grâce à un timing partagé.</span></div>
+<div class="f"><b>COMMENT</b> <span>Chaque semaine, Verba propose une routine à thème (par exemple vider sa boîte de réception à la voix) ; tout clip confirmé associé au défi apparaît dans une galerie intégrée à l'application et peut être partagé avec la carte de fin fait avec Verba.</span></div>
+<div class="f"><b>POUR</b> <span>Les membres de la communauté et créateurs qui veulent une raison récurrente de publier et d'être vus en train d'utiliser Verba.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Une cadence hebdomadaire bat les tentatives de viralité ponctuelles, et la galerie intégrée garde l'engagement à l'intérieur du produit au lieu de le disperser sur des plateformes externes.</span></div>
+<div class="tags"><span class="tag leapfrog">leapfrog</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">099</span><div class="nm">Page publique d'automatisation</div></div>
+<div class="f"><b>POURQUOI</b> <span>Une page partageable des vraies routines vocales fonctionnelles de quelqu'un est un signal de confiance plus fort qu'une liste de fonctionnalités, et c'est le foyer naturel de son lien de parrainage.</span></div>
+<div class="f"><b>COMMENT</b> <span>Chaque utilisateur peut choisir de publier une page publique légère listant ses flux de travail nommés, jamais ses données privées ou transcriptions, avec des boutons d'installation et son propre lien de parrainage attaché.</span></div>
+<div class="f"><b>POUR</b> <span>Les utilisateurs avancés et créateurs qui veulent montrer leur configuration comme on partage son bureau ou sa pile d'outils.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Chaque page publique est une page d'atterrissage que Verba n'a pas eu à construire ni à payer, et chacune porte un chemin de parrainage intégré.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag M">effort M</span></div>
+</div>
+<div class="idea">
+<div class="top"><span class="num">100</span><div class="nm">Badge d'action vérifiée</div></div>
+<div class="f"><b>POURQUOI</b> <span>À mesure que JARVIS agit dans davantage d'applications, une marque d'action confirmée et vérifiée devient un signal de confiance qui vaut la peine d'être montré en dehors de Verba lui-même.</span></div>
+<div class="f"><b>COMMENT</b> <span>Tout document, entrée de calendrier, ou brouillon de message que JARVIS a produit peut porter un petit badge vérifié par Verba renvoyant à la façon dont il a été fait et confirmé.</span></div>
+<div class="f"><b>POUR</b> <span>Les utilisateurs professionnels qui veulent que les destinataires voient qu'un élément a été soigneusement confirmé, pas envoyé automatiquement en silence.</span></div>
+<div class="f"><b>AVANTAGE</b> <span>Le badge voyage dans d'autres applications et boîtes de réception, mettant Verba devant des gens qui ne l'ont jamais installé, un canal de distribution qu'un concurrent uniquement sur abonnement ne peut pas reproduire.</span></div>
+<div class="tags"><span class="tag moat">moat</span><span class="tag L">effort L</span></div>
+</div>
+</div>
+<div class="foot">Verba, 100 idées de fonctionnalités pour dominer le marché de la voix, généré à partir de l'analyse des concurrents (9 rivaux, 236 fonctionnalités) et du positionnement de Verba (privé sur l'appareil, action JARVIS soumise à confirmation). Le message reste modèles privés uniquement, zéro tiret cadratin. Un backlog à prioriser, pas un engagement. 2026-07-09.</div>
+</div>
+</div>
+</body></html>
