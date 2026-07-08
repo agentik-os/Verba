@@ -1,0 +1,17 @@
+{
+  "campaign": "value-content",
+  "posted": {
+    "v01": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-08T20:49:28.473489+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4eb7d56912c61564077f16\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \""
+      },
+      "linkedin": {
+        "ok": true,
+        "ts": "2026-07-08T20:49:32.935429+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4eb7dad1eedd236de00d1a\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \""
+      }
+    }
+  }
+}
