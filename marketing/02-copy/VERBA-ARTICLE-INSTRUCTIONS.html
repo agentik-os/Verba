@@ -1,0 +1,80 @@
+<title>Verba, Global Article Instructions (SEO article generation)</title>
+<style>
+  :root{--bg:#050507;--panel:#0c0c10;--ink:#f4f4f6;--dim:rgba(244,244,246,.74);--muted:rgba(244,244,246,.5);--line:rgba(255,255,255,.09);--acc:#ff5a4d;--warm:#f4ede0;--good:#5ac37a;--font:-apple-system,BlinkMacSystemFont,"Inter",system-ui,sans-serif}
+  @media(prefers-color-scheme:light){:root{--bg:#f6f6f7;--panel:#fff;--ink:#0a0a0c;--dim:rgba(10,10,12,.74);--muted:rgba(10,10,12,.54);--line:rgba(10,10,12,.1);--warm:#7a5b3a}}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:840px;margin:0 auto;padding:48px 22px 86px}
+  .kick{font-size:12px;text-transform:uppercase;letter-spacing:.22em;color:var(--acc);font-weight:700}
+  h1{font-size:34px;font-weight:600;letter-spacing:-.03em;margin:8px 0 6px}h1 .d{color:var(--acc)}
+  .sub{font-size:16px;color:var(--dim);max-width:64ch}
+  h2{font-size:21px;font-weight:600;letter-spacing:-.02em;margin:38px 0 8px;padding-top:18px;border-top:1px solid var(--line)}
+  h3{font-size:15.5px;margin:18px 0 4px}
+  p,li{color:var(--dim);font-size:15px}b{color:var(--ink)}
+  ol,ul{padding-left:20px}li{margin:5px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:10px 0}
+  .rule{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:10px;padding:11px 15px;margin:7px 0;font-size:14.5px}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:.86em;background:rgba(127,127,127,.15);padding:1px 6px;border-radius:5px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:10px 0}
+  th,td{text-align:left;padding:8px 11px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+  .foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+</style>
+<div class="wrap">
+<div class="kick">Verba · article generation brief</div>
+<h1>Verba<span class="d">.</span> Global Article Instructions</h1>
+<p class="sub">Scope: instructions for generating ONE Verba SEO article per run (blog, comparison, how-to, use-case, privacy explainer). Follow these for every article. This is not a posting or campaign brief.</p>
+
+<h2>Product and positioning (context for the writer)</h2>
+<div class="card"><p>Verba is the <b>private voice agent for Mac</b>. You hold a key, speak, and your words appear clean wherever your cursor is. When you mean it, <b>JARVIS</b> plans the action, shows you the step, waits for your confirm, then runs it across your apps. Two promises no rival makes together: <b>private</b> (your voice and words stay on your Mac) and <b>it acts</b> (confirm-gated). Sell the outcome, never the machinery.</p></div>
+
+<h2>Hard rules (an article that breaks one is rejected)</h2>
+<div class="rule"><b>Secret tech.</b> Never name the technology behind listening, dictation, or the AI: no model or vendor names, no "bring your own AI / reuse your subscription / no key", and never the word "cloud". Say <b>private AI models</b> and <b>your data stays on your Mac</b>. Describe rivals as "sends your audio to their servers", never "cloud".</div>
+<div class="rule"><b>No long dash.</b> Zero em dash and zero en dash anywhere in the article. Use comma, period, colon, or parentheses.</div>
+<div class="rule"><b>English only. Exact claims only.</b> No invented metrics, no fake testimonials, no fabricated benchmarks. If a number is not verified, do not use it.</div>
+<div class="rule"><b>No numeric pricing in the body</b> unless the article is explicitly a pricing page. Link to verba.run/pricing instead.</div>
+<div class="rule"><b>Every JARVIS example shows the confirm step.</b></div>
+
+<h2>Article structure (produce all of these)</h2>
+<ol>
+<li><b>SEO title / H1</b> (<= 60 chars) containing the primary keyword, benefit-led, not clickbait.</li>
+<li><b>Meta description</b> (<= 155 chars) with the keyword and a clear payoff.</li>
+<li><b>Slug</b> (kebab-case, keyword-based, no tech names).</li>
+<li><b>Intro</b> (2 to 3 short paragraphs): name the reader's real problem, promise the payoff, no fluff. The first sentence must earn the read.</li>
+<li><b>Body</b> in scannable <b>H2 / H3</b> sections, one idea each, benefit-led and concrete (JTBD, real workflows, examples). Short paragraphs, occasional lists.</li>
+<li><b>Comparison table</b> when the article is a "Verba vs X" piece: honest, specific, fair to the competitor, Verba's real edge = private on your Mac + confirm-gated action.</li>
+<li><b>FAQ</b> (3 to 6 Q and A, answer-first) so the article is eligible for rich results and AI answer engines.</li>
+<li><b>Soft CTA</b> to verba.run (try it, raw dictation is free forever). One CTA, not a sales wall.</li>
+<li><b>Suggested internal links</b> (2 to 4) to related Verba pages / articles.</li>
+<li><b>JSON-LD suggestion</b>: Article + FAQPage (no tech names in any field).</li>
+</ol>
+
+<h2>SEO and GEO</h2>
+<ul>
+<li>Target <b>one primary keyword</b> + a couple of secondary ones; match the search intent (informational, comparison, or transactional). No keyword stuffing.</li>
+<li>Write for humans first, structure for machines: clear H2s that answer a question, a direct answer in the first line of each section, a real FAQ.</li>
+<li>For comparison / alternative articles, title pattern: <code>Verba vs [Competitor]: the private Mac voice app that also acts</code>.</li>
+<li>Length: 1200 to 2000 words for pillar/how-to; 800 to 1400 for a focused comparison. Depth over padding.</li>
+</ul>
+
+<h2>Voice and tone</h2>
+<p>Confident, candid, a little witty, pro-user, never salesy, Apple-native. Concrete over abstract. Show the workflow, do not just assert benefits. Address the reader as "you".</p>
+
+<h2>Article types and their angle</h2>
+<table>
+<tr><th>Type</th><th>Primary angle</th></tr>
+<tr><td>How-to / workflow</td><td>"How to [dictate / draft / run a task] on your Mac by voice", product as one natural part.</td></tr>
+<tr><td>Comparison (vs a rival)</td><td>Honest table + why private-on-Mac + confirm-gated action wins for the reader.</td></tr>
+<tr><td>Use-case</td><td>A specific job (standup notes, client email, long-form draft) done by voice, start to finish.</td></tr>
+<tr><td>Privacy explainer</td><td>Why your voice never leaving your Mac matters, in plain language, no tech names.</td></tr>
+</table>
+
+<h2>Do not</h2>
+<ul>
+<li>Name any underlying model, vendor, or the word "cloud".</li>
+<li>Use em or en dashes.</li>
+<li>Invent statistics, quotes, or ratings.</li>
+<li>Keyword-stuff or write thin, generic listicle filler.</li>
+<li>Add posting cadence, channel plans, or campaign strategy: out of scope for an article.</li>
+</ul>
+
+<div class="foot">Verba global article instructions · brief for generating one SEO article at a time · private-models messaging, zero long dash, exact claims, benefit-led, answer-first structure. The broader posting/campaign doctrine is a separate document.</div>
+</div>
