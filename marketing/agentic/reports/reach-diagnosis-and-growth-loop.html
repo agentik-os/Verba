@@ -1,0 +1,111 @@
+<title>Verba, Reach Diagnosis and Self-Improving Growth Loop</title>
+<style>
+  :root{--bg:#08080b;--panel:#111117;--ink:#f2f2f6;--dim:rgba(242,242,246,.72);--muted:rgba(242,242,246,.5);--line:rgba(255,255,255,.09);--acc:#ff5a4d;--warm:#f4ede0;--good:#5ac37a;--gold:#f4c94d;--font:-apple-system,BlinkMacSystemFont,"Inter",system-ui,sans-serif}
+  @media(prefers-color-scheme:light){:root{--bg:#f4f3f0;--panel:#fff;--ink:#0e0e12;--dim:rgba(14,14,18,.74);--muted:rgba(14,14,18,.54);--line:rgba(14,14,18,.1);--warm:#7a5b3a}}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:44px 22px 80px}
+  h1{font-size:34px;font-weight:600;letter-spacing:-.03em;margin:0 0 6px}
+  h2{font-size:23px;font-weight:600;letter-spacing:-.02em;margin:40px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+  h3{font-size:17px;margin:22px 0 6px}
+  .kick{font-size:12px;text-transform:uppercase;letter-spacing:.2em;color:var(--acc);font-weight:700}
+  p,li{color:var(--dim);font-size:15px}b{color:var(--ink)}
+  a{color:var(--warm)}
+  .lede{font-size:17px;color:var(--dim);border-left:3px solid var(--acc);padding:6px 0 6px 16px;margin:16px 0 4px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:12px 0}
+  .card.bad{border-left:3px solid var(--acc)}.card.do{border-left:3px solid var(--good)}
+  .t{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700;margin-bottom:5px}
+  ol,ul{padding-left:20px}li{margin:5px 0}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid var(--line);color:var(--muted);margin-left:6px}
+  .tag.c{color:var(--good);border-color:var(--good)}.tag.l{color:var(--gold);border-color:var(--gold)}.tag.a{color:var(--acc);border-color:var(--acc)}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:.86em;background:rgba(127,127,127,.14);padding:1px 5px;border-radius:4px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:12px 0}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+  .foot{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+</style>
+<div class="wrap">
+<div class="kick">Verba growth · marketing intelligence</div>
+<h1>Why we have no reach, and the loop that fixes it</h1>
+<p class="lede">The changelog campaign published cleanly (22/22, X + Reddit, hourly). It got no reach. This is why, grounded in real 2025-2026 sources, and the self-improving loop to change it. Evidence tagged <span class="tag c">CONFIRMED</span> <span class="tag l">LIKELY</span> <span class="tag a">ANECDOTAL</span>.</p>
+
+<h2>The diagnosis: 6 root causes</h2>
+
+<div class="card bad"><div class="t">1. We posted Reddit to the PROFILE, not into subreddits</div>
+<p>The single biggest Reddit cause. A scheduler posting to the connected account with no subreddit target posts to <code>u/VerbaRun</code>. A profile post reaches only your followers' home feeds and profile visitors. With ~0 followers that is functionally zero audience, no Hot ranking, no r/all, no recommendations. <span class="tag l">LIKELY</span> (<a href="https://support.reddithelp.com/hc/en-us/articles/4406644781204-How-do-followers-work-and-how-can-I-opt-in-or-out">Reddit Help: followers</a>). No copy change fixes this; the post must target a subreddit, and the account must clear that sub's karma/age gate first.</p></div>
+
+<div class="card bad"><div class="t">2. Cold accounts (0 followers) + broadcast = no distribution</div>
+<p>X sources ~50% in-network / 50% out-of-network candidates and co-ranks by predicted engagement. Zero followers = no in-network surface and no interaction history for the discovery layer to match, so nothing seeds early-engagement velocity, so nothing gets amplified. A hidden reputation score (TweepCred) also throttles brand-new accounts. <span class="tag l">LIKELY</span> (algorithm-code-derived, <a href="https://github.com/twitter/the-algorithm">the-algorithm</a>).</p></div>
+
+<div class="card bad"><div class="t">3. Broadcast earns likes; the algorithm pays for replies (~27x)</div>
+<p>2023 open-source Heavy Ranker weights: like <b>0.5</b>, retweet <b>1.0</b>, reply <b>13.5</b>, reply the author engages back <b>75.0</b>, negative feedback <b>-74</b>, report <b>-369</b>. <span class="tag c">CONFIRMED</span> for 2023 values (<a href="https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/README.md">recap README</a>). Changelog cards generate likes at best and zero conversation, so they earn almost no ranked signal.</p></div>
+
+<div class="card bad"><div class="t">4. Links in the post body were invisible (non-Premium)</div>
+<p>Buffer analyzed <b>18.8M posts across 71k accounts</b> (Oct 2025): non-Premium <b>link posts hit ~0% median engagement after March 2025</b>; Premium accounts get ~10x median reach. <span class="tag c">CONFIRMED</span> (<a href="https://buffer.com/resources/links-on-x/">Buffer study</a>). Fix: link goes in the first reply, never the main post. X softened this penalty in Oct 2025 but the effect is not yet independently measured.</p></div>
+
+<div class="card bad"><div class="t">5. We fly blind: no analytics pipe</div>
+<p>Zernio publishes but exposes zero analytics (every metrics endpoint returns 404). We cannot see impressions, engagement, or profile-visit-to-follow, so we cannot know what works or optimize. A growth system without measurement is a slot machine.</p></div>
+
+<div class="card bad"><div class="t">6. Changelog content is the lowest-reach format</div>
+<p>Bare "we shipped X" announcements are the weakest format on both platforms. They start cold (no velocity), read as promo (Reddit filters + X mutes), and invite no reply. The winners from zero all run conversation, story, demo, and build-in-public, not release feeds.</p></div>
+
+<h2>Did the Reddit posts happen? Yes, but at the wrong address</h2>
+<p>All 22 posted to Reddit successfully via the API, but to the <b>u/VerbaRun profile</b>, not into subreddits (Zernio's post command has no subreddit target). So they are technically live and technically invisible. Real Reddit reach is not automatable safely: it needs a warmed human account (karma + age), value-first comments, and subreddit-targeted show-and-tell at ~90/10 value-to-promo, or the account gets filtered or shadowbanned. Auto-posting promo from a cold account into communities is the textbook ban pattern. <span class="tag l">LIKELY</span> (<a href="https://taboogrow.com/blog/reddit-shadowban-guide/">shadowban guide</a>, <a href="https://www.conbersa.ai/learn/reddit-self-promotion-rules">self-promo rules</a>).</p>
+
+<h2>The fixes, ranked by impact</h2>
+<div class="tablewrap"><table>
+<tr><th>#</th><th>Fix</th><th>Owner</th><th>Why</th></tr>
+<tr><td>1</td><td><b>Flip broadcast to reply-first engagement on X.</b> 15-20 genuine replies/day into fresh posts (&lt;15 min old) of accounts 5-20x our size, in the voice/dictation/Mac/privacy niche.</td><td>system + session</td><td>The proven cold-start move; earns the reply=13.5 / reply-back=75 weights and borrows a seed audience. This is the growth-engine skill's exact job.</td></tr>
+<tr><td>2</td><td><b>Never put the link in the post body.</b> Link goes in the first reply; body ends on a question or a build-in-public beat.</td><td>system</td><td>The one CONFIRMED large-sample reach unlock, zero cost (Buffer 18.8M).</td></tr>
+<tr><td>3</td><td><b>X Premium (~$8/mo) on @verba_run.</b></td><td>operator</td><td>~10x median reach + unlocks the analytics we need to run the loop.</td></tr>
+<tr><td>4</td><td><b>Reddit: warm the account, then value-first comments + subreddit-targeted show-and-tell.</b> r/macapps (most promo-tolerant), r/productivity, r/dictation, r/SideProject. Never the profile, never auto-promo.</td><td>human (gated)</td><td>The only Reddit motion that reaches and does not get banned.</td></tr>
+<tr><td>5</td><td><b>Content = conversation + build-in-public + demo,</b> not changelog announcements. Every card ends on a real question.</td><td>system</td><td>Broadcasts get likes; questions get the replies the ranker rewards.</td></tr>
+<tr><td>6</td><td><b>Measure profile-visit-to-follow, not impressions.</b></td><td>system</td><td>The leading indicator of real growth; impressions are diagnostic only.</td></tr>
+</table></div>
+
+<h2>The self-improving loop (design)</h2>
+<p>A bounded loop (OmegaOS R-LOOP: verifiable goal, memory, a ceiling, escalate to human, never "post until it works") that learns what works and doubles down.</p>
+<div class="card"><div class="t">Architecture</div>
+<pre style="white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--dim)">arms  = hook_type x format x post_time x topic_angle (small grid)
+loop (per slot):
+  1 SAMPLE   Thompson-sample an arm from Beta posteriors (explore, then exploit)
+  2 GENERATE the post for that arm (writing model), link in first reply, ends on a question
+  3 GATE     adversarial anti-spam/anti-cringe + secret-tech + no-em-dash (default reject)
+  4 PUBLISH  gated, operator GO for the irreversible action
+  5 MEASURE  +1h (velocity), +24h, +72h  via ScrapeCreators + X own-metrics + Reddit .json
+  6 REWARD   w1*(engagements/impr) + w2*(profile_clicks/impr) + w3*(early_velocity_z)
+  7 UPDATE   reward -> arm posterior;  WINNER when posterior beats baseline over >=5 samples
+  8 DOUBLE   winner gets a higher sampling floor + auto-clones its hook/format for next slots;
+             loser drops to minimum exploration.  Ceiling: cap regenerations, escalate.</pre>
+<p>Winner metric = engagement rate + first-hour velocity + profile-visit-to-follow (the follow proxy). "When it works, double down" = the winner-promotion + format-clone rules above. Multi-armed bandit (Thompson Sampling) beats fixed A/B for continuous content because it reallocates as data arrives. <span class="tag l">LIKELY</span> (<a href="https://splitmetrics.com/blog/multi-armed-bandit-in-a-b-testing/">bandit vs A/B</a>).</p></div>
+
+<h3>Measurement data sources (Zernio has none)</h3>
+<table>
+<tr><th>Source</th><th>Gives</th><th>Cost</th><th>Status</th></tr>
+<tr><td>ScrapeCreators (X + Reddit)</td><td>public per-post engagement</td><td>PAYG, key present</td><td>wired in growth-engine; endpoint needs finalizing</td></tr>
+<tr><td>Reddit <code>.json</code></td><td>score, comments, ratio</td><td>free</td><td>needs real User-Agent; profile posts have ~none anyway</td></tr>
+<tr><td>X API own-metrics</td><td>impressions, profile clicks (author-only)</td><td>~$0.001/read</td><td>needs an X API key/OAuth</td></tr>
+<tr><td>X native dashboard</td><td>follows-per-post</td><td>Premium ~$8/mo</td><td>needs Premium + session</td></tr>
+</table>
+
+<h2>Rollout across all projects (marketing machine)</h2>
+<p>Generalize the loop as a per-project, config-driven engine in <code>Station/Marketing</code>, one config per project (accounts, niche/topic list, voice, caps, arms). Strict per-project isolation (OmegaOS R-PROJ): separate account sessions, state dirs, and API-key scoping, never shared. Publishing stays single-executor per project to avoid double-posting. Reuse the two existing skills as the engine: <b>growth-engine</b> (X engagement, Playwright, gated + capped) and <b>agent-ecosystem-watch</b> (content radar, publishes via zernio); add the missing measurement + bandit-state + reallocation arc on top.</p>
+
+<h2>What unblocks reach (needs you), vs what I build</h2>
+<div class="card do"><div class="t">You (operator)</div><ul>
+<li>Turn on <b>X Premium</b> on @verba_run (~10x reach + analytics).</li>
+<li>Provide an <b>X login session</b> for @verba_run so the engagement layer can post replies (no session = no engagement automation).</li>
+<li>Green-light the <b>human Reddit motion</b> (warm account + value-first), since safe Reddit reach is not automatable.</li>
+</ul></div>
+<div class="card do"><div class="t">Me (buildable now / next)</div><ul>
+<li>Stop the counterproductive Reddit profile auto-posting (the changelog cron is already removed).</li>
+<li>Build the <b>measurement collector</b> (ScrapeCreators + Reddit .json + X own-metrics when keyed) writing a per-post metrics log.</li>
+<li>Build the <b>bandit state + nightly analyze/reallocate</b> job, bounded per R-LOOP.</li>
+<li>Rewrite the poster: <b>link in first reply</b>, cards end on a question, conversation-first.</li>
+<li>Wire it per-project in the marketing machine with isolation.</li>
+</ul></div>
+
+<h2>Honesty ledger</h2>
+<p><b>CONFIRMED:</b> Buffer 18.8M study (link 0% / Premium 10x); 2023 algorithm weights; Reddit profile-vs-subreddit distribution; Zernio has no analytics (tested); our Reddit posts went to the profile. <b>LIKELY:</b> cold-start mechanics, reply-first tactic, bandit-over-A/B, karma/age gates. <b>ANECDOTAL / do not quote as fact:</b> specific follower-growth case numbers, engagement-rate benchmarks, "first 15 min" thresholds. Nothing here is invented; every hard claim carries a source.</p>
+
+<div class="foot">Verba marketing intelligence · reach diagnosis and growth-loop design · sources cited inline · guardrails: private-models-only messaging, zero em dash, exact claims. Built from three deep-research passes (X, Reddit, tooling) plus live checks of our own accounts and Zernio.</div>
+</div>
