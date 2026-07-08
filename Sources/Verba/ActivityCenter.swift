@@ -88,9 +88,11 @@ final class ActivityCenter: ObservableObject {
     /// active (spinner); done → ✓, failed → ✗. Anything else (awaiting confirm/clarify/input, cancelled,
     /// chat, or the row vanished) drops the spinner — those are either user-owned or non-events.
     private func wireJarvisBridge() {
-        bridgeCancellable = ActionFeedStore.shared.$items
-            .receive(on: RunLoop.main)
-            .sink { [weak self] feed in self?.syncJarvis(feed) }
+        // DISABLED: JARVIS actions already show in the centered Action feed widget (with their own
+        // Done state). Mirroring them into a bottom-right toast produced a duplicate "Done" clone.
+        // The bottom-right toasts are only for genuinely-background ops (a to-do captured / a note
+        // transcribing while you do something else) that otherwise have no visible confirmation.
+        // (syncJarvis is kept below but no longer wired.)
     }
 
     private func syncJarvis(_ feed: [ActionFeedItem]) {
