@@ -36,6 +36,11 @@ enum Changelog {
             date: "July 4, 2026", tag: "Today",
             summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
             entries: [
+                ChangelogEntry(version: "0.9.66",
+                    title: "Your local AI installs itself, with a progress bar",
+                    items: [
+                        "First run on Fully local now downloads both on-device models (speech + AI) automatically, with a visible progress bar during onboarding — so your first prompt, mode or JARVIS command just works, no manual setup. If you try before it's ready, you see a friendly \"setting up… NN%\" instead of an error. Raw dictation works instantly regardless.",
+                    ]),
                 ChangelogEntry(version: "0.9.65",
                     title: "See every background task, and results land where you started",
                     items: [

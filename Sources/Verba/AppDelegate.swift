@@ -428,7 +428,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         // Fully local: ensure the open-source engine AND the model are installed so on-device
         // reprompting is ready without any manual setup (Raw dictation already works immediately).
-        if s.repromptBackend == .localLLM { LocalLLM.setupFullyLocal() }
+        if s.repromptBackend == .localLLM { Task { @MainActor in LocalSetupProgress.shared.start() } }
         // Warm the Claude Code path lookup off the reprompt path (its login-shell probe is slow).
         Task.detached(priority: .utility) { _ = ClaudeCode.isAvailable }
     }

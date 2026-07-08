@@ -280,12 +280,13 @@ enum LocalLLM {
     }
 
     enum LLMError: LocalizedError {
-        case notRunning, notDownloaded(String), http(String)
+        case notRunning, notDownloaded(String), http(String), settingUp(Int)
         var errorDescription: String? {
             switch self {
             case .notRunning: return "Local engine isn't running. Set it up in Settings ▸ AI rewriting."
             case .notDownloaded(let m): return "The local model “\(m)” isn't downloaded yet. Open Settings ▸ AI rewriting and tap “Download model”."
             case .http(let b): return "Local model error: \(b)"
+            case .settingUp(let pct): return "Setting up your local AI… \(pct)% — one moment. Your dictation still works; AI rewriting turns on as soon as the download finishes."
             }
         }
     }
@@ -293,17 +294,35 @@ enum LocalLLM {
     /// Full fully-local setup, safe to call repeatedly (idempotent): ensure the Ollama server is
     /// running (download the open-source engine if it's missing), then pull the configured model if
     /// it isn't present yet. Without the model pull, reprompting throws notDownloaded on first use.
+    ///
+    /// Progress + completion are reported into `LocalSetupProgress.shared` so the onboarding bar and
+    /// the first-use guard can show real state instead of dropping it on the floor. Already-present
+    /// models finish instantly (no re-download).
     static func setupFullyLocal() {
+        let m = Settings.shared.localLLMModel
+        guard !m.isEmpty else { Task { @MainActor in LocalSetupProgress.shared.finishModel(true) }; return }
+        let fail: () -> Void = { Task { @MainActor in LocalSetupProgress.shared.finishModel(false) } }
         let pullModel = {
-            let m = Settings.shared.localLLMModel
-            guard !m.isEmpty else { return }
-            // Warm the model into memory once it's present, so the FIRST JARVIS action is instant
-            // instead of paying the multi-second cold-load of a 5GB model.
-            pull(m, progress: { _ in }, done: { _ in warm(m) })
+            // If the model is already downloaded, don't re-pull — flip straight to ready and warm it.
+            hasModel(m) { present in
+                if present {
+                    warm(m)
+                    Task { @MainActor in LocalSetupProgress.shared.finishModel(true) }
+                    return
+                }
+                // Warm the model into memory once it's present, so the FIRST JARVIS action is instant
+                // instead of paying the multi-second cold-load of a 5GB model.
+                pull(m,
+                     progress: { p in Task { @MainActor in LocalSetupProgress.shared.reportModel(p) } },
+                     done: { ok in
+                        if ok { warm(m) }
+                        Task { @MainActor in LocalSetupProgress.shared.finishModel(ok) }
+                     })
+            }
         }
         ensureServer { up in
             if up { pullModel() }
-            else { installBinary { ok in if ok { ensureServer { u in if u { pullModel() } } } } }
+            else { installBinary { ok in if ok { ensureServer { u in if u { pullModel() } else { fail() } } } else { fail() } } }
         }
     }
 
@@ -319,6 +338,13 @@ enum LocalLLM {
     }
 
     static func chat(system: String, user: String, model: String) async throws -> String {
+        // First-launch guard: if the fully-local models are still downloading, surface the friendly
+        // setup progress instead of a cryptic "model not found". Only fires while a download is
+        // actively in flight — once installed, phase is .ready/.idle and we proceed normally.
+        if await MainActor.run(body: { LocalSetupProgress.shared.isSettingUp }) {
+            let pct = await MainActor.run(body: { LocalSetupProgress.shared.percent })
+            throw LLMError.settingUp(pct)
+        }
         var req = URLRequest(url: URL(string: "\(host)/api/chat")!)
         req.httpMethod = "POST"; req.setValue("application/json", forHTTPHeaderField: "content-type")
         req.timeoutInterval = 180

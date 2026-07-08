@@ -21,6 +21,13 @@ const DAYS: Day[] = [
     summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
     entries: [
       {
+        version: "0.9.66",
+        title: "Your local AI installs itself, with a progress bar",
+        items: [
+          "First run on Fully local now downloads both on-device models (speech + AI) automatically, with a visible progress bar during onboarding — so your first prompt, mode or JARVIS command just works, no manual setup. If you try before it\u2019s ready, you see a friendly \u201csetting up\u2026 NN%\u201d instead of an error. Raw dictation works instantly regardless.",
+        ],
+      },
+      {
         version: "0.9.65",
         title: "See every background task, and results land where you started",
         items: [

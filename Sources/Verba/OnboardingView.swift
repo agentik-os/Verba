@@ -12,6 +12,7 @@ struct OnboardingView: View {
 
     @State private var step = 0
     @ObservedObject private var coach = InputCoach.shared
+    @ObservedObject private var localSetup = LocalSetupProgress.shared
     @State private var copied = false
     @State private var signingIn = false
     @State private var micGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
@@ -195,8 +196,47 @@ struct OnboardingView: View {
             engineCard(.auto, "bolt.fill", L("Verba managed"), L("Works instantly. Zero setup."))
             engineCard(.claudeCode, "brain", L("My Claude subscription"), L("Use your Claude Pro/Max plan, no API key."))
             engineExplainer
+            if settings.repromptBackend == .localLLM && localSetup.phase != .idle { localSetupCard }
             Text(L("You can change this anytime in Settings ▸ AI rewriting.")).font(.caption).foregroundStyle(.secondary)
         }
+    }
+
+    /// First-launch download bar for the two on-device models. Reassuring, non-blocking — the user
+    /// can finish onboarding while it keeps updating. Hidden entirely when the models are already
+    /// installed (phase jumps straight to .ready with no bar shown mid-download).
+    @ViewBuilder private var localSetupCard: some View {
+        let done = localSetup.phase == .ready
+        let failed = localSetup.phase == .failed
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: done ? "checkmark.seal.fill" : (failed ? "exclamationmark.triangle.fill" : "arrow.down.circle"))
+                    .font(.system(size: 16))
+                    .foregroundStyle(done ? AnyShapeStyle(.green) : (failed ? AnyShapeStyle(.orange) : AnyShapeStyle(.tint)))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(done ? L("Your private on-device AI is ready")
+                              : (failed ? L("Setup didn't finish")
+                                        : L("Setting up your private on-device AI"))).font(.callout.weight(.semibold))
+                    Text(done ? L("Everything runs on your Mac. Nothing leaves the device.")
+                              : (failed ? L("You can retry anytime in Settings ▸ AI rewriting.")
+                                        : L("This runs once. You can keep going — it finishes in the background."))).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                if !done && !failed { Text("\(localSetup.percent)%").font(.callout.weight(.semibold).monospacedDigit()).foregroundStyle(.secondary) }
+            }
+            if !done && !failed {
+                VStack(alignment: .leading, spacing: 4) {
+                    ProgressView(value: localSetup.engineProgress).progressViewStyle(.linear)
+                    Text(localSetup.speechLabel).font(.caption2).foregroundStyle(.secondary)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    ProgressView(value: localSetup.modelProgress).progressViewStyle(.linear)
+                    Text(localSetup.aiLabel).font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+        .glass(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .transition(.opacity)
     }
 
     /// Contextual "how this works" shown under the cards for the selected engine — so the user
@@ -234,8 +274,10 @@ struct OnboardingView: View {
             // which Verba downloads and starts itself if it isn't already installed).
             if backend == .localLLM {
                 settings.engine = .parakeet
-                Task.detached { _ = await EngineManager.install(.parakeet) }
-                LocalLLM.setupFullyLocal()   // engine + model, so on-device reprompting actually works
+                // Download BOTH on-device models with progress tracked (not dropped), so the bar
+                // below can reassure the user and the first prompt never hits a silent "not ready".
+                // Idempotent + already-installed-aware: no re-download, straight to ready if present.
+                LocalSetupProgress.shared.start()
             }
         } label: {
             HStack(spacing: 12) {
