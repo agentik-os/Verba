@@ -36,6 +36,11 @@ enum Changelog {
             date: "July 4, 2026", tag: "Today",
             summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
             entries: [
+                ChangelogEntry(version: "0.9.70",
+                    title: "Every AI feature works on every engine",
+                    items: [
+                        "Improve on feedback, and Context mode, no longer error when you run a local model. If your engine can't read a screenshot, Verba automatically works from your words instead of failing. We audited every AI feature so whatever engine you pick, it just works.",
+                    ]),
                 ChangelogEntry(version: "0.9.69",
                     title: "Latest cloud models available",
                     items: [

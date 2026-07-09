@@ -489,15 +489,24 @@ struct FeedbackView: View {
 
         Rules: Keep every concrete detail, the original meaning and the user's tone. Be concise — one short line per field. Do not add new ideas, do not answer or comment on the feedback. If a field is genuinely not stated and cannot be reasonably inferred from the text, write "—" for that field rather than inventing content. Return only the three labelled lines, with no preamble, quotes or extra commentary.\(imageNote)
         """
+        // Screenshot-free system prompt for the text-only path: without it, a text model is told to
+        // "read the attached screenshot" it never receives and is pressured to invent a Section.
+        let systemTextOnly = system.replacingOccurrences(of: imageNote, with: "")
         Task {
             do {
                 let improved = try await {
-                    if let shot {
+                    // Only send the screenshot to a backend that can actually see it (not a local model,
+                    // not an unsigned/keyless backend). Otherwise degrade to a text-only reprompt on the
+                    // SAME selected model, so Improve works on every engine instead of erroring on local.
+                    if let shot, Reprompter.backendSupportsVision {
                         return try await Reprompter(model: model)
                             .repromptVision(transcript: original, systemPrompt: system, imagePNG: shot)
                     }
+                    // No usable vision: if there's typed text, clean it up text-only; a screenshot-only
+                    // feedback on a vision-incapable backend has nothing to improve, so keep the draft.
+                    guard !original.isEmpty else { return original }
                     return try await Reprompter(model: model)
-                        .reprompt(transcript: original, systemPrompt: system)
+                        .reprompt(transcript: original, systemPrompt: systemTextOnly)
                 }().trimmingCharacters(in: .whitespacesAndNewlines)
                 await MainActor.run {
                     improving = false

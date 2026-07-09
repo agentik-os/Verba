@@ -177,6 +177,25 @@ struct Reprompter {
     // Vision needs a multimodal model. We use whichever provider the "My API key"/OpenRouter
     // backend is set to, when its key is present. The CLI and local engines can't take images,
     // so we route around them with a clear message if no usable key/account is configured.
+    /// True when the CURRENTLY-selected backend can actually see a screenshot. Local text models can't;
+    /// the hosted/CLI paths need a signed-in account; an apiKey provider needs its key. Callers gate on
+    /// this to send a screenshot-free prompt (and text-only reprompt) when vision isn't available, so a
+    /// feature that offers screenshots still works on every model instead of erroring.
+    static var backendSupportsVision: Bool {
+        switch Settings.shared.repromptBackend.resolved {
+        case .apiKey:
+            switch Settings.shared.apiKeyProvider {
+            case .anthropic:  return !(Keychain.anthropicKey ?? "").isEmpty
+            case .openAI:     return !(Keychain.openAIKey ?? "").isEmpty
+            case .openRouter: return !(Keychain.openRouterKey ?? "").isEmpty
+            }
+        case .openRouter:      return !(Keychain.openRouterKey ?? "").isEmpty
+        case .verba, .claudeCode:
+            return !Settings.shared.proEmail.trimmingCharacters(in: .whitespaces).isEmpty
+        case .localLLM, .auto: return false
+        }
+    }
+
     func repromptVision(transcript: String, systemPrompt: String, imagePNG: Data) async throws -> String {
         let userText = "Here is what I said. Use the screenshot to do it:\n\n<request>\n\(transcript)\n</request>"
         let b64 = imagePNG.base64EncodedString()
@@ -217,9 +236,11 @@ struct Reprompter {
             }
             return try await verbaHosted(transcript: transcript, systemPrompt: systemPrompt, imageBase64: b64)
         case .localLLM:
-            // Local models here are text-only: never silently fall back to hosted Claude just
-            // because the user is ALSO signed in for other features.
-            throw RepromptError.http(400, "Context mode needs a vision-capable model; local models don't support screenshots yet. Pick another backend for Context mode.")
+            // Local models are text-only, but the user wants EVERY feature to work on their chosen
+            // engine. Instead of a hard error, degrade to a text-only reprompt on the SAME local model
+            // (it processes the spoken request without seeing the screen) — never a silent hosted Claude
+            // call just because they're signed in elsewhere.
+            return try await reprompt(transcript: transcript, systemPrompt: systemPrompt)
         case .auto:
             break   // unreachable, .resolved never returns .auto
         }
