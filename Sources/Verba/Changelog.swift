@@ -36,6 +36,11 @@ enum Changelog {
             date: "July 4, 2026", tag: "Today",
             summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
             entries: [
+                ChangelogEntry(version: "0.9.69",
+                    title: "Latest cloud models available",
+                    items: [
+                        "When you use the cloud AI path (your Claude subscription or your own key), you can now pick the newest models, including Sonnet 5 and Opus 4.8. Fully local stays the private default.",
+                    ]),
                 ChangelogEntry(version: "0.9.68",
                     title: "Feedback fixes from you",
                     items: [

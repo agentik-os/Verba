@@ -106,7 +106,7 @@ struct SettingsView: View {
     @State private var autoDownload = Updater.shared.autoDownload
     @State private var copiedReferral = false
 
-    private let claudeModels = ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-8"]
+    private let claudeModels = ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-sonnet-5", "claude-opus-4-8"]
     private let localModels = ["base", "small", "large-v3-v20240930_turbo", "large-v3"]
 
     var body: some View {
