@@ -50,6 +50,11 @@ final class ActivityCenter: ObservableObject {
     /// Register a new in-flight operation and return its token. Label is what shows next to the spinner.
     @discardableResult
     func begin(kind: ActivityItem.Kind, label: String) -> UUID {
+        // The bottom-right toast is ONLY for genuinely-background ops (a to-do captured / a note
+        // transcribing while you do something else). Dictation and JARVIS already have their own
+        // CENTERED widget — mirroring them here produced a duplicate. Skip them: callers still get a
+        // token, but no chip is created, so their update/finish/drop calls are harmless no-ops.
+        guard kind == .todo || kind == .note else { return UUID() }
         let item = ActivityItem(id: UUID(), kind: kind, label: label, done: false, ok: true, startedAt: Date())
         items.append(item)
         return item.id

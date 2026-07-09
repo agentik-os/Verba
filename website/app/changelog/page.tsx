@@ -22,9 +22,9 @@ const DAYS: Day[] = [
     entries: [
       {
         version: "0.9.67",
-        title: "Fix: no more duplicate \u201cDone\u201d",
+        title: "Fix: no more duplicate widget",
         items: [
-          "A JARVIS action showed its result in the centered widget AND cloned a second \u201cDone\u201d in the bottom-right. Removed the duplicate; the centered widget is the single source of truth. Background toasts stay for to-dos and notes captured while you do something else.",
+          "Dictation and JARVIS results showed in the centered widget AND cloned a second copy in the bottom-right. Removed the duplicate: the centered widget is the single source of truth. The bottom-right toast is now only for to-dos and notes captured in the background while you do something else.",
         ],
       },
       {
