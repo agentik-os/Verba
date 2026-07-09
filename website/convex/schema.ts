@@ -142,6 +142,17 @@ export default defineSchema({
     synced: v.optional(v.boolean()),
   }).index("by_synced", ["synced"]),
 
+  beta_signups: defineTable({   // iPhone TestFlight beta-test signups from the macOS app, deduped by email
+    email: v.string(),          // the user's iCloud/Apple-ID email (lowercased) — the TestFlight invite target
+    alias: v.optional(v.string()),
+    appVersion: v.optional(v.string()),
+    uid: v.optional(v.string()),
+    created: v.number(),
+    status: v.string(),         // "pending" until added to TestFlight, then "invited"
+    invited: v.boolean(),       // false until the testflight-invite helper adds them to the beta group
+    invitedAt: v.optional(v.number()),
+  }).index("by_email", ["email"]),
+
   device_auth: defineTable({   // uid → sha256(device secret); multiple rows = multiple devices
     uid: v.string(),
     secretHash: v.string(),    // hex sha256 of the 64-char hex secret string

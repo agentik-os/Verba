@@ -94,6 +94,7 @@ struct MainWindow: View {
     @ObservedObject private var appearance = VerbaAppearance.shared
     @ObservedObject private var updater = Updater.shared   // VER-17: surface "update available" in the sidebar
     @State private var selection: NavItem? = .home
+    @State private var showBetaInvite = false   // iPhone TestFlight beta signup sheet
     @State private var qwenInstalling = false
     @State private var qwenProgress: Double = 0
     @State private var qwenStatus = ""
@@ -374,10 +375,41 @@ struct MainWindow: View {
                 .padding(.horizontal, 10)
                 .help(L("A new version of Verba is available — click to install and relaunch"))
             }
+            betaInviteCard
             footerPanel
         }
         .padding(.vertical, 10)
         .onAppear { if !settings.proEmail.isEmpty { Task { _ = await settings.verifyPro() } } }
+        .sheet(isPresented: $showBetaInvite) { BetaInviteView() }
+    }
+
+    /// Small, subtle card above the account menu inviting users onto the iPhone TestFlight beta.
+    /// Deliberately quieter than the accent-filled update banner: a soft-fill card with just an
+    /// accent iPhone glyph + a thin accent hairline, so it reads as an offer, not an alert.
+    private var betaInviteCard: some View {
+        Button { showBetaInvite = true } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "iphone")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(appearance.accentColor)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(L("Beta test on iPhone")).font(.caption.weight(.semibold)).lineLimit(1)
+                    Text(L("Get early TestFlight access")).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer(minLength: 4)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 10).padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .background(.softFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(appearance.accentColor.opacity(0.18), lineWidth: 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 10)
+        .help(L("Join the Verba iPhone beta on TestFlight"))
     }
 
     private var footerPanel: some View {
