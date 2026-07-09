@@ -193,8 +193,8 @@ struct OnboardingView: View {
         VStack(alignment: .leading, spacing: 12) {
             title(L("Choose your engine"), L("How Verba cleans up and understands your speech. Transcription is always on-device."))
             engineCard(.localLLM, "lock.laptopcomputer", L("Fully local"), L("Open-source models running on your Mac. Nothing ever leaves the device."), badge: L("Recommended"))
-            engineCard(.auto, "bolt.fill", L("Verba managed"), L("Works instantly. Zero setup."))
             engineCard(.claudeCode, "brain", L("My Claude subscription"), L("Use your Claude Pro/Max plan, no API key."))
+            engineCard(.apiKey, "key", L("My API key"), L("Your own OpenAI, Anthropic, or OpenRouter key."))
             engineExplainer
             if settings.repromptBackend == .localLLM && localSetup.phase != .idle { localSetupCard }
             Text(L("You can change this anytime in Settings ▸ AI rewriting.")).font(.caption).foregroundStyle(.secondary)

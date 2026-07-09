@@ -4,7 +4,7 @@ import LegalDoc from "@/components/LegalDoc";
 export const metadata: Metadata = {
   title: "Privacy Policy, Verba",
   description:
-    "How Verba handles your voice and data: on-device by default on macOS, Apple speech on iOS, our included AI (OpenRouter/Anthropic) or your own key, Convex sync you control, and exactly which third parties see what.",
+    "How Verba handles your voice and data: on-device by default on macOS, Apple speech on iOS, AI rewriting on your own Claude plan / API key / a fully-local model (Verba never uses company AI keys), Convex sync you control, and exactly which third parties see what.",
   alternates: { canonical: "/privacy" },
 };
 
@@ -20,8 +20,9 @@ We do not sell your personal information, and we do not use your voice, transcri
 
 - **On macOS, your audio stays on your Mac by default.** With on-device transcription (WhisperKit or Parakeet), your microphone audio is turned into text locally and never sent to us or any third party.
 - **On iOS**, dictation uses Apple's speech recognition, so audio is processed by **Apple** (on-device where the device supports it, otherwise on Apple's servers). See §2.
-- **Some features send data off-device**, e.g. our included AI cleanup, live translation, and the JARVIS voice agent (a cloud AI provider), plus JARVIS actions on the apps you connect. These are detailed below.
-- **You can stay essentially fully local on macOS**: on-device transcription + a local AI model (Ollama) + not signing in keeps almost all processing on your machine.
+- **Verba never makes a billed AI call on your behalf.** AI rewriting, translation, and the JARVIS voice agent run through the AI backend **you** choose: your own Claude Code subscription, your own API key (OpenAI / Anthropic / OpenRouter), or a fully-local on-device model. There is no company-hosted AI and Verba never processes your text under company AI keys.
+- **Some features can send data off-device depending on your choices**, e.g. if you point AI rewriting at your own cloud API key or Claude plan, and JARVIS actions on the apps you connect. These are detailed below.
+- **You can stay essentially fully local on macOS**: on-device transcription + a fully local AI model + not signing in keeps almost all processing on your machine.
 
 ## 2. Information We Process, and where it goes
 
@@ -30,10 +31,10 @@ We do not sell your personal information, and we do not use your voice, transcri
 - *macOS, cloud transcription (OpenAI, optional):* if you choose it, audio is sent to OpenAI under your own key.
 - *iOS:* dictation uses Apple's Speech framework (SFSpeechRecognizer). To favor accuracy, your audio may be sent to Apple for recognition, which Apple processes under its own privacy terms. We never receive your raw audio.
 
-**AI cleanup, translation, and JARVIS (text).** After transcription, the *text* may be rewritten or translated by an AI, through one of:
-- *Your own AI (Bring-Your-Own):* your Anthropic, OpenAI, or OpenRouter key, or your Claude plan via Claude Code, the request goes directly to that provider under your credentials. Claude Code runs the local \`claude\` CLI on your Mac.
-- *Verba's included AI (signed in, no key set):* the transcript text (and, in Context mode, a screenshot you trigger) is sent to our relay at verba.run, which processes it through **OpenRouter** (primary) and **Anthropic** (fallback) under our keys. Requests are tied to your account; we do not use them to train models.
-- *Local model (Ollama):* runs on your Mac; nothing leaves the device.
+**AI cleanup, translation, and JARVIS (text).** After transcription, the *text* may be rewritten or translated by an AI. This ALWAYS runs on an AI backend **you** choose — Verba never processes your text under company AI keys, and never makes a billed AI call on your behalf. Your options are:
+- *Your own API key (Bring-Your-Own):* your Anthropic, OpenAI, or OpenRouter key, the request goes directly to that provider under your credentials. Your key is stored in the macOS Keychain on your device.
+- *Your Claude plan via Claude Code:* runs the local \`claude\` CLI on your Mac against your own Claude Pro/Max subscription; no key, and no company relay.
+- *Local model:* runs on your Mac; nothing leaves the device. This is the private default.
 
 **Transcripts, notes, tasks, and settings.** Stored locally on your device. If you sign in, they sync to our backend (**Convex**) so they follow your account across devices: dictation history, notes, to-dos, per-day usage stats, app settings, and your custom modes, styles, snippets, transforms and personal dictionary. If you do not sign in, none of this syncs to us.
 
@@ -71,7 +72,7 @@ You can block cookies in your browser; the apps are unaffected.
 We share data only with the service providers needed to run Verba, each acting under its own privacy terms and only for its function:
 
 - **Apple** (iOS), speech recognition of your dictation audio.
-- **OpenRouter** and **Anthropic**, our included AI cleanup / translation / JARVIS (server-side, under our keys); or **Anthropic / OpenAI / OpenRouter** directly under your key if you bring your own. **Ollama** (local) receives nothing off-device.
+- **Anthropic / OpenAI / OpenRouter**, only if you choose one of them for AI rewriting under your OWN API key, or your own Claude plan via Claude Code (the local \`claude\` CLI). Verba never routes your text through these providers under company keys. A **fully local model** receives nothing off-device.
 - **Composio**, relays JARVIS actions to the 1,000+ apps you connect and holds those connected-app credentials server-side.
 - **Google**, OAuth for Google-based connected apps (e.g. Gmail), and Google Ads conversion measurement on the website.
 - **Convex**, our sync backend for your account content.
@@ -86,7 +87,7 @@ We do not sell your personal information, and we do not share it for third-party
 - **Connected-app credentials** are kept until you disconnect the app or close your account, after which they are revoked/deleted.
 - **Billing records** are kept as required for accounting and legal compliance.
 
-**The off-switch (macOS):** do not sign in (or sign out) to disable cloud sync, keep transcription on-device, and use a local Ollama model, in that configuration Verba processes essentially everything locally. Disconnecting a JARVIS app deletes its server-side credentials. On iOS, dictation relies on Apple's speech recognition by design.
+**The off-switch (macOS):** do not sign in (or sign out) to disable cloud sync, keep transcription on-device, and use a fully local model, in that configuration Verba processes essentially everything locally. Disconnecting a JARVIS app deletes its server-side credentials. On iOS, dictation relies on Apple's speech recognition by design.
 
 ## 7. Your Rights
 

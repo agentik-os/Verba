@@ -28,7 +28,7 @@ Some features (cloud sync, billing, JARVIS) require an account, authenticated vi
 ## 4. Subscriptions, Billing & Refunds
 
 - Verba offers a permanently free tier: unlimited raw dictation, forever, no card. Continued use of the paid AI features requires a subscription.
-- Paid plans are **$9.99 USD / month** or **$84 USD / year**, billed through **Stripe**.
+- Paid plans are **$9.99 USD / month** or **$84 USD / year**, or a one-time **$149 USD Founder's Edition** lifetime license, billed through **Stripe**. Paid AI features include a 7-day trial.
 - Subscriptions **renew automatically** at the end of each billing period until cancelled. You can cancel at any time; cancellation takes effect at the end of the current paid period and you retain access until then.
 - Prices and plans may change on a prospective basis with notice; changes do not affect the period you have already paid for.
 - **Refunds:** To the extent required by applicable French and EU consumer law, you may be entitled to a refund or right of withdrawal. Outside any mandatory statutory right, fees already paid are generally non-refundable. Refund requests: **hello@agentik-os.com**.
@@ -39,7 +39,7 @@ You agree to use Verba lawfully and not to: use it for unlawful, infringing, har
 
 ## 6. Bring-Your-Own-AI (BYO-AI)
 
-Verba lets you connect your own AI provider (a Claude plan / Claude Code, or an Anthropic, OpenAI, or OpenRouter key, or local Ollama). Your use of those providers is governed by **their** terms and pricing, and you are responsible for your own usage, costs, and key security. We are not responsible for the availability, accuracy, output, or acts of third-party AI providers, and AI output may be inaccurate, review it before relying on it.
+Verba lets you connect your own AI provider (a Claude plan / Claude Code, or an Anthropic, OpenAI, or OpenRouter key, or a fully local model). Your use of those providers is governed by **their** terms and pricing, and you are responsible for your own usage, costs, and key security. We are not responsible for the availability, accuracy, output, or acts of third-party AI providers, and AI output may be inaccurate, review it before relying on it.
 
 ## 7. JARVIS & Connected Apps, Your Responsibility
 

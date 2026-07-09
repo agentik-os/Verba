@@ -276,8 +276,8 @@ final class ActionAgentClient {
 
     // MARK: On-device planning engine
 
-    /// Run one planning completion on the user's engine. `.verba`/unusable choices fall through to
-    /// Claude Code (their subscription) or the local model — NEVER the server's Anthropic key.
+    /// Run one planning completion on the user's engine. `.auto`/unusable choices fall through to
+    /// Claude Code (their subscription) or the local model — there is no hosted company backend.
     private static func runLLM(system: String, user: String) async throws -> String {
         let backend = Settings.shared.repromptBackend.resolved
         switch backend {
@@ -305,7 +305,7 @@ final class ActionAgentClient {
             if let key = Keychain.openRouterKey, !key.isEmpty {
                 return try await openRouterDirect(key: key, system: system, user: user)
             }
-        case .verba, .auto:
+        case .auto:
             break
         }
         // Fallback chain for hosted/auto or a chosen-but-missing key.

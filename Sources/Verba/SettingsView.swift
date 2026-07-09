@@ -908,7 +908,9 @@ struct SettingsView: View {
 
         card(L("Backend")) {
             VStack(spacing: 9) {
-                ForEach(RepromptBackend.allCases) { b in
+                // `.auto` is not offered as an explicit choice — the three real backends are
+                // Claude Code, My API key, and Fully local (plus OpenRouter). No company AI.
+                ForEach(RepromptBackend.allCases.filter { $0 != .auto }) { b in
                     selectCard(
                         icon: backendIcon(b),
                         title: b.label,
@@ -954,7 +956,7 @@ struct SettingsView: View {
     }
 
     /// The one API-key field the current reprompting backend needs — nothing more. Backends that
-    /// need no key (Verba managed, Claude subscription, Fully local) show no key card at all.
+    /// need no key (Claude subscription, Fully local) show no key card at all.
     @ViewBuilder private var repromptKeyCard: some View {
         let b = settings.repromptBackend
         let footer = L("Saved automatically as you type, in your macOS Keychain.")
@@ -1014,7 +1016,6 @@ struct SettingsView: View {
     private func backendIcon(_ b: RepromptBackend) -> String {
         switch b {
         case .auto:       return "wand.and.stars"
-        case .verba:      return "checkmark.seal"
         case .claudeCode: return "terminal"
         case .apiKey:     return "key"
         case .openRouter: return "arrow.triangle.branch"
@@ -1023,8 +1024,7 @@ struct SettingsView: View {
     }
     private func backendSubtitle(_ b: RepromptBackend) -> String {
         switch b {
-        case .auto:       return L("Claude Code if present, else Verba's included engine.")
-        case .verba:      return L("Included, no key. Runs on Verba's servers.")
+        case .auto:       return L("Claude Code if present, else the fully-local model.")
         case .claudeCode: return L("Runs on your Claude Max/Pro plan via the local CLI.")
         case .apiKey:     return L("Pay-per-token with your own OpenAI, Anthropic, or OpenRouter key.")
         case .openRouter: return L("Any model on openrouter.ai with your key.")
@@ -1047,21 +1047,8 @@ struct SettingsView: View {
         case .auto:
             statusLabel(ClaudeCode.isAvailable
                         ? L("Using Claude Code (runs on your Claude plan, no key).")
-                        : L("Using Verba's included rewriting (no key, no setup)."),
+                        : L("Using the fully-local model (on-device, no key, nothing leaves your Mac)."),
                         system: "wand.and.stars", tint: .secondary)
-        case .verba:
-            if settings.proEmail.isEmpty {
-                HStack(alignment: .top, spacing: 10) {
-                    statusLabel(L("Sign in to use the included rewriting, no API key needed."),
-                                system: "exclamationmark.triangle.fill", tint: .orange)
-                    Spacer()
-                    Button { startSignIn() } label: { Text(signingIn ? L("Signing in…") : L("Sign in")) }
-                        .glassButton().controlSize(.small).disabled(signingIn)
-                }
-            } else {
-                statusLabel(L("Included with Verba, no API key needed. Runs on Verba's servers."),
-                            system: "checkmark.seal.fill", tint: .green)
-            }
         case .claudeCode:
             statusLabel(ClaudeCode.isAvailable
                         ? L("Claude Code detected, uses your Claude plan, no API key.")

@@ -1,184 +1,31 @@
-import { NextRequest, NextResponse } from "next/server";
-import { entitlementByEmail } from "@/lib/billing";
-import { verifyAppToken } from "@/lib/apptoken";
-import { convexBump } from "@/lib/convex";
+import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
-// JARVIS planning (2-phase Opus + Composio reads) + reprompting can run tens of seconds;
-// without this Vercel kills the function at its default timeout → the app shows "took too long".
-export const maxDuration = 300;
-// EU users + EU Convex: run at Paris/Frankfurt instead of the default US region
-// (measured: shaves the transatlantic round-trip off every rewrite).
-export const preferredRegion = ["cdg1", "fra1"];
 
-// Verba's own hosted AI rewriting endpoint. The macOS app calls this so users don't
-// need their own API key: we run it on the company Anthropic key, gated by the user's
-// app-session token (S2 — the email is taken from the verified token, never the body).
+// DEPRECATED / REMOVED: Verba's company-hosted AI rewriting endpoint.
+//
+// Product decision (2026-07): Verba never makes a billed AI call on your behalf. AI rewriting now
+// runs ONLY on the user's own resources — their Claude Code subscription (local `claude` CLI, no
+// key), their own API key (OpenAI / Anthropic / OpenRouter), or a fully-local Ollama model. There
+// is no company-hosted / company-key backend anymore, so this route no longer proxies to any
+// provider. It intentionally returns HTTP 410 Gone so any stale client fails fast with a clear
+// message instead of silently hitting a dead path. (The Composio connected-apps relay, leaderboard,
+// sync, feedback, and other endpoints are unaffected — those are unrelated to AI rewriting.)
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-// Only these models may be requested; anything else is forced to the default so a
-// leaked token can't burn the key on expensive models.
-const ALLOWED_MODELS = ["claude-sonnet-4-6", "claude-haiku-4-5", "claude-opus-4-6"];
-const DEFAULT_MODEL = "claude-sonnet-4-6";
-
-// In-memory fast-path short-circuit only — the authoritative daily counter lives in
-// Convex (ratelimit:bump) and survives serverless instances.
-const freeHits = new Map<string, { day: string; n: number }>();
-const FREE_DAILY = 60;
+const GONE = {
+  error:
+    "Verba's hosted AI rewriting has been removed. Rewriting now runs on your own Claude Code plan, your own API key, or a fully-local model — configure it in Verba ▸ Settings ▸ AI rewriting.",
+};
 
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: cors });
 }
 
-export async function POST(req: NextRequest) {
-  const anthropic = process.env.ANTHROPIC_API_KEY;
-  const openrouter = process.env.OPENROUTER_API_KEY;
-  if (!anthropic && !openrouter) {
-    return NextResponse.json({ error: "AI rewriting isn't configured yet." }, { status: 503, headers: cors });
-  }
-
-  // S2: require a valid app-session token; the email comes from it, never the body.
-  const tok = verifyAppToken(req.headers.get("authorization"));
-  if (!tok) {
-    return NextResponse.json({ error: "Sign in to use Verba's AI rewriting." }, { status: 401, headers: cors });
-  }
-  const email = tok.email;
-
-  let body: { transcript?: string; system?: string; model?: string; image?: string; purpose?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Bad request" }, { status: 400, headers: cors });
-  }
-
-  const transcript = body.transcript ?? "";
-  const system = body.system ?? "";
-  const model = ALLOWED_MODELS.includes(body.model ?? "") ? (body.model as string) : DEFAULT_MODEL;
-  const image = body.image; // optional base64 PNG (Context mode)
-
-  if (!transcript && !image) {
-    return NextResponse.json({ error: "Nothing to rewrite." }, { status: 400, headers: cors });
-  }
-
-  // Gate: active subscribers are generous; everyone else gets a daily allowance.
-  const ent = await entitlementByEmail(email).catch(() => ({ active: false }));
-  if (!ent.active) {
-    const day = new Date().toISOString().slice(0, 10);
-    const limitMsg = NextResponse.json(
-      { error: "Daily free limit reached. Upgrade to Pro for unlimited rewriting." },
-      { status: 402, headers: cors }
-    );
-    // Fast path: this warm instance already knows the limit is hit.
-    const rec = freeHits.get(email);
-    const n = rec && rec.day === day ? rec.n : 0;
-    if (n >= FREE_DAILY) return limitMsg;
-    // Authoritative shared counter. FAIL CLOSED on a Convex outage: serverless spins many instances
-    // so the per-instance fast path can't bound global spend, and a public free tier on the company
-    // Anthropic key must not become unlimited if the counter is unreachable.
-    const allowed = await convexBump(`reprompt:${email}:${day}`, FREE_DAILY, false);
-    if (!allowed) {
-      freeHits.set(email, { day, n: FREE_DAILY });
-      return limitMsg;
-    }
-    freeHits.set(email, { day, n: n + 1 });
-  }
-
-  const userText = `Here is the raw voice transcript to restructure:\n\n<transcript>\n${transcript}\n</transcript>`;
-  const content = image
-    ? [
-        { type: "image", source: { type: "base64", media_type: "image/png", data: image } },
-        { type: "text", text: `Here is what I said. Use the screenshot to do it:\n\n<request>\n${transcript}\n</request>` },
-      ]
-    : userText;
-
-  // Primary engine: OpenRouter open-source (cost-controlled — see VerbaMobile economics
-  // report 2026-06-12: hosted Sonnet loses money on heavy users; qwen-2.5-72b holds an
-  // ~85% margin worst case). Anthropic stays as the fallback when configured.
-  try {
-    if (openrouter) {
-      // JARVIS planning needs frontier-grade instruction following + strict JSON:
-      // route "action" calls to Claude (via OpenRouter), everything else to qwen.
-      const orModel = body.purpose === "action"
-        ? (process.env.ACTION_MODEL ?? "anthropic/claude-haiku-4.5")
-        : image
-          ? (process.env.REPROMPT_VISION_MODEL ?? "qwen/qwen2.5-vl-72b-instruct")
-          : (process.env.REPROMPT_MODEL ?? "qwen/qwen-2.5-72b-instruct");
-      const orContent = image
-        ? [
-            { type: "image_url", image_url: { url: `data:image/png;base64,${image}` } },
-            { type: "text", text: `Here is what I said. Use the screenshot to do it:\n\n<request>\n${transcript}\n</request>` },
-          ]
-        : userText;
-      const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${openrouter}`, "content-type": "application/json" },
-        body: JSON.stringify({
-          model: orModel,
-          provider: { sort: "throughput" },   // measured: 0.9s vs 7s on default routing
-          messages: [
-            { role: "system", content: system },
-            { role: "user", content: orContent },
-          ],
-        }),
-      });
-      const data = await r.json();
-      const text: string = data?.choices?.[0]?.message?.content?.trim() ?? "";
-      if (r.ok && text) {
-        return NextResponse.json({ text }, { headers: cors });
-      }
-      // Retry ONCE on OpenRouter's default provider routing (sort=throughput
-      // occasionally picks a flaky provider), then surface the REAL error.
-      // Never fall back to the direct Anthropic key when OpenRouter is
-      // configured: that key is unfunded by design, and its "credit balance is
-      // too low" reply was masking the actual failure from users.
-      const r2 = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${openrouter}`, "content-type": "application/json" },
-        body: JSON.stringify({
-          model: orModel,
-          messages: [
-            { role: "system", content: system },
-            { role: "user", content: orContent },
-          ],
-        }),
-      });
-      const data2 = await r2.json();
-      const text2: string = data2?.choices?.[0]?.message?.content?.trim() ?? "";
-      if (r2.ok && text2) {
-        return NextResponse.json({ text: text2 }, { headers: cors });
-      }
-      return NextResponse.json(
-        { error: data2?.error?.message ?? data?.error?.message ?? "Rewrite failed." },
-        { status: r2.ok ? 502 : r2.status, headers: cors }
-      );
-    }
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": anthropic!,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ model, max_tokens: 8000, system, messages: [{ role: "user", content }] }),
-    });
-    const data = await r.json();
-    if (!r.ok) {
-      return NextResponse.json({ error: data?.error?.message ?? "Rewrite failed." }, { status: r.status, headers: cors });
-    }
-    const text: string = (data.content ?? [])
-      .filter((b: { type: string }) => b.type === "text")
-      .map((b: { text: string }) => b.text)
-      .join("")
-      .trim();
-    if (!text) {
-      return NextResponse.json({ error: "Empty response." }, { status: 502, headers: cors });
-    }
-    return NextResponse.json({ text }, { headers: cors });
-  } catch {
-    return NextResponse.json({ error: "Rewrite failed." }, { status: 502, headers: cors });
-  }
+export async function POST() {
+  return NextResponse.json(GONE, { status: 410, headers: cors });
 }

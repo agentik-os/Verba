@@ -139,7 +139,7 @@ export default function Compare() {
         <a href={DOWNLOAD} className="rounded-full bg-[var(--fg)] px-7 py-3 font-medium text-[var(--bg)] hover:opacity-90">
           Download Verba for macOS
         </a>
-        <p className="mt-6 text-xs muted">33 free dictations · Pro $9.99/mo · cancel anytime</p>
+        <p className="mt-6 text-xs muted">Unlimited raw dictation free forever · Pro $9.99/mo · cancel anytime</p>
       </div>
 
       <SiteFooter />

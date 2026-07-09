@@ -31,7 +31,7 @@ export const COMPARE = {
   "wispr-flow": "$15/mo (monthly); $12/mo billed annually",
   "superwhisper": "$8.49 to $8.99/mo (Pro; ~$84.99/yr; $249.99 lifetime)",
   "aqua-voice": "$8/mo (annual) / $10/mo (monthly)",
-  "macwhisper": "No monthly plan on Gumroad (one-time €59/~$69 lifetime); App Store \"Whisper Transcription\" subscription ~$6.99/mo (or $29.99/yr); optional Assistant add-on $9.99/mo",
+  "macwhisper": "No monthly plan on Gumroad (one-time €59/$99 lifetime); App Store \"Whisper Transcription\" subscription ~$6.99/mo (or $29.99/yr); optional Assistant add-on $9.99/mo",
   "willow-voice": "$15/mo (monthly) or $12/mo billed annually (Individual); free plan 2,000 words/week",
   "voiceink": "$0/mo (no subscription; one-time lifetime $25-$49)",
   "talktastic": "Free during beta (no public paid monthly price verified)",
@@ -175,7 +175,7 @@ export const COMPARE = {
    }
   },
   {
-   "feature": "Local LLM (Ollama) for rewriting",
+   "feature": "Local model for rewriting",
    "cells": {
     "verba": "yes:fully offline, can aut",
     "wispr-flow": "no",
@@ -317,7 +317,7 @@ export const COMPARE = {
     "superwhisper": "iOS yes, Android no",
     "aqua-voice": "partial",
     "macwhisper": "partial",
-    "willow-voice": "yes:iOS (App Store 'Willow",
+    "willow-voice": "yes:iOS + Android apps",
     "voiceink": "partial",
     "talktastic": "no",
     "apple-dictation": "partial",
@@ -357,7 +357,7 @@ export const COMPARE = {
   {
    "feature": "One-time purchase option",
    "cells": {
-    "verba": "no",
+    "verba": "yes:$149 lifetime (Founder's)",
     "wispr-flow": "no",
     "superwhisper": "yes",
     "aqua-voice": "no",
@@ -387,7 +387,7 @@ export const COMPARE = {
   {
    "feature": "Price per month",
    "cells": {
-    "verba": "$9.99/mo (or $84/year; 3",
+    "verba": "$9.99/mo (or $84/year; $149 lifetime; unlimited raw free)",
     "wispr-flow": "$15/mo (Pro monthly); $1",
     "superwhisper": "$8.49 to $8.99/mo (Pro)",
     "aqua-voice": "$8/mo billed annually ($",

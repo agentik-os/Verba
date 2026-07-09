@@ -36,6 +36,11 @@ enum Changelog {
             date: "July 4, 2026", tag: "Today",
             summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
             entries: [
+                ChangelogEntry(version: "0.9.71",
+                    title: "Your AI, your keys, always",
+                    items: [
+                        "AI rewriting now runs only on what you choose: your Claude Code plan (no key), your own API key, or a fully local model. Verba never makes a billed AI call on your behalf. Simpler, more private, and honest.",
+                    ]),
                 ChangelogEntry(version: "0.9.70",
                     title: "Every AI feature works on every engine",
                     items: [

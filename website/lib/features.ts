@@ -49,7 +49,7 @@ export const FEATURES: Feature[] = [
       },
       {
         "h2": "Runs on the AI you control, with keys that stay server-side",
-        "body": "The planning brain behind JARVIS is your own AI engine, the same bring-your-own setup the rest of Verba uses: your Claude subscription through Claude Code with no API key, your Anthropic key, OpenRouter, or a local model. Verba never makes a billed AI call on your behalf. And the credentials that connect your apps never land on your Mac. App connection keys are held by a secure server-side relay, so your laptop holds the conversation, not your Slack or Gmail tokens.",
+        "body": "The planning brain behind JARVIS is your own AI engine, the same bring-your-own setup the rest of Verba uses: your Claude subscription through Claude Code with no API key, your own API key (OpenAI, Anthropic, or OpenRouter), or a fully local model. Verba never makes a billed AI call on your behalf. And the credentials that connect your apps never land on your Mac. App connection keys are held by a secure server-side relay, so your laptop holds the conversation, not your Slack or Gmail tokens.",
         "bullets": [
           "Planning runs on your own AI engine, strictly bring-your-own",
           "Verba never makes a billed call for you",
@@ -77,7 +77,7 @@ export const FEATURES: Feature[] = [
       },
       {
         "q": "What AI runs JARVIS, and do I need an API key?",
-        "a": "The planning runs on your own AI engine: your Claude subscription via Claude Code with no key, your Anthropic key, OpenRouter, or a local Ollama model. Verba is strictly bring-your-own-AI and never makes a billed call for you."
+        "a": "The planning runs on your own AI engine: your Claude subscription via Claude Code with no key, your own API key (OpenAI, Anthropic, or OpenRouter), or a fully local model. Verba is strictly bring-your-own-AI and never makes a billed call for you."
       },
       {
         "q": "Where are my app connection keys stored?",
@@ -91,27 +91,27 @@ export const FEATURES: Feature[] = [
     "eyebrow": "DICTATION MODES",
     "h1": "AI Dictation Modes for Mac: Voice to Clean Text, Your Way",
     "metaTitle": "AI Dictation Modes for Mac, Verba",
-    "metaDescription": "Verba's AI dictation modes turn voice into clean text on your Mac: Raw, Polish, Intent, Coding, plus custom modes and styles. Switch with Fn+1..9. BYO AI.",
-    "lead": "Raw transcription is a solved problem. What you actually want is voice that lands as clean, finished text in whatever app you're in, formatted the way that moment needs it. Verba does that with dictation modes: pick Raw for verbatim, Polish to clean up your speech, Intent to write to an instruction, or Coding for code, then layer a style on top. Switch with Fn+1..9, and the AI cleanup runs on a model you control, never a billed call we make for you.",
+    "metaDescription": "Verba's AI dictation modes turn voice into clean text on your Mac: Raw, Polish, Intent, Prompt, plus custom modes and styles. Switch with Fn+1..9. BYO AI.",
+    "lead": "Raw transcription is a solved problem. What you actually want is voice that lands as clean, finished text in whatever app you're in, formatted the way that moment needs it. Verba does that with dictation modes: pick Raw for verbatim, Polish to clean up your speech, Intent to write to an instruction, or Prompt to turn a spoken thought into an optimized AI prompt, then layer a style on top. Switch with Fn+1..9, and the AI cleanup runs on a model you control, never a billed call we make for you.",
     "sections": [
       {
         "h2": "What an AI dictation mode actually does",
         "body": "A mode is a recipe for turning your voice into text. It decides whether Verba transcribes you verbatim or sends the transcript through an AI cleanup pass, and it tells that AI what kind of output you want: a tidy sentence, a Slack reply, a commit message, a code snippet. Transcription happens on-device first (WhisperKit or NVIDIA Parakeet), so your audio never has to leave your Mac, and only the cleanup step touches the AI engine you've chosen. The result pastes straight into the app where your cursor is, system-wide. You're never copy-pasting out of a separate window.",
         "bullets": [
           "Transcribe on-device, then optionally clean up with AI you control",
-          "Output is tailored per mode: verbatim, polished prose, an instruction's answer, or code",
+          "Output is tailored per mode: verbatim, polished prose, an instruction's answer, or a ready-to-run AI prompt",
           "Pastes at your cursor in any app, no separate window",
-          "Cleanup runs on your Claude plan, your key, OpenRouter, or local Ollama"
+          "Cleanup runs on your Claude plan, your own API key, or a fully local model"
         ]
       },
       {
-        "h2": "The four core modes: Raw, Polish, Intent, Coding",
-        "body": "Verba ships six built-in modes; these four are the ones you'll live in. Raw is pure speech-to-text with no AI, the fastest path when you just want your exact words down. Polish reads your transcript and resolves the way people really talk, the self-corrections, the false starts, the 'no wait, make that', and writes the version you meant. Intent treats your speech as a command and writes the thing you asked for, so you can say 'reply to this saying I'll be ten minutes late, keep it casual' and get the message, not a transcript of the request. Coding is tuned for code and technical text, preserving symbols, identifiers and structure instead of prose-ifying them.",
+        "h2": "The four core modes: Raw, Polish, Intent, Prompt",
+        "body": "Verba ships six built-in modes; these four are the ones you'll live in. Raw is pure speech-to-text with no AI, the fastest path when you just want your exact words down. Polish reads your transcript and resolves the way people really talk, the self-corrections, the false starts, the 'no wait, make that', and writes the version you meant. Intent treats your speech as a command and writes the thing you asked for, so you can say 'reply to this saying I'll be ten minutes late, keep it casual' and get the message, not a transcript of the request. Prompt turns a rambling spoken thought into a clean, optimized prompt for any AI, a chat assistant, an image generator, or a coding agent like Cursor or Claude Code.",
         "bullets": [
           "Raw: verbatim, no AI, instant",
           "Polish: resolves filler and self-corrections into clean prose",
           "Intent: write to an instruction, not a transcript of it",
-          "Coding: keeps symbols, identifiers and structure intact",
+          "Prompt: turns speech into an optimized prompt for any AI or coding agent",
           "(Plus Translate and Context, covered on their own pages)"
         ]
       },
@@ -137,10 +137,10 @@ export const FEATURES: Feature[] = [
       },
       {
         "h2": "You control the AI behind every mode",
-        "body": "Verba is strictly bring-your-own-AI: it never makes a billed AI call on your behalf. Every mode that uses cleanup runs on an engine you pick, your Claude subscription through Claude Code with no key at all, your own Anthropic or OpenRouter key, or a fully local Ollama model so nothing leaves your Mac. Keys live in the macOS Keychain. That means a mode isn't just a prompt; it's a prompt plus the engine you trust to run it, and you can mix them, Polish on local Ollama, Intent on your Claude plan, whatever fits the work and your privacy bar.",
+        "body": "Verba is strictly bring-your-own-AI: it never makes a billed AI call on your behalf. Every mode that uses cleanup runs on an engine you pick, your Claude subscription through Claude Code with no key at all, your own API key (OpenAI, Anthropic, or OpenRouter), or a fully local model so nothing leaves your Mac. Keys live in the macOS Keychain. That means a mode isn't just a prompt; it's a prompt plus the engine you trust to run it, and you can mix them, Polish on a local model, Intent on your Claude plan, whatever fits the work and your privacy bar.",
         "bullets": [
           "No markup, no billed-by-us calls, ever",
-          "Your Claude plan (no key), Anthropic, OpenRouter, or local Ollama",
+          "Your Claude plan (no key), your own API key, or a fully local model",
           "Keys stored in the macOS Keychain",
           "Run fully offline cleanup with a local model"
         ]
@@ -149,7 +149,7 @@ export const FEATURES: Feature[] = [
     "faq": [
       {
         "q": "What are AI dictation modes in Verba?",
-        "a": "Dictation modes are presets that turn your voice into the kind of text you want. Verba ships six built-in modes, including Raw (verbatim, no AI), Polish (cleans up filler and self-corrections), Intent (writes to a spoken instruction), and Coding (preserves code and symbols). You can also build custom modes and layer styles on top."
+        "a": "Dictation modes are presets that turn your voice into the kind of text you want. Verba ships six built-in modes, including Raw (verbatim, no AI), Polish (cleans up filler and self-corrections), Intent (writes to a spoken instruction), and Prompt (turns what you say into an optimized prompt for any AI or coding agent). You can also build custom modes and layer styles on top."
       },
       {
         "q": "What's the difference between Raw and Polish mode?",
@@ -165,7 +165,7 @@ export const FEATURES: Feature[] = [
       },
       {
         "q": "Which AI runs the dictation cleanup, and is it private?",
-        "a": "You control it. Verba is bring-your-own-AI and never makes a billed call for you. Cleanup runs on your Claude subscription via Claude Code (no key), your Anthropic or OpenRouter key, or a fully local Ollama model. Transcription is on-device by default, so with a local model your voice and text never leave your Mac."
+        "a": "You control it. Verba is bring-your-own-AI and never makes a billed call for you. Cleanup runs on your Claude subscription via Claude Code (no key), your own API key (OpenAI, Anthropic, or OpenRouter), or a fully local model. Transcription is on-device by default, so with a local model your voice and text never leave your Mac."
       }
     ]
   },
@@ -277,7 +277,7 @@ export const FEATURES: Feature[] = [
       },
       {
         "h2": "Runs on AI you control",
-        "body": "The planning agent that breaks your request into a hierarchy runs on AI you choose, not a meter Verba bills you for. Point it at your Claude subscription through Claude Code with no key, your own Anthropic key, OpenRouter, or a fully local Ollama model. It is strictly bring-your-own-AI: Verba never makes a billed AI call on your behalf, and your keys live in the macOS Keychain. Want everything local? Pair on-device transcription with a local Ollama model and the whole flow stays on your machine."
+        "body": "The planning agent that breaks your request into a hierarchy runs on AI you choose, not a meter Verba bills you for. Point it at your Claude subscription through Claude Code with no key, your own API key (OpenAI, Anthropic, or OpenRouter), or a fully local model. It is strictly bring-your-own-AI: Verba never makes a billed AI call on your behalf, and your keys live in the macOS Keychain. Want everything local? Pair on-device transcription with a fully local model and the whole flow stays on your machine."
       }
     ],
     "faq": [
@@ -295,7 +295,7 @@ export const FEATURES: Feature[] = [
       },
       {
         "q": "Does Verba bill me for the AI that organizes my tasks?",
-        "a": "No. Verba is strictly bring-your-own-AI and never makes a billed AI call for you. The planning agent runs on your Claude subscription via Claude Code, your Anthropic key, OpenRouter, or a local Ollama model, with keys stored in the macOS Keychain."
+        "a": "No. Verba is strictly bring-your-own-AI and never makes a billed AI call for you. The planning agent runs on your Claude subscription via Claude Code, your own API key (OpenAI, Anthropic, or OpenRouter), or a fully local model, with keys stored in the macOS Keychain."
       },
       {
         "q": "How do I see today's tasks quickly?",
@@ -334,7 +334,7 @@ export const FEATURES: Feature[] = [
       },
       {
         "h2": "Where your voice and your translation actually run",
-        "body": "Two stages, two clear privacy boundaries. The first stage, turning your speech into text, runs on-device with WhisperKit or NVIDIA Parakeet, so in on-device mode your audio never leaves the Mac. The second stage, rewriting that text into your target language, runs on the AI engine you bring: your Claude subscription through Claude Code with no key, your own Anthropic or OpenRouter key, or a fully local Ollama model. Verba never makes a billed AI call on your behalf. If you want the whole pipeline to stay on your machine, pair on-device transcription with a local Ollama model."
+        "body": "Two stages, two clear privacy boundaries. The first stage, turning your speech into text, runs on-device with WhisperKit or NVIDIA Parakeet, so in on-device mode your audio never leaves the Mac. The second stage, rewriting that text into your target language, runs on the AI engine you bring: your Claude subscription through Claude Code with no key, your own API key (OpenAI, Anthropic, or OpenRouter), or a fully local model. Verba never makes a billed AI call on your behalf. If you want the whole pipeline to stay on your machine, pair on-device transcription with a fully local model."
       },
       {
         "h2": "Pastes the translation straight into any app",
@@ -356,7 +356,7 @@ export const FEATURES: Feature[] = [
       },
       {
         "q": "Does my audio leave my Mac during live translation?",
-        "a": "In on-device mode, no. Speech-to-text runs locally with WhisperKit or NVIDIA Parakeet, so audio never leaves the Mac. The rewrite into your target language runs on the AI engine you control, which can also be a fully local Ollama model."
+        "a": "In on-device mode, no. Speech-to-text runs locally with WhisperKit or NVIDIA Parakeet, so audio never leaves the Mac. The rewrite into your target language runs on the AI engine you control, which can also be a fully local model."
       },
       {
         "q": "Does Verba translate word for word or by meaning?",
@@ -385,7 +385,7 @@ export const FEATURES: Feature[] = [
           "Trigger with Fn+X, like every other Verba mode",
           "Say the instruction, not the context: \"reply to this\", \"explain this error\"",
           "Pastes the finished text into whatever app holds the cursor",
-          "Runs on your own AI: Claude subscription, Anthropic key, OpenRouter, or local Ollama vision model"
+          "Runs on your own AI: Claude subscription, your own API key, or a fully local vision model"
         ]
       },
       {
@@ -401,11 +401,11 @@ export const FEATURES: Feature[] = [
       },
       {
         "h2": "What Context mode needs to see your screen",
-        "body": "Because it reads pixels, Context mode has two requirements the verbatim modes do not. First, macOS Screen Recording permission, which Verba requests so it can capture the screenshot it sends to the model. Second, a vision-capable model on your AI engine, since a text-only model cannot read an image. Both Claude (via your subscription or Anthropic key) and many OpenRouter and Ollama models support vision; pick one of those for Context. Once granted, the screenshot goes only to the engine you configured for rewriting.",
+        "body": "Because it reads pixels, Context mode has two requirements the verbatim modes do not. First, macOS Screen Recording permission, which Verba requests so it can capture the screenshot it sends to the model. Second, a vision-capable model on your AI engine, since a text-only model cannot read an image. Both Claude (via your subscription or your own API key) and many other cloud and local models support vision; pick one of those for Context. Once granted, the screenshot goes only to the engine you configured for rewriting.",
         "bullets": [
           "Requires macOS Screen Recording permission to capture the screen",
           "Requires a vision-capable model on your chosen AI engine",
-          "Works with Claude, Anthropic, OpenRouter, or a local vision model",
+          "Works with Claude, your own API key, or a fully local vision model",
           "Bring-your-own-AI: Verba never makes a billed call on your behalf"
         ]
       },
@@ -429,7 +429,7 @@ export const FEATURES: Feature[] = [
       },
       {
         "q": "Does my screen get sent to the cloud in Context mode?",
-        "a": "The screenshot is sent only to the AI engine you configured for rewriting, which can be your Claude subscription, your Anthropic key, OpenRouter, or a fully local Ollama vision model. If you pick a local model, the image never leaves your Mac. Verba is bring-your-own-AI and never makes a billed call for you."
+        "a": "The screenshot is sent only to the AI engine you configured for rewriting, which can be your Claude subscription, your own API key, or a fully local vision model. If you pick a local model, the image never leaves your Mac. Verba is bring-your-own-AI and never makes a billed call for you."
       },
       {
         "q": "How is Context mode different from JARVIS?",
@@ -453,7 +453,7 @@ export const FEATURE_NAV: { href: string; label: string; desc?: string }[] = [
   {
     "href": "/features/dictation-modes",
     "label": "Modes",
-    "desc": "Raw, Polish, Intent, Coding"
+    "desc": "Raw, Polish, Intent, Prompt"
   },
   {
     "href": "/features/voice-notes",

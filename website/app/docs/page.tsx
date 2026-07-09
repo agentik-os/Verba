@@ -43,7 +43,7 @@ const SECTIONS: Section[] = [
         "Optional: grant Screen Recording only if you want Context mode (Verba reading your screen).",
         "Hold the Fn (globe) key, speak, release, your clean text is pasted where your cursor is.",
       ] },
-      { kind: "p", text: "New installs include 33 full-feature dictations to try everything before subscribing. Verba is $9.99/month or $84/year, billed through Stripe." },
+      { kind: "p", text: "Raw dictation is free forever and unlimited, with no card. The paid AI features (every mode, Notes, Tasks, JARVIS) have a 7-day Pro trial, then $9.99/month, $84/year, or a one-time $149 Founder's Edition lifetime, billed through Stripe." },
     ],
   },
   {
@@ -89,11 +89,11 @@ const SECTIONS: Section[] = [
       ] },
       { kind: "p", text: "AI rewriting (cleanup, modes):" },
       { kind: "ul", items: [
+        "Fully local, the private default: Verba can auto-install and run a local model on your Mac, offline, with no key and no markup.",
         "Your Claude subscription via Claude Code, no API key needed.",
-        "Your own Anthropic API key, or an OpenRouter key.",
-        "A fully local Ollama model, offline, no key, no markup.",
+        "Your own API key (OpenAI, Anthropic, or OpenRouter).",
       ] },
-      { kind: "p", text: "Verba is strictly bring-your-own-AI: it never makes a billed API call on your behalf. All keys are stored in the macOS Keychain, never on Verba's servers." },
+      { kind: "p", text: "Verba is strictly bring-your-own-AI: there is no company-hosted \"included\" AI and it never makes a billed API call on your behalf. All keys are stored in the macOS Keychain, never on Verba's servers." },
     ],
   },
   {
@@ -174,6 +174,9 @@ const SECTIONS: Section[] = [
         ["Fn + T", "Capture a to-do by voice"],
         ["⌥ + Fn", "Glance at today's to-dos"],
         ["⌥ + X", "Transform the selected text"],
+        ["⌃ + ⌥ + X", "Toggle the Actions widget"],
+        ["⌃ + ⌥ + Z", "Toggle the To-dos widget"],
+        ["⌃ + ⌥ + C", "Toggle the Notes widget"],
         ["Fn + 1…9", "Jump to a specific mode"],
         ["Fn + ] / Fn + [", "Next / previous writing style"],
         ["⌃ (Control)", "Pause / resume recording"],

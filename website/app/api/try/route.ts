@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   const ipUsed = ipHits.get(ip) ?? 0;
   if (used >= FREE_TRIES || ipUsed >= FREE_TRIES) {
     return NextResponse.json(
-      { error: "You've used your free demos. Download Verba to keep going: 33 full-Pro dictations in the app, no card." },
+      { error: "You've used your free demos. Download Verba to keep going: unlimited raw dictation, free forever, no card." },
       { status: 429 }
     );
   }
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   const globalOk = await convexBump(`try:global:${day}`, GLOBAL_DAILY, false);
   if (!ipOk || !globalOk) {
     return NextResponse.json(
-      { error: "You've used your free demos. Download Verba to keep going: 33 full-Pro dictations in the app, no card." },
+      { error: "You've used your free demos. Download Verba to keep going: unlimited raw dictation, free forever, no card." },
       { status: 429 }
     );
   }

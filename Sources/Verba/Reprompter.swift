@@ -26,9 +26,9 @@ struct Reprompter {
 
     func reprompt(transcript: String, systemPrompt: String, fast: Bool = false) async throws -> String {
         let userText = "Here is the raw voice transcript to restructure:\n\n<transcript>\n\(transcript)\n</transcript>"
-        // Automatic mode (Claude Code, else Verba) auto-recovers: it walks each available backend and
-        // model until one succeeds, so a failed Claude CLI, an unavailable or rate-limited model never
-        // dead-ends the dictation. An explicitly chosen backend keeps its single, predictable attempt.
+        // Automatic mode (Claude Code, else fully-local) auto-recovers: it walks each available backend
+        // and model until one succeeds, so a failed Claude CLI, an unavailable or rate-limited model
+        // never dead-ends the dictation. An explicitly chosen backend keeps its single, predictable attempt.
         if backendOverride == nil, Settings.shared.repromptBackend == .auto {
             return try await autoFallback(transcript: transcript, systemPrompt: systemPrompt, userText: userText, fast: fast)
         }
@@ -36,14 +36,14 @@ struct Reprompter {
     }
 
     /// Automatic mode: try every available (backend, model) pair until one returns text. Order: the
-    /// user's Claude Code first (free, runs on their plan), then their Anthropic key, then Verba's
-    /// hosted engine (always works, no key); within each, the mode's model first, then lighter models
-    /// that are likelier to be available / within limits.
+    /// user's Claude Code first (runs on their plan), then their Anthropic key, then the fully-local
+    /// model (always works, no key, nothing leaves the device); within each, the mode's model first,
+    /// then lighter models that are likelier to be available / within limits.
     private func autoFallback(transcript: String, systemPrompt: String, userText: String, fast: Bool) async throws -> String {
         var backends: [RepromptBackend] = []
         if ClaudeCode.isAvailable, !fast { backends.append(.claudeCode) }   // skip the slow CLI on the notes fast-path
         if let k = Keychain.anthropicKey, !k.isEmpty { backends.append(.apiKey) }
-        backends.append(.verba)
+        backends.append(.localLLM)   // final always-works fallback (on-device, no key)
         var seen = Set<String>(); backends = backends.filter { seen.insert($0.rawValue).inserted }
 
         var lastError: Error?
@@ -83,17 +83,16 @@ struct Reprompter {
         // Settings so it doesn't accidentally route through OpenAI/OpenRouter instead.
         var provider = apiKeyProviderOverride ?? Settings.shared.apiKeyProvider
         // Notes fast path: spawning the Claude CLI costs ~6-8s of pure startup overhead per call,
-        // which dwarfs the generation. For notes, never spawn it — swap to a direct HTTP model call
-        // (API key if present, else the hosted proxy). Same model, no process spawn.
+        // which dwarfs the generation. For notes, never spawn it — swap to a fast no-spawn call: the
+        // user's Anthropic key (direct HTTP) if present, otherwise the fully-local model. Never a
+        // hosted company call (there is no company AI backend anymore).
         if fast, backend == .claudeCode {
             if let key = Keychain.anthropicKey, !key.isEmpty { backend = .apiKey; provider = .anthropic }
-            else if !Settings.shared.proEmail.trimmingCharacters(in: .whitespaces).isEmpty { backend = .verba }
+            else { backend = .localLLM }
         }
         switch backend {
         case .auto:   // unreachable (resolved never returns .auto), satisfy exhaustiveness
-            return try await verbaHosted(transcript: transcript, systemPrompt: systemPrompt, imageBase64: nil)
-        case .verba:
-            return try await verbaHosted(transcript: transcript, systemPrompt: systemPrompt, imageBase64: nil)
+            return try await LocalLLM.chat(system: systemPrompt, user: userText, model: Settings.shared.localLLMModel)
         case .claudeCode:
             // No API key, uses the user's Claude subscription via the CLI.
             return try await ClaudeCode.reprompt(systemPrompt: systemPrompt, userText: userText, model: model)
@@ -145,42 +144,14 @@ struct Reprompter {
         let content: [Block]
     }
 
-    // MARK: Verba hosted backend — the included AI rewriting (no API key needed).
-    // Calls verba.run/api/reprompt, gated by the signed-in account. Supports vision too.
-    func verbaHosted(transcript: String, systemPrompt: String, imageBase64: String?) async throws -> String {
-        let email = Settings.shared.proEmail.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !email.isEmpty else {
-            throw RepromptError.http(401, "Sign in to Verba (Settings ▸ account) to use the included AI rewriting, or pick another backend.")
-        }
-        var req = URLRequest(url: URL(string: "https://verba.run/api/reprompt")!)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "content-type")
-        AuthToken.bearer(&req)   // the route is 401-gated: prove the signed-in session, not just an email
-        req.timeoutInterval = 180
-        var payload: [String: Any] = ["email": email, "transcript": transcript, "system": systemPrompt, "model": model]
-        if let imageBase64 { payload["image"] = imageBase64 }
-        req.httpBody = try JSONSerialization.data(withJSONObject: payload)
-
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
-        guard (200..<300).contains(code) else {
-            let body = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["error"] as? String
-            throw RepromptError.http(code, body ?? (String(data: data, encoding: .utf8) ?? ""))
-        }
-        let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        let text = (obj?["text"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { throw RepromptError.empty }
-        return text
-    }
-
     // MARK: Context mode (vision) — send a screenshot + the spoken request.
     // Vision needs a multimodal model. We use whichever provider the "My API key"/OpenRouter
-    // backend is set to, when its key is present. The CLI and local engines can't take images,
-    // so we route around them with a clear message if no usable key/account is configured.
-    /// True when the CURRENTLY-selected backend can actually see a screenshot. Local text models can't;
-    /// the hosted/CLI paths need a signed-in account; an apiKey provider needs its key. Callers gate on
-    /// this to send a screenshot-free prompt (and text-only reprompt) when vision isn't available, so a
-    /// feature that offers screenshots still works on every model instead of erroring.
+    // backend is set to, when its key is present. The Claude CLI and local engines can't take
+    // images, so vision degrades to a text-only reprompt on those (never a hosted company call).
+    /// True when the CURRENTLY-selected backend can actually see a screenshot. The Claude Code CLI
+    /// and local text models can't, so they report false and callers send a screenshot-free, text-only
+    /// reprompt instead — a feature that offers screenshots still works on every backend, on the user's
+    /// OWN engine, never a hosted company call. An apiKey/openRouter backend needs its key present.
     static var backendSupportsVision: Bool {
         switch Settings.shared.repromptBackend.resolved {
         case .apiKey:
@@ -190,9 +161,7 @@ struct Reprompter {
             case .openRouter: return !(Keychain.openRouterKey ?? "").isEmpty
             }
         case .openRouter:      return !(Keychain.openRouterKey ?? "").isEmpty
-        case .verba, .claudeCode:
-            return !Settings.shared.proEmail.trimmingCharacters(in: .whitespaces).isEmpty
-        case .localLLM, .auto: return false
+        case .claudeCode, .localLLM, .auto: return false
         }
     }
 
@@ -203,16 +172,13 @@ struct Reprompter {
         // Context mode must use the SAME engine as the user's other modes — never silently fall to a
         // stray key or a hosted call the user didn't choose. Route by the selected backend; only the
         // apiKey/openRouter backends use their own keys (the user's explicit choice). Backends that
-        // can't see images at all (Claude Code's CLI, .verba) go through the user's SIGNED-IN ACCOUNT
-        // (verbaHosted) — their own Claude subscription, the same one powering every other mode.
-        // `.localLLM` (Fully local) NEVER falls back to verbaHosted just because the user also happens
-        // to be signed in for other features (leaderboard etc.) — a local-only user gets a clear error,
-        // not a silent hosted Claude call.
+        // can't see images at all (Claude Code's CLI, the local model) degrade to a TEXT-ONLY reprompt
+        // on that SAME engine — the request is processed without seeing the screen, on the user's own
+        // Claude plan / local model. There is no hosted company backend to fall back to, by design.
         let backend = Settings.shared.repromptBackend.resolved
         let hasAnthropic = !(Keychain.anthropicKey ?? "").isEmpty
         let hasOpenAI = !(Keychain.openAIKey ?? "").isEmpty
         let hasOpenRouter = !(Keychain.openRouterKey ?? "").isEmpty
-        let signedIn = !Settings.shared.proEmail.trimmingCharacters(in: .whitespaces).isEmpty
 
         switch backend {
         case .apiKey:
@@ -230,16 +196,11 @@ struct Reprompter {
         case .openRouter:
             guard hasOpenRouter else { throw RepromptError.missingKey }
             return try await openRouterVision(systemPrompt: systemPrompt, userText: userText, base64PNG: b64)
-        case .verba, .claudeCode:
-            guard signedIn else {
-                throw RepromptError.http(401, "Sign in to Verba (Settings ▸ account) to use Context mode with this backend, or pick a vision-capable backend.")
-            }
-            return try await verbaHosted(transcript: transcript, systemPrompt: systemPrompt, imageBase64: b64)
-        case .localLLM:
-            // Local models are text-only, but the user wants EVERY feature to work on their chosen
-            // engine. Instead of a hard error, degrade to a text-only reprompt on the SAME local model
-            // (it processes the spoken request without seeing the screen) — never a silent hosted Claude
-            // call just because they're signed in elsewhere.
+        case .claudeCode, .localLLM:
+            // The Claude CLI and local models are text-only, but the user wants EVERY feature to work
+            // on their chosen engine. Instead of a hard error, degrade to a text-only reprompt on the
+            // SAME engine (it processes the spoken request without seeing the screen). NEVER a hosted
+            // company call — there is no company AI backend anymore.
             return try await reprompt(transcript: transcript, systemPrompt: systemPrompt)
         case .auto:
             break   // unreachable, .resolved never returns .auto

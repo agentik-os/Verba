@@ -126,12 +126,14 @@ enum OverlayStyle: String, Codable, CaseIterable, Identifiable {
 /// Where the Claude reprompting runs: pay-per-token API key, or the user's
 /// Claude Code subscription (Max/Pro plan) via the local `claude` CLI.
 enum RepromptBackend: String, Codable, CaseIterable, Identifiable {
-    case auto, verba, claudeCode, apiKey, openRouter, localLLM
+    // NOTE: the hosted "Verba managed" backend (`.verba`) was removed — Verba never makes a
+    // billed AI call on your behalf. AI rewriting runs ONLY on the user's own resources:
+    // their Claude Code plan, their own API key, or a fully-local Ollama model.
+    case auto, claudeCode, apiKey, openRouter, localLLM
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .auto:       return L("Automatic (Claude Code, else Verba)")
-        case .verba:      return L("Verba (included, no key needed)")
+        case .auto:       return L("Automatic (Claude Code, else local)")
         case .claudeCode: return L("Claude Code (Max/Pro plan)")
         case .apiKey:     return L("My API key")
         case .openRouter: return L("OpenRouter (any model)")
@@ -139,12 +141,12 @@ enum RepromptBackend: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    /// Resolve `.auto` to a concrete backend: prefer the user's Claude Code (free for us,
-    /// runs on their Claude plan) when the CLI is available, otherwise the Verba hosted proxy
-    /// (works for everyone, no key). Other choices are explicit and pass through unchanged.
+    /// Resolve `.auto` to a concrete backend: prefer the user's Claude Code (runs on their own
+    /// Claude plan) when the CLI is available, otherwise the fully-local model (always works, no
+    /// key, nothing leaves the device — the private default). Other choices pass through unchanged.
     var resolved: RepromptBackend {
         guard self == .auto else { return self }
-        return ClaudeCode.isAvailable ? .claudeCode : .verba
+        return ClaudeCode.isAvailable ? .claudeCode : .localLLM
     }
 }
 
@@ -824,7 +826,17 @@ final class Settings: ObservableObject {
         modeGroups = (d.data(forKey: "modeGroups")).flatMap { try? JSONDecoder().decode([ModeGroup].self, from: $0) } ?? []
         // Default NEW installs to Fully local (open-source, on-device, no account). Existing users keep
         // their persisted choice — this ?? only applies when nothing was ever saved.
-        repromptBackend = RepromptBackend(rawValue: d.string(forKey: "repromptBackend") ?? "") ?? .localLLM
+        // MIGRATION: the hosted "Verba managed" backend was removed. Any user stored on "verba"
+        // (the retired company-key backend) or "auto" (which used to fall back to it) is moved once
+        // to a working real backend: their Claude Code plan if present, else the fully-local model.
+        let storedBackend = d.string(forKey: "repromptBackend") ?? ""
+        if storedBackend == "verba" || storedBackend == "auto" {
+            let migrated: RepromptBackend = ClaudeCode.isAvailable ? .claudeCode : .localLLM
+            repromptBackend = migrated
+            d.set(migrated.rawValue, forKey: "repromptBackend")   // persist once (didSet doesn't fire in init)
+        } else {
+            repromptBackend = RepromptBackend(rawValue: storedBackend) ?? .localLLM
+        }
         // Default provider is Anthropic (matches the pre-picker behaviour of "My API key").
         apiKeyProvider = ApiKeyProvider(rawValue: d.string(forKey: "apiKeyProvider") ?? "") ?? .anthropic
         openAIModel = d.string(forKey: "openAIModel") ?? "gpt-4o"

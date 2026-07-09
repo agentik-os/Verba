@@ -35,7 +35,7 @@ function vsFaq(c: { name: string; price: string; onDevice: string }) {
   return [
     { q: `Is Verba a good ${c.name} alternative?`, a: `Yes. Verba is a native Mac dictation app at $9.99/mo with on-device transcription, AI cleanup in any app, live translation, and a voice agent for 1,000+ apps. ${local}` },
     { q: `Verba vs ${c.name}: which is more private?`, a: local },
-    { q: `How much does Verba cost vs ${c.name}?`, a: `Verba is $9.99/mo (or $84/year) with 33 free dictations to start; ${c.name} is ${c.price}. Verba lets you bring your own AI key or use a local model, with no markup.` },
+    { q: `How much does Verba cost vs ${c.name}?`, a: `Verba is $9.99/mo (or $84/year, or a $149 one-time lifetime), and raw dictation is free forever and unlimited with no card, plus a 7-day Pro trial; ${c.name} is ${c.price}. Verba lets you bring your own AI key or use a local model, with no markup.` },
   ];
 }
 
@@ -162,7 +162,7 @@ export default async function Vs({ params }: { params: Promise<{ slug: string }>
         <a href={DOWNLOAD} className="rounded-full bg-[var(--fg)] px-7 py-3 font-medium text-[var(--bg)] hover:opacity-90">
           Try Verba free
         </a>
-        <p className="mt-6 text-xs muted">33 free dictations · Pro $9.99/mo · 7-day trial</p>
+        <p className="mt-6 text-xs muted">Unlimited raw dictation free forever · Pro $9.99/mo</p>
       </div>
     <SiteFooter />
     </main>

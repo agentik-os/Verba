@@ -12,7 +12,7 @@ acts on it across 1,000+ connected apps. Dictation that doesn't just type, it ac
 Website: https://verba.run
 Download (macOS 14+): https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg
 Maker: Agentik OS
-Price: $9.99/month or $84/year. Free trial: 33 full-feature dictations.
+Price: Raw dictation is free forever (unlimited, no card). Pro is $9.99/month or $84/year, or a one-time $149 lifetime (Founder's Edition). Paid AI features include a 7-day trial.
 
 ## Key facts
 - Platform: macOS 14+ (Apple Silicon). No Windows, iOS or Android app.
