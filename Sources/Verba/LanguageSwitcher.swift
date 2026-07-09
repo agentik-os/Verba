@@ -162,6 +162,11 @@ struct FooterLanguageButton: View {
     /// Set the dictation OUTPUT language, then offer to also translate the interface (with a restart).
     private func pick(_ lang: String) {
         settings.mainLanguage = lang
+        // Keep the Translate mode's target in sync with this one obvious control: picking a
+        // language here used to leave Translate on its own separate target (default "English"),
+        // so Translate appeared to "only work in English" no matter what the user chose. A real
+        // language now drives BOTH; "Auto-detect" ("") leaves the last Translate target intact.
+        if !lang.isEmpty { settings.setTranslateLanguage(lang) }
         LocaleManager.offerUISwitch(to: lang)
     }
 }
