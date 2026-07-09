@@ -160,7 +160,7 @@ struct OnboardingView: View {
     private var welcomeAndPermissions: some View {
         let core = micGranted && axGranted && imGranted
         return VStack(alignment: .leading, spacing: 16) {
-            title(L("Speak. It types. Anywhere on your Mac."), L("Two quick permissions and you're dictating. That's it."))
+            title(L("Speak. It types. Anywhere on your Mac."), L("Three quick permissions and you're dictating. That's it."))
             VStack(spacing: 12) {
                 permRow("mic.fill", L("Microphone"), L("So Verba can hear you."), granted: micGranted) {
                     AVCaptureDevice.requestAccess(for: .audio) { _ in }
@@ -313,12 +313,7 @@ struct OnboardingView: View {
             }
             .padding(14).frame(maxWidth: .infinity, alignment: .leading).glass(in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             if !settings.useFnAsPrimary {
-                HStack {
-                    Text(L("Your shortcut:")).font(.callout)
-                    ShortcutRecorder(label: shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods),
-                                     onCapture: { c, m in settings.primaryKeyCode = c; settings.primaryMods = m })
-                    Spacer()
-                }
+                shortcutPicker(lead: L("Your shortcut:"))
             }
             actionRow("hand.tap", L("Single tap"), L("Tap to start recording, tap again to send."), done: coach.singleFn)
             actionRow("hand.tap.fill", L("Press & hold"), L("Hold while you speak, release to send (push-to-talk)."), done: coach.holdFn)
@@ -471,12 +466,7 @@ struct OnboardingView: View {
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
             if !settings.useFnAsPrimary {
-                HStack {
-                    Text(L("Or pick a shortcut:")).font(.callout)
-                    ShortcutRecorder(label: shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods),
-                                     onCapture: { c, m in settings.primaryKeyCode = c; settings.primaryMods = m })
-                    Spacer()
-                }
+                shortcutPicker(lead: L("Or pick a shortcut:"))
             }
             if settings.useFnAsPrimary {
                 HStack {
@@ -526,6 +516,29 @@ struct OnboardingView: View {
             // Emoji/keyboard popup escape hatch: if macOS still shows it, point to the system toggle.
             Label(L("Still seeing the macOS emoji / keyboard popup? Turn it off in System Settings ▸ Keyboard ▸ “Press 🌐 key to” → Do Nothing."), systemImage: "keyboard.badge.ellipsis")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// Custom-trigger picker with an explicit valid/invalid confirmation, so onboarding shows
+    /// exactly what was captured and whether it's usable (VER-41). A valid combo needs a
+    /// ⌘/⌥/⌃ modifier plus a key — the same rule ShortcutRecorder enforces on capture.
+    private func shortcutPicker(lead: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(lead).font(.callout)
+                ShortcutRecorder(label: shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods),
+                                 onCapture: { c, m in settings.primaryKeyCode = c; settings.primaryMods = m })
+                Spacer()
+            }
+            if settings.primaryHasShortcut {
+                Label(L("Set to") + " \(shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods)). " + L("Press it below to test."),
+                      systemImage: "checkmark.circle.fill")
+                    .font(.caption).foregroundStyle(.green).fixedSize(horizontal: false, vertical: true)
+            } else {
+                Label(L("Click the field, then hold ⌘, ⌥ or ⌃ and press a key. A modifier is required, so a lone letter won't be accepted."),
+                      systemImage: "exclamationmark.circle")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 

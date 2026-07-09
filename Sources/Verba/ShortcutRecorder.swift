@@ -18,7 +18,7 @@ struct ShortcutRecorder: View {
             Button {
                 recording ? cancel() : begin()
             } label: {
-                Text(recording ? "Press keys…  (Esc)" : (label.isEmpty ? "None" : label))
+                Text(recording ? L("Hold ⌘ / ⌥ / ⌃ + a key…  (Esc)") : (label.isEmpty ? L("None") : label))
                     .frame(minWidth: 110)
                     .monospacedDigit()
             }

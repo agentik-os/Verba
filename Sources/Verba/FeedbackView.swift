@@ -215,12 +215,21 @@ struct FeedbackView: View {
                     .disabled(submitting || transcribing || improving)
                     .help(L("Dictate your feedback"))
                     if screenshotThumb == nil {
+                        // VER-39: two explicit choices — capture the screen now, or pick an existing
+                        // file — so the button no longer surprises the user by auto-capturing. Drag &
+                        // drop (below, on the whole panel) still works as a third way to attach.
                         Button { attachScreenshot() } label: {
-                            ActionChip(title: L("Attach screenshot"), icon: "camera.viewfinder")
+                            ActionChip(title: L("Take screenshot"), icon: "camera.viewfinder")
                         }
                         .buttonStyle(.plain)
                         .disabled(submitting || improving)
-                        .help(L("Capture the current screen, or drag an image onto the editor, to attach it"))
+                        .help(L("Capture the current screen now and attach it"))
+                        Button { attachFile() } label: {
+                            ActionChip(title: L("Add file"), icon: "paperclip")
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(submitting || improving)
+                        .help(L("Choose an image from your Mac, or drag one onto this panel, to attach it"))
                     }
                     Spacer(minLength: 12)
                     if awaitingConfirm {
@@ -605,6 +614,28 @@ struct FeedbackView: View {
             self.screenshot = png
             self.screenshotThumb = NSImage(data: png)
         }
+    }
+
+    // MARK: file attachment (VER-39)
+
+    /// Pick an existing image from disk via an open panel and attach it. Reuses the same
+    /// NSImage → PNG plumbing as drag-and-drop and screen capture, so it flows through the
+    /// identical attachment pipeline (screenshot bytes + thumbnail).
+    private func attachFile() {
+        error = nil
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.allowedContentTypes = [.png, .jpeg, .tiff, .heic, .gif, .bmp, .image]
+        panel.prompt = L("Attach")
+        panel.message = L("Choose an image to attach to your feedback.")
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        guard let img = NSImage(contentsOf: url) else {
+            error = L("That file isn't a readable image. Choose a PNG or JPEG.")
+            return
+        }
+        attach(image: img)
     }
 
     // MARK: screenshot attachment

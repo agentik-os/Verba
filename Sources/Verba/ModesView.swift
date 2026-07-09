@@ -93,8 +93,8 @@ struct ModesView: View {
                         EmptyState(icon: "wand.and.stars",
                                    title: settings.profiles.isEmpty ? L("No modes yet") : L("Select a mode"),
                                    message: settings.profiles.isEmpty
-                                       ? L("Modes are the different ways Claude reorders and improves your dictation. Create one, or restore the built-in modes.")
-                                       : L("Each mode is a different way Claude reorders and improves your dictation."))
+                                       ? L("Modes are the different ways your AI reorders and improves your dictation. Create one, or restore the built-in modes.")
+                                       : L("Each mode is a different way your AI reorders and improves your dictation."))
                         HStack(spacing: 10) {
                             Button { genError = nil; genDescription = ""; showGenerator = true } label: {
                                 Label(L("New mode"), systemImage: "plus")
@@ -408,7 +408,7 @@ struct ModesView: View {
                             label: isActive ? L("Active") : L("Make active"),
                             selected: isActive) { if !promptBlank { settings.activeProfileID = id } }
                         .disabled(isActive || promptBlank)
-                        .help(promptBlank ? L("Add a system prompt before making this mode active — an empty prompt gives Claude no instructions.") : "")
+                        .help(promptBlank ? L("Add a system prompt before making this mode active — an empty prompt gives your AI no instructions.") : "")
                     Spacer()
                     Button(role: .destructive) { confirmOrDelete(id) } label: {
                         Image(systemName: "trash")
@@ -423,7 +423,7 @@ struct ModesView: View {
                                 .font(.system(size: 16)).foregroundStyle(.secondary)
                                 .frame(width: 20).padding(.top, 1)
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(L("This mode screenshots the frontmost window and sends it to Claude along with your spoken request, so it can act on what's on screen (reply to the visible email, comment on a photo, answer the question shown)."))
+                                Text(L("This mode screenshots the frontmost window and sends it to your AI along with your spoken request, so it can act on what's on screen (reply to the visible email, comment on a photo, answer the question shown)."))
                                     .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                                 Label(L("The screenshot is sent to your AI backend only for this request and is never stored."),
                                       systemImage: "lock.shield")
@@ -495,8 +495,8 @@ struct ModesView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 6) {
                             Text(L("System prompt")).font(.subheadline.weight(.semibold))
-                            Text(isVision ? L("what Claude does with the screenshot + your spoken request")
-                                          : L("how Claude reinterprets your audio"))
+                            Text(isVision ? L("what your AI does with the screenshot + your spoken request")
+                                          : L("how your AI reinterprets your audio"))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         TextEditor(text: promptB)
@@ -504,7 +504,7 @@ struct ModesView: View {
                             .frame(minHeight: 220).padding(12)
                             .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         if promptBlank {
-                            Label(L("This mode has no system prompt. Claude would get no instructions and may echo or mangle your dictation. Add a prompt to make it active."),
+                            Label(L("This mode has no system prompt. Your AI would get no instructions and may echo or mangle your dictation. Add a prompt to make it active."),
                                   systemImage: "exclamationmark.triangle.fill")
                                 .font(.caption).foregroundStyle(.orange)
                                 .fixedSize(horizontal: false, vertical: true)

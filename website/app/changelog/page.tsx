@@ -21,6 +21,14 @@ const DAYS: Day[] = [
     summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
     entries: [
       {
+        version: "0.9.68",
+        title: "Feedback fixes from you",
+        items: [
+          "Onboarding now says the right number of permissions, and the shortcut picker tells you exactly which key combos are valid and confirms your choice.",
+          "The Feedback panel has a clear Take screenshot button plus a separate Add file button, and Context mode no longer names a specific AI when you use a different one.",
+        ],
+      },
+      {
         version: "0.9.67",
         title: "Fix: no more duplicate widget",
         items: [
