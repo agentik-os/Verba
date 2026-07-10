@@ -21,7 +21,7 @@ struct OnboardingView: View {
     @State private var screenGranted = ScreenCapture.hasPermission()
     @State private var pulse = false
 
-    private let total = 3   // roadmap 2026-07-03: Welcome+Permissions / Choose engine / First dictation
+    private let total = 4   // Sign in (required, first) / Welcome+Permissions / Choose engine / First dictation
     @State private var demoText = ""
     private let poll = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -119,18 +119,28 @@ struct OnboardingView: View {
                     .disabled(!canAdvance)
             } else {
                 VStack(spacing: 8) {
-                    Button(action: finish) { Text(L("Start using Verba")).frame(minWidth: 140) }
+                    // Gate the finish on the local model being installed, so the user's first real use
+                    // works instead of hitting a not-ready error. Only when Fully local is the chosen
+                    // backend; other backends (Claude plan / own key) have nothing to download.
+                    let permsOK = micGranted && axGranted && imGranted
+                    let localPending = settings.repromptBackend == .localLLM && !localSetup.isReady
+                    let ready = permsOK && !localPending
+                    Button(action: finish) {
+                        Text(localPending ? L("Setting up your local AI… \(localSetup.percent)%") : L("Start using Verba"))
+                            .frame(minWidth: 140)
+                    }
                         .buttonStyle(DarkButton())
-                        .opacity(micGranted && axGranted && imGranted ? 1 : 0.35)
-                        .disabled(!(micGranted && axGranted && imGranted))
-                    // If a core permission was revoked after the permissions step, don't leave a
-                    // silent dead button — name what's still missing so the user can go back.
-                    if !(micGranted && axGranted && imGranted) {
+                        .opacity(ready ? 1 : 0.35)
+                        .disabled(!ready)
+                    if !permsOK {
                         let missing = [micGranted ? nil : L("Microphone"),
                                        axGranted ? nil : L("Accessibility"),
                                        imGranted ? nil : L("Input Monitoring")].compactMap { $0 }.joined(separator: ", ")
                         Text(L("Still needed: ") + missing)
                             .font(.caption).foregroundStyle(.orange).multilineTextAlignment(.center)
+                    } else if localPending {
+                        Text(L("Your local model is downloading so it's ready the moment you finish. This runs once."))
+                            .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     }
                 }
             }
@@ -142,16 +152,18 @@ struct OnboardingView: View {
     /// right after the account step, before the user can go any further or use the app.
     private var canAdvance: Bool {
         switch step {
-        case 0: return micGranted && axGranted && imGranted   // the 3 core permissions gate screen 1
+        case 0: return !settings.proEmail.isEmpty                // must sign in before anything else
+        case 1: return micGranted && axGranted && imGranted     // the 3 core permissions gate the next screen
         default: return true
         }
     }
 
-    // MARK: steps — 3 screens (sign-in is deferred, non-blocking; offered later in Settings/Account).
+    // MARK: steps — 4 screens. Sign-in is now the REQUIRED first step (can't advance until signed in).
     @ViewBuilder private var content: some View {
         switch step {
-        case 0: welcomeAndPermissions
-        case 1: chooseEngine
+        case 0: account
+        case 1: welcomeAndPermissions
+        case 2: chooseEngine
         default: firstDictation
         }
     }
@@ -709,7 +721,7 @@ struct OnboardingView: View {
                 settings.proEmail = email
                 Task { _ = await settings.verifyPro() }
                 // Signed in → the web window is already closed; move straight to the next step.
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { if step == 1 { step += 1 } }
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { if step == 0 { step += 1 } }
             }
         }
     }
