@@ -112,6 +112,8 @@ final class FnTap {
         case .flagsChanged:
             let fn = event.flags.contains(.maskSecondaryFn)
             let opt = event.flags.contains(.maskAlternate)
+            let shift = event.flags.contains(.maskShift)
+            let cmd = event.flags.contains(.maskCommand)
             let bareFn = event.flags.subtracting([.maskSecondaryFn, .maskNonCoalesced]).isEmpty
 
             // Plain Control (no Option) → pause/resume the active recording. The HID tap sees
@@ -122,10 +124,14 @@ final class FnTap {
             // phantom pause/resume. By deciding on release and latching whether Option was ever
             // co-present during the press, a lone ⌃ tap pauses while a ⌃⌥ chord does not. Fn may be
             // co-held (hold+Fn dictation) — that's fine, we key off Control alone, ignoring Fn.
+            // The pause gesture is a LONE Control tap. Any OTHER modifier co-present (Option, Shift,
+            // Command) means it's a real system shortcut (⌃⇧-, ⌘⇧-, ⌃⌥…) — never fire pause, and never
+            // interfere. Fn may be co-held (hold+Fn dictation), so it's the only allowed companion.
             let ctrlHeld = event.flags.contains(.maskControl)
+            let ctrlHasCompanion = opt || shift || cmd
             if ctrlHeld {
-                if !ctrlPresent { ctrlPresent = true; optSeenDuringCtrl = opt }
-                if opt { optSeenDuringCtrl = true }   // Option arrived during the press → it's a chord
+                if !ctrlPresent { ctrlPresent = true; optSeenDuringCtrl = ctrlHasCompanion }
+                if ctrlHasCompanion { optSeenDuringCtrl = true }   // another modifier joined → it's a combo, not a lone ⌃ tap
             } else if ctrlPresent {
                 // Control released. Fire pause/resume only if this was a lone-Control press.
                 let wasChord = optSeenDuringCtrl
@@ -144,8 +150,8 @@ final class FnTap {
             // and ⌥+Fn (to-do glance) never fire this. In hold-to-talk, Fn is held → optCombo latches
             // → it correctly does nothing.
             if opt {
-                if !optPresent { optPresent = true; optCombo = ctrlHeld || fn }
-                if ctrlHeld || fn { optCombo = true }
+                if !optPresent { optPresent = true; optCombo = ctrlHeld || fn || shift || cmd }
+                if ctrlHeld || fn || shift || cmd { optCombo = true }   // ⌥ with any other modifier is a combo, not a lone ⌥ tap
             } else if optPresent {
                 let wasCombo = optCombo
                 optPresent = false; optCombo = false

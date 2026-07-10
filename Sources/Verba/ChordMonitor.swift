@@ -71,10 +71,12 @@ final class ChordMonitor {
         // Control is fully absent — a missed release can't block the next press.
         if !FnTap.shared.active {
             let ctrlHeld = f.contains(.control)
-            let optHeld = f.contains(.option)
+            // Lone Control tap only. Option, Shift or Command co-present → it's a system shortcut
+            // (⌃⇧-, ⌃⌘-, ⌃⌥…), never Verba's pause gesture; don't fire or interfere.
+            let ctrlHasCompanion = f.contains(.option) || f.contains(.shift) || f.contains(.command)
             if ctrlHeld {
-                if !ctrlPresent { ctrlPresent = true; optSeenDuringCtrl = optHeld }
-                if optHeld { optSeenDuringCtrl = true }
+                if !ctrlPresent { ctrlPresent = true; optSeenDuringCtrl = ctrlHasCompanion }
+                if ctrlHasCompanion { optSeenDuringCtrl = true }
             } else if ctrlPresent {
                 let wasChord = optSeenDuringCtrl
                 ctrlPresent = false
