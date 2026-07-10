@@ -374,10 +374,21 @@ enum LocalLLM {
             "messages": [["role": "system", "content": system], ["role": "user", "content": user]],
         ])
         let (data, resp): (Data, URLResponse)
-        do { (data, resp) = try await URLSession.shared.data(for: req) } catch { throw LLMError.notRunning }
+        do { (data, resp) = try await URLSession.shared.data(for: req) }
+        catch {
+            // Server not up → SELF-HEAL: kick off the local setup (installs engine + pulls the model)
+            // and surface progress instead of a dead "not running" error, so reprompting recovers on
+            // its own for anyone whose local engine isn't ready yet (incl. Automatic-mode fallback).
+            let pct = await MainActor.run { LocalSetupProgress.shared.start(); return LocalSetupProgress.shared.percent }
+            throw LLMError.settingUp(pct)
+        }
         let body = String(data: data, encoding: .utf8) ?? ""
         guard (resp as? HTTPURLResponse)?.statusCode == 200 else {
-            if body.contains("not found") { throw LLMError.notDownloaded(model) }
+            if body.contains("not found") {
+                // Model missing → SELF-HEAL: start the pull and show setup progress, not a dead error.
+                let pct = await MainActor.run { LocalSetupProgress.shared.start(); return LocalSetupProgress.shared.percent }
+                throw LLMError.settingUp(pct)
+            }
             throw LLMError.http(body)
         }
         let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any]

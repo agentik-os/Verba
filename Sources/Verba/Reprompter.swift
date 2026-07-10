@@ -32,7 +32,31 @@ struct Reprompter {
         if backendOverride == nil, Settings.shared.repromptBackend == .auto {
             return try await autoFallback(transcript: transcript, systemPrompt: systemPrompt, userText: userText, fast: fast)
         }
-        return try await runOnce(transcript: transcript, systemPrompt: systemPrompt, userText: userText, fast: fast)
+        do {
+            return try await runOnce(transcript: transcript, systemPrompt: systemPrompt, userText: userText, fast: fast)
+        } catch {
+            // SAFETY NET: an explicitly-chosen engine that is genuinely UNAVAILABLE (Claude Code CLI not
+            // installed, no API key set, local server down) must not dead-end the dictation — fall back
+            // to the fully-local model (which self-installs on demand). This recovers users the earlier
+            // hosted-AI migration pinned to a single backend that later became unavailable. Transient/
+            // content errors from a working engine still surface (we only catch unavailability).
+            if backendOverride == nil, Self.isEngineUnavailable(error),
+               Settings.shared.repromptBackend != .localLLM {
+                return try await LocalLLM.chat(system: systemPrompt, user: userText, model: Settings.shared.localLLMModel)
+            }
+            throw error
+        }
+    }
+
+    /// True for errors that mean "this engine can't run at all right now" (as opposed to a transient
+    /// or content error from a working engine) — the cases where falling back to local is right.
+    private static func isEngineUnavailable(_ error: Error) -> Bool {
+        if case ClaudeCode.CCError.notInstalled = error { return true }
+        if case RepromptError.missingKey = error { return true }
+        if case LocalLLM.LLMError.notRunning = error { return true }
+        if case LocalLLM.LLMError.settingUp = error { return true }
+        if case LocalLLM.LLMError.notDownloaded = error { return true }
+        return false
     }
 
     /// Automatic mode: try every available (backend, model) pair until one returns text. Order: the

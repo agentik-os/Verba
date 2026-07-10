@@ -430,9 +430,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
-        // Fully local: ensure the open-source engine AND the model are installed so on-device
-        // reprompting is ready without any manual setup (Raw dictation already works immediately).
-        if s.repromptBackend == .localLLM { Task { @MainActor in LocalSetupProgress.shared.start() } }
+        // Ensure the local model is installed whenever the local engine could actually be used for
+        // reprompting: an explicit Fully-local choice, OR Automatic (which falls back to local when
+        // Claude Code / a key aren't available). Without this, Automatic users who fall through to
+        // local hit "model not downloaded" and reprompting silently fails.
+        if s.repromptBackend == .localLLM || s.repromptBackend == .auto {
+            Task { @MainActor in LocalSetupProgress.shared.start() }
+        }
         // Warm the Claude Code path lookup off the reprompt path (its login-shell probe is slow).
         Task.detached(priority: .utility) { _ = ClaudeCode.isAvailable }
     }

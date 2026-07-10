@@ -835,13 +835,15 @@ final class Settings: ObservableObject {
         // Default NEW installs to Fully local (open-source, on-device, no account). Existing users keep
         // their persisted choice — this ?? only applies when nothing was ever saved.
         // MIGRATION: the hosted "Verba managed" backend was removed. Any user stored on "verba"
-        // (the retired company-key backend) or "auto" (which used to fall back to it) is moved once
-        // to a working real backend: their Claude Code plan if present, else the fully-local model.
+        // (the retired company-key backend) is moved to AUTOMATIC — NOT a single specific backend.
+        // Automatic runs the resilient fallback chain (Claude Code → your Anthropic key → fully local),
+        // so if any one engine is unavailable/rate-limited/not-yet-installed the dictation still succeeds.
+        // Pinning them to a single backend (the earlier bug) dead-ended reprompting whenever that one
+        // engine failed — the root cause of "Verba is down" reports after the hosted-AI removal.
         let storedBackend = d.string(forKey: "repromptBackend") ?? ""
         if storedBackend == "verba" || storedBackend == "auto" {
-            let migrated: RepromptBackend = ClaudeCode.isAvailable ? .claudeCode : .localLLM
-            repromptBackend = migrated
-            d.set(migrated.rawValue, forKey: "repromptBackend")   // persist once (didSet doesn't fire in init)
+            repromptBackend = .auto
+            d.set("auto", forKey: "repromptBackend")   // persist once (didSet doesn't fire in init)
         } else {
             repromptBackend = RepromptBackend(rawValue: storedBackend) ?? .localLLM
         }
