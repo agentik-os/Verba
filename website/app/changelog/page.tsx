@@ -21,6 +21,13 @@ const DAYS: Day[] = [
     summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
     entries: [
       {
+        version: "0.9.74",
+        title: "You'll know when an update is ready",
+        items: [
+          "When a new version is available, Verba now shows a clear popup so you never miss it, with a one-tap Update now that installs in seconds and relaunches. It only asks once per version.",
+        ],
+      },
+      {
         version: "0.9.73",
         title: "Fix: the local model now installs",
         items: [

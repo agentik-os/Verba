@@ -205,10 +205,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         // Silent check shortly after launch so the menu/icon reflect availability without a popup.
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) { Updater.shared.checkInBackground() }
-        // When Sparkle's delegate flips update availability, rebuild the menu + re-badge the icon.
+        // When Sparkle's delegate flips update availability, rebuild the menu + re-badge the icon,
+        // and show a one-time popup so EVERY user sees the new version (not just the sidebar banner).
         Updater.shared.$updateAvailable
             .removeDuplicates().receive(on: RunLoop.main)
-            .sink { [weak self] _ in self?.refreshUI() }
+            .sink { [weak self] available in
+                self?.refreshUI()
+                if available { self?.maybeShowUpdatePopup() }
+            }
             .store(in: &cancellables)
         // CRITICAL: keep FnTap.menuActive perfectly in sync with the picker's visibility. Several
         // code paths close the picker via `overlay.model.menu = false` without also resetting
@@ -2465,6 +2469,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     @objc private func checkUpdates() { Updater.shared.checkForUpdates() }
     @objc private func installUpdate() { Updater.shared.installUpdate() }
+
+    /// One-time popup when a new version is found, so EVERY user is told (not just the sidebar banner).
+    /// Guarded per-version so a given update prompts only once, never nags on every relaunch.
+    private func maybeShowUpdatePopup() {
+        guard Settings.shared.onboarded else { return }   // never interrupt first-run
+        let v = Updater.shared.latestVersion ?? "new"
+        let key = "updatePopupShown.\(v)"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
+        let vLabel = Updater.shared.latestVersion.map { "Verba \($0)" } ?? "A new version of Verba"
+        showGlassAlert(
+            icon: "arrow.down.circle.fill", tint: VerbaAppearance.shared.accentColor,
+            title: "\(vLabel) is available",
+            message: "Update now to get the latest fixes and features. It installs in a few seconds and relaunches Verba.",
+            buttons: [
+                .init(title: "Later", role: .cancel, action: {}),
+                .init(title: "Update now", isDefault: true) { [weak self] in self?.installUpdate() },
+            ],
+            size: NSSize(width: 400, height: 210))
+    }
     @objc private func quit() { NSApp.terminate(nil) }
 
     // MARK: - Windows
