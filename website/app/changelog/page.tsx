@@ -21,6 +21,15 @@ const DAYS: Day[] = [
     summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
     entries: [
       {
+        version: "0.9.72",
+        title: "Subscription restore, local setup errors, and Raw always free",
+        items: [
+          "Already subscribed but Verba shows Free? Settings, Account, enter your checkout email and Verify, it now restores your subscription even if you signed into the app with a different email.",
+          "The local engine Set up button now tells you what went wrong if it can't install, instead of doing nothing, with a Retry and a manual install link.",
+          "When your free trial ends you get a clear note, and you can always keep dictating in Raw, which is free forever for everyone.",
+        ],
+      },
+      {
         version: "0.9.71",
         title: "Your AI, your keys, always",
         items: [

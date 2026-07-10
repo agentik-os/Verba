@@ -98,6 +98,7 @@ struct SettingsView: View {
     @State private var pulling = false
     @State private var pullProgress: Double = 0
     @State private var engineInstalling = false
+    @State private var engineError: String?
     @State private var engineRefresh = 0
     @State private var activating = false
     @State private var cacheBytes: Int64 = 0
@@ -650,16 +651,34 @@ struct SettingsView: View {
             HStack {
                 Button {
                     verifying = true; verifyMsg = ""
-                    Task {
-                        let ok = await settings.verifyPro()
-                        verifying = false
-                        if ok {
+                    let typed = restoreEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+                    // The server only honours the typed checkout email alongside a valid app-session
+                    // token. Verify sends that email as ?email=; if there's no token yet, mint one via
+                    // sign-in FIRST, then verify — so a signed-out user never gets a silent no-op.
+                    let doVerify: () -> Void = {
+                        Task {
+                            let ok = await settings.verifyPro(restoreEmail: typed)
+                            verifying = false
                             // Only on a confirmed Pro result do we reconcile the displayed account
                             // identity with the email the user just verified — never on free-typing.
-                            let typed = restoreEmail.trimmingCharacters(in: .whitespacesAndNewlines)
-                            if !typed.isEmpty { settings.proEmail = typed }
+                            if ok, !typed.isEmpty { settings.proEmail = typed }
+                            verifyMsg = ok ? L("Pro unlocked ✓") : L("No active subscription for this email.")
                         }
-                        verifyMsg = ok ? L("Pro unlocked ✓") : L("No active subscription for this email.")
+                    }
+                    if AuthToken.current == nil {
+                        AuthSession.shared.signIn { email in
+                            DispatchQueue.main.async {
+                                guard email != nil else {
+                                    verifying = false
+                                    settings.needsReauth = true
+                                    verifyMsg = L("Sign in to restore your subscription, then try again.")
+                                    return
+                                }
+                                doVerify()
+                            }
+                        }
+                    } else {
+                        doVerify()
                     }
                 } label: { Text(verifying ? L("Checking…") : (settings.isPro ? L("Re-check") : L("Verify / restore"))) }
                     .glassButton().controlSize(.regular)
@@ -1703,6 +1722,21 @@ struct SettingsView: View {
                 Button(L("Download model")) { pullModel() }.glassProminentButton().controlSize(.small)
             }
         }
+        if let engineError {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                Text(engineError).font(.caption).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
+                Spacer()
+                HStack(spacing: 10) {
+                    Button(L("Retry")) { setupEngine() }.controlSize(.small)
+                    if let u = URL(string: "https://ollama.com/download") {
+                        Link(L("Get Ollama"), destination: u).font(.caption)
+                    }
+                }
+            }
+            .padding(.horizontal, 11).padding(.vertical, 9)
+            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.orange.opacity(0.1)))
+        }
         Text(L("Reformulation runs entirely on your Mac. Tap Set up to install the local engine (~30 MB) the first time. Qwen 2.5 7B recommended (~4.7 GB)."))
             .font(.caption).foregroundStyle(.secondary)
             // Probe state non-intrusively. If the engine is already installed we start it,
@@ -1725,15 +1759,24 @@ struct SettingsView: View {
     }
 
     private func setupEngine() {
-        engineInstalling = true
+        engineInstalling = true; engineError = nil
         LocalLLM.ensureServer { up in
             if up {
                 engineInstalling = false; ollamaUp = true
                 LocalLLM.hasModel(settings.localLLMModel) { ollamaHasModel = $0 }
             } else {
+                // No local binary yet (or it wouldn't start): download + verify + launch it.
                 LocalLLM.installBinary { ok in
                     engineInstalling = false; ollamaUp = ok
-                    if ok { LocalLLM.hasModel(settings.localLLMModel) { ollamaHasModel = $0 } }
+                    if ok {
+                        LocalLLM.hasModel(settings.localLLMModel) { ollamaHasModel = $0 }
+                    } else {
+                        // installBinary reports only success/failure (network drop, Gatekeeper /
+                        // code-signature block, perms, or the server not coming up all funnel here).
+                        // Surface a visible, actionable error instead of silently flipping the
+                        // spinner off — the reported "I press Set up and nothing happens" bug.
+                        engineError = L("Couldn't set up the local engine. Check your internet connection and try again, or install Ollama manually from ollama.com.")
+                    }
                 }
             }
         }

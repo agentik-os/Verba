@@ -33,9 +33,16 @@ enum Entitlement {
     /// Token-authenticated subscription check. `.unreachable` (offline, server error, or a
     /// rejected/missing token) is deliberately distinct from `.inactive`: only an explicit
     /// server "no" revokes Pro — everything else goes through the S7 offline-grace window.
-    static func check() async -> ProStatus {
+    /// `email` (optional): the checkout email to RESTORE against, appended as `?email=`. Used by the
+    /// "Restore a subscription" card so a signed-in user whose app-token email differs from their
+    /// Stripe checkout email can still unlock Pro. The server only honours it alongside a valid token.
+    static func check(email: String? = nil) async -> ProStatus {
         guard AuthToken.current != nil else { return .unreachable }   // migration: no token yet ≠ revoke
-        guard let url = URL(string: endpoint) else { return .unreachable }
+        var comps = URLComponents(string: endpoint)
+        if let email = email?.trimmingCharacters(in: .whitespacesAndNewlines), !email.isEmpty {
+            comps?.queryItems = [URLQueryItem(name: "email", value: email)]
+        }
+        guard let url = comps?.url else { return .unreachable }
         var req = URLRequest(url: url)
         AuthToken.bearer(&req)
         do {

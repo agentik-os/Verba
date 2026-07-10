@@ -778,9 +778,12 @@ final class Settings: ObservableObject {
     /// server errors, rejected/missing tokens — none of these ever downgrade the user or
     /// nag them to subscribe. Unreachable just means "keep the last known state and
     /// quietly revalidate later".
+    /// `restoreEmail` (optional): when the user restores via the "Restore a subscription" card, the
+    /// typed checkout email is passed to the server so a user whose app-token email differs from their
+    /// Stripe checkout email can still unlock Pro. Nil = the ordinary token-only re-check.
     @MainActor
-    func verifyPro() async -> Bool {
-        switch await Entitlement.check() {
+    func verifyPro(restoreEmail: String? = nil) async -> Bool {
+        switch await Entitlement.check(email: restoreEmail) {
         case .active:
             isPro = true
             needsReauth = false

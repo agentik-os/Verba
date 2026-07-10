@@ -1894,6 +1894,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 case .localLLM, .apiKey, .openRouter, .claudeCode: Gamification.shared.flag(.usedOwnAI)
                 default: break
                 }
+                self.maybeShowTrialEndedNudge()   // first time the trial hits 0, surface the paywall once
             }
             // Surface the finished Session: list it (with Copy) and notify without stealing focus.
             SessionStore.shared.complete(session)
@@ -2777,13 +2778,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             message: "You're signed in as \(email). After a security upgrade, this Mac just needs one click to reconnect — nothing else changes.",
             buttons: [
                 .init(title: "Later", role: .cancel, action: {}),
+                .init(title: "Continue in Raw (free)") { [weak self] in
+                    self?.continueInRaw()
+                },
                 .init(title: "Reconnect", isDefault: true) {
                     AuthSession.shared.signIn { ok in
                         if ok != nil { Task { _ = await Settings.shared.verifyPro() } }
                     }
                 },
             ],
-            size: NSSize(width: 400, height: 200))
+            size: NSSize(width: 420, height: 220))
+    }
+
+    /// The first time a free user's trial dictations reach zero, proactively surface the trial-ended
+    /// paywall ONCE — so the wall isn't a surprise on the next AI-mode dictation. Guarded by a
+    /// UserDefaults flag so it never nags again. Raw dictation stays free regardless.
+    private func maybeShowTrialEndedNudge() {
+        guard !Settings.shared.isPro, Entitlement.trialsRemaining() == 0 else { return }
+        let key = "verba.trialEndedNudgeShown"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
+        DispatchQueue.main.async { [weak self] in self?.showPaywall() }
     }
 
     private func showPaywall() {
@@ -2797,10 +2812,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         showGlassAlert(
             icon: "sparkles", tint: .primary,
-            title: "Unlock the AI modes",
-            message: "Raw dictation is free forever and unlimited. Upgrade to Verba Pro to use Polish, Translate, Prompt and every other mode, plus Notes, Tasks and JARVIS, for $9.99/month.",
+            title: "Your free trial has ended",
+            message: "Raw dictation stays FREE forever and unlimited — it's never locked. To keep using the AI modes (Polish, Translate, Prompt and every other mode), plus Notes, Tasks and JARVIS, upgrade to Verba Pro for $9.99/month.",
             buttons: [
                 .init(title: "Later", role: .cancel, action: {}),
+                .init(title: "Continue in Raw (free)") { [weak self] in
+                    self?.continueInRaw()
+                },
                 .init(title: "I already subscribed") { [weak self] in
                     self?.openMain()   // Settings ▸ Plan to restore via email
                 },
@@ -2808,6 +2826,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     if let u = URL(string: Entitlement.pricingURL) { NSWorkspace.shared.open(u) }
                 },
             ],
-            size: NSSize(width: 400, height: 230))
+            size: NSSize(width: 420, height: 250))
+    }
+
+    /// "Continue in Raw (free)" — Raw dictation is free forever, so when a free user triggers an AI
+    /// mode after the trial is spent, this lets them fall back to Raw and start dictating immediately.
+    /// Switches the active mode to the built-in Raw profile and starts a raw recording (which the
+    /// paywall gate lets through because `activeProfile.raw == true`).
+    private func continueInRaw() {
+        guard let raw = Settings.shared.profiles.first(where: { $0.raw }) else { return }
+        Settings.shared.activeProfileID = raw.id
+        startRecording(forced: raw)
     }
 }
