@@ -21,6 +21,13 @@ const DAYS: Day[] = [
     summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
     entries: [
       {
+        version: "0.9.73",
+        title: "Fix: the local model now installs",
+        items: [
+          "Fixed a bad bug where installing the local AI engine failed for everyone who didn't already have it: the download source moved, and a security check wrongly rejected the engine. Both are fixed and verified, so Fully local now sets itself up automatically (or from the Set up button) and runs 100% offline.",
+        ],
+      },
+      {
         version: "0.9.72",
         title: "Subscription restore, local setup errors, and Raw always free",
         items: [

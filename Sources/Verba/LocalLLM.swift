@@ -22,18 +22,25 @@ enum LocalLLM {
     //                 notarised (Gatekeeper/`spctl` accepts it), and — when a Team ID is
     //                 pinned below — be signed by that exact Developer ID team.
     //
-    /// The only host we will ever download the engine from.
-    private static let engineHost = "ollama.com"
-    private static let engineURL = URL(string: "https://ollama.com/download/ollama-darwin.tgz")!
+    /// Hosts we accept the engine download from. Ollama's own `ollama.com/download/...` now 307-redirects
+    /// to GitHub Releases (github.com → *.githubusercontent.com), so pinning a single host broke the
+    /// download for EVERYONE. We download straight from GitHub Releases and allow the hosts that redirect
+    /// chain legitimately lands on. Transport is still HTTPS-only; the REAL integrity guarantee is Gate 3
+    /// below (the binary must carry a valid Apple code signature + be notarised), which host-pinning was
+    /// never a substitute for.
+    private static let allowedDownloadHosts: Set<String> = [
+        "ollama.com", "github.com", "objects.githubusercontent.com", "release-assets.githubusercontent.com",
+    ]
+    private static let engineURL = URL(string: "https://github.com/ollama/ollama/releases/latest/download/ollama-darwin.tgz")!
     /// Optional pinned SHA-256 (hex, lowercase) of the expected tarball. Ollama ships new
     /// builds frequently, so a stale pin would break downloads; left empty the SHA gate is
     /// skipped and integrity rests on the (version-independent) code-signature gate below.
     /// Set this to a known-good hash to hard-pin a specific tarball.
     private static let pinnedTarballSHA256: String? = nil
-    /// Optional pinned Apple Developer Team Identifier of the engine binary. When set, the
-    /// extracted binary's signing team must match exactly. Ollama's published Developer ID
-    /// team is "EUDNPXK4V8"; pin it once verified in your environment.
-    private static let pinnedTeamID: String? = nil
+    /// Pinned Apple Developer Team Identifier of the engine binary — the extracted binary's signing
+    /// team must match exactly. Verified at runtime from the shipped Ollama build: "3MU9H2V9Y9"
+    /// (Infra Technologies, Inc). This is the true integrity anchor for the CLI binary.
+    private static let pinnedTeamID: String? = "3MU9H2V9Y9"
 
     private static var binDir: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -97,16 +104,17 @@ enum LocalLLM {
     /// done(false) and the partially-downloaded artefacts are removed — we never chmod or
     /// exec an unverified binary.
     static func installBinary(_ done: @escaping (Bool) -> Void) {
-        // Gate 1 (transport): never anything but our exact HTTPS host.
-        guard engineURL.scheme == "https", engineURL.host == engineHost else {
+        // Gate 1 (transport): HTTPS + a host on the allowlist (GitHub Releases + Ollama).
+        guard engineURL.scheme == "https", let h0 = engineURL.host, allowedDownloadHosts.contains(h0) else {
             DispatchQueue.main.async { done(false) }; return
         }
         var req = URLRequest(url: engineURL)
         req.timeoutInterval = 600
         URLSession.shared.downloadTask(with: req) { tmp, resp, err in
             let finish: (Bool) -> Void = { ok in DispatchQueue.main.async { done(ok) } }
-            // Reject if the response ended up on a different host (redirect away from ollama.com).
-            if let final = resp?.url, final.scheme != "https" || final.host != engineHost {
+            // Reject if the response ended up on an off-allowlist host or non-HTTPS. The code-signature
+            // gate below is the real integrity check, so accepting any of GitHub's release hosts is safe.
+            if let final = resp?.url, final.scheme != "https" || !(final.host.map { allowedDownloadHosts.contains($0) } ?? false) {
                 if let tmp { try? FileManager.default.removeItem(at: tmp) }
                 finish(false); return
             }
@@ -234,13 +242,14 @@ enum LocalLLM {
         }
         // 1. Signature must be present and intact.
         guard run("/usr/bin/codesign", ["--verify", "--deep", "--strict", bin.path]).0 == 0 else { return false }
-        // 2. Must pass Gatekeeper as a notarised executable (rejects ad-hoc / unnotarised).
-        guard run("/usr/sbin/spctl", ["--assess", "--type", "execute", "--context", "context:primary-signature", bin.path]).0 == 0 else { return false }
-        // 3. Optional exact Developer ID team pin.
-        if let team = pinnedTeamID, !team.isEmpty {
-            let info = run("/usr/bin/codesign", ["-dvv", bin.path]).1
-            guard info.contains("TeamIdentifier=\(team)") else { return false }
-        }
+        // 2. Must be a real Developer ID binary signed by OLLAMA's exact team, anchored to Apple.
+        //    NOTE: `spctl --assess --type execute` is NOT used here — it rejects a bare notarised CLI
+        //    Mach-O ("valid but does not seem to be an app"), which silently broke every local install.
+        //    A codesign designated-requirement check (Apple anchor + Ollama's Developer ID team OU) is
+        //    the correct, stronger guarantee for a command-line binary: only Ollama can produce it.
+        let team = pinnedTeamID ?? "3MU9H2V9Y9"   // Ollama = Infra Technologies, Inc (3MU9H2V9Y9)
+        let requirement = "anchor apple generic and certificate leaf[subject.OU]=\"\(team)\""
+        guard run("/usr/bin/codesign", ["-v", "-R=\(requirement)", bin.path]).0 == 0 else { return false }
         return true
     }
 
