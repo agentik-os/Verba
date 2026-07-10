@@ -59,7 +59,10 @@ export async function POST(req: NextRequest) {
   // when present, still lets us record which account the signup came from.
   const tok = verifyAppToken(req.headers.get("authorization"));
 
-  // Durable store FIRST (deduped by email) so a Linear outage never loses a signup.
+  // Durable store, resilient: prefer the dedicated beta_signups table; if that function isn't
+  // deployed yet (or errors), fall back to the always-deployed feedback table so a signup is NEVER
+  // lost and the button NEVER 502s. We only hard-fail if BOTH durable writes AND the Linear ping fail.
+  let durable = false;
   try {
     await convexCall<string>("mutation", "beta:submit", {
       serverKey: process.env.APP_TOKEN_SECRET ?? "",
@@ -68,13 +71,27 @@ export async function POST(req: NextRequest) {
       appVersion: body.appVersion ?? "",
       uid: body.uid ?? tok?.code ?? "",
     });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Couldn't record your signup right now.";
-    return NextResponse.json({ ok: false, error: msg }, { status: 502, headers: cors });
+    durable = true;
+  } catch {
+    // beta:submit unavailable → record it durably in the feedback table (deployed) instead.
+    try {
+      await convexCall<string>("mutation", "feedback:record", {
+        serverKey: process.env.APP_TOKEN_SECRET ?? "",
+        uid: body.uid ?? tok?.code ?? "",
+        alias: body.deviceAlias ?? "",
+        text: `iPhone TestFlight beta signup — iCloud: ${email}`,
+        version: body.appVersion ?? "",
+        email,
+      });
+      durable = true;
+    } catch {
+      /* both durable paths failed — the Linear ping below is the last capture; see the guard at the end */
+    }
   }
 
   // Operator ping — mirror the feedback pipeline (a Linear issue). Best-effort: a Linear hiccup
   // must NEVER fail the request, because the durable Convex row already captured the signup.
+  let pinged = false;
   const key = process.env.LINEAR_API_KEY;
   if (key) {
     try {
@@ -100,10 +117,18 @@ export async function POST(req: NextRequest) {
           },
         }),
       });
+      pinged = true;
     } catch {
-      /* non-fatal: the durable Convex row already captured the signup */
+      /* non-fatal: a durable write above likely captured the signup */
     }
   }
 
+  // Only truly fail if NOTHING captured the signup (no durable write AND no operator ping).
+  if (!durable && !pinged) {
+    return NextResponse.json(
+      { ok: false, error: "Couldn't record your signup right now, please try again shortly." },
+      { status: 502, headers: cors },
+    );
+  }
   return NextResponse.json({ ok: true }, { headers: cors });
 }
