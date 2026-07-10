@@ -221,11 +221,11 @@ enum Output {
     /// Returns false only when Accessibility isn't granted (caller falls back to clipboard-only).
     @discardableResult
     static func paste(_ text: String, rich: Bool = false, target: PasteTarget?) -> Bool {
-        // VER-24: auto-paste delivers text via the clipboard (⌘V), but it must not silently
-        // overwrite whatever the user had copied. Unless they opted into keeping dictations on the
-        // clipboard (Settings ▸ Copy to clipboard), snapshot the current clipboard now and put it
-        // back once ⌘V has landed.
-        let preserveClipboard = !Settings.shared.copyToClipboard
+        // Auto-paste delivers text via the clipboard (⌘V). Optionally restore whatever the user had
+        // copied afterwards — but ONLY if they opted in, because reading the clipboard to snapshot it
+        // triggers macOS Sequoia's recurring "access data from other apps" prompt on EVERY paste.
+        // Default OFF: no clipboard read, no prompt (the dictated text simply stays on the clipboard).
+        let preserveClipboard = Settings.shared.preserveClipboard
         let savedClipboard = preserveClipboard ? snapshotPasteboard() : []
         let scheduleRestore: () -> Void = {
             guard preserveClipboard else { return }

@@ -536,6 +536,11 @@ final class Settings: ObservableObject {
     // (a dictation processing, a to-do saving, a note transcribing, a JARVIS action running).
     @Published var showActivityToasts: Bool { didSet { d.set(showActivityToasts, forKey: "showActivityToasts") } }
     @Published var copyToClipboard: Bool { didSet { d.set(copyToClipboard, forKey: "copyToClipboard") } }
+    /// Restore the user's previous clipboard after an auto-paste. OFF by default because doing it
+    /// requires READING the clipboard, which on macOS Sequoia triggers a recurring "access data from
+    /// other apps" permission prompt on every paste. Off = no prompt (the dictated text just stays on
+    /// the clipboard). On = restore the prior clipboard, accepting the one-time macOS prompt.
+    @Published var preserveClipboard: Bool { didSet { d.set(preserveClipboard, forKey: "preserveClipboard") } }
     @Published var richTextPaste: Bool { didSet { d.set(richTextPaste, forKey: "richTextPaste") } }
     @Published var reviewBeforeSend: Bool { didSet { d.set(reviewBeforeSend, forKey: "reviewBeforeSend") } }
     @Published var autoDetectProfile: Bool { didSet { d.set(autoDetectProfile, forKey: "autoDetectProfile") } }
@@ -861,6 +866,7 @@ final class Settings: ObservableObject {
         // VER-24: off by default — auto-paste now restores the prior clipboard instead of leaving
         // the dictation on it. Users who want every dictation copied can enable this.
         copyToClipboard = d.object(forKey: "copyToClipboard") as? Bool ?? false
+        preserveClipboard = d.object(forKey: "preserveClipboard") as? Bool ?? false
         richTextPaste = d.object(forKey: "richTextPaste") as? Bool ?? true
         reviewBeforeSend = d.object(forKey: "reviewBeforeSend") as? Bool ?? false
         autoDetectProfile = d.object(forKey: "autoDetectProfile") as? Bool ?? true

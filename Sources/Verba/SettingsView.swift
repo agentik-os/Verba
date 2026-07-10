@@ -1098,6 +1098,8 @@ struct SettingsView: View {
                           help: L("If you move to another app while a dictation is still processing, Verba pastes the result back into the app and field you started in — so parallel dictations each land in the right place. Needs Accessibility. If it can't restore the original field, the result waits in Sessions instead of going to the wrong app."))
             }
             toggleRow(L("Copy to clipboard"), $settings.copyToClipboard)
+            toggleRow(L("Restore my clipboard after pasting"), $settings.preserveClipboard,
+                      help: L("Puts back whatever you had copied after each dictation. Off by default because it makes macOS ask for permission to read your clipboard on every paste. Leave it off for a prompt-free experience; the dictated text just stays on the clipboard."))
             toggleRow(L("Paste with formatting (render Markdown)"), $settings.richTextPaste)
             toggleRow(L("Review / edit before sending"), $settings.reviewBeforeSend)
             if !Output.accessibilityTrusted {
