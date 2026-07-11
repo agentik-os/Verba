@@ -76,16 +76,22 @@ private struct TaskReminderView: View {
         return f.string(from: payload.due)
     }
 
+    private var accent: Color { VerbaAppearance.shared.accentColor }
+
     var body: some View {
         ZStack {
-            // Dimmed take-over backdrop; click anywhere outside the card to dismiss.
-            Color.black.opacity(0.55).ignoresSafeArea().contentShape(Rectangle())
+            // Take-over backdrop tinted with the user's chosen master color, so the reminder feels
+            // like Verba (and a bit more joyful) instead of a plain black scrim. Click away to dismiss.
+            LinearGradient(colors: [accent.opacity(0.55), Color.black.opacity(0.6), accent.opacity(0.35)],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+                .overlay(Color.black.opacity(0.25))
+                .ignoresSafeArea().contentShape(Rectangle())
                 .onTapGesture { onDismiss() }
 
             VStack(spacing: 20) {
                 Label("Reminder", systemImage: "bell.fill")
                     .font(.system(size: 13, weight: .semibold)).textCase(.uppercase)
-                    .foregroundStyle(.secondary).labelStyle(.titleAndIcon)
+                    .foregroundStyle(accent).labelStyle(.titleAndIcon)
 
                 Text(payload.title.isEmpty ? "Untitled task" : payload.title)
                     .font(.system(size: 34, weight: .bold)).multilineTextAlignment(.center)
@@ -116,8 +122,9 @@ private struct TaskReminderView: View {
             .padding(44)
             .frame(maxWidth: 560)
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(.white.opacity(0.12)))
-            .shadow(color: .black.opacity(0.45), radius: 40, y: 20)
+            .background(accent.opacity(0.14), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(accent.opacity(0.45), lineWidth: 1.5))
+            .shadow(color: accent.opacity(0.35), radius: 40, y: 20)
             .scaleEffect(appeared ? 1 : 0.94).opacity(appeared ? 1 : 0)
         }
         .onAppear { withAnimation(.spring(response: 0.36, dampingFraction: 0.82)) { appeared = true } }

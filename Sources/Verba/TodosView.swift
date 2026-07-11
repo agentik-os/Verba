@@ -1110,14 +1110,16 @@ private struct DeadlinePicker: View {
         Button { show = true } label: {
             if let d = deadline {
                 HStack(spacing: 3) {
-                    Image(systemName: "clock").font(.system(size: compact ? 9 : 10))
+                    // A bell (not a plain clock) so it reads as an ALERT: setting a deadline schedules a
+                    // reminder + full-screen alert. Tinted with the master color when not overdue.
+                    Image(systemName: "bell.fill").font(.system(size: compact ? 9 : 10))
                     Text(label(d)).font((compact ? Font.caption2 : Font.caption2).weight(.medium)).monospacedDigit()
                 }
-                .foregroundStyle(overdue ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+                .foregroundStyle(overdue ? AnyShapeStyle(.red) : AnyShapeStyle(VerbaAppearance.shared.accentColor))
                 .padding(.horizontal, 7).padding(.vertical, 3)
                 .background(.softFill, in: Capsule())
             } else {
-                Label(compact ? L("Due") : L("Deadline"), systemImage: "plus")
+                Label(compact ? L("Remind") : L("Set a reminder"), systemImage: "bell")
                     .font(.caption2).foregroundStyle(.tertiary)
                     .padding(.horizontal, 7).padding(.vertical, 3)
                     .background(.softFill, in: Capsule())
