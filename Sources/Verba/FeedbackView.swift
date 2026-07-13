@@ -505,8 +505,16 @@ struct FeedbackView: View {
                     // No usable vision: if there's typed text, clean it up text-only; a screenshot-only
                     // feedback on a vision-incapable backend has nothing to improve, so keep the draft.
                     guard !original.isEmpty else { return original }
-                    return try await Reprompter(model: model)
-                        .reprompt(transcript: original, systemPrompt: systemTextOnly)
+                    do {
+                        return try await Reprompter(model: model)
+                            .reprompt(transcript: original, systemPrompt: systemTextOnly)
+                    } catch {
+                        // BULLETPROOF: Improve must work with ANY engine. If the chosen backend fails for
+                        // ANY reason (CLI hiccup, rate limit, timeout), fall back to the fully-local model
+                        // (self-installs on demand) rather than showing an error — feedback cleanup is
+                        // low-stakes text. Only surface an error if local ALSO fails.
+                        return try await LocalLLM.chat(system: systemTextOnly, user: original, model: Settings.shared.localLLMModel)
+                    }
                 }().trimmingCharacters(in: .whitespacesAndNewlines)
                 await MainActor.run {
                     improving = false

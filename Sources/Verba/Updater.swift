@@ -40,6 +40,10 @@ final class Updater: ObservableObject {
                                                   updaterDelegate: delegate,
                                                   userDriverDelegate: nil)
         delegate.owner = self
+        // Belt-and-suspenders with Info.plist SUAutomaticallyUpdate=false: never silently pre-download
+        // an update in the background (which could stage an intermediate build). Sparkle still checks
+        // on schedule; the actual download happens on the user's Update click, fetching the LATEST.
+        controller.updater.automaticallyDownloadsUpdates = false
     }
 
     /// User-initiated check (menu / Settings): shows UI even if already up to date.

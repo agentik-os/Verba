@@ -117,7 +117,12 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>SUFeedURL</key>               <string>https://github.com/agentik-os/Verba-releases/releases/latest/download/appcast.xml</string>
     <key>SUPublicEDKey</key>           <string>tUNn6q4RYRTmz5eB73hBC7Gh/RQfeCk8LHbGoczQGhs=</string>
     <key>SUEnableAutomaticChecks</key> <true/>
-    <key>SUAutomaticallyUpdate</key>   <true/>
+    <!-- SUAutomaticallyUpdate=false: do NOT silently auto-download/install in the background. That
+         downloaded whatever was newest at check time and installed THAT on relaunch, so a user could
+         land on an intermediate build instead of the newest (the "installs the next update, not the
+         latest" bug). With it off, Sparkle still checks hourly and prompts, and downloads the LATEST
+         appcast build at the moment the user clicks Update. -->
+    <key>SUAutomaticallyUpdate</key>   <false/>
     <key>SUScheduledCheckInterval</key><integer>3600</integer>
     <!-- VER-19: register Transforms as a macOS Service so selecting text in ANY app and
          right-clicking shows Services ▸ "Transform with Verba…", which runs a chosen transform
