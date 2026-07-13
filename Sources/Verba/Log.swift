@@ -27,6 +27,7 @@ enum VerbaLog {
     static func syncFailure(_ context: String, error: Error? = nil) {
         let detail = error.map { "\(context): \($0.localizedDescription)" } ?? context
         sync.error("\(detail, privacy: .public)")
+        ErrorReporter.report(detail, context: ["area": "sync"])   // auto-file recurring sync failures
         lock.lock()
         syncFailureCount += 1
         let surface = syncFailureCount >= 2 && !syncFailureSurfaced

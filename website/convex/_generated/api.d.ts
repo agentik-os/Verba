@@ -10,6 +10,9 @@
 
 import type * as account from "../account.js";
 import type * as auth from "../auth.js";
+import type * as beta from "../beta.js";
+import type * as blog from "../blog.js";
+import type * as diagnostics from "../diagnostics.js";
 import type * as dict from "../dict.js";
 import type * as feedback from "../feedback.js";
 import type * as history from "../history.js";
@@ -35,6 +38,9 @@ import type {
 declare const fullApi: ApiFromModules<{
   account: typeof account;
   auth: typeof auth;
+  beta: typeof beta;
+  blog: typeof blog;
+  diagnostics: typeof diagnostics;
   dict: typeof dict;
   feedback: typeof feedback;
   history: typeof history;

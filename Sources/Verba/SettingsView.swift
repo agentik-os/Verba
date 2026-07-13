@@ -1431,6 +1431,11 @@ struct SettingsView: View {
     // MARK: - 6 · Privacy & history
 
     @ViewBuilder private var privacyDetail: some View {
+        card(L("Diagnostics"),
+             footer: L("When an error or crash happens, Verba sends a sanitized report so the problem gets fixed. Only the error text (with paths and emails removed), your app version, and macOS version are sent — never your dictations, notes, clipboard, or any file content.")) {
+            toggleRow(L("Send anonymous error reports"), $settings.sendDiagnostics)
+        }
+
         card(L("Dictation history")) {
             toggleRow(L("Save dictation history"), $settings.saveHistory,
                       help: settings.saveHistory ? nil : L("Off: new dictations are pasted and forgotten — nothing is written to disk, no audio is kept, nothing is synced. Existing history stays until you delete it below."))

@@ -82,6 +82,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var recordStartedAt: Date?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        ErrorReporter.installCrashHandlers()   // capture uncaught exceptions / fatal signals → report next launch
+        ErrorReporter.reportPendingCrash()     // auto-file a crash recovered from the previous run
         LocaleManager.applyAtLaunch()   // redirect Bundle.main to the chosen UI language BEFORE any UI builds
         applyDockPolicy()
         installMainMenu()   // menu-bar apps have no main menu → no ⌘C/⌘V in text fields without this
@@ -1644,6 +1646,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 await MainActor.run { self.purgeAudio(ctx.audioURL); ActivityCenter.shared.drop(activityToken) }   // R12: cancelled → buffer never needed again
             } catch {
                 VerbaLog.app.error("session \(session.id.uuidString, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")   // R14
+                ErrorReporter.report("dictation session failed: \(error.localizedDescription)", context: ["area": "pipeline"])
                 if Task.isCancelled { return }
                 await MainActor.run {
                     guard self.sessionTasks[session.id] != nil else { self.purgeAudio(ctx.audioURL); ActivityCenter.shared.drop(activityToken); return }
@@ -2624,6 +2627,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 ActionFeedController.shared.show()   // re-fit to the plan's height
             } catch {
                 VerbaLog.app.error("action agent failed: \(error.localizedDescription, privacy: .public)")   // R14
+                ErrorReporter.report("action agent failed: \(error.localizedDescription)", context: ["area": "action-agent"])
                 // Graceful fallback: drop the feed item and use the one-shot path the pipeline already
                 // produced, so a signed-out user (or a relay outage) still gets the simple action.
                 ActionFeedStore.shared.remove(itemID)
@@ -2648,6 +2652,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 ActionFeedStore.shared.succeeded(itemID, announce: message)
             } catch {
                 VerbaLog.app.error("agent action execution failed: \(error.localizedDescription, privacy: .public)")   // R14
+                ErrorReporter.report("agent action execution failed: \(error.localizedDescription)", context: ["area": "action-exec"])
                 ActionFeedStore.shared.failed(itemID, error: error.localizedDescription)
             }
             self.actionAgentTranscripts[itemID] = nil

@@ -546,6 +546,9 @@ final class Settings: ObservableObject {
     @Published var autoDetectProfile: Bool { didSet { d.set(autoDetectProfile, forKey: "autoDetectProfile") } }
     @Published var useSelectionContext: Bool { didSet { d.set(useSelectionContext, forKey: "useSelectionContext") } }
     @Published var voiceCommands: Bool { didSet { d.set(voiceCommands, forKey: "voiceCommands") } }
+    /// Auto-send sanitized error/crash reports so recurring problems get fixed. No content ever leaves
+    /// the device — only the error text (paths/emails redacted) + app version + macOS + backend.
+    @Published var sendDiagnostics: Bool { didSet { d.set(sendDiagnostics, forKey: "sendDiagnostics") } }
     /// User-configurable Action-mode web search / quick-open targets ("search X on Google/ChatGPT/Claude").
     @Published var searchTargets: [SearchTarget] {
         didSet { if let data = try? JSONEncoder().encode(searchTargets) { d.set(data, forKey: "searchTargets") } }
@@ -895,6 +898,7 @@ final class Settings: ObservableObject {
         // of the box); falls back to auto-detect only if the system language isn't a known one.
         mainLanguage = d.object(forKey: "mainLanguage") as? String ?? Settings.systemLanguageName()
         voiceCommands = d.object(forKey: "voiceCommands") as? Bool ?? true
+        sendDiagnostics = d.object(forKey: "sendDiagnostics") as? Bool ?? true
         searchTargets = d.data(forKey: "searchTargets").flatMap { try? JSONDecoder().decode([SearchTarget].self, from: $0) } ?? SearchTarget.defaults
         disabledActions = Set((d.object(forKey: "disabledActions") as? [String]) ?? [])
         eventCalendarID = d.string(forKey: "eventCalendarID") ?? ""

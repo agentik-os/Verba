@@ -203,4 +203,19 @@ export default defineSchema({
     receivedAt: v.number(),              // when our webhook first stored it (ms)
     updatedAt: v.number(),               // last time the webhook rewrote it (ms)
   }).index("by_slug", ["slug"]).index("by_outrankId", ["outrankId"]),
+
+  diagnostics: defineTable({   // auto error/crash reports from the macOS app, DEDUPED by signature
+    signature: v.string(),     // stable hash of kind + sanitized message → one row per distinct error
+    kind: v.string(),          // "error" | "crash"
+    message: v.string(),       // sanitized error text (home paths/emails redacted; no dictation content)
+    count: v.number(),         // total reports across all users/sessions
+    users: v.number(),         // distinct uids that hit it (best-effort)
+    versions: v.array(v.string()),   // app versions that reported it (so a fix can be verified)
+    lastOS: v.optional(v.string()),
+    lastContext: v.optional(v.string()),  // JSON string of extra context (backend, engine, mode…)
+    linearId: v.optional(v.string()),     // Linear issue node id, set once the issue is filed
+    linearUrl: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_signature", ["signature"]),
 });
