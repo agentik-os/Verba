@@ -350,8 +350,11 @@ enum LocalLLM {
         // First-launch guard: if the fully-local models are still downloading, surface the friendly
         // setup progress instead of a cryptic "model not found". Only fires while a download is
         // actively in flight — once installed, phase is .ready/.idle and we proceed normally.
-        if await MainActor.run(body: { LocalSetupProgress.shared.isSettingUp }) {
-            let pct = await MainActor.run(body: { LocalSetupProgress.shared.percent })
+        // Only defer while the AI (LLM) model ITSELF is still being pulled — never for a still-downloading
+        // Whisper/Parakeet speech model (Action mode + reprompt need only the LLM). Otherwise a secondary
+        // speech download stuck mid-way would block every local reprompt + Action (the 77% bug).
+        if await MainActor.run(body: { LocalSetupProgress.shared.isAIModelSettingUp }) {
+            let pct = await MainActor.run(body: { LocalSetupProgress.shared.modelPercent })
             throw LLMError.settingUp(pct)
         }
         var req = URLRequest(url: URL(string: "\(host)/api/chat")!)

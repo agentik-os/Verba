@@ -43,11 +43,21 @@ final class LocalSetupProgress: ObservableObject {
 
     // MARK: derived state
     var isReady: Bool { phase == .ready }
-    /// True while either model is still downloading — the signal the reprompt/JARVIS guard uses.
+    /// True while ANY model (speech or AI) is still downloading — used by the onboarding UI/bar.
     var isSettingUp: Bool { phase == .installingEngine || phase == .pullingModel }
+    /// The signal the reprompt / Action-mode (JARVIS) guard uses. Deliberately keyed to the AI (LLM)
+    /// model ALONE, never the Whisper/Parakeet speech downloads: reprompting and Action mode need only
+    /// the LLM, so a slow/stuck/failed SECONDARY speech download must not block them. (This was the
+    /// "Action mode does nothing on local" bug: selecting Turbo left Whisper mid-download, which pinned
+    /// the whole setup at ~77% and the old guard — keyed to that global phase — threw "setting up 77%"
+    /// on every local reprompt + Action.) Only blocks while the AI model is ACTIVELY being pulled.
+    var isAIModelSettingUp: Bool { !modelDone && modelProgress > 0 && modelProgress < 1 }
     /// Overall fraction across the three downloads (Parakeet + Whisper + AI), weighted evenly.
     var overall: Double { (engineProgress + whisperProgress + modelProgress) / 3 }
     var percent: Int { Int((overall * 100).rounded()) }
+    /// Progress of the AI (LLM) model alone — shown by the reprompt/Action guard so the "setting up NN%"
+    /// message reflects the download that actually gates them, not the combined speech+AI bar.
+    var modelPercent: Int { Int((modelProgress * 100).rounded()) }
 
     /// A single reassuring status line for compact UI / the first-use guard.
     var statusLabel: String {
@@ -156,10 +166,12 @@ final class LocalSetupProgress: ObservableObject {
         // Only resolve to a terminal state here. A setting-up phase is entered EXCLUSIVELY by a real
         // download starting (start() → .installingEngine, reportModel → .pullingModel), so an already
         // installed setup never flashes a spurious "setting up" during the async present-check.
-        // Await all three attempts so the bar reaches 100% before we settle. Whisper is a SECONDARY
-        // engine, so its success is NOT required for .ready (Parakeet + the AI model are the core);
-        // if only Whisper failed the user is still fully set up and can retry it in Settings.
-        guard engineDone && whisperDone && modelDone else { return }
+        // Resolve on the CORE two — Parakeet (speech) + the AI model. Whisper is a SECONDARY engine:
+        // do NOT gate the terminal state on whisperDone, or a slow/stuck/failed Whisper download (e.g.
+        // when the user picked Turbo and it's still fetching) pins the whole setup in "setting up"
+        // FOREVER — which used to block every local reprompt + Action mode. Whisper keeps downloading
+        // in the background and just updates its own label; it never holds the AI hostage.
+        guard engineDone && modelDone else { return }
         phase = (engineOK && modelOK) ? .ready : .failed
     }
 }

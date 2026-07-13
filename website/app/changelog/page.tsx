@@ -18,8 +18,15 @@ const DAYS: Day[] = [
   {
     date: "July 13, 2026",
     tag: "Today",
-    summary: "Turbo fixed and faster, a clearer Modes tab you can show/hide per mode, and quicker transcription.",
+    summary: "Action mode + AI rewriting now work reliably on the local model, Turbo fixed, clearer Modes.",
     entries: [
+      {
+        version: "0.9.88",
+        title: "Action mode & AI rewriting now work on the local model",
+        items: [
+          "Fixed the big one: with the fully-local model, Action mode (and AI rewriting) could silently do nothing — stuck on “Setting up your local AI… 77%”. A secondary speech-model download (e.g. after picking Turbo) was wrongly holding the whole AI hostage. Now the local AI runs as soon as its own model is ready, regardless of any speech-model download. Action mode works on every backend — Claude, your own key, and fully local.",
+        ],
+      },
       {
         version: "0.9.87",
         title: "Turbo that actually loads, clearer Modes, faster transcription",
