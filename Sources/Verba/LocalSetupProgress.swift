@@ -23,16 +23,21 @@ final class LocalSetupProgress: ObservableObject {
     @Published var phase: Phase = .idle
     /// Speech model (Parakeet) download, 0…1.
     @Published var engineProgress: Double = 0
+    /// Second speech model (Whisper large-v3) download, 0…1 — ships alongside Parakeet by default.
+    @Published var whisperProgress: Double = 0
     /// AI model (Ollama / qwen3) download, 0…1.
     @Published var modelProgress: Double = 0
 
-    // Per-model "finished its attempt" + success flags, so we only reach .ready when BOTH
-    // downloads actually completed (and .failed if either couldn't).
+    // Per-model "finished its attempt" + success flags, so we only reach .ready when the required
+    // downloads actually completed (and .failed if a required one couldn't). Whisper is a SECONDARY
+    // engine: it's tracked/awaited for the progress bar but its failure alone doesn't fail setup.
     private var engineDone = false
+    private var whisperDone = false
     private var modelDone = false
     private var engineOK = false
     private var modelOK = false
     private var engineInFlight = false
+    private var whisperInFlight = false
 
     private init() {}
 
@@ -40,8 +45,8 @@ final class LocalSetupProgress: ObservableObject {
     var isReady: Bool { phase == .ready }
     /// True while either model is still downloading — the signal the reprompt/JARVIS guard uses.
     var isSettingUp: Bool { phase == .installingEngine || phase == .pullingModel }
-    /// Overall fraction across both downloads (weighted evenly).
-    var overall: Double { (engineProgress + modelProgress) / 2 }
+    /// Overall fraction across the three downloads (Parakeet + Whisper + AI), weighted evenly.
+    var overall: Double { (engineProgress + whisperProgress + modelProgress) / 3 }
     var percent: Int { Int((overall * 100).rounded()) }
 
     /// A single reassuring status line for compact UI / the first-use guard.
@@ -58,6 +63,10 @@ final class LocalSetupProgress: ObservableObject {
         engineDone ? L("Speech model ready")
                    : L("Downloading the speech model…") + " \(Int((engineProgress * 100).rounded()))%"
     }
+    var whisperLabel: String {
+        whisperDone ? L("Accuracy model ready")
+                    : L("Downloading the accuracy model…") + " \(Int((whisperProgress * 100).rounded()))%"
+    }
     var aiLabel: String {
         modelDone ? L("AI model ready")
                   : L("Downloading the AI model…") + " \(Int((modelProgress * 100).rounded()))%"
@@ -72,10 +81,10 @@ final class LocalSetupProgress: ObservableObject {
         // Clean slate on a retry after a previous failure, so stale done/OK flags don't
         // short-circuit settle() before the fresh download reports in.
         if phase == .failed {
-            engineDone = false; modelDone = false; engineOK = false; modelOK = false
-            engineProgress = 0; modelProgress = 0; phase = .idle
+            engineDone = false; whisperDone = false; modelDone = false; engineOK = false; modelOK = false
+            engineProgress = 0; whisperProgress = 0; modelProgress = 0; phase = .idle
         }
-        // --- Speech model (Parakeet) ---
+        // --- Speech model (Parakeet) — the default on-device engine, loaded ready for first use. ---
         if EngineManager.isInstalled(.parakeet) {
             engineProgress = 1
             finishEngine(true)
@@ -87,6 +96,23 @@ final class LocalSetupProgress: ObservableObject {
                     Task { @MainActor in LocalSetupProgress.shared.engineProgress = p }
                 })
                 await MainActor.run { LocalSetupProgress.shared.finishEngine(ok) }
+            }
+        }
+
+        // --- Second speech model (Whisper large-v3) — staged to disk so BOTH on-device engines
+        // ship active by default. Download-only (no RAM load): the user can activate or uninstall
+        // it in Settings ▸ Transcription engine. Its failure is non-fatal to overall setup. ---
+        if EngineManager.isInstalled(.whisper) {
+            whisperProgress = 1
+            finishWhisper(true)
+        } else if !whisperInFlight {
+            whisperInFlight = true
+            if phase == .idle || phase == .ready { phase = .installingEngine }
+            Task.detached(priority: .userInitiated) {
+                let ok = await EngineManager.download(.whisper, progress: { p in
+                    Task { @MainActor in LocalSetupProgress.shared.whisperProgress = p }
+                })
+                await MainActor.run { LocalSetupProgress.shared.finishWhisper(ok) }
             }
         }
 
@@ -102,6 +128,14 @@ final class LocalSetupProgress: ObservableObject {
         engineDone = true; engineOK = ok
         if ok { engineProgress = 1 }
         engineInFlight = false
+        settle()
+    }
+
+    /// Called when the secondary Whisper (large-v3) download finishes (success or fail).
+    func finishWhisper(_ ok: Bool) {
+        whisperDone = true
+        if ok { whisperProgress = 1 }
+        whisperInFlight = false
         settle()
     }
 
@@ -122,7 +156,10 @@ final class LocalSetupProgress: ObservableObject {
         // Only resolve to a terminal state here. A setting-up phase is entered EXCLUSIVELY by a real
         // download starting (start() → .installingEngine, reportModel → .pullingModel), so an already
         // installed setup never flashes a spurious "setting up" during the async present-check.
-        guard engineDone && modelDone else { return }
+        // Await all three attempts so the bar reaches 100% before we settle. Whisper is a SECONDARY
+        // engine, so its success is NOT required for .ready (Parakeet + the AI model are the core);
+        // if only Whisper failed the user is still fully set up and can retry it in Settings.
+        guard engineDone && whisperDone && modelDone else { return }
         phase = (engineOK && modelOK) ? .ready : .failed
     }
 }

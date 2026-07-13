@@ -108,7 +108,7 @@ struct SettingsView: View {
     @State private var copiedReferral = false
 
     private let claudeModels = ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-sonnet-5", "claude-opus-4-8"]
-    private let localModels = ["base", "small", "large-v3-v20240930_turbo", "large-v3"]
+    private let localModels = ["large-v3"]   // Whisper ships large-v3 only — the highest-accuracy variant
 
     var body: some View {
         HStack(spacing: 0) {
@@ -912,9 +912,9 @@ struct SettingsView: View {
 
     private func engineSubtitle(_ e: TranscriptionEngine) -> String {
         switch e {
-        case .openAI:   return L("Remote, no download. Uses your OpenAI key.")
-        case .whisper:  return L("On-device WhisperKit. Fully offline & free.")
-        case .parakeet: return L("On-device NVIDIA Parakeet, multilingual. Offline & free.")
+        case .openAI:   return L("Cloud, uses your OpenAI key.")
+        case .whisper:  return L("Highest accuracy, all languages.")
+        case .parakeet: return L("Fast, great for European languages.")
         }
     }
 
@@ -1690,7 +1690,7 @@ struct SettingsView: View {
                     Button(L("Download & install")) { installEngine(engineTab) }.glassProminentButton().controlSize(.small)
                 }
             }
-            Text(L("Runs fully offline & free once installed, no API key needed."))
+            Text(L("Runs on your Mac once installed, no account or key needed."))
                 .font(.caption).foregroundStyle(.secondary)
         }
     }

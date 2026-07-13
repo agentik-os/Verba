@@ -129,14 +129,55 @@ struct PlannedAction: Decodable, Identifiable {
 
         // The planner emits exactly today's VerbaActionJSON under "action". Re-serialize that nested
         // object back to a JSON string and run it through the one true parser so the executor, the
-        // confirm flow, and VerbaAction stay completely unchanged.
-        if let nested = try? c.decode(AnyJSON.self, forKey: .action),
-           let data = try? JSONSerialization.data(withJSONObject: ["action": nested.value]),
-           let raw = String(data: data, encoding: .utf8) {
-            action = Pipeline.parseAgenticAction(raw)
+        // confirm flow, and VerbaAction stay completely unchanged. The two Verba-task-manager shapes
+        // (complete_task / set_task_reminder) live outside that parser's file, so they're resolved
+        // here first; everything else falls through to Pipeline.parseAgenticAction untouched.
+        if let nested = try? c.decode(AnyJSON.self, forKey: .action) {
+            if let taskAction = Self.parseTaskAction(nested.value) {
+                action = taskAction
+            } else if let data = try? JSONSerialization.data(withJSONObject: ["action": nested.value]),
+                      let raw = String(data: data, encoding: .utf8) {
+                action = Pipeline.parseAgenticAction(raw)
+            } else {
+                action = nil
+            }
         } else {
             action = nil
         }
+    }
+
+    /// Resolve the two Verba-task-manager action shapes the shared parser doesn't know about.
+    /// Returns nil for any other type so decoding falls through to `Pipeline.parseAgenticAction`.
+    private static func parseTaskAction(_ value: Any) -> VerbaAction? {
+        guard let a = value as? [String: Any] else { return nil }
+        let type = ((a["type"] as? String) ?? (a["kind"] as? String) ?? "")
+            .lowercased().replacingOccurrences(of: "-", with: "_")
+        let match = ((a["match"] as? String) ?? (a["task"] as? String) ?? (a["title"] as? String) ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        switch type {
+        case "complete_task", "completetask", "mark_done", "markdone", "finish_task", "complete":
+            guard !match.isEmpty else { return nil }
+            return .completeTask(match: match)
+        case "set_task_reminder", "settaskreminder", "task_reminder", "remind_task", "remind_about_task":
+            guard !match.isEmpty,
+                  let dueStr = a["due"] as? String, let due = parseISO(dueStr) else { return nil }
+            return .setTaskReminder(match: match, due: due)
+        default:
+            return nil
+        }
+    }
+
+    /// Tolerant ISO8601 parse (with/without fractional seconds, or a bare full date).
+    private static func parseISO(_ s: String) -> Date? {
+        let str = s.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !str.isEmpty else { return nil }
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = f.date(from: str) { return d }
+        f.formatOptions = [.withInternetDateTime]
+        if let d = f.date(from: str) { return d }
+        f.formatOptions = [.withFullDate]; f.timeZone = .current
+        return f.date(from: str)
     }
 }
 
@@ -218,6 +259,32 @@ final class ActionAgentClient {
         return f.string(from: Date())
     }
 
+    /// A compact list of the user's OPEN (not-done) Verba tasks + sub-tasks, for the planner to match
+    /// against when the user asks to complete or set a reminder on an EXISTING task. Capped at ~40
+    /// items so the prompt stays small. Empty string when there are no open tasks.
+    @MainActor
+    private static func openTasksBlock() -> String {
+        let df = DateFormatter(); df.locale = .current; df.dateStyle = .short; df.timeStyle = .short
+        var lines: [String] = []
+        outer: for project in TodoStore.shared.projects {
+            for task in project.tasks {
+                if !task.isComplete {
+                    let due = task.deadline.map { ", due \(df.string(from: $0))" } ?? ""
+                    lines.append("- \(task.title) (\(project.name)\(due))")
+                    if lines.count >= 40 { break outer }
+                }
+                for sub in task.subtasks where !sub.done {
+                    let due = sub.deadline.map { ", due \(df.string(from: $0))" } ?? ""
+                    lines.append("- \(sub.title) (\(project.name) › \(task.title)\(due))")
+                    if lines.count >= 40 { break outer }
+                }
+            }
+        }
+        guard !lines.isEmpty else { return "" }
+        return "\n\nYOUR CURRENT OPEN TASKS (match these for complete_task / set_task_reminder):\n"
+            + lines.joined(separator: "\n")
+    }
+
     /// Plan an Action-mode command: fetch the planner context from the relay, run the planning
     /// model ON-DEVICE, let the relay execute any read-only steps, resolve, then validate/repair
     /// the proposed arguments against the real schemas.
@@ -243,6 +310,10 @@ final class ActionAgentClient {
         let schemas = ctx["schemas"] as? [String: Any] ?? [:]
 
         var userMsg = "The user said:\n\n<command>\n\(transcript)\n</command>"
+        // Inject the user's own OPEN Verba to-dos so the planner can match complete_task /
+        // set_task_reminder against them (the relay has no access to these local tasks).
+        let tasksBlock = await Self.openTasksBlock()
+        if !tasksBlock.isEmpty { userMsg += tasksBlock }
         if let screenText, !screenText.isEmpty { userMsg += "\n\nON-SCREEN CONTEXT:\n\(screenText.prefix(4000))" }
         if let resolveChoice, !resolveChoice.isEmpty {
             userMsg += "\n\nThe user answered your clarification: they chose \"\(resolveChoice)\". Re-plan with that choice pinned."
@@ -449,7 +520,7 @@ final class ActionAgentClient {
         guard var items = plan["proposedWriteActions"] as? [[String: Any]] else { return }
         // Fields that belong to the inner VerbaAction (never the wrapper).
         let actionKeys = ["type", "tool", "arguments", "title", "start", "end", "due", "notes",
-                          "to", "subject", "body", "query", "name", "url", "script", "target", "input"]
+                          "to", "subject", "body", "query", "name", "url", "script", "target", "input", "match"]
         for i in items.indices {
             var it = items[i]
             // 1 — lift a flattened action into `action` if the wrapper is missing one.

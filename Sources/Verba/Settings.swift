@@ -43,7 +43,7 @@ enum TranscriptionEngine: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .openAI:   return L("OpenAI (cloud)")
         case .whisper:  return L("Whisper (local)")
-        case .parakeet: return L("Parakeet (local · NVIDIA)")
+        case .parakeet: return L("Parakeet (local)")
         }
     }
     var isLocal: Bool { self != .openAI }
@@ -814,7 +814,12 @@ final class Settings: ObservableObject {
         // Default to a LOCAL engine so a fresh user can dictate with no API key at all
         // (Parakeet: on-device, multilingual, auto-downloads on first run).
         engine = TranscriptionEngine(rawValue: d.string(forKey: "engine") ?? "") ?? .parakeet
-        localModel = d.string(forKey: "localModel") ?? "large-v3-v20240930_turbo"
+        // Whisper now ships large-v3 ONLY (highest accuracy) — fold any retired variant
+        // (base / small / large-v3 turbo) forward to large-v3 so the picker + install match.
+        let savedWhisper = d.string(forKey: "localModel") ?? "large-v3"
+        let migratedWhisper = (savedWhisper == "large-v3") ? savedWhisper : "large-v3"
+        localModel = migratedWhisper
+        d.set(migratedWhisper, forKey: "localModel")
         claudeModel = d.string(forKey: "claudeModel") ?? "claude-sonnet-4-6"
         micUID = d.string(forKey: "micUID") ?? ""
         hiddenNav = Set(d.stringArray(forKey: "hiddenNav") ?? [])

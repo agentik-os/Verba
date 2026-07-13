@@ -767,6 +767,18 @@ final class TodoStore: ObservableObject {
         projects[pi].tasks[ti].deadline = deadline
     }
 
+    /// Set (or clear, with nil) a sub-task's deadline, resolved by sub-task id across all projects.
+    func setSubtaskDeadline(subtaskID: UUID, _ deadline: Date?) {
+        for pi in projects.indices {
+            for ti in projects[pi].tasks.indices {
+                if let si = projects[pi].tasks[ti].subtasks.firstIndex(where: { $0.id == subtaskID }) {
+                    projects[pi].tasks[ti].subtasks[si].deadline = deadline
+                    return
+                }
+            }
+        }
+    }
+
     // MARK: sub-task ops
     func addSubtask(_ projectID: UUID, _ taskID: UUID, _ title: String = "") {
         guard let pi = projects.firstIndex(where: { $0.id == projectID }),

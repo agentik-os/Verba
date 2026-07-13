@@ -95,18 +95,25 @@ enum VerbaAction: Codable, Equatable {
     /// Composio relay on verba.run. `tool` is the exact Composio tool slug, `label` the
     /// human-readable description shown in the confirmation card.
     case composio(tool: String, label: String, arguments: [String: String])
+    /// Mark an EXISTING Verba task (TodoStore) done, resolved by fuzzy title match. `match` is the
+    /// words from the task title the user referenced ("the taxes task", "groceries").
+    case completeTask(match: String)
+    /// Set a reminder/deadline on an EXISTING Verba task (TodoStore), resolved by fuzzy title match.
+    /// Setting the deadline schedules the existing 30-min reminder + full-screen alert.
+    case setTaskReminder(match: String, due: Date)
 
     // MARK: Codable (tagged by "kind" so it round-trips cleanly)
 
     private enum CodingKeys: String, CodingKey {
         case kind, title, start, end, notes, due, to, subject, body
         case name, input, query, script, label, url
-        case tool, args
+        case tool, args, match
     }
     private enum Kind: String, Codable {
         case calendarEvent, reminder, emailDraft
         case runShortcut, openApp, playMusic, sendMessage, appleScript, openURL
         case composio
+        case completeTask, setTaskReminder
     }
 
     init(from decoder: Decoder) throws {
@@ -153,6 +160,12 @@ enum VerbaAction: Codable, Equatable {
                 tool: try c.decode(String.self, forKey: .tool),
                 label: try c.decode(String.self, forKey: .label),
                 arguments: try c.decodeIfPresent([String: String].self, forKey: .args) ?? [:])
+        case .completeTask:
+            self = .completeTask(match: try c.decode(String.self, forKey: .match))
+        case .setTaskReminder:
+            self = .setTaskReminder(
+                match: try c.decode(String.self, forKey: .match),
+                due: try c.decode(Date.self, forKey: .due))
         }
     }
 
@@ -202,6 +215,13 @@ enum VerbaAction: Codable, Equatable {
             try c.encode(tool, forKey: .tool)
             try c.encode(label, forKey: .label)
             try c.encode(arguments, forKey: .args)
+        case let .completeTask(match):
+            try c.encode(Kind.completeTask, forKey: .kind)
+            try c.encode(match, forKey: .match)
+        case let .setTaskReminder(match, due):
+            try c.encode(Kind.setTaskReminder, forKey: .kind)
+            try c.encode(match, forKey: .match)
+            try c.encode(due, forKey: .due)
         }
     }
 
@@ -218,6 +238,9 @@ enum VerbaAction: Codable, Equatable {
         case .appleScript:   return .applescript
         case .openURL:       return .search
         case .composio:      return .connectedApp
+        // Acting on Verba's own to-dos is gated behind the same allow-list toggle as Reminders.
+        case .completeTask:    return .reminder
+        case .setTaskReminder: return .reminder
         }
     }
 
@@ -236,6 +259,8 @@ enum VerbaAction: Codable, Equatable {
         case .appleScript:   return "applescript"
         case .openURL:       return "safari"
         case .composio:      return "app.connected.to.app.below.fill"
+        case .completeTask:    return "checkmark.circle"
+        case .setTaskReminder: return "alarm"
         }
     }
 
@@ -267,6 +292,10 @@ enum VerbaAction: Codable, Equatable {
             return "Open · \(label)"
         case let .composio(tool, label, _):
             return "Connected app · \(label.isEmpty ? tool : label)"
+        case let .completeTask(match):
+            return "Complete task · \(Self.clip(match))"
+        case let .setTaskReminder(match, due):
+            return "Remind · \(Self.clip(match)) · \(Self.when(due))"
         }
     }
 
@@ -304,6 +333,7 @@ struct ActionExecutor {
         case shortcutFailed(String)
         case appNotFound(String)
         case scriptFailed(String)
+        case noMatchingTask(String)
 
         var errorDescription: String? {
             switch self {
@@ -323,6 +353,8 @@ struct ActionExecutor {
                 return "Couldn't find an app named “\(name)”."
             case let .scriptFailed(reason):
                 return "The action couldn't be completed: \(reason)"
+            case let .noMatchingTask(match):
+                return "No open task matching “\(match)”."
             }
         }
     }
@@ -354,7 +386,92 @@ struct ActionExecutor {
             // Connected app: execute through the Composio relay on verba.run (the user
             // already confirmed in ActionConfirmView; the relay enforces the signed-in session).
             return try await ComposioStore.shared.execute(tool: tool, arguments: arguments)
+        case let .completeTask(match):
+            return try await completeVerbaTask(match: match)
+        case let .setTaskReminder(match, due):
+            return try await setVerbaTaskReminder(match: match, due: due)
         }
+    }
+
+    // MARK: Verba task manager (act on TodoStore's own to-dos)
+
+    /// Mark an existing Verba task (or sub-task) done by fuzzy title match.
+    @MainActor
+    @discardableResult
+    func completeVerbaTask(match: String) async throws -> String {
+        guard let hit = Self.resolveOpenTask(match: match) else {
+            throw ActionError.noMatchingTask(match)
+        }
+        if let subtaskID = hit.subtaskID {
+            TodoStore.shared.markSubtaskDone(subtaskID: subtaskID, done: true)
+        } else {
+            TodoStore.shared.markDone(taskID: hit.taskID, done: true)
+        }
+        return "Marked “\(hit.title)” as done."
+    }
+
+    /// Set the deadline on an existing Verba task (or sub-task) by fuzzy title match. Persisting the
+    /// deadline makes TodoReminders schedule the 30-min-ahead notification + full-screen alert.
+    @MainActor
+    @discardableResult
+    func setVerbaTaskReminder(match: String, due: Date) async throws -> String {
+        guard let hit = Self.resolveOpenTask(match: match) else {
+            throw ActionError.noMatchingTask(match)
+        }
+        if let subtaskID = hit.subtaskID {
+            TodoStore.shared.setSubtaskDeadline(subtaskID: subtaskID, due)
+        } else {
+            TodoStore.shared.setDeadline(hit.projectID, hit.taskID, due)
+        }
+        let df = DateFormatter(); df.locale = .current; df.dateStyle = .medium; df.timeStyle = .short
+        return "Reminder set for “\(hit.title)” · \(df.string(from: due))."
+    }
+
+    /// A resolved open-task hit: the project + task (+ optional sub-task) and its display title.
+    struct TaskHit { let projectID: UUID; let taskID: UUID; let subtaskID: UUID?; let title: String }
+
+    /// Best fuzzy, case-insensitive match for `match` across every project's OPEN (not-done) tasks
+    /// and sub-tasks. Returns nil when nothing scores above a small threshold. When two items tie
+    /// (ambiguous phrasing) the first encountered in project/task order wins — the confirm card lets
+    /// the user cancel if it picked the wrong one.
+    @MainActor
+    static func resolveOpenTask(match: String) -> TaskHit? {
+        let query = match.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return nil }
+        var best: (score: Double, hit: TaskHit)? = nil
+        for project in TodoStore.shared.projects {
+            for task in project.tasks {
+                if !task.isComplete {
+                    let s = score(query, task.title)
+                    if s > (best?.score ?? 0) {
+                        best = (s, TaskHit(projectID: project.id, taskID: task.id, subtaskID: nil, title: task.title))
+                    }
+                }
+                for sub in task.subtasks where !sub.done {
+                    let s = score(query, sub.title)
+                    if s > (best?.score ?? 0) {
+                        best = (s, TaskHit(projectID: project.id, taskID: task.id, subtaskID: sub.id, title: sub.title))
+                    }
+                }
+            }
+        }
+        guard let best, best.score >= 0.3 else { return nil }
+        return best.hit
+    }
+
+    /// Simple title-similarity score in [0, 1]: exact = 1, substring = 0.85, else token overlap
+    /// (Jaccard). Enough to map a spoken "the taxes task" onto a "File taxes" to-do.
+    private static func score(_ query: String, _ title: String) -> Double {
+        let t = title.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !t.isEmpty else { return 0 }
+        if t == query { return 1.0 }
+        if t.contains(query) || query.contains(t) { return 0.85 }
+        let qw = Set(query.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map(String.init))
+        let tw = Set(t.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map(String.init))
+        guard !qw.isEmpty, !tw.isEmpty else { return 0 }
+        let inter = qw.intersection(tw).count
+        let union = qw.union(tw).count
+        return union == 0 ? 0 : Double(inter) / Double(union)
     }
 
     // MARK: Calendar

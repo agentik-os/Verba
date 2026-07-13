@@ -10,13 +10,7 @@ enum EngineManager {
         switch engine {
         case .openAI:   return ""
         case .parakeet: return "≈ 0.6 GB"
-        case .whisper:
-            switch Settings.shared.localModel {
-            case "base":  return "≈ 0.15 GB"
-            case "small": return "≈ 0.5 GB"
-            case "large-v3": return "≈ 1.6 GB"
-            default:      return "≈ 1.5 GB"   // large-v3 turbo
-            }
+        case .whisper:  return "≈ 1.6 GB"   // large-v3 (the only Whisper variant Verba ships)
         }
     }
 
@@ -133,6 +127,35 @@ enum EngineManager {
         } catch {
             let msg = (error as NSError).localizedDescription
             NSLog("Verba: install \(engine.rawValue) failed: \(error)")
+            lastInstallError = msg
+            return false
+        }
+    }
+
+    /// Download `engine`'s model to disk ONLY — no RAM load, doesn't touch `loaded`. Used to
+    /// pre-stage the non-active local engine at launch/onboarding so BOTH on-device engines ship
+    /// ready without paying a memory cost for the one you're not currently using. Reports 0…1.
+    @discardableResult
+    static func download(_ engine: TranscriptionEngine, progress: @escaping (Double) -> Void = { _ in }) async -> Bool {
+        guard engine.isLocal else { return true }
+        if isInstalled(engine) { DispatchQueue.main.async { progress(1.0) }; return true }
+        do {
+            switch engine {
+            case .whisper:
+                _ = try await WhisperKit.download(variant: Settings.shared.localModel,
+                    progressCallback: { p in DispatchQueue.main.async { progress(p.fractionCompleted) } })
+            case .parakeet:
+                _ = try await AsrModels.download(version: .v3,
+                    progressHandler: { pr in DispatchQueue.main.async { progress(pr.fractionCompleted) } })
+            case .openAI:
+                break
+            }
+            DispatchQueue.main.async { progress(1.0) }
+            lastInstallError = nil
+            return true
+        } catch {
+            let msg = (error as NSError).localizedDescription
+            NSLog("Verba: download \(engine.rawValue) failed: \(error)")
             lastInstallError = msg
             return false
         }

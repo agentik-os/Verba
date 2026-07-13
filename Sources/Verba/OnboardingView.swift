@@ -241,6 +241,10 @@ struct OnboardingView: View {
                     Text(localSetup.speechLabel).font(.caption2).foregroundStyle(.secondary)
                 }
                 VStack(alignment: .leading, spacing: 4) {
+                    ProgressView(value: localSetup.whisperProgress).progressViewStyle(.linear)
+                    Text(localSetup.whisperLabel).font(.caption2).foregroundStyle(.secondary)
+                }
+                VStack(alignment: .leading, spacing: 4) {
                     ProgressView(value: localSetup.modelProgress).progressViewStyle(.linear)
                     Text(localSetup.aiLabel).font(.caption2).foregroundStyle(.secondary)
                 }

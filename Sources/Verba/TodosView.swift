@@ -1042,12 +1042,15 @@ private struct ProjectDetail: View {
 // MARK: - Status filter (view-only narrowing of the visible projects)
 
 private enum StatusFilter: String, CaseIterable, Identifiable {
-    case all = "All", today = "Today", upcoming = "Upcoming", done = "Done", overdue = "Overdue"
+    case all = "All", today = "Today", thisWeek = "This Week", thisMonth = "This Month"
+    case upcoming = "Upcoming", done = "Done", overdue = "Overdue"
     var id: String { rawValue }
     var icon: String {
         switch self {
         case .all: "square.grid.2x2"
         case .today: "sun.max"
+        case .thisWeek: "calendar.badge.clock"
+        case .thisMonth: "calendar.circle"
         case .upcoming: "calendar"
         case .done: "checkmark.circle"
         case .overdue: "exclamationmark.circle"
@@ -1061,6 +1064,14 @@ private enum StatusFilter: String, CaseIterable, Identifiable {
         case .today:
             guard !t.done, let d = t.deadline else { return false }
             return Calendar.current.isDateInToday(d)
+        case .thisWeek:
+            guard !t.done, let d = t.deadline,
+                  let week = Calendar.current.dateInterval(of: .weekOfYear, for: Date()) else { return false }
+            return week.contains(d)
+        case .thisMonth:
+            guard !t.done, let d = t.deadline,
+                  let month = Calendar.current.dateInterval(of: .month, for: Date()) else { return false }
+            return month.contains(d)
         case .upcoming:
             guard !t.done, let d = t.deadline else { return false }
             return d >= Date() && !Calendar.current.isDateInToday(d)

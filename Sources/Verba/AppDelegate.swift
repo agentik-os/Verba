@@ -423,11 +423,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 10 minutes. Keeps launch memory flat — the Parakeet model alone is ~461MB.
     private func preloadEngine() {
         let s = Settings.shared
-        if s.engine.isLocal {
-            Task.detached(priority: .utility) {
-                if !EngineManager.isInstalled(s.engine) {
-                    _ = await EngineManager.install(s.engine)
-                }
+        // Both on-device transcription engines ship active by DEFAULT, so a fresh user ends up with
+        // BOTH Parakeet and Whisper (large-v3) ready (they can uninstall one in Settings ▸ Transcription
+        // engine to reclaim disk). The ACTIVE local engine installs (which loads it into RAM) if missing
+        // so the first dictation is instant; the other is DOWNLOAD-ONLY (no RAM load — memory stays flat,
+        // loading stays lazy via prewarmForRecording). Parakeet is usually already seeded from the bundle.
+        Task.detached(priority: .utility) {
+            if s.engine.isLocal && !EngineManager.isInstalled(s.engine) {
+                _ = await EngineManager.install(s.engine)
+            }
+            for e in [TranscriptionEngine.parakeet, .whisper] where !EngineManager.isInstalled(e) {
+                _ = await EngineManager.download(e)
             }
         }
         // Ensure the local model is installed whenever the local engine could actually be used for

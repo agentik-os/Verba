@@ -54,6 +54,8 @@ struct ActionConfirmView: View {
         case let .openURL(label, _): return L("Open \(label)?")
         case let .composio(tool, label, _):
             return L("Run \(label.isEmpty ? tool : label) in your connected app?")
+        case let .completeTask(match):        return L("Mark the “\(match)” task done?")
+        case let .setTaskReminder(match, _):  return L("Set a reminder on the “\(match)” task?")
         }
     }
 
@@ -69,6 +71,8 @@ struct ActionConfirmView: View {
         case .appleScript:   return L("Run")
         case .openURL:       return L("Open")
         case .composio:      return L("Run action")
+        case .completeTask:    return L("Mark done")
+        case .setTaskReminder: return L("Set reminder")
         }
     }
 
@@ -116,6 +120,10 @@ struct ActionConfirmView: View {
                 f.append((k.replacingOccurrences(of: "_", with: " ").capitalized, v))
             }
             return f
+        case let .completeTask(match):
+            return [(L("Task"), match)]
+        case let .setTaskReminder(match, due):
+            return [(L("Task"), match), (L("Remind at"), Self.fmt(due))]
         }
     }
 
