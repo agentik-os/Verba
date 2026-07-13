@@ -87,7 +87,7 @@ struct NoteModesView: View {
                     }
                 }
 
-                field("Model", hint: "which Claude model turns the recording into this note") {
+                field("Model", hint: "which model turns the recording into this note") {
                     Picker("", selection: modelB) {
                         Text("Default (\(Settings.shared.claudeModel))").tag("")
                         Text("Haiku 4.5, fastest, cheapest").tag("claude-haiku-4-5")
@@ -101,7 +101,7 @@ struct NoteModesView: View {
                     HStack(spacing: 6) {
                         Text("System prompt").font(.subheadline.weight(.semibold))
                         Text(isIntent ? "the base prompt; your spoken/typed instruction is added on top each time"
-                                      : "how Claude turns your words into the note").font(.caption).foregroundStyle(.secondary)
+                                      : "how the AI turns your words into the note").font(.caption).foregroundStyle(.secondary)
                     }
                     TextEditor(text: promptB)
                         .font(.system(.callout, design: .monospaced)).scrollContentBackground(.hidden)

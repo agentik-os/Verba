@@ -922,7 +922,7 @@ struct SettingsView: View {
 
     @ViewBuilder private var rewritingDetail: some View {
         card(L("Reprompting")) {
-            toggleRow(L("Restructure transcript with Claude"), $settings.repromptEnabled)
+            toggleRow(L("Restructure transcript with AI"), $settings.repromptEnabled)
         }
 
         card(L("Backend")) {
@@ -949,7 +949,7 @@ struct SettingsView: View {
                 labeledField(L("Model id"), $settings.openRouterModel, prompt: "anthropic/claude-3.7-sonnet", width: 360)
             }
         } else if settings.repromptBackend == .localLLM {
-            card(L("Local model (Ollama)")) { localModelBlock }
+            card(L("Local model")) { localModelBlock }
         } else if settings.repromptBackend == .apiKey {
             card(L("Provider")) {
                 chips(ApiKeyProvider.allCases, selected: settings.apiKeyProvider,
@@ -1047,7 +1047,7 @@ struct SettingsView: View {
         case .claudeCode: return L("Runs on your Claude Max/Pro plan via the local CLI.")
         case .apiKey:     return L("Pay-per-token with your own OpenAI, Anthropic, or OpenRouter key.")
         case .openRouter: return L("Any model on openrouter.ai with your key.")
-        case .localLLM:   return L("Fully offline on your Mac via Ollama.")
+        case .localLLM:   return L("Fully offline and private, on your Mac.")
         }
     }
 
@@ -1144,8 +1144,8 @@ struct SettingsView: View {
 
         card(L("Loading jokes"),
              footer: settings.quipTone == .off
-             ? "\(L("While Claude works, Verba shows a neutral")) “\(Quips.neutral)”."
-             : L("While Claude works, Verba shows a short AI-generated joke in this style, never the same twice in a day.")) {
+             ? "\(L("While the AI works, Verba shows a neutral")) “\(Quips.neutral)”."
+             : L("While the AI works, Verba shows a short AI-generated joke in this style, never the same twice in a day.")) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(L("Joke style")).font(.caption.weight(.medium)).foregroundStyle(.secondary)
                 chips(QuipTone.allCases, selected: settings.quipTone,

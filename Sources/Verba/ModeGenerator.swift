@@ -56,7 +56,7 @@ enum ModeGenerator {
     JSON shape (use exactly these keys):
     {
       "name": "1-2 word mode name, Title Case",
-      "systemPrompt": "the full system prompt Claude will follow for this mode",
+      "systemPrompt": "the full system prompt the AI will follow for this mode",
       "model": "claude-haiku-4-5" | "claude-sonnet-4-6" | "claude-opus-4-8" | "",
       "matchBundleIDs": ["macOS bundle ids of apps where this mode fits, may be empty"],
       "raw": false

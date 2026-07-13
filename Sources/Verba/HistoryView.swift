@@ -284,7 +284,7 @@ struct HistoryView: View {
     private func detail(_ e: HistoryEntry) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                section(L("Restructured (Claude)"), e.reprompted)
+                section(L("Restructured"), e.reprompted)
                 section(L("Raw transcript"), e.original)
                 // Action toolbar: borderless icons in one soft row, no stock bordered buttons.
                 HStack(spacing: 10) {
@@ -313,7 +313,7 @@ struct HistoryView: View {
                                 .font(.system(size: 12, weight: .medium))
                         }
                         .buttonStyle(.borderless)
-                        .help("\(L("Re-run Claude on the raw transcript using this dictation's own mode")) (\(rerunModeLabel(e))) \(L("and OVERWRITE the saved entry. To try a variation without changing this entry, use Adapt below."))")
+                        .help("\(L("Re-run the AI on the raw transcript using this dictation's own mode")) (\(rerunModeLabel(e))) \(L("and OVERWRITE the saved entry. To try a variation without changing this entry, use Adapt below."))")
                         // Undo appears only right after a re-run, restoring the previous restructured text.
                         if let stash = preRerunReprompted, stash.id == e.id {
                             Divider().frame(height: 12)
