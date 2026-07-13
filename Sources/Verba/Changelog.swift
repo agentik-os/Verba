@@ -36,7 +36,7 @@ enum Changelog {
             date: "July 13, 2026", tag: "Today",
             summary: "The “access data from other apps” pop-up is gone for good, and no more false Fn-permission nags.",
             entries: [
-                ChangelogEntry(version: "0.9.92",
+                ChangelogEntry(version: "0.9.93",
                     title: "The “access data from other apps” pop-up is truly gone",
                     items: [
                         "Fixed for real: the macOS “Verba would like to access data from other apps” pop-up that kept appearing on every launch. The on-device speech model was stored in a shared “FluidAudio” folder that macOS treats as another app’s data; Verba now keeps it in its own space and moves any existing copy over automatically. Verified: no prompt on launch.",

@@ -43,28 +43,34 @@ enum EngineManager {
         modelsDownloadBase.appendingPathComponent("parakeet-tdt-0.6b-v3", isDirectory: true)
     }
 
-    /// One-time migration: move the Parakeet model out of the foreign-looking ~/Library/Application
-    /// Support/FluidAudio/ container into Verba's own folder, so it's never enumerated there again
-    /// (that access is what re-triggers the "access data from other apps" prompt on every launch).
+    /// One-time relocation of the Parakeet model out of the foreign-looking ~/Library/Application
+    /// Support/FluidAudio/ container into Verba's own folder. CRITICAL: this must run AT MOST ONCE and
+    /// must NEVER stat/touch the FluidAudio path once done — merely calling `fileExists` or `removeItem`
+    /// on a path under another app's data container itself re-triggers the "access data from other apps"
+    /// prompt EVERY launch (that recurring prompt was this migration code re-touching FluidAudio each
+    /// time, not the model load). A UserDefaults flag makes it strictly one-shot; if our own copy
+    /// already exists we set the flag WITHOUT ever touching FluidAudio.
     static func migrateParakeetOutOfFluidAudio() {
+        let d = UserDefaults.standard
+        guard !d.bool(forKey: kParakeetRelocated) else { return }   // done — never touch FluidAudio again
         let fm = FileManager.default
+        // Our copy already present (e.g. seeded, or a prior run migrated it) → mark done, touch nothing foreign.
+        if fm.fileExists(atPath: parakeetDir.path) { d.set(true, forKey: kParakeetRelocated); return }
+        // First-ever migration: this single pass is the ONLY time we may touch FluidAudio.
         let old = AsrModels.defaultCacheDirectory(for: .v3)   // ~/…/FluidAudio/Models/parakeet-tdt-0.6b-v3
-        guard fm.fileExists(atPath: old.path), !fm.fileExists(atPath: parakeetDir.path) else { return }
-        try? fm.createDirectory(at: parakeetDir.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try? fm.moveItem(at: old, to: parakeetDir)
-    }
-
-    /// Remove the now-orphaned ~/Library/Application Support/FluidAudio tree so the provenance-tagged
-    /// foreign container never persists to re-trigger the launch prompt. Safe: our model lives under
-    /// parakeetDir now; FluidAudio/ is only a stray cache once migrated.
-    static func purgeFluidAudioDir() {
-        let fluid = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("FluidAudio", isDirectory: true)
-        // Only purge once our copy exists, so a failed migration can't leave the user with no model.
-        if FileManager.default.fileExists(atPath: parakeetDir.path) {
-            try? FileManager.default.removeItem(at: fluid)
+        if fm.fileExists(atPath: old.path) {
+            try? fm.createDirectory(at: parakeetDir.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try? fm.moveItem(at: old, to: parakeetDir)
+        }
+        // Purge the orphaned FluidAudio tree in this same one-time pass (only if our copy now exists).
+        if fm.fileExists(atPath: parakeetDir.path) {
+            let fluid = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("FluidAudio", isDirectory: true)
+            try? fm.removeItem(at: fluid)
+            d.set(true, forKey: kParakeetRelocated)
         }
     }
+    private static let kParakeetRelocated = "verba.parakeetRelocated"
 
     /// One-time migration: move the WHOLE Hugging Face `models` tree an earlier build stored in
     /// ~/Documents/huggingface into Verba's Application Support root — the argmaxinc CoreML model AND
@@ -74,8 +80,16 @@ enum EngineManager {
     /// the tokenizer and made Whisper hang on "Activating…" forever (WhisperKit couldn't load the
     /// tokenizer). Moving the whole `models` tree preserves it. Best-effort; MUST run before any
     /// isInstalled() check so a migrated model reads as installed.
+    private static let kWhisperDocsRelocated = "verba.whisperDocsRelocated"
     static func migrateWhisperModelsOutOfDocuments() {
+        let d = UserDefaults.standard
+        guard !d.bool(forKey: kWhisperDocsRelocated) else { return }   // done — never stat ~/Documents/huggingface again
         let fm = FileManager.default
+        // If our own copy already exists, mark done WITHOUT stat-ing the (name-classified-as-foreign)
+        // ~/Documents/huggingface path — merely stat-ing it can re-fire the AppData prompt.
+        if fm.fileExists(atPath: modelsDownloadBase.appendingPathComponent("models/argmaxinc").path) {
+            d.set(true, forKey: kWhisperDocsRelocated); return
+        }
         let oldRoot = fm.homeDirectoryForCurrentUser.appendingPathComponent("Documents/huggingface")
         let oldModels = oldRoot.appendingPathComponent("models")
         let newModels = modelsDownloadBase.appendingPathComponent("models")
@@ -90,6 +104,7 @@ enum EngineManager {
         }
         // Drop the now-orphaned old tree so it's never enumerated again (kills the recurring prompt).
         try? fm.removeItem(at: oldRoot)
+        d.set(true, forKey: kWhisperDocsRelocated)
     }
 
     /// Recursively move `src` into `dst`, merging into any existing dirs and never overwriting a file
@@ -145,14 +160,6 @@ enum EngineManager {
     static func purgeBrokenTurboModel() {
         let broken = whisperBase.appendingPathComponent("openai_whisper-large-v3_turbo")
         try? FileManager.default.removeItem(at: broken)
-    }
-
-    /// Belt-and-suspenders: if any Hub call re-created ~/Documents/huggingface (the swift-transformers
-    /// default base), remove it so the macl-tagged folder never persists to re-trigger the launch prompt.
-    /// Safe: our models + tokenizer live under Application Support; Documents is only ever a stray cache.
-    static func purgeDocumentsHuggingface() {
-        let old = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Documents/huggingface")
-        try? FileManager.default.removeItem(at: old)
     }
 
     /// On-disk model folder for a local engine (nil for OpenAI). Used by the self-heal to move a
@@ -251,7 +258,6 @@ enum EngineManager {
                 let m = Settings.shared.localModel
                 _ = try await LocalTranscriber.shared.ensureLoaded(model: m)
                 loaded = (.whisper, m)
-                purgeDocumentsHuggingface()   // clear any stray Hub cache the load may have created
             case .parakeet:
                 _ = try await ParakeetTranscriber.shared.ensureLoaded()
                 loaded = (.parakeet, "v3")

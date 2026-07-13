@@ -89,13 +89,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         installMainMenu()   // menu-bar apps have no main menu → no ⌘C/⌘V in text fields without this
         VerbaServiceProvider.register()   // VER-19: "Transform with Verba…" in the Services menu (right-click on any selection)
         Quips.refillIfLow(tone: Settings.shared.quipTone)  // pre-warm the AI-generated loading lines
-        EngineManager.migrateParakeetOutOfFluidAudio()   // move Parakeet out of ~/…/FluidAudio (foreign container) BEFORE any access — stops the recurring "access data from other apps" prompt
+        // Relocate on-device models out of foreign-app-named containers (FluidAudio, ~/Documents/
+        // huggingface) into Verba's own folder. Each is STRICTLY ONE-TIME (UserDefaults-flagged): after
+        // the first run they never stat/touch those paths again — because even a `fileExists` on a path
+        // under another app's data container re-fires the "access data from other apps" prompt EVERY
+        // launch (that recurring prompt was this migration code, not the model load).
+        EngineManager.migrateParakeetOutOfFluidAudio()   // Parakeet → Application Support/Verba (one-time)
         EngineManager.seedBundledModels()   // copy the app-bundled Parakeet model into cache (first run, offline-instant)
-        EngineManager.migrateWhisperModelsOutOfDocuments()   // move any old ~/Documents/huggingface models (model + tokenizer) into Application Support BEFORE isInstalled checks — stops the recurring "access data from other apps" prompt
-        EngineManager.seedWhisperTokenizer()   // pre-stage the bundled Whisper tokenizer so a load never hits the Hub (which re-creates ~/Documents/huggingface) and never hangs on "Activating…"
-        EngineManager.purgeDocumentsHuggingface()   // remove any stray Documents/huggingface a prior build left behind
+        EngineManager.migrateWhisperModelsOutOfDocuments()   // Whisper model + tokenizer out of ~/Documents/huggingface (one-time)
+        EngineManager.seedWhisperTokenizer()   // pre-stage the bundled Whisper tokenizer so a load never hits the Hub and never hangs on "Activating…"
         EngineManager.purgeBrokenTurboModel()   // delete the broken 2.4GB full-precision large-v3_turbo (MIL load error); the quantized turbo replaces it
-        EngineManager.purgeFluidAudioDir()   // remove the orphaned ~/…/FluidAudio container so it never re-triggers the prompt
         preloadEngine()   // load the local transcription model now so the first dictation is instant
         ConfigSync.shared.start()   // observe modes/styles/snippets/transforms/dictionary/tasks for cloud sync
         // Re-check the real subscription on launch so Pro reflects Stripe, not just sign-in.
