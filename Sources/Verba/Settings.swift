@@ -289,6 +289,18 @@ struct Style: Codable, Identifiable, Equatable {
 let translateLanguages = ["English", "French", "Spanish", "German", "Italian", "Portuguese", "Dutch",
                           "Russian", "Chinese", "Japanese", "Korean", "Arabic", "Hindi", "Turkish", "Polish"]
 
+/// English display name → ISO 639-1 code (what both WhisperKit and FluidAudio expect). Used to turn the
+/// friendly "Spoken language" picker into the code the transcriber forces, and back for display.
+let languageNameToCode: [String: String] = [
+    "English": "en", "French": "fr", "Spanish": "es", "German": "de", "Italian": "it",
+    "Portuguese": "pt", "Dutch": "nl", "Russian": "ru", "Chinese": "zh", "Japanese": "ja",
+    "Korean": "ko", "Arabic": "ar", "Hindi": "hi", "Turkish": "tr", "Polish": "pl",
+]
+func languageCode(forName name: String) -> String { languageNameToCode[name] ?? "" }
+func languageName(forCode code: String) -> String {
+    languageNameToCode.first { $0.value == code.lowercased() }?.key ?? ""
+}
+
 extension Profile {
     static let intent = Profile(
         name: "Intent",

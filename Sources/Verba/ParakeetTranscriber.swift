@@ -88,8 +88,12 @@ actor ParakeetTranscriber: Transcriber {
             _ = try? await previous?.value
             let m = try await self.ensureLoaded()
             var state = try TdtDecoderState()
-            // v3 auto-detects language; the file-URL API resamples to 16 kHz internally.
-            let result = try await m.transcribe(fileURL, decoderState: &state, language: nil)
+            // Honor a pinned Spoken language (script-aware filtering on v3) so a French dictation
+            // isn't peppered with another-script guesses; nil = auto-detect. (Whisper enforces the
+            // language harder — same-script FR/EN pinning is fully reliable only there.) The file-URL
+            // API resamples to 16 kHz internally.
+            let forced = (language?.isEmpty ?? true) ? nil : Language(rawValue: language!.lowercased())
+            let result = try await m.transcribe(fileURL, decoderState: &state, language: forced)
             let text = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !text.isEmpty else { throw TranscribeError.empty }
             return text

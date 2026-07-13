@@ -34,8 +34,13 @@ enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
             date: "July 13, 2026", tag: "Today",
-            summary: "Local Action mode fixed, plus Verba now auto-reports errors so they get fixed faster.",
+            summary: "Pin your language to stop mixed French/English transcripts, plus reliability fixes.",
             entries: [
+                ChangelogEntry(version: "0.9.90",
+                    title: "Stop mixed-language transcripts — pin your language",
+                    items: [
+                        "Fixed transcripts that mixed French and English (or any two languages) even when you spoke only one. Settings ▸ Dictation ▸ Language now has a simple “Spoken language” picker: choose your language (e.g. French) and transcription stays 100% in it, in every mode including Raw. Leave it on Auto-detect only if you switch languages often.",
+                    ]),
                 ChangelogEntry(version: "0.9.89",
                     title: "Verba now fixes itself faster",
                     items: [

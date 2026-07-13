@@ -919,9 +919,25 @@ struct SettingsView: View {
                 }
                 .labelsHidden().fixedSize()
             }
-            labeledField(L("Spoken language"), $settings.language, prompt: L("ISO code, blank = auto"))
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L("Spoken language")).font(.system(size: 13))
+                    Text(L("Pin the language you dictate in so transcription never mixes languages (e.g. French audio stays 100% French). Leave on Auto-detect only if you switch languages often. Whisper enforces this most strictly."))
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 12)
+                Picker("", selection: Binding(
+                    get: { languageName(forCode: settings.language) },   // "" = Auto-detect
+                    set: { settings.language = languageCode(forName: $0) }
+                )) {
+                    Text(L("Auto-detect")).tag("")
+                    Divider()
+                    ForEach(translateLanguages, id: \.self) { Text($0).tag($0) }
+                }
+                .labelsHidden().fixedSize()
+            }
             toggleRow(L("Single-language output"), $settings.languageGuard,
-                      help: settings.languageGuard ? L("If the engine mixes two languages mid-sentence, Verba rewrites the result fully in its dominant language. Applies to every mode, including Raw.") : nil)
+                      help: settings.languageGuard ? L("Safety net: if the engine still mixes two languages mid-sentence, Verba rewrites the result fully in its dominant language. Applies to every mode, including Raw. Pinning a Spoken language above is the more reliable fix.") : nil)
         }
 
         card(L("Voice commands")) {
