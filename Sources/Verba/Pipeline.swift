@@ -714,9 +714,18 @@ enum Pipeline {
            open.lowerBound <= close.lowerBound {
             let json = String(s[open.lowerBound...close.lowerBound])
             if let data = json.data(using: .utf8),
-               let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
-               let text = obj["text"] as? String {
-                return text.trimmingCharacters(in: .whitespacesAndNewlines)
+               let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] {
+                if let text = obj["text"] as? String {
+                    return text.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                // An `{"action":…}` payload that reached here is a MALFORMED or DISABLED action (a
+                // valid one is consumed by parseAgenticAction). Never paste the raw JSON into the
+                // user's document — strip the whole envelope so at worst nothing is inserted rather
+                // than a literal {"action":{…}} blob.
+                if obj["action"] != nil {
+                    let outside = (s.replacingOccurrences(of: json, with: "")).trimmingCharacters(in: .whitespacesAndNewlines)
+                    return outside
+                }
             }
         }
         // Not a recognizable envelope: use the reply verbatim so nothing is lost.

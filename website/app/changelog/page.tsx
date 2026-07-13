@@ -18,8 +18,19 @@ const DAYS: Day[] = [
   {
     date: "July 13, 2026",
     tag: "Today",
-    summary: "No more “access data from other apps” pop-up, and your local model is safer than ever.",
+    summary: "Whisper fixed and faster, a new Turbo model, instant first dictation, and feedback that always sends.",
     entries: [
+      {
+        version: "0.9.86",
+        title: "Whisper unstuck + a faster Turbo model, instant dictation, reliable feedback",
+        items: [
+          "Fixed Whisper getting stuck on “Activating…” forever — it now loads reliably and offline, with no permission pop-up.",
+          "New: choose your Whisper model. Large v3 is the most accurate; the new Turbo is several times faster and lighter (≈ 1 GB), nearly as accurate — great for everyday dictation. The choice is labelled so you pick knowingly.",
+          "First dictation is instant again: Verba now warms your on-device model at launch, so raw dictation no longer stalls the first time (or after idle).",
+          "Feedback always sends now. “Give feedback” submits your message directly — it no longer depends on an AI step that could fail. “Improve with AI” is an optional polish button that never blocks sending.",
+          "Under the hood: safer formatted-paste, transcript-history rescue on corruption, and several reliability fixes from a deep code audit.",
+        ],
+      },
       {
         version: "0.9.85",
         title: "The “access data from other apps” pop-up is gone",

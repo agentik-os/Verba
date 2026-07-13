@@ -264,13 +264,26 @@ final class History: ObservableObject {
     }
 
     private func load() {
-        guard let data = try? Data(contentsOf: indexURL),
-              let decoded = try? JSONDecoder().decode([HistoryEntry].self, from: data) else { return }
+        guard let data = try? Data(contentsOf: indexURL) else { return }
+        guard let decoded = try? JSONDecoder().decode([HistoryEntry].self, from: data) else {
+            // Corrupt/truncated index. Do NOT start empty and let the next save() clobber it — park a
+            // rescue copy first (mirrors NotesStore) so the transcripts are recoverable, and log it.
+            if !data.isEmpty {
+                let rescue = indexURL.deletingLastPathComponent()
+                    .appendingPathComponent("index.rescue-\(Int(Date().timeIntervalSince1970)).json")
+                try? data.write(to: rescue)
+                VerbaLog.syncFailure("history index decode", error: NSError(domain: "Verba", code: -1,
+                    userInfo: [NSLocalizedDescriptionKey: "corrupt history index parked at \(rescue.lastPathComponent)"]))
+            }
+            return
+        }
         entries = decoded
     }
 
     private func save() {
-        do { try JSONEncoder().encode(entries).write(to: indexURL) }
+        // .atomic so a crash/kill/power-loss mid-write can't leave a truncated index that the next
+        // load() rejects (and then clobbers) — the file is swapped in whole or not at all.
+        do { try JSONEncoder().encode(entries).write(to: indexURL, options: .atomic) }
         catch { VerbaLog.syncFailure("history index save", error: error) }   // R14: was silently swallowed
     }
 }

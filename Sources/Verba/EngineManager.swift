@@ -11,7 +11,7 @@ enum EngineManager {
         switch engine {
         case .openAI:   return ""
         case .parakeet: return "≈ 0.6 GB"
-        case .whisper:  return "≈ 1.6 GB"   // large-v3 (the only Whisper variant Verba ships)
+        case .whisper:  return Settings.shared.localModel.contains("turbo") ? "≈ 1 GB" : "≈ 1.6 GB"
         }
     }
 
@@ -34,25 +34,83 @@ enum EngineManager {
         whisperBase.appendingPathComponent("openai_whisper-\(model)")
     }
 
-    /// One-time migration: move Whisper models an earlier build stored in ~/Documents/huggingface
-    /// into Verba's Application Support root. The old path triggered the recurring "access data from
-    /// other apps" prompt (macl-tagged, iCloud-synced) on every launch. Best-effort: if the user
-    /// denies the one-time read, the move no-ops and Whisper simply re-downloads to the new base on
-    /// next use. MUST run before any isInstalled() check so a migrated model reads as installed.
+    /// One-time migration: move the WHOLE Hugging Face `models` tree an earlier build stored in
+    /// ~/Documents/huggingface into Verba's Application Support root — the argmaxinc CoreML model AND
+    /// the openai/whisper-* TOKENIZER that lives alongside it. The old path triggered the recurring
+    /// "access data from other apps" prompt (macl-tagged, iCloud-synced) on every launch. An earlier
+    /// version of this migration moved only the argmaxinc subtree and deleted the rest, which orphaned
+    /// the tokenizer and made Whisper hang on "Activating…" forever (WhisperKit couldn't load the
+    /// tokenizer). Moving the whole `models` tree preserves it. Best-effort; MUST run before any
+    /// isInstalled() check so a migrated model reads as installed.
     static func migrateWhisperModelsOutOfDocuments() {
         let fm = FileManager.default
         let oldRoot = fm.homeDirectoryForCurrentUser.appendingPathComponent("Documents/huggingface")
-        let oldModels = oldRoot.appendingPathComponent("models/argmaxinc/whisperkit-coreml")
-        guard fm.fileExists(atPath: oldModels.path),
-              let entries = try? fm.contentsOfDirectory(at: oldModels, includingPropertiesForKeys: nil) else { return }
-        try? fm.createDirectory(at: whisperBase, withIntermediateDirectories: true)
-        for src in entries where src.hasDirectoryPath {
-            let dest = whisperBase.appendingPathComponent(src.lastPathComponent)
-            if fm.fileExists(atPath: dest.path) { continue }   // already migrated
-            try? fm.moveItem(at: src, to: dest)
+        let oldModels = oldRoot.appendingPathComponent("models")
+        let newModels = modelsDownloadBase.appendingPathComponent("models")
+        if fm.fileExists(atPath: oldModels.path) {
+            try? fm.createDirectory(at: newModels, withIntermediateDirectories: true)
+            // Merge each repo-owner dir (argmaxinc, openai, …) so the tokenizer travels with the model.
+            if let owners = try? fm.contentsOfDirectory(at: oldModels, includingPropertiesForKeys: nil) {
+                for owner in owners where owner.hasDirectoryPath {
+                    mergeMove(owner, into: newModels.appendingPathComponent(owner.lastPathComponent), fm: fm)
+                }
+            }
         }
         // Drop the now-orphaned old tree so it's never enumerated again (kills the recurring prompt).
         try? fm.removeItem(at: oldRoot)
+    }
+
+    /// Recursively move `src` into `dst`, merging into any existing dirs and never overwriting a file
+    /// that's already there (the destination copy wins). Used so a partial earlier migration completes.
+    private static func mergeMove(_ src: URL, into dst: URL, fm: FileManager) {
+        var isDir: ObjCBool = false
+        guard fm.fileExists(atPath: src.path, isDirectory: &isDir) else { return }
+        if !isDir.boolValue {
+            if !fm.fileExists(atPath: dst.path) { try? fm.moveItem(at: src, to: dst) }
+            return
+        }
+        if !fm.fileExists(atPath: dst.path) {
+            // Whole subtree not present at destination → one atomic move is cheapest.
+            try? fm.createDirectory(at: dst.deletingLastPathComponent(), withIntermediateDirectories: true)
+            if (try? fm.moveItem(at: src, to: dst)) != nil { return }
+        }
+        try? fm.createDirectory(at: dst, withIntermediateDirectories: true)
+        if let kids = try? fm.contentsOfDirectory(at: src, includingPropertiesForKeys: nil) {
+            for kid in kids { mergeMove(kid, into: dst.appendingPathComponent(kid.lastPathComponent), fm: fm) }
+        }
+    }
+
+    /// Copy the app-bundled Whisper tokenizer (config.json + tokenizer.json + tokenizer_config.json)
+    /// into Application Support at the exact hub-repo path WhisperKit searches — <base>/models/openai/
+    /// whisper-large-v3. With it pre-staged, WhisperKit loads the tokenizer LOCALLY and never calls the
+    /// Hugging Face Hub, whose default HubApi hard-codes ~/Documents/huggingface as its download base
+    /// (swift-transformers HubApi.init) and would re-create the macl-tagged Documents folder → the
+    /// "access data from other apps" prompt. large-v3 and large-v3-turbo share this tokenizer. No-op
+    /// if already present or not bundled.
+    static func seedWhisperTokenizer() {
+        let fm = FileManager.default
+        guard let bundled = Bundle.main.resourceURL?
+                .appendingPathComponent("WhisperTokenizer/openai_whisper-large-v3", isDirectory: true),
+              fm.fileExists(atPath: bundled.path) else { return }
+        // openai/whisper-large-v3 is the tokenizer repo WhisperKit resolves for both large-v3 variants.
+        let dest = modelsDownloadBase.appendingPathComponent("models/openai/whisper-large-v3", isDirectory: true)
+        let tokenizerJSON = dest.appendingPathComponent("tokenizer.json")
+        if fm.fileExists(atPath: tokenizerJSON.path) { return }   // already staged
+        try? fm.createDirectory(at: dest, withIntermediateDirectories: true)
+        if let files = try? fm.contentsOfDirectory(at: bundled, includingPropertiesForKeys: nil) {
+            for f in files {
+                let to = dest.appendingPathComponent(f.lastPathComponent)
+                if !fm.fileExists(atPath: to.path) { try? fm.copyItem(at: f, to: to) }
+            }
+        }
+    }
+
+    /// Belt-and-suspenders: if any Hub call re-created ~/Documents/huggingface (the swift-transformers
+    /// default base), remove it so the macl-tagged folder never persists to re-trigger the launch prompt.
+    /// Safe: our models + tokenizer live under Application Support; Documents is only ever a stray cache.
+    static func purgeDocumentsHuggingface() {
+        let old = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Documents/huggingface")
+        try? FileManager.default.removeItem(at: old)
     }
 
     /// On-disk model folder for a local engine (nil for OpenAI). Used by the self-heal to move a
@@ -151,6 +209,7 @@ enum EngineManager {
                 let m = Settings.shared.localModel
                 _ = try await LocalTranscriber.shared.ensureLoaded(model: m)
                 loaded = (.whisper, m)
+                purgeDocumentsHuggingface()   // clear any stray Hub cache the load may have created
             case .parakeet:
                 _ = try await ParakeetTranscriber.shared.ensureLoaded()
                 loaded = (.parakeet, "v3")

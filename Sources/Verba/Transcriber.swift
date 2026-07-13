@@ -102,8 +102,13 @@ actor LocalTranscriber: Transcriber {
         // (no re-download, faster). Otherwise allow WhisperKit to fetch it.
         onStatus?(installed ? "Loading model…" : "Downloading model… (first run)")
         let task = Task<WhisperKit, Error> {
+            // downloadBase MUST be set even on the installed path: it becomes WhisperKit's
+            // tokenizerFolder, so the tokenizer resolves under Application Support (bundled/seeded
+            // there) instead of the Hub. Without it the tokenizer couldn't load and Activation hung
+            // on "Activating…" forever, and any Hub fallback re-created ~/Documents/huggingface.
             let config = installed
-                ? WhisperKitConfig(model: model, modelFolder: path, download: false)
+                ? WhisperKitConfig(model: model, downloadBase: EngineManager.modelsDownloadBase,
+                                   modelFolder: path, download: false)
                 : WhisperKitConfig(model: model, downloadBase: EngineManager.modelsDownloadBase)
             return try await WhisperKit(config)
         }

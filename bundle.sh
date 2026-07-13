@@ -46,6 +46,19 @@ else
   exit 1
 fi
 
+# Bundle the Whisper tokenizer (config.json + tokenizer.json + tokenizer_config.json for
+# openai/whisper-large-v3, shared by large-v3 and large-v3-turbo). Seeded into Application Support
+# at launch (EngineManager.seedWhisperTokenizer) so WhisperKit loads the tokenizer LOCALLY and never
+# hits the Hugging Face Hub — which would hang activation and re-create the macl-tagged
+# ~/Documents/huggingface folder (the "access data from other apps" prompt). ~2.6 MB.
+if [ -d WhisperTokenizer ]; then
+  mkdir -p "$APP/Contents/Resources/WhisperTokenizer"
+  cp -R WhisperTokenizer/* "$APP/Contents/Resources/WhisperTokenizer/"
+  echo "▸ Bundled Whisper tokenizer ($(du -sh WhisperTokenizer | cut -f1))"
+else
+  echo "⚠︎ WhisperTokenizer/ not found; Whisper will fetch the tokenizer from the Hub on first load."
+fi
+
 # Embed Sparkle (silent auto-update). The binary loads @rpath/Sparkle.framework.
 ditto ".build/release/Sparkle.framework" "$APP/Contents/Frameworks/Sparkle.framework"
 install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP/Contents/MacOS/Verba" 2>/dev/null || true

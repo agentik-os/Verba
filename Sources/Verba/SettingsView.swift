@@ -108,7 +108,26 @@ struct SettingsView: View {
     @State private var copiedReferral = false
 
     private let claudeModels = ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-sonnet-5", "claude-opus-4-8"]
-    private let localModels = ["large-v3"]   // Whisper ships large-v3 only — the highest-accuracy variant
+    // Whisper offers two on-device variants, with an explicit speed/accuracy trade-off so the user
+    // chooses knowingly (VER): large-v3 = highest accuracy but slower; large-v3_turbo = a distilled
+    // decoder that's several times faster with a small accuracy cost. Both share the same tokenizer.
+    private let localModels = ["large-v3", "large-v3_turbo"]
+
+    static func whisperModelTitle(_ id: String) -> String {
+        switch id {
+        case "large-v3_turbo": return L("Turbo")
+        case "large-v3":       return L("Large v3")
+        default:               return id
+        }
+    }
+    static func whisperModelBlurb(_ id: String) -> String {
+        switch id {
+        case "large-v3_turbo":
+            return L("Turbo — much faster, uses less memory (≈ 1 GB). Nearly as accurate as Large v3; great for everyday dictation.")
+        default:
+            return L("Large v3 — the most accurate, all languages (≈ 1.6 GB). A bit slower to transcribe than Turbo.")
+        }
+    }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -1646,7 +1665,10 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(L("Whisper model")).font(.caption.weight(.medium)).foregroundStyle(.secondary)
                     chips(localModels.map { IdString($0) }, selected: IdString(settings.localModel),
-                          label: { $0.id }, onPick: { settings.localModel = $0.id; engineRefresh += 1 })
+                          label: { Self.whisperModelTitle($0.id) },
+                          onPick: { settings.localModel = $0.id; engineRefresh += 1 })
+                    Text(Self.whisperModelBlurb(settings.localModel))
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
             }
             if installing {
@@ -1827,6 +1849,7 @@ struct SettingsView: View {
     }
 
     private func activate(_ e: TranscriptionEngine) {
+        let previous = settings.engine
         settings.engine = e
         activating = true
         EngineManager.lastInstallError = nil
@@ -1835,7 +1858,10 @@ struct SettingsView: View {
             await MainActor.run {
                 activating = false
                 engineRefresh += 1
-                if !ok { verifyMsg = "" }
+                // Roll back the active-engine switch if the load didn't verify, so dictation keeps
+                // using the previously-working engine instead of a selected-but-unloadable one (the
+                // error is surfaced by lastInstallError under the row).
+                if !ok { settings.engine = previous; verifyMsg = "" }
             }
         }
     }

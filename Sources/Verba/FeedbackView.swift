@@ -247,18 +247,36 @@ struct FeedbackView: View {
                         }
                         .dialogPrimary(tint: .primary).disabled(!canSubmit)
                     } else {
+                        // Optional AI polish — never gates the send. Shown only when there's something
+                        // to improve, disabled while busy. On failure the draft is untouched.
+                        if canSubmit {
+                            Button(action: improveTapped) {
+                                Group {
+                                    if improving {
+                                        HStack(spacing: 6) { ProgressView().controlSize(.small); Text(L("Improving…")).font(.callout) }
+                                    } else {
+                                        Label(L("Improve with AI"), systemImage: "sparkles").font(.callout)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain).foregroundStyle(.secondary)
+                            .disabled(submitting || improving)
+                            if preImproveDraft != nil {
+                                Button(L("Undo")) { revertImprove() }
+                                    .buttonStyle(.plain).foregroundStyle(.secondary).disabled(submitting || improving)
+                            }
+                        }
                         Button(action: sendTapped) {
                             Group {
-                                if submitting || improving {
-                                    HStack(spacing: 7) { ProgressView().controlSize(.small)
-                                        Text(improving ? L("Improving…") : L("Sending…")).font(.callout) }
+                                if submitting {
+                                    HStack(spacing: 7) { ProgressView().controlSize(.small); Text(L("Sending…")).font(.callout) }
                                 } else {
                                     Text(L("Give feedback"))
                                 }
                             }.frame(minWidth: 124)
                         }
                         .dialogPrimary(tint: .primary)
-                        .disabled(!canSubmit || improving)
+                        .disabled(!canSubmit || improving || submitting)
                     }
                 }
                 .frame(minHeight: 30)
@@ -453,16 +471,22 @@ struct FeedbackView: View {
         draft = original
     }
 
-    /// VER-52: "Send feedback" first runs the AI improvement (unless the draft is already the
-    /// unedited AI version), then asks the user to Confirm or Cancel before actually submitting.
+    /// "Give feedback" submits the draft DIRECTLY — it must NEVER depend on an AI model. The
+    /// server accepts a raw text POST (no auth, no AI); coupling submit to the "Improve" call is
+    /// exactly what made feedback silently fail for users whose local model was still downloading
+    /// or whose backend hiccuped (the improve error blocked the send). "Improve with AI" is now a
+    /// separate, optional enhancement (improveTapped) that rewrites the draft in place but never
+    /// gates submission.
     private func sendTapped() {
+        submit()
+    }
+
+    /// Optional: rewrite the draft with AI before sending. Best-effort — on any failure the draft
+    /// is untouched and the user can still Give feedback. Never blocks submission.
+    private func improveTapped() {
         let t = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        // VER-13: a screenshot-only feedback (no typed text) must still start the improve flow —
-        // improveWithAI reads the image. Mirror canSubmit, which already allows screenshot != nil.
         guard (!t.isEmpty || screenshot != nil), !submitting, !improving else { return }
-        // Already the AI-structured version and untouched → no need to improve again, just submit.
-        if let li = lastImproved, t == li.trimmingCharacters(in: .whitespacesAndNewlines) { submit(); return }
-        improveWithAI(thenConfirm: true)
+        improveWithAI(thenConfirm: false)
     }
 
     /// Send the current draft through the reprompt pipeline with a concise clean-up instruction

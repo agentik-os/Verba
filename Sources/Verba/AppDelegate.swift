@@ -88,7 +88,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         VerbaServiceProvider.register()   // VER-19: "Transform with Verba…" in the Services menu (right-click on any selection)
         Quips.refillIfLow(tone: Settings.shared.quipTone)  // pre-warm the AI-generated loading lines
         EngineManager.seedBundledModels()   // copy the app-bundled Parakeet model into cache (first run, offline-instant)
-        EngineManager.migrateWhisperModelsOutOfDocuments()   // move any old ~/Documents/huggingface models into Application Support BEFORE isInstalled checks — stops the recurring "access data from other apps" prompt
+        EngineManager.migrateWhisperModelsOutOfDocuments()   // move any old ~/Documents/huggingface models (model + tokenizer) into Application Support BEFORE isInstalled checks — stops the recurring "access data from other apps" prompt
+        EngineManager.seedWhisperTokenizer()   // pre-stage the bundled Whisper tokenizer so a load never hits the Hub (which re-creates ~/Documents/huggingface) and never hangs on "Activating…"
+        EngineManager.purgeDocumentsHuggingface()   // remove any stray Documents/huggingface a prior build left behind
         preloadEngine()   // load the local transcription model now so the first dictation is instant
         ConfigSync.shared.start()   // observe modes/styles/snippets/transforms/dictionary/tasks for cloud sync
         // Re-check the real subscription on launch so Pro reflects Stripe, not just sign-in.
@@ -430,8 +432,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // so the first dictation is instant; the other is DOWNLOAD-ONLY (no RAM load — memory stays flat,
         // loading stays lazy via prewarmForRecording). Parakeet is usually already seeded from the bundle.
         Task.detached(priority: .utility) {
-            if s.engine.isLocal && !EngineManager.isInstalled(s.engine) {
-                _ = await EngineManager.install(s.engine)
+            if s.engine.isLocal {
+                if !EngineManager.isInstalled(s.engine) {
+                    _ = await EngineManager.install(s.engine)   // install already loads it into RAM
+                } else {
+                    // WARM the active engine into RAM at launch even when already installed. The first
+                    // Core ML load compiles the model for the Neural Engine — ~15-20s the first time
+                    // after an install/app-update — so paying it HERE (in the background at launch)
+                    // instead of lazily on the first recording is what makes raw dictation feel instant.
+                    // Without this the first dictation of a session (or after the 10-min idle-unload)
+                    // stalled for that whole compile — the "Parakeet raw got super slow" regression.
+                    _ = await EngineManager.load(s.engine)
+                }
             }
             for e in [TranscriptionEngine.parakeet, .whisper] where !EngineManager.isInstalled(e) {
                 _ = await EngineManager.download(e)

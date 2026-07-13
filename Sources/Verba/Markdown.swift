@@ -104,7 +104,11 @@ enum Markdown {
     /// CURRENT string and processes matches LAST-to-FIRST so earlier locations stay valid while the
     /// string shrinks. Order: code first (its content is literal), then bold, italic, links.
     private static func applyInline(_ a: NSMutableAttributedString) {
-        pass(a, #"`([^`]+)`"#) { r in
+        // Code first: its content is LITERAL. We tag the resulting run with .font == codeFont, and
+        // every later pass skips any match sitting inside a code run — otherwise `a_b_c` inside
+        // backticks would get its `_b_` italicised and `[x](y)` linkified (bug: code spans were
+        // re-scanned and silently corrupted). skipCode:false only for this pass.
+        pass(a, #"`([^`]+)`"#, skipCode: false) { r in
             let inner = a.attributedSubstring(from: r.range(at: 1))
             a.replaceCharacters(in: r.range(at: 0), with: inner)
             a.addAttribute(.font, value: codeFont,
@@ -127,6 +131,13 @@ enum Markdown {
         }
     }
 
+    /// True if the character at `loc` is already part of a code run (font == codeFont), so inline
+    /// passes leave it untouched.
+    private static func isCode(_ a: NSMutableAttributedString, at loc: Int) -> Bool {
+        guard loc < a.length else { return false }
+        return (a.attribute(.font, at: loc, effectiveRange: nil) as? NSFont) == codeFont
+    }
+
     /// Replace a `<delim>inner<delim>` match (group 1 = inner) with the inner run carrying an added
     /// font trait, preserving any traits an earlier pass already applied inside it.
     private static func reStyle(_ a: NSMutableAttributedString, _ r: NSTextCheckingResult, trait: NSFontTraitMask) {
@@ -139,11 +150,14 @@ enum Markdown {
         }
     }
 
-    private static func pass(_ a: NSMutableAttributedString, _ pattern: String,
+    private static func pass(_ a: NSMutableAttributedString, _ pattern: String, skipCode: Bool = true,
                              _ body: (NSTextCheckingResult) -> Void) {
         guard let re = try? NSRegularExpression(pattern: pattern) else { return }
         let full = NSRange(location: 0, length: (a.string as NSString).length)
-        for m in re.matches(in: a.string, range: full).reversed() { body(m) }
+        for m in re.matches(in: a.string, range: full).reversed() {
+            if skipCode, isCode(a, at: m.range(at: 0).location) { continue }   // don't reformat inside a code span
+            body(m)
+        }
     }
 
     // MARK: - Block detection helpers
