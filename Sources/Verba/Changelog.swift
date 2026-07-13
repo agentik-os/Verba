@@ -34,8 +34,14 @@ enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
             date: "July 13, 2026", tag: "Today",
-            summary: "No more false “grant Fn permission” prompts, pin your language, and more.",
+            summary: "The “access data from other apps” pop-up is gone for good, and no more false Fn-permission nags.",
             entries: [
+                ChangelogEntry(version: "0.9.92",
+                    title: "The “access data from other apps” pop-up is truly gone",
+                    items: [
+                        "Fixed for real: the macOS “Verba would like to access data from other apps” pop-up that kept appearing on every launch. The on-device speech model was stored in a shared “FluidAudio” folder that macOS treats as another app’s data; Verba now keeps it in its own space and moves any existing copy over automatically. Verified: no prompt on launch.",
+                        "Also fixed the “Verba needs permission to use the Fn key” alert that could keep nagging even after you granted it — Verba now trusts the Accessibility permission it actually uses instead of a second one that reads stale until you relaunch.",
+                    ]),
                 ChangelogEntry(version: "0.9.91",
                     title: "No more false “Verba needs Fn permission” prompts",
                     items: [

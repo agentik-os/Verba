@@ -34,6 +34,38 @@ enum EngineManager {
         whisperBase.appendingPathComponent("openai_whisper-\(model)")
     }
 
+    /// Verba-owned Parakeet cache. FluidAudio defaults to ~/Library/Application Support/FluidAudio/,
+    /// which macOS treats as ANOTHER app's data container (it carries the com.apple.provenance tag), so
+    /// Verba reading it at EVERY launch (isInstalled / seed / prewarm) fired the recurring "Verba would
+    /// like to access data from other apps" prompt — the exact same trap as ~/Documents/huggingface for
+    /// Whisper. Keeping Parakeet under Verba's OWN Application Support folder removes it.
+    static var parakeetDir: URL {
+        modelsDownloadBase.appendingPathComponent("parakeet-tdt-0.6b-v3", isDirectory: true)
+    }
+
+    /// One-time migration: move the Parakeet model out of the foreign-looking ~/Library/Application
+    /// Support/FluidAudio/ container into Verba's own folder, so it's never enumerated there again
+    /// (that access is what re-triggers the "access data from other apps" prompt on every launch).
+    static func migrateParakeetOutOfFluidAudio() {
+        let fm = FileManager.default
+        let old = AsrModels.defaultCacheDirectory(for: .v3)   // ~/…/FluidAudio/Models/parakeet-tdt-0.6b-v3
+        guard fm.fileExists(atPath: old.path), !fm.fileExists(atPath: parakeetDir.path) else { return }
+        try? fm.createDirectory(at: parakeetDir.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? fm.moveItem(at: old, to: parakeetDir)
+    }
+
+    /// Remove the now-orphaned ~/Library/Application Support/FluidAudio tree so the provenance-tagged
+    /// foreign container never persists to re-trigger the launch prompt. Safe: our model lives under
+    /// parakeetDir now; FluidAudio/ is only a stray cache once migrated.
+    static func purgeFluidAudioDir() {
+        let fluid = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("FluidAudio", isDirectory: true)
+        // Only purge once our copy exists, so a failed migration can't leave the user with no model.
+        if FileManager.default.fileExists(atPath: parakeetDir.path) {
+            try? FileManager.default.removeItem(at: fluid)
+        }
+    }
+
     /// One-time migration: move the WHOLE Hugging Face `models` tree an earlier build stored in
     /// ~/Documents/huggingface into Verba's Application Support root — the argmaxinc CoreML model AND
     /// the openai/whisper-* TOKENIZER that lives alongside it. The old path triggered the recurring
@@ -128,7 +160,7 @@ enum EngineManager {
     private static func modelFolder(_ engine: TranscriptionEngine) -> URL? {
         switch engine {
         case .whisper:  return whisperFolder(Settings.shared.localModel)
-        case .parakeet: return AsrModels.defaultCacheDirectory(for: .v3)
+        case .parakeet: return parakeetDir
         case .openAI:   return nil
         }
     }
@@ -162,7 +194,7 @@ enum EngineManager {
         case .whisper:
             return whisperModelComplete(whisperFolder(Settings.shared.localModel))
         case .parakeet:
-            return AsrModels.modelsExist(at: AsrModels.defaultCacheDirectory(for: .v3))
+            return AsrModels.modelsExist(at: parakeetDir)
         }
     }
 
@@ -245,7 +277,7 @@ enum EngineManager {
     /// launch, so a fresh install transcribes offline instantly with no download or API key.
     /// No-op if the model is already cached or wasn't bundled.
     static func seedBundledModels() {
-        let cache = AsrModels.defaultCacheDirectory(for: .v3)
+        let cache = parakeetDir
         if AsrModels.modelsExist(at: cache) { return }
         guard let bundled = Bundle.main.resourceURL?
                 .appendingPathComponent("Models/parakeet-tdt-0.6b-v3", isDirectory: true),
@@ -274,7 +306,7 @@ enum EngineManager {
                     progressCallback: { p in DispatchQueue.main.async { progress(p.fractionCompleted) } })
                 _ = try await LocalTranscriber.shared.ensureLoaded(model: Settings.shared.localModel)
             case .parakeet:
-                _ = try await AsrModels.download(version: .v3,
+                _ = try await AsrModels.download(to: parakeetDir, version: .v3,
                     progressHandler: { pr in DispatchQueue.main.async { progress(pr.fractionCompleted) } })
                 _ = try await ParakeetTranscriber.shared.ensureLoaded()
             case .openAI:
@@ -373,7 +405,7 @@ enum EngineManager {
                     downloadBase: modelsDownloadBase,
                     progressCallback: { p in DispatchQueue.main.async { progress(p.fractionCompleted) } })
             case .parakeet:
-                _ = try await AsrModels.download(version: .v3,
+                _ = try await AsrModels.download(to: parakeetDir, version: .v3,
                     progressHandler: { pr in DispatchQueue.main.async { progress(pr.fractionCompleted) } })
             case .openAI:
                 break
@@ -396,7 +428,7 @@ enum EngineManager {
             try? FileManager.default.removeItem(at: whisperFolder(Settings.shared.localModel))
             await LocalTranscriber.shared.unload()
         case .parakeet:
-            try? FileManager.default.removeItem(at: AsrModels.defaultCacheDirectory(for: .v3))
+            try? FileManager.default.removeItem(at: parakeetDir)
             await ParakeetTranscriber.shared.unload()
         }
     }

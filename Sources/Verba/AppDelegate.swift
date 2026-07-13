@@ -89,11 +89,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         installMainMenu()   // menu-bar apps have no main menu → no ⌘C/⌘V in text fields without this
         VerbaServiceProvider.register()   // VER-19: "Transform with Verba…" in the Services menu (right-click on any selection)
         Quips.refillIfLow(tone: Settings.shared.quipTone)  // pre-warm the AI-generated loading lines
+        EngineManager.migrateParakeetOutOfFluidAudio()   // move Parakeet out of ~/…/FluidAudio (foreign container) BEFORE any access — stops the recurring "access data from other apps" prompt
         EngineManager.seedBundledModels()   // copy the app-bundled Parakeet model into cache (first run, offline-instant)
         EngineManager.migrateWhisperModelsOutOfDocuments()   // move any old ~/Documents/huggingface models (model + tokenizer) into Application Support BEFORE isInstalled checks — stops the recurring "access data from other apps" prompt
         EngineManager.seedWhisperTokenizer()   // pre-stage the bundled Whisper tokenizer so a load never hits the Hub (which re-creates ~/Documents/huggingface) and never hangs on "Activating…"
         EngineManager.purgeDocumentsHuggingface()   // remove any stray Documents/huggingface a prior build left behind
         EngineManager.purgeBrokenTurboModel()   // delete the broken 2.4GB full-precision large-v3_turbo (MIL load error); the quantized turbo replaces it
+        EngineManager.purgeFluidAudioDir()   // remove the orphaned ~/…/FluidAudio container so it never re-triggers the prompt
         preloadEngine()   // load the local transcription model now so the first dictation is instant
         ConfigSync.shared.start()   // observe modes/styles/snippets/transforms/dictionary/tasks for cloud sync
         // Re-check the real subscription on launch so Pro reflects Stripe, not just sign-in.
@@ -961,11 +963,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// The Fn event tap failed to start → permissions are missing. Tell the user and open
     /// the relevant System Settings panes (this is why "nothing happens when I press Fn").
-    /// True when macOS ACTUALLY reports both permissions the Fn tap needs as granted — Input
-    /// Monitoring (the HID tap) and Accessibility (the session-tap fallback). Checked before ever
-    /// showing the "grant permission" alert.
+    /// True when the permission our Fn tap actually depends on is granted. That is ACCESSIBILITY: the
+    /// active session-level tap (and our auto-paste CGEvents) are authorized by Accessibility. We do
+    /// NOT also require Input Monitoring's IOHIDCheckAccess here — it only adds the HID-level globe-key
+    /// consumption, and its result is stale on an ALREADY-RUNNING process right after the user grants
+    /// it (macOS only refreshes it on relaunch). Requiring it is exactly what kept nagging users who
+    /// had already granted everything. Accessibility, in contrast, updates live.
     private func fnTapPermissionsGranted() -> Bool {
-        IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted && Output.accessibilityTrusted
+        Output.accessibilityTrusted
     }
 
     /// Permissions are granted but the tap didn't come up — retry starting it a few times with a

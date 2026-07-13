@@ -31,7 +31,15 @@ fi
 # instantly on first launch, with no download and no API key. Seeded into the FluidAudio
 # cache at first run (see EngineManager.seedBundledModels). Requires the model present in
 # the local cache at build time (run the app once to fetch it, or it's skipped).
-PARAKEET_SRC="${PARAKEET_SRC:-$HOME/Library/Application Support/FluidAudio/Models/parakeet-tdt-0.6b-v3}"
+# Prefer Verba's own relocated cache (parakeet moved out of the foreign-looking FluidAudio/ container
+# to stop the "access data from other apps" prompt); fall back to the legacy FluidAudio path.
+if [ -z "${PARAKEET_SRC:-}" ]; then
+  if [ -d "$HOME/Library/Application Support/Verba/parakeet-tdt-0.6b-v3" ]; then
+    PARAKEET_SRC="$HOME/Library/Application Support/Verba/parakeet-tdt-0.6b-v3"
+  else
+    PARAKEET_SRC="$HOME/Library/Application Support/FluidAudio/Models/parakeet-tdt-0.6b-v3"
+  fi
+fi
 if [ -d "$PARAKEET_SRC" ]; then
   mkdir -p "$APP/Contents/Resources/Models"
   ditto "$PARAKEET_SRC" "$APP/Contents/Resources/Models/parakeet-tdt-0.6b-v3"

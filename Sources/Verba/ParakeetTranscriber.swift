@@ -56,12 +56,15 @@ actor ParakeetTranscriber: Transcriber {
     func ensureLoaded() async throws -> AsrManager {
         scheduleIdleUnload()                       // any use re-arms the idle clock
         if let loadTask { return try await loadTask.value }
-        let cached = AsrModels.modelsExist(at: AsrModels.defaultCacheDirectory(for: .v3))
+        // Verba-owned cache dir (NOT ~/…/FluidAudio, which triggers the "access data from other apps"
+        // prompt — see EngineManager.parakeetDir).
+        let dir = EngineManager.parakeetDir
+        let cached = AsrModels.modelsExist(at: dir)
         onStatus?(cached ? "Loading model…" : "Downloading model… (first run)")
         let task = Task<AsrManager, Error> {
             // Load straight from cache when present (no re-download); otherwise fetch + load.
-            let models = cached ? try await AsrModels.loadFromCache(version: .v3)
-                                : try await AsrModels.downloadAndLoad(version: .v3)
+            let models = cached ? try await AsrModels.load(from: dir, version: .v3)
+                                : try await AsrModels.downloadAndLoad(to: dir, version: .v3)
             let m = AsrManager(config: .default)
             try await m.loadModels(models)
             return m
