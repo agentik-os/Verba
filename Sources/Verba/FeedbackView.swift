@@ -518,7 +518,18 @@ struct FeedbackView: View {
                 }().trimmingCharacters(in: .whitespacesAndNewlines)
                 await MainActor.run {
                     improving = false
-                    guard !improved.isEmpty else { return }
+                    guard !improved.isEmpty else {
+                        // The backend returned nothing usable. Don't dead-end silently (button just
+                        // reverts, nothing happens): if the user was sending, submit their ORIGINAL
+                        // draft so the click still does something; otherwise surface a retry hint.
+                        if thenConfirm, !original.isEmpty {
+                            draft = original
+                            submit()
+                        } else {
+                            error = L("Couldn’t improve that — try again, or send it as-is.")
+                        }
+                        return
+                    }
                     // Stash the original BEFORE swapping in the rewrite so the user can
                     // revert. Set the trackers first so the draft-onChange (which fires
                     // on the next line) sees a matching `lastImproved` and keeps them.

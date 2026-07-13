@@ -61,6 +61,18 @@ else {
 print("✓ Appcast EdDSA signature verifies against the shipped SUPublicEDKey")
 SWIFT
 
+# Optional: mark THIS version's appcast item as a critical update. Sparkle then surfaces it more
+# insistently (skips the phased-rollout wait, harder to defer) so a reliability fix reaches everyone
+# fast. Opt-in per release via CRITICAL=1 so ordinary releases stay non-critical. Inserted AFTER the
+# signature gate and BEFORE upload, into this version's <item> only (before its enclosure) — the
+# enclosure line the gate verifies is untouched.
+if [ "${CRITICAL:-0}" = "1" ]; then
+  echo "▸ Marking v$VERSION as a CRITICAL update in the appcast…"
+  perl -0pi -e "s{(\n\s*)(<enclosure[^>]*Verba-\Q$VERSION\E\.dmg)}{\$1<sparkle:criticalUpdate></sparkle:criticalUpdate>\$1\$2}" dist/appcast.xml
+  grep -q "sparkle:criticalUpdate" dist/appcast.xml \
+    || { echo "❌ CRITICAL requested but the <sparkle:criticalUpdate/> tag was not inserted (appcast layout changed?)" >&2; exit 1; }
+fi
+
 echo "▸ Publishing GitHub release v$VERSION on $REPO…"
 # Upload: versioned DMG (referenced by the appcast), stable-named Verba.dmg
 # (website latest-link), the appcast, and any Sparkle deltas this run produced.

@@ -88,6 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         VerbaServiceProvider.register()   // VER-19: "Transform with Verba…" in the Services menu (right-click on any selection)
         Quips.refillIfLow(tone: Settings.shared.quipTone)  // pre-warm the AI-generated loading lines
         EngineManager.seedBundledModels()   // copy the app-bundled Parakeet model into cache (first run, offline-instant)
+        EngineManager.migrateWhisperModelsOutOfDocuments()   // move any old ~/Documents/huggingface models into Application Support BEFORE isInstalled checks — stops the recurring "access data from other apps" prompt
         preloadEngine()   // load the local transcription model now so the first dictation is instant
         ConfigSync.shared.start()   // observe modes/styles/snippets/transforms/dictionary/tasks for cloud sync
         // Re-check the real subscription on launch so Pro reflects Stripe, not just sign-in.

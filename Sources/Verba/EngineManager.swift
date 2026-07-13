@@ -1,5 +1,6 @@
 import Foundation
 import FluidAudio
+import Network
 import WhisperKit
 
 /// Install / detect / uninstall lifecycle for the on-device engines (Whisper,
@@ -14,12 +15,54 @@ enum EngineManager {
         }
     }
 
-    private static var whisperBase: URL {
-        FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Documents/huggingface/models/argmaxinc/whisperkit-coreml")
+    /// Verba-owned model root: ~/Library/Application Support/Verba. WhisperKit lays models out UNDER
+    /// this as <base>/models/argmaxinc/whisperkit-coreml/openai_whisper-<model>. Kept OUT of
+    /// ~/Documents ON PURPOSE: that old location was in the iCloud Desktop&Documents sync scope AND
+    /// carried macOS app-data-isolation tags (com.apple.macl / com.apple.provenance) created by other
+    /// Hugging Face tools, so macOS re-prompted "Verba would like to access data from other apps" on
+    /// EVERY launch (preloadEngine enumerates it), and an iCloud-offloaded model read as corrupt.
+    /// Application Support is Verba's own container — no TCC prompt, never offloaded.
+    static var modelsDownloadBase: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Verba", isDirectory: true)
     }
-    private static func whisperFolder(_ model: String) -> URL {
+    private static var whisperBase: URL {
+        modelsDownloadBase.appendingPathComponent("models/argmaxinc/whisperkit-coreml")
+    }
+    /// Internal (not private): LocalTranscriber loads Whisper from this exact folder.
+    static func whisperFolder(_ model: String) -> URL {
         whisperBase.appendingPathComponent("openai_whisper-\(model)")
+    }
+
+    /// One-time migration: move Whisper models an earlier build stored in ~/Documents/huggingface
+    /// into Verba's Application Support root. The old path triggered the recurring "access data from
+    /// other apps" prompt (macl-tagged, iCloud-synced) on every launch. Best-effort: if the user
+    /// denies the one-time read, the move no-ops and Whisper simply re-downloads to the new base on
+    /// next use. MUST run before any isInstalled() check so a migrated model reads as installed.
+    static func migrateWhisperModelsOutOfDocuments() {
+        let fm = FileManager.default
+        let oldRoot = fm.homeDirectoryForCurrentUser.appendingPathComponent("Documents/huggingface")
+        let oldModels = oldRoot.appendingPathComponent("models/argmaxinc/whisperkit-coreml")
+        guard fm.fileExists(atPath: oldModels.path),
+              let entries = try? fm.contentsOfDirectory(at: oldModels, includingPropertiesForKeys: nil) else { return }
+        try? fm.createDirectory(at: whisperBase, withIntermediateDirectories: true)
+        for src in entries where src.hasDirectoryPath {
+            let dest = whisperBase.appendingPathComponent(src.lastPathComponent)
+            if fm.fileExists(atPath: dest.path) { continue }   // already migrated
+            try? fm.moveItem(at: src, to: dest)
+        }
+        // Drop the now-orphaned old tree so it's never enumerated again (kills the recurring prompt).
+        try? fm.removeItem(at: oldRoot)
+    }
+
+    /// On-disk model folder for a local engine (nil for OpenAI). Used by the self-heal to move a
+    /// corrupt model aside instead of deleting it outright.
+    private static func modelFolder(_ engine: TranscriptionEngine) -> URL? {
+        switch engine {
+        case .whisper:  return whisperFolder(Settings.shared.localModel)
+        case .parakeet: return AsrModels.defaultCacheDirectory(for: .v3)
+        case .openAI:   return nil
+        }
     }
 
     /// A Whisper model counts as installed ONLY if it's actually COMPLETE, not merely present. The old
@@ -55,13 +98,27 @@ enum EngineManager {
         }
     }
 
+    /// `loaded` and `lastInstallError` are written from genuinely concurrent, unsynchronized executors
+    /// (prewarm's detached load, Settings Activate's off-main load, preloadEngine's install/download,
+    /// and the transcriber actors' idle-unload). Route BOTH through one lock so concurrent ARC writes
+    /// to the String-bearing values can't tear or crash.
+    private static let stateLock = NSLock()
+
     /// Last install/load failure, surfaced in Settings so the user sees the real cause.
-    static var lastInstallError: String?
+    private nonisolated(unsafe) static var _lastInstallError: String?
+    static var lastInstallError: String? {
+        get { stateLock.lock(); defer { stateLock.unlock() }; return _lastInstallError }
+        set { stateLock.lock(); _lastInstallError = newValue; stateLock.unlock() }
+    }
 
     /// What's currently loaded into memory (warm + ready to transcribe). Set after a
     /// successful load, CLEARED by the engines' idle auto-unload; used to show a truthful
     /// "Active & ready" state in Settings.
-    nonisolated(unsafe) static var loaded: (engine: TranscriptionEngine, model: String)?
+    private nonisolated(unsafe) static var _loaded: (engine: TranscriptionEngine, model: String)?
+    static var loaded: (engine: TranscriptionEngine, model: String)? {
+        get { stateLock.lock(); defer { stateLock.unlock() }; return _loaded }
+        set { stateLock.lock(); _loaded = newValue; stateLock.unlock() }
+    }
 
     /// Warm the selected LOCAL engine in the background when a recording STARTS, so a lazily
     /// idle-unloaded model (see ParakeetTranscriber.idleUnloadAfter) is reloaded behind the
@@ -103,10 +160,12 @@ enum EngineManager {
         } catch {
             let msg = (error as NSError).localizedDescription
             NSLog("Verba: load \(engine.rawValue) failed: \(error)")
-            // The user tapped Activate to retry a model that failed to load. If it's corrupt on disk,
-            // reloading the same files fails forever — wipe + re-download so Activate actually recovers.
+            // The user tapped Activate to retry a model that failed to load. If it's genuinely corrupt
+            // on disk, reloading the same files fails forever — repair it. selfHealCorruptModel moves
+            // the bad copy ASIDE (never a bare delete) and restores it if the re-download fails, so a
+            // false-positive or an offline retry can never leave the user with no model.
             if engine.isLocal, isCorruptModelError(msg) {
-                return await install(engine, progress: { _ in }, allowCleanRetry: true)
+                return await selfHealCorruptModel(engine, progress: { _ in })
             }
             lastInstallError = msg
             return false
@@ -142,6 +201,7 @@ enum EngineManager {
             switch engine {
             case .whisper:
                 _ = try await WhisperKit.download(variant: Settings.shared.localModel,
+                    downloadBase: modelsDownloadBase,
                     progressCallback: { p in DispatchQueue.main.async { progress(p.fractionCompleted) } })
                 _ = try await LocalTranscriber.shared.ensureLoaded(model: Settings.shared.localModel)
             case .parakeet:
@@ -160,22 +220,73 @@ enum EngineManager {
             NSLog("Verba: install \(engine.rawValue) failed: \(error)")
             // SELF-HEAL a corrupt/incomplete on-disk model. A truncated download leaves broken files
             // ("Could not open …/weights/weight.bin", "Error parsing MIL model") that a plain retry
-            // reloads forever. Wipe them and re-download ONCE so "Activate to retry" actually recovers.
+            // reloads forever. Repair via selfHealCorruptModel (move-aside + restore-on-failure) so
+            // the recovery is non-destructive even if the re-download fails.
             if engine.isLocal, allowCleanRetry, isCorruptModelError(msg) {
-                NSLog("Verba: \(engine.rawValue) model looks corrupt — wiping and re-downloading once")
-                await uninstall(engine)
-                return await install(engine, progress: progress, allowCleanRetry: false)
+                NSLog("Verba: \(engine.rawValue) model looks corrupt — repairing (move-aside + re-download)")
+                return await selfHealCorruptModel(engine, progress: progress)
             }
             lastInstallError = msg
             return false
         }
     }
 
-    /// True for on-disk model corruption / truncation errors, where the only fix is delete + redownload.
+    /// True ONLY for a GENUINE on-disk corruption / truncation signature. Deliberately narrow: Core ML
+    /// load/compile NSErrors routinely embed the compiled ".../AudioEncoder.mlmodelc/weights/weight.bin"
+    /// path, so bare "mlmodelc" / "could not open" also matched TRANSIENT failures of a perfectly good
+    /// model (a busy or momentarily-unavailable file), which then got wiped. These substrings appear
+    /// only on real truncation/corruption, or "could not open"/"truncated" specifically about weight.bin.
     private static func isCorruptModelError(_ msg: String) -> Bool {
         let m = msg.lowercased()
-        return m.contains("could not open") || m.contains("parsing mil") || m.contains("weight.bin")
-            || m.contains("mlmodelc") || m.contains("corrupt") || m.contains("unexpected eof")
+        return m.contains("parsing mil") || m.contains("corrupt") || m.contains("unexpected eof")
+            || (m.contains("weight.bin") && (m.contains("could not open") || m.contains("truncat")))
+    }
+
+    /// Repair a model that failed to load with a genuine corruption error, WITHOUT ever risking the
+    /// user's working copy. Bail out offline (re-download impossible → keep what's on disk), move the
+    /// bad folder ASIDE (never a bare delete), re-download, and RESTORE the aside if that fails.
+    private static func selfHealCorruptModel(_ engine: TranscriptionEngine, progress: @escaping (Double) -> Void) async -> Bool {
+        guard engine.isLocal, let folder = modelFolder(engine) else { return false }
+        guard await networkLikelyReachable() else {
+            lastInstallError = "This model looks corrupt but you appear to be offline — reconnect, then tap Activate to re-download it."
+            return false
+        }
+        let fm = FileManager.default
+        let aside = folder.appendingPathExtension("corrupt-bak")
+        try? fm.removeItem(at: aside)
+        let moved = (try? fm.moveItem(at: folder, to: aside)) != nil
+        let ok = await install(engine, progress: progress, allowCleanRetry: false)
+        if ok {
+            try? fm.removeItem(at: aside)                 // repaired → drop the bad copy
+        } else if moved {
+            try? fm.removeItem(at: folder)                // clear any partial re-download
+            try? fm.moveItem(at: aside, to: folder)       // restore the prior model (better than none)
+        }
+        return ok
+    }
+
+    /// One-shot network reachability check (2s cap). Gates the destructive-repair path so a corrupt
+    /// model is never moved aside when a re-download couldn't possibly succeed. Assumes reachable on
+    /// timeout so a slow-but-online link still repairs.
+    private static func networkLikelyReachable() async -> Bool {
+        /// Ensures the continuation resumes exactly once (first of the path callback / timeout wins).
+        final class Gate: @unchecked Sendable {
+            private let lock = NSLock()
+            private var claimed = false
+            func claim() -> Bool { lock.lock(); defer { lock.unlock() }; if claimed { return false }; claimed = true; return true }
+        }
+        return await withCheckedContinuation { (cont: CheckedContinuation<Bool, Never>) in
+            let monitor = NWPathMonitor()
+            let queue = DispatchQueue(label: "verba.reachability")
+            let gate = Gate()
+            monitor.pathUpdateHandler = { path in
+                if gate.claim() { monitor.cancel(); cont.resume(returning: path.status == .satisfied) }
+            }
+            monitor.start(queue: queue)
+            queue.asyncAfter(deadline: .now() + 2) {
+                if gate.claim() { monitor.cancel(); cont.resume(returning: true) }
+            }
+        }
     }
 
     /// Download `engine`'s model to disk ONLY — no RAM load, doesn't touch `loaded`. Used to
@@ -189,6 +300,7 @@ enum EngineManager {
             switch engine {
             case .whisper:
                 _ = try await WhisperKit.download(variant: Settings.shared.localModel,
+                    downloadBase: modelsDownloadBase,
                     progressCallback: { p in DispatchQueue.main.async { progress(p.fractionCompleted) } })
             case .parakeet:
                 _ = try await AsrModels.download(version: .v3,

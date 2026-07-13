@@ -2,77 +2,151 @@ import AppKit
 
 /// Converts Claude's Markdown output into styled rich text, so pasting into apps
 /// that support formatting (Notes, Mail, Slack, Pages…) shows real bold/headings/
-/// lists instead of literal **stars** and #. Goes through HTML → NSAttributedString.
+/// lists instead of literal **stars** and #.
+///
+/// Built with NATIVE NSAttributedString runs — deliberately NOT `NSAttributedString(html:)`.
+/// That API silently spins up a full WebKit instance on the main thread; on macOS Sequoia the
+/// WebKit init inspects the general pasteboard, so if the clipboard holds a file reference from
+/// ANOTHER app (e.g. a CleanShot screenshot) macOS fired the "Verba would like to access data
+/// from other apps" prompt on every rich paste. It was also needlessly slow. This native builder
+/// produces the same visual result with zero WebKit and zero pasteboard access.
 enum Markdown {
     static func attributed(_ md: String) -> NSAttributedString {
-        let style = """
-        <style>
-          body { font-family: -apple-system, Helvetica, sans-serif; font-size: 14px; line-height: 1.45; }
-          h1 { font-size: 22px; margin: 0.4em 0; } h2 { font-size: 18px; margin: 0.4em 0; }
-          h3 { font-size: 16px; margin: 0.3em 0; } p { margin: 0.3em 0; }
-          ul, ol { margin: 0.2em 0 0.2em 1.2em; } li { margin: 0.1em 0; }
-          code { font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
-          pre { font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
-        </style>
-        """
-        let html = style + toHTML(md)
-        if let data = html.data(using: .utf8),
-           let attr = try? NSAttributedString(
-               data: data,
-               options: [.documentType: NSAttributedString.DocumentType.html,
-                         .characterEncoding: String.Encoding.utf8.rawValue],
-               documentAttributes: nil) {
-            return attr
-        }
-        return NSAttributedString(string: md)
-    }
-
-    // MARK: - Markdown → HTML (covers what the reprompt produces)
-
-    static func toHTML(_ md: String) -> String {
-        var out: [String] = []
-        var inUL = false, inOL = false, inCode = false
+        let out = NSMutableAttributedString()
+        var inCode = false
         var codeBuf: [String] = []
+        var pendingNewline = false
 
-        func closeLists() {
-            if inUL { out.append("</ul>"); inUL = false }
-            if inOL { out.append("</ol>"); inOL = false }
+        func appendBlock(_ block: NSAttributedString) {
+            if pendingNewline { out.append(NSAttributedString(string: "\n")) }
+            out.append(block)
+            pendingNewline = true
+        }
+        func flushCode() {
+            guard !codeBuf.isEmpty else { return }
+            appendBlock(codeParagraph(codeBuf.joined(separator: "\n")))
+            codeBuf = []
         }
 
         for raw in md.components(separatedBy: "\n") {
-            // fenced code blocks ```
+            // Fenced code blocks ``` … ```
             if raw.trimmingCharacters(in: .whitespaces).hasPrefix("```") {
-                if inCode {
-                    out.append("<pre><code>" + codeBuf.map(escape).joined(separator: "\n") + "</code></pre>")
-                    codeBuf = []; inCode = false
-                } else {
-                    closeLists(); inCode = true
-                }
+                if inCode { flushCode(); inCode = false }
+                else { inCode = true }
                 continue
             }
             if inCode { codeBuf.append(raw); continue }
 
             let t = raw.trimmingCharacters(in: .whitespaces)
-            if t.isEmpty { closeLists(); continue }
+            if t.isEmpty { continue }
 
             if let h = heading(t) {
-                closeLists(); out.append("<h\(h.0)>\(inline(h.1))</h\(h.0)>"); continue
+                appendBlock(styledLine(h.1, base: headingFont(h.0), paragraph: headingParagraph()))
+                continue
             }
             if t.hasPrefix("- ") || t.hasPrefix("* ") || t.hasPrefix("+ ") {
-                if !inUL { closeLists(); out.append("<ul>"); inUL = true }
-                out.append("<li>\(inline(String(t.dropFirst(2))))</li>"); continue
+                appendBlock(styledLine(String(t.dropFirst(2)), base: bodyFont,
+                                       paragraph: listParagraph(), bullet: "•\t"))
+                continue
             }
             if let item = numbered(t) {
-                if !inOL { closeLists(); out.append("<ol>"); inOL = true }
-                out.append("<li>\(inline(item))</li>"); continue
+                appendBlock(styledLine(item, base: bodyFont,
+                                       paragraph: listParagraph(), bullet: "\(numberPrefix(t)).\t"))
+                continue
             }
-            closeLists()
-            out.append("<p>\(inline(t))</p>")
+            appendBlock(styledLine(t, base: bodyFont, paragraph: bodyParagraph()))
         }
-        if inCode { out.append("<pre><code>" + codeBuf.map(escape).joined(separator: "\n") + "</code></pre>") }
-        closeLists()
-        return out.joined()
+        if inCode { flushCode() }
+        return out
     }
+
+    // MARK: - Fonts & paragraph styles
+
+    private static let bodyFont = NSFont.systemFont(ofSize: 14)
+    private static let codeFont = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+
+    private static func headingFont(_ level: Int) -> NSFont {
+        let size: CGFloat = [1: 22, 2: 18, 3: 16, 4: 15][level] ?? 14
+        return NSFont.boldSystemFont(ofSize: size)
+    }
+    private static func bodyParagraph() -> NSParagraphStyle {
+        let p = NSMutableParagraphStyle(); p.paragraphSpacing = 6; return p
+    }
+    private static func headingParagraph() -> NSParagraphStyle {
+        let p = NSMutableParagraphStyle(); p.paragraphSpacingBefore = 6; p.paragraphSpacing = 4; return p
+    }
+    private static func listParagraph() -> NSParagraphStyle {
+        let p = NSMutableParagraphStyle()
+        p.headIndent = 18; p.paragraphSpacing = 2
+        p.tabStops = [NSTextTab(textAlignment: .left, location: 18)]
+        return p
+    }
+    private static func codeParagraph(_ code: String) -> NSAttributedString {
+        let p = NSMutableParagraphStyle(); p.headIndent = 12; p.firstLineHeadIndent = 12; p.paragraphSpacing = 6
+        return NSAttributedString(string: code, attributes: [.font: codeFont, .paragraphStyle: p])
+    }
+
+    // MARK: - Block → styled line (with inline formatting applied)
+
+    private static func styledLine(_ text: String, base: NSFont, paragraph: NSParagraphStyle,
+                                   bullet: String? = nil) -> NSAttributedString {
+        let line = NSMutableAttributedString(string: bullet ?? "",
+                                             attributes: [.font: base, .paragraphStyle: paragraph])
+        let body = NSMutableAttributedString(string: text, attributes: [.font: base, .paragraphStyle: paragraph])
+        applyInline(body)
+        line.append(body)
+        return line
+    }
+
+    // MARK: - Inline formatting (bold / italic / code / links), WebKit-free
+
+    /// Apply inline Markdown by rewriting delimiter spans into styled runs. Each pass scans the
+    /// CURRENT string and processes matches LAST-to-FIRST so earlier locations stay valid while the
+    /// string shrinks. Order: code first (its content is literal), then bold, italic, links.
+    private static func applyInline(_ a: NSMutableAttributedString) {
+        pass(a, #"`([^`]+)`"#) { r in
+            let inner = a.attributedSubstring(from: r.range(at: 1))
+            a.replaceCharacters(in: r.range(at: 0), with: inner)
+            a.addAttribute(.font, value: codeFont,
+                           range: NSRange(location: r.range(at: 0).location, length: inner.length))
+        }
+        for pattern in [#"\*\*([^*]+)\*\*"#, #"__([^_]+)__"#] {
+            pass(a, pattern) { r in reStyle(a, r, trait: .boldFontMask) }
+        }
+        // Single-* italics, and single-_ italics only at word boundaries (leave snake_case alone).
+        for pattern in [#"(?<!\*)\*([^*\n]+)\*(?!\*)"#, #"(?<![\w_])_([^_\n]+)_(?![\w_])"#] {
+            pass(a, pattern) { r in reStyle(a, r, trait: .italicFontMask) }
+        }
+        pass(a, #"\[([^\]]+)\]\(([^)]+)\)"#) { r in
+            let urlStr = (a.string as NSString).substring(with: r.range(at: 2))
+            let inner = a.attributedSubstring(from: r.range(at: 1))
+            a.replaceCharacters(in: r.range(at: 0), with: inner)
+            let newRange = NSRange(location: r.range(at: 0).location, length: inner.length)
+            if let url = URL(string: urlStr) { a.addAttribute(.link, value: url, range: newRange) }
+            a.addAttribute(.foregroundColor, value: NSColor.linkColor, range: newRange)
+        }
+    }
+
+    /// Replace a `<delim>inner<delim>` match (group 1 = inner) with the inner run carrying an added
+    /// font trait, preserving any traits an earlier pass already applied inside it.
+    private static func reStyle(_ a: NSMutableAttributedString, _ r: NSTextCheckingResult, trait: NSFontTraitMask) {
+        let inner = a.attributedSubstring(from: r.range(at: 1))
+        a.replaceCharacters(in: r.range(at: 0), with: inner)
+        let range = NSRange(location: r.range(at: 0).location, length: inner.length)
+        a.enumerateAttribute(.font, in: range, options: []) { value, sub, _ in
+            let current = (value as? NSFont) ?? bodyFont
+            a.addAttribute(.font, value: NSFontManager.shared.convert(current, toHaveTrait: trait), range: sub)
+        }
+    }
+
+    private static func pass(_ a: NSMutableAttributedString, _ pattern: String,
+                             _ body: (NSTextCheckingResult) -> Void) {
+        guard let re = try? NSRegularExpression(pattern: pattern) else { return }
+        let full = NSRange(location: 0, length: (a.string as NSString).length)
+        for m in re.matches(in: a.string, range: full).reversed() { body(m) }
+    }
+
+    // MARK: - Block detection helpers
 
     private static func heading(_ s: String) -> (Int, String)? {
         var level = 0
@@ -87,29 +161,8 @@ enum Markdown {
         return String(s[s.index(dot, offsetBy: 2)...])
     }
 
-    private static func escape(_ s: String) -> String {
-        s.replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
-    }
-
-    /// Inline: escape, then code → bold → italic → links.
-    private static func inline(_ s: String) -> String {
-        var t = escape(s)
-        t = replace(t, #"`([^`]+)`"#, "<code>$1</code>")
-        t = replace(t, #"\*\*([^*]+)\*\*"#, "<strong>$1</strong>")
-        t = replace(t, #"__([^_]+)__"#, "<strong>$1</strong>")
-        t = replace(t, #"(?<!\*)\*([^*\n]+)\*(?!\*)"#, "<em>$1</em>")
-        // Single-underscore italics (_word_), but only at word boundaries so snake_case
-        // identifiers like file_name_here are left untouched.
-        t = replace(t, #"(?<![\w_])_([^_\n]+)_(?![\w_])"#, "<em>$1</em>")
-        t = replace(t, #"\[([^\]]+)\]\(([^)]+)\)"#, "<a href=\"$2\">$1</a>")
-        return t
-    }
-
-    private static func replace(_ s: String, _ pattern: String, _ template: String) -> String {
-        guard let re = try? NSRegularExpression(pattern: pattern) else { return s }
-        let range = NSRange(s.startIndex..., in: s)
-        return re.stringByReplacingMatches(in: s, range: range, withTemplate: template)
+    /// The leading number of an ordered-list item ("3. foo" → "3"), for the rendered bullet.
+    private static func numberPrefix(_ s: String) -> String {
+        String(s.prefix { $0.isNumber })
     }
 }

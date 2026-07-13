@@ -16,8 +16,31 @@ type Day = { date: string; tag?: string; window?: string; summary: string; entri
 
 const DAYS: Day[] = [
   {
-    date: "July 4, 2026",
+    date: "July 13, 2026",
     tag: "Today",
+    summary: "No more “access data from other apps” pop-up, and your local model is safer than ever.",
+    entries: [
+      {
+        version: "0.9.85",
+        title: "The “access data from other apps” pop-up is gone",
+        items: [
+          "Fixed for good: the macOS “Verba would like to access data from other apps” pop-up that kept appearing (often right after you took a screenshot). It came from how Verba rendered formatted text for pasting — now done natively, so Verba never touches your clipboard or other apps’ data to format text. No more prompt, and rich paste is faster too.",
+        ],
+      },
+      {
+        version: "0.9.84",
+        title: "Your local model is safer, and setup can’t get stuck",
+        items: [
+          "On-device models now live in Verba’s own space instead of your Documents folder, so they’re never touched by iCloud and load reliably.",
+          "If a local model ever fails to load, Verba repairs it without deleting your copy, and never wipes a working model when you’re offline.",
+          "Setup can no longer get stuck: you can always finish onboarding even if a background download is still going or hit a snag.",
+          "Plus smaller reliability fixes to actions and feedback.",
+        ],
+      },
+    ],
+  },
+  {
+    date: "July 4, 2026",
     summary: "A cleaner Features page and setup, clearer engine choices, and JARVIS reliable on any engine.",
     entries: [
       {

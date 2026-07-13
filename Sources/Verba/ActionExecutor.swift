@@ -334,6 +334,7 @@ struct ActionExecutor {
         case appNotFound(String)
         case scriptFailed(String)
         case noMatchingTask(String)
+        case disabled(ActionKind)
 
         var errorDescription: String? {
             switch self {
@@ -355,6 +356,8 @@ struct ActionExecutor {
                 return "The action couldn't be completed: \(reason)"
             case let .noMatchingTask(match):
                 return "No open task matching “\(match)”."
+            case let .disabled(kind):
+                return "“\(kind.label)” actions are turned off in Settings ▸ Actions."
             }
         }
     }
@@ -362,6 +365,13 @@ struct ActionExecutor {
     /// Dispatch to the right executor for the action kind.
     @discardableResult
     func perform(_ action: VerbaAction) async throws -> String {
+        // Enforce the enable/disable allow-list on EVERY execution path. The non-agentic reprompt
+        // gate (Pipeline) only covers the actions IT parses; the JARVIS / action-feed agentic path
+        // (executeAgentAction → perform) reaches here directly and never consulted it, so a disabled
+        // category could still run once confirmed. This funnel makes the allow-list actually binding.
+        guard Settings.shared.isActionEnabled(action.kind) else {
+            throw ActionError.disabled(action.kind)
+        }
         switch action {
         case let .calendarEvent(title, start, end, notes):
             return try await createEvent(title: title, start: start, end: end, notes: notes)

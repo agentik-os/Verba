@@ -87,11 +87,10 @@ actor LocalTranscriber: Transcriber {
 
     func unload() { loadTask?.cancel(); loadTask = nil; loadTaskModel = nil }
 
-    /// Where WhisperKit stores models (matches EngineManager's install path).
+    /// Where WhisperKit stores models — the single source of truth is EngineManager (Application
+    /// Support, NOT ~/Documents; see EngineManager.modelsDownloadBase for why).
     private static func folder(_ model: String) -> String {
-        FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Documents/huggingface/models/argmaxinc/whisperkit-coreml/openai_whisper-\(model)")
-            .path
+        EngineManager.whisperFolder(model).path
     }
 
     func ensureLoaded(model: String) async throws -> WhisperKit {
@@ -105,7 +104,7 @@ actor LocalTranscriber: Transcriber {
         let task = Task<WhisperKit, Error> {
             let config = installed
                 ? WhisperKitConfig(model: model, modelFolder: path, download: false)
-                : WhisperKitConfig(model: model)
+                : WhisperKitConfig(model: model, downloadBase: EngineManager.modelsDownloadBase)
             return try await WhisperKit(config)
         }
         loadTask = task

@@ -66,8 +66,10 @@ struct OnboardingView: View {
         }
         .onChange(of: step) { newStep in
             // Reset the coach flags on the first-dictation screen so a Back/retry reflects the
-            // CURRENT attempt rather than staying green from an earlier visit.
-            if newStep == 2 { coach.singleFn = false; coach.holdFn = false }
+            // CURRENT attempt rather than staying green from an earlier visit. That screen is step 3
+            // (0 account · 1 permissions · 2 chooseEngine · 3 firstDictation) — resetting on 2 left
+            // any stray Fn tap made on the engine screen showing pre-checked on first dictation.
+            if newStep == 3 { coach.singleFn = false; coach.holdFn = false }
         }
     }
 
@@ -119,19 +121,21 @@ struct OnboardingView: View {
                     .disabled(!canAdvance)
             } else {
                 VStack(spacing: 8) {
-                    // Gate the finish on the local model being installed, so the user's first real use
-                    // works instead of hitting a not-ready error. Only when Fully local is the chosen
-                    // backend; other backends (Claude plan / own key) have nothing to download.
+                    // Permissions are the ONLY hard gate to finish. We show the local-model download
+                    // progress on the button, but NEVER block finishing on it: if the download stalls
+                    // or fails (phase .failed), the old gate left the user permanently stuck on this
+                    // screen with the "retry in Settings" advice unreachable. The local model self-heals
+                    // on first use anyway (LocalLLM.chat installs/repairs on demand), so letting the user
+                    // through is always safe — the download just continues in the background.
                     let permsOK = micGranted && axGranted && imGranted
-                    let localPending = settings.repromptBackend == .localLLM && !localSetup.isReady
-                    let ready = permsOK && !localPending
+                    let localPending = settings.repromptBackend == .localLLM && localSetup.isSettingUp
                     Button(action: finish) {
                         Text(localPending ? L("Setting up your local AI… \(localSetup.percent)%") : L("Start using Verba"))
                             .frame(minWidth: 140)
                     }
                         .buttonStyle(DarkButton())
-                        .opacity(ready ? 1 : 0.35)
-                        .disabled(!ready)
+                        .opacity(permsOK ? 1 : 0.35)
+                        .disabled(!permsOK)
                     if !permsOK {
                         let missing = [micGranted ? nil : L("Microphone"),
                                        axGranted ? nil : L("Accessibility"),
