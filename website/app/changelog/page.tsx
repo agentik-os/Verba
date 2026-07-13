@@ -18,8 +18,15 @@ const DAYS: Day[] = [
   {
     date: "July 13, 2026",
     tag: "Today",
-    summary: "Pin your language to stop mixed French/English transcripts, plus reliability fixes.",
+    summary: "No more false “grant Fn permission” prompts, pin your language, and more.",
     entries: [
+      {
+        version: "0.9.91",
+        title: "No more false “Verba needs Fn permission” prompts",
+        items: [
+          "Fixed the annoying “Verba needs permission to use the Fn key” alert that kept appearing even though you’d already granted it (it could show up after an update). Verba now checks whether the permission is actually granted before ever asking, and silently re-arms the Fn key instead of nagging.",
+        ],
+      },
       {
         version: "0.9.90",
         title: "Stop mixed-language transcripts — pin your language",

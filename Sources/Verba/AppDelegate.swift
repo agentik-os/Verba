@@ -961,9 +961,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// The Fn event tap failed to start → permissions are missing. Tell the user and open
     /// the relevant System Settings panes (this is why "nothing happens when I press Fn").
+    /// True when macOS ACTUALLY reports both permissions the Fn tap needs as granted — Input
+    /// Monitoring (the HID tap) and Accessibility (the session-tap fallback). Checked before ever
+    /// showing the "grant permission" alert.
+    private func fnTapPermissionsGranted() -> Bool {
+        IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted && Output.accessibilityTrusted
+    }
+
+    /// Permissions are granted but the tap didn't come up — retry starting it a few times with a
+    /// short backoff (a fresh event tap after an app update / a transient launch-time failure). No
+    /// alert: if it recovers we re-arm the nag; if it's still dead after the retries AND the OS now
+    /// says a permission is actually missing, the next trigger surfaces the real prompt.
+    private func retryFnTapSilently(attemptsLeft: Int) {
+        guard attemptsLeft > 0, Settings.shared.useFnAsPrimary, !FnTap.shared.active else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+            guard let self, !FnTap.shared.active else { return }
+            if FnTap.shared.start() { self.tapPermissionNagged = false; return }
+            self.retryFnTapSilently(attemptsLeft: attemptsLeft - 1)
+        }
+    }
+
     private func promptTapPermissions() {
         // Never nag during onboarding (the permissions slide handles it), and only once per session.
         if tapPermissionNagged || !Settings.shared.onboarded || onboardingWC?.window?.isVisible == true { return }
+        // "It says I need permission but it's already authorized": if macOS reports BOTH permissions
+        // granted, the tap failing to start is NOT a permission problem (a transient tapCreate failure
+        // right at launch, or a grant that needs a fresh tap after an app update). Showing a "grant
+        // permission" alert here is misleading and infuriating. Instead, retry the tap a few times
+        // silently — that recovers it without a single false prompt.
+        if fnTapPermissionsGranted() {
+            retryFnTapSilently(attemptsLeft: 6)
+            return
+        }
         tapPermissionNagged = true
         showGlassAlert(
             icon: "keyboard", tint: .orange,
