@@ -109,24 +109,25 @@ struct SettingsView: View {
 
     private let claudeModels = ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-sonnet-5", "claude-opus-4-8"]
     // Whisper offers two on-device variants, with an explicit speed/accuracy trade-off so the user
-    // chooses knowingly (VER): large-v3 = highest accuracy but slower; large-v3_turbo = a distilled
-    // decoder that's several times faster with a small accuracy cost. Both share the same tokenizer.
-    private let localModels = ["large-v3", "large-v3_turbo"]
+    // chooses knowingly (VER): large-v3 = highest accuracy but slower; Turbo = OpenAI's distilled
+    // large-v3-turbo, quantized and device-optimised (WhisperKitModel.turbo), several times faster
+    // with a small accuracy cost. Both share the same tokenizer. NB: the exact quantized variant
+    // matters — the bare "large-v3_turbo" is a 2.4GB full-precision build that fails to load on many
+    // Apple-silicon chips ("Error in reading the MIL network"); this dated+quantized one is the
+    // device-supported turbo across the WhisperKit support matrix.
+    static let whisperTurbo = "large-v3-v20240930_turbo_632MB"
+    private let localModels = ["large-v3", SettingsView.whisperTurbo]
 
     static func whisperModelTitle(_ id: String) -> String {
-        switch id {
-        case "large-v3_turbo": return L("Turbo")
-        case "large-v3":       return L("Large v3")
-        default:               return id
-        }
+        if id.contains("turbo") { return L("Turbo") }
+        if id == "large-v3"     { return L("Large v3") }
+        return id
     }
     static func whisperModelBlurb(_ id: String) -> String {
-        switch id {
-        case "large-v3_turbo":
-            return L("Turbo — much faster, uses less memory (≈ 1 GB). Nearly as accurate as Large v3; great for everyday dictation.")
-        default:
-            return L("Large v3 — the most accurate, all languages (≈ 1.6 GB). A bit slower to transcribe than Turbo.")
+        if id.contains("turbo") {
+            return L("Turbo — much faster, uses less memory (≈ 0.6 GB). Nearly as accurate as Large v3; great for everyday dictation.")
         }
+        return L("Large v3 — the most accurate, all languages (≈ 1.6 GB). A bit slower to transcribe than Turbo.")
     }
 
     var body: some View {

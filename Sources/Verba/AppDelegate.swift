@@ -91,6 +91,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         EngineManager.migrateWhisperModelsOutOfDocuments()   // move any old ~/Documents/huggingface models (model + tokenizer) into Application Support BEFORE isInstalled checks — stops the recurring "access data from other apps" prompt
         EngineManager.seedWhisperTokenizer()   // pre-stage the bundled Whisper tokenizer so a load never hits the Hub (which re-creates ~/Documents/huggingface) and never hangs on "Activating…"
         EngineManager.purgeDocumentsHuggingface()   // remove any stray Documents/huggingface a prior build left behind
+        EngineManager.purgeBrokenTurboModel()   // delete the broken 2.4GB full-precision large-v3_turbo (MIL load error); the quantized turbo replaces it
         preloadEngine()   // load the local transcription model now so the first dictation is instant
         ConfigSync.shared.start()   // observe modes/styles/snippets/transforms/dictionary/tasks for cloud sync
         // Re-check the real subscription on launch so Pro reflects Stripe, not just sign-in.

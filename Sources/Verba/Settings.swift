@@ -814,10 +814,18 @@ final class Settings: ObservableObject {
         // Default to a LOCAL engine so a fresh user can dictate with no API key at all
         // (Parakeet: on-device, multilingual, auto-downloads on first run).
         engine = TranscriptionEngine(rawValue: d.string(forKey: "engine") ?? "") ?? .parakeet
-        // Whisper now ships large-v3 ONLY (highest accuracy) — fold any retired variant
-        // (base / small / large-v3 turbo) forward to large-v3 so the picker + install match.
+        // Whisper ships large-v3 (accuracy) + a device-optimised Turbo (speed). Keep those two as-is,
+        // migrate the broken bare "large-v3_turbo" (2.4GB full-precision, fails to load on many chips)
+        // to the quantized turbo, and fold any other retired variant (base/small/…) to large-v3 so the
+        // picker + install always match a real, loadable model.
+        let whisperTurbo = "large-v3-v20240930_turbo_632MB"
         let savedWhisper = d.string(forKey: "localModel") ?? "large-v3"
-        let migratedWhisper = (savedWhisper == "large-v3") ? savedWhisper : "large-v3"
+        let migratedWhisper: String
+        switch savedWhisper {
+        case "large-v3", whisperTurbo: migratedWhisper = savedWhisper
+        case "large-v3_turbo":         migratedWhisper = whisperTurbo   // repoint off the broken full-precision build
+        default:                       migratedWhisper = "large-v3"
+        }
         localModel = migratedWhisper
         d.set(migratedWhisper, forKey: "localModel")
         claudeModel = d.string(forKey: "claudeModel") ?? "claude-sonnet-4-6"

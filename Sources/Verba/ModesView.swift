@@ -182,7 +182,16 @@ struct ModesView: View {
                 HStack(spacing: 5) {
                     Text(p.name).font(.system(size: 13, weight: .medium)).lineLimit(1)
                     if isActive {
-                        Image(systemName: "checkmark.circle.fill").font(.system(size: 11)).foregroundStyle(.secondary)
+                        Text(L("Current")).font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.green)
+                            .padding(.horizontal, 5).padding(.vertical, 1)
+                            .background(Capsule().fill(Color.green.opacity(0.15)))
+                    }
+                    if !p.raw && !settings.isModeEnabled(p) {
+                        Text(L("Hidden")).font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 5).padding(.vertical, 1)
+                            .background(Capsule().fill(Color.secondary.opacity(0.12)))
                     }
                 }
                 HStack(spacing: 5) {
@@ -197,19 +206,21 @@ struct ModesView: View {
                 }
             }
             Spacer(minLength: 0)
-            // Per-mode on/off: a disabled mode is hidden from the picker/menu/cycle but not deleted.
+            // Per-mode show/hide: a hidden mode is kept but removed from the picker/menu/cycle. An
+            // eye / eye-slash reads as "shown vs hidden" far more clearly than the old bare circle.
             // Raw is the always-on fallback, so it has no toggle.
             if !p.raw {
                 let on = settings.isModeEnabled(p)
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { settings.setModeEnabled(p, !on) }
                 } label: {
-                    Image(systemName: on ? "circle.inset.filled" : "circle")
-                        .font(.system(size: 13))
-                        .foregroundStyle(on ? AnyShapeStyle(.green) : AnyShapeStyle(.tertiary))
+                    Image(systemName: on ? "eye" : "eye.slash")
+                        .font(.system(size: 12))
+                        .foregroundStyle(on ? AnyShapeStyle(.secondary) : AnyShapeStyle(.tertiary))
                 }
                 .buttonStyle(.plain)
-                .help(on ? L("Enabled — click to turn this mode off") : L("Disabled — click to turn this mode on"))
+                .help(on ? L("Shown in the mode picker — click to hide it (without deleting)")
+                          : L("Hidden from the mode picker — click to show it again"))
             }
         }
         .opacity(p.raw || settings.isModeEnabled(p) ? 1 : 0.45)
@@ -401,19 +412,44 @@ struct ModesView: View {
 
         return ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Name + actions (delete right next to the name; any mode is deletable).
+                // Name + actions. "Current" = the mode dictation uses right now (until you switch with
+                // the mode picker); "Use this mode" makes it current. Separate from show/hide + delete.
                 HStack(spacing: 10) {
-                    TextField(L("Name"), text: nameB).cleanField().frame(maxWidth: 240)
-                    TagChip(icon: isActive ? "checkmark.circle.fill" : "circle",
-                            label: isActive ? L("Active") : L("Make active"),
-                            selected: isActive) { if !promptBlank { settings.activeProfileID = id } }
-                        .disabled(isActive || promptBlank)
-                        .help(promptBlank ? L("Add a system prompt before making this mode active — an empty prompt gives your AI no instructions.") : "")
+                    TextField(L("Name"), text: nameB).cleanField().frame(maxWidth: 220)
+                    if isActive {
+                        TagChip(icon: "checkmark.circle.fill", label: L("Current mode"), selected: true) { }
+                            .disabled(true)
+                            .help(L("This is the mode dictation uses right now. Switch anytime from the mode picker."))
+                    } else {
+                        TagChip(icon: "arrow.up.circle", label: L("Use this mode"), selected: false) {
+                            if !promptBlank { settings.activeProfileID = id }
+                        }
+                        .disabled(promptBlank)
+                        .help(promptBlank ? L("Add a system prompt first — an empty prompt gives your AI no instructions.")
+                                          : L("Make this the mode dictation uses right now."))
+                    }
                     Spacer()
                     Button(role: .destructive) { confirmOrDelete(id) } label: {
                         Image(systemName: "trash")
                     }
-                    .buttonStyle(.borderless).foregroundStyle(.red).help(L("Delete this mode"))
+                    .buttonStyle(.borderless).foregroundStyle(.red).help(L("Delete this mode permanently"))
+                }
+
+                // Show/hide in the picker — the non-destructive alternative to Delete. A hidden mode
+                // stays saved and fully editable but disappears from the Fn+Tab picker until re-enabled.
+                if !isRaw {
+                    let shown = settings.isModeEnabled(p ?? Profile.prompt)
+                    Toggle(isOn: Binding(
+                        get: { shown },
+                        set: { v in if let pp = p { withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { settings.setModeEnabled(pp, v) } } }
+                    )) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L("Show in the mode picker")).font(.system(size: 13, weight: .medium))
+                            Text(L("Turn off to hide this mode from the picker and Fn-Tab cycling — without deleting it. Re-enable anytime."))
+                                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .toggleStyle(.switch)
                 }
 
                 if isVision {

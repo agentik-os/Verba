@@ -18,8 +18,17 @@ const DAYS: Day[] = [
   {
     date: "July 13, 2026",
     tag: "Today",
-    summary: "Whisper fixed and faster, a new Turbo model, instant first dictation, and feedback that always sends.",
+    summary: "Turbo fixed and faster, a clearer Modes tab you can show/hide per mode, and quicker transcription.",
     entries: [
+      {
+        version: "0.9.87",
+        title: "Turbo that actually loads, clearer Modes, faster transcription",
+        items: [
+          "Fixed Whisper Turbo failing to load (“Error in reading the MIL network”). It now uses the device-optimised Turbo build — smaller (≈ 0.6 GB), faster, and it loads and transcribes reliably. If you’d downloaded the old one, Verba cleans it up automatically.",
+          "Modes tab, clearer: your in-use mode is marked “Current”, and every mode has a simple show/hide switch — hide a mode from the picker without deleting it, and bring it back anytime.",
+          "Transcription is a bit faster on-device (we skip work dictation never uses), with identical accuracy.",
+        ],
+      },
       {
         version: "0.9.86",
         title: "Whisper unstuck + a faster Turbo model, instant dictation, reliable feedback",

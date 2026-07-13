@@ -11,7 +11,7 @@ enum EngineManager {
         switch engine {
         case .openAI:   return ""
         case .parakeet: return "≈ 0.6 GB"
-        case .whisper:  return Settings.shared.localModel.contains("turbo") ? "≈ 1 GB" : "≈ 1.6 GB"
+        case .whisper:  return Settings.shared.localModel.contains("turbo") ? "≈ 0.6 GB" : "≈ 1.6 GB"
         }
     }
 
@@ -103,6 +103,16 @@ enum EngineManager {
                 if !fm.fileExists(atPath: to.path) { try? fm.copyItem(at: f, to: to) }
             }
         }
+    }
+
+    /// Remove the broken bare "large-v3_turbo" model (a 2.4GB full-precision build that fails to load
+    /// on many Apple-silicon chips with "Error in reading the MIL network"). Users who tried Turbo
+    /// before the quantized variant shipped have this dead weight on disk; delete it so it's not
+    /// mistaken for installed and to reclaim the space. The good quantized turbo lives in a different
+    /// folder (openai_whisper-large-v3-v20240930_turbo_632MB).
+    static func purgeBrokenTurboModel() {
+        let broken = whisperBase.appendingPathComponent("openai_whisper-large-v3_turbo")
+        try? FileManager.default.removeItem(at: broken)
     }
 
     /// Belt-and-suspenders: if any Hub call re-created ~/Documents/huggingface (the swift-transformers
@@ -297,7 +307,8 @@ enum EngineManager {
     /// only on real truncation/corruption, or "could not open"/"truncated" specifically about weight.bin.
     private static func isCorruptModelError(_ msg: String) -> Bool {
         let m = msg.lowercased()
-        return m.contains("parsing mil") || m.contains("corrupt") || m.contains("unexpected eof")
+        return m.contains("parsing mil") || m.contains("reading the mil") || m.contains("mil network")
+            || m.contains("corrupt") || m.contains("unexpected eof")
             || (m.contains("weight.bin") && (m.contains("could not open") || m.contains("truncat")))
     }
 
