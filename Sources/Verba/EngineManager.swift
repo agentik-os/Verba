@@ -22,13 +22,34 @@ enum EngineManager {
         whisperBase.appendingPathComponent("openai_whisper-\(model)")
     }
 
+    /// A Whisper model counts as installed ONLY if it's actually COMPLETE, not merely present. The old
+    /// check ("any file in the folder") accepted a truncated download, which then failed to load with
+    /// "Could not open …/weights/weight.bin". Require the .mlmodelc components AND every weight.bin
+    /// non-empty, so a half-finished download reads as not-installed and re-downloads cleanly.
+    private static func whisperModelComplete(_ folder: URL) -> Bool {
+        let fm = FileManager.default
+        var isDir: ObjCBool = false
+        guard fm.fileExists(atPath: folder.path, isDirectory: &isDir), isDir.boolValue,
+              let en = fm.enumerator(at: folder, includingPropertiesForKeys: [.fileSizeKey]) else { return false }
+        var mlmodelcCount = 0, weightFiles = 0
+        for case let url as URL in en {
+            if url.pathExtension == "mlmodelc" { mlmodelcCount += 1 }
+            if url.lastPathComponent == "weight.bin" {
+                let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                if size <= 0 { return false }        // present but empty = truncated download
+                weightFiles += 1
+            }
+        }
+        // A complete large-v3 has the AudioEncoder/TextDecoder/MelSpectrogram components each carrying
+        // weights. Require the components AND at least one non-empty weight.bin.
+        return mlmodelcCount >= 3 && weightFiles >= 1
+    }
+
     static func isInstalled(_ engine: TranscriptionEngine) -> Bool {
         switch engine {
         case .openAI: return true
         case .whisper:
-            let f = whisperFolder(Settings.shared.localModel)
-            let items = (try? FileManager.default.contentsOfDirectory(atPath: f.path)) ?? []
-            return items.contains { !$0.hasPrefix(".") }
+            return whisperModelComplete(whisperFolder(Settings.shared.localModel))
         case .parakeet:
             return AsrModels.modelsExist(at: AsrModels.defaultCacheDirectory(for: .v3))
         }
@@ -80,8 +101,14 @@ enum EngineManager {
             lastInstallError = nil
             return true
         } catch {
-            lastInstallError = (error as NSError).localizedDescription
+            let msg = (error as NSError).localizedDescription
             NSLog("Verba: load \(engine.rawValue) failed: \(error)")
+            // The user tapped Activate to retry a model that failed to load. If it's corrupt on disk,
+            // reloading the same files fails forever — wipe + re-download so Activate actually recovers.
+            if engine.isLocal, isCorruptModelError(msg) {
+                return await install(engine, progress: { _ in }, allowCleanRetry: true)
+            }
+            lastInstallError = msg
             return false
         }
     }
@@ -107,6 +134,10 @@ enum EngineManager {
 
     /// Download + load the model, reporting 0...1 progress. Returns true on success.
     static func install(_ engine: TranscriptionEngine, progress: @escaping (Double) -> Void = { _ in }) async -> Bool {
+        await install(engine, progress: progress, allowCleanRetry: true)
+    }
+
+    private static func install(_ engine: TranscriptionEngine, progress: @escaping (Double) -> Void, allowCleanRetry: Bool) async -> Bool {
         do {
             switch engine {
             case .whisper:
@@ -127,9 +158,24 @@ enum EngineManager {
         } catch {
             let msg = (error as NSError).localizedDescription
             NSLog("Verba: install \(engine.rawValue) failed: \(error)")
+            // SELF-HEAL a corrupt/incomplete on-disk model. A truncated download leaves broken files
+            // ("Could not open …/weights/weight.bin", "Error parsing MIL model") that a plain retry
+            // reloads forever. Wipe them and re-download ONCE so "Activate to retry" actually recovers.
+            if engine.isLocal, allowCleanRetry, isCorruptModelError(msg) {
+                NSLog("Verba: \(engine.rawValue) model looks corrupt — wiping and re-downloading once")
+                await uninstall(engine)
+                return await install(engine, progress: progress, allowCleanRetry: false)
+            }
             lastInstallError = msg
             return false
         }
+    }
+
+    /// True for on-disk model corruption / truncation errors, where the only fix is delete + redownload.
+    private static func isCorruptModelError(_ msg: String) -> Bool {
+        let m = msg.lowercased()
+        return m.contains("could not open") || m.contains("parsing mil") || m.contains("weight.bin")
+            || m.contains("mlmodelc") || m.contains("corrupt") || m.contains("unexpected eof")
     }
 
     /// Download `engine`'s model to disk ONLY — no RAM load, doesn't touch `loaded`. Used to
