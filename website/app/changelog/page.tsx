@@ -18,8 +18,15 @@ const DAYS: Day[] = [
   {
     date: "July 13, 2026",
     tag: "Today",
-    summary: "Action mode + AI rewriting now work reliably on the local model, Turbo fixed, clearer Modes.",
+    summary: "Local Action mode fixed, plus Verba now auto-reports errors so they get fixed faster.",
     entries: [
+      {
+        version: "0.9.89",
+        title: "Verba now fixes itself faster",
+        items: [
+          "Verba now automatically reports errors and crashes (sanitized — only the error text with paths/emails removed, your app version, and macOS, never your dictations or any content) so recurring problems get spotted and fixed without you having to report them. You can turn this off in Settings ▸ Privacy & history ▸ Diagnostics.",
+        ],
+      },
       {
         version: "0.9.88",
         title: "Action mode & AI rewriting now work on the local model",
