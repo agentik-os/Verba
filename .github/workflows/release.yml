@@ -89,22 +89,16 @@ jobs:
           git lfs version || brew install git-lfs
           git lfs install
           # The HF repo carries EVERY Parakeet variant (~3 GB → a 4.6 GB app bundle → a DMG over
-          # GitHub's 2 GB per-asset limit → 422 on upload). Copy ONLY the v3 files the app actually
-          # loads (matches the local ~461 MB model): the three v3 .mlmodelc components, the configs
-          # and vocabs. Fetch just those LFS objects to keep the clone small.
-          git clone --filter=blob:none --no-checkout --depth 1 \
-            https://huggingface.co/FluidInference/parakeet-tdt-0.6b-v3-coreml "$RUNNER_TEMP/hf"
+          # GitHub's 2 GB per-asset limit → 422 on upload). HF's git backend doesn't support partial
+          # clone, so clone the whole thing (transient on the runner) but copy ONLY the v3 files the
+          # app actually loads into PARAKEET_SRC (matches the local ~461 MB model) — that's what
+          # bundle.sh embeds, so the DMG stays small.
+          git clone --depth 1 https://huggingface.co/FluidInference/parakeet-tdt-0.6b-v3-coreml "$RUNNER_TEMP/hf"
+          DST="$RUNNER_TEMP/parakeet"; mkdir -p "$DST"
           cd "$RUNNER_TEMP/hf"
-          git sparse-checkout init --no-cone
-          printf '%s\n' /config.json /parakeet_v3_vocab.json /parakeet_vocab.json \
-            '/Decoder.mlmodelc/**' '/Encoder.mlmodelc/**' '/JointDecisionv3.mlmodelc/**' '/Preprocessor.mlmodelc/**' \
-            > .git/info/sparse-checkout
-          git checkout
-          DST="$RUNNER_TEMP/parakeet"
-          mkdir -p "$DST"
           cp -R config.json parakeet_v3_vocab.json parakeet_vocab.json \
                 Decoder.mlmodelc Encoder.mlmodelc JointDecisionv3.mlmodelc Preprocessor.mlmodelc "$DST/"
-          echo "v3 model size:"; du -sh "$DST"; ls "$DST"
+          echo "v3 model size (should be ~0.5 GB):"; du -sh "$DST"; ls "$DST"
 
       - name: Build, sign, notarize + publish release
         env:
