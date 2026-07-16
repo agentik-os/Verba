@@ -56,7 +56,7 @@ cat > "$WIDGET_ENTITLEMENTS" <<'PLIST'
 PLIST
 
 echo "▸ Building app…"
-VERSION="$VERSION" ./bundle.sh >/dev/null
+VERSION="$VERSION" ./bundle.sh
 
 echo "▸ Signing Sparkle (inside-out) + app (hardened runtime)…"
 # Sparkle must be signed inside-out (XPC services, Autoupdate, Updater.app, then
