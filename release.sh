@@ -82,8 +82,14 @@ echo "▸ Publishing GitHub release v$VERSION on $REPO…"
 # (website latest-link), the appcast, and any Sparkle deltas this run produced.
 DELTAS=(dist/*.delta)
 [ -e "${DELTAS[0]}" ] || DELTAS=()
-gh release create "v$VERSION" \
+# IDEMPOTENT: a re-run (or a prior partial run) may have left a v$VERSION release/tag on $REPO,
+# which makes `gh release create` (or its asset upload) fail with 422. Remove any existing one first,
+# then create the release WITHOUT assets and upload them separately with --clobber (so a retried
+# upload overwrites instead of 422-ing on a duplicate asset name).
+gh release delete "v$VERSION" --repo "$REPO" --yes --cleanup-tag 2>/dev/null || true
+gh release create "v$VERSION" --repo "$REPO" --title "Verba $VERSION" --generate-notes
+gh release upload "v$VERSION" \
   "Verba.dmg" "$DMG_VERSIONED" "dist/appcast.xml" "${DELTAS[@]}" \
-  --repo "$REPO" --title "Verba $VERSION" --generate-notes
+  --repo "$REPO" --clobber
 
 echo "✅ Released v$VERSION. Sparkle clients will pick it up from the appcast."
