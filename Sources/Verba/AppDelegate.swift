@@ -439,18 +439,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // engine to reclaim disk). The ACTIVE local engine installs (which loads it into RAM) if missing
         // so the first dictation is instant; the other is DOWNLOAD-ONLY (no RAM load — memory stays flat,
         // loading stays lazy via prewarmForRecording). Parakeet is usually already seeded from the bundle.
-        Task.detached(priority: .utility) {
+        // .userInitiated (not .utility): the FIRST Core ML load compiles the model for the Neural
+        // Engine (~15-20s the first time after an app UPDATE, since a new code signature invalidates
+        // Core ML's compiled cache). Warming at high priority shrinks the window where a dictation
+        // right after launch would still hit that cold compile ("raw got slow after an update").
+        Task.detached(priority: .userInitiated) {
             if s.engine.isLocal {
                 if !EngineManager.isInstalled(s.engine) {
                     _ = await EngineManager.install(s.engine)   // install already loads it into RAM
                 } else {
-                    // WARM the active engine into RAM at launch even when already installed. The first
-                    // Core ML load compiles the model for the Neural Engine — ~15-20s the first time
-                    // after an install/app-update — so paying it HERE (in the background at launch)
-                    // instead of lazily on the first recording is what makes raw dictation feel instant.
-                    // Without this the first dictation of a session (or after the 10-min idle-unload)
-                    // stalled for that whole compile — the "Parakeet raw got super slow" regression.
-                    _ = await EngineManager.load(s.engine)
+                    _ = await EngineManager.load(s.engine)   // warm the ACTIVE engine into RAM at launch
                 }
             }
             for e in [TranscriptionEngine.parakeet, .whisper] where !EngineManager.isInstalled(e) {
