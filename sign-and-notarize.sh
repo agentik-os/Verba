@@ -86,7 +86,14 @@ echo "▸ Building DMG…"
 codesign --force --timestamp --sign "$DEVID" "$DMG"
 
 echo "▸ Notarizing (a few minutes)…"
-xcrun notarytool submit "$DMG" --keychain-profile "$PROFILE" --wait
+# CI path: notarize with an App Store Connect API key (.p8) instead of a stored keychain profile,
+# so the build needs NO interactive keychain — set NOTARY_KEY (path to the .p8), NOTARY_KEY_ID and
+# NOTARY_ISSUER. Locally (no NOTARY_KEY), fall back to the `verba-notary` keychain profile.
+if [ -n "${NOTARY_KEY:-}" ]; then
+  xcrun notarytool submit "$DMG" --key "$NOTARY_KEY" --key-id "${NOTARY_KEY_ID:?}" --issuer "${NOTARY_ISSUER:?}" --wait
+else
+  xcrun notarytool submit "$DMG" --keychain-profile "$PROFILE" --wait
+fi
 
 echo "▸ Stapling…"
 xcrun stapler staple "$DMG"

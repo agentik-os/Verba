@@ -32,8 +32,12 @@ VERSION="$VERSION" DEVID="$DEVID" ./sign-and-notarize.sh
 mkdir -p dist
 DMG_VERSIONED="dist/Verba-$VERSION.dmg"
 cp Verba.dmg "$DMG_VERSIONED"
-"$GENAPPCAST" dist \
-  --download-url-prefix "https://github.com/$REPO/releases/download/v$VERSION/"
+# generate_appcast signs the appcast with the Sparkle EdDSA PRIVATE key. Locally it reads it from
+# the login keychain; in CI there's no keychain, so pass it as a file via SPARKLE_ED_KEY_FILE
+# (the workflow writes the SPARKLE_ED_PRIVATE_KEY secret to a temp file).
+GENAPPCAST_ARGS=(dist --download-url-prefix "https://github.com/$REPO/releases/download/v$VERSION/")
+[ -n "${SPARKLE_ED_KEY_FILE:-}" ] && GENAPPCAST_ARGS+=(--ed-key-file "$SPARKLE_ED_KEY_FILE")
+"$GENAPPCAST" "${GENAPPCAST_ARGS[@]}"
 
 # ── Gate: verify the appcast's EdDSA signature against the SUPublicEDKey that
 # actually SHIPS in the app bundle. A keychain/bundle key mismatch would make
