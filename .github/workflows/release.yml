@@ -24,7 +24,10 @@ concurrency:
 
 jobs:
   release:
-    runs-on: macos-15   # Xcode 16 / Swift 6 toolchain (Package.swift needs swift-tools 6.0)
+    # macOS 26 (Tahoe) runner — Xcode 26 ships the macOS 26 SDK the app compiles against (it uses the
+    # Liquid Glass APIs: glassEffect / GlassEffectContainer / .buttonStyle(.glass)). Older runners
+    # (macos-15 = Xcode 16 = macOS 15 SDK) lack those symbols and fail to build.
+    runs-on: macos-26
     timeout-minutes: 60
     steps:
       - name: Checkout
@@ -38,13 +41,14 @@ jobs:
           echo "version=$V" >> "$GITHUB_OUTPUT"
           echo "Building version: $V"
 
-      - name: Select newest Xcode 16 (Swift 6)
+      - name: Select newest Xcode 26 (macOS 26 SDK)
         run: |
-          XC="$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)"
+          XC="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)"
           [ -n "$XC" ] || XC=/Applications/Xcode.app
           echo "Using $XC"
           sudo xcode-select -s "$XC"
           swift --version
+          xcrun --show-sdk-version
 
       - name: Import Developer ID signing certificate
         env:
