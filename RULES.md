@@ -7,7 +7,7 @@
 - **Projet** : Verba — app macOS **menu-bar** de dictée. Parle, Verba transcrit puis utilise **Claude** pour restructurer ton flux de pensée en prompt/message propre (façon Wispr Flow, mais cleanup par LLM avec tes propres clés). Cas d'usage : **vibe coding** + **messaging**.
 - **Owner** : Agentik / Dafnck Studio
 - **Repo** : `github.com/agentik-os/Verba` · branche `main`
-- **Forme** : app macOS (Swift) + dossier `ios/` + site `website/` (Next.js + Convex).
+- **Forme** : app macOS (Swift) + site `website/` (Next.js + Convex). Le mobile (iOS + Android) vit dans un repo séparé : `github.com/agentik-os/VerbaMobile` (Expo/EAS).
 
 ## Stack
 - App macOS : **Swift 6** (SwiftPM, `swift-tools-version:6.0`), cible **macOS 14+**, Xcode 26.

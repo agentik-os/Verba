@@ -3,7 +3,9 @@
 > **Type** : rapport de recherche (état de l'art 2024-2026). Aucun code modifié.
 > **Date** : 2026-07-16. Toutes les URLs citées ont été consultées le 2026-07-16.
 > **Confiance** : `[CV]` = cross-validé (≥2 sources indépendantes) · `[SU]` = source unique · `[DATÉ]` = source >2 ans, à revalider sur iOS récent.
-> **Point de départ** : `ios/VerbaKeyboard/KeyboardViewController.swift` (scaffold UIKit : barre de modes + bouton mic ouvrant l'app conteneur via `verba://record`, insertion du résultat via App Group `group.com.agentik.verba`). Douleur n°1 : pas de correcteur automatique, pas de frappe confortable.
+> **Point de départ** : le clavier vit dans le repo `agentik-os/VerbaMobile`, fichier `targets/keyboard/KeyboardViewController.swift` (scaffold UIKit : barre de modes + bouton mic ouvrant l'app conteneur via `verba://record`, insertion du résultat via App Group `group.com.agentik.verba`). Douleur n°1 : pas de correcteur automatique, pas de frappe confortable.
+>
+> ⚠️ L'ancien scaffold `ios/VerbaKeyboard/` de ce repo a été supprimé le 2026-07-16 : il portait le **même nom de fichier** que le vrai clavier et n'était compilé par rien. Toute modif du clavier va dans VerbaMobile.
 
 ---
 
