@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   release:
-    runs-on: macos-14
+    runs-on: macos-15   # Xcode 16 / Swift 6 toolchain (Package.swift needs swift-tools 6.0)
     timeout-minutes: 60
     steps:
       - name: Checkout
@@ -38,8 +38,13 @@ jobs:
           echo "version=$V" >> "$GITHUB_OUTPUT"
           echo "Building version: $V"
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.app || sudo xcode-select -s /Applications/Xcode.app
+      - name: Select newest Xcode 16 (Swift 6)
+        run: |
+          XC="$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)"
+          [ -n "$XC" ] || XC=/Applications/Xcode.app
+          echo "Using $XC"
+          sudo xcode-select -s "$XC"
+          swift --version
 
       - name: Import Developer ID signing certificate
         env:
