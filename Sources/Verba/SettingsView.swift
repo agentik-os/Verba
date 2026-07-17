@@ -1125,26 +1125,74 @@ struct SettingsView: View {
 
     // MARK: - 4 · Output & feedback
 
+    /// UI-only view of the two stored delivery settings (`autoPaste` / `copyToClipboard`): one
+    /// exclusive "what happens after a dictation" choice instead of two interacting toggles.
+    /// Purely derived — no new stored key, existing installs keep their exact behaviour.
+    private enum DeliveryMode: String, CaseIterable, Identifiable {
+        case paste, copy, saveOnly
+        var id: String { rawValue }
+        var label: String {
+            switch self {
+            case .paste:    return L("Paste it")
+            case .copy:     return L("Copy it")
+            case .saveOnly: return L("Save it only")
+            }
+        }
+        /// One-line description shown under the chips for the selected mode (and as a tooltip).
+        var help: String {
+            switch self {
+            case .paste:    return L("Verba pastes the result straight into the field you're in.")
+            case .copy:     return L("Puts the result on your clipboard; nothing is pasted for you.")
+            case .saveOnly: return L("No paste, no copy. Results wait in Sessions and History.")
+            }
+        }
+    }
+
+    /// Derived from the stored settings: Paste it = auto-paste on; Copy it = auto-paste off but
+    /// copy on; Save it only = both off. (When auto-paste is on, `copyToClipboard` has no effect
+    /// in the delivery path — see AppDelegate's deliver closure — so it doesn't split the mode.)
+    private var deliveryMode: DeliveryMode {
+        settings.autoPaste ? .paste : (settings.copyToClipboard ? .copy : .saveOnly)
+    }
+
+    private func setDeliveryMode(_ mode: DeliveryMode) {
+        switch mode {
+        case .paste:    settings.autoPaste = true
+        case .copy:     settings.autoPaste = false; settings.copyToClipboard = true
+        case .saveOnly: settings.autoPaste = false; settings.copyToClipboard = false
+        }
+    }
+
     @ViewBuilder private var outputDetail: some View {
-        card(L("Paste & formatting"),
-             footer: L("Formatting pastes as real bold/headings/lists in apps that support it; plain fields get clean text.")) {
-            toggleRow(L("Auto-paste into the active field"), $settings.autoPaste)
-            if settings.autoPaste {
+        card(L("After each dictation"),
+             footer: deliveryMode == .paste
+             ? L("Pasting works through the clipboard (a synthesized ⌘V): your last copy gets replaced by the dictation, unless you turn on the restore option above.")
+             : nil) {
+            chips(DeliveryMode.allCases, selected: deliveryMode,
+                  label: { $0.label }, help: { $0.help }, onPick: { setDeliveryMode($0) })
+            Text(deliveryMode.help).font(.caption).foregroundStyle(.secondary)
+            if deliveryMode == .paste {
+                toggleRow(L("Put my previous copy back afterwards"), $settings.preserveClipboard,
+                          help: L("Puts back whatever you had copied about a second after each paste. Off by default because it makes macOS ask for permission to read your clipboard on every paste. Leave it off for a prompt-free experience; the dictated text just stays on the clipboard."))
                 toggleRow(L("Deliver each dictation where you started it"), $settings.routeResultToOrigin,
                           help: L("If you move to another app while a dictation is still processing, Verba pastes the result back into the app and field you started in — so parallel dictations each land in the right place. Needs Accessibility. If it can't restore the original field, the result waits in Sessions instead of going to the wrong app."))
             }
-            toggleRow(L("Copy to clipboard"), $settings.copyToClipboard)
-            toggleRow(L("Restore my clipboard after pasting"), $settings.preserveClipboard,
-                      help: L("Puts back whatever you had copied after each dictation. Off by default because it makes macOS ask for permission to read your clipboard on every paste. Leave it off for a prompt-free experience; the dictated text just stays on the clipboard."))
-            toggleRow(L("Paste with formatting (render Markdown)"), $settings.richTextPaste)
-            toggleRow(L("Review / edit before sending"), $settings.reviewBeforeSend)
-            if !Output.accessibilityTrusted {
+            toggleRow(L("Review / edit before sending"), $settings.reviewBeforeSend,
+                      help: L("Shows the result in a small window for a quick edit before it's delivered. Only the dictation you just finished is reviewed; background dictations land in Sessions."))
+            if deliveryMode == .paste && !Output.accessibilityTrusted {
                 HStack {
                     statusLabel(L("Auto-paste needs Accessibility access"), system: "exclamationmark.triangle.fill", tint: .orange)
                     Spacer()
                     Button(L("Enable…")) { Output.promptAccessibility() }.glassButton().controlSize(.small)
                 }
             }
+        }
+
+        card(L("Formatting"),
+             footer: L("Formatting pastes as real bold/headings/lists in apps that support it; plain fields get clean text.")) {
+            toggleRow(L("Paste with formatting (render Markdown)"), $settings.richTextPaste)
+            toggleRow(L("Smart formatting per app"), $settings.smartFormatting,
+                      help: L("Rich text/markdown in apps that render it (Mail, Notion, Notes…), plain text in code editors and terminals."))
         }
 
         card(L("Recording indicator")) {
@@ -1225,8 +1273,6 @@ struct SettingsView: View {
                     }
                 }
             }
-            toggleRow(L("Smart formatting per app"), $settings.smartFormatting,
-                      help: L("Rich text/markdown in apps that render it (Mail, Notion, Notes…), plain text in code editors and terminals."))
             toggleRow(L("Redo last dictation in another mode"), $settings.redoEnabled,
                       help: L("Adds “Redo last in…” to the menu, re-runs your last recording through any mode without speaking again."))
             toggleRow(L("Auto-learn dictionary from your edits"), $settings.autoLearnDictionary,
