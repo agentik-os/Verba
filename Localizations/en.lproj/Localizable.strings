@@ -1186,3 +1186,17 @@
 "they have, you don't" = "they have, you don't";
 "you have, they don't" = "you have, they don't";
 "Badges with this mark are ones you've earned too — so you can see at a glance where you're ahead or behind." = "Badges with this mark are ones you've earned too — so you can see at a glance where you're ahead or behind.";
+
+/* Output settings clarity (After each dictation card) */
+"After each dictation" = "After each dictation";
+"Paste it" = "Paste it";
+"Copy it" = "Copy it";
+"Save it only" = "Save it only";
+"Verba pastes the result straight into the field you're in." = "Verba pastes the result straight into the field you're in.";
+"Puts the result on your clipboard; nothing is pasted for you." = "Puts the result on your clipboard; nothing is pasted for you.";
+"No paste, no copy. Results wait in Sessions and History." = "No paste, no copy. Results wait in Sessions and History.";
+"Pasting works through the clipboard (a synthesized ⌘V): your last copy gets replaced by the dictation, unless you turn on the restore option above." = "Pasting works through the clipboard (a synthesized ⌘V): your last copy gets replaced by the dictation, unless you turn on the restore option above.";
+"Put my previous copy back afterwards" = "Put my previous copy back afterwards";
+"Puts back whatever you had copied about a second after each paste. Off by default because it makes macOS ask for permission to read your clipboard on every paste. Leave it off for a prompt-free experience; the dictated text just stays on the clipboard." = "Puts back whatever you had copied about a second after each paste. Off by default because it makes macOS ask for permission to read your clipboard on every paste. Leave it off for a prompt-free experience; the dictated text just stays on the clipboard.";
+"Shows the result in a small window for a quick edit before it's delivered. Only the dictation you just finished is reviewed; background dictations land in Sessions." = "Shows the result in a small window for a quick edit before it's delivered. Only the dictation you just finished is reviewed; background dictations land in Sessions.";
+"Formatting" = "Formatting";

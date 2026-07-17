@@ -1186,3 +1186,17 @@
 "they have, you don't" = "il a, pas toi";
 "you have, they don't" = "tu as, pas lui";
 "Badges with this mark are ones you've earned too — so you can see at a glance where you're ahead or behind." = "Les badges portant ce repère sont ceux que tu as aussi obtenus, pour voir d'un coup d'œil où tu es en avance ou en retard.";
+
+/* Output settings clarity (After each dictation card) */
+"After each dictation" = "Après chaque dictée";
+"Paste it" = "Coller";
+"Copy it" = "Copier";
+"Save it only" = "Garder seulement";
+"Verba pastes the result straight into the field you're in." = "Verba colle le résultat directement dans le champ où vous êtes.";
+"Puts the result on your clipboard; nothing is pasted for you." = "Met le résultat dans votre presse-papiers ; rien n'est collé à votre place.";
+"No paste, no copy. Results wait in Sessions and History." = "Ni collé, ni copié. Les résultats attendent dans Sessions et dans l'historique.";
+"Pasting works through the clipboard (a synthesized ⌘V): your last copy gets replaced by the dictation, unless you turn on the restore option above." = "Le collage passe par le presse-papiers (un ⌘V simulé) : votre dernière copie est remplacée par la dictée, sauf si vous activez l'option de restauration ci-dessus.";
+"Put my previous copy back afterwards" = "Restaurer ma copie précédente ensuite";
+"Puts back whatever you had copied about a second after each paste. Off by default because it makes macOS ask for permission to read your clipboard on every paste. Leave it off for a prompt-free experience; the dictated text just stays on the clipboard." = "Remet ce que vous aviez copié environ une seconde après chaque collage. Désactivé par défaut car macOS demande alors la permission de lire votre presse-papiers à chaque collage. Laissez-le désactivé pour une expérience sans fenêtre de permission ; le texte dicté reste simplement dans le presse-papiers.";
+"Shows the result in a small window for a quick edit before it's delivered. Only the dictation you just finished is reviewed; background dictations land in Sessions." = "Affiche le résultat dans une petite fenêtre pour une retouche rapide avant de le livrer. Seule la dictée que vous venez de terminer est revue ; les dictées en arrière-plan atterrissent dans Sessions.";
+"Formatting" = "Mise en forme";
