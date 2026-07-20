@@ -1,0 +1,91 @@
+name: Verify release (installs & launches)
+
+# Proves a published DMG actually installs and launches — on a real macOS runner, since the VPS is
+# Linux. Downloads the public DMG, mounts it, checks the code signature, the STAPLED notarization
+# ticket and Gatekeeper's verdict, copies the .app to /Applications like a user would, and launches
+# it (a menu-bar / LSUIElement app: success = the process is running).
+#
+#   gh workflow run verify-release.yml --repo agentik-os/Verba -f version=0.9.95
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to verify (e.g. 0.9.95)"
+        required: true
+
+jobs:
+  verify:
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - name: Download the published DMG
+        run: |
+          set -euo pipefail
+          V="${{ github.event.inputs.version }}"
+          URL="https://github.com/agentik-os/Verba-releases/releases/download/v${V}/Verba-${V}.dmg"
+          echo "Downloading $URL"
+          curl -fL --retry 3 -o verba.dmg "$URL"
+          ls -lh verba.dmg
+
+      - name: Mount the DMG
+        id: mount
+        run: |
+          set -euo pipefail
+          PLIST=$(hdiutil attach verba.dmg -nobrowse -plist)
+          MNT=$(echo "$PLIST" | plutil -extract "system-entities" xml1 -o - - \
+            | grep -A1 "mount-point" | grep string | sed -E 's/.*<string>(.*)<\/string>.*/\1/' | head -1)
+          echo "Mounted at: $MNT"
+          APP=$(ls -d "$MNT"/*.app | head -1)
+          echo "App: $APP"
+          echo "mount=$MNT" >> "$GITHUB_OUTPUT"
+          echo "app=$APP" >> "$GITHUB_OUTPUT"
+
+      - name: Code signature is valid
+        run: |
+          set -euo pipefail
+          codesign --verify --deep --strict --verbose=2 "${{ steps.mount.outputs.app }}"
+          echo "--- identity ---"
+          codesign -dvv "${{ steps.mount.outputs.app }}" 2>&1 | grep -E "Authority|TeamIdentifier|Identifier" | head
+
+      - name: Notarization ticket is stapled
+        run: xcrun stapler validate "${{ steps.mount.outputs.app }}"
+
+      - name: Gatekeeper accepts it (would launch on a user's Mac)
+        run: |
+          set -euo pipefail
+          spctl --assess --type execute --verbose=4 "${{ steps.mount.outputs.app }}"
+
+      - name: Install to /Applications like a user
+        id: install
+        run: |
+          set -euo pipefail
+          cp -R "${{ steps.mount.outputs.app }}" /Applications/
+          APPNAME=$(basename "${{ steps.mount.outputs.app }}")
+          echo "installed=/Applications/$APPNAME" >> "$GITHUB_OUTPUT"
+          hdiutil detach "${{ steps.mount.outputs.mount }}" || true
+
+      - name: Launch it and confirm the process runs
+        run: |
+          set -euo pipefail
+          open "${{ steps.install.outputs.installed }}"
+          echo "Waiting for com.agentik.verba to come up…"
+          for i in $(seq 1 20); do
+            if pgrep -f "/Applications/.*Verba.app/Contents/MacOS/Verba" >/dev/null; then
+              echo "✅ Verba is running (pid $(pgrep -f 'Verba.app/Contents/MacOS/Verba' | head -1))"
+              sleep 3
+              # Still alive after a few seconds = it did not crash on launch.
+              if pgrep -f "Verba.app/Contents/MacOS/Verba" >/dev/null; then
+                echo "✅ Still alive after 3s — clean launch, no immediate crash."
+                osascript -e 'quit app "Verba"' 2>/dev/null || killall Verba 2>/dev/null || true
+                exit 0
+              fi
+              echo "::error::Verba started but exited within 3s (launch crash)."
+              exit 1
+            fi
+            sleep 1
+          done
+          echo "::error::Verba never appeared as a running process after 20s."
+          # Surface any crash report for diagnosis.
+          ls -t ~/Library/Logs/DiagnosticReports/*.crash ~/Library/Logs/DiagnosticReports/*.ips 2>/dev/null | head -1 | xargs -I{} sh -c 'echo "--- {} ---"; cat "{}"' || true
+          exit 1
