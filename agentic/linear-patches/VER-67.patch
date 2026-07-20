@@ -1,0 +1,90 @@
+--- a/Sources/Verba/FeedbackView.swift
++++ b/Sources/Verba/FeedbackView.swift
+@@ -121,9 +121,7 @@
+             // dropped so we don't confirm the same send twice.
+             VStack(alignment: .leading, spacing: 10) {
+                 ZStack(alignment: .topLeading) {
+-                    TextEditor(text: $draft)
+-                        .font(.body)
+-                        .scrollContentBackground(.hidden)
++                    FeedbackTextEditor(text: $draft)
+                         .padding(editorInset)
+                         .frame(minHeight: 160)
+                         .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+@@ -712,3 +710,76 @@
+         }
+     }
+ }
++
++/// VER-67: the feedback text field, wrapped so a screenshot dropped onto it ATTACHES (as if via
++/// "Add file") instead of pasting the file PATH as text.
++///
++/// Why the plain SwiftUI `TextEditor` was wrong here: it is backed by an `NSTextView`, itself a
++/// registered drag destination for file/image types that, by default, inserts the dropped file's path
++/// string. Because that `NSTextView` is a descendant sitting on top of the panel's
++/// `.onDrop(of: [.fileURL, .image])` (which already attaches real image bytes), AppKit routes a drop
++/// over the text area to the text view first, so it swallows the drop and pastes a path. Everywhere
++/// else on the panel the drop correctly bubbles to the panel `.onDrop`, which is why "drop anywhere"
++/// worked except over the editor. Wrapping our own `NSTextView` that registers no dragged types lets
++/// image/file drops fall through to the panel `.onDrop` (handleDrop then attach), so the text area now
++/// behaves like the rest of the surface. Geometry mirrors the previous `TextEditor`: a zero container
++/// inset keeps the default 5pt lineFragmentPadding plus the outer `.padding(editorInset)`, so the caret
++/// stays aligned with the placeholder overlay.
++private struct FeedbackTextEditor: NSViewRepresentable {
++    @Binding var text: String
++
++    func makeCoordinator() -> Coordinator { Coordinator(self) }
++
++    func makeNSView(context: Context) -> NSScrollView {
++        let scroll = NSScrollView()
++        scroll.borderType = .noBorder
++        scroll.hasVerticalScroller = true
++        scroll.autohidesScrollers = true
++        scroll.drawsBackground = false
++
++        let tv = NonDroppingTextView()
++        tv.delegate = context.coordinator
++        tv.isRichText = false
++        tv.allowsUndo = true
++        tv.font = NSFont.preferredFont(forTextStyle: .body)
++        tv.textContainerInset = .zero
++        tv.backgroundColor = .clear
++        tv.drawsBackground = false
++        tv.isVerticallyResizable = true
++        tv.isHorizontallyResizable = false
++        tv.autoresizingMask = [.width]
++        tv.minSize = NSSize(width: 0, height: 0)
++        tv.maxSize = NSSize(width: .greatestFiniteMagnitude, height: .greatestFiniteMagnitude)
++        tv.textContainer?.widthTracksTextView = true
++        tv.textContainer?.containerSize = NSSize(width: 0, height: .greatestFiniteMagnitude)
++        tv.string = text
++        scroll.documentView = tv
++        return scroll
++    }
++
++    func updateNSView(_ scroll: NSScrollView, context: Context) {
++        guard let tv = scroll.documentView as? NSTextView else { return }
++        if tv.string != text {                       // external change (dictation, Improve, clear on send)
++            let sel = tv.selectedRange()
++            tv.string = text
++            tv.setSelectedRange(NSRange(location: min(sel.location, (text as NSString).length), length: 0))
++        }
++    }
++
++    final class Coordinator: NSObject, NSTextViewDelegate {
++        let parent: FeedbackTextEditor
++        init(_ parent: FeedbackTextEditor) { self.parent = parent }
++        func textDidChange(_ notification: Notification) {
++            guard let tv = notification.object as? NSTextView else { return }
++            parent.text = tv.string
++        }
++    }
++}
++
++/// An `NSTextView` that never registers as a drag destination. `NSTextView` re-registers its file/image
++/// drag types in `updateDragTypeRegistration()` whenever it becomes editable or moves to a window, so a
++/// one-off `unregisterDraggedTypes()` would not stick: we override that hook to unregister instead. With
++/// no registered types, image/file drops fall through to the enclosing SwiftUI `.onDrop` (VER-67).
++final class NonDroppingTextView: NSTextView {
++    override func updateDragTypeRegistration() { unregisterDraggedTypes() }
++}

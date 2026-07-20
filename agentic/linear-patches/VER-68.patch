@@ -1,0 +1,39 @@
+--- a/Sources/Verba/FeedbackView.swift
++++ b/Sources/Verba/FeedbackView.swift
+@@ -562,11 +562,26 @@
+                     draft = improved
+                     if thenConfirm { awaitingConfirm = true }   // VER-52: now show Confirm / Cancel
+                 }
+             } catch {
+                 await MainActor.run {
+                     improving = false
+-                    self.error = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
++                    // "Improve with AI" runs on the user's OWN engine. For a Parakeet + Automatic user
++                    // with no Claude CLI and no API key, that resolves to the on-device model, a large
++                    // download that may not be installed yet. Rather than dead-end with a red error,
++                    // kick the idempotent local setup so the download actually starts or resumes from
++                    // here, and show a clear status. "Give feedback" still sends with no AI required.
++                    if Self.isLocalSetupPending(error) {
++                        LocalSetupProgress.shared.start()
++                        let pct = LocalSetupProgress.shared.percent
++                        self.error = L("Your on-device AI is still setting up. Improve with AI turns on once the download finishes; you can still tap Give feedback to send this now.") + " (\(pct)%)"
++                    } else {
++                        self.error = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
++                    }
+                 }
+             }
+         }
+     }
+ 
++    /// True when Improve failed only because the on-device AI isn't ready yet: the local model is
++    /// still downloading, not pulled, or the local server isn't running. Those states get the friendly
++    /// "still setting up" treatment (and a nudge to finish the download), not an alarming red error,
++    /// which is what a genuine backend failure (bad key, HTTP error) still gets.
++    private static func isLocalSetupPending(_ error: Error) -> Bool {
++        if case LocalLLM.LLMError.settingUp = error { return true }
++        if case LocalLLM.LLMError.notDownloaded = error { return true }
++        if case LocalLLM.LLMError.notRunning = error { return true }
++        return false
++    }
++
+     // MARK: drag & drop image attachment (VER-6 / VER-14)

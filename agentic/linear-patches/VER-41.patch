@@ -1,0 +1,106 @@
+diff --git a/Sources/Verba/Settings.swift b/Sources/Verba/Settings.swift
+index 0000000..1111111 100644
+--- a/Sources/Verba/Settings.swift
++++ b/Sources/Verba/Settings.swift
+@@ -22,15 +22,32 @@
+ /// How the primary Fn (globe) trigger behaves.
+ ///   • toggle: tap Fn to start, tap again to send (hands-free, latched).
+ ///   • hold:   hold Fn to talk, release to send (push-to-talk).
++///   • doubleTap: double-tap Fn to start (opt-in), tap once to send. A lone Fn tap never
++///     opens the mic, so a stray/accidental single press can't start a dictation.
+ enum TriggerStyle: String, Codable, CaseIterable, Identifiable {
+     case toggle    // tap to toggle: tap starts, tap again sends
+     case hold      // hold to talk: press starts, release sends
++    case doubleTap = "double"  // double-tap to start; a lone tap is ignored
+     var id: String { rawValue }
+-    var label: String { self == .toggle ? L("Tap to toggle") : L("Hold to talk") }
+-    var help: String {
+-        self == .toggle
+-            ? L("Tap Fn to start, tap again to send. Esc cancels.")
+-            : L("Hold Fn while you talk, release to send. Esc cancels.")
++    var label: String {
++        switch self {
++        case .toggle:    return L("Tap to toggle")
++        case .hold:      return L("Hold to talk")
++        case .doubleTap: return L("Double-tap")
++        }
++    }
++    var help: String {
++        switch self {
++        case .toggle:    return L("Tap Fn to start, tap again to send. Esc cancels.")
++        case .hold:      return L("Hold Fn while you talk, release to send. Esc cancels.")
++        case .doubleTap: return L("Double-tap Fn to start, tap once to send. Esc cancels.")
++        }
++    }
++    /// One-line subtitle shown under the Fn chord row (Settings picker).
++    var chordHint: String {
++        switch self {
++        case .toggle:    return L("Tap to start, tap again to send")
++        case .hold:      return L("Hold to talk, release to send")
++        case .doubleTap: return L("Double-tap to start, tap once to send")
++        }
+     }
+ }
+diff --git a/Sources/Verba/AppDelegate.swift b/Sources/Verba/AppDelegate.swift
+index 0000000..2222222 100644
+--- a/Sources/Verba/AppDelegate.swift
++++ b/Sources/Verba/AppDelegate.swift
+@@ -15,6 +15,9 @@
+     private var lastFnDown: Date?
+     private var fnPressAt: Date?        // when the current hold started (push-to-talk)
+     private let fnHoldThreshold = 0.8   // hold longer than this → release auto-finishes; a
+                                         // deliberate "tap" (≤0.8s) latches for hands-free listening
++    private var fnDoubleTapArmed: Date? // first tap of a potential double-tap (.doubleTap style only)
++    private let fnDoubleTapWindow = 0.35 // max gap between the two Fn taps to count as a double-tap
+@@ -1221,6 +1224,20 @@ private func fnDown() {
+         if transformInFlight { return }
+ 
++        // Double-tap-to-start (opt-in .doubleTap style): the first bare Fn tap arms a short
++        // window; only a SECOND bare Fn tap within it opens the mic, so a stray/accidental
++        // single Fn press never starts a dictation. No timer and no added latency — the second
++        // keydown starts recording immediately; a lone tap simply does nothing (it re-arms).
++        // Held-Fn chords (Fn+digit, Fn+Tab, ⌥+Fn, Fn+T/Z/X) are untouched: they fire on their
++        // own keyDown path regardless of the armed state, which self-expires via the window.
++        if Settings.shared.triggerStyle == .doubleTap {
++            if let first = fnDoubleTapArmed, Date().timeIntervalSince(first) <= fnDoubleTapWindow {
++                fnDoubleTapArmed = nil            // second tap in time → fall through and record
++            } else {
++                fnDoubleTapArmed = Date()         // first (or stale) tap → arm and wait; do nothing
++                return
++            }
++        }
++
+         // Idle → record instantly with the active mode. Remember the press so a
+         // sustained hold-then-release can auto-finish (push-to-talk).
+         lastFnDown = Date()
+@@ -2441,9 +2458,13 @@
+         header("Dictation")
+         if s.useFnAsPrimary {
+-            ref(primary, s.triggerStyle == .hold
+-                ? "Hold to talk, release to send"
+-                : "Tap to start, tap again to send")
++            let hint: String
++            switch s.triggerStyle {
++            case .hold:      hint = "Hold to talk, release to send"
++            case .doubleTap: hint = "Double-tap to start, tap once to send"
++            case .toggle:    hint = "Tap to start, tap again to send"
++            }
++            ref(primary, hint)
+         } else {
+             ref(primary, "Start / stop dictation")
+         }
+diff --git a/Sources/Verba/SettingsView.swift b/Sources/Verba/SettingsView.swift
+index 0000000..3333333 100644
+--- a/Sources/Verba/SettingsView.swift
++++ b/Sources/Verba/SettingsView.swift
+@@ -1328,9 +1328,7 @@
+                     chips(TriggerStyle.allCases, selected: settings.triggerStyle,
+                           label: { $0.label }, onPick: { settings.triggerStyle = $0 })
+                 }
+-                chordRow(settings.triggerStyle == .hold
+-                         ? L("Hold to talk, release to send") : L("Tap to start, tap again to send"),
+-                         caps: ["Fn"])
++                chordRow(settings.triggerStyle.chordHint, caps: ["Fn"])
+             } else {
+                 chordRecorderRow(L("Start / stop dictation"),
+                                  has: settings.primaryHasShortcut,

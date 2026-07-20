@@ -1,0 +1,28 @@
+--- a/Sources/Verba/AppDelegate.swift
++++ b/Sources/Verba/AppDelegate.swift
+@@ -1687,12 +1687,22 @@
+                     guard self.sessionTasks[session.id] != nil else { self.purgeAudio(ctx.audioURL); ActivityCenter.shared.drop(activityToken); return }
+                     self.sessionTasks[session.id] = nil
+                     self.failSession(session, error: error, latestShowsOverlay: true)
+-                    self.purgeAudio(ctx.audioURL)   // R12: a failed run's buffer is never reused (redo keeps lastAudioURL)
+                     // A silent/too-short capture is a non-event (failSession drops it) — drop the chip
+                     // too; a real failure flips it to a brief ✗ (the pill still shows the full reason).
+                     let m = error.localizedDescription.lowercased()
+                     var benign = m.contains("300ms") || m.contains("too short") || m.contains("invalid audio")
+                     if case TranscribeError.empty = error { benign = true }
+-                    if benign { ActivityCenter.shared.drop(activityToken) }
+-                    else { ActivityCenter.shared.finish(activityToken, ok: false, resultLabel: L("Failed")) }
++                    if benign {
++                        self.purgeAudio(ctx.audioURL)   // R12: a silent/too-short capture has nothing to recover
++                        ActivityCenter.shared.drop(activityToken)
++                    } else {
++                        // VER-64: a real transcription failure must NOT destroy the recording. Keep it as
++                        // the redo source (menu-bar "Redo last in...") so the user can retry the exact
++                        // audio instead of re-speaking, so a failed dictation never silently loses the voice.
++                        if let old = self.lastAudioURL, old != ctx.audioURL { try? FileManager.default.removeItem(at: old) }
++                        self.lastAudioURL = ctx.audioURL
++                        self.lastAudioBundleID = ctx.capturedBundleID
++                        self.lastAudioTarget = ctx.capturedTarget
++                        ActivityCenter.shared.finish(activityToken, ok: false, resultLabel: L("Failed"))
++                    }
+                 }

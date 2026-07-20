@@ -1,0 +1,19 @@
+--- a/Sources/Verba/FnTap.swift
++++ b/Sources/Verba/FnTap.swift
+@@ -181,3 +181,7 @@
+         case .keyDown:
+             let code = Int(event.getIntegerValueField(.keyboardEventKeycode))
++            // VER-65: any key pressed while Control is held (Ctrl+Arrow desktop/Space switching,
++            // Ctrl+C, etc.) is a real system shortcut, never Verba's lone-Control pause tap. Latch
++            // the current Control press as a combo so its release does not fire a phantom pause.
++            if ctrlPresent, event.flags.contains(.maskControl) { optSeenDuringCtrl = true }
+             if code == 63 { return nil }                          // bare globe key
+--- a/Sources/Verba/ChordMonitor.swift
++++ b/Sources/Verba/ChordMonitor.swift
+@@ -103,2 +103,6 @@
+     private func handleKey(_ e: NSEvent) {
++        // VER-65: a key pressed while Control is held (Ctrl+Arrow Space switch, Ctrl+C, etc.) is a
++        // system shortcut, not the lone-Control pause tap. Latch the Control press as a combo so its
++        // release does not pause/resume. Fallback path only; FnTap owns this gesture when active.
++        if !FnTap.shared.active, ctrlPresent, e.modifierFlags.contains(.control) { optSeenDuringCtrl = true }
+         if e.keyCode == UInt16(kVK_Escape) {
