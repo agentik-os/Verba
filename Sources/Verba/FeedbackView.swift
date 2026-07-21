@@ -60,6 +60,9 @@ struct FeedbackView: View {
 
     // "Improve with AI" reformat state.
     @State private var improving = false
+    // VER-68: while the on-device AI is downloading / setting up, show this calm status line
+    // (never a red error) instead of dead-ending Improve. nil = the AI is not setting up.
+    @State private var aiSetupStatus: String?
     // VER-52: after Send auto-runs "Improve with AI", we hold here so the user can edit the
     // enhanced text and explicitly Confirm or Cancel before it's actually submitted.
     @State private var awaitingConfirm = false
@@ -121,9 +124,13 @@ struct FeedbackView: View {
             // dropped so we don't confirm the same send twice.
             VStack(alignment: .leading, spacing: 10) {
                 ZStack(alignment: .topLeading) {
-                    TextEditor(text: $draft)
-                        .font(.body)
-                        .scrollContentBackground(.hidden)
+                    // VER-67: a plain SwiftUI TextEditor is backed by an NSTextView that registers
+                    // itself as a file/image drag destination and inserts the dropped file's PATH as
+                    // text, hit-test-winning over the panel's own .onDrop below. FeedbackTextEditor
+                    // wraps an NSTextView that registers NO dragged types, so a screenshot dropped over
+                    // the text area falls through to the panel .onDrop (handleDrop then attach) and
+                    // attaches as an image, exactly like "Add file".
+                    FeedbackTextEditor(text: $draft)
                         .padding(editorInset)
                         .frame(minHeight: 160)
                         .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -181,6 +188,16 @@ struct FeedbackView: View {
                     Label(error, systemImage: "exclamationmark.triangle")
                         .font(.callout).foregroundStyle(.red)
                         .fixedSize(horizontal: false, vertical: true)
+                }
+
+                // VER-68: on-device AI setup status — a calm, non-error line with a live spinner while
+                // the local model downloads. Deliberately not the red error styling above.
+                if let aiSetupStatus {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text(aiSetupStatus).font(.callout).foregroundStyle(.secondary)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
                 }
 
                 // VER-16: a stable bottom bar — the status sits left, the primary action keeps a
@@ -260,7 +277,7 @@ struct FeedbackView: View {
                                 }
                             }
                             .buttonStyle(.plain).foregroundStyle(.secondary)
-                            .disabled(submitting || improving)
+                            .disabled(submitting || improving || aiSetupStatus != nil)
                             if preImproveDraft != nil {
                                 Button(L("Undo")) { revertImprove() }
                                     .buttonStyle(.plain).foregroundStyle(.secondary).disabled(submitting || improving)
@@ -456,6 +473,7 @@ struct FeedbackView: View {
                 awaitingConfirm = false
                 preImproveDraft = nil
                 lastImproved = nil
+                aiSetupStatus = nil
                 flashToast()
             }
         }
@@ -485,7 +503,7 @@ struct FeedbackView: View {
     /// is untouched and the user can still Give feedback. Never blocks submission.
     private func improveTapped() {
         let t = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard (!t.isEmpty || screenshot != nil), !submitting, !improving else { return }
+        guard (!t.isEmpty || screenshot != nil), !submitting, !improving, aiSetupStatus == nil else { return }
         improveWithAI(thenConfirm: false)
     }
 
@@ -497,7 +515,7 @@ struct FeedbackView: View {
         let shot = screenshot
         // VER-13: allow Improve even with no typed text as long as a screenshot is attached —
         // the model reads the image to infer the section and what's wrong.
-        guard !(original.isEmpty && shot == nil), !improving else { return }
+        guard !(original.isEmpty && shot == nil), !improving, aiSetupStatus == nil else { return }
         improving = true
         error = nil
         let model = Settings.shared.claudeModel.hasPrefix("claude-") ? Settings.shared.claudeModel : "claude-sonnet-4-6"
@@ -517,58 +535,137 @@ struct FeedbackView: View {
         // "read the attached screenshot" it never receives and is pressured to invent a Section.
         let systemTextOnly = system.replacingOccurrences(of: imageNote, with: "")
         Task {
-            do {
-                let improved = try await {
-                    // Only send the screenshot to a backend that can actually see it (not a local model,
-                    // not an unsigned/keyless backend). Otherwise degrade to a text-only reprompt on the
-                    // SAME selected model, so Improve works on every engine instead of erroring on local.
-                    if let shot, Reprompter.backendSupportsVision {
-                        return try await Reprompter(model: model)
-                            .repromptVision(transcript: original, systemPrompt: system, imagePNG: shot)
+            // VER-68: run the rewrite on the user's own engine. If it fails ONLY because the on-device
+            // AI isn't ready yet (still downloading / not pulled / server not up — the Parakeet +
+            // Automatic case), don't dead-end with a red error: kick + await the local setup once, then
+            // retry. A genuine backend failure still surfaces a real error. "Give feedback" stays usable
+            // throughout (improving is cleared while the download runs).
+            var didAwaitSetup = false
+            while true {
+                do {
+                    let improved = try await improvePipeline(original: original, shot: shot, model: model,
+                                                             system: system, systemTextOnly: systemTextOnly)
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    await MainActor.run {
+                        improving = false
+                        aiSetupStatus = nil
+                        applyImprovedResult(improved, original: original, thenConfirm: thenConfirm)
                     }
-                    // No usable vision: if there's typed text, clean it up text-only; a screenshot-only
-                    // feedback on a vision-incapable backend has nothing to improve, so keep the draft.
-                    guard !original.isEmpty else { return original }
-                    do {
-                        return try await Reprompter(model: model)
-                            .reprompt(transcript: original, systemPrompt: systemTextOnly)
-                    } catch {
-                        // BULLETPROOF: Improve must work with ANY engine. If the chosen backend fails for
-                        // ANY reason (CLI hiccup, rate limit, timeout), fall back to the fully-local model
-                        // (self-installs on demand) rather than showing an error — feedback cleanup is
-                        // low-stakes text. Only surface an error if local ALSO fails.
-                        return try await LocalLLM.chat(system: systemTextOnly, user: original, model: Settings.shared.localLLMModel)
-                    }
-                }().trimmingCharacters(in: .whitespacesAndNewlines)
-                await MainActor.run {
-                    improving = false
-                    guard !improved.isEmpty else {
-                        // The backend returned nothing usable. Don't dead-end silently (button just
-                        // reverts, nothing happens): if the user was sending, submit their ORIGINAL
-                        // draft so the click still does something; otherwise surface a retry hint.
-                        if thenConfirm, !original.isEmpty {
-                            draft = original
-                            submit()
-                        } else {
-                            error = L("Couldn’t improve that — try again, or send it as-is.")
+                    return
+                } catch {
+                    if !didAwaitSetup, Self.isLocalSetupPending(error) {
+                        didAwaitSetup = true
+                        if await awaitLocalSetupReady() {
+                            await MainActor.run { improving = true; error = nil; aiSetupStatus = nil }
+                            continue   // model is ready now — retry the rewrite once
+                        }
+                        await MainActor.run {
+                            improving = false
+                            aiSetupStatus = nil
+                            self.error = L("Couldn't set up the local AI. Open Settings ▸ AI rewriting to finish the download, then try again.")
                         }
                         return
                     }
-                    // Stash the original BEFORE swapping in the rewrite so the user can
-                    // revert. Set the trackers first so the draft-onChange (which fires
-                    // on the next line) sees a matching `lastImproved` and keeps them.
-                    preImproveDraft = original
-                    lastImproved = improved
-                    draft = improved
-                    if thenConfirm { awaitingConfirm = true }   // VER-52: now show Confirm / Cancel
-                }
-            } catch {
-                await MainActor.run {
-                    improving = false
-                    self.error = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                    await MainActor.run {
+                        improving = false
+                        aiSetupStatus = nil
+                        self.error = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                    }
+                    return
                 }
             }
         }
+    }
+
+    /// The rewrite pipeline itself (VER-8/13), factored out so the first attempt and the post-setup
+    /// retry (VER-68) share one path. Vision-capable backends see the screenshot; every other engine
+    /// degrades to a text-only reprompt on the SAME selected model, falling back to the fully-local
+    /// model if the chosen backend fails.
+    private func improvePipeline(original: String, shot: Data?, model: String,
+                                 system: String, systemTextOnly: String) async throws -> String {
+        // Only send the screenshot to a backend that can actually see it (not a local model,
+        // not an unsigned/keyless backend). Otherwise degrade to a text-only reprompt on the
+        // SAME selected model, so Improve works on every engine instead of erroring on local.
+        if let shot, Reprompter.backendSupportsVision {
+            return try await Reprompter(model: model)
+                .repromptVision(transcript: original, systemPrompt: system, imagePNG: shot)
+        }
+        // No usable vision: if there's typed text, clean it up text-only; a screenshot-only
+        // feedback on a vision-incapable backend has nothing to improve, so keep the draft.
+        guard !original.isEmpty else { return original }
+        do {
+            return try await Reprompter(model: model)
+                .reprompt(transcript: original, systemPrompt: systemTextOnly)
+        } catch {
+            // BULLETPROOF: Improve must work with ANY engine. If the chosen backend fails for
+            // ANY reason (CLI hiccup, rate limit, timeout), fall back to the fully-local model
+            // (self-installs on demand) rather than showing an error — feedback cleanup is
+            // low-stakes text. Only surface an error if local ALSO fails.
+            return try await LocalLLM.chat(system: systemTextOnly, user: original, model: Settings.shared.localLLMModel)
+        }
+    }
+
+    /// Apply the AI-rewritten text (VER-8 revert / VER-52 confirm semantics). Shared by the first
+    /// attempt and the post-setup retry.
+    @MainActor
+    private func applyImprovedResult(_ improved: String, original: String, thenConfirm: Bool) {
+        guard !improved.isEmpty else {
+            // The backend returned nothing usable. Don't dead-end silently (button just
+            // reverts, nothing happens): if the user was sending, submit their ORIGINAL
+            // draft so the click still does something; otherwise surface a retry hint.
+            if thenConfirm, !original.isEmpty {
+                draft = original
+                submit()
+            } else {
+                error = L("Couldn't improve that. Try again, or send it as-is.")
+            }
+            return
+        }
+        // Stash the original BEFORE swapping in the rewrite so the user can revert. Set the
+        // trackers first so the draft-onChange (which fires on the next line) sees a matching
+        // `lastImproved` and keeps them.
+        preImproveDraft = original
+        lastImproved = improved
+        draft = improved
+        if thenConfirm { awaitingConfirm = true }   // VER-52: now show Confirm / Cancel
+    }
+
+    /// True when Improve failed ONLY because the on-device AI isn't ready yet: the local model is
+    /// still downloading, not pulled, or the local server isn't running. Those transient states get
+    /// the calm "setting up" treatment (VER-68); a genuine backend failure (bad key, HTTP error)
+    /// still surfaces a real error.
+    private static func isLocalSetupPending(_ error: Error) -> Bool {
+        if case LocalLLM.LLMError.settingUp = error { return true }
+        if case LocalLLM.LLMError.notDownloaded = error { return true }
+        if case LocalLLM.LLMError.notRunning = error { return true }
+        return false
+    }
+
+    /// VER-68: trigger the idempotent on-device AI setup and wait until it's ready (or fails),
+    /// surfacing live progress as a calm status line instead of a red error. Returns true when the
+    /// local AI is ready to use. Bounded (R-LOOP): a ~5 GB model pull finishes well inside this
+    /// ceiling; if it stalls we give up and report failure rather than spin forever.
+    private func awaitLocalSetupReady() async -> Bool {
+        await MainActor.run {
+            improving = false                       // free "Give feedback" while the download runs
+            error = nil
+            LocalSetupProgress.shared.start()       // idempotent: resumes / short-circuits if ready
+            aiSetupStatus = L("Setting up the local AI…")
+        }
+        for _ in 0..<2400 {                         // 2400 × 0.5s = 20 min ceiling
+            let done: Bool? = await MainActor.run { () -> Bool? in
+                switch LocalSetupProgress.shared.phase {
+                case .ready:  return true
+                case .failed: return false
+                case .idle, .installingEngine, .pullingModel:
+                    aiSetupStatus = L("Setting up the local AI…") + " (\(LocalSetupProgress.shared.modelPercent)%)"
+                    return nil
+                }
+            }
+            if let done { return done }
+            try? await Task.sleep(nanoseconds: 500_000_000)
+        }
+        return false
     }
 
     // MARK: drag & drop image attachment (VER-6 / VER-14)
@@ -711,4 +808,78 @@ struct FeedbackView: View {
             screenshotThumb = NSImage(data: png)
         }
     }
+}
+
+/// VER-67: the feedback text field, wrapped so a screenshot dropped onto it ATTACHES (as if via
+/// "Add file") instead of pasting the file PATH as text.
+///
+/// Why a plain SwiftUI `TextEditor` was wrong here: it is backed by an `NSTextView`, itself a
+/// registered drag destination for file/image types that, by default, inserts the dropped file's
+/// path string. Because that `NSTextView` sits on top of the panel's `.onDrop(of: [.fileURL, .image])`
+/// (which already attaches real image bytes via handleDrop/attach), AppKit routes a drop over the text
+/// area to the text view first, so it swallows the drop and pastes a path — everywhere else on the
+/// panel the drop correctly bubbles to the panel `.onDrop`, which is why "drop anywhere" worked except
+/// over the editor. Wrapping our own `NSTextView` that registers no dragged types lets image/file drops
+/// fall through to the panel `.onDrop`, so the text area behaves like the rest of the surface.
+///
+/// Geometry mirrors the previous `TextEditor`: a zero container inset keeps the default 5pt
+/// lineFragmentPadding, plus the outer `.padding(editorInset)`, so the caret stays aligned with the
+/// placeholder overlay. Mirrors the house `NSViewRepresentable` pattern in `MarkdownEditor.swift`.
+private struct FeedbackTextEditor: NSViewRepresentable {
+    @Binding var text: String
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let scroll = NSScrollView()
+        scroll.borderType = .noBorder
+        scroll.hasVerticalScroller = true
+        scroll.autohidesScrollers = true
+        scroll.drawsBackground = false
+
+        let tv = NonDroppingTextView()
+        tv.delegate = context.coordinator
+        tv.isRichText = false
+        tv.allowsUndo = true
+        tv.font = NSFont.preferredFont(forTextStyle: .body)
+        tv.textContainerInset = .zero
+        tv.backgroundColor = .clear
+        tv.drawsBackground = false
+        tv.isVerticallyResizable = true
+        tv.isHorizontallyResizable = false
+        tv.autoresizingMask = [.width]
+        tv.minSize = NSSize(width: 0, height: 0)
+        tv.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        tv.textContainer?.widthTracksTextView = true
+        tv.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
+        tv.string = text
+        scroll.documentView = tv
+        return scroll
+    }
+
+    func updateNSView(_ scroll: NSScrollView, context: Context) {
+        guard let tv = scroll.documentView as? NSTextView else { return }
+        if tv.string != text {                       // external change (dictation, Improve, clear on send)
+            let sel = tv.selectedRange()
+            tv.string = text
+            tv.setSelectedRange(NSRange(location: min(sel.location, (text as NSString).length), length: 0))
+        }
+    }
+
+    final class Coordinator: NSObject, NSTextViewDelegate {
+        let parent: FeedbackTextEditor
+        init(_ parent: FeedbackTextEditor) { self.parent = parent }
+        func textDidChange(_ notification: Notification) {
+            guard let tv = notification.object as? NSTextView else { return }
+            parent.text = tv.string
+        }
+    }
+}
+
+/// An `NSTextView` that never registers as a drag destination. `NSTextView` re-registers its file/image
+/// drag types in `updateDragTypeRegistration()` whenever it becomes editable or moves to a window, so a
+/// one-off `unregisterDraggedTypes()` would not stick — we override that hook to unregister instead.
+/// With no registered types, image/file drops fall through to the enclosing SwiftUI `.onDrop` (VER-67).
+final class NonDroppingTextView: NSTextView {
+    override func updateDragTypeRegistration() { unregisterDraggedTypes() }
 }
