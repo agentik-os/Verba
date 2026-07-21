@@ -22,15 +22,34 @@ enum RecordStyle: String, Codable, CaseIterable, Identifiable {
 /// How the primary Fn (globe) trigger behaves.
 ///   • toggle: tap Fn to start, tap again to send (hands-free, latched).
 ///   • hold:   hold Fn to talk, release to send (push-to-talk).
+///   • doubleTap: double-tap Fn to start (opt-in), tap once to send. A lone Fn tap never
+///     opens the mic, so a stray/accidental single press can't start a dictation.
 enum TriggerStyle: String, Codable, CaseIterable, Identifiable {
     case toggle    // tap to toggle: tap starts, tap again sends
     case hold      // hold to talk: press starts, release sends
+    case doubleTap = "double"  // double-tap to start; a lone tap is ignored
     var id: String { rawValue }
-    var label: String { self == .toggle ? L("Tap to toggle") : L("Hold to talk") }
+    var label: String {
+        switch self {
+        case .toggle:    return L("Tap to toggle")
+        case .hold:      return L("Hold to talk")
+        case .doubleTap: return L("Double-tap")
+        }
+    }
     var help: String {
-        self == .toggle
-            ? L("Tap Fn to start, tap again to send. Esc cancels.")
-            : L("Hold Fn while you talk, release to send. Esc cancels.")
+        switch self {
+        case .toggle:    return L("Tap Fn to start, tap again to send. Esc cancels.")
+        case .hold:      return L("Hold Fn while you talk, release to send. Esc cancels.")
+        case .doubleTap: return L("Double-tap Fn to start, tap once to send. Esc cancels.")
+        }
+    }
+    /// One-line subtitle shown under the Fn chord row (Settings picker).
+    var chordHint: String {
+        switch self {
+        case .toggle:    return L("Tap to start, tap again to send")
+        case .hold:      return L("Hold to talk, release to send")
+        case .doubleTap: return L("Double-tap to start, tap once to send")
+        }
     }
 }
 

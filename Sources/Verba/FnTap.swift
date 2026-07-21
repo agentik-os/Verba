@@ -180,6 +180,10 @@ final class FnTap {
 
         case .keyDown:
             let code = Int(event.getIntegerValueField(.keyboardEventKeycode))
+            // VER-65: any key pressed while Control is held (Ctrl+Arrow desktop/Space switching,
+            // Ctrl+C, etc.) is a real system shortcut, never Verba's lone-Control pause tap. Latch
+            // the current Control press as a combo so its release does not fire a phantom pause.
+            if ctrlPresent, event.flags.contains(.maskControl) { optSeenDuringCtrl = true }
             if code == 63 { return nil }                          // bare globe key
             // Holding a key down fires repeated keyDown events. Our action chords (transform, Fn+T/
             // Z/X, Fn+Tab, Fn+[ ], Fn+digit) must fire ONCE per physical press, never on auto-repeat

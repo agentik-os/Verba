@@ -270,17 +270,42 @@ enum Output {
         if alreadyFront {
             restoreFocus()
             postPasteShortcut(after: 0.05)
+            scheduleRestore()
         } else {
-            // Bring the captured app forward (this switches Space if it lives on another one —
-            // acceptable per spec), wait for it to actually become active, then focus + paste.
+            // Bring the captured app forward (this may switch Space if it lives on another one,
+            // acceptable per spec). Activating a background app from a menu-bar agent can take
+            // well over 150ms, so a blind fixed-delay Cmd-V races the activation and can land the
+            // text in whatever app is still frontmost (app B) instead of the origin, or paste
+            // nothing at all. CONFIRM the origin is actually frontmost before pasting; if it
+            // never comes forward, leave the text on the clipboard so it waits in Sessions
+            // rather than going to the wrong app (the feature's stated contract).
             app.activate()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                restoreFocus()
-                postPasteShortcut(after: 0.05)
-            }
+            pasteWhenFrontmost(pid: pid, restoreFocus: restoreFocus,
+                               onPasted: scheduleRestore, attemptsLeft: 12)
         }
-        scheduleRestore()
         return true
+    }
+
+    /// Bounded wait until `pid` is frontmost, then restore focus and synthesize Cmd-V, running
+    /// `onPasted` once the paste is posted (used to schedule the optional clipboard restore).
+    /// If the app never becomes frontmost within the budget (~1.2s), do nothing: the dictated
+    /// text stays on the clipboard as the safe fallback, so it is retrievable from Sessions
+    /// instead of being pasted into the wrong app.
+    private static func pasteWhenFrontmost(pid: pid_t,
+                                           restoreFocus: @escaping () -> Void,
+                                           onPasted: @escaping () -> Void,
+                                           attemptsLeft: Int) {
+        if NSWorkspace.shared.frontmostApplication?.processIdentifier == pid {
+            restoreFocus()
+            postPasteShortcut(after: 0.05)
+            onPasted()
+            return
+        }
+        guard attemptsLeft > 0 else { return }   // gave up: text waits on the clipboard / in Sessions
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            pasteWhenFrontmost(pid: pid, restoreFocus: restoreFocus,
+                               onPasted: onPasted, attemptsLeft: attemptsLeft - 1)
+        }
     }
 
     // MARK: clipboard preservation (VER-24)

@@ -16,6 +16,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var fnPressAt: Date?        // when the current hold started (push-to-talk)
     private let fnHoldThreshold = 0.8   // hold longer than this → release auto-finishes; a
                                         // deliberate "tap" (≤0.8s) latches for hands-free listening
+    private var fnDoubleTapArmed: Date? // first tap of a potential double-tap (.doubleTap style only)
+    private let fnDoubleTapWindow = 0.35 // max gap between the two Fn taps to count as a double-tap
     // Each in-flight Session runs its own concurrent processing Task, keyed by Session id, so
     // several dictations can transcribe/reprompt in parallel (the recorder is free the instant a
     // recording stops). Esc cancels them all. The old single-session `processingTask` is gone.
@@ -1221,6 +1223,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // the NEW-capture path is suppressed for the brief, bounded transform window.
         if transformInFlight { return }
 
+        // Double-tap-to-start (opt-in .doubleTap style): the first bare Fn tap arms a short
+        // window; only a SECOND bare Fn tap within it opens the mic, so a stray/accidental
+        // single Fn press never starts a dictation. No timer and no added latency — the second
+        // keydown starts recording immediately; a lone tap simply does nothing (it re-arms).
+        // Held-Fn chords (Fn+digit, Fn+Tab, ⌥+Fn, Fn+T/Z/X) are untouched: they fire on their
+        // own keyDown path regardless of the armed state, which self-expires via the window.
+        if Settings.shared.triggerStyle == .doubleTap {
+            if let first = fnDoubleTapArmed, Date().timeIntervalSince(first) <= fnDoubleTapWindow {
+                fnDoubleTapArmed = nil            // second tap in time → fall through and record
+            } else {
+                fnDoubleTapArmed = Date()         // first (or stale) tap → arm and wait; do nothing
+                return
+            }
+        }
+
         // Idle → record instantly with the active mode. Remember the press so a
         // sustained hold-then-release can auto-finish (push-to-talk).
         lastFnDown = Date()
@@ -1687,14 +1704,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     guard self.sessionTasks[session.id] != nil else { self.purgeAudio(ctx.audioURL); ActivityCenter.shared.drop(activityToken); return }
                     self.sessionTasks[session.id] = nil
                     self.failSession(session, error: error, latestShowsOverlay: true)
-                    self.purgeAudio(ctx.audioURL)   // R12: a failed run's buffer is never reused (redo keeps lastAudioURL)
                     // A silent/too-short capture is a non-event (failSession drops it) — drop the chip
                     // too; a real failure flips it to a brief ✗ (the pill still shows the full reason).
                     let m = error.localizedDescription.lowercased()
                     var benign = m.contains("300ms") || m.contains("too short") || m.contains("invalid audio")
                     if case TranscribeError.empty = error { benign = true }
-                    if benign { ActivityCenter.shared.drop(activityToken) }
-                    else { ActivityCenter.shared.finish(activityToken, ok: false, resultLabel: L("Failed")) }
+                    if benign {
+                        self.purgeAudio(ctx.audioURL)   // R12: a silent/too-short capture has nothing to recover
+                        ActivityCenter.shared.drop(activityToken)
+                    } else {
+                        // VER-64: a real transcription failure must NOT destroy the recording. Keep it as
+                        // the redo source (menu-bar "Redo last in…") so the user can retry the exact audio
+                        // instead of re-speaking, so a failed dictation never silently loses the voice.
+                        if let old = self.lastAudioURL, old != ctx.audioURL { try? FileManager.default.removeItem(at: old) }
+                        self.lastAudioURL = ctx.audioURL
+                        self.lastAudioBundleID = ctx.capturedBundleID
+                        self.lastAudioTarget = ctx.capturedTarget
+                        ActivityCenter.shared.finish(activityToken, ok: false, resultLabel: L("Failed"))
+                    }
                 }
             }
         }
@@ -2441,9 +2468,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         header("Dictation")
         if s.useFnAsPrimary {
-            ref(primary, s.triggerStyle == .hold
-                ? "Hold to talk, release to send"
-                : "Tap to start, tap again to send")
+            let hint: String
+            switch s.triggerStyle {
+            case .hold:      hint = "Hold to talk, release to send"
+            case .doubleTap: hint = "Double-tap to start, tap once to send"
+            case .toggle:    hint = "Tap to start, tap again to send"
+            }
+            ref(primary, hint)
         } else {
             ref(primary, "Start / stop dictation")
         }

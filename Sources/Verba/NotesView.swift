@@ -498,12 +498,46 @@ struct NotesView: View {
                     Text(L("Pick a mode below")).font(.caption).foregroundStyle(.secondary)
                 }
             }
+            if !isRecording { writeInsteadButton }
             if isRecording { pauseControl }
             if !recordError.isEmpty { recordErrorBanner }
             formatChips
         }
         .frame(maxWidth: .infinity).padding(.vertical, 32).padding(.horizontal, 24)
         .glass(in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+
+    /// VER-44: a text-first path into a note. The Notes tab defaults to voice, but a note can also
+    /// be written or pasted. This button reveals the always-editable editor on an empty draft, with
+    /// no recording required, so typing and paste (Cmd+V, native to the editor) create a note too.
+    private var writeInsteadButton: some View {
+        Button { startTypedNote() } label: {
+            HStack(spacing: 7) {
+                Image(systemName: "keyboard").font(.system(size: 12, weight: .semibold))
+                Text(L("Write it instead")).font(.callout.weight(.medium))
+            }
+            .padding(.horizontal, 16).padding(.vertical, 8)
+            .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.055)))
+            .overlay(Capsule(style: .continuous).strokeBorder(Color.hairlineTint, lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .help(L("Type or paste a note instead of recording"))
+    }
+
+    /// VER-44: open the note editor on a fresh, empty draft so the user can type or paste directly.
+    /// Latching `hasComposed` flips `detail` from the record-only card to the editable editor; the
+    /// existing debounced autosave (autosaveCommit) then persists any non-empty text with no store
+    /// changes, exactly like a dictated note after formatting.
+    private func startTypedNote() {
+        newNote()             // fresh, empty draft (clears any stale transcript / record state)
+        hasComposed = true    // reveal the editor even though nothing was recorded
+        // Best-effort focus so the caret lands in the body for immediate typing / paste. Deferred so
+        // the editor's NSTextView exists after SwiftUI rebuilds; if it isn't ready yet, the user
+        // simply clicks into the editor.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            if let tv = md.textView { tv.window?.makeFirstResponder(tv) }
+        }
     }
 
     /// A legible, persistent error when a note recording can't start (the old gray sub-flash was

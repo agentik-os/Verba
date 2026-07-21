@@ -1175,7 +1175,7 @@ struct SettingsView: View {
                 toggleRow(L("Put my previous copy back afterwards"), $settings.preserveClipboard,
                           help: L("Puts back whatever you had copied about a second after each paste. Off by default because it makes macOS ask for permission to read your clipboard on every paste. Leave it off for a prompt-free experience; the dictated text just stays on the clipboard."))
                 toggleRow(L("Deliver each dictation where you started it"), $settings.routeResultToOrigin,
-                          help: L("If you move to another app while a dictation is still processing, Verba pastes the result back into the app and field you started in — so parallel dictations each land in the right place. Needs Accessibility. If it can't restore the original field, the result waits in Sessions instead of going to the wrong app."))
+                          help: L("If you move to another app while a dictation is still processing, Verba pastes the result back into the app and field you started in, so parallel dictations each land in the right place. Needs Accessibility. If it can't restore the original field, the result waits in Sessions instead of going to the wrong app."))
             }
             toggleRow(L("Review / edit before sending"), $settings.reviewBeforeSend,
                       help: L("Shows the result in a small window for a quick edit before it's delivered. Only the dictation you just finished is reviewed; background dictations land in Sessions."))
@@ -1328,9 +1328,7 @@ struct SettingsView: View {
                     chips(TriggerStyle.allCases, selected: settings.triggerStyle,
                           label: { $0.label }, onPick: { settings.triggerStyle = $0 })
                 }
-                chordRow(settings.triggerStyle == .hold
-                         ? L("Hold to talk, release to send") : L("Tap to start, tap again to send"),
-                         caps: ["Fn"])
+                chordRow(settings.triggerStyle.chordHint, caps: ["Fn"])
             } else {
                 chordRecorderRow(L("Start / stop dictation"),
                                  has: settings.primaryHasShortcut,
