@@ -101,6 +101,10 @@ final class ChordMonitor {
     }
 
     private func handleKey(_ e: NSEvent) {
+        // VER-65: a key pressed while Control is held (Ctrl+Arrow Space switch, Ctrl+C, etc.) is a
+        // system shortcut, not the lone-Control pause tap. Latch the Control press as a combo so its
+        // release does not pause/resume. Fallback path only; FnTap owns this gesture when active.
+        if !FnTap.shared.active, ctrlPresent, e.modifierFlags.contains(.control) { optSeenDuringCtrl = true }
         if e.keyCode == UInt16(kVK_Escape) {
             // When the Fn event tap is live it owns the Esc-cancel gesture (gated behind its own
             // escapeShouldCancel), so skip here to avoid running cancelEverything() twice during a
