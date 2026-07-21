@@ -556,7 +556,7 @@ struct FeedbackView: View {
                     if !didAwaitSetup, Self.isLocalSetupPending(error) {
                         didAwaitSetup = true
                         if await awaitLocalSetupReady() {
-                            await MainActor.run { improving = true; error = nil; aiSetupStatus = nil }
+                            await MainActor.run { improving = true; self.error = nil; aiSetupStatus = nil }
                             continue   // model is ready now — retry the rewrite once
                         }
                         await MainActor.run {
