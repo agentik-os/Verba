@@ -1,0 +1,27 @@
+name: Build check (compile only)
+
+# Compile gate for a branch — the VPS is Linux and cannot build the Swift/macOS app, so this runs
+# `swift build` on a real macOS runner. No signing, no notarization, no release: just proof the code
+# compiles before it is tagged for a real signed release.
+#
+#   gh workflow run build-check.yml --repo agentik-os/Verba --ref <branch>
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select newest Xcode 26 (macOS 26 SDK — the app uses Liquid Glass APIs)
+        run: |
+          XC="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)"
+          [ -n "$XC" ] || XC=/Applications/Xcode.app
+          sudo xcode-select -s "$XC"
+          swift --version
+
+      - name: swift build (release)
+        run: swift build -c release
