@@ -483,5 +483,6 @@ export const RESOURCE_NAV: { href: string; label: string; desc?: string }[] = [
   { href: "/compare", label: "Compare", desc: "Verba vs every Mac dictation app" },
   { href: "/best-mac-dictation-app", label: "Best Mac dictation app", desc: "The 2026 ranking" },
   { href: "/changelog", label: "Changelog", desc: "Every release, shipped in public" },
+  { href: "/blog", label: "Blog", desc: "Guides and deep dives on voice on Mac" },
   { href: "https://t.me/verbarun", label: "Community (Telegram)", desc: "Join the Verba Telegram" },
 ];

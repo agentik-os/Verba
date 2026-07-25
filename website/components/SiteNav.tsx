@@ -44,6 +44,7 @@ export default function SiteNav() {
       <div className="hidden items-center gap-7 text-sm muted md:flex">
         <Dropdown label="Features" items={FEATURE_NAV} />
         <Dropdown label="Resources" items={RESOURCE_NAV} />
+        <Link href="/blog" className="transition-colors duration-150 hover:text-[var(--fg)]">Blog</Link>
         <Link href="/#pricing" className="transition-colors duration-150 hover:text-[var(--fg)]">Pricing</Link>
       </div>
       <div className="flex items-center gap-3">

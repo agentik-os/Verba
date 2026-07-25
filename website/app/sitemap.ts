@@ -5,6 +5,11 @@ import { convexCall } from "@/lib/convex";
 
 const BASE = "https://verba.run";
 
+// Regenerate at most every 5 min, same cadence as the blog pages. Without this the sitemap is
+// frozen at build time, so an article pushed by the Outrank webhook would stay out of it until
+// the next deploy.
+export const revalidate = 300;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const staticPages: MetadataRoute.Sitemap = [

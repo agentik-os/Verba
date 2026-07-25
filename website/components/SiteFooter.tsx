@@ -41,6 +41,7 @@ export default function SiteFooter() {
               <p className="mono-meta mb-4">Resources</p>
               <ul className="space-y-2.5 muted">
                 <li><Link href="/features" className="link-quiet whitespace-nowrap">Features</Link></li>
+                <li><Link href="/blog" className="link-quiet whitespace-nowrap">Blog</Link></li>
                 <li><Link href="/docs" className="link-quiet whitespace-nowrap">Documentation</Link></li>
                 <li><Link href="/features/jarvis-voice-agent" className="link-quiet whitespace-nowrap">JARVIS voice agent</Link></li>
                 <li><Link href="/features/voice-notes" className="link-quiet whitespace-nowrap">Voice notes</Link></li>
