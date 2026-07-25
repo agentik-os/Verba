@@ -33,7 +33,21 @@ struct ChangelogDay: Identifiable {
 enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
-            date: "July 13, 2026", tag: "Today",
+            date: "July 26, 2026", tag: "Today",
+            summary: "Long dictations survive, and the local model answers fast again.",
+            entries: [
+                ChangelogEntry(version: "0.9.98",
+                    title: "Dictate for an hour: it no longer gives up or comes back short",
+                    items: [
+                        "A dictation longer than a few minutes could fail outright or come back shortened. There was a hard 3-minute ceiling on the whole transcribe-plus-rewrite step, so a long recording was cancelled while it was still working normally. The ceiling now follows how long you actually spoke.",
+                        "The local model also never saw more than about 3000 words of a long transcript, and could only write back about 750 words, so the rest was quietly dropped. Both limits now follow the length of what you said, which is why long dictations used to read like a summary.",
+                        "On your own API key, a very long dictation could stop mid-sentence. Measured on a 21000-word transcript, the last quarter was missing; the budget is now sized to the transcript.",
+                        "The local model is quick again. It is now loaded while you are still speaking instead of after you stop, so you no longer wait for it to wake up. And on qwen3 it was silently writing a hidden block of reasoning before every answer, which was thrown away after you had already waited for it; that is switched off.",
+                        "A tap of the key that records nothing no longer files a bug report for itself.",
+                    ]),
+            ]),
+        ChangelogDay(
+            date: "July 13, 2026",
             summary: "The “access data from other apps” pop-up is gone for good, and no more false Fn-permission nags.",
             entries: [
                 ChangelogEntry(version: "0.9.93",
