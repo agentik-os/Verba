@@ -384,6 +384,26 @@ enum LocalLLM {
         return (m.contains("qwen3") || m.contains("qwen-3")) ? "\n\n/no_think" : ""
     }
 
+    /// Load the model into memory WHILE THE USER IS STILL SPEAKING, so the rewrite does not begin
+    /// with a multi-second cold load of a 5GB model.
+    ///
+    /// `warm(_:)` above existed but was never called from anywhere — the changelog's "the local
+    /// model now stays warm in memory" was carried entirely by `keep_alive` on real calls, so the
+    /// first dictation after launch, and every dictation more than 30 minutes after the last one,
+    /// paid the full load. This mirrors EngineManager.prewarmForRecording(), which has always done
+    /// exactly this for the speech model, and hides the load behind the speaking time.
+    ///
+    /// Gated to the users who will actually run locally: Raw does no rewrite at all, and warming a
+    /// 5GB model for someone whose rewrite runs on Claude Code or an API key would just eat RAM.
+    // Deliberately NOT @MainActor, mirroring EngineManager.prewarmForRecording() so both can be
+    // called side by side from the same record-start closure.
+    static func prewarmForRecording() {
+        let s = Settings.shared
+        guard !s.activeProfile.raw else { return }
+        guard s.repromptBackend.resolved == .localLLM else { return }
+        warm(s.localLLMModel)
+    }
+
     static func chat(system: String, user: String, model: String) async throws -> String {
         // First-launch guard: if the fully-local models are still downloading, surface the friendly
         // setup progress instead of a cryptic "model not found". Only fires while a download is

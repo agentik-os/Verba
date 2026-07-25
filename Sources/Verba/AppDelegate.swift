@@ -617,6 +617,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.recorder.releaseArmed()
             guard self.recorder.start() else { self.finishTodoCapture(error: "Couldn't start recording."); return }
             EngineManager.prewarmForRecording()   // reload a lazily-unloaded local model behind the speaking time
+            LocalLLM.prewarmForRecording()        // and the AI model too, so the rewrite doesn't start with a cold load
             self.todoCaptureRecording = true
             TodoCaptureController.shared.lastError = nil
             TodoCaptureController.shared.capturing = true
@@ -1546,6 +1547,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // captures and overlay work while audio is already flowing.
             guard self.recorder.start() else { self.resetOneShotFlags(); self.flashError("Couldn't start recording"); return }
             EngineManager.prewarmForRecording()   // reload a lazily-unloaded local model behind the speaking time
+            LocalLLM.prewarmForRecording()        // and the AI model too, so the rewrite doesn't start with a cold load
             self.recordStartedAt = Date()
             self.state = .recording
             SoundFX.start()
