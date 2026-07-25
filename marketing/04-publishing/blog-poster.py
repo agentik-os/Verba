@@ -124,7 +124,43 @@ def zpost(text, platform, media):
     return r.returncode == 0, ((r.stdout or "") + (r.stderr or "")).strip()[:300]
 
 
+def zernio_ready():
+    """Zernio answers 402 on every endpoint while the subscription is inactive. Check once, up
+    front, instead of discovering it per platform per article and writing a sent-log full of
+    failures. Returns (ready, message)."""
+    key = os.environ.get("ZERNIO_API_KEY", "")
+    if not key:
+        env = os.path.expanduser("~/.omega/secrets/integrations.env")
+        try:
+            for line in open(env):
+                if line.startswith("ZERNIO_API_KEY="):
+                    key = line.strip().split("=", 1)[1]
+        except OSError:
+            pass
+    if not key:
+        return False, "ZERNIO_API_KEY not found in the env or ~/.omega/secrets/integrations.env"
+    req = urllib.request.Request(
+        "https://api.zernio.com/v1/accounts", headers={"Authorization": f"Bearer {key}"}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.status == 200, f"HTTP {r.status}"
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "replace")[:200]
+        if e.code == 402:
+            return False, f"Zernio subscription inactive (HTTP 402). Restore billing, then re-run. {body}"
+        return False, f"Zernio HTTP {e.code}: {body}"
+    except Exception as e:
+        return False, f"Zernio unreachable: {e}"
+
+
 def main():
+    ready, why = zernio_ready()
+    if not ready:
+        log(f"ABORT before touching anything: {why}")
+        # Not a code failure: exit 0 on the billing block so a cron does not alert every run.
+        sys.exit(0 if "402" in why else 1)
+
     try:
         arts = articles()
     except Exception as e:
