@@ -1,0 +1,24 @@
+{
+  "audit": "omegaos-standard",
+  "audits_covered": ["seo", "perf", "a11y", "sec", "copy", "uiux"],
+  "score": 92,
+  "score_basis": "Lighthouse after fixes: SEO 100/100/100, a11y 100/100/100, perf 89/100/96, best-practices 100/100/96. Held below 100 by 5 remaining transitive high npm vulnerabilities and the unresolved secret-tech copy question.",
+  "confidence": "high",
+  "confidence_basis": "Every score comes from a tool that actually executed, verified by non-empty artifacts after the first pass was found to be 3-byte files. Each fix was re-measured on prod, not assumed: a11y re-run to 100, dashes rescanned across 30 live pages to zero, footer re-tested over 50 page/viewport combinations, sitemap ISR proven by a lastmod change with no deploy in between, Clerk upgrade verified by 5 live routes plus Clerk mounting with no console errors.",
+  "falsifiable_tests": [
+    {"name": "tools actually ran", "hypothesis": "if the gather worked, artifacts are non-trivial", "command": "ls -la .seo/raw .a11y/raw", "actual": "lighthouse-*.json = 3 bytes, pa11y.json = 3 bytes, npm-audit.json = 0 bytes", "passed": false, "outcome": "first pass invalidated, re-run required"},
+    {"name": "sitemap self-refreshes", "hypothesis": "if revalidate works, lastmod tracks Convex with no deploy", "command": "resync then re-fetch sitemap.xml after 340s", "expected": "lastmod >= 21:59:31Z", "actual": "21:41:23Z -> 21:59:31Z, no deployment in between", "passed": true},
+    {"name": "footer overlap", "hypothesis": "if fixed, no two footer links intersect", "command": "playwright bounding-box intersection, 10 pages x 5 viewports", "expected": "0", "actual": "50 combinations checked, 0 overlaps and 0 spills", "passed": true},
+    {"name": "clerk upgrade did not break auth", "hypothesis": "if broken, routes 500 or Clerk fails to mount", "command": "playwright over /, /blog, /account, /features, /docs", "actual": "all 200, SignedOut control rendered, 0 console errors", "passed": true},
+    {"name": "banned dashes gone from live copy", "hypothesis": "if fixed, 0 em/en dashes in rendered body text", "command": "fetch 30 sitemap URLs, strip tags, count U+2014/U+2013", "expected": "0", "actual": "30 pages scanned, NONE", "passed": true},
+    {"name": "a11y really reaches 100", "hypothesis": "re-run must show no remaining binary failures", "command": "lighthouse --only-categories=accessibility on 3 pages", "actual": "100/100/100, remaining failures: none", "passed": true}
+  ],
+  "open_items": [
+    "5 transitive high npm vulnerabilities (next DoS needs a major, ws via convex, postcss build-time, sharp/libvips)",
+    "secret-tech names in visible copy on /best-mac-dictation-app and /compare, operator decision",
+    "third-party cookie from the YouTube embed keeps article best-practices at 96",
+    "5 meta descriptions outside the 110-165 SERP window"
+  ],
+  "banned_phrase_check": "passed",
+  "finished_at": "2026-07-26"
+}
