@@ -22,7 +22,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // several dictations can transcribe/reprompt in parallel (the recorder is free the instant a
     // recording stops). Esc cancels them all. The old single-session `processingTask` is gone.
     private var sessionTasks: [UUID: Task<Void, Never>] = [:]
-    private let processingTimeout: Double = 180   // hard ceiling on transcribe+reprompt so a hung backend can't spin forever
+    // Hard ceiling on transcribe+reprompt, see `processingTimeout(for:)`. It is NOT a constant any
+    // more: a flat 180s killed every long dictation while it was still progressing normally.
     private var cancellables = Set<AnyCancellable>()
     private var tapPermissionNagged = false   // show the "grant Fn permission" alert at most once
     private var lastAudioURL: URL?            // #8: last recording, to redo in another mode
@@ -1671,8 +1672,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             label: ctx.actionMode ? L("Processing command…") : L("Transcribing…"))
         sessionTasks[session.id] = Task {
             do {
-                // Hard ceiling so a hung transcription/reprompt backend can't spin forever.
-                let result = try await withTimeout(seconds: self.processingTimeout) {
+                // Hard ceiling so a hung transcription/reprompt backend can't spin forever, sized
+                // to how long the user actually spoke (see processingTimeout(for:)).
+                let result = try await withTimeout(seconds: self.processingTimeout(for: ctx)) {
                     try await Pipeline.run(audioURL: url, frontmostBundleID: bundleID, forcedProfile: forced, selection: selection, editLast: editLast, actionMode: ctx.actionMode) { [weak self] s in
                         DispatchQueue.main.async {
                             guard let self else { return }
@@ -1725,6 +1727,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
+    }
+
+    /// Hard ceiling on one dictation's transcribe+reprompt, derived from how long the user spoke.
+    ///
+    /// This was a flat 180 seconds, which is generous for a 10-second dictation and fatal for a
+    /// long one: an hour of audio takes minutes to transcribe on-device and minutes more to rewrite
+    /// word for word, so the session was killed while it was still progressing and surfaced as a
+    /// failure. Long dictations therefore either died outright or came back short. Roughly 4x the
+    /// spoken duration covers transcription plus a full-length rewrite with headroom, and the
+    /// absolute cap still stops a genuinely hung backend from spinning forever.
+    private func processingTimeout(for ctx: SessionContext) -> Double {
+        let spoken = ctx.recordStartedAt.map { Date().timeIntervalSince($0) } ?? 0
+        return min(max(180, 180 + spoken * 4), 3600)
     }
 
     /// Mark a Session failed and surface it. The latest Session shows the overlay flash/info (so the

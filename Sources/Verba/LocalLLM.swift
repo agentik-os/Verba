@@ -346,6 +346,21 @@ enum LocalLLM {
         URLSession.shared.dataTask(with: req).resume()
     }
 
+    /// Token budgets sized from the actual text, not from a constant.
+    ///
+    /// Long dictations used to come back as recaps, and both halves of that were here. Ollama
+    /// defaults `num_ctx` to 4096, so a transcript past roughly 3000 words was cut off the INPUT
+    /// before the model ever saw it; `num_predict: 1024` then capped the OUTPUT at roughly 750
+    /// words, which alone halves a 10-minute dictation. A cleanup rewrite is about as long as its
+    /// input, so both budgets follow the input instead. Short callers (JARVIS plans, feedback
+    /// polish) land on the old small values and stay just as fast.
+    static func budgets(system: String, user: String) -> (ctx: Int, predict: Int) {
+        let inputTokens = (system.count + user.count) / 3   // conservative for accented text
+        let predict = min(max(1024, inputTokens * 3 / 2), 16384)
+        let ctx = min(max(4096, inputTokens + predict + 512), 32768)
+        return (ctx, predict)
+    }
+
     static func chat(system: String, user: String, model: String) async throws -> String {
         // First-launch guard: if the fully-local models are still downloading, surface the friendly
         // setup progress instead of a cryptic "model not found". Only fires while a download is
@@ -357,9 +372,12 @@ enum LocalLLM {
             let pct = await MainActor.run(body: { LocalSetupProgress.shared.modelPercent })
             throw LLMError.settingUp(pct)
         }
+        let budget = budgets(system: system, user: user)
         var req = URLRequest(url: URL(string: "\(host)/api/chat")!)
         req.httpMethod = "POST"; req.setValue("application/json", forHTTPHeaderField: "content-type")
-        req.timeoutInterval = 180
+        // A 1-hour transcript on a local model genuinely takes minutes to regenerate; the old
+        // 180s ceiling aborted long rewrites that were still progressing.
+        req.timeoutInterval = budget.predict > 4096 ? 900 : 180
         req.httpBody = try JSONSerialization.data(withJSONObject: [
             "model": model, "stream": false,
             // think:false — qwen3 (our default) and other thinking models otherwise emit a
@@ -372,7 +390,10 @@ enum LocalLLM {
             "keep_alive": "30m",
             "options": [
                 "temperature": 0.2,     // low temp = faster, more deterministic plans/rewrites
-                "num_predict": 1024,    // bound generation — plans + rewrites are short; no runaway output
+                // Both sized from the text (see `budgets`). num_ctx MUST be set: Ollama's 4096
+                // default silently truncates a long transcript's input.
+                "num_ctx": budget.ctx,
+                "num_predict": budget.predict,
             ],
             "messages": [["role": "system", "content": system], ["role": "user", "content": user]],
         ])

@@ -99,6 +99,24 @@ struct Reprompter {
         return list
     }
 
+    /// Output-token budget for one rewrite, derived from the text being rewritten.
+    ///
+    /// A cleanup rewrite returns roughly as many tokens as it consumed, so a constant ceiling
+    /// truncates exactly the users who dictate longest. 64000 is the current Sonnet/Opus output
+    /// ceiling; the floor keeps short dictations on the same small, fast request as before.
+    static func outputBudget(for text: String) -> Int {
+        let inputTokens = text.count / 3          // conservative for accented text
+        return min(max(4096, inputTokens * 3 / 2), 64000)
+    }
+
+
+    /// Request timeout for one rewrite. A 1-hour transcript genuinely takes minutes to regenerate,
+    /// so a flat 180s aborted exactly the long dictations this pass is fixing. Short texts keep the
+    /// old snappy ceiling so a failing backend still fails fast.
+    static func requestTimeout(for text: String) -> TimeInterval {
+        text.count > 6000 ? 900 : 180
+    }
+
     /// A single reprompt attempt against one resolved backend + this instance's `model`.
     private func runOnce(transcript: String, systemPrompt: String, userText: String, fast: Bool) async throws -> String {
         var backend = backendOverride ?? Settings.shared.repromptBackend.resolved
@@ -138,11 +156,15 @@ struct Reprompter {
         req.setValue(key, forHTTPHeaderField: "x-api-key")
         req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         req.setValue("application/json", forHTTPHeaderField: "content-type")
-        req.timeoutInterval = 180
+        req.timeoutInterval = Reprompter.requestTimeout(for: userText)
 
         let payload: [String: Any] = [
             "model": model,
-            "max_tokens": 16000,
+            // Sized from the transcript, not fixed. A cleanup rewrite is about as long as its
+            // input, so a flat 16000 stopped mid-sentence on anything past roughly an hour of
+            // speech: measured on a 21650-word transcript, the reply came back stop_reason
+            // max_tokens with the last 27% of the content simply gone.
+            "max_tokens": Reprompter.outputBudget(for: userText),
             "system": systemPrompt,
             "messages": [
                 ["role": "user", "content": userText]
@@ -242,11 +264,11 @@ struct Reprompter {
         req.setValue(key, forHTTPHeaderField: "x-api-key")
         req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         req.setValue("application/json", forHTTPHeaderField: "content-type")
-        req.timeoutInterval = 180
+        req.timeoutInterval = Reprompter.requestTimeout(for: userText)
 
         let payload: [String: Any] = [
             "model": visionModel,
-            "max_tokens": 8000,
+            "max_tokens": Reprompter.outputBudget(for: userText),
             "system": systemPrompt,
             "messages": [[
                 "role": "user",
@@ -279,7 +301,7 @@ struct Reprompter {
         req.httpMethod = "POST"
         req.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         req.setValue("application/json", forHTTPHeaderField: "content-type")
-        req.timeoutInterval = 180
+        req.timeoutInterval = Reprompter.requestTimeout(for: userText)
 
         let payload: [String: Any] = [
             "model": modelID,
@@ -314,7 +336,7 @@ struct Reprompter {
         req.setValue("application/json", forHTTPHeaderField: "content-type")
         req.setValue("https://verba.run", forHTTPHeaderField: "HTTP-Referer")
         req.setValue("Verba", forHTTPHeaderField: "X-Title")
-        req.timeoutInterval = 180
+        req.timeoutInterval = Reprompter.requestTimeout(for: userText)
 
         let payload: [String: Any] = [
             "model": modelID,
@@ -347,7 +369,7 @@ struct Reprompter {
         req.httpMethod = "POST"
         req.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         req.setValue("application/json", forHTTPHeaderField: "content-type")
-        req.timeoutInterval = 180
+        req.timeoutInterval = Reprompter.requestTimeout(for: userText)
 
         let payload: [String: Any] = [
             "model": modelID,
@@ -381,7 +403,7 @@ struct Reprompter {
         req.setValue("application/json", forHTTPHeaderField: "content-type")
         req.setValue("https://verba.run", forHTTPHeaderField: "HTTP-Referer")
         req.setValue("Verba", forHTTPHeaderField: "X-Title")
-        req.timeoutInterval = 180
+        req.timeoutInterval = Reprompter.requestTimeout(for: userText)
 
         let payload: [String: Any] = [
             "model": modelID,
