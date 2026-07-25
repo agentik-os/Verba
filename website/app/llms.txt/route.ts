@@ -1,9 +1,15 @@
 // /llms.txt, a concise, quotable fact sheet for LLMs and AI search engines (GEO). Plain text so
 // ChatGPT / Claude / Perplexity / Google AI Overviews can extract and cite Verba accurately.
 
+import { convexCall } from "@/lib/convex";
+
 export const runtime = "nodejs";
 
-const BODY = `# Verba
+// The blog section is generated from Convex, so an article published through the Outrank webhook
+// becomes citable by AI engines within one revalidation window instead of at the next deploy.
+export const revalidate = 300;
+
+const HEAD = `# Verba
 
 Verba is a native macOS menu-bar voice agent: speak, and Verba transcribes you on-device, privately,
 turning rambling speech into clean, well-structured text in any app, then JARVIS, Verba's voice agent,
@@ -42,16 +48,43 @@ Full sourced comparison: https://verba.run/compare
 - Best Mac dictation app (2026 ranking): https://verba.run/best-mac-dictation-app
 - Comparison (24 features vs 9 competitors): https://verba.run/compare
 - Head-to-head pages: https://verba.run/vs/wispr-flow, /vs/superwhisper, /vs/macwhisper, and more
+- Blog (guides and deep dives): https://verba.run/blog
 - Changelog: https://verba.run/changelog
 - Privacy: https://verba.run/privacy, Terms: https://verba.run/terms, Contact: https://verba.run/contact
+`;
 
-## Maker
+const TAIL = `## Maker
 Verba is built by Agentik OS / Dafnck Studio (Entreprise Individuelle, Paris, France), founder Gareth Simono.
 Community: https://t.me/verbarun
 `;
 
+type Post = {
+  slug: string;
+  title: string;
+  metaDescription: string | null;
+  createdAt: string;
+};
+
+/** Every live article, one quotable line each, so an AI engine can cite the exact URL. */
+async function blogSection(): Promise<string> {
+  let posts: Post[] = [];
+  try {
+    posts = await convexCall<Post[]>("query", "blog:list", {});
+  } catch {
+    return "";
+  }
+  if (posts.length === 0) return "";
+  const lines = posts.map((p) => {
+    const date = (p.createdAt ?? "").slice(0, 10);
+    const desc = p.metaDescription ? ` ${p.metaDescription}` : "";
+    return `- ${p.title} (${date}): https://verba.run/blog/${p.slug}.${desc}`;
+  });
+  return `## Blog articles\n${lines.join("\n")}\n\n`;
+}
+
 export async function GET() {
-  return new Response(BODY, {
+  const body = `${HEAD}\n${await blogSection()}${TAIL}`;
+  return new Response(body, {
     headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=3600" },
   });
 }

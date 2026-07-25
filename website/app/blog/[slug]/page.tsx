@@ -81,22 +81,46 @@ export default async function BlogArticle(
   const article = await getArticle(slug);
   if (!article) notFound();
 
+  // Rough word count off the rendered body: search and AI engines use it to judge depth.
+  const wordCount = article.contentHtml.replace(/<[^>]*>/g, " ").split(/\s+/).filter(Boolean).length;
+
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    headline: article.title,
-    url: `https://verba.run/blog/${article.slug}`,
-    datePublished: article.createdAt,
-    dateModified: article.updatedAt,
-    mainEntityOfPage: { "@type": "WebPage", "@id": `https://verba.run/blog/${article.slug}` },
-    author: { "@type": "Organization", name: "Agentik OS", url: "https://verba.run" },
-    publisher: {
-      "@type": "Organization",
-      name: "Agentik OS",
-      logo: { "@type": "ImageObject", url: "https://verba.run/icon.png" },
-    },
-    ...(article.metaDescription ? { description: article.metaDescription } : {}),
-    ...(article.imageUrl ? { image: article.imageUrl } : {}),
+    "@graph": [
+      {
+        "@type": "BlogPosting",
+        headline: article.title,
+        url: `https://verba.run/blog/${article.slug}`,
+        datePublished: article.createdAt,
+        dateModified: article.updatedAt,
+        inLanguage: "en",
+        wordCount,
+        isPartOf: { "@type": "Blog", "@id": "https://verba.run/blog" },
+        mainEntityOfPage: { "@type": "WebPage", "@id": `https://verba.run/blog/${article.slug}` },
+        author: { "@type": "Organization", name: "Agentik OS", url: "https://verba.run" },
+        publisher: {
+          "@type": "Organization",
+          name: "Agentik OS",
+          logo: { "@type": "ImageObject", url: "https://verba.run/icon.png" },
+        },
+        ...(article.tags.length ? { keywords: article.tags.join(", ") } : {}),
+        ...(article.metaDescription ? { description: article.metaDescription } : {}),
+        ...(article.imageUrl ? { image: article.imageUrl } : {}),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Verba", item: "https://verba.run" },
+          { "@type": "ListItem", position: 2, name: "Blog", item: "https://verba.run/blog" },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: article.title,
+            item: `https://verba.run/blog/${article.slug}`,
+          },
+        ],
+      },
+    ],
   };
 
   return (
@@ -133,6 +157,11 @@ export default async function BlogArticle(
           <img
             src={article.imageUrl}
             alt={article.title}
+            // Intrinsic 16:9 so the browser reserves the box before the image lands (no CLS).
+            // This is the LCP element, so it loads eagerly at high priority.
+            width={1600}
+            height={900}
+            fetchPriority="high"
             className="mt-8 w-full rounded-3xl border hairline object-cover"
           />
         )}

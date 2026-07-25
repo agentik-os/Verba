@@ -2,3 +2,4 @@
 website__.env.local	website/.env.local	dotenv
 website__.vercel__.env.preview.local	website/.vercel/.env.preview.local	dotenv
 website__.vercel__.env.production.local	website/.vercel/.env.production.local	dotenv
+omega__secrets__verba-outrank.env	~/.omega/secrets/verba-outrank.env	dotenv

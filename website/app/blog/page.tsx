@@ -100,11 +100,12 @@ export default async function Blog() {
       </section>
 
       {articles.length === 0 ? (
-        <div className="glass rounded-3xl p-10 text-center">
+        <div className="glass mb-20 rounded-3xl p-10 text-center sm:mb-28">
           <p className="muted">New articles are on the way. Check back soon.</p>
         </div>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2">
+        // mb-* keeps the last row off the footer; every other page gets that gap from its CTA section.
+        <div className="mb-20 grid gap-5 sm:mb-28 sm:grid-cols-2">
           {articles.map((a, i) => (
             <Reveal key={a.slug} delay={i * 60}>
               <Link href={`/blog/${a.slug}`} className="group block h-full">
