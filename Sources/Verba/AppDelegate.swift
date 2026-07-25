@@ -1700,7 +1700,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 await MainActor.run { self.purgeAudio(ctx.audioURL); ActivityCenter.shared.drop(activityToken) }   // R12: cancelled → buffer never needed again
             } catch {
                 VerbaLog.app.error("session \(session.id.uuidString, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")   // R14
-                ErrorReporter.report("dictation session failed: \(error.localizedDescription)", context: ["area": "pipeline"])
+                // Classify BEFORE reporting. A silent or too-short capture is a non-event the code
+                // already knows to drop, but it was auto-filed first and only judged benign after,
+                // so every user who tapped the key by accident opened a bug ticket (VER-52, VER-54).
+                let msg = error.localizedDescription.lowercased()
+                var isBenign = msg.contains("300ms") || msg.contains("too short") || msg.contains("invalid audio")
+                if case TranscribeError.empty = error { isBenign = true }
+                if !isBenign {
+                    ErrorReporter.report("dictation session failed: \(error.localizedDescription)", context: ["area": "pipeline"])
+                }
                 if Task.isCancelled { return }
                 await MainActor.run {
                     guard self.sessionTasks[session.id] != nil else { self.purgeAudio(ctx.audioURL); ActivityCenter.shared.drop(activityToken); return }
@@ -1708,9 +1716,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self.failSession(session, error: error, latestShowsOverlay: true)
                     // A silent/too-short capture is a non-event (failSession drops it) — drop the chip
                     // too; a real failure flips it to a brief ✗ (the pill still shows the full reason).
-                    let m = error.localizedDescription.lowercased()
-                    var benign = m.contains("300ms") || m.contains("too short") || m.contains("invalid audio")
-                    if case TranscribeError.empty = error { benign = true }
+                    let benign = isBenign
                     if benign {
                         self.purgeAudio(ctx.audioURL)   // R12: a silent/too-short capture has nothing to recover
                         ActivityCenter.shared.drop(activityToken)
