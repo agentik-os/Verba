@@ -15,6 +15,7 @@ export const runtime = "nodejs";
 //   { "event_type": "publish_articles", "timestamp": "...", "data": { "articles": [ {
 //       id, title, content_markdown, content_html, meta_description, created_at, image_url,
 //       slug, tags: [] } ] } }
+//   { "event_type": "update_article",   "data": { "article": { …same fields, singular… } } }
 //   { "event_type": "delete_articles", "data": { "article_ids": ["..."] } }
 //
 // Set the webhook URL in Outrank to:  https://verba.run/api/outrank-webhook
@@ -36,6 +37,8 @@ type OutrankPayload = {
   timestamp?: string;
   data?: {
     articles?: OutrankArticle[];
+    // `update_article` carries ONE article under the singular key, not an array.
+    article?: OutrankArticle;
     article_ids?: string[];
   };
 };
@@ -95,8 +98,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, event, removed });
     }
 
-    // Publish (default): upsert each article.
-    const articles = body.data?.articles ?? [];
+    // Publish (default) and update: both upsert. `publish_articles` sends `data.articles` (array),
+    // `update_article` sends `data.article` (one object) — accept either so an edit in Outrank is
+    // not silently dropped.
+    const single = body.data?.article;
+    const articles = body.data?.articles ?? (single ? [single] : []);
     let processed = 0;
     for (const art of articles) {
       const outrankId = art.id ? String(art.id) : slugify(art);
