@@ -17,6 +17,7 @@
   --fg-dim: rgba(244, 244, 246, 0.78);
   --muted: rgba(244, 244, 246, 0.56);
   --faint: rgba(244, 244, 246, 0.38);
+  --faint-data: rgba(244, 244, 246, 0.52);   /* small mono text, 5.2:1, see .mono-meta */
   --tint: rgba(255, 255, 255, 0.04);
   --tint-strong: rgba(255, 255, 255, 0.085);
   --border: rgba(255, 255, 255, 0.08);
@@ -49,6 +50,7 @@
   --fg-dim: rgba(10, 10, 12, 0.82);
   --muted: rgba(10, 10, 12, 0.56);
   --faint: rgba(10, 10, 12, 0.40);
+  --faint-data: rgba(10, 10, 12, 0.62);      /* small mono text, 5.4:1 on #f6f6f7 */
   --tint: rgba(10, 10, 20, 0.035);
   --tint-strong: rgba(10, 10, 20, 0.07);
   --border: rgba(10, 10, 20, 0.10);
@@ -372,16 +374,19 @@ input.cl-formFieldInput {
    ========================================================================== */
 
 /* The mono voice: DATA only (indices, dates, prices, models, shortcuts) [C1, G10] */
+/* These two are 0.72rem, so WCAG AA demands 4.5:1, not the 3:1 large-text allowance.
+   --faint measured 3.30:1 on the blog card and 3.24:1 on the article (Lighthouse
+   color-contrast). --faint-data is the same hue at the alpha where small text passes. */
 .mono-meta {
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
   font-size: 0.72rem; font-weight: 400; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--faint);
+  text-transform: uppercase; color: var(--faint-data);
   font-variant-numeric: tabular-nums;
 }
 .mono-index {
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
   font-size: 0.72rem; font-weight: 400; letter-spacing: 0.06em;
-  color: var(--faint); font-variant-numeric: tabular-nums;
+  color: var(--faint-data); font-variant-numeric: tabular-nums;
 }
 
 /* Breathing rec glow — ONE place only: behind the hero demo [M3] */

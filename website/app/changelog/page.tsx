@@ -25,7 +25,7 @@ const DAYS: Day[] = [
         title: "The “access data from other apps” pop-up is truly gone",
         items: [
           "Fixed for real: the macOS “Verba would like to access data from other apps” pop-up that kept appearing on every launch. The on-device speech model was stored in a shared “FluidAudio” folder that macOS treats as another app’s data; Verba now keeps it in its own space and moves any existing copy over automatically. Verified: no prompt on launch.",
-          "Also fixed the “Verba needs permission to use the Fn key” alert that could keep nagging even after you granted it — Verba now trusts the Accessibility permission it actually uses instead of a second one that reads stale until you relaunch.",
+          "Also fixed the “Verba needs permission to use the Fn key” alert that could keep nagging even after you granted it. Verba now trusts the Accessibility permission it actually uses instead of a second one that reads stale until you relaunch.",
         ],
       },
       {
@@ -37,7 +37,7 @@ const DAYS: Day[] = [
       },
       {
         version: "0.9.90",
-        title: "Stop mixed-language transcripts — pin your language",
+        title: "Stop mixed-language transcripts, pin your language",
         items: [
           "Fixed transcripts that mixed French and English (or any two languages) even when you spoke only one. Settings ▸ Dictation ▸ Language now has a simple “Spoken language” picker: choose your language (e.g. French) and transcription stays 100% in it, in every mode including Raw. Leave it on Auto-detect only if you switch languages often.",
         ],
@@ -46,22 +46,22 @@ const DAYS: Day[] = [
         version: "0.9.89",
         title: "Verba now fixes itself faster",
         items: [
-          "Verba now automatically reports errors and crashes (sanitized — only the error text with paths/emails removed, your app version, and macOS, never your dictations or any content) so recurring problems get spotted and fixed without you having to report them. You can turn this off in Settings ▸ Privacy & history ▸ Diagnostics.",
+          "Verba now automatically reports errors and crashes (sanitized, only the error text with paths/emails removed, your app version, and macOS, never your dictations or any content) so recurring problems get spotted and fixed without you having to report them. You can turn this off in Settings ▸ Privacy & history ▸ Diagnostics.",
         ],
       },
       {
         version: "0.9.88",
         title: "Action mode & AI rewriting now work on the local model",
         items: [
-          "Fixed the big one: with the fully-local model, Action mode (and AI rewriting) could silently do nothing — stuck on “Setting up your local AI… 77%”. A secondary speech-model download (e.g. after picking Turbo) was wrongly holding the whole AI hostage. Now the local AI runs as soon as its own model is ready, regardless of any speech-model download. Action mode works on every backend — Claude, your own key, and fully local.",
+          "Fixed the big one: with the fully-local model, Action mode (and AI rewriting) could silently do nothing, stuck on “Setting up your local AI… 77%”. A secondary speech-model download (e.g. after picking Turbo) was wrongly holding the whole AI hostage. Now the local AI runs as soon as its own model is ready, regardless of any speech-model download. Action mode works on every backend: Claude, your own key, and fully local.",
         ],
       },
       {
         version: "0.9.87",
         title: "Turbo that actually loads, clearer Modes, faster transcription",
         items: [
-          "Fixed Whisper Turbo failing to load (“Error in reading the MIL network”). It now uses the device-optimised Turbo build — smaller (≈ 0.6 GB), faster, and it loads and transcribes reliably. If you’d downloaded the old one, Verba cleans it up automatically.",
-          "Modes tab, clearer: your in-use mode is marked “Current”, and every mode has a simple show/hide switch — hide a mode from the picker without deleting it, and bring it back anytime.",
+          "Fixed Whisper Turbo failing to load (“Error in reading the MIL network”). It now uses the device-optimised Turbo build: smaller (≈ 0.6 GB), faster, and it loads and transcribes reliably. If you’d downloaded the old one, Verba cleans it up automatically.",
+          "Modes tab, clearer: your in-use mode is marked “Current”, and every mode has a simple show/hide switch, so you can hide a mode from the picker without deleting it, and bring it back anytime.",
           "Transcription is a bit faster on-device (we skip work dictation never uses), with identical accuracy.",
         ],
       },
@@ -69,10 +69,10 @@ const DAYS: Day[] = [
         version: "0.9.86",
         title: "Whisper unstuck + a faster Turbo model, instant dictation, reliable feedback",
         items: [
-          "Fixed Whisper getting stuck on “Activating…” forever — it now loads reliably and offline, with no permission pop-up.",
-          "New: choose your Whisper model. Large v3 is the most accurate; the new Turbo is several times faster and lighter (≈ 1 GB), nearly as accurate — great for everyday dictation. The choice is labelled so you pick knowingly.",
+          "Fixed Whisper getting stuck on “Activating…” forever. It now loads reliably and offline, with no permission pop-up.",
+          "New: choose your Whisper model. Large v3 is the most accurate; the new Turbo is several times faster and lighter (≈ 1 GB), nearly as accurate, great for everyday dictation. The choice is labelled so you pick knowingly.",
           "First dictation is instant again: Verba now warms your on-device model at launch, so raw dictation no longer stalls the first time (or after idle).",
-          "Feedback always sends now. “Give feedback” submits your message directly — it no longer depends on an AI step that could fail. “Improve with AI” is an optional polish button that never blocks sending.",
+          "Feedback always sends now. “Give feedback” submits your message directly. It no longer depends on an AI step that could fail. “Improve with AI” is an optional polish button that never blocks sending.",
           "Under the hood: safer formatted-paste, transcript-history rescue on corruption, and several reliability fixes from a deep code audit.",
         ],
       },
@@ -80,7 +80,7 @@ const DAYS: Day[] = [
         version: "0.9.85",
         title: "The “access data from other apps” pop-up is gone",
         items: [
-          "Fixed for good: the macOS “Verba would like to access data from other apps” pop-up that kept appearing (often right after you took a screenshot). It came from how Verba rendered formatted text for pasting — now done natively, so Verba never touches your clipboard or other apps’ data to format text. No more prompt, and rich paste is faster too.",
+          "Fixed for good: the macOS “Verba would like to access data from other apps” pop-up that kept appearing (often right after you took a screenshot). It came from how Verba rendered formatted text for pasting. That is now done natively, so Verba never touches your clipboard or other apps’ data to format text. No more prompt, and rich paste is faster too.",
         ],
       },
       {
@@ -162,7 +162,7 @@ const DAYS: Day[] = [
         version: "0.9.66",
         title: "Your local AI installs itself, with a progress bar",
         items: [
-          "First run on Fully local now downloads both on-device models (speech + AI) automatically, with a visible progress bar during onboarding — so your first prompt, mode or JARVIS command just works, no manual setup. If you try before it\u2019s ready, you see a friendly \u201csetting up\u2026 NN%\u201d instead of an error. Raw dictation works instantly regardless.",
+          "First run on Fully local now downloads both on-device models (speech + AI) automatically, with a visible progress bar during onboarding, so your first prompt, mode or JARVIS command just works, no manual setup. If you try before it\u2019s ready, you see a friendly \u201csetting up\u2026 NN%\u201d instead of an error. Raw dictation works instantly regardless.",
         ],
       },
       {
@@ -222,7 +222,7 @@ const DAYS: Day[] = [
         version: "0.9.58",
         title: "Fully local by default, now on qwen3",
         items: [
-          "Verba now runs fully offline on your Mac by default (Ollama), on the newer qwen3 model, and every AI feature — including JARVIS, transforms and tools — works on-device with nothing leaving your Mac.",
+          "Verba now runs fully offline on your Mac by default (Ollama), on the newer qwen3 model, and every AI feature (including JARVIS, transforms and tools) works on-device with nothing leaving your Mac.",
         ],
       },
       {
@@ -424,22 +424,22 @@ const DAYS: Day[] = [
         version: "0.9.35",
         title: "Coding and Prompt are now one mode: Prompt",
         items: [
-          "Coding and Prompt did the same job — turn what you say into a clean, engineered prompt — so they're now a single Prompt mode.",
-          "It auto-detects what you need: a precise coding-agent prompt (Cursor, Claude Code — every file path, function and error kept verbatim) or a general AI prompt (ChatGPT, Claude, an image generator — task, context, constraints, output format). Still on ⌃⌥5, still auto-activates in your editor and terminal.",
+          "Coding and Prompt did the same job (turn what you say into a clean, engineered prompt), so they're now a single Prompt mode.",
+          "It auto-detects what you need: a precise coding-agent prompt (Cursor, Claude Code: every file path, function and error kept verbatim) or a general AI prompt (ChatGPT, Claude, an image generator: task, context, constraints, output format). Still on ⌃⌥5, still auto-activates in your editor and terminal.",
         ],
       },
       {
         version: "0.9.34",
         title: "Connected apps, front and center",
         items: [
-          "Connected apps moved out of Settings and into the sidebar, under Library — connect Gmail, Slack, Notion and 1,000+ more, then act on them by voice with JARVIS. It's a real feature, so it now has a real home.",
+          "Connected apps moved out of Settings and into the sidebar, under Library. Connect Gmail, Slack, Notion and 1,000+ more, then act on them by voice with JARVIS. It's a real feature, so it now has a real home.",
         ],
       },
       {
         version: "0.9.33",
         title: "The Automatic engine never dead-ends",
         items: [
-          "On the Automatic engine (Claude Code, else Verba), if a model or backend fails, is unavailable, or is rate-limited, Verba now automatically tries the next one until a dictation comes back — no more “Claude Code failed” dead-ends.",
+          "On the Automatic engine (Claude Code, else Verba), if a model or backend fails, is unavailable, or is rate-limited, Verba now automatically tries the next one until a dictation comes back, no more “Claude Code failed” dead-ends.",
           "Local transcription models: a Reinstall button to re-download a model if it ever gets corrupted or only partly downloaded. (Your model is still installed automatically in the background on first launch.)",
         ],
       },
@@ -447,7 +447,7 @@ const DAYS: Day[] = [
         version: "0.9.32",
         title: "Pick your Translate language inline",
         items: [
-          "In Translate mode, a small language chip now sits right on the recording pill (and in the menu bar) — tap it to switch the output language without opening Settings.",
+          "In Translate mode, a small language chip now sits right on the recording pill (and in the menu bar), tap it to switch the output language without opening Settings.",
           "Your choice is remembered as the default, so the next dictation translates into the same language until you change it.",
         ],
       },
@@ -455,7 +455,7 @@ const DAYS: Day[] = [
         version: "0.9.31",
         title: "New mode: Prompt",
         items: [
-          "Prompt mode turns rambling dictation into a clean, optimized AI prompt — task, context, constraints, and output format — ready to paste into ChatGPT, Claude, an image generator, anything.",
+          "Prompt mode turns rambling dictation into a clean, optimized AI prompt (task, context, constraints, and output format), ready to paste into ChatGPT, Claude, an image generator, anything.",
           "It's the general-purpose sibling of Coding mode. Pick it from your modes, or set it as a per-app default.",
         ],
       },
@@ -463,7 +463,7 @@ const DAYS: Day[] = [
         version: "0.9.30",
         title: "Rename imported transcripts",
         items: [
-          "Open a saved transcript and click its name to rename it — handy when the file came in as something like “audio_2026.m4a”.",
+          "Open a saved transcript and click its name to rename it, handy when the file came in as something like “audio_2026.m4a”.",
           "Clear the name to fall back to the original file name. Your existing transcripts are untouched.",
         ],
       },

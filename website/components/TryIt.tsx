@@ -110,6 +110,10 @@ export default function TryIt() {
         <button
           onClick={state === "recording" ? stop : start}
           disabled={state === "working"}
+          // Icon-only button: without this a screen reader announces just "button".
+          aria-label={
+            state === "recording" ? "Stop recording" : state === "working" ? "Working" : "Start recording"
+          }
           className={`group relative mx-auto flex h-20 w-20 items-center justify-center rounded-full transition ${
             state === "recording" ? "bg-red-500 text-white" : "bg-[var(--fg)] text-[var(--bg)] hover:scale-105"
           } disabled:opacity-50`}

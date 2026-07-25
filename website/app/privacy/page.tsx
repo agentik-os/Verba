@@ -31,7 +31,7 @@ We do not sell your personal information, and we do not use your voice, transcri
 - *macOS, cloud transcription (OpenAI, optional):* if you choose it, audio is sent to OpenAI under your own key.
 - *iOS:* dictation uses Apple's Speech framework (SFSpeechRecognizer). To favor accuracy, your audio may be sent to Apple for recognition, which Apple processes under its own privacy terms. We never receive your raw audio.
 
-**AI cleanup, translation, and JARVIS (text).** After transcription, the *text* may be rewritten or translated by an AI. This ALWAYS runs on an AI backend **you** choose — Verba never processes your text under company AI keys, and never makes a billed AI call on your behalf. Your options are:
+**AI cleanup, translation, and JARVIS (text).** After transcription, the *text* may be rewritten or translated by an AI. This ALWAYS runs on an AI backend **you** choose. Verba never processes your text under company AI keys, and never makes a billed AI call on your behalf. Your options are:
 - *Your own API key (Bring-Your-Own):* your Anthropic, OpenAI, or OpenRouter key, the request goes directly to that provider under your credentials. Your key is stored in the macOS Keychain on your device.
 - *Your Claude plan via Claude Code:* runs the local \`claude\` CLI on your Mac against your own Claude Pro/Max subscription; no key, and no company relay.
 - *Local model:* runs on your Mac; nothing leaves the device. This is the private default.

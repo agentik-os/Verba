@@ -84,6 +84,19 @@ export default async function BlogArticle(
   // Rough word count off the rendered body: search and AI engines use it to judge depth.
   const wordCount = article.contentHtml.replace(/<[^>]*>/g, " ").split(/\s+/).filter(Boolean).length;
 
+  // Outrank embeds video iframes with no title attribute, which leaves screen-reader users with
+  // an unlabelled frame (axe frame-title, confirmed by Lighthouse on /blog/zoom-meeting-transcript).
+  // Label any untitled iframe from the article it belongs to. Done at render so already-stored
+  // articles are covered too, not just future webhook deliveries.
+  //
+  // The same embeds also set third-party cookies on load (Lighthouse best-practices, Cookie issue
+  // on youtube.com/embed). youtube-nocookie.com serves the identical player without them, which is
+  // the only defensible default for a product whose whole pitch is privacy.
+  const frameTitle = article.title.replace(/"/g, "&quot;");
+  const bodyHtml = article.contentHtml
+    .replace(/<iframe(?![^>]*\stitle=)/gi, `<iframe title="Video: ${frameTitle}"`)
+    .replace(/https:\/\/(www\.)?youtube\.com\/embed\//gi, "https://www.youtube-nocookie.com/embed/");
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -169,7 +182,7 @@ export default async function BlogArticle(
         {/* Body is Outrank-authored HTML (Bearer-authenticated source). Styled via .article-body. */}
         <div
           className="article-body mt-10"
-          dangerouslySetInnerHTML={{ __html: article.contentHtml }}
+          dangerouslySetInnerHTML={{ __html: bodyHtml }}
         />
       </article>
 
