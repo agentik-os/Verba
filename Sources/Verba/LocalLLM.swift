@@ -342,7 +342,13 @@ enum LocalLLM {
         var req = URLRequest(url: URL(string: "\(host)/api/generate")!)
         req.httpMethod = "POST"; req.setValue("application/json", forHTTPHeaderField: "content-type")
         req.timeoutInterval = 120
-        req.httpBody = try? JSONSerialization.data(withJSONObject: ["model": model, "prompt": "", "keep_alive": "30m"])
+        // Warm at the SAME context size the first real call will ask for. If the warm loads the model
+        // at one num_ctx and the first dictation asks for another, Ollama unloads and reloads it, and
+        // the warm-up has bought nothing.
+        req.httpBody = try? JSONSerialization.data(withJSONObject: [
+            "model": model, "prompt": "", "keep_alive": "30m",
+            "options": ["num_ctx": 4096],
+        ])
         URLSession.shared.dataTask(with: req).resume()
     }
 
@@ -354,11 +360,28 @@ enum LocalLLM {
     /// words, which alone halves a 10-minute dictation. A cleanup rewrite is about as long as its
     /// input, so both budgets follow the input instead. Short callers (JARVIS plans, feedback
     /// polish) land on the old small values and stay just as fast.
+    /// `num_ctx` is BUCKETED, and that matters more than it looks: Ollama reloads the model whenever
+    /// the requested context size changes, and a reload is a multi-second stall on a 5GB model. A
+    /// continuously-varying value would therefore trade the recap bug for a cold load on almost every
+    /// dictation. With buckets, every short dictation asks for the same 4096 and reuses the warm,
+    /// resident model exactly as before; only genuinely long ones step up a tier and pay once.
     static func budgets(system: String, user: String) -> (ctx: Int, predict: Int) {
         let inputTokens = (system.count + user.count) / 3   // conservative for accented text
         let predict = min(max(1024, inputTokens * 3 / 2), 16384)
-        let ctx = min(max(4096, inputTokens + predict + 512), 32768)
+        let needed = inputTokens + predict + 512
+        let ctx = [4096, 8192, 16384, 32768].first { $0 >= needed } ?? 32768
         return (ctx, predict)
+    }
+
+    /// Qwen3 is a hybrid reasoning model: left to itself it emits a `<think>…</think>` block before
+    /// the answer on every single call. That block is pure latency, generated then thrown away by
+    /// `stripThinking`, and it is why the local model went from instant to slow when the default
+    /// moved from qwen2.5 to qwen3. The `think: false` field below is the right switch but is
+    /// silently ignored by older Ollama builds (hence stripThinking existing at all), so we ALSO
+    /// use Qwen's own in-prompt soft switch, which the chat template honours regardless of version.
+    static func noThinkSuffix(for model: String) -> String {
+        let m = model.lowercased()
+        return (m.contains("qwen3") || m.contains("qwen-3")) ? "\n\n/no_think" : ""
     }
 
     static func chat(system: String, user: String, model: String) async throws -> String {
@@ -383,7 +406,8 @@ enum LocalLLM {
             // think:false — qwen3 (our default) and other thinking models otherwise emit a
             // <think>…</think> reasoning block. For reprompting AND JARVIS plan JSON we need clean,
             // directly-parseable output, never visible chain-of-thought. Ollama ignores this field
-            // for non-thinking models, so it's safe across every local model.
+            // for non-thinking models, so it's safe across every local model. Older Ollama builds
+            // ignore it entirely, which is why the system prompt also carries /no_think.
             "think": false,
             // SPEED: keep the model resident in memory for 30 min so back-to-back JARVIS actions don't
             // each pay the multi-second cold-load of a 5GB model (Ollama's default evicts after 5 min).
@@ -395,7 +419,10 @@ enum LocalLLM {
                 "num_ctx": budget.ctx,
                 "num_predict": budget.predict,
             ],
-            "messages": [["role": "system", "content": system], ["role": "user", "content": user]],
+            "messages": [
+                ["role": "system", "content": system + Self.noThinkSuffix(for: model)],
+                ["role": "user", "content": user],
+            ],
         ])
         let (data, resp): (Data, URLResponse)
         do { (data, resp) = try await URLSession.shared.data(for: req) }
