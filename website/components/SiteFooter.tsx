@@ -5,12 +5,19 @@ const DOWNLOAD_URL = "https://github.com/agentik-os/Verba-releases/releases/late
 
 // Shared footer used on every page. `whitespace-nowrap` on each link keeps every item on a single
 // line (no two-line wraps like "Best Mac dictation / app").
+//
+// The link columns are a flex row, NOT a fixed 3-column grid. With fixed 1fr columns the longest
+// labels ("JARVIS voice agent", "Community (Telegram)") were wider than their track, and because
+// nowrap forbids wrapping they painted straight over the next column's links. Content-sized flex
+// columns cannot overlap: when the row runs out of room a whole column wraps to the next line.
 export default function SiteFooter() {
   return (
     <>
       <CrossRule />
       <footer className="pb-10 pt-16 text-sm">
-        <div className="grid gap-12 lg:grid-cols-[1.2fr_1fr]">
+        {/* auto (not 1fr) on the links cell: it takes exactly the width its three columns need,
+            the brand block absorbs the rest. A 1fr cell was too narrow to hold all three. */}
+        <div className="grid gap-12 lg:grid-cols-[1fr_auto]">
           <div>
             <Logo />
             <p className="t-anchor mt-8 max-w-md text-[var(--faint)]">Speak it.<br />Send it clean.</p>
@@ -27,7 +34,7 @@ export default function SiteFooter() {
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+          <div className="flex flex-wrap gap-x-10 gap-y-8">
             <div>
               <p className="mono-meta mb-4">Product</p>
               <ul className="space-y-2.5 muted">
