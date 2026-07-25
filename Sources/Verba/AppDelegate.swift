@@ -1703,9 +1703,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 // Classify BEFORE reporting. A silent or too-short capture is a non-event the code
                 // already knows to drop, but it was auto-filed first and only judged benign after,
                 // so every user who tapped the key by accident opened a bug ticket (VER-52, VER-54).
-                let msg = error.localizedDescription.lowercased()
-                var isBenign = msg.contains("300ms") || msg.contains("too short") || msg.contains("invalid audio")
-                if case TranscribeError.empty = error { isBenign = true }
+                // `let`, not `var`: it is captured by the @Sendable MainActor.run closure below.
+                let isBenign: Bool = {
+                    if case TranscribeError.empty = error { return true }
+                    let msg = error.localizedDescription.lowercased()
+                    return msg.contains("300ms") || msg.contains("too short") || msg.contains("invalid audio")
+                }()
                 if !isBenign {
                     ErrorReporter.report("dictation session failed: \(error.localizedDescription)", context: ["area": "pipeline"])
                 }
