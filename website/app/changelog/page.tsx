@@ -16,8 +16,33 @@ type Day = { date: string; tag?: string; window?: string; summary: string; entri
 
 const DAYS: Day[] = [
   {
-    date: "July 13, 2026",
+    date: "July 26, 2026",
     tag: "Today",
+    summary: "Your lists keep their order, long dictations survive, and the local model answers fast again.",
+    entries: [
+      {
+        version: "0.9.99",
+        title: "Your transforms stop reshuffling every time you open Verba",
+        items: [
+          "The transform picker (Option + X) came back in a different order at almost every launch, so the 1 to 9 numbering you had learned never held. Your modes, styles, snippets and dictionary entries were shuffled the same way. Verba was rebuilding those lists from your synced account in an order that changed at each start, then saving the shuffle over the old one. They now keep the order you put them in, and anything you added on another device lands at the end of the list instead of somewhere in the middle.",
+          "Tasks you just ticked no longer jump around in the widget while they fade out.",
+        ],
+      },
+      {
+        version: "0.9.98",
+        title: "Dictate for an hour: it no longer gives up or comes back short",
+        items: [
+          "A dictation longer than a few minutes could fail outright or come back shortened. There was a hard 3-minute ceiling on the whole transcribe-plus-rewrite step, so a long recording was cancelled while it was still working normally. The ceiling now follows how long you actually spoke.",
+          "The local model also never saw more than about 3000 words of a long transcript, and could only write back about 750 words, so the rest was quietly dropped. Both limits now follow the length of what you said, which is why long dictations used to read like a summary.",
+          "On your own API key, a very long dictation could stop mid-sentence. Measured on a 21000-word transcript, the last quarter was missing; the budget is now sized to the transcript.",
+          "The local model is quick again. It is now loaded while you are still speaking instead of after you stop, so you no longer wait for it to wake up. And on qwen3 it was silently writing a hidden block of reasoning before every answer, which was thrown away after you had already waited for it; that is switched off.",
+          "A tap of the key that records nothing no longer files a bug report for itself.",
+        ],
+      },
+    ],
+  },
+  {
+    date: "July 13, 2026",
     summary: "The “access data from other apps” pop-up is gone for good, and no more false Fn-permission nags.",
     entries: [
       {

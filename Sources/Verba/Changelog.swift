@@ -34,8 +34,14 @@ enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
             date: "July 26, 2026", tag: "Today",
-            summary: "Long dictations survive, and the local model answers fast again.",
+            summary: "Your lists keep their order, long dictations survive, and the local model answers fast again.",
             entries: [
+                ChangelogEntry(version: "0.9.99",
+                    title: "Your transforms stop reshuffling every time you open Verba",
+                    items: [
+                        "The transform picker (Option + X) came back in a different order at almost every launch, so the 1 to 9 numbering you had learned never held. Your modes, styles, snippets and dictionary entries were shuffled the same way. Verba was rebuilding those lists from your synced account in an order that changed at each start, then saving the shuffle over the old one. They now keep the order you put them in, and anything you added on another device lands at the end of the list instead of somewhere in the middle.",
+                        "Tasks you just ticked no longer jump around in the widget while they fade out.",
+                    ]),
                 ChangelogEntry(version: "0.9.98",
                     title: "Dictate for an hour: it no longer gives up or comes back short",
                     items: [
