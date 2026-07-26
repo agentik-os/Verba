@@ -177,7 +177,7 @@ final class ConfigSync {
                     byTs[cts] = nw
                 }
             }
-            self.applyRemote("snippets", Array(byTs.values)) { SnippetsStore.shared.items = $0 }
+            self.applyRemote("snippets", self.ordered("snippets", local: items, byTs)) { SnippetsStore.shared.items = $0 }
         }
     }
 
@@ -207,7 +207,7 @@ final class ConfigSync {
                     byTs[cts] = nw
                 }
             }
-            self.applyRemote("transforms", Array(byTs.values)) { TransformsStore.shared.items = $0 }
+            self.applyRemote("transforms", self.ordered("transforms", local: items, byTs)) { TransformsStore.shared.items = $0 }
         }
     }
 
@@ -239,7 +239,7 @@ final class ConfigSync {
                     byTs[cts] = nw
                 }
             }
-            self.applyRemote("dict", Array(byTs.values)) { DictionaryStore.shared.terms = $0 }
+            self.applyRemote("dict", self.ordered("dict", local: items, byTs)) { DictionaryStore.shared.terms = $0 }
         }
     }
 
@@ -270,9 +270,10 @@ final class ConfigSync {
                     byTs[cts] = nw
                 }
             }
-            // Preserve built-ins (Normal) at the front, then the synced user styles.
+            // Preserve built-ins (Normal) at the front, then the synced user styles in a stable order.
             let builtins = items.filter { $0.builtin }
-            self.applyRemote("styles", builtins + Array(byTs.values)) { Settings.shared.styles = $0 }
+            let userLocal = items.filter { !$0.builtin }
+            self.applyRemote("styles", builtins + self.ordered("styles", local: userLocal, byTs)) { Settings.shared.styles = $0 }
         }
     }
 
@@ -325,7 +326,8 @@ final class ConfigSync {
                 }
             }
             let builtins = items.filter { $0.builtin }
-            self.applyRemote("modes", builtins + Array(byTs.values)) { Settings.shared.profiles = $0 }
+            let userLocal = items.filter { !$0.builtin }
+            self.applyRemote("modes", builtins + self.ordered("modes", local: userLocal, byTs)) { Settings.shared.profiles = $0 }
         }
     }
 
@@ -384,6 +386,32 @@ final class ConfigSync {
             self.applyingRemote = false
             self.lastIDs["tasks"] = projects.flatMap { $0.tasks }.map(\.id)
         }
+    }
+
+    // MARK: - deterministic merge order
+
+    /// Flatten a merged `ts → item` map into a list whose order is STABLE across launches.
+    ///
+    /// Never use `Array(byTs.values)` here: Swift seeds its hasher randomly PER PROCESS, so the very
+    /// same map iterates in a different order on every launch. Feeding that straight into a store
+    /// re-shuffled the user's lists at each pull and persisted the shuffle — the ⌥X transform
+    /// picker's 1-9 numbering (and the modes / styles / snippets lists) changed every launch.
+    ///
+    /// Order: the LOCAL list's order first, so a list the user arranged keeps its arrangement, then
+    /// anything new that arrived from the cloud, by ascending `ts` (the row's stable sync key).
+    private func ordered<T>(_ table: String, local: [T], _ byTs: [Double: T]) -> [T] where T: Identifiable, T.ID == UUID {
+        var out: [T] = []
+        var used = Set<Double>()
+        for item in local {
+            let key = ts(table, item.id)
+            guard !used.contains(key), let merged = byTs[key] else { continue }
+            used.insert(key)
+            out.append(merged)
+        }
+        for key in byTs.keys.sorted() where !used.contains(key) {
+            if let v = byTs[key] { out.append(v) }
+        }
+        return out
     }
 
     // MARK: - apply a merged list back to a store without bouncing it out again

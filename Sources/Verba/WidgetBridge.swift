@@ -110,7 +110,9 @@ final class WidgetBridge {
         lingering = lingering.filter { _, v in now.timeIntervalSince(v.at) < lingerWindow }
         for id in openIDs { lingering.removeValue(forKey: id) }
 
-        let rows = openRows + lingering.values.map(\.row)
+        // Sorted by completion time, never straight off `lingering.values`: a Dictionary's iteration
+        // order is unspecified, so several lingering rows would jitter between writes for no reason.
+        let rows = openRows + lingering.values.sorted { $0.at < $1.at }.map(\.row)
 
         if let data = try? JSONEncoder().encode(rows) {
             defaults.set(data, forKey: kTodayKey)
