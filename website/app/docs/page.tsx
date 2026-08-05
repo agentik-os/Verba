@@ -7,7 +7,7 @@ import SiteFooter from "@/components/SiteFooter";
 export const metadata: Metadata = {
   title: "Documentation, Verba AI Dictation for Mac",
   description:
-    "Verba's technical documentation: install & permissions, dictation modes, AI engines and bring-your-own-AI setup, the JARVIS voice agent, Notes, Tasks, shortcuts, privacy and troubleshooting.",
+    "Verba's technical documentation: install & permissions, what Free and Pro each include, dictation modes, AI engines and bring-your-own-AI setup, the JARVIS voice agent, Notes, Tasks, scheduling, connecting apps, shortcuts, privacy and troubleshooting.",
   alternates: { canonical: "/docs" },
   openGraph: {
     title: "Verba Documentation, Mac AI Dictation",
@@ -26,7 +26,10 @@ type Block =
   | { kind: "p"; text: string }
   | { kind: "ul"; items: string[] }
   | { kind: "steps"; items: string[] }
-  | { kind: "keys"; rows: [string, string][] };
+  | { kind: "keys"; rows: [string, string][] }
+  // Example phrases the user can literally say out loud.
+  | { kind: "say"; items: string[] }
+  | { kind: "table"; head: [string, string, string]; rows: [string, string, string][] };
 
 type Section = { id: string; title: string; blurb: string; blocks: Block[] };
 
@@ -43,7 +46,35 @@ const SECTIONS: Section[] = [
         "Optional: grant Screen Recording only if you want Context mode (Verba reading your screen).",
         "Hold the Fn (globe) key, speak, release, your clean text is pasted where your cursor is.",
       ] },
-      { kind: "p", text: "Raw dictation is free forever and unlimited, with no card. The paid AI features (every mode, Notes, Tasks, JARVIS) have a 7-day Pro trial, then $9.99/month, $84/year, or a one-time $149 Founder's Edition lifetime, billed through Stripe." },
+      { kind: "p", text: "Raw dictation is free forever and unlimited, with no card. Everything else is Pro, see Plans below." },
+    ],
+  },
+  {
+    id: "plans",
+    title: "Plans, Free and Pro",
+    blurb: "What Free gives you, what Pro adds, and what happens when the free AI allowance runs out.",
+    blocks: [
+      { kind: "table", head: ["", "Free", "Pro"], rows: [
+        ["Raw dictation", "Unlimited, forever, no card", "Unlimited"],
+        ["AI modes (Polish, Intent, Translate, Context, Prompt, custom)", "33 dictations included, then Pro", "Unlimited"],
+        ["Notes, Tasks, JARVIS", "Pro", "Included"],
+        ["Dictionary, Transforms, History, 15 languages", "Included", "Included"],
+        ["Price", "$0", "$9.99/month, $84/year, or $149 one-time (Founder's Edition)"],
+      ] },
+      { kind: "p", text: "Raw dictation is never paywalled. When the included AI allowance runs out, Verba does not stop working: it offers to upgrade, and you can keep dictating in Raw forever, on the same Fn key, with no card." },
+      { kind: "p", text: "Two different things get called \"the trial\", so here they are apart:" },
+      { kind: "ul", items: [
+        "The included AI allowance: 33 AI-mode dictations, enforced on your Mac, no card, no clock. It is spent by your dictation count, so raw dictations count toward it even though raw itself is never blocked.",
+        "The 7-day Pro trial: card required, starts when you check out, and is run by Stripe. During it you have full Pro.",
+      ] },
+      { kind: "p", text: "Billing runs on Stripe, which is the single source of truth. Verba asks verba.run for your status; only an explicit \"no subscription\" moves you back to Free. If Verba cannot reach the server, or the server cannot reach Stripe, your current plan is kept as-is, so an outage or a plane ride never revokes Pro." },
+      { kind: "p", text: "Restore a subscription: if you subscribed with a different email than the one you signed into the app with, open Settings ▸ Plan ▸ Restore a subscription, type the email you used at checkout, and press Verify. You must be signed in for this to work, it only ever reads your own subscription." },
+      { kind: "ul", items: [
+        "Signed out: Verba cannot check a subscription at all, so Pro features stay locked and raw dictation keeps working. Sign in from Settings ▸ Account, then press Verify.",
+        "\"Please sign in again\": your app session expired. Nothing was cancelled and Pro is not lost, click Sign in again to restore it.",
+        "\"Billing unavailable\" or a failed upgrade button: the billing service is not reachable right now. Your existing Pro is unaffected, try the upgrade again later or email hello@agentik-os.com.",
+        "Manage, change or cancel a plan: Settings ▸ Plan ▸ Manage subscription, or verba.run/account, both open the Stripe billing portal.",
+      ] },
     ],
   },
   {
@@ -66,7 +97,7 @@ const SECTIONS: Section[] = [
     blurb: "Six built-in modes plus custom AI-built modes, each is a prompt that shapes your speech.",
     blocks: [
       { kind: "ul", items: [
-        "Raw, verbatim, no AI rewriting (the default).",
+        "Raw, verbatim, no AI rewriting (the default). This is the free one, unlimited forever.",
         "Polish, resolves your self-corrections into finished prose.",
         "Intent, you give an instruction and Verba writes to it.",
         "Translate, pick a target language once; speak any language, it writes the target.",
@@ -75,6 +106,7 @@ const SECTIONS: Section[] = [
         "Custom modes, describe what you need and Verba's AI builds a new mode; edit any prompt freely.",
       ] },
       { kind: "p", text: "Switch modes with Fn+1…9 or the menu-bar picker; the choice sticks for every next dictation until you change it. Writing Styles (Fn+] / Fn+[) layer tone/format on top of any mode." },
+      { kind: "p", text: "Every mode except Raw is a Pro feature. On Free you get 33 AI-mode dictations included, then Verba offers to upgrade and keeps dictating in Raw. See Plans above." },
     ],
   },
   {
@@ -101,12 +133,61 @@ const SECTIONS: Section[] = [
     title: "JARVIS, the voice agent",
     blurb: "Action mode (Fn+X) plans, asks to clarify, and acts on 1,000+ connected apps after you confirm.",
     blocks: [
-      { kind: "p", text: "Say a goal however it comes out, \"remind me in 10 to grab the cake\" or \"find me a free hour tomorrow and book it\". JARVIS recovers your intent, resolves times in your timezone, reads context when it needs to, shows exactly what it will do, and only acts on your confirmation." },
+      { kind: "p", text: "Press Fn+X, say a goal however it comes out. JARVIS recovers your intent, resolves times in your timezone, reads context when it needs to, shows exactly what it will do, and only then acts. Pro feature." },
+      { kind: "say", items: [
+        "Remind me in 10 minutes to grab the cake.",
+        "Find a free hour tomorrow afternoon and book a call with Marie about the onboarding rewrite.",
+        "Send Marie a Slack message saying the onboarding review moved to Thursday.",
+        "What did Marie email me about the invoice?",
+      ] },
+      { kind: "p", text: "Confirmation behavior, the rule is simple: anything that WRITES is confirmed, anything that only READS is not. A write action (sending, booking, creating, editing, deleting) always stops on a confirmation card showing the exact action, the app it targets and every field it will use, and nothing happens until you accept. You can edit the fields on that card first, or dismiss it and nothing is sent. Read-only lookups (checking your calendar, searching an inbox) run straight away, since they change nothing." },
       { kind: "ul", items: [
-        "Connect apps in Settings ▸ Connected apps: Gmail, Slack, Notion, Google Calendar, Linear, GitHub and 1,000+ more.",
-        "Most apps connect with an API key; OAuth apps open a browser sign-in.",
-        "Connection keys are relayed server-side and never stored on your Mac.",
-        "Planning runs on your own AI engine (Claude Code or a local model), your requests never burn a shared cloud key.",
+        "Multi-step goals are planned as a sequence and confirmed before they run.",
+        "When something is ambiguous or missing, JARVIS asks a short question or shows editable fields instead of guessing.",
+        "After a successful action it can propose a follow-up (\"Invite people to the event?\"), which is itself confirmed before it runs.",
+      ] },
+    ],
+  },
+  {
+    id: "scheduling",
+    title: "Scheduling meetings",
+    blurb: "Book a meeting by voice, review the exact event, then confirm it.",
+    blocks: [
+      { kind: "p", text: "Scheduling is JARVIS (Fn+X) with a calendar. It works against your Mac's own Calendar, and against Google Calendar or Outlook once you connect them. Pro feature." },
+      { kind: "steps", items: [
+        "Connect a calendar in Settings ▸ Connected apps if you want more than the local Calendar app, then press Fn+X.",
+        "Say the meeting in plain words. Relative times (\"tomorrow afternoon\", \"in 20 minutes\", \"next Tuesday\") resolve in your own timezone.",
+        "JARVIS reads your calendar to find the slot, then shows a confirmation card with the title, date, time, duration and invitees.",
+        "Change anything you want on the card, then confirm. The event is created only at that point. Dismiss it and nothing is booked.",
+      ] },
+      { kind: "say", items: [
+        "Book a 30 minute call with Marie tomorrow at 2pm about the onboarding rewrite.",
+        "Find a free hour this week for a design review and invite the team.",
+        "Move my 3pm to Thursday morning and let the attendees know.",
+      ] },
+    ],
+  },
+  {
+    id: "connected-apps",
+    title: "Connecting apps",
+    blurb: "Give JARVIS Gmail, Slack, Notion, Calendar, Linear, GitHub and 1,000+ more.",
+    blocks: [
+      { kind: "steps", items: [
+        "Open Settings ▸ Connected apps. Search the catalog by name, or filter by category.",
+        "Tap Connect. OAuth apps (Gmail, Slack, Notion, Google Calendar…) open a secure browser sign-in; the many API-key apps open a small in-app form asking for exactly the keys they need, and nothing more.",
+        "Tap any connected app to see every action it exposes, each with example phrases you can say to JARVIS.",
+        "Say what you want with Fn+X. JARVIS picks the right app and action, and confirms before any write.",
+      ] },
+      { kind: "say", items: [
+        "Send Marie a Slack message saying the onboarding review moved to Thursday.",
+        "Create a Linear issue for the paywall copy fix and put it in the current cycle.",
+        "Draft a reply to the last email from accounting and leave it in my drafts.",
+      ] },
+      { kind: "ul", items: [
+        "Connection keys are relayed server-side and are never stored on your Mac.",
+        "Disconnect any app at any time from the same screen, which revokes Verba's access to it.",
+        "Planning runs on your own AI engine (a local model, your Claude subscription, or your own key), so your requests never burn a shared cloud key.",
+        "Connected apps and JARVIS are Pro features. Raw dictation keeps working on Free without any of this.",
       ] },
     ],
   },
@@ -115,6 +196,12 @@ const SECTIONS: Section[] = [
     title: "Notes",
     blurb: "Record up to an hour and turn it into a clean, structured document.",
     blocks: [
+      { kind: "p", text: "Press Fn+Z, pick a format, talk, then tap to stop. Verba transcribes the whole recording and rewrites it into the format you chose. Pro feature." },
+      { kind: "say", items: [
+        "Kickoff with the design team. We agreed to ship the onboarding rewrite first, Marie owns the copy, and we review Thursday. Tag it hashtag product.",
+        "Brain dump on pricing: I think we are too cheap for teams, but the single-seat price is right, and the annual discount is doing the work.",
+      ] },
+      { kind: "p", text: "Nothing is sent anywhere and nothing is confirmed: a note is written to your own library, where you can edit it in place, rename it, or delete it." },
       { kind: "ul", items: [
         "Pick a format before you start: Clean note, Brain-dump→outline, Summary, Meeting notes, Journal, Email, Code task, To-do list, or Article outline, plus your own custom modes.",
         "Markdown is rendered (headings, bold, checkboxes). Edit the result in place.",
@@ -129,8 +216,14 @@ const SECTIONS: Section[] = [
     title: "Tasks",
     blurb: "A voice task manager: projects → tasks → sub-tasks, built by an AI agent.",
     blocks: [
+      { kind: "p", text: "Press Fn+T and describe what you need in one breath. Verba builds the whole project, task and sub-task hierarchy for you, no forms. Pro feature." },
+      { kind: "say", items: [
+        "Make a Cooking project with a Chocolate cake task and the full shopping list as sub-tasks.",
+        "Add a task to send the investor update, due Friday, under the Fundraising project.",
+        "Mark the onboarding copy task as done and add a sub-task to review it with Marie.",
+      ] },
+      { kind: "p", text: "Tasks are created straight in your own list, so there is no confirmation step. Everything stays editable: rename, re-parent, check off or delete any item afterwards. Asking JARVIS (Fn+X) to act on a task in another app, for example creating the matching Linear issue, is a write action and is confirmed on a card first." },
       { kind: "ul", items: [
-        "Describe a list, \"a Cooking project, a Chocolate cake task, and the full shopping list\", and Verba builds the whole hierarchy.",
         "Tags file into the same nested tree as Notes; filter by any tag and everything nested beneath it.",
         "⌥+Fn pops a quick glance of today's tasks; add or check off tasks by voice from there.",
       ] },
@@ -258,6 +351,40 @@ function BlockView({ b }: { b: Block }) {
           </li>
         ))}
       </ol>
+    );
+  if (b.kind === "say")
+    return (
+      <div className="mt-3 space-y-2">
+        {b.items.map((it) => (
+          <p key={it} className="rounded-2xl border border-[var(--border)] bg-[var(--tint)]/40 px-4 py-3 text-sm italic leading-relaxed">
+            <span className="mr-1.5 not-italic opacity-50">Say</span>
+            &ldquo;{it}&rdquo;
+          </p>
+        ))}
+      </div>
+    );
+  if (b.kind === "table")
+    return (
+      <div className="mt-4 overflow-x-auto rounded-2xl border border-[var(--border)]">
+        <table className="w-full min-w-[34rem] text-sm">
+          <thead>
+            <tr className="bg-[var(--tint)]/60">
+              {b.head.map((h) => (
+                <th key={h} className="p-3 text-left font-semibold">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {b.rows.map((r, i) => (
+              <tr key={r[0]} className={i % 2 ? "bg-[var(--tint)]/40" : ""}>
+                <td className="p-3 align-top font-medium">{r[0]}</td>
+                <td className="p-3 align-top muted">{r[1]}</td>
+                <td className="p-3 align-top muted">{r[2]}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     );
   // keys
   return (
