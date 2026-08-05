@@ -163,9 +163,14 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         // Raw included, since this is below the mode layer — returns false forever. The user sees
         // "Couldn't start recording" (or nothing at all on the paths that don't flash) until they
         // relaunch. Tear the dead one down and take the cold path instead of refusing.
+        // The staleness test is `isRecording == false` AND `isPaused == false`, never isRecording
+        // alone: a PAUSED recorder also reports isRecording == false, so isRecording by itself
+        // cannot tell a recorder that died from one the user deliberately paused, and the teardown
+        // below would throw away a dictation they are still holding. Paused is a live recording
+        // waiting for resume(), so it refuses exactly like a running one.
         if let live = recorder {
-            guard !live.isRecording else {
-                VerbaLog.audio.error("AudioRecorder.start() refused: a recording is already live")
+            guard !live.isRecording, !isPaused else {
+                VerbaLog.audio.error("AudioRecorder.start() refused: a recording is already live or paused")
                 return false
             }
             VerbaLog.audio.error("AudioRecorder.start(): discarding a stale recorder that had already stopped itself")
