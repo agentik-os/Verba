@@ -25,6 +25,114 @@ REPO="agentik-os/Verba-releases"
 GENAPPCAST=".build/artifacts/sparkle/Sparkle/bin/generate_appcast"
 
 # ─────────────────────────────────────────────────────────────────────────────
+# APPCAST INTROSPECTION — used by the gate on the LOCAL appcast before upload,
+# and again on the PUBLISHED feed after it.
+#
+# `generate_appcast` (Sparkle 2) emits the version as an ELEMENT inside <item>:
+#     <sparkle:version>0.9.98</sparkle:version>
+# Sparkle 1 put it on the enclosure instead (sparkle:version="0.9.98"), and the
+# app's own feed parser accepts both (Tests/UpdaterContractTests.swift). A gate
+# that greps for the attribute form therefore matches NOTHING against the feed
+# we actually generate — it fails every release after the ~40-minute build, and
+# it would have gone on failing until someone read the XML. So: parse the
+# document with a real parser rather than pattern-matching its serialization,
+# and accept BOTH shapes so a Sparkle up- or downgrade cannot blind this again.
+# xmllint first (always present on macOS), python3 as the fallback — the same
+# two-backend pattern the well-formedness gate below already uses.
+# ─────────────────────────────────────────────────────────────────────────────
+SPARKLE_NS="http://www.andymatuschak.org/xml-namespaces/sparkle"
+
+# appcast_facts <file> — print, one fact per line:
+#   items <count>     how many <item> entries the feed carries
+#   version <value>   once per sparkle:version found, element form or attribute form
+# Returns non-zero when the file cannot be parsed at all.
+appcast_facts() {
+  local file="$1"
+  local xp_item xp_ver n i v
+  xp_item="//*[local-name()='item']"
+  xp_ver="//*[local-name()='version' and namespace-uri()='$SPARKLE_NS']"
+  xp_ver="$xp_ver | //@*[local-name()='version' and namespace-uri()='$SPARKLE_NS']"
+  if command -v xmllint >/dev/null 2>&1; then
+    n="$(xmllint --xpath "count($xp_item)" "$file" 2>/dev/null)" || return 1
+    printf 'items %s\n' "${n%%.*}"
+    n="$(xmllint --xpath "count($xp_ver)" "$file" 2>/dev/null)" || return 1
+    n="${n%%.*}"
+    i=1
+    while [ "$i" -le "$n" ]; do
+      # string() of a single-node filter expression is that node's text; normalize-space
+      # strips the indentation generate_appcast wraps element content in.
+      v="$(xmllint --xpath "normalize-space(string(($xp_ver)[$i]))" "$file" 2>/dev/null)" || return 1
+      [ -n "$v" ] && printf 'version %s\n' "$v"
+      i=$((i + 1))
+    done
+  else
+    python3 - "$file" "$SPARKLE_NS" <<'PY' || return 1
+import sys, xml.etree.ElementTree as ET
+path, ns = sys.argv[1], sys.argv[2]
+nodes = list(ET.parse(path).getroot().iter())
+print("items %d" % sum(1 for e in nodes if e.tag.rsplit("}", 1)[-1] == "item"))
+tag = "{%s}version" % ns
+for e in nodes:
+    for raw in (e.text if e.tag == tag else None, e.attrib.get(tag)):
+        if raw and raw.strip():
+            print("version %s" % " ".join(raw.split()))
+PY
+  fi
+}
+
+# assert_appcast_advertises <file> <expected-version> <label> — refuse anything but a feed
+# carrying exactly one <item> whose sparkle:version is exactly <expected-version>.
+# MISSING (a feed no client can act on), MULTIPLE (a stale DMG left in dist/ — its enclosure
+# would 404 under this release's tag, which the enclosure gate below also refuses) and
+# MISMATCHED (we would publish a build the feed does not advertise) all abort the release.
+assert_appcast_advertises() {
+  local file="$1" want="$2" label="$3"
+  local facts items="" versions="" distinct="" ndistinct=0 kind val
+
+  facts="$(appcast_facts "$file")" || {
+    echo "❌ $label: could not be parsed for sparkle:version." >&2
+    echo "   Either the XML is unreadable, or neither xmllint nor python3 is available here." >&2
+    exit 1; }
+
+  while read -r kind val; do
+    case "$kind" in
+      items)   items="$val" ;;
+      version) versions="$versions$val
+" ;;
+    esac
+  done <<< "$facts"
+
+  case "$items" in
+    1) ;;
+    0|"")
+      echo "❌ $label carries no <item> — every client would see an empty feed." >&2
+      exit 1 ;;
+    *)
+      echo "❌ $label carries $items <item> entries; exactly one (v$want) is expected." >&2
+      echo "   A leftover DMG in dist/ gets its own item, and its enclosure would 404 under" >&2
+      echo "   this release's tag. Fix: rm -rf dist && re-run." >&2
+      exit 1 ;;
+  esac
+
+  distinct="$(printf '%s' "$versions" | sed '/^[[:space:]]*$/d' | sort -u)"
+  [ -n "$distinct" ] && ndistinct="$(printf '%s\n' "$distinct" | wc -l | tr -d '[:space:]')"
+  if [ "$ndistinct" -eq 0 ]; then
+    echo "❌ $label carries no sparkle:version (neither a <sparkle:version> element nor an" >&2
+    echo "   enclosure attribute). Sparkle cannot compare it against an installed build." >&2
+    exit 1
+  fi
+  if [ "$ndistinct" -gt 1 ]; then
+    echo "❌ $label advertises conflicting sparkle:version values:" \
+         "$(printf '%s' "$distinct" | tr '\n' ' ')" >&2
+    exit 1
+  fi
+  [ "$distinct" = "$want" ] || {
+    echo "❌ $label advertises sparkle:version='$distinct', expected '$want'." >&2
+    exit 1; }
+  echo "▸ $label advertises sparkle:version $want (one item, one version)."
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # PREFLIGHT — everything below runs in seconds, BEFORE the ~40-minute build +
 # notarization round trip, and before anything is published. A release that
 # cannot be valid must die here, not in the field.
@@ -162,13 +270,10 @@ else
     || { echo "❌ dist/appcast.xml is not well-formed XML" >&2; exit 1; }
 fi
 
-# ── Gate: the appcast advertises OUR version ──
+# ── Gate: the appcast advertises OUR version, once ──
 # generate_appcast reads sparkle:version back out of the DMG's own Info.plist, so this is an
 # independent check on the artifact — unlike the filename, which we built from $VERSION.
-APPCAST_VER="$(grep -o 'sparkle:version="[^"]*"' dist/appcast.xml | head -1 | cut -d'"' -f2 || true)"
-[ "$APPCAST_VER" = "$VERSION" ] || {
-  echo "❌ appcast advertises sparkle:version='$APPCAST_VER', expected '$VERSION'." >&2
-  exit 1; }
+assert_appcast_advertises dist/appcast.xml "$VERSION" "dist/appcast.xml"
 
 # ── Gate: every enclosure URL points at a file this run actually uploads ──
 # --download-url-prefix is per-RELEASE but applies to the whole dist/ DIRECTORY. A leftover
@@ -300,9 +405,12 @@ for URL in "$BASE_LATEST/appcast.xml" "$BASE_LATEST/Verba.dmg" "${DOWNLOAD_PREFI
   echo "   ✓ $URL"
 done
 
-# The feed clients will actually parse must advertise this version.
-PUBLISHED_APPCAST="$(curl -fsSL --retry 3 "$BASE_LATEST/appcast.xml")"
-printf '%s' "$PUBLISHED_APPCAST" | grep -q "sparkle:version=\"$VERSION\"" \
-  || { echo "❌ the published appcast does not advertise sparkle:version=\"$VERSION\"." >&2; exit 1; }
+# The feed clients will actually parse must advertise this version — same parser-based check as
+# the local gate, run against the bytes GitHub actually serves through /releases/latest/.
+PUBLISHED_APPCAST="$(mktemp "${TMPDIR:-/tmp}/verba-appcast.XXXXXX")"
+trap 'rm -f "$PUBLISHED_APPCAST"' EXIT
+curl -fsSL --retry 3 -o "$PUBLISHED_APPCAST" "$BASE_LATEST/appcast.xml" \
+  || { echo "❌ could not re-download the published appcast for verification." >&2; exit 1; }
+assert_appcast_advertises "$PUBLISHED_APPCAST" "$VERSION" "the published appcast ($BASE_LATEST/appcast.xml)"
 
 echo "✅ Released v$VERSION — assets attached, 'latest' points here, and every public URL verified downloadable."
