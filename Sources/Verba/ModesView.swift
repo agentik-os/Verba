@@ -193,6 +193,17 @@ struct ModesView: View {
                             .padding(.horizontal, 5).padding(.vertical, 1)
                             .background(Capsule().fill(Color.secondary.opacity(0.12)))
                     }
+                    // Switched on, but the Advanced-modes feature keeps it out of the picker and the
+                    // Fn shortcuts. Without this the mode looks fully available and simply never
+                    // arrives when you switch to it. Mutually exclusive with "Hidden" above: a
+                    // hidden mode is already out of the picker on its own terms.
+                    if isGatedByAdvancedModes(p) {
+                        Text(L("Locked")).font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.orange)
+                            .padding(.horizontal, 5).padding(.vertical, 1)
+                            .background(Capsule().fill(Color.orange.opacity(0.15)))
+                            .help(L("Turn on Advanced modes to reach this mode from the picker and the Fn shortcuts"))
+                    }
                 }
                 HStack(spacing: 5) {
                     // The per-mode model is only meaningful on the cloud backend; under Local /
@@ -350,14 +361,37 @@ struct ModesView: View {
     }
 
     /// If `p` is the active profile and its prompt has just been blanked, demote it to the
-    /// first remaining mode with a usable prompt (falling back to the built-in .prompt mode).
+    /// first remaining mode with a usable prompt.
+    ///
+    /// The replacement MUST be a mode that is actually in `settings.profiles`. A built-in static
+    /// (`Profile.prompt`, `Profile.flow`, …) carries `id = UUID()` minted fresh per process, so its
+    /// id matches a persisted profile only during the single run that seeded the defaults. Pointing
+    /// `activeProfileID` at such an id makes `Settings.activeProfile` fall back to `profiles.first`
+    /// (Raw) with no signal, and persists an id that resolves to nothing: dictation silently stops
+    /// being rewritten. Raw and translate modes always count as usable, so when nothing here
+    /// qualifies the blanked mode is genuinely the only one left; we leave it active and let the
+    /// editor's inline warning stand rather than store a dangling id.
     private func demoteIfActiveBlanked(_ p: Profile) {
         guard settings.activeProfileID == p.id, !hasUsablePrompt(p) else { return }
-        if let replacement = settings.profiles.first(where: { $0.id != p.id && hasUsablePrompt($0) }) {
-            settings.activeProfileID = replacement.id
-        } else {
-            settings.activeProfileID = Profile.prompt.id
-        }
+        guard let replacement = settings.profiles.first(where: { $0.id != p.id && hasUsablePrompt($0) })
+        else { return }
+        settings.activeProfileID = replacement.id
+    }
+
+    /// True when a mode the user has left switched ON is still kept out of every switching gesture
+    /// by the Advanced-modes feature. `Settings.visibleProfiles` (the list behind Fn+Tab cycling,
+    /// Fn+digit, the overlay picker, the menu-bar mode list and the Home strip) drops everything
+    /// outside `Settings.level1ModeNames` until `FeatureFlags.advancedModes` is on, and a brand-new
+    /// install seeds NO features. Intent, Context and every custom mode are therefore listed here as
+    /// ordinary modes that no shortcut can ever land on, which reads as "modes are broken".
+    ///
+    /// The `isModeEnabled` term mirrors the SECOND filter in `visibleProfiles`: a mode the user hid
+    /// with the toggle below is already out of the picker on its own, so turning Advanced modes on
+    /// would not bring it back. Flagging it here would offer a remedy that visibly does nothing.
+    private func isGatedByAdvancedModes(_ p: Profile) -> Bool {
+        settings.isModeEnabled(p)
+            && !settings.isFeatureEnabled(FeatureFlags.advancedModes)
+            && !Settings.level1ModeNames.contains(p.name)
     }
 
     /// Generate (or regenerate) the friendly "what this mode does" blurb with AI, store it.
@@ -435,13 +469,39 @@ struct ModesView: View {
                     .buttonStyle(.borderless).foregroundStyle(.red).help(L("Delete this mode permanently"))
                 }
 
+                // Advanced modes is off, so every switching GESTURE (Fn+Tab, Fn+digit, the overlay
+                // picker, the menu-bar mode list) is filtered to the Level-1 modes and this one
+                // never arrives. "Use this mode" above still works, so the mode is not dead, it is
+                // just unreachable by shortcut. Say exactly that, and offer the one tap that fixes
+                // it instead of leaving the user to hunt through the Features page.
+                if let pp = p, isGatedByAdvancedModes(pp) {
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "lock")
+                            .font(.system(size: 16)).foregroundStyle(.orange)
+                            .frame(width: 20).padding(.top, 1)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(L("Advanced modes is not enabled, so this mode stays out of the mode picker, Fn-Tab cycling and the Fn-number shortcuts. You can still select it here with \u{201C}Use this mode\u{201D}, but no shortcut will ever land on it."))
+                                .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                            Button(L("Turn on Advanced modes")) {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                                    settings.setFeature(FeatureFlags.advancedModes, true)
+                                }
+                            }
+                            .glassButton()
+                        }
+                    }
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .glassCard(cornerRadius: 14)
+                }
+
                 // Show/hide in the picker — the non-destructive alternative to Delete. A hidden mode
                 // stays saved and fully editable but disappears from the Fn+Tab picker until re-enabled.
-                if !isRaw {
-                    let shown = settings.isModeEnabled(p ?? Profile.prompt)
+                if let pp = p, !isRaw {
+                    let shown = settings.isModeEnabled(pp)
                     Toggle(isOn: Binding(
                         get: { shown },
-                        set: { v in if let pp = p { withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { settings.setModeEnabled(pp, v) } } }
+                        set: { v in withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { settings.setModeEnabled(pp, v) } }
                     )) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(L("Show in the mode picker")).font(.system(size: 13, weight: .medium))

@@ -110,9 +110,6 @@ final class TransformPickerController {
 
     var isShowing: Bool { panel?.isVisible ?? false }
 
-    /// Flip the open panel to the live "Transforming…" state (called by the action handler).
-    func showWorking(_ name: String) { model.phase = .working(name) }
-
     /// Present the picker near a screen point (typically the mouse), for the given transforms.
     func present(_ transforms: [Transform], at point: NSPoint, onPick: @escaping (Transform) -> Void) {
         self.transforms = Array(transforms.prefix(9))
@@ -182,6 +179,10 @@ final class TransformPickerController {
 
     func hide() {
         panel?.orderOut(nil)
+        // Reset the phase with the panel: `pick` is the only writer and it never clears it, so a
+        // hidden panel stays `.working` forever. `present` re-seeds `.list`, but any future show
+        // path that skips it would open straight onto a stale spinner.
+        model.phase = .list
         removeDismissMonitors()
         removeWorkingEscapeMonitor()
     }
