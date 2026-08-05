@@ -268,21 +268,21 @@ enum Pipeline {
                     if ScreenCapture.hasPermission() {
                         status("Looking at your screen…")
                         guard let shot = await ScreenCapture.capturePNG(), !shot.isEmpty else {
-                            throw RepromptError.http(0, "Couldn't capture the screen. If Screen Recording was just enabled, quit and reopen Verba, then try again.")
+                            throw RepromptError.unavailable("Couldn't capture the screen. If Screen Recording was just enabled, quit and reopen Verba, then try again.")
                         }
                         png = shot
                     } else if profile.vision {
                         // Context mode is inherently screen-grounded — without the permission it can't run.
                         ScreenCapture.requestPermission()
                         ScreenCapture.openPrivacySettings()
-                        throw RepromptError.http(0, "Context mode needs Screen Recording. Enable Verba in System Settings ▸ Privacy & Security ▸ Screen Recording, then try again.")
+                        throw RepromptError.unavailable("Context mode needs Screen Recording. Enable Verba in System Settings ▸ Privacy & Security ▸ Screen Recording, then try again.")
                     } else {
                         // Action mode + a screen-grounded command, but no Screen Recording: prompt the
                         // user to enable it rather than silently running blind on a request that needs
                         // the screen ("reply to this", "what's on screen").
                         ScreenCapture.requestPermission()
                         ScreenCapture.openPrivacySettings()
-                        throw RepromptError.http(0, "That command needs to see your screen. Enable Verba in System Settings ▸ Privacy & Security ▸ Screen Recording, then try again — or phrase a self-contained command (e.g. “open Spotify”, “create an event tomorrow at 3pm”).")
+                        throw RepromptError.unavailable("That command needs to see your screen. Enable Verba in System Settings ▸ Privacy & Security ▸ Screen Recording, then try again — or phrase a self-contained command (e.g. “open Spotify”, “create an event tomorrow at 3pm”).")
                     }
                 }
                 status(Quips.current())
@@ -313,6 +313,15 @@ enum Pipeline {
                         detectedAction = action
                     } else {
                         reprompted = extractAgenticText(raw)
+                        // The reply was neither a usable action nor any text: `extractAgenticText`
+                        // strips a malformed or DISABLED `{"action":…}` envelope rather than paste raw
+                        // JSON, and that can leave nothing at all. Surface it instead of delivering.
+                        // Nothing here is safe to deliver: "" wipes the user's selection, and falling
+                        // back to `original` would paste the spoken COMMAND ("reply to this email")
+                        // as if it were content.
+                        if reprompted.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            throw RepromptError.empty("AI rewriting")
+                        }
                     }
                 } else if let png {
                     reprompted = try await r.repromptVision(transcript: original, systemPrompt: sys, imagePNG: png)
@@ -379,6 +388,22 @@ enum Pipeline {
             // is…"). Skip the strip whenever an action is in play.
             if detectedAction == nil {
                 reprompted = stripLeadingPreamble(reprompted)
+            }
+
+            // LAST LINE OF DEFENCE FOR THE USER'S WORDS, on the PLAIN-DICTATION branch only — the one
+            // branch where `original` is the content the user wants delivered. Every engine now throws
+            // rather than returning empty text (Reprompter.requireText), so this should be
+            // unreachable; it stays so that any future path that yields "" degrades to the transcript
+            // instead of pasting an empty string over the user's document.
+            //
+            // Every OTHER branch is excluded on purpose, because there `original` is a spoken COMMAND
+            // ("make this shorter", "reply to this email") and pasting it as content would be worse
+            // than the empty string: edit-last and the selection branches via `editingLast` /
+            // `wasInstruction`, and Context / Action mode via `profile.vision` / `actionMode`, which
+            // raise `.empty` at the point of failure instead.
+            if detectedAction == nil, !editingLast, !wasInstruction, !profile.vision, !actionMode,
+               reprompted.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                reprompted = original
             }
         }
 

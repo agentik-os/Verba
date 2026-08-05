@@ -182,6 +182,27 @@ enum ApiKeyProvider: String, Codable, CaseIterable, Identifiable, Hashable {
         case .openRouter: return "OpenRouter"
         }
     }
+
+    /// This provider's stored key, TRIMMED — nil when absent or whitespace-only.
+    ///
+    /// The single answer to "is this provider configured". Every call site used to inline its own
+    /// `!(Keychain.xKey ?? "").isEmpty`, untrimmed, while the Settings UI checked the same key
+    /// trimmed: a key pasted with a stray newline therefore read as CONFIGURED at the call site and
+    /// as MISSING in Settings, so the request went out with a whitespace header and dead-ended on a
+    /// 401 that no amount of re-reading Settings explained.
+    var storedKey: String? {
+        let raw: String?
+        switch self {
+        case .anthropic:  raw = Keychain.anthropicKey
+        case .openAI:     raw = Keychain.openAIKey
+        case .openRouter: raw = Keychain.openRouterKey
+        }
+        let trimmed = (raw ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    /// True when this provider has a usable key stored.
+    var hasKey: Bool { storedKey != nil }
 }
 
 // Carbon modifier masks (avoid importing Carbon here): control|option = 4096|2048.
@@ -891,8 +912,23 @@ final class Settings: ObservableObject {
         if storedBackend == "verba" || storedBackend == "auto" {
             repromptBackend = .auto
             d.set("auto", forKey: "repromptBackend")   // persist once (didSet doesn't fire in init)
+        } else if storedBackend.isEmpty {
+            // Nothing ever saved = a genuinely fresh install: fully local, as documented above.
+            repromptBackend = .localLLM
+        } else if let known = RepromptBackend(rawValue: storedBackend) {
+            repromptBackend = known
         } else {
-            repromptBackend = RepromptBackend(rawValue: storedBackend) ?? .localLLM
+            // A NON-EMPTY value we don't recognise: a raw value from a newer build (a downgrade, or
+            // settings sync from a Mac running one), or a corrupted blob. Falling to `.localLLM`
+            // here pinned the user to ONE specific engine — the exact dead-end the "verba" migration
+            // above exists to undo, and it fired without them ever choosing it. Use the resilient
+            // chain instead.
+            //
+            // Deliberately NOT persisted, unlike the "verba" migration: that one rewrites a value
+            // that is genuinely retired, whereas this one may be a setting a NEWER build still
+            // understands. Overwriting it would let the older app destroy the newer app's choice and
+            // sync the downgrade back. Behave resiliently in memory, leave the stored value alone.
+            repromptBackend = .auto
         }
         // Default provider is Anthropic (matches the pre-picker behaviour of "My API key").
         apiKeyProvider = ApiKeyProvider(rawValue: d.string(forKey: "apiKeyProvider") ?? "") ?? .anthropic
