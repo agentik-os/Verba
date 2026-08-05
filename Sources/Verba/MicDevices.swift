@@ -49,9 +49,15 @@ enum MicDevices {
         return dev
     }
 
-    /// Resolve a persisted UID back to a live device id (nil if unplugged).
+    /// Resolve a persisted UID back to a live device id.
+    ///
+    /// nil means "no such input device is connected right now", and every caller MUST read that as
+    /// "record from the system default input" rather than as a failure. A saved mic that is
+    /// unplugged, powered off, or came from another Mac is the normal case, not a broken one — the
+    /// recording has to happen anyway. (See `AudioRecorder.chosenMicToApply`.)
     static func id(forUID uid: String) -> AudioDeviceID? {
-        inputs().first { $0.uid == uid }?.id
+        guard !uid.isEmpty else { return nil }
+        return inputs().first { $0.uid == uid }?.id
     }
 
     static func name(forUID uid: String) -> String? {

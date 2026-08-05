@@ -90,9 +90,19 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
 
     /// The device the user picked that ISN'T already the default input, or nil if
     /// no switch is needed (no chosen mic, or it's already the default).
+    ///
+    /// A persisted UID that no longer resolves to a live input — the mic was unplugged, the
+    /// Bluetooth headset is off, the settings came from another Mac — is NOT an error and must
+    /// never fail the recording: nil here means "record from the system default input", which is
+    /// the one device we know exists. The stale UID is left in Settings on purpose so the user's
+    /// choice comes back when they plug the device in again; it is only logged, once per start.
     private func chosenMicToApply() -> AudioDeviceID? {
         let uid = Settings.shared.micUID
-        guard !uid.isEmpty, let chosen = MicDevices.id(forUID: uid) else { return nil }
+        guard !uid.isEmpty else { return nil }
+        guard let chosen = MicDevices.id(forUID: uid) else {
+            VerbaLog.audio.error("chosen mic \(uid, privacy: .public) is not connected — falling back to the system default input")
+            return nil
+        }
         return chosen != MicDevices.defaultInputID() ? chosen : nil
     }
 
@@ -111,6 +121,10 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
     }
 
     /// Ask for mic permission (macOS prompts once). Completion on main thread.
+    ///
+    /// The status is READ FRESH on every call rather than cached: the user can grant or revoke
+    /// microphone access in System Settings while Verba is running, and a cached "denied" would
+    /// keep every dictation dead until the next relaunch with no way for the user to tell why.
     func requestPermission(_ done: @escaping (Bool) -> Void) {
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .authorized:
@@ -124,14 +138,41 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         }
     }
 
+    /// True when macOS is REFUSING the microphone (the user denied it, or a profile/parental
+    /// restriction blocks it) as opposed to simply not having asked yet. macOS will not prompt
+    /// again in this state — `requestAccess` returns false without any UI — so the only way out is
+    /// System Settings, and the caller must say so instead of flashing a dead end.
+    var permissionRefused: Bool {
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .denied, .restricted: return true
+        default: return false
+        }
+    }
+
     @discardableResult
     func start() -> Bool {
-        // R1: never overwrite a live recorder — replacing `recorder` while it's still recording
+        // R1: never overwrite a LIVE recorder — replacing `recorder` while it's still recording
         // would orphan a running AVAudioRecorder (hot mic, lost dictation) with no owner left to
         // stop it. One recording at a time; the caller must stop() the current one first.
-        guard recorder == nil else {
-            VerbaLog.audio.error("AudioRecorder.start() refused: a recording is already live")
-            return false
+        //
+        // But `recorder != nil` is NOT the same fact as "a recording is live", and conflating the
+        // two is a permanent dead end: AVAudioRecorder stops itself on an encode error, on a route
+        // change, and when the capture device it was bound to disappears (unplugged mic, headset
+        // powered off, a Handoff/AirPods switch). None of those run our stop(), so `recorder` stays
+        // non-nil while `isRecording` is false, and from that moment EVERY start() in EVERY mode —
+        // Raw included, since this is below the mode layer — returns false forever. The user sees
+        // "Couldn't start recording" (or nothing at all on the paths that don't flash) until they
+        // relaunch. Tear the dead one down and take the cold path instead of refusing.
+        if let live = recorder {
+            guard !live.isRecording else {
+                VerbaLog.audio.error("AudioRecorder.start() refused: a recording is already live")
+                return false
+            }
+            VerbaLog.audio.error("AudioRecorder.start(): discarding a stale recorder that had already stopped itself")
+            live.stop()
+            recorder = nil
+            isPaused = false
+            restoreMic()   // it held a default-input switch we never restored
         }
         let chosen = chosenMicToApply()
 
@@ -205,6 +246,28 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         // Re-arm for the next dictation so the following Fn-press starts instantly.
         prewarm()
         return finished
+    }
+
+    // MARK: - AVAudioRecorderDelegate
+
+    /// The encoder died mid-capture (disk full, the input device vanished, a codec fault). We were
+    /// already the delegate but implemented nothing, so the failure was invisible AND the recorder
+    /// object stayed referenced. Log it, and if the casualty is the PRE-ARMED recorder, drop it:
+    /// an armed recorder whose encoder has failed will refuse `record()` on every future dictation
+    /// while `prewarm()` keeps seeing `armed != nil` and declines to build a healthy replacement.
+    /// The live recorder is left for `start()`/`stop()` to reap, which is where the recovery and
+    /// the mic restore already live.
+    func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
+        VerbaLog.audio.error("recorder encode error: \(error?.localizedDescription ?? "unknown", privacy: .public)")
+        if recorder === armed { discardArmed() }
+    }
+
+    /// Same reasoning for an unsuccessful finish: a failed armed recorder is unusable, and holding
+    /// it blocks `prewarm()` from arming a working one.
+    func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
+        guard !flag else { return }
+        VerbaLog.audio.error("recorder finished unsuccessfully")
+        if recorder === armed { discardArmed() }
     }
 
     /// Current input level 0...1 for the meter, boosted so quiet speech still moves.

@@ -976,17 +976,52 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Output.accessibilityTrusted
     }
 
-    /// Permissions are granted but the tap didn't come up — retry starting it a few times with a
-    /// short backoff (a fresh event tap after an app update / a transient launch-time failure). No
-    /// alert: if it recovers we re-arm the nag; if it's still dead after the retries AND the OS now
-    /// says a permission is actually missing, the next trigger surfaces the real prompt.
+    /// Accessibility is granted but the tap didn't come up — retry starting it a few times with a
+    /// short backoff (a fresh event tap after an app update / a transient launch-time failure).
+    /// Quiet WHILE retrying, so a grant that just needs a fresh tap never produces a false prompt.
+    /// If every retry fails the tap is genuinely dead and the user is told, once.
     private func retryFnTapSilently(attemptsLeft: Int) {
-        guard attemptsLeft > 0, Settings.shared.useFnAsPrimary, !FnTap.shared.active else { return }
+        guard Settings.shared.useFnAsPrimary, !FnTap.shared.active else { return }
+        // Retries exhausted and the tap is STILL dead. Returning quietly here is what made the Fn
+        // key a silent dead end: `fnTapPermissionsGranted()` only reads ACCESSIBILITY, so a user
+        // with Accessibility granted and Input Monitoring missing took this branch on every press,
+        // burned six silent retries, and was never told which permission to grant. The tap not
+        // coming up IS the evidence that something is still missing — say so.
+        guard attemptsLeft > 0 else { forceTapPermissionAlert(); return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
             guard let self, !FnTap.shared.active else { return }
             if FnTap.shared.start() { self.tapPermissionNagged = false; return }
             self.retryFnTapSilently(attemptsLeft: attemptsLeft - 1)
         }
+    }
+
+    /// Show the Fn-permission alert even though `fnTapPermissionsGranted()` (Accessibility) says
+    /// yes — because Accessibility is not the only grant the HID tap needs. Still once per session,
+    /// still never over onboarding.
+    private func forceTapPermissionAlert() {
+        guard !tapPermissionNagged, Settings.shared.onboarded,
+              onboardingWC?.window?.isVisible != true else { return }
+        tapPermissionNagged = true
+        showTapPermissionAlert()
+    }
+
+    /// macOS is refusing the microphone outright (denied or restricted). It will not prompt again,
+    /// so the app has to hand the user the pane that can actually reverse it — otherwise every
+    /// dictation, in every mode, fails with a flash and no way forward.
+    private func promptMicPermission() {
+        showGlassAlert(
+            icon: "mic.slash", tint: .orange,
+            title: "Verba can't reach your microphone",
+            message: "Microphone access is turned off for Verba, so no mode can record. Turn Verba on under Microphone in System Settings ▸ Privacy & Security, then press your trigger again.",
+            buttons: [
+                .init(title: "Later", role: .cancel, action: {}),
+                .init(title: "Open Microphone Settings", isDefault: true) {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
+                        NSWorkspace.shared.open(url)
+                    }
+                },
+            ],
+            size: NSSize(width: 400, height: 230))
     }
 
     private func promptTapPermissions() {
@@ -1002,6 +1037,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         tapPermissionNagged = true
+        showTapPermissionAlert()
+    }
+
+    /// The actionable "grant the Fn permissions" alert. Shared by the up-front check and by the
+    /// exhausted-retry path, so both dead ends surface the SAME actionable message instead of one
+    /// of them going quiet.
+    private func showTapPermissionAlert() {
         showGlassAlert(
             icon: "keyboard", tint: .orange,
             title: "Verba needs permission to use the Fn key",
@@ -1275,8 +1317,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // A ⌥X transform is applying in the background (state is still .idle for its whole run): don't
         // start a fresh dictation on top of it — the transform's pending Output.paste would otherwise
         // land in the dictation's field (or vice-versa). The stop/cancel paths above still run; only
-        // the NEW-capture path is suppressed for the brief, bounded transform window.
-        if transformInFlight { return }
+        // the NEW-capture path is suppressed for the brief, bounded transform window. Announced, not
+        // silent: a Fn press that starts nothing and says nothing reads as a broken microphone.
+        if transformInFlight { flashStatusItemMessage("Applying a transform…", isError: false); return }
 
         // Double-tap-to-start (opt-in .doubleTap style): the first bare Fn tap arms a short
         // window; only a SECOND bare Fn tap within it opens the mic, so a stray/accidental
@@ -1599,7 +1642,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // A voice to-do capture owns the shared `recorder` while it records (state stays .idle,
         // so every state==.idle caller — global shortcut, edit-last, etc. — would otherwise hijack
         // its mic and orphan the capture). Refuse to start a dictation over an in-flight capture.
-        if todoCaptureRecording { resetOneShotFlags(); return }   // R3: don't leak editLast/action into the next run
+        // Refusing is right; refusing SILENTLY is not. If this flag is ever left set by a capture
+        // that ended without clearing it, every dictation in every mode returns here with no
+        // recorder, no overlay and no message — the exact "the mic just stopped working" report,
+        // with nothing on screen to explain it. Say what happened next to the menu-bar icon.
+        if todoCaptureRecording {
+            resetOneShotFlags()   // R3: don't leak editLast/action into the next run
+            flashStatusItemMessage("Finishing the to-do capture first", isError: false)
+            return
+        }
         // Chained dictation: starting a new one while an earlier dictation is still processing.
         if SessionStore.shared.hasInflight { Gamification.shared.flag(.chainedDictation) }
         // Raw dictation is FREE FOREVER and unlimited — it is never paywalled. Only the AI modes
@@ -1617,7 +1668,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard ok else {
                 let wasAction = self.actionModeRecording   // captured before resetOneShotFlags clears it
                 self.resetOneShotFlags()
-                self.flashError(wasAction ? "Action mode needs microphone access" : "Microphone access denied")
+                // A REFUSED grant is a dead end the user cannot escape from inside the app: macOS
+                // never prompts again once denied, so a 2-second "Microphone access denied" flash
+                // leaves every mode — Raw included — permanently silent with no next step. Give the
+                // one action that fixes it. A merely-dismissed first-run prompt (.notDetermined,
+                // requestAccess returned false) still just flashes: pressing Fn again re-prompts.
+                if self.recorder.permissionRefused { self.promptMicPermission() }
+                else { self.flashError(wasAction ? "Action mode needs microphone access" : "Microphone access denied") }
                 return
             }
             // Start capturing FIRST (the recorder is pre-armed, so record() is instant) so the
