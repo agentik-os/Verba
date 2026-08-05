@@ -69,6 +69,12 @@ final class NotesStore: ObservableObject {
     private let indexURL: URL
     private let tombstoneURL: URL
 
+    /// Notes are written off the main thread, but on a SERIAL queue: the old code dispatched every
+    /// save onto the global CONCURRENT queue, so two saves in quick succession (an autosave landing
+    /// while a cloud pull committed) raced and could let the OLDER snapshot win — a silently lost
+    /// edit. One queue = writes land in the order they were snapshotted.
+    private let io = DispatchQueue(label: "run.verba.notes.io", qos: .utility)
+
     /// Persisted set of deleted note timestamps (ms, rounded). Mirrors History's intent
     /// but survives across pulls: a row the user deleted must never be re-appended by a
     /// later cloud pull, even if the server still returns it (notes:remove failed transiently).
@@ -100,9 +106,17 @@ final class NotesStore: ObservableObject {
     func add(original: String, formatted: String, formatName: String, audioURL: URL?, tags: [String] = [], title: String = "") -> NotesEntry {
         var stored: String?
         if let audioURL {
+            // Only record the audio filename when the copy actually landed. The old code set it
+            // unconditionally, so a failed copy (name collision, disk full) left the note pointing
+            // at a file that was never there — audioURL(for:) then handed back a dead URL.
             let dest = dir.appendingPathComponent(audioURL.lastPathComponent)
-            try? FileManager.default.copyItem(at: audioURL, to: dest)
-            stored = dest.lastPathComponent
+            do {
+                if FileManager.default.fileExists(atPath: dest.path) { try FileManager.default.removeItem(at: dest) }
+                try FileManager.default.copyItem(at: audioURL, to: dest)
+                stored = dest.lastPathComponent
+            } catch {
+                VerbaLog.syncFailure("note audio copy", error: error)
+            }
         }
         let allTags = NotesStore.mergeTags(tags + NotesStore.hashtags(in: formatted))
         let entry = NotesEntry(title: title.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -253,8 +267,8 @@ final class NotesStore: ObservableObject {
     private func saveTombstones() {
         let snapshot = Array(tombstones)
         let url = tombstoneURL
-        DispatchQueue.global(qos: .utility).async {
-            do { try JSONEncoder().encode(snapshot).write(to: url) }
+        io.async {
+            do { try JSONEncoder().encode(snapshot).write(to: url, options: .atomic) }
             catch { VerbaLog.syncFailure("notes tombstone save", error: error) }
         }
     }
@@ -435,10 +449,13 @@ final class NotesStore: ObservableObject {
 
     private func save() {
         // Snapshot on the caller (main) thread, write off-thread so a save never hitches the UI.
+        // `.atomic` writes through a temp file and renames: a crash or a power cut mid-write can no
+        // longer leave a TRUNCATED index.json behind (which the init decode-rescue then had to
+        // recover from, with the notes list coming up empty in the meantime).
         let snapshot = entries
         let url = indexURL
-        DispatchQueue.global(qos: .utility).async {
-            do { try JSONEncoder().encode(snapshot).write(to: url) }
+        io.async {
+            do { try JSONEncoder().encode(snapshot).write(to: url, options: .atomic) }
             catch { VerbaLog.syncFailure("notes index save", error: error) }   // R14: was silently swallowed
         }
     }

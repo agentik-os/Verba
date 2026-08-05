@@ -37,7 +37,21 @@ struct NotesView: View {
     @State private var busy = false
     @State private var status = ""
     @State private var recordError = ""     // legible, persistent "couldn't record" banner (cleared on success / dismiss)
+    // Transcribe/organize failures. These used to be written into `status`, which is only rendered
+    // inside `if busy { processingRow }` — and every failure branch clears `busy` in the same
+    // breath, so the message was mathematically unreachable and a failed note looked like nothing
+    // happened at all. This banner renders whether or not we're busy.
+    @State private var workError = ""
+    @State private var workFailure: WorkFailure?
+    /// What failed, so "Try again" can re-run the right step instead of a generic retry.
+    private enum WorkFailure: Equatable {
+        case transcribe(URL)   // the audio is still on disk: re-run transcription
+        case format            // the transcript is in hand: re-run the formatting
+    }
     @State private var work: Task<Void, Never>?
+    /// Monotonic id of the current transcribe/organize run. Bumped whenever work is started or
+    /// cancelled, so a superseded or cancelled Task can be told to write nothing.
+    @State private var workGen = 0
     @State private var activityToken: UUID?     // bottom-right activity chip for this note's transcribe→organize
     @State private var filterTag: String?
     @State private var expandedTags: Set<String> = []   // Bear-style tag tree: which parent tags are open
@@ -47,6 +61,7 @@ struct NotesView: View {
     @State private var lockSheetFor: NotesEntry?        // note being assigned a NEW password
     @State private var newPassword = ""
     @State private var newPasswordConfirm = ""
+    @State private var lockError = ""                   // why the last "Lock note" attempt did not protect the note
     @State private var gatePassword = ""                // password typed at the unlock gate
     @State private var gateError = false
     @State private var appendMode = false   // next recording is appended to the current note
@@ -54,7 +69,19 @@ struct NotesView: View {
     @State private var lastRecordedSeconds = 0   // duration snapshotted when the recording stops, used for Stats (live `elapsed` is reset before formatting finishes)
     @State private var autosaveTask: Task<Void, Never>?
     @State private var savedFlash = false   // brief "Saved ✓" after an autosave commit
-    @State private var addedToTasksFlash = false   // brief confirmation after "Add to Tasks"
+    /// The note a first-save just created and adopted. That adoption moves `selectedID`, which
+    /// re-enters loadSelection; this marker tells it the draft is already persisted so it does not
+    /// save a second copy.
+    @State private var justAdopted: UUID?
+    // Why the last autosave did NOT commit. A refused commit used to `return` silently, so the badge
+    // kept reading "Auto-saved" while every edit was being dropped (a locked note re-locked from
+    // another device is the real case). Empty = the note is saved.
+    @State private var saveError = ""
+    // Outcome of the last "Add to Tasks", read back from TodoStore rather than assumed. Every
+    // TodoStore mutator is a fire-and-forget Void that no-ops when it can't find its project, so a
+    // plain success flash could (and did) claim tasks that were never created.
+    @State private var taskFlash: TaskFlash?
+    private struct TaskFlash { let text: String; let ok: Bool }
     @StateObject private var md = MarkdownEditorController()   // drives the formatting toolbar
 
     private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -73,7 +100,9 @@ struct NotesView: View {
         .onAppear { notesCtl.visible = true }
         .onDisappear { notesCtl.visible = false }
         .onReceive(tick) { _ in if isRecording && !isPaused { elapsed = pausedAccum + Int(Date().timeIntervalSince(recordStart)) } }
-        .onChange(of: selectedID) { _, id in loadSelection(id) }
+        // `previous` matters: onChange fires AFTER selectedID moved, so the outgoing note's pending
+        // edit must be flushed into the id we came FROM, never into the one just clicked.
+        .onChange(of: selectedID) { old, id in loadSelection(id, previous: old) }
         .onChange(of: editorText) { _, _ in markComposedIfNeeded(); scheduleAutosave() }
         .onChange(of: noteTags) { _, _ in markComposedIfNeeded(); scheduleAutosave() }
         .onChange(of: notesCtl.pendingRecord) { _, v in if v { consumePending() } }
@@ -126,8 +155,13 @@ struct NotesView: View {
                 if !newPasswordConfirm.isEmpty && newPassword != newPasswordConfirm {
                     Text(L("Passwords don't match.")).font(.caption).foregroundStyle(.red)
                 }
+                if !lockError.isEmpty {
+                    Label(lockError, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption).foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 HStack {
-                    Button(L("Cancel")) { lockSheetFor = nil; newPassword = ""; newPasswordConfirm = "" }.buttonStyle(.plain)
+                    Button(L("Cancel")) { lockSheetFor = nil; newPassword = ""; newPasswordConfirm = ""; lockError = "" }.buttonStyle(.plain)
                     Spacer()
                     Button(L("Lock note")) { commitLock() }
                         .dialogPrimary().keyboardShortcut(.defaultAction)
@@ -137,7 +171,9 @@ struct NotesView: View {
             .padding(22).frame(width: 420)
             .presentationBackground(.thinMaterial).dialogAppear()
         }
-        .onDisappear { notesCtl.isRecording = false; levelTimer?.invalidate(); levelTimer = nil; autosaveTask?.cancel(); autosaveCommit(); work?.cancel(); if isRecording { _ = recorder.stop(); recorder.releaseArmed() } }
+        // Cancel first, then flush: the commit bails while `busy`, so cancelling afterwards
+        // left the in-flight note unsaved AND the view stuck busy the next time it appeared.
+        .onDisappear { notesCtl.isRecording = false; levelTimer?.invalidate(); levelTimer = nil; autosaveTask?.cancel(); autosaveTask = nil; cancelWork(); autosaveCommit(target: selectedID); if isRecording { _ = recorder.stop(); recorder.releaseArmed() } }
     }
 
     /// Notes matching the current tag filter. A parent tag (e.g. "work") matches its own notes AND
@@ -231,16 +267,42 @@ struct NotesView: View {
         // Reuse the gate field as the confirmation password for removal.
         guard !gatePassword.isEmpty, store.removePassword(e, password: gatePassword) else { gateError = true; return }
         gateError = false; gatePassword = ""; unlocked.insert(e.id)
-        loadSelection(e.id)
+        // Re-read from the store: removePassword just rewrote this entry to plaintext, and `e` is
+        // the stale pre-decrypt snapshot. loadEntry (not loadSelection) because the selection has
+        // not changed, so there is no outgoing note to flush.
+        if let fresh = store.entries.first(where: { $0.id == e.id }) { loadEntry(fresh) }
     }
 
     private func commitLock() {
         guard let e = lockSheetFor, !newPassword.isEmpty, newPassword == newPasswordConfirm else { return }
-        autosaveCommit()   // make sure the latest edit is saved before we encrypt it
+        // Flush the latest edit before we encrypt it — and REFUSE to lock if that flush did not
+        // land. store.lock encrypts what is on DISK, so locking over a failed flush would seal the
+        // older text while the wipe below destroys the only copy of the newer one.
+        if selectedID == e.id, !autosaveCommit(target: selectedID) {
+            lockError = L("Couldn't save this note's latest changes, so it was not locked. Copy your changes, then try again.")
+            return
+        }
         if store.lock(e, password: newPassword) {
             unlocked.remove(e.id)
-            if selectedID == e.id { selectedID = nil; newNote() }   // drop the now-encrypted text from the editor
+            unlockedKeys.removeValue(forKey: e.id)   // don't keep the password for a note we just sealed
+            if selectedID == e.id {
+                // Wipe the plaintext from the editor BEFORE newNote(). newNote() flushes, and with
+                // the selection already cleared that flush hit the CREATE branch and wrote the
+                // just-encrypted body back out as a brand-new UNLOCKED note, then pushed the
+                // plaintext to the cloud: locking a note quietly published a clear copy of it.
+                transcript = ""; editorText = ""; noteTitle = ""; noteTags = []
+                selectedID = nil
+                newNote()   // drop the now-encrypted text from the editor
+            }
+        } else {
+            // store.lock returns false on an empty password, a missing entry, an already-locked
+            // note, or a crypto failure (now including an RNG failure, which used to degrade to a
+            // zero salt). Closing the sheet silently told the user their note was protected while
+            // it stayed in plaintext on disk and in the cloud.
+            lockError = L("Couldn't lock this note, so it is still unprotected. Try again.")
+            return
         }
+        lockError = ""
         lockSheetFor = nil; newPassword = ""; newPasswordConfirm = ""
     }
 
@@ -392,7 +454,7 @@ struct NotesView: View {
             if e.locked {
                 Button { selectedID = e.id } label: { Label(L("Unlock to read"), systemImage: "lock.open") }
             } else {
-                Button { lockSheetFor = e } label: { Label(L("Lock with password…"), systemImage: "lock") }
+                Button { lockError = ""; newPassword = ""; newPasswordConfirm = ""; lockSheetFor = e } label: { Label(L("Lock with password…"), systemImage: "lock") }
             }
             Button(role: .destructive) { remove(e) } label: { Label(L("Delete"), systemImage: "trash") }
         }
@@ -500,7 +562,7 @@ struct NotesView: View {
             }
             if !isRecording { writeInsteadButton }
             if isRecording { pauseControl }
-            if !recordError.isEmpty { recordErrorBanner }
+            problemBanners
             formatChips
         }
         .frame(maxWidth: .infinity).padding(.vertical, 32).padding(.horizontal, 24)
@@ -570,6 +632,52 @@ struct NotesView: View {
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.red.opacity(0.35), lineWidth: 1))
         )
         .transition(.opacity)
+    }
+
+    /// Transcribe / organize outcome banner. Amber rather than red: in every case here the note's
+    /// words are still on screen and saved, so this reports a step that didn't finish, not a loss.
+    /// "Try again" re-runs the step that actually failed; it is hidden when a retry could only fail
+    /// the same way (silent audio), so the button is never a lie (R-LOOP: no unbounded retry).
+    private var workErrorBanner: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.circle.fill").font(.system(size: 14, weight: .semibold))
+                Text(workError).font(.callout.weight(.medium)).fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
+            }
+            .foregroundStyle(Color.orange)
+            HStack(spacing: 10) {
+                if let f = workFailure {
+                    Button(f == .format ? L("Organize again") : L("Transcribe again")) { retryWork(f) }
+                        .glassProminentButton().tint(.orange).disabled(busy)
+                }
+                Button(L("Dismiss")) { workError = ""; workFailure = nil }.glassButton()
+            }
+            .controlSize(.small)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14).padding(.horizontal, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.orange.opacity(0.10))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.orange.opacity(0.35), lineWidth: 1))
+        )
+        .transition(.opacity)
+    }
+
+    /// The two problem banners as ONE child. They are grouped because `noteEditor`'s VStack sits at
+    /// exactly ViewBuilder's 10-subview ceiling; adding an 11th direct child there is a compile
+    /// error, not a layout nit.
+    @ViewBuilder private var problemBanners: some View {
+        if !recordError.isEmpty { recordErrorBanner }
+        if !workError.isEmpty { workErrorBanner }
+    }
+
+    private func retryWork(_ f: WorkFailure) {
+        workError = ""; workFailure = nil
+        switch f {
+        case .transcribe(let url): transcribe(url)
+        case .format:              applyFormat()
+        }
     }
 
     private var formatChips: some View {
@@ -726,17 +834,31 @@ struct NotesView: View {
             if !t.isEmpty { return t }
             return format.name == "To-do list" ? "To-do list" : "\(format.name) tasks"
         }()
-        let pid = TodoStore.shared.addProject(name)
-        TodoStore.shared.appendTasks(pid, items.map { (title, _) in (title, [String](), nil) })
-        // Carry over already-checked items so a partially-done list lands consistent.
-        if let pi = TodoStore.shared.projects.firstIndex(where: { $0.id == pid }) {
-            for (idx, item) in items.enumerated() where item.done && idx < TodoStore.shared.projects[pi].tasks.count {
-                TodoStore.shared.projects[pi].tasks[idx].done = true
-            }
+        let store = TodoStore.shared
+        let pid = store.addProject(name)
+        store.appendTasks(pid, items.map { (title, _) in (title, [String](), nil) })
+        // Confirm against the store instead of assuming. Every TodoStore mutator is a
+        // fire-and-forget Void that silently no-ops when it can't find its project, so the old code
+        // flashed "Added to Tasks" whether or not a single task had been created.
+        guard let pi = store.projects.firstIndex(where: { $0.id == pid }),
+              store.projects[pi].tasks.count >= items.count else {
+            flashTaskResult(L("Couldn't add these to Tasks. Open the Tasks tab and try again."), ok: false)
+            return
         }
-        withAnimation(.easeInOut(duration: 0.18)) { addedToTasksFlash = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
-            withAnimation(.easeOut(duration: 0.25)) { addedToTasksFlash = false }
+        // Carry over already-checked items so a partially-done list lands consistent. The project
+        // was created empty a line ago, so checklist item N is task N.
+        for (idx, item) in items.enumerated() where item.done && idx < store.projects[pi].tasks.count {
+            store.projects[pi].tasks[idx].done = true
+        }
+        let n = items.count
+        flashTaskResult("\(L("Added to Tasks")) · \(n) \(n == 1 ? L("task") : L("tasks")) \(L("in")) “\(name)”", ok: true)
+    }
+
+    private func flashTaskResult(_ text: String, ok: Bool) {
+        withAnimation(.easeInOut(duration: 0.18)) { taskFlash = TaskFlash(text: text, ok: ok) }
+        // A failure stays up longer than a confirmation: it is the one the user must actually read.
+        DispatchQueue.main.asyncAfter(deadline: .now() + (ok ? 2.6 : 5.0)) {
+            withAnimation(.easeOut(duration: 0.25)) { taskFlash = nil }
         }
     }
 
@@ -809,19 +931,20 @@ struct NotesView: View {
                 .help(L("Export note"))
                 .disabled(editorText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 CopyButton(text: editorText)
-                Button(role: .destructive) { if let id = selectedID, let e = store.entries.first(where: { $0.id == id }) { remove(e) } else { newNote() } } label: { Image(systemName: "trash") }
+                Button(role: .destructive) { if let id = selectedID, let e = store.entries.first(where: { $0.id == id }) { remove(e) } else { discardDraft() } } label: { Image(systemName: "trash") }
                     .buttonStyle(.borderless).foregroundStyle(.secondary)
                     .help(selectedID == nil ? L("Discard") : L("Delete note"))
             }
             formatToolbar
             if format.intent { intentHelper }
-            if addedToTasksFlash {
-                Label(L("Added to Tasks — open the Tasks tab to see them"), systemImage: "checkmark.circle.fill")
-                    .font(.system(size: 11, weight: .medium)).foregroundStyle(.green)
+            if let f = taskFlash {
+                Label(f.text, systemImage: f.ok ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                    .font(.system(size: 11, weight: .medium)).foregroundStyle(f.ok ? Color.green : Color.orange)
+                    .fixedSize(horizontal: false, vertical: true)
                     .transition(.opacity)
             }
             if busy { processingRow }
-            if !recordError.isEmpty { recordErrorBanner }
+            problemBanners
             if isRecording {
                 HStack(spacing: 10) {
                     Circle().fill(isPaused ? .orange : .red).frame(width: 8, height: 8)
@@ -879,7 +1002,12 @@ struct NotesView: View {
     /// Auto-save status. Reflects ONLY the actual save (disk + cloud), which is instant — it is
     /// NOT tied to `busy` (transcription/formatting), so the LLM wait is never mislabeled "Saving".
     @ViewBuilder private var autosaveBadge: some View {
-        if autosaveTask != nil {
+        if !saveError.isEmpty {
+            // A refused commit must never read "Auto-saved" — that is the badge telling the user
+            // their work is safe while it is being dropped on every keystroke.
+            Label(L("Not saved"), systemImage: "exclamationmark.triangle.fill")
+                .font(.caption).foregroundStyle(.orange).help(saveError)
+        } else if autosaveTask != nil {
             HStack(spacing: 5) { ProgressView().controlSize(.small); Text(L("Saving…")).font(.caption) }
                 .foregroundStyle(.secondary)
         } else if savedFlash {
@@ -965,13 +1093,58 @@ struct NotesView: View {
 
     // MARK: selection / lifecycle
     private func newNote() {
-        autosaveTask?.cancel(); autosaveTask = nil; autosaveCommit()   // flush any pending title/body edit before clearing
-        work?.cancel(); busy = false; status = ""
+        autosaveTask?.cancel(); autosaveTask = nil
+        // Clear `busy` BEFORE flushing: the commit guards on `!busy`, so the old order
+        // (commit, then cancel) silently threw away the text of a note that was still organizing.
+        cancelWork()
+        autosaveCommit(target: selectedID)   // flush any pending title/body edit before clearing
         if isRecording { stopRecorderHard() }
         selectedID = nil
         transcript = ""; editorText = ""; noteTitle = ""; noteTags = []; tagInput = ""; intentText = ""
         recordingURL = nil; appendMode = false
+        recordError = ""; workError = ""; workFailure = nil; saveError = ""
+        // The flush above may have adopted a draft; clearing the selection right after means
+        // loadSelection never runs to consume that marker. Left set, the NEXT draft the user types
+        // would be flushed into the note this one became.
+        justAdopted = nil
         hasComposed = false; lastRecordedSeconds = 0
+    }
+
+    /// Throw the unsaved draft away WITHOUT committing it. The trash control is labelled "Discard"
+    /// on a new note, but it routed through newNote(), which FLUSHES first — so the one destructive
+    /// button in the header actually created the note, filed it in the sidebar, recorded it in Stats
+    /// and fired the savedNote flag. Emptying the editor first makes newNote's flush a no-op.
+    private func discardDraft() {
+        autosaveTask?.cancel(); autosaveTask = nil
+        cancelWork()
+        transcript = ""; editorText = ""; noteTitle = ""; noteTags = []
+        newNote()
+    }
+
+    /// Cancel any in-flight transcribe/organize work and leave the UI in a clean, non-busy state.
+    /// The Tasks themselves return early on `Task.isCancelled`, so the CANCELLER owns the cleanup:
+    /// without this, `busy` stayed true forever (a permanent "Working…" row that also disabled
+    /// autosave, which guards on `!busy`) and the ActivityCenter chip was never resolved.
+    private func cancelWork() {
+        work?.cancel(); work = nil
+        workGen &+= 1               // invalidate anything still in flight (see beginWork)
+        busy = false; status = ""
+        if let t = activityToken { ActivityCenter.shared.drop(t); activityToken = nil }
+    }
+
+    /// Take ownership of the work slot and return the generation the new task must run under.
+    ///
+    /// `Task.isCancelled` alone is not enough: both transcribe and applyFormat suspend across
+    /// `await MainActor.run`, and a cancel landing in that gap still let the old task write its
+    /// transcript into whatever note is now loaded and then call applyFormat, which set `busy` back
+    /// to true and installed a fresh Task the canceller no longer held. applyFormat also used to
+    /// replace `work` WITHOUT cancelling the previous format task, so a superseded run could paint
+    /// a permanent "Couldn't organize" banner over a note that had organized fine. One monotonic
+    /// counter closes both: a task whose generation is stale writes nothing.
+    private func beginWork() -> Int {
+        work?.cancel()
+        workGen &+= 1
+        return workGen
     }
 
     /// Latch `hasComposed` once any composition content exists. Drives the recorder→editor flip from
@@ -995,14 +1168,40 @@ struct NotesView: View {
         _ = recorder.stop(); recorder.releaseArmed()
     }
 
-    private func loadSelection(_ id: UUID?) {
+    private func loadSelection(_ id: UUID?, previous: UUID?) {
         guard let id, let e = store.entries.first(where: { $0.id == id }) else { return }
-        autosaveTask?.cancel(); autosaveTask = nil; autosaveCommit()   // flush the outgoing note's pending edit before loading the new one
-        work?.cancel(); busy = false; status = ""
+        autosaveTask?.cancel(); autosaveTask = nil
+        cancelWork()   // clear `busy` first, else the flush below is a no-op (see newNote)
+        // Reset the transient banners BEFORE the flush, never after: the flush can set `saveError`
+        // (the outgoing note was deleted or locked elsewhere) and clearing afterwards wiped that
+        // warning before it ever rendered — on precisely the path where loadEntry below overwrites
+        // the editor and those edits become unrecoverable.
+        recordError = ""; workError = ""; workFailure = nil; saveError = ""
+        // Which note does the editor's current content belong to? Normally the note we came FROM.
+        // But a first save adopts the draft into a real note and moves `selectedID` itself, and
+        // SwiftUI may coalesce that with the user's next click into a single onChange (old = nil),
+        // so `previous` alone would read as "unsaved draft" and save a SECOND copy. `justAdopted`
+        // carries the real owner across that gap.
+        let outgoing = previous ?? justAdopted
+        justAdopted = nil
+        if outgoing != id {
+            // `adopt: false` so committing a draft on the way out cannot reassign selectedID and
+            // fight the selection the user just made.
+            autosaveCommit(target: outgoing, adopt: false)
+        }
+        // outgoing == id means this change IS our own adoption: already committed, nothing to flush.
         if isRecording { stopRecorderHard() }
         // Locked + not yet unlocked → the lock gate (not the editor) is shown; never load the
         // ciphertext into the editor or let autosave touch it. tryUnlock() loads the plaintext.
         if e.locked && !unlocked.contains(id) { gatePassword = ""; gateError = false; return }
+        loadEntry(e)
+    }
+
+    /// Load a note's stored content into the editor. Deliberately does NOT flush: only a caller
+    /// that is SWITCHING notes has an outgoing note to commit, and that caller is loadSelection.
+    /// Re-loading the SAME note (after unlocking it, say) must not flush, because while a lock gate
+    /// is up the editor still holds the previously-open note's text.
+    private func loadEntry(_ e: NotesEntry) {
         transcript = e.original
         editorText = e.formatted
         noteTitle = e.title
@@ -1045,39 +1244,84 @@ struct NotesView: View {
             if Task.isCancelled { return }
             await MainActor.run {
                 autosaveTask = nil
-                if editorText == snapshot { autosaveCommit() }   // settled → commit
+                if editorText == snapshot { autosaveCommit(target: selectedID) }   // settled → commit
             }
         }
     }
 
     /// Create the note (first commit) or update it. Idempotent; safe to call on disappear.
-    private func autosaveCommit() {
+    ///
+    /// `target` is the note the CURRENT editor content belongs to, and it is explicit for a reason:
+    /// a caller that is SWITCHING notes must pass the OUTGOING id, because `selectedID` has already
+    /// moved by the time `.onChange(of: selectedID)` fires. Reading `selectedID` here meant that
+    /// clicking note B flushed note A's body into B and pushed it to the cloud, while the editor
+    /// repainted from a snapshot taken before the write, so the damage stayed invisible until the
+    /// next launch or sync.
+    ///
+    /// `adopt` says whether a note CREATED here should become the selection. False when we are only
+    /// flushing a draft on the way out, so the flush cannot fight the user's new selection.
+    /// Returns true when the editor's content is safely on disk (committed now, or already
+    /// identical to what is stored). Callers that are about to DESTROY the editor content, like
+    /// commitLock, must check this rather than assume the flush landed.
+    @discardableResult
+    private func autosaveCommit(target: UUID?, adopt: Bool = true) -> Bool {
         let doc = editorText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !doc.isEmpty, !busy else { return }
+        guard !doc.isEmpty, !busy else { return false }
         let titleTrim = noteTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let id = selectedID, let e = store.entries.first(where: { $0.id == id }) {
+        if let id = target {
+            // The note is gone (the user just deleted it). Falling through to the create branch
+            // here RESURRECTED the note that was just deleted, under a fresh id and date that the
+            // tombstone (keyed on the old timestamp) could not suppress.
+            guard let e = store.entries.first(where: { $0.id == id }) else {
+                // Deleted underneath the editor (a cloud pull can do this without going through
+                // remove()). Say so rather than let the badge keep reading "Auto-saved".
+                saveError = L("This note was deleted on another device. Copy your changes to keep them.")
+                return false
+            }
             let mergedTags = NotesStore.mergeTags(noteTags + NotesStore.hashtags(in: doc))
-            if e.formatted == doc, e.formatName == format.name, e.tags == mergedTags, e.title == titleTrim { return }   // unchanged → skip
+            if e.formatted == doc, e.formatName == format.name, e.tags == mergedTags, e.title == titleTrim {
+                saveError = ""   // in sync: never leave a stale "Not saved" on a clean note
+                return true      // already identical on disk: safe to destroy the editor
+            }
             // A locked-but-unlocked-this-session note must be re-encrypted, not written as plaintext —
             // and we must NOT flash "Saved" if the commit didn't actually happen (was silent data loss).
             let committed: Bool
             if e.locked, let pw = unlockedKeys[id] {
                 committed = store.updateUnlockedNote(e, original: transcript, formatted: doc, formatName: format.name, tags: noteTags, title: titleTrim, password: pw)
+            } else if e.locked {
+                // The note is locked but this session holds no password for it — it was locked on
+                // another device and adopted by a cloud pull while the editor was open. Writing it
+                // as plaintext would defeat the lock, so we refuse; say so instead of dropping the
+                // edit behind an "Auto-saved" badge.
+                committed = false
             } else {
                 committed = store.update(e, formatted: doc, formatName: format.name, tags: noteTags, title: titleTrim)
             }
-            guard committed else { return }
+            guard committed else {
+                saveError = e.locked
+                    ? L("This note was locked on another device. Copy your changes, then unlock it with its password to save them.")
+                    : L("Couldn't save this note. Copy your changes before closing Verba.")
+                return false
+            }
         } else {
             let e = store.add(original: transcript, formatted: doc, formatName: format.name, audioURL: recordingURL, tags: noteTags, title: titleTrim)
             Stats.shared.record(words: wordCount(doc), seconds: Double(lastRecordedSeconds))
-            selectedID = e.id          // keep editing the just-saved note
-            noteTags = e.tags          // reflect auto-extracted #hashtags
-            // First save with no title yet: focus the Title field so the (easy-to-miss) titling
-            // affordance is discoverable and the sidebar list gains a real label, not "Untitled".
-            if titleTrim.isEmpty && !titleFocused { titleFocused = true }
+            if adopt {
+                // Adopting reassigns selectedID, which re-enters loadSelection with `previous ==
+                // nil`. Without this marker that flush takes the create branch AGAIN and saves a
+                // SECOND copy of the note (and pushes it), on every single first save.
+                justAdopted = e.id
+                selectedID = e.id          // keep editing the just-saved note
+                noteTags = e.tags          // reflect auto-extracted #hashtags
+                // First save with no title yet: focus the Title field so the (easy-to-miss) titling
+                // affordance is discoverable and the sidebar list gains a real label, not "Untitled".
+                if titleTrim.isEmpty && !titleFocused { titleFocused = true }
+            }
         }
+        saveError = ""
         savedFlash = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { savedFlash = false }
+        return true
     }
 
     // MARK: actions
@@ -1121,8 +1365,16 @@ struct NotesView: View {
 
     /// Latch the UI into the recording state after the recorder successfully started.
     private func beginNoteRecording() {
-        if !appendMode { transcript = ""; editorText = ""; noteTags = [] }   // append keeps the current note
-        status = ""; recordError = ""; recordStart = Date(); elapsed = 0
+        if !appendMode {
+            transcript = ""; editorText = ""; noteTags = []
+        } else if transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !editorText.isEmpty {
+            // Appending to a note that has no raw source — one typed via "Write it instead", or
+            // adopted from a cloud pull, both of which store an empty `original`. transcribe() ends
+            // with `editorText = transcript`, so without seeding the transcript from the body the
+            // ENTIRE existing note was replaced by the new recording alone, then autosaved over.
+            transcript = editorText
+        }
+        status = ""; recordError = ""; workError = ""; workFailure = nil; recordStart = Date(); elapsed = 0
         pausedAccum = 0; pauseStart = nil; isPaused = false; notesCtl.level = 0
         isRecording = true
         // Feed the shared overlay pill's waveform (AppDelegate reads notesCtl.level) AND drive the
@@ -1165,6 +1417,11 @@ struct NotesView: View {
     }
 
     private func transcribe(_ url: URL) {
+        let gen = beginWork()
+        // transcribe is the only place that MINTS a token; applyFormat just updates the one it
+        // inherits. Resolve any token still held before overwriting the slot, or a superseded run
+        // would strand its chip in the activity list forever.
+        if let t = activityToken { ActivityCenter.shared.drop(t); activityToken = nil }
         busy = true; status = L("Transcribing…")
         // Activity chip (multitask visibility): this note is transcribing (then organizing) in the
         // background, so the user can watch it alongside any other in-flight work.
@@ -1184,16 +1441,18 @@ struct NotesView: View {
                 if s.voiceCommands { text = VoiceCommands.apply(text) }
                 if Task.isCancelled { return }
                 // Empty/garbled audio → a readable banner, not a stuck "Transcribing…" spinner
-                // (applyFormat() bails on empty transcript without ever clearing busy).
+                // (applyFormat() bails on empty transcript without ever clearing busy). The three
+                // engines THROW TranscribeError.empty rather than returning "", so this guard is the
+                // second net; the catch below handles the thrown case identically.
                 guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                    await MainActor.run {
-                        busy = false; status = ""; appendMode = false
-                        recordError = L("Didn't catch anything — try recording again.")
-                        if let t = activityToken { ActivityCenter.shared.drop(t); activityToken = nil }
-                    }
+                    await MainActor.run { if gen == workGen { reportHeardNothing() } }
                     return
                 }
                 await MainActor.run {
+                    // Cancellation can land in the actor hop above. Without this the abandoned
+                    // recording's text was written into whatever note is now loaded, and the
+                    // applyFormat() below re-armed `busy` with a Task the canceller had let go.
+                    guard gen == workGen else { return }
                     // Safety net: every note dictation ALSO lands in History (tagged "note"),
                     // so the dictated text stays recoverable even if the note is later deleted.
                     History.shared.add(original: text, reprompted: text, profileName: format.name,
@@ -1201,24 +1460,45 @@ struct NotesView: View {
                     if appendMode { transcript = (transcript + "\n\n" + text).trimmingCharacters(in: .whitespacesAndNewlines); appendMode = false }
                     else { transcript = text }
                     editorText = transcript
+                    // VER-20: Intent now reads the spoken intent from the START of the recording (the
+                    // user says "as a bug report", then the content, in one take) — no separate typed
+                    // field required. So always apply the format; a typed instruction, if present, still
+                    // takes precedence (effectiveSystemPrompt prepends it). Called INSIDE this block so
+                    // it is atomic with the generation check above.
+                    applyFormat()
                 }
-                // VER-20: Intent now reads the spoken intent from the START of the recording (the
-                // user says "as a bug report", then the content, in one take) — no separate typed
-                // field required. So always apply the format; a typed instruction, if present, still
-                // takes precedence (effectiveSystemPrompt prepends it).
-                applyFormat()
             } catch {
                 if Task.isCancelled { return }
                 await MainActor.run {
-                    busy = false; status = "\(L("Transcription failed:")) \(error.localizedDescription)"
+                    guard gen == workGen else { return }
+                    // Silence is not a failure. The engines throw TranscribeError.empty for a silent
+                    // or unreadable recording, and the old code surfaced that as "Transcription
+                    // failed: …" — alarming, and it offered a retry that could only fail again.
+                    if case TranscribeError.empty = error { reportHeardNothing(); return }
+                    busy = false; status = ""; appendMode = false
+                    workError = "\(L("Couldn't transcribe this recording.")) \(error.localizedDescription)"
+                    workFailure = .transcribe(url)   // the audio is still on disk, so a retry is real
                     if let t = activityToken { ActivityCenter.shared.finish(t, ok: false, resultLabel: L("Note failed")); activityToken = nil }
                 }
             }
         }
     }
 
+    /// The recording carried no speech. Nothing is overwritten: `transcript` and `editorText` are
+    /// left exactly as they were, so an append onto an existing note keeps that note intact.
+    private func reportHeardNothing() {
+        busy = false; status = ""; appendMode = false
+        workError = L("Didn't catch anything. The recording sounded silent, so nothing was changed. Try recording again.")
+        workFailure = nil   // re-transcribing the same silent audio can only fail again
+        if let t = activityToken { ActivityCenter.shared.drop(t); activityToken = nil }
+    }
+
     private func applyFormat() {
         guard !transcript.isEmpty else { return }
+        // Supersede any run already in flight. Re-picking a format used to leave the previous task
+        // alive, and BOTH wrote back: the loser could stamp a permanent "Couldn't organize" banner
+        // (and its older output) over a note the winner had organized fine.
+        let gen = beginWork()
         busy = true; status = "\(L("Organizing into")) \(format.name)…"
         if let t = activityToken { ActivityCenter.shared.update(t, label: L("Organizing note…")) }
         // Snapshot the intent on the main actor so the system prompt always reflects what the user
@@ -1234,15 +1514,38 @@ struct NotesView: View {
                 let out = try await r.reprompt(transcript: transcript, systemPrompt: sys, fast: true)
                 if Task.isCancelled { return }
                 await MainActor.run {
+                    guard gen == workGen else { return }   // superseded or cancelled: write nothing
+                    // An EMPTY model reply must never blank the note. Every HTTP backend throws on
+                    // empty, but the local-model path (Reprompter falls back to LocalLLM whenever
+                    // `fast` is set and no Anthropic key is present) returns "" with no guard — so
+                    // this assigned an empty editorText, flashed "Note ready", and autosaved a blank
+                    // note over the user's words. Keep what we have and say what happened.
+                    guard !out.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                        busy = false; status = ""
+                        workError = L("The model returned an empty note, so your transcript was kept as it was recorded.")
+                        workFailure = .format
+                        autosaveTask?.cancel(); autosaveTask = nil
+                        autosaveCommit(target: selectedID)   // the raw transcript is still worth saving
+                        if let t = activityToken { ActivityCenter.shared.finish(t, ok: false, resultLabel: L("Note failed")); activityToken = nil }
+                        return
+                    }
                     editorText = out; busy = false; status = ""
+                    workError = ""; workFailure = nil
                     autosaveTask?.cancel(); autosaveTask = nil
-                    autosaveCommit()   // persist the finished note immediately (no debounce wait)
+                    autosaveCommit(target: selectedID)   // persist the finished note immediately (no debounce wait)
                     if let t = activityToken { ActivityCenter.shared.finish(t, ok: true, resultLabel: L("Note ready")); activityToken = nil }
                 }
             } catch {
                 if Task.isCancelled { return }
                 await MainActor.run {
-                    busy = false; status = "\(L("Couldn't organize:")) \(error.localizedDescription)"
+                    guard gen == workGen else { return }   // superseded or cancelled: write nothing
+                    // editorText still holds the raw transcript here (transcribe() assigned it before
+                    // calling us), so nothing is lost — commit it so the words survive the failure.
+                    busy = false; status = ""
+                    workError = "\(L("Couldn't organize this note, your transcript was kept.")) \(error.localizedDescription)"
+                    workFailure = .format
+                    autosaveTask?.cancel(); autosaveTask = nil
+                    autosaveCommit(target: selectedID)
                     if let t = activityToken { ActivityCenter.shared.finish(t, ok: false, resultLabel: L("Note failed")); activityToken = nil }
                 }
             }
