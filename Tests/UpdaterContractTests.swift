@@ -665,3 +665,123 @@ enum Fixtures {
     </rss>
     """
 }
+
+// MARK: - Capture path contract
+
+/// Contract tests for the microphone capture path (`AudioRecorder`, `MicDevices`, and the
+/// permission dead-ends in `AppDelegate`).
+///
+/// These live in this target for the same reason the Sparkle checks do, and with the same
+/// technique: the production sources are read AS DATA (`RepoFile`), never imported. The app target
+/// is macOS-only — it pulls WhisperKit, FluidAudio, Sparkle and AppKit — so a test that imported
+/// `AudioRecorder` could not build on Linux CI at all, and a test that instantiated one would need
+/// a real microphone, a real TCC grant and a real CoreAudio device list. What CAN be pinned
+/// without any of that is the SHAPE of the decisions, and the shape is exactly what regressed:
+/// every failure below was a path that refused to record and said nothing.
+///
+/// Their limits, stated rather than implied: these prove the guards are present and correctly
+/// polarised in the source. They do NOT prove the app records. Only running it on a Mac does that.
+/// Every assertion has a negative twin — the specific broken form must be ABSENT — so a checker
+/// that would pass on the pre-fix source is a failing checker.
+final class CaptureContractTests: XCTestCase {
+
+    private func audioRecorder() throws -> String { try RepoFile.contents(of: "Sources/Verba/AudioRecorder.swift") }
+    private func micDevices() throws -> String { try RepoFile.contents(of: "Sources/Verba/MicDevices.swift") }
+    private func appDelegate() throws -> String { try RepoFile.contents(of: "Sources/Verba/AppDelegate.swift") }
+
+    /// THE regression this suite exists for. `recorder != nil` and "a recording is live" are not
+    /// the same fact: AVAudioRecorder stops itself on an encode error, a route change, or when its
+    /// input device disappears, none of which run our `stop()`. Refusing on the nil-check alone
+    /// therefore latches, and from that moment every `start()` in every mode — Raw included, since
+    /// this sits below the mode layer — returns false until the app is relaunched.
+    func testStartRecoversFromARecorderThatStoppedItself() throws {
+        let source = try audioRecorder()
+        XCTAssertFalse(source.contains("guard recorder == nil else"),
+                       "start() must not refuse on `recorder != nil` alone — a recorder that stopped itself is not a live recording, and refusing on it blocks every mode until relaunch")
+        XCTAssertTrue(source.contains("guard !live.isRecording else"),
+                      "the refusal must be conditioned on isRecording, so a dead recorder is torn down instead of latching")
+        XCTAssertTrue(Regex.captures(#"guard !live\.isRecording else \{[^}]*\}\s*\n[\s\S]{0,600}?(recorder = nil)"#, in: source).count == 1,
+                      "the recovery branch must actually clear `recorder`, otherwise start() still refuses on the next press")
+    }
+
+    /// A recorder that is discarded without restoring the default input leaves the user's system
+    /// mic switched to Verba's chosen device for every other app.
+    func testStaleRecorderRecoveryRestoresTheDefaultInput() throws {
+        let source = try audioRecorder()
+        let recovery = try XCTUnwrap(Regex.captures(#"discarding a stale recorder[\s\S]{0,400}?\n(\s*\})"#, in: source).first,
+                                     "the stale-recorder recovery branch should be identifiable by its log line")
+        XCTAssertFalse(recovery.isEmpty)
+        XCTAssertTrue(source.contains("restoreMic()   // it held a default-input switch we never restored"),
+                      "tearing down a stale recorder must restore whatever input device was default before it ran")
+    }
+
+    /// A saved mic that is unplugged, powered off, or came from another Mac is the NORMAL case.
+    /// It must degrade to the system default input, never fail the recording.
+    func testAnUnresolvableMicUIDFallsBackToTheSystemDefault() throws {
+        let recorder = try audioRecorder()
+        let devices = try micDevices()
+        XCTAssertTrue(recorder.contains("falling back to the system default input"),
+                      "an unresolvable mic UID must be logged and fall back, not fail the capture")
+        // Polarity check: the fallback branch returns nil (= use the default), it does not propagate
+        // a failure. `chosenMicToApply` returning nil is what makes start() take the default path.
+        XCTAssertTrue(Regex.captures(#"guard let chosen = MicDevices\.id\(forUID: uid\) else \{[\s\S]{0,300}?(return nil)"#, in: recorder).count == 1,
+                      "the unresolved-UID branch must `return nil` (record from the default input)")
+        XCTAssertTrue(devices.contains("guard !uid.isEmpty else { return nil }"),
+                      "MicDevices.id(forUID:) must treat an empty UID as 'no choice' rather than scanning for a device named \"\"")
+    }
+
+    /// macOS never re-prompts once microphone access is denied, so a flash that disappears in two
+    /// seconds leaves every mode permanently silent with no next step.
+    func testARefusedMicrophoneGrantOffersTheSettingsPane() throws {
+        let recorder = try audioRecorder()
+        let delegate = try appDelegate()
+        XCTAssertTrue(recorder.contains("var permissionRefused: Bool"),
+                      "the recorder must expose whether macOS is REFUSING the mic, distinct from 'not asked yet'")
+        XCTAssertTrue(delegate.contains("permissionRefused { self.promptMicPermission() }"),
+                      "a refused grant must route to the actionable prompt, not to a transient flash")
+        XCTAssertTrue(delegate.contains("Privacy_Microphone"),
+                      "the prompt must open the Microphone pane — the only place the user can reverse a denial")
+    }
+
+    /// The Fn dead end: `fnTapPermissionsGranted()` reads ACCESSIBILITY only, so a user with
+    /// Accessibility granted and Input Monitoring missing burned every silent retry and was never
+    /// told which permission to grant.
+    func testExhaustedFnTapRetriesSurfaceThePermissionAlert() throws {
+        let delegate = try appDelegate()
+        XCTAssertTrue(delegate.contains("guard attemptsLeft > 0 else { forceTapPermissionAlert(); return }"),
+                      "when every silent retry has failed the tap is genuinely dead — the user must be told, not left with a dead Fn key")
+        XCTAssertFalse(delegate.contains("guard attemptsLeft > 0, Settings.shared.useFnAsPrimary, !FnTap.shared.active else { return }"),
+                      "the old form returned quietly on exhaustion, which is the silent dead end itself")
+        XCTAssertTrue(delegate.contains("Privacy_ListenEvent"),
+                      "the alert must name and open Input Monitoring, not only Accessibility")
+    }
+
+    /// Every branch that declines to start a capture has to say so. A trigger that starts nothing
+    /// and prints nothing is indistinguishable from a broken microphone, which is precisely how
+    /// this bug was reported.
+    func testNoCapturePathDeclinesSilently() throws {
+        let delegate = try appDelegate()
+        for (guardClause, why) in [
+            ("if todoCaptureRecording {", "a stuck to-do capture would swallow every dictation with no message"),
+            ("if transformInFlight { flashStatusItemMessage(", "a Fn press during a transform must explain why nothing started"),
+        ] {
+            XCTAssertTrue(delegate.contains(guardClause), why)
+        }
+        XCTAssertFalse(delegate.contains("if todoCaptureRecording { resetOneShotFlags(); return }"),
+                       "the silent one-line form is the regression: it returns with no recorder, no overlay and no message")
+        XCTAssertFalse(delegate.contains("if transformInFlight { return }\n\n        // Double-tap"),
+                       "the dictation path's transform guard must not return silently")
+    }
+
+    /// The delegate callbacks existed in the conformance list and nowhere else, so an encoder
+    /// failure was invisible and could poison the PRE-ARMED recorder — which `prewarm()` then
+    /// refuses to replace, because it only arms when `armed == nil`.
+    func testEncoderFailuresDropThePreArmedRecorder() throws {
+        let source = try audioRecorder()
+        XCTAssertTrue(source.contains("func audioRecorderEncodeErrorDidOccur"),
+                      "AVAudioRecorderDelegate was declared but its failure callbacks were never implemented")
+        XCTAssertTrue(source.contains("func audioRecorderDidFinishRecording"))
+        XCTAssertEqual(Regex.captures(#"if recorder === armed \{ (discardArmed\(\)) \}"#, in: source).count, 2,
+                       "both failure callbacks must drop a poisoned armed recorder so prewarm() can build a healthy one")
+    }
+}
