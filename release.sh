@@ -173,7 +173,11 @@ version_le() {  # version_le A B -> true when A <= B, comparing each dotted fiel
 if [ "${ALLOW_NON_MONOTONIC:-0}" = "1" ]; then
   echo "⚠︎ ALLOW_NON_MONOTONIC=1 — skipping the published-version comparison (deliberate override)."
 else
-  echo "▸ Checking $VERSION against the currently published release on $REPO…"
+  # Brace every expansion that touches a multibyte character: bash 3.2 on the macOS
+  # runner accepts the leading byte of one as part of an identifier, so an unbraced
+  # $REPO followed straight by the ellipsis parsed as the unset name REPO\xe2 and
+  # `set -u` aborted the run before the build (run 31023566275).
+  echo "▸ Checking $VERSION against the currently published release on ${REPO}…"
   LATEST_TAG=""
   if LATEST_TAG="$(gh release view --repo "$REPO" --json tagName -q .tagName 2>/dev/null)"; then
     LATEST_VER="${LATEST_TAG#v}"
@@ -345,7 +349,7 @@ if [ "${CRITICAL:-0}" = "1" ]; then
   fi
 fi
 
-echo "▸ Publishing GitHub release v$VERSION on $REPO…"
+echo "▸ Publishing GitHub release v$VERSION on ${REPO}…"
 # Upload: versioned DMG (referenced by the appcast), stable-named Verba.dmg
 # (website latest-link), the appcast, and any Sparkle deltas this run produced.
 #
