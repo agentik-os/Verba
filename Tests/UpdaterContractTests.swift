@@ -698,10 +698,27 @@ final class CaptureContractTests: XCTestCase {
         let source = try audioRecorder()
         XCTAssertFalse(source.contains("guard recorder == nil else"),
                        "start() must not refuse on `recorder != nil` alone — a recorder that stopped itself is not a live recording, and refusing on it blocks every mode until relaunch")
-        XCTAssertTrue(source.contains("guard !live.isRecording else"),
+        XCTAssertTrue(source.contains("guard !live.isRecording, !isPaused else"),
                       "the refusal must be conditioned on isRecording, so a dead recorder is torn down instead of latching")
-        XCTAssertTrue(Regex.captures(#"guard !live\.isRecording else \{[^}]*\}\s*\n[\s\S]{0,600}?(recorder = nil)"#, in: source).count == 1,
+        XCTAssertTrue(Regex.captures(#"guard !live\.isRecording, !isPaused else \{[^}]*\}\s*\n[\s\S]{0,600}?(recorder = nil)"#, in: source).count == 1,
                       "the recovery branch must actually clear `recorder`, otherwise start() still refuses on the next press")
+    }
+
+    /// The other half of that fact, and the one the recovery above can destroy: a recorder the user
+    /// PAUSED also reports `isRecording == false`. Testing isRecording alone therefore reads a
+    /// paused dictation as a corpse and tears it down — `live.stop()` flushes the file, `recorder`
+    /// is cleared and the audio the user is still holding is gone, silently. Paused is a live
+    /// recording waiting for `resume()`, so it must refuse exactly like a running one.
+    func testStartDoesNotDiscardAPausedRecording() throws {
+        let source = try audioRecorder()
+        XCTAssertFalse(source.contains("guard !live.isRecording else"),
+                       "the isRecording-only form is the regression: a paused recorder reports isRecording == false and would be torn down as stale")
+        XCTAssertEqual(Regex.captures(#"guard !live\.isRecording, (!isPaused) else"#, in: source).count, 1,
+                       "the staleness test must ask isPaused too, so a paused recording is preserved rather than discarded")
+        // Polarity: the paused case takes the REFUSAL branch (return false), never the teardown.
+        // The teardown must stay strictly below the guard, where only a genuinely dead recorder reaches it.
+        XCTAssertTrue(Regex.captures(#"guard !live\.isRecording, !isPaused else \{[^}]*(return false)[^}]*\}"#, in: source).count == 1,
+                      "a paused recorder must make start() return false, not fall through to `live.stop()`")
     }
 
     /// A recorder that is discarded without restoring the default input leaves the user's system
