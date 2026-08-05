@@ -17,8 +17,18 @@ struct NoteModesView: View {
                     ForEach(store.modes) { m in
                         HStack(spacing: 8) {
                             Image(systemName: m.icon).foregroundStyle(.secondary).frame(width: 16)
-                            Text(m.name).lineLimit(1)
+                            Text(m.hasUsableName ? m.name : "Untitled")
+                                .lineLimit(1)
+                                .foregroundStyle(m.hasUsableName ? Color.primary : Color.secondary)
                             Spacer(minLength: 6)
+                            // Flag the two states that change what this mode actually does, so the
+                            // list tells the truth before the user picks a row (an empty prompt runs
+                            // a fallback; a duplicate name is ambiguous when a note is reopened).
+                            if !m.hasUsablePrompt {
+                                badge("This mode has no prompt of its own")
+                            } else if store.isNameDuplicated(m.id) {
+                                badge("Another mode has this name")
+                            }
                             if m.builtin { Text("Built-in").font(.caption2).foregroundStyle(.tertiary) }
                         }
                         .padding(.vertical, 3)
@@ -75,6 +85,11 @@ struct NoteModesView: View {
                              set: { v in if let i = index(of: id) { store.modes[i].model = v.isEmpty ? nil : v } })
         let m = store.modes.first { $0.id == id }
         let isIntent = m?.intent ?? false
+        let promptIsBlank = !(m?.hasUsablePrompt ?? true)
+        let nameIsBlank = !(m?.hasUsableName ?? true)
+        let nameIsDuplicated = store.isNameDuplicated(id)
+        let isLastMode = store.modes.count <= 1
+        let deleteHelp = isLastMode ? "This is your last note mode, so it can't be deleted" : "Delete this mode"
 
         return ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -83,8 +98,18 @@ struct NoteModesView: View {
                     Spacer()
                     if !isIntent {
                         Button(role: .destructive) { delete(id) } label: { Image(systemName: "trash") }
-                            .buttonStyle(.borderless).foregroundStyle(.red).help("Delete this mode")
+                            .buttonStyle(.borderless).foregroundStyle(.red)
+                            .disabled(isLastMode)
+                            .help(deleteHelp)
                     }
+                }
+                if nameIsBlank {
+                    warning("This mode has no name, so its chip in Notes will be blank. Give it one.")
+                }
+                if nameIsDuplicated {
+                    // Notes store the format by name (NotesStore.formatName), so two modes sharing one
+                    // name make reopening an old note ambiguous: the first match in this list wins.
+                    warning("Another note mode is already called \u{201C}\(m?.name ?? "")\u{201D}. Reopening a saved note picks whichever of them comes first in this list.")
                 }
 
                 field("Model", hint: "which model turns the recording into this note") {
@@ -107,6 +132,14 @@ struct NoteModesView: View {
                         .font(.system(.callout, design: .monospaced)).scrollContentBackground(.hidden)
                         .frame(minHeight: 220).padding(12)
                         .background(.softFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    if promptIsBlank {
+                        // Never let an empty prompt look like "no formatting": an empty system prompt
+                        // still runs, unguided. NoteFormat.effectiveBasePrompt substitutes a shipped
+                        // prompt, and this says which one, so the substitution is never a surprise.
+                        warning(isIntent
+                            ? "This prompt is empty, so recordings fall back to the shipped Intent prompt (it still reads the intent you speak at the start)."
+                            : "This prompt is empty, so recordings fall back to the shipped Clean note prompt. Write a prompt to make this mode do something of its own.")
+                    }
                     if isIntent {
                         Text("This is the Intent mode: when you pick it in Notes, you also give a one-off instruction (e.g. \u{201C}as a bug report\u{201D}) that shapes that single recording.")
                             .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
@@ -119,12 +152,28 @@ struct NoteModesView: View {
     }
 
     private func delete(_ id: UUID) {
-        // Never delete the unique Intent mode: it's the only source of one-off
-        // instructions and can't be re-created without a full Reset-to-defaults.
-        if store.modes.first(where: { $0.id == id })?.intent == true { return }
-        selectedID = nil
-        store.delete(id)
+        // The store owns the rules now (the Intent mode is undeletable because it is the only source
+        // of one-off instructions and cannot be re-created without a full reset; the list may never
+        // empty out), so every caller inherits them. A refusal leaves the selection untouched rather
+        // than clearing the editor as if something had happened.
+        guard store.delete(id) else { return }
         selectedID = store.modes.first?.id
+    }
+
+    /// The list-row marker for a mode whose behaviour is not what its row suggests.
+    private func badge(_ help: String) -> some View {
+        Image(systemName: "exclamationmark.triangle.fill")
+            .font(.caption2).foregroundStyle(.orange).help(help)
+    }
+
+    /// An inline caution about the selected mode. Used for the states that silently change what a
+    /// run does: an empty prompt, a blank name, a name another mode already answers to.
+    private func warning(_ text: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Image(systemName: "exclamationmark.triangle.fill").font(.caption).foregroundStyle(.orange)
+            Text(text).font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     @ViewBuilder
