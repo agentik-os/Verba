@@ -33,7 +33,29 @@ struct ChangelogDay: Identifiable {
 enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
-            date: "July 26, 2026", tag: "Today",
+            date: "August 5, 2026", tag: "Today",
+            summary: "Updates reach you again, and Verba stops pretending a failed update check went fine.",
+            entries: [
+                ChangelogEntry(version: "0.9.100",
+                    title: "Updates reach you again",
+                    items: [
+                        "If you have been sitting on 0.9.97 wondering why nothing new ever arrived, here is why: 0.9.98 and 0.9.99 were written but never came out as an installable build, so no copy of Verba was ever offered them. 0.9.100 is the first release to actually reach you since 0.9.97, and it brings everything those two were meant to bring.",
+                        "Verba could advertise a version that no longer exists. The last version it had ever seen stayed pinned in the menu bar and in the update prompt even after a later check found nothing, so you could be invited to install a release that had been pulled. That version is now cleared the moment a check comes back empty, and a build that matches the one you are already running is never offered to you as an update.",
+                        "A failed update check used to look exactly like a successful one. Being offline, a release feed that does not answer, a download whose signature does not verify: none of them said anything, and Settings kept showing a reassuring “last checked” time for a check that never got anywhere. Failures are now recorded, and “last checked” only moves when the check really completed.",
+                        "Your auto-update preference is applied from the very first check. Verba used to start looking for updates a moment before it had finished reading that setting, so the first check after a launch could ignore it.",
+                        "The version Verba reports in Settings, feedback and error reports now falls back to the build number instead of showing “0” when the display version is missing.",
+                    ]),
+                ChangelogEntry(version: "Under the hood",
+                    title: "A release can no longer strand you on an old version",
+                    items: [
+                        "The release pipeline now refuses to publish anything that is not strictly newer than what is already out, and it checks the shape of the version number before a build even starts. A lower or oddly shaped version is exactly what freezes everyone silently: every installed copy compares it against what it already runs, finds nothing newer, and reports that you are up to date, forever.",
+                        "A live release is never deleted to make room for a retry. The old publish step removed the existing release first, which threw away a release people were downloading and opened a window where both the update feed and the download button pointed at nothing. New releases are now staged out of sight and only become visible once every file is attached.",
+                        "After publishing, the pipeline downloads the update feed and the installer from the public addresses your copy of Verba and the website actually use, and fails the release if one of them is missing or points at the wrong build. A missing signing secret now stops the run in seconds instead of forty minutes later, after a full build and notarization.",
+                        "The update path now has its own test suite: that 0.9.99 is read as older than 0.9.100, that every entry in the feed carries its signature and size, and that an update installs the newest version rather than an intermediate one.",
+                    ]),
+            ]),
+        ChangelogDay(
+            date: "July 26, 2026",
             summary: "Your lists keep their order, long dictations survive, and the local model answers fast again.",
             entries: [
                 ChangelogEntry(version: "0.9.99",
