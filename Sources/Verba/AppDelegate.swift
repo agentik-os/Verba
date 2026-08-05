@@ -135,6 +135,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ChordMonitor.shared.onEscape = { [weak self] in self?.escapePressed() }
         ChordMonitor.shared.onControl = { [weak self] in InputCoach.shared.note(.control); self?.togglePause() }   // ⌃ pauses/resumes
         FnTap.shared.onTransformKey = { [weak self] in self?.showTransformPicker() }      // ⌥X on a selection (HID tap consumes the key)
+        // Dismissing the picker while it shows "Transforming…" must CANCEL that run, not just hide
+        // the spinner: the completion would otherwise paste its result over the selection seconds
+        // after the user asked it to stop.
+        TransformPickerController.shared.onCancelWorking = { [weak self] in self?.cancelTransformInFlight() }
         // Dead-end guard: when Fn is the primary trigger but the HID event tap couldn't start
         // (Accessibility/Input-Monitoring not granted, or revoked after launch), pressing Fn does
         // NOTHING and the user gets no signal why. ChordMonitor's lighter NSEvent monitor still
@@ -151,7 +155,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         FnTap.shared.onTodoCapture = { [weak self] in Gamification.shared.flag(.usedVoiceTodo); self?.startTodoCapture() }    // Fn+T (Fn+§ on ISO) → add a to-do
         FnTap.shared.onActionMode = { [weak self] in Gamification.shared.flag(.usedActionMode); self?.startActionMode() }      // Fn+X → Action mode (speech controls the Mac)
         FnTap.shared.onDigit = { [weak self] n in self?.fnDigit(n) ?? false }
-        FnTap.shared.onDigitOutOfRange = { [weak self] n in self?.flashInfo("No mode \(n)") }   // Fn + an unmapped digit → brief feedback instead of a silent swallow
+        FnTap.shared.onDigitOutOfRange = { [weak self] n in self?.digitOutOfRange(n) }   // Fn + an unmapped digit → brief feedback instead of a silent swallow
         FnTap.shared.onArrow = { [weak self] d in self?.fnArrow(d) ?? false }
         FnTap.shared.onEnter = { [weak self] in self?.fnEnter() ?? false }
         FnTap.shared.onControl = { [weak self] in InputCoach.shared.note(.control); self?.togglePause() }   // ⌃ pauses/resumes (reliable HID-tap path when Fn is primary)
@@ -162,18 +166,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // appeared dead while Verba was reprompting. The tap sees Esc at head-insert; the guard fires
         // cancel ONLY while a recording / in-flight dictation actually exists.
         FnTap.shared.onEscape = { [weak self] in self?.cancelEverything() }
-        FnTap.shared.escapeShouldCancel = { [weak self] in
-            guard let self else { return false }
-            return self.state != .idle
-                || SessionStore.shared.hasInflight
-                || !self.sessionTasks.isEmpty
-                || self.todoCaptureRecording
-                || NotesController.shared.isRecording
-                || self.overlay.model.menu
-                || TodoGlanceController.shared.isShowing
-                || ActionFeedController.shared.isShowing
-                || self.reviewWindow != nil
-        }
+        FnTap.shared.escapeShouldCancel = { [weak self] in self?.escapeHasSomethingToCancel() ?? false }
+        // The SAME gate on ChordMonitor's NSEvent path. It was declared and read there but never
+        // assigned, so its `escapeShouldCancel?() != true` guard returned early forever: for every
+        // user whose primary trigger is NOT Fn (the event tap is stopped, so the FnTap path above is
+        // dead too) Esc cancelled nothing at all, while the overlay kept advertising "Cancel (Esc)".
+        ChordMonitor.shared.escapeShouldCancel = { [weak self] in self?.escapeHasSomethingToCancel() ?? false }
         overlay.model.onCancel = { [weak self] in self?.cancelEverything() }
         overlay.model.onPauseToggle = { [weak self] in self?.togglePause() }
         overlay.prepare()   // warm the floating panel so it appears instantly
@@ -1086,7 +1084,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // transform that the verbal-shortcut path (Pipeline.swift) and the Services provider
         // (Services.swift) special-case. The ⌥X picker has no such special-case, so showing it here
         // would send its prompt to Claude and paste the result OVER the user's selection.
-        let transforms = TransformsStore.shared.items.filter { !TransformsStore.isAddToDictionary($0) }
+        // Also drop transforms with an EMPTY instruction. `selectionSystemPrompt` turns such a prompt
+        // into a bare "Output ONLY the transformed text", and the model's answer to that is pasted
+        // OVER the user's selection — an unrecoverable overwrite triggered by a row that only looks
+        // like a transform. A prompt-less row is not runnable, so it is not offered.
+        let transforms = TransformsStore.shared.items.filter {
+            !TransformsStore.isAddToDictionary($0) && Self.hasUsableTransformPrompt($0)
+        }
         guard !transforms.isEmpty else { flashError("No transforms yet — add some in Verba ▸ Transforms."); return }
         let target = Output.captureTarget()
         TransformPickerController.shared.present(transforms, at: NSEvent.mouseLocation) { [weak self] transform in
@@ -1094,7 +1098,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// A transform is only runnable with a real instruction: an empty prompt degenerates into
+    /// "Output ONLY the transformed text", whose answer would replace the selection with whatever
+    /// the model made of no instruction at all.
+    private static func hasUsableTransformPrompt(_ t: Transform) -> Bool {
+        !t.prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     private func runTransformOnSelection(_ transform: Transform, selection: String, target: PasteTarget?) {
+        // Second gate, at the point of no return: the picker already filters these out, but this is
+        // the one place every ⌥X run funnels through, and the paste that follows is destructive.
+        guard Self.hasUsableTransformPrompt(transform) else {
+            TransformPickerController.shared.hide()
+            flashError("That transform has no instruction yet. Add one in Verba ▸ Transforms.")
+            return
+        }
         Gamification.shared.flag(.usedTransform)
         // Mark the transform busy for its ENTIRE async lifetime so no Fn dictation or second ⌥X can
         // start while it's applying (they would each eventually Output.paste into a now-wrong field,
@@ -1120,6 +1138,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
+    }
+
+    /// "Is anything in flight that Esc should cancel?" — the single gate BOTH Esc paths use (the Fn
+    /// HID tap when Fn is primary, ChordMonitor's NSEvent monitor otherwise). It exists so a global
+    /// Esc pressed to dismiss a dialog in another app never runs the full idle-teardown, and so the
+    /// two paths can never drift apart on what counts as "in flight".
+    ///
+    /// The ⌥X transform is part of that set: it runs for seconds with `state` still `.idle`, and its
+    /// completion pastes over the user's selection, so Esc must be able to reach `cancelEverything`
+    /// (which cancels `transformTask`) instead of being let through to the app underneath.
+    private func escapeHasSomethingToCancel() -> Bool {
+        state != .idle
+            || SessionStore.shared.hasInflight
+            || !sessionTasks.isEmpty
+            || todoCaptureRecording
+            || NotesController.shared.isRecording
+            || overlay.model.menu
+            || transformInFlight
+            || TransformPickerController.shared.isShowing
+            || TodoGlanceController.shared.isShowing
+            || ActionFeedController.shared.isShowing
+            || reviewWindow != nil
+    }
+
+    /// Cancel ONLY the in-flight ⌥X transform, leaving everything else alone. Used by the picker's
+    /// own dismissal (Esc / the ×) while it shows "Transforming…": hiding that panel is not enough,
+    /// the network call keeps running and its completion still pastes the result over a selection
+    /// the user has already walked away from. The completion is gated on `!Task.isCancelled`, so
+    /// cancelling the task here is exactly what suppresses that stale paste.
+    private func cancelTransformInFlight() {
+        transformTask?.cancel(); transformTask = nil
+        transformInFlight = false
     }
 
     /// Esc / the × in the overlay: discard a recording, abort processing, or dismiss the picker.
@@ -1217,7 +1267,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             stopAndProcess()
             return
         }
-        if overlay.model.menu { dismissMenu(); lastFnDown = nil; return }
+        // Fn while the mode picker is up closes it. `dismissMenu()` only clears the flags — the panel
+        // itself is ordered out explicitly (as the ⌃⌥-release path does), otherwise the pill stayed
+        // on screen showing an empty non-menu state with no way left to dismiss it.
+        if overlay.model.menu { dismissMenu(); overlay.hide(); lastFnDown = nil; return }
 
         // A ⌥X transform is applying in the background (state is still .idle for its whole run): don't
         // start a fresh dictation on top of it — the transform's pending Output.paste would otherwise
@@ -1265,11 +1318,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         TodoGlanceController.shared.toggle()
     }
 
-    /// Fn + Tab (next) / Fn + ⇧ + Tab (previous) → cycle the active mode, live while recording.
+    /// Fn + Tab (next) / Fn + ⇧ + Tab (previous) → change the active mode, live while recording.
     private func modeCycleGesture(_ dir: Int) {
         if state == .processing { return }
         InputCoach.shared.note(.changeMode)   // onboarding: the Fn+Tab "change mode" gesture, tracked independently of Fn+number
-        cycleMode(dir)
+        changeMode(dir)
     }
 
     /// A lone ⌥ (Option) tap WHILE hands-free recording cycles to the next mode and keeps listening.
@@ -1298,18 +1351,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// The change-mode action shared by the Fn gesture and the configurable global shortcut.
-    /// Cycles straight to the next mode (no list) when `modeGestureCycles` is on — works live
-    /// while recording — otherwise opens the numbered picker.
-    private func changeMode() {
+    /// The change-mode action behind the Fn + Tab gesture (`dir` = +1 next, -1 previous).
+    /// Cycles straight to the next mode (no list) when `modeGestureCycles` is on — works live while
+    /// recording — otherwise opens the numbered picker, which is what Settings ▸ Modes promises with
+    /// "turn the toggle off to open a numbered picker instead".
+    ///
+    /// This is the ONLY way the picker opens on the Fn path, and nothing called it before: the
+    /// gesture went straight to `cycleMode`, so `overlay.model.menu` never became true, which in turn
+    /// left `FnTap.menuActive`, the arrow/Enter handlers and the overlay's numbered list dead, and
+    /// made the Settings toggle a switch with no effect either way.
+    ///
+    /// Two guards keep the picker branch runtime-safe. A LIVE RECORDING keeps cycling instead: the
+    /// picker is a pre-record chooser, and the old code opened it by calling `cancelRecording()`
+    /// first — a mode switch must never silently discard what the user is dictating. The MINIMAL
+    /// overlay style also keeps cycling, because that style orders the panel out entirely
+    /// (`Overlay.show()`), so opening the picker there would swallow the gesture with no UI at all.
+    private func changeMode(_ dir: Int = 1) {
         if state == .processing { return }
-        if Settings.shared.modeGestureCycles {
-            cycleMode(1)
-        } else {
-            if Settings.shared.overlayStyle == .minimal { return }
-            if state == .recording { cancelRecording() }
-            showModeMenu()
+        let s = Settings.shared
+        // `count > 1`: a picker over a single visible mode has nothing to pick, and opening it would
+        // still latch `FnTap.menuActive` and swallow every digit system-wide until it is dismissed.
+        guard !s.modeGestureCycles, state == .idle, s.overlayStyle != .minimal,
+              s.visibleProfiles.count > 1 else {
+            cycleMode(dir)
+            return
         }
+        // Picker already up: the gesture walks the highlight, exactly like the arrow keys, so Fn+Tab
+        // stays "move to the next mode" in both branches. Enter (or a number) confirms.
+        if overlay.model.menu {
+            _ = fnArrow(dir)
+            return
+        }
+        showModeMenu()
     }
 
     /// Advance the active mode by `delta` (default = next). While recording it switches THIS
@@ -1531,7 +1604,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if SessionStore.shared.hasInflight { Gamification.shared.flag(.chainedDictation) }
         // Raw dictation is FREE FOREVER and unlimited — it is never paywalled. Only the AI modes
         // (Polish/Translate/Prompt/Intent/Context/custom) sit behind Pro once the free trial is spent.
-        if !Settings.shared.activeProfile.raw && Entitlement.freeLimitReached() {
+        // Gate on the mode this recording will ACTUALLY run (`forced` when the caller named one), not
+        // on the outgoing active profile: Fn + digit passes the picked mode here and only writes
+        // `activeProfileID` afterwards, so reading the active profile checked the mode the user just
+        // left. It let a Fn+digit into an AI mode from Raw skip the free limit, and paywalled a
+        // Fn+digit into Raw, which is free forever.
+        if !(forced ?? Settings.shared.activeProfile).raw && Entitlement.freeLimitReached() {
             resetOneShotFlags(); showPaywall(); return
         }
         recorder.requestPermission { [weak self] ok in
@@ -2121,6 +2199,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         statusFlashRestore = work
         DispatchQueue.main.asyncAfter(deadline: .now() + (isError ? 3.0 : 2.0), execute: work)
+    }
+
+    /// Fn + a digit with no mode at that index. The feedback must NEVER tear down live state:
+    /// `flashInfo` forces the overlay into the idle hint and sets `state = .idle`, so routing this
+    /// straight to it DROPPED a running dictation's state machine while the recorder and the level
+    /// timer kept going — the next Fn tap then called `recorder.start()` on a busy recorder, and the
+    /// same flash also closed an open mode picker. So while ANYTHING is live (a dictation, a note, a
+    /// voice to-do, or the picker) the miss is reported next to the menu-bar icon instead and the
+    /// capture is left exactly as it was; only a genuinely idle app gets the overlay hint.
+    private func digitOutOfRange(_ n: Int) {
+        let message = "No mode \(n)"
+        let busy = state != .idle
+            || todoCaptureRecording
+            || NotesController.shared.isRecording
+            || overlay.model.menu
+        if busy { flashStatusItemMessage(message, isError: false) } else { flashInfo(message) }
     }
 
     /// A quiet, auto-dismissing overlay hint (no sound, no red modal) for benign outcomes
