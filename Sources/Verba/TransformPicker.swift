@@ -108,6 +108,12 @@ final class TransformPickerController {
     private var onPick: ((Transform) -> Void)?
     private let model = TransformPickerModel()
 
+    /// Called when the user dismisses the panel WHILE it is applying a transform (Esc or the ×).
+    /// Set once by the owner (AppDelegate) so the dismissal also cancels the running transform:
+    /// without it the panel vanished but the seconds-long network call stayed alive and still pasted
+    /// its result over the selection afterwards, which reads as "Esc did nothing".
+    var onCancelWorking: (() -> Void)?
+
     var isShowing: Bool { panel?.isVisible ?? false }
 
     /// Flip the open panel to the live "Transforming…" state (called by the action handler).
@@ -155,7 +161,7 @@ final class TransformPickerController {
             transforms: transforms,
             model: model,
             onPick: { [weak self] t in self?.pick(t) },
-            onClose: { [weak self] in self?.hide() }))
+            onClose: { [weak self] in self?.dismiss() }))
         host.sizingOptions = [.preferredContentSize]
         p.contentViewController = host
         // Clip to the rounded shape at the window layer so the glass material / window shadow never
@@ -172,28 +178,40 @@ final class TransformPickerController {
         // transform and calls hide() when it finishes (or fails). Stop accepting list input (number
         // keys / click-away) so a second transform can't be launched mid-run — but keep an Esc-only
         // monitor alive so a stalled/slow provider call can never leave the panel spinning forever
-        // with no dismiss affordance. Esc here just orders the panel out (the eventual completion
-        // still calls hide()); it is the one always-available escape hatch during .working.
+        // with no dismiss affordance. Esc here goes through `dismiss()`, which orders the panel out
+        // AND cancels the run; it is the one always-available escape hatch during .working.
         removeDismissMonitors()
         installWorkingEscapeMonitor()
         model.phase = .working(t.name)
         onPick?(t)
     }
 
+    /// Pure teardown of the panel. Stays pure on purpose: the owners that call it (the transform's
+    /// own completion handler, and the global Esc path in `cancelEverything`) already own
+    /// cancellation themselves, so firing `onCancelWorking` from here would double-cancel.
     func hide() {
         panel?.orderOut(nil)
         removeDismissMonitors()
         removeWorkingEscapeMonitor()
     }
 
+    /// A dismissal the USER asked for (Esc, the ×, a click away). Identical to `hide()` while the
+    /// list is up; during `.working` it ALSO cancels the running transform, because a transform the
+    /// user just dismissed must not paste its result over the selection a few seconds later.
+    private func dismiss() {
+        let wasWorking = model.phase != .list
+        hide()
+        if wasWorking { onCancelWorking?() }
+    }
+
     /// During the `.working` phase the list monitors are gone; keep a lone Esc monitor so the spinner
-    /// panel always has a dismiss affordance, even if the background transform stalls. Esc orders the
-    /// panel out (a still-running transform's late result is handled by the action handler's hide()).
+    /// panel always has a dismiss affordance, even if the background transform stalls. Esc cancels
+    /// the run through `dismiss()` and orders the panel out.
     private func installWorkingEscapeMonitor() {
         removeWorkingEscapeMonitor()
         workingEscapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self else { return event }
-            if event.keyCode == UInt16(kVK_Escape) { self.hide(); return nil }
+            if event.keyCode == UInt16(kVK_Escape) { self.dismiss(); return nil }
             return event
         }
     }
@@ -206,14 +224,14 @@ final class TransformPickerController {
         removeDismissMonitors()
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self else { return event }
-            if event.keyCode == UInt16(kVK_Escape) { self.hide(); return nil }
+            if event.keyCode == UInt16(kVK_Escape) { self.dismiss(); return nil }
             if let n = Self.digit(Int(event.keyCode)), n >= 1, n <= self.transforms.count {
                 self.pick(self.transforms[n - 1]); return nil
             }
             return event
         }
         clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            self?.hide()
+            self?.dismiss()
         }
     }
 

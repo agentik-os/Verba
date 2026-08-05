@@ -88,7 +88,7 @@ struct HomeView: View {
             Card {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(L("Start dictating")).font(.headline)
-                    Text("Press \(triggerLabel) and talk. Fn + Tab jumps to the next mode (even mid-sentence), ⌃ pauses & resumes, or use ⌃⌥1-6 for a specific mode.")
+                    Text(startDictatingHint)
                         .foregroundStyle(.secondary)
                     FlowLayout(spacing: 8) {
                         ForEach(settings.visibleProfiles.prefix(6)) { p in
@@ -160,11 +160,27 @@ struct HomeView: View {
         }
     }
 
+    /// The gestures this build actually registers, and nothing else. The per-mode ⌃⌥1-6 chords this
+    /// card used to advertise were removed from `applyTriggers` (they are stored and editable but
+    /// never registered), so pressing them did nothing at all. Fn + Tab and Fn + 1-9 are equally
+    /// conditional: they live on the Fn event tap, which only runs while Fn IS the primary trigger.
+    private var startDictatingHint: String {
+        guard settings.useFnAsPrimary || settings.primaryHasShortcut else {
+            return L("No dictation shortcut is set yet. Pick one in Settings ▸ Shortcuts (or turn on the Fn trigger), then press it and talk.")
+        }
+        if settings.useFnAsPrimary {
+            return "Press \(triggerLabel) and talk. Fn + Tab jumps to the next mode (even mid-sentence), Fn + 1-9 picks one by number, ⌃ pauses & resumes, ⎋ cancels."
+        }
+        return "Press \(triggerLabel) and talk. ⌃ pauses & resumes, ⎋ cancels. Pick a mode from the menu-bar icon, or switch the trigger to Fn in Settings to unlock the Fn + Tab and Fn + 1-9 gestures."
+    }
+
+    /// Only ever read once a trigger genuinely exists (see `startDictatingHint`), so there is no
+    /// third "default" chord to name here: with Fn off and no recorded shortcut, nothing is bound.
     private var triggerLabel: String {
         if settings.useFnAsPrimary { return "Fn 🌐" }
         return settings.primaryHasShortcut
             ? shortcutLabel(keyCode: settings.primaryKeyCode, modifiers: settings.primaryMods)
-            : "⌃⌥ + number"
+            : L("no shortcut yet")
     }
 
     private func stat(_ value: String, _ label: String, _ icon: String) -> some View {
