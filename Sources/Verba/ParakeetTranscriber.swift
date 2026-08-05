@@ -23,6 +23,13 @@ actor ParakeetTranscriber: Transcriber {
     static let idleUnloadAfter: TimeInterval = 10 * 60
     private var idleTimer: Task<Void, Never>?
 
+    /// Transcriptions currently in flight. A 20-minute audio takes longer than `idleUnloadAfter`, so
+    /// the timer armed at load time used to fire in the MIDDLE of it: the running job survived (it
+    /// holds its own AsrManager) but `EngineManager.loaded` was cleared, so Settings claimed the
+    /// engine was cold while it was actively decoding, and the next dictation paid a full reload.
+    /// Busy is not idle: the clock only runs when this is zero.
+    private var activeJobs = 0
+
     /// Human-readable load status (e.g. while downloading the model the first time).
     nonisolated(unsafe) var onStatus: ((String) -> Void)?
 
@@ -34,11 +41,15 @@ actor ParakeetTranscriber: Transcriber {
         if EngineManager.loaded?.engine == .parakeet { EngineManager.loaded = nil }
     }
 
-    /// Drop the cached model after `idleUnloadAfter` of no use. Safe against an in-flight
-    /// job: a running transcription holds its own strong `AsrManager` reference, so unloading
-    /// only clears the cache for the NEXT dictation (which lazily reloads).
+    /// Drop the cached model after `idleUnloadAfter` of no use. Never armed while a transcription is
+    /// in flight (`activeJobs > 0`) — a long dictation outlives the idle window, and an unload during
+    /// one made `EngineManager.loaded` lie. The last job to finish re-arms it. Even so the unload
+    /// stays safe against a job that slips through: a running transcription holds its own strong
+    /// `AsrManager` reference, so unloading only clears the cache for the NEXT dictation.
     private func scheduleIdleUnload() {
         idleTimer?.cancel()
+        idleTimer = nil
+        guard activeJobs == 0 else { return }   // busy: the clock is re-armed when the last job ends
         idleTimer = Task {
             try? await Task.sleep(nanoseconds: UInt64(Self.idleUnloadAfter * 1_000_000_000))
             guard !Task.isCancelled else { return }
@@ -55,7 +66,13 @@ actor ParakeetTranscriber: Transcriber {
 
     func ensureLoaded() async throws -> AsrManager {
         scheduleIdleUnload()                       // any use re-arms the idle clock
-        if let loadTask { return try await loadTask.value }
+        if let loadTask {
+            let m = try await loadTask.value
+            // Still resident. Re-assert it: activating ANOTHER engine overwrites `loaded`, and
+            // without this the cached path left Settings showing Parakeet as cold while it was warm.
+            EngineManager.loaded = (.parakeet, "v3")
+            return m
+        }
         // Verba-owned cache dir (NOT ~/…/FluidAudio, which triggers the "access data from other apps"
         // prompt — see EngineManager.parakeetDir).
         let dir = EngineManager.parakeetDir
@@ -75,6 +92,9 @@ actor ParakeetTranscriber: Transcriber {
             onStatus?("")
             // A lazy (re)load is just as "warm & ready" as an explicit Activate.
             EngineManager.loaded = (.parakeet, "v3")
+            // This branch may have DOWNLOADED the model, outside EngineManager's install/download
+            // paths — drop the memoized isInstalled answer so the UI stops saying "not installed".
+            if !cached { EngineManager.invalidateInstallCache() }
             scheduleIdleUnload()
             return m
         } catch {
@@ -89,6 +109,9 @@ actor ParakeetTranscriber: Transcriber {
         let previous = queueTail
         let job = Task<String, Error> {
             _ = try? await previous?.value
+            // Esc'd while still queued behind another dictation: don't load a model or start the
+            // engine at all for a result nobody will read.
+            try Task.checkCancellation()
             let m = try await self.ensureLoaded()
             var state = try TdtDecoderState()
             // Honor a pinned Spoken language (script-aware filtering on v3) so a French dictation
@@ -102,7 +125,17 @@ actor ParakeetTranscriber: Transcriber {
             return text
         }
         queueTail = job
-        defer { scheduleIdleUnload() }
-        return try await job.value
+        activeJobs += 1
+        idleTimer?.cancel(); idleTimer = nil          // busy — the clock restarts when the last job ends
+        defer { activeJobs -= 1; scheduleIdleUnload() }
+        // `job` is UNSTRUCTURED, so it neither inherits the caller's cancellation nor receives it
+        // through `job.value`. Without this bridge an Esc'd dictation kept decoding to completion,
+        // burning the ANE and — because the queue chains on it — delaying the NEXT dictation by the
+        // full length of a result that was already discarded.
+        return try await withTaskCancellationHandler {
+            try await job.value
+        } onCancel: {
+            job.cancel()
+        }
     }
 }
