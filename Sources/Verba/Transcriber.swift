@@ -25,6 +25,22 @@ protocol Transcriber {
 struct OpenAITranscriber: Transcriber {
     var model = "gpt-4o-transcribe"
 
+    /// Multipart content type for the uploaded audio. NOT always m4a: the recorder produces m4a, but
+    /// FileTranscribeView also accepts mp3 / wav / mp4 / opus, and AudioInput.readable passes an
+    /// AVFoundation-readable file through UNCHANGED (only opus/ogg get transcoded to wav). Labelling
+    /// a .wav or .mp3 upload as audio/m4a contradicts its own bytes, so derive it from the extension.
+    private static func mimeType(for url: URL) -> String {
+        switch url.pathExtension.lowercased() {
+        case "wav":                 return "audio/wav"
+        case "mp3", "mpga", "mpeg": return "audio/mpeg"
+        case "mp4", "m4v", "mov":   return "video/mp4"
+        case "webm":                return "audio/webm"
+        case "flac":                return "audio/flac"
+        case "ogg", "oga", "opus":  return "audio/ogg"
+        default:                    return "audio/m4a"
+        }
+    }
+
     func transcribe(fileURL: URL, language: String?, hint: String?) async throws -> String {
         guard let key = Keychain.openAIKey, !key.isEmpty else { throw TranscribeError.missingKey }
 
@@ -47,9 +63,13 @@ struct OpenAITranscriber: Transcriber {
         if let hint, !hint.isEmpty { field("prompt", "Vocabulary: \(hint)") }
 
         let fileData = try Data(contentsOf: fileURL)
+        // Empty file = nothing to transcribe. Uploading it would come back as a raw 400 JSON body in
+        // the user's face; throw the SAME .empty the on-device engines throw so all three engines
+        // report empty input identically (the caller treats .empty as benign, not as a failure).
+        guard !fileData.isEmpty else { throw TranscribeError.empty }
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(fileURL.lastPathComponent)\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: audio/m4a\r\n\r\n".data(using: .utf8)!)
+        body.append("Content-Type: \(Self.mimeType(for: fileURL))\r\n\r\n".data(using: .utf8)!)
         body.append(fileData)
         body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
         req.httpBody = body
@@ -85,7 +105,13 @@ actor LocalTranscriber: Transcriber {
     /// Called with human-readable load status (e.g. while downloading the model the first time).
     nonisolated(unsafe) var onStatus: ((String) -> Void)?
 
-    func unload() { loadTask?.cancel(); loadTask = nil; loadTaskModel = nil }
+    func unload() {
+        loadTask?.cancel(); loadTask = nil; loadTaskModel = nil
+        // Keep EngineManager's "warm & ready" state truthful, exactly as ParakeetTranscriber.unload
+        // does. Without this, uninstalling Whisper left `loaded` pointing at the deleted model, so
+        // Settings kept showing "Active & ready" and prewarmForRecording skipped reloading it.
+        if EngineManager.loaded?.engine == .whisper { EngineManager.loaded = nil }
+    }
 
     /// Where WhisperKit stores models — the single source of truth is EngineManager (Application
     /// Support, NOT ~/Documents; see EngineManager.modelsDownloadBase for why).
@@ -94,10 +120,18 @@ actor LocalTranscriber: Transcriber {
     }
 
     func ensureLoaded(model: String) async throws -> WhisperKit {
-        if let loadTask, loadTaskModel == model { return try await loadTask.value }
+        if let loadTask, loadTaskModel == model {
+            let kit = try await loadTask.value
+            EngineManager.loaded = (.whisper, model)   // still warm — keep Settings truthful
+            return kit
+        }
         loadTask?.cancel()                  // model switched mid-flight: drop the stale load
         let path = Self.folder(model)
-        let installed = (try? FileManager.default.contentsOfDirectory(atPath: path))?.contains { !$0.hasPrefix(".") } ?? false
+        // COMPLETENESS, not mere presence. The old test ("any file in the folder") accepted a
+        // truncated download, which then took the `download: false` branch below and could never
+        // heal: every load failed on "Could not open …/weights/weight.bin" while EngineManager
+        // (which uses this same check) reported the model as not installed. Same check, one answer.
+        let installed = EngineManager.whisperModelComplete(EngineManager.whisperFolder(model))
         // If it's already on disk, load straight from the folder with NO hub round-trip
         // (no re-download, faster). Otherwise allow WhisperKit to fetch it.
         onStatus?(installed ? "Loading model…" : "Downloading model… (first run)")
@@ -117,6 +151,13 @@ actor LocalTranscriber: Transcriber {
         do {
             let kit = try await task.value
             onStatus?("")
+            // A lazy load (a dictation that warmed the model itself) is just as "warm & ready" as an
+            // explicit Activate — mirrors ParakeetTranscriber. Without it, Settings showed Whisper as
+            // cold while it was resident, and prewarmForRecording re-loaded it on every recording.
+            EngineManager.loaded = (.whisper, model)
+            // This branch may have DOWNLOADED the model (`installed == false` above), which happens
+            // outside EngineManager's install/download paths — drop the memoized isInstalled answer.
+            if !installed { EngineManager.invalidateInstallCache() }
             return kit
         } catch {
             // A failed load must not poison future loads (only clear if it's still ours).
@@ -131,6 +172,9 @@ actor LocalTranscriber: Transcriber {
         let previous = queueTail
         let job = Task<String, Error> {
             _ = try? await previous?.value
+            // Esc'd while still queued behind another dictation: don't load a model or start the
+            // engine at all for a result nobody will read.
+            try Task.checkCancellation()
             let model = Settings.shared.localModel
             let kit = try await self.ensureLoaded(model: model)
             let lang = (language?.isEmpty ?? true) ? nil : language
@@ -152,6 +196,14 @@ actor LocalTranscriber: Transcriber {
             return text
         }
         queueTail = job
-        return try await job.value
+        // `job` is UNSTRUCTURED, so it neither inherits the caller's cancellation nor receives it
+        // through `job.value`. Without this bridge an Esc'd dictation kept decoding to completion,
+        // burning the ANE and — because the queue chains on it — delaying the NEXT dictation by the
+        // full length of a result that was already discarded.
+        return try await withTaskCancellationHandler {
+            try await job.value
+        } onCancel: {
+            job.cancel()
+        }
     }
 }

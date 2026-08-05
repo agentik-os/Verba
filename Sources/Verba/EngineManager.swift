@@ -68,6 +68,7 @@ enum EngineManager {
                 .appendingPathComponent("FluidAudio", isDirectory: true)
             try? fm.removeItem(at: fluid)
             d.set(true, forKey: kParakeetRelocated)
+            invalidateInstallCache()          // the model moved to the path isInstalled looks at
         }
     }
     private static let kParakeetRelocated = "verba.parakeetRelocated"
@@ -105,6 +106,7 @@ enum EngineManager {
         // Drop the now-orphaned old tree so it's never enumerated again (kills the recurring prompt).
         try? fm.removeItem(at: oldRoot)
         d.set(true, forKey: kWhisperDocsRelocated)
+        invalidateInstallCache()          // the model moved to the path isInstalled looks at
     }
 
     /// Recursively move `src` into `dst`, merging into any existing dirs and never overwriting a file
@@ -160,6 +162,7 @@ enum EngineManager {
     static func purgeBrokenTurboModel() {
         let broken = whisperBase.appendingPathComponent("openai_whisper-large-v3_turbo")
         try? FileManager.default.removeItem(at: broken)
+        invalidateInstallCache()
     }
 
     /// On-disk model folder for a local engine (nil for OpenAI). Used by the self-heal to move a
@@ -176,7 +179,10 @@ enum EngineManager {
     /// check ("any file in the folder") accepted a truncated download, which then failed to load with
     /// "Could not open …/weights/weight.bin". Require the .mlmodelc components AND every weight.bin
     /// non-empty, so a half-finished download reads as not-installed and re-downloads cleanly.
-    private static func whisperModelComplete(_ folder: URL) -> Bool {
+    /// Internal (not private): LocalTranscriber asks the SAME question before deciding whether it may
+    /// load with `download: false`, and two different answers there meant a truncated model that
+    /// could neither load nor re-download.
+    static func whisperModelComplete(_ folder: URL) -> Bool {
         let fm = FileManager.default
         var isDir: ObjCBool = false
         guard fm.fileExists(atPath: folder.path, isDirectory: &isDir), isDir.boolValue,
@@ -195,14 +201,31 @@ enum EngineManager {
         return mlmodelcCount >= 3 && weightFiles >= 1
     }
 
+    /// Memoized `isInstalled` answers, keyed by engine (+ Whisper variant). SettingsView calls
+    /// isInstalled from its `body` and prewarmForRecording used to call it on the main thread at every
+    /// record-start, and for Whisper the answer costs a recursive directory walk with a stat per file.
+    /// The answer only changes when a model is added or removed, so compute it once and invalidate
+    /// explicitly. Cached under `stateLock`, but computed OUTSIDE it (never hold a lock across I/O).
+    private nonisolated(unsafe) static var _installedCache: [String: Bool] = [:]
+
+    /// Drop the memoized isInstalled answers. MUST be called after anything that adds or removes a
+    /// model on disk, or the UI keeps rendering the pre-change answer.
+    static func invalidateInstallCache() {
+        stateLock.lock(); _installedCache.removeAll(); stateLock.unlock()
+    }
+
     static func isInstalled(_ engine: TranscriptionEngine) -> Bool {
-        switch engine {
-        case .openAI: return true
-        case .whisper:
-            return whisperModelComplete(whisperFolder(Settings.shared.localModel))
-        case .parakeet:
-            return AsrModels.modelsExist(at: parakeetDir)
-        }
+        guard engine != .openAI else { return true }        // remote: nothing to install
+        let key = engine == .whisper ? "whisper:\(Settings.shared.localModel)" : "parakeet"
+        stateLock.lock()
+        let hit = _installedCache[key]
+        stateLock.unlock()
+        if let hit { return hit }
+        let value = engine == .whisper
+            ? whisperModelComplete(whisperFolder(Settings.shared.localModel))
+            : AsrModels.modelsExist(at: parakeetDir)
+        stateLock.lock(); _installedCache[key] = value; stateLock.unlock()
+        return value
     }
 
     /// `loaded` and `lastInstallError` are written from genuinely concurrent, unsynchronized executors
@@ -234,9 +257,16 @@ enum EngineManager {
     /// install stays an explicit Settings action / first-use path).
     static func prewarmForRecording() {
         let s = Settings.shared
-        guard s.engine.isLocal, isInstalled(s.engine) else { return }
-        guard !isReady(s.engine, model: s.localModel) else { return }   // already warm
-        Task.detached(priority: .userInitiated) { _ = await load(s.engine) }
+        let engine = s.engine, model = s.localModel      // read the settings on the caller's thread…
+        guard engine.isLocal else { return }
+        // …but do the DISK probe off it. This is called synchronously from the main thread the moment
+        // a recording starts, and isInstalled(.whisper) walks the model tree — a filesystem walk on
+        // the main actor at the one instant the UI must stay responsive.
+        Task.detached(priority: .userInitiated) {
+            guard isInstalled(engine) else { return }               // no surprise multi-GB download here
+            guard !isReady(engine, model: model) else { return }    // already warm
+            _ = await load(engine)
+        }
     }
 
     /// True if `engine` (with `model` for Whisper) is actually loaded and ready right now.
@@ -250,6 +280,15 @@ enum EngineManager {
     /// This is what the Settings "Activate" button calls so activation is verified, not assumed.
     @discardableResult
     static func load(_ engine: TranscriptionEngine) async -> Bool {
+        // The cloud engine has nothing to load, but it is NOT usable without a key: reporting success
+        // here left Settings in a dead state — "Activate" succeeded, isReady stayed false (it checks
+        // the keychain), and load() had just cleared lastInstallError so no reason was ever shown.
+        // Fail with the same message the transcriber throws, so the row explains itself.
+        if engine == .openAI, (Keychain.openAIKey ?? "").isEmpty {
+            if loaded?.engine == .openAI { loaded = nil }
+            lastInstallError = TranscribeError.missingKey.errorDescription
+            return false
+        }
         do {
             switch engine {
             case .openAI:
@@ -293,6 +332,7 @@ enum EngineManager {
                                                     withIntermediateDirectories: true)
             try? FileManager.default.removeItem(at: cache)
             try FileManager.default.copyItem(at: bundled, to: cache)
+            invalidateInstallCache()
         } catch {
             lastInstallError = "Couldn't seed the bundled model: \(error.localizedDescription)"
         }
@@ -320,6 +360,7 @@ enum EngineManager {
             }
             DispatchQueue.main.async { progress(1.0) }
             lastInstallError = nil
+            invalidateInstallCache()          // a model just appeared on disk
             loaded = engine == .whisper ? (.whisper, Settings.shared.localModel) : (engine, "v3")
             return true
         } catch {
@@ -363,12 +404,14 @@ enum EngineManager {
         let aside = folder.appendingPathExtension("corrupt-bak")
         try? fm.removeItem(at: aside)
         let moved = (try? fm.moveItem(at: folder, to: aside)) != nil
+        if moved { invalidateInstallCache() }             // the model is off its path right now
         let ok = await install(engine, progress: progress, allowCleanRetry: false)
         if ok {
             try? fm.removeItem(at: aside)                 // repaired → drop the bad copy
         } else if moved {
             try? fm.removeItem(at: folder)                // clear any partial re-download
             try? fm.moveItem(at: aside, to: folder)       // restore the prior model (better than none)
+            invalidateInstallCache()                      // …and it is back
         }
         return ok
     }
@@ -418,6 +461,7 @@ enum EngineManager {
             }
             DispatchQueue.main.async { progress(1.0) }
             lastInstallError = nil
+            invalidateInstallCache()          // a model just appeared on disk
             return true
         } catch {
             let msg = (error as NSError).localizedDescription
@@ -437,5 +481,9 @@ enum EngineManager {
             try? FileManager.default.removeItem(at: parakeetDir)
             await ParakeetTranscriber.shared.unload()
         }
+        invalidateInstallCache()          // a model just left the disk
+        // The engine the user just deleted is no longer a candidate for anything; keep the failure
+        // banner from an earlier install attempt out of the freshly-empty row.
+        if engine.isLocal { lastInstallError = nil }
     }
 }
