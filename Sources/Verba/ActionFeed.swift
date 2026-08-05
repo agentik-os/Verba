@@ -46,6 +46,16 @@ struct ActionFeedItem: Identifiable, Codable, Equatable {
     }
 }
 
+/// One confirmed step of a plan: the action to run plus the localized label the planner gave it.
+/// A plan can propose several writes ("create the event AND email the guests"); they are confirmed
+/// together, once, then executed in order.
+struct ActionStep: Equatable {
+    let label: String
+    let action: VerbaAction
+    /// What the confirm card and the progress line show for this step.
+    var title: String { label.isEmpty ? action.summary : label }
+}
+
 // MARK: - Feed store (state machine)
 
 /// The action feed's state. Holds the persisted history of recent actions plus, for the item the
@@ -59,12 +69,25 @@ final class ActionFeedStore: ObservableObject {
     @Published private(set) var items: [ActionFeedItem] = []
 
     /// Live, non-persisted side-tables keyed by item id:
-    ///  the WRITE awaiting confirmation, and the clarification options awaiting a pick.
-    @Published private(set) var pendingActions: [UUID: VerbaAction] = [:]
+    ///  the WRITES awaiting one confirmation, and the clarification options awaiting a pick.
+    /// NOTHING here has run: an entry leaves this table only through `confirm`.
+    @Published private(set) var pendingActions: [UUID: [ActionStep]] = [:]
     @Published private(set) var clarifications: [UUID: PlanClarification] = [:]
     /// The fields to collect for a `.needsInput` item, and the user's live edits keyed by field key.
     @Published private(set) var inputRequests: [UUID: PlanInputRequest] = [:]
     @Published var inputDrafts: [UUID: [String: String]] = [:]
+
+    /// Multi-step execution state: the confirmed steps, how far we got, and each step's result line.
+    /// Kept out of `items` because it is transient to one run and never persisted.
+    private var runningSteps: [UUID: [ActionStep]] = [:]
+    private var stepIndex: [UUID: Int] = [:]
+    private var stepResults: [UUID: [String]] = [:]
+
+    /// Monotonic per-item token. EVERY status change bumps it, and a watchdog only fires when the
+    /// token it captured is still current — so a watchdog armed while the item was "thinking" can
+    /// no longer kill an execution that legitimately started later (it used to, and the row then
+    /// flipped to "took too long" seconds after the user pressed Confirm).
+    private var phase: [UUID: Int] = [:]
 
     /// Called when the user taps Confirm on a pending write. Wired by AppDelegate.
     var onConfirm: ((_ itemID: UUID, _ action: VerbaAction) -> Void)?
@@ -93,14 +116,29 @@ final class ActionFeedStore: ObservableObject {
         return item.id
     }
 
+    /// Invalidate any armed watchdog for `id` and return the new token.
+    @discardableResult
+    private func bumpPhase(_ id: UUID) -> Int {
+        let next = (phase[id] ?? 0) + 1
+        phase[id] = next
+        return next
+    }
+
     /// Safety net: if an item is still thinking/running after a while (a hung relay or a stalled
-    /// executor), collapse it to a friendly failure instead of spinning forever.
-    private func watchdog(_ id: UUID) {
+    /// executor), collapse it to a friendly failure instead of spinning forever. Armed per PHASE:
+    /// any status change since arming cancels it, so it can only ever fire on a genuinely stuck
+    /// step — never on the next one.
+    private func watchdog(_ id: UUID, seconds: UInt64? = nil) {
         // A LOCAL model runs the 2-phase agentic plan (PLAN + RESOLVE) on-device and is far slower
-        // than a hosted one, so give it a generous budget; a hung hosted relay still fails in ~2.5 min.
-        let seconds: UInt64 = Settings.shared.repromptBackend.resolved == .localLLM ? 300 : 150
+        // than a hosted one, so give it a generous budget. This must stay ABOVE the planner's own
+        // request deadlines (75s for /agent-context + 180s for /agent-reads + the model calls), or
+        // it fails a plan that is still legitimately running and then has to resurrect the row when
+        // the plan finally lands.
+        let budget = seconds ?? (Settings.shared.repromptBackend.resolved == .localLLM ? 600 : 330)
+        let token = bumpPhase(id)
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: seconds * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: budget * 1_000_000_000)
+            guard phase[id] == token else { return }   // the item moved on — this watchdog is stale
             guard let idx = items.firstIndex(where: { $0.id == id }) else { return }
             if items[idx].status == .thinking || items[idx].status == .running {
                 failed(id, error: L("That took too long — try again."))
@@ -112,12 +150,24 @@ final class ActionFeedStore: ObservableObject {
     /// queue a pending write, or mark it chat/done.
     func apply(_ plan: VerbaPlan, to id: UUID) {
         guard let idx = items.firstIndex(where: { $0.id == id }) else { return }
+        // A plan that lands after the user walked away must not put a confirm card back on screen.
+        // (`.failed` IS re-openable on purpose: that one is our timeout, not the user's decision,
+        // and nothing has run.)
+        guard items[idx].status != .cancelled else { return }
+        // A re-plan (clarification answered, follow-up accepted) must not inherit the previous
+        // plan's queue: whatever this plan proposes replaces it entirely.
+        clearRun(id)
         items[idx].messages = plan.messages.isEmpty ? [plan.summary].filter { !$0.isEmpty } : plan.messages
         if plan.summary.isEmpty == false { items[idx].title = plan.summary }
         // A suggested next step shown once this action succeeds (rule 8).
         if let f = plan.followup, !f.question.isEmpty, !f.intent.isEmpty {
             items[idx].followupQuestion = f.question
             items[idx].followupIntent = f.intent
+        }
+
+        // Every step the planner proposed, in order, paired with its localized label.
+        let steps: [ActionStep] = plan.proposedActions.compactMap { p in
+            p.action.map { ActionStep(label: p.label, action: $0) }
         }
 
         if let req = plan.inputRequest, !req.tool.isEmpty, !req.fields.isEmpty {
@@ -127,38 +177,118 @@ final class ActionFeedStore: ObservableObject {
             items[idx].appLogoSlug = Self.logoSlug(forTool: req.tool)
             inputRequests[id] = req
             inputDrafts[id] = Dictionary(req.fields.map { ($0.key, $0.value) }, uniquingKeysWith: { a, _ in a })
-        } else if let clar = plan.clarification {
+            // An input request REPLACES the proposed writes on screen. If the plan carried both,
+            // say what is being set aside rather than losing it without a word.
+            if !steps.isEmpty {
+                items[idx].messages.append(String(
+                    format: L("%d other proposed step(s) are on hold until this is filled in."), steps.count))
+            }
+        } else if let clar = plan.clarification, !clar.options.isEmpty {
+            // Options are REQUIRED: a clarification with none renders as a question with no buttons,
+            // which is a dead end the user can only close.
             items[idx].status = .clarify
-            clarifications[id] = clar
-        } else if let first = plan.proposedActions.first, let action = first.action {
+            clarifications[id] = clar   // the view renders clar.question above the option chips
+        } else if let first = steps.first {
             items[idx].status = .pendingConfirm
-            if first.label.isEmpty == false { items[idx].title = first.label }
-            items[idx].symbol = action.icon
-            items[idx].appLogoSlug = Self.logoSlug(for: action)
-            pendingActions[id] = action
+            items[idx].symbol = first.action.icon
+            items[idx].appLogoSlug = Self.logoSlug(for: first.action)
+            if steps.count == 1 {
+                if !first.label.isEmpty { items[idx].title = first.label }
+            } else {
+                // Multi-step: name the whole batch. The row itself lists each step WITH its fields
+                // (see `stepDetails`), so ONE confirmation is still an informed one.
+                items[idx].title = String(format: L("%d steps to confirm"), steps.count)
+            }
+            // The planner proposed writes we could not turn into steps: never drop them in silence.
+            if steps.count < plan.proposedActions.count {
+                items[idx].messages.append(String(
+                    format: L("%d proposed step(s) couldn't be prepared and were left out."),
+                    plan.proposedActions.count - steps.count))
+            }
+            pendingActions[id] = steps
+        } else if plan.proposedCount > 0 {
+            // The planner DID propose writes, but none survived into something runnable (a malformed
+            // action object, an unknown type). Saying so is the whole point: this used to fall through
+            // to `.chat`, which looked exactly like "your request was ignored".
+            items[idx].status = .failed
+            items[idx].errorText = L("I couldn't turn that into an action I can run. Try saying it another way.")
         } else {
             // No write proposed: a pure conversational / read-only answer.
             items[idx].status = .chat
         }
+        bumpPhase(id)
         persist()
     }
 
-    /// User tapped Confirm on item `id` → mark running and hand the action to the executor.
+    /// User tapped Confirm on item `id` → mark running and hand the FIRST step to the executor.
+    /// This is the only door to execution: an action reaches the executor from `pendingActions`,
+    /// and it only ever gets there via `apply` (planner-proposed) or `submitInput` (user-filled),
+    /// both of which require the user to press a button on a card that shows what will run.
     func confirm(_ id: UUID) {
-        guard let action = pendingActions[id] else { return }
-        setStatus(id, .running, messages: [L("Doing it now…")])
+        guard let idx = items.firstIndex(where: { $0.id == id }),
+              items[idx].status == .pendingConfirm,
+              let steps = pendingActions[id], !steps.isEmpty else { return }
+        // No wired executor (the callback lives in AppDelegate) → say so instead of spinning until
+        // the watchdog gives up.
+        guard let handler = onConfirm else {
+            failed(id, error: L("Actions aren't ready yet. Reopen Verba and try again."))
+            return
+        }
         pendingActions[id] = nil
-        watchdog(id)
-        onConfirm?(id, action)
+        runningSteps[id] = steps
+        stepIndex[id] = 0
+        stepResults[id] = []
+        setStatus(id, .running, messages: [Self.progressLine(steps, index: 0)])
+        watchdog(id, seconds: Self.stepTimeout)
+        handler(id, steps[0].action)
+    }
+
+    /// How long ONE confirmed step may take before the feed calls it stuck. Kept strictly ABOVE the
+    /// relay's own /execute deadline (300s, matching its maxDuration) so the network layer — the only
+    /// party that knows whether the write left the machine — always reports first. A watchdog that
+    /// fires at the same moment as the request timeout produces two verdicts for one step.
+    private static let stepTimeout: UInt64 = 330
+
+    /// "Doing it now…" for a single step, "Step 2 of 3 · Email the guests" for a batch.
+    private static func progressLine(_ steps: [ActionStep], index: Int) -> String {
+        guard steps.count > 1 else { return L("Doing it now…") }
+        let title = index < steps.count ? steps[index].title : ""
+        return String(format: L("Step %d of %d · %@"), index + 1, steps.count, title)
     }
 
     /// User tapped Cancel on a pending write.
     func cancel(_ id: UUID) {
-        pendingActions[id] = nil
+        clearRun(id)
         clarifications[id] = nil
         inputRequests[id] = nil
         inputDrafts[id] = nil
         setStatus(id, .cancelled, messages: [L("Cancelled.")])
+    }
+
+    /// True while the item can still legitimately change outcome. `.done`, `.failed` and
+    /// `.cancelled` are FINAL: whatever the user last read there stays true.
+    private func isLive(_ id: UUID) -> Bool {
+        guard let item = items.first(where: { $0.id == id }) else { return false }
+        switch item.status {
+        case .done, .failed, .cancelled: return false
+        default: return true
+        }
+    }
+
+    /// Attach a result that arrived after the row settled, so the information is kept without
+    /// contradicting the verdict on screen.
+    private func appendLate(_ id: UUID, _ line: String) {
+        guard let idx = items.firstIndex(where: { $0.id == id }), !line.isEmpty else { return }
+        items[idx].messages.append(String(format: L("Late result: %@"), line))
+        persist()
+    }
+
+    /// Drop every trace of a queued or in-flight run (nothing here has side effects of its own).
+    private func clearRun(_ id: UUID) {
+        pendingActions[id] = nil
+        runningSteps[id] = nil
+        stepIndex[id] = nil
+        stepResults[id] = nil
     }
 
     /// Update one editable field of a `.needsInput` item.
@@ -168,23 +298,33 @@ final class ActionFeedStore: ObservableObject {
 
     /// User picked a clarification option → re-plan with it pinned.
     func resolve(_ id: UUID, optionID: String) {
+        guard clarifications[id] != nil else { return }
         clarifications[id] = nil
+        guard let handler = onResolveChoice else {
+            failed(id, error: L("Actions aren't ready yet. Reopen Verba and try again."))
+            return
+        }
         setStatus(id, .thinking, messages: [L("On it…")])
         watchdog(id)
-        onResolveChoice?(id, optionID)
+        handler(id, optionID)
     }
 
     /// The user filled the requested fields and submitted → build the composio action from those
-    /// values and run it through the normal confirm→execute path.
+    /// values and run it through the normal confirm→execute path. Pressing this button IS the
+    /// confirmation for that write: the card above it shows the app, the action and every value
+    /// about to be sent, and the button carries the action's own label.
     func submitInput(_ id: UUID) {
-        guard let req = inputRequests[id] else { return }
+        guard let req = inputRequests[id],
+              items.first(where: { $0.id == id })?.status == .needsInput,
+              inputReady(id) else { return }
         let values = inputDrafts[id] ?? [:]
         // Drop empty optional fields; keep what the user typed.
         let args = values.filter { !$0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         let action = VerbaAction.composio(tool: req.tool, label: req.label, arguments: args)
         inputRequests[id] = nil
         inputDrafts[id] = nil
-        pendingActions[id] = action
+        pendingActions[id] = [ActionStep(label: req.label, action: action)]
+        setStatus(id, .pendingConfirm)
         confirm(id)
     }
 
@@ -215,18 +355,61 @@ final class ActionFeedStore: ObservableObject {
         }
     }
 
-    /// The executor finished. `announce` is the JARVIS success line (falls back to a generic one).
+    /// ONE step finished. `announce` is its result line. When more steps remain this hands the next
+    /// one to the executor; only the last step closes the item as `.done`, with every step's result
+    /// listed — so a 3-step plan reports 3 outcomes instead of claiming "Done." after the first.
     func succeeded(_ id: UUID, announce: String?) {
         let line = (announce?.isEmpty == false) ? announce! : L("Done.")
-        setStatus(id, .done, messages: [line])
+        // A LATE report must never overwrite a settled row. The executor Task is not cancellable,
+        // so a step the watchdog already gave up on can still return minutes later; letting it write
+        // `.done` turned "Stopped at step 2 of 3" into a green checkmark on a batch that never
+        // finished. Record it as a line, keep the verdict.
+        guard isLive(id) else { appendLate(id, line); return }
+        guard let steps = runningSteps[id], let index = stepIndex[id] else {
+            setStatus(id, .done, messages: [line])
+            return
+        }
+        var results = stepResults[id] ?? []
+        results.append(steps.count > 1 ? "\(index + 1). \(line)" : line)
+        stepResults[id] = results
+
+        let next = index + 1
+        guard next < steps.count else {
+            clearRun(id)
+            setStatus(id, .done, messages: results)
+            return
+        }
+        guard let handler = onConfirm else {
+            failed(id, error: L("Actions aren't ready yet. Reopen Verba and try again."))
+            return
+        }
+        stepIndex[id] = next
+        setStatus(id, .running, messages: results + [Self.progressLine(steps, index: next)])
+        watchdog(id, seconds: Self.stepTimeout)
+        handler(id, steps[next].action)
     }
 
-    /// The planner or executor errored.
+    /// The planner or executor errored. A failure mid-batch STOPS the remaining steps (never keep
+    /// writing to someone's accounts after something went wrong) and reports exactly what did run.
     func failed(_ id: UUID, error: String) {
         guard let idx = items.firstIndex(where: { $0.id == id }) else { return }
+        // Same rule as `succeeded`: a report that arrives after the row settled is appended, never
+        // allowed to rewrite the outcome the user already saw.
+        guard isLive(id) else { appendLate(id, error); return }
+        let steps = runningSteps[id]
+        let done = stepResults[id] ?? []
+        clearRun(id)
+        bumpPhase(id)
         items[idx].status = .failed
         items[idx].errorText = error
-        items[idx].messages = [L("That didn't work.")]
+        if let steps, steps.count > 1 {
+            items[idx].messages = done + [
+                String(format: L("Stopped at step %d of %d. The remaining steps were not run."),
+                       done.count + 1, steps.count)
+            ]
+        } else if items[idx].messages.isEmpty {
+            items[idx].messages = [L("That didn't work.")]
+        }
         persist()
     }
 
@@ -235,15 +418,17 @@ final class ActionFeedStore: ObservableObject {
         guard let idx = items.firstIndex(where: { $0.id == id }) else { return }
         items[idx].status = status
         if let messages { items[idx].messages = messages }
+        bumpPhase(id)
         persist()
     }
 
     /// Remove one item from the feed.
     func remove(_ id: UUID) {
-        pendingActions[id] = nil
+        clearRun(id)
         clarifications[id] = nil
         inputRequests[id] = nil
         inputDrafts[id] = nil
+        phase[id] = nil
         items.removeAll { $0.id == id }
         persist()
     }
@@ -252,9 +437,13 @@ final class ActionFeedStore: ObservableObject {
     func clearAll() {
         items.removeAll()
         pendingActions.removeAll()
+        runningSteps.removeAll()
+        stepIndex.removeAll()
+        stepResults.removeAll()
         clarifications.removeAll()
         inputRequests.removeAll()
         inputDrafts.removeAll()
+        phase.removeAll()
         persist()
     }
 
@@ -290,9 +479,16 @@ final class ActionFeedStore: ObservableObject {
         guard let data = UserDefaults.standard.data(forKey: storeKey),
               let decoded = try? JSONDecoder().decode([ActionFeedItem].self, from: data) else { return }
         // Any item left mid-flight from a previous launch is stale — collapse to a terminal state.
+        // `.running` is deliberately NOT cancelled: the app died with a write in flight, so whether
+        // it landed is genuinely unknown, and calling that "cancelled" would be a quiet lie.
         items = decoded.map { item in
             switch item.status {
-            case .thinking, .running, .pendingConfirm, .clarify, .needsInput:
+            case .running:
+                var s = item
+                s.status = .failed
+                s.errorText = L("Verba closed while this was running, so I can't tell whether it completed. Check the app before repeating it.")
+                return s
+            case .thinking, .pendingConfirm, .clarify, .needsInput:
                 var s = item; s.status = .cancelled; return s
             default: return item
             }
@@ -422,6 +618,10 @@ struct ActionFeedView: View {
                     if !req.prompt.isEmpty {
                         Text(req.prompt).font(.system(size: 12)).foregroundStyle(.secondary)
                     }
+                    // Name the exact tool: submitting these fields RUNS it, so the user has to be
+                    // able to see what they're approving, not just the fields.
+                    Text(ComposioStore.prettyToolName(req.tool))
+                        .font(.system(size: 10.5, weight: .medium)).foregroundStyle(.tertiary)
                     ForEach(req.fields) { field in inputField(item.id, field) }
                     HStack(spacing: 8) {
                         Button(action: { store.cancel(item.id) }) {
@@ -449,6 +649,18 @@ struct ActionFeedView: View {
                 .padding(.leading, 30)
             }
 
+            // What each pending step will actually do, field by field. The Confirm button below is
+            // the ONLY gate on a real write, so the row has to show what is being approved, not
+            // just the planner's one-line label.
+            if item.status == .pendingConfirm, let steps = store.pendingActions[item.id] {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(Array(steps.enumerated()), id: \.offset) { entry in
+                        stepDetails(entry.element, number: steps.count > 1 ? entry.offset + 1 : nil)
+                    }
+                }
+                .padding(.leading, 30)
+            }
+
             // Inline Confirm / Cancel for a pending write.
             if item.status == .pendingConfirm {
                 HStack(spacing: 8) {
@@ -461,10 +673,12 @@ struct ActionFeedView: View {
                             .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
+                    let stepCount = store.pendingActions[item.id]?.count ?? 1
                     Button(action: { store.confirm(item.id) }) {
                         HStack(spacing: 5) {
                             Image(systemName: "checkmark").font(.system(size: 10, weight: .bold))
-                            Text(L("Confirm")).font(.system(size: 12, weight: .semibold))
+                            Text(stepCount > 1 ? String(format: L("Run %d steps"), stepCount) : L("Confirm"))
+                                .font(.system(size: 12, weight: .semibold))
                         }
                         .foregroundStyle(.white)
                         .padding(.horizontal, 14).padding(.vertical, 6)
@@ -500,6 +714,36 @@ struct ActionFeedView: View {
         .padding(12)
         .glassCard(cornerRadius: 14)
         .transition(.move(edge: .top).combined(with: .opacity))
+    }
+
+    // MARK: Pending-step disclosure
+
+    /// One pending step rendered as label/value rows, from the SAME source as the standalone
+    /// confirmation sheet (`ActionConfirmView.fields(for:)`), so both paths disclose identically.
+    @ViewBuilder private func stepDetails(_ step: ActionStep, number: Int?) -> some View {
+        let rows = Array(ActionConfirmView.fields(for: step.action).prefix(8))
+        VStack(alignment: .leading, spacing: 3) {
+            if let number {
+                Text("\(number). \(step.title)")
+                    .font(.system(size: 11.5, weight: .semibold)).foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            ForEach(Array(rows.enumerated()), id: \.offset) { row in
+                HStack(alignment: .top, spacing: 6) {
+                    Text(row.element.0)
+                        .font(.system(size: 10.5, weight: .medium)).foregroundStyle(.tertiary)
+                        .frame(width: 82, alignment: .leading)
+                    Text(row.element.1)
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                        .lineLimit(3).fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)
+                    Spacer(minLength: 0)
+                }
+            }
+        }
+        .padding(9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.softFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
     }
 
     // MARK: Editable input field
