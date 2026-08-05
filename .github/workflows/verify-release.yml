@@ -54,6 +54,78 @@ jobs:
           EXPECT_LATEST: ${{ github.event.inputs.expect_latest }}
         run: |
           set -euo pipefail
+          # ── How this step reads the feed ───────────────────────────────────────────────
+          # `generate_appcast` (Sparkle 2) emits the version as an ELEMENT inside <item>:
+          #     <sparkle:version>0.9.98</sparkle:version>
+          # Sparkle 1 put it on the enclosure instead (sparkle:version="0.9.98"), and the
+          # app's own feed parser accepts both (Tests/UpdaterContractTests.swift). This step
+          # used to `grep -q 'sparkle:version="$V"'`, which matches NOTHING against the feed
+          # we actually publish: it failed on perfectly good releases and would have gone on
+          # failing until someone read the XML. So parse the document with a real parser
+          # rather than pattern-matching its serialization, and accept BOTH shapes so a
+          # Sparkle up- or downgrade cannot blind this again. Same XPath and same two
+          # backends as release.sh's appcast_facts — this asserts the same invariant on the
+          # same file, after publication instead of before it.
+          SPARKLE_NS='http://www.andymatuschak.org/xml-namespaces/sparkle'
+
+          # appcast_nodes <label> <xpath> <file> — print `<label> <value>` per non-empty match.
+          # string() of a single-node filter expression is that node's string-value, and
+          # normalize-space strips the indentation generate_appcast wraps element content in.
+          appcast_nodes() {
+            local label="$1" xp="$2" file="$3" n i v
+            n="$(xmllint --xpath "count($xp)" "$file" 2>/dev/null)" || return 1
+            n="${n%%.*}"
+            i=1
+            while [ "$i" -le "$n" ]; do
+              v="$(xmllint --xpath "normalize-space(string(($xp)[$i]))" "$file" 2>/dev/null)" || return 1
+              if [ -n "$v" ]; then printf '%s %s\n' "$label" "$v"; fi
+              i=$((i + 1))
+            done
+          }
+
+          # appcast_facts <file> — print, one fact per line:
+          #   items <count>        how many <item> entries the feed carries
+          #   version <value>      once per sparkle:version, element form or attribute form
+          #   signature <value>    once per sparkle:edSignature, element or attribute form
+          #   enclosure <url>      once per <enclosure url="…">
+          # Returns non-zero when the file cannot be parsed at all.
+          appcast_facts() {
+            local file="$1" xp_item xp_ver xp_sig xp_enc n
+            xp_item="//*[local-name()='item']"
+            xp_ver="//*[local-name()='version' and namespace-uri()='$SPARKLE_NS']"
+            xp_ver="$xp_ver | //@*[local-name()='version' and namespace-uri()='$SPARKLE_NS']"
+            xp_sig="//*[local-name()='edSignature' and namespace-uri()='$SPARKLE_NS']"
+            xp_sig="$xp_sig | //@*[local-name()='edSignature' and namespace-uri()='$SPARKLE_NS']"
+            xp_enc="//*[local-name()='enclosure']/@url"
+            if command -v xmllint >/dev/null 2>&1; then
+              n="$(xmllint --xpath "count($xp_item)" "$file" 2>/dev/null)" || return 1
+              printf 'items %s\n' "${n%%.*}"
+              appcast_nodes version   "$xp_ver" "$file" || return 1
+              appcast_nodes signature "$xp_sig" "$file" || return 1
+              appcast_nodes enclosure "$xp_enc" "$file" || return 1
+            else
+              # The heredoc body is deliberately flush with the YAML block indent so it reaches
+              # python at column 0. Re-indenting it to match the shell around it breaks it.
+              python3 - "$file" "$SPARKLE_NS" <<'PY' || return 1
+          import sys, xml.etree.ElementTree as ET
+          path, ns = sys.argv[1], sys.argv[2]
+          nodes = list(ET.parse(path).getroot().iter())
+          print("items %d" % sum(1 for e in nodes if e.tag.rsplit("}", 1)[-1] == "item"))
+          for label, name in (("version", "version"), ("signature", "edSignature")):
+              tag = "{%s}%s" % (ns, name)
+              for e in nodes:
+                  for raw in (e.text if e.tag == tag else None, e.attrib.get(tag)):
+                      if raw and raw.strip():
+                          print("%s %s" % (label, " ".join(raw.split())))
+          for e in nodes:
+              if e.tag.rsplit("}", 1)[-1] == "enclosure":
+                  raw = e.attrib.get("url")
+                  if raw and raw.strip():
+                      print("enclosure %s" % raw.strip())
+          PY
+            fi
+          }
+
           # Default (expect_latest=true) fetches through /releases/latest/, the exact indirection
           # SUFeedURL uses — the only path that catches a release published without becoming
           # 'latest'. Set it false to audit an older release through its own tag.
@@ -64,16 +136,65 @@ jobs:
           fi
           echo "BASE=$BASE" >> "$GITHUB_ENV"
           curl -fsSL --retry 3 -o appcast.xml "$BASE/appcast.xml"
-          xmllint --noout appcast.xml || { echo "::error::published appcast.xml is not well-formed XML"; exit 1; }
-          grep -q "sparkle:version=\"$V\"" appcast.xml \
-            || { echo "::error::latest appcast does not advertise sparkle:version=\"$V\" (is 'latest' pointing elsewhere?)"; exit 1; }
-          grep -q 'sparkle:edSignature="' appcast.xml \
-            || { echo "::error::latest appcast carries no sparkle:edSignature — clients would reject the update"; exit 1; }
-          ENC=$(grep -o '<enclosure[^>]*url="[^"]*"' appcast.xml | grep -o 'url="[^"]*"' | cut -d'"' -f2 | head -1)
+
+          # Same backend choice as appcast_facts, so the fallback is a path that can actually
+          # run rather than dead code behind an xmllint-only gate.
+          if command -v xmllint >/dev/null 2>&1; then
+            xmllint --noout appcast.xml \
+              || { echo "::error::published appcast.xml is not well-formed XML"; exit 1; }
+          else
+            python3 -c 'import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])' appcast.xml \
+              || { echo "::error::published appcast.xml is not well-formed XML"; exit 1; }
+          fi
+
+          FACTS="$(appcast_facts appcast.xml)" \
+            || { echo "::error::published appcast.xml could not be parsed for sparkle:version — either the XML is unreadable, or neither xmllint nor python3 is available on this runner"; exit 1; }
+          ITEMS="" VERSIONS="" SIGS="" ENCS=""
+          while read -r KIND VAL; do
+            case "$KIND" in
+              items)     ITEMS="$VAL" ;;
+              version)   VERSIONS="$VERSIONS$VAL
+          " ;;
+              signature) SIGS="$SIGS$VAL
+          " ;;
+              enclosure) ENCS="$ENCS$VAL
+          " ;;
+            esac
+          done <<< "$FACTS"
+
+          # Exactly one <item>: release.sh gates the local appcast to a single item before it is
+          # uploaded verbatim, so more than one here means the published feed is stale (a leftover
+          # DMG in dist/ gets its own item, whose enclosure 404s under this release's tag).
+          case "$ITEMS" in
+            1) ;;
+            0|"") echo "::error::published appcast carries no <item> — every client sees an empty feed"; exit 1 ;;
+            *)    echo "::error::published appcast carries $ITEMS <item> entries; exactly one (v$V) is expected — the feed is stale"; exit 1 ;;
+          esac
+
+          DISTINCT="$(printf '%s' "$VERSIONS" | sed '/^[[:space:]]*$/d' | sort -u)"
+          NDISTINCT=0
+          if [ -n "$DISTINCT" ]; then NDISTINCT="$(printf '%s\n' "$DISTINCT" | wc -l | tr -d '[:space:]')"; fi
+          if [ "$NDISTINCT" -eq 0 ]; then
+            echo "::error::published appcast carries no sparkle:version (neither a <sparkle:version> element nor an enclosure attribute) — Sparkle cannot compare it against an installed build"
+            exit 1
+          fi
+          if [ "$NDISTINCT" -gt 1 ]; then
+            echo "::error::published appcast advertises conflicting sparkle:version values: $(printf '%s' "$DISTINCT" | tr '\n' ' ')"
+            exit 1
+          fi
+          [ "$DISTINCT" = "$V" ] \
+            || { echo "::error::published appcast advertises sparkle:version '$DISTINCT', expected '$V' (is 'latest' pointing elsewhere?)"; exit 1; }
+
+          printf '%s' "$SIGS" | grep -q '[^[:space:]]' \
+            || { echo "::error::published appcast carries no sparkle:edSignature — clients would reject the update"; exit 1; }
+
+          ENC="$(printf '%s' "$ENCS" | sed '/^[[:space:]]*$/d' | head -1)"
+          [ -n "$ENC" ] \
+            || { echo "::error::published appcast carries no <enclosure url=…> — clients have nothing to download"; exit 1; }
           echo "enclosure: $ENC"
           curl -fsSL --retry 3 -o /dev/null "$ENC" \
             || { echo "::error::the appcast enclosure URL does not resolve: $ENC"; exit 1; }
-          echo "✅ appcast live, well-formed, signed, version $V, enclosure downloadable"
+          echo "✅ appcast live, well-formed, signed, one item advertising version $V, enclosure downloadable"
 
       - name: The website download link resolves to this version
         env:
