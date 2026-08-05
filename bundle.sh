@@ -1,11 +1,23 @@
 #!/bin/bash
 # Build Verba and assemble a runnable .app bundle.
-set -e
+set -euo pipefail
 cd "$(dirname "$0")"
 
 # No silent default: an unstamped bundle ships a wrong CFBundleVersion and
 # breaks Sparkle's version comparison. Always pass it explicitly.
 VERSION="${VERSION:?Set VERSION explicitly, e.g. VERSION=0.2.0 ./bundle.sh}"
+
+# STRICT version shape. Non-empty is NOT enough: Sparkle compares CFBundleVersion with
+# SUStandardVersionComparator, which ranks a component starting with a letter BELOW every
+# numeric one. So a bundle stamped "main" (what `${GITHUB_REF_NAME#v}` yields on a
+# workflow_dispatch run off a branch) or "v0.9.98" (a leading "v" the operator typed) reads
+# as OLDER than 0.9.97 to every installed client: they see no update, silently, forever.
+# The plist is written here, so the shape is enforced here — not only upstream.
+if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+  echo "❌ VERSION='$VERSION' is not MAJOR.MINOR.PATCH (digits only, e.g. 0.9.98)." >&2
+  echo "   Sparkle would rank a non-numeric version BELOW the published one and no client would update." >&2
+  exit 1
+fi
 APP="Verba.app"
 
 echo "▸ Building release (arm64)…"
@@ -165,6 +177,21 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </dict>
 </plist>
 PLIST
+
+# ── Gate: read the version back OUT of the plists we just wrote ──
+# The heredocs above interpolate ${VERSION}; a malformed plist (or a future edit that drops
+# the key) would produce a bundle whose CFBundleVersion is empty or stale, and Sparkle would
+# then compare the WRONG number. Assert the written bytes, not the intent.
+for PL in "$APP/Contents/Info.plist" "$APP/Contents/PlugIns/VerbaWidget.appex/Contents/Info.plist"; do
+  [ -f "$PL" ] || continue
+  plutil -lint "$PL" >/dev/null || { echo "❌ $PL is not a well-formed plist" >&2; exit 1; }
+  for KEY in CFBundleVersion CFBundleShortVersionString; do
+    GOT="$(/usr/libexec/PlistBuddy -c "Print :$KEY" "$PL" 2>/dev/null || true)"
+    [ "$GOT" = "$VERSION" ] || {
+      echo "❌ $PL: $KEY is '$GOT', expected '$VERSION'" >&2; exit 1; }
+  done
+done
+echo "▸ Version $VERSION verified in Info.plist (app$([ -d "$APP/Contents/PlugIns/VerbaWidget.appex" ] && echo " + widget"))"
 
 # Sign with a STABLE identity if available (Developer ID) so macOS keeps the
 # Accessibility/Microphone grant across rebuilds. Falls back to ad-hoc otherwise.
