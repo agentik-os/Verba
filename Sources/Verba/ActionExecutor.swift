@@ -335,6 +335,7 @@ struct ActionExecutor {
         case scriptFailed(String)
         case noMatchingTask(String)
         case disabled(ActionKind)
+        case notConnected(String)
 
         var errorDescription: String? {
             switch self {
@@ -358,6 +359,8 @@ struct ActionExecutor {
                 return "No open task matching “\(match)”."
             case let .disabled(kind):
                 return "“\(kind.label)” actions are turned off in Settings ▸ Actions."
+            case let .notConnected(app):
+                return "\(app) isn't connected yet. Open Connected apps and connect it, then try again."
             }
         }
     }
@@ -393,14 +396,40 @@ struct ActionExecutor {
             NSWorkspace.shared.open(url)
             return "Opened \(label)"
         case let .composio(tool, _, arguments):
-            // Connected app: execute through the Composio relay on verba.run (the user
-            // already confirmed in ActionConfirmView; the relay enforces the signed-in session).
+            // Connected app: execute through the Composio relay on verba.run (the user already
+            // confirmed; the relay enforces the signed-in session). Check the connection FIRST so a
+            // never-connected app says "connect it" instead of returning the relay's raw 502.
+            if let missing = Self.missingConnection(for: tool) { throw ActionError.notConnected(missing) }
             return try await ComposioStore.shared.execute(tool: tool, arguments: arguments)
         case let .completeTask(match):
             return try await completeVerbaTask(match: match)
         case let .setTaskReminder(match, due):
             return try await setVerbaTaskReminder(match: match, due: due)
         }
+    }
+
+    /// The name of the app a tool needs, when we can PROVE it isn't connected. Tool slugs are
+    /// TOOLKIT_ACTION and connections are keyed by lowercased toolkit slug, so a live connection is
+    /// a prefix of the tool slug (google_maps covers GOOGLE_MAPS_GET_DIRECTIONS).
+    ///
+    /// Deliberately conservative — it returns nil (execute anyway) unless ALL of these hold:
+    /// `/connections` has answered successfully at least once (a failed fetch leaves the map empty,
+    /// which must NOT read as "nothing is connected"), the tool's toolkit is in the catalog, that
+    /// toolkit needs auth at all ("none"-auth toolkits run with no connected account), and no ACTIVE
+    /// connection matches. A wrongly refused action is a worse failure than the relay's own error.
+    private static func missingConnection(for tool: String) -> String? {
+        let store = ComposioStore.shared
+        guard store.didLoadConnections else { return nil }
+        let slug = tool.lowercased()
+        func covers(_ toolkit: String) -> Bool {
+            let t = toolkit.lowercased()
+            return !t.isEmpty && (slug == t || slug.hasPrefix(t + "_"))
+        }
+        // Longest match wins, so a "GOOGLE" entry can't shadow "GOOGLE_MAPS".
+        let candidates = store.apps.filter { covers($0.slug) }
+        guard let app = candidates.max(by: { $0.slug.count < $1.slug.count }), app.auth != "none" else { return nil }
+        let connected = store.connections.contains { covers($0.key) && $0.value.uppercased() == "ACTIVE" }
+        return connected ? nil : app.name
     }
 
     // MARK: Verba task manager (act on TodoStore's own to-dos)

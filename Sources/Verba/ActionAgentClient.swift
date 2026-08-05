@@ -25,6 +25,11 @@ struct VerbaPlan: Decodable {
     let inputRequest: PlanInputRequest?
     /// An optional next step to offer AFTER the action succeeds (e.g. "Invite people to the event?").
     let followup: PlanFollowup?
+    /// How many writes the PLANNER proposed, INCLUDING any entry this client couldn't turn into a
+    /// usable action. When it exceeds the usable count something was dropped, and the feed must say
+    /// so — silently presenting a proposed write as a chat reply is the invisible failure that made
+    /// Action mode look like it had simply ignored the request.
+    let proposedCount: Int
 
     private enum CodingKeys: String, CodingKey {
         case summary, classification, messages, announce
@@ -39,14 +44,23 @@ struct VerbaPlan: Decodable {
         messages = (try? c.decode([String].self, forKey: .messages)) ?? []
         announce = try? c.decodeIfPresent(String.self, forKey: .announce)
         // The relay names the field `proposedWriteActions`; accept the shorter `proposedActions` too.
-        let write = (try? c.decode([PlannedAction].self, forKey: .proposedWriteActions))
-            ?? (try? c.decode([PlannedAction].self, forKey: .proposedActions))
+        // Decoded ELEMENT BY ELEMENT: one malformed entry used to fail the whole array decode and
+        // wipe every proposed write with it.
+        let write = (try? c.decode([FailableAction].self, forKey: .proposedWriteActions))
+            ?? (try? c.decode([FailableAction].self, forKey: .proposedActions))
             ?? []
-        proposedActions = write
+        proposedCount = write.count
+        proposedActions = write.compactMap(\.value)
         clarification = try? c.decodeIfPresent(PlanClarification.self, forKey: .clarification)
         inputRequest = try? c.decodeIfPresent(PlanInputRequest.self, forKey: .inputRequest)
         followup = try? c.decodeIfPresent(PlanFollowup.self, forKey: .followup)
     }
+}
+
+/// One entry of `proposedWriteActions` that never fails the surrounding array decode.
+private struct FailableAction: Decodable {
+    let value: PlannedAction?
+    init(from decoder: Decoder) throws { value = try? PlannedAction(from: decoder) }
 }
 
 /// A suggested next step shown after an action succeeds. Accepting re-plans `intent` as if the
@@ -187,6 +201,18 @@ struct PlannedAction: Decodable, Identifiable {
 struct PlanClarification: Decodable {
     let question: String
     let options: [PlanOption]
+
+    // Tolerant like every other plan model here: a clarification that arrives without a question,
+    // or with one malformed option, used to fail the whole decode and vanish — taking the user's
+    // only way forward with it.
+    private enum CodingKeys: String, CodingKey { case question, options, choices }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        question = (try? c.decode(String.self, forKey: .question)) ?? ""
+        options = (try? c.decode([PlanOption].self, forKey: .options))
+            ?? (try? c.decode([PlanOption].self, forKey: .choices))
+            ?? []
+    }
 }
 
 struct PlanOption: Decodable, Identifiable {
@@ -308,6 +334,10 @@ final class ActionAgentClient {
         guard let sysPlan = ctx["systemPlan"] as? String,
               let sysResolve = ctx["systemResolve"] as? String else { throw ActionAgentError.badResponse }
         let schemas = ctx["schemas"] as? [String: Any] ?? [:]
+        // Hand the schemas to the executor's client: the action model flattens every argument to a
+        // String on its way to the confirm card, and only the schema can tell which ones must be
+        // turned back into arrays, objects, numbers or booleans before the tool runs.
+        await MainActor.run { ComposioStore.shared.cacheToolSchemas(schemas) }
 
         var userMsg = "The user said:\n\n<command>\n\(transcript)\n</command>"
         // Inject the user's own OPEN Verba to-dos so the planner can match complete_task /
@@ -323,9 +353,25 @@ final class ActionAgentClient {
         var planObj = try Self.firstJSON(await Self.runLLM(system: sysPlan, user: userMsg))
 
         // 3 — read-only steps via the relay, then RESOLVE locally with the results.
+        //
+        // The relay runs these WITHOUT any confirmation, which is only acceptable while every step
+        // is genuinely a read. Its own gate is a verb heuristic, and a slug like TWITTER_FOLLOW_LIST
+        // passes it while actually changing the user's account. So we refuse write-shaped slugs HERE
+        // too, before they leave the Mac, and hand the refusal to the resolve phase so the model
+        // re-proposes them as confirmable writes instead of losing them.
         if let needs = planObj["needReads"] as? [[String: Any]], !needs.isEmpty {
-            let readsResp = try await Self.post("/agent-reads", token: token, body: ["steps": needs])
-            let block = readsResp["block"] as? String ?? ""
+            let safe = needs.filter { Self.isReadShaped(($0["tool"] as? String) ?? "") }
+            let refused = needs.compactMap { $0["tool"] as? String }.filter { !Self.isReadShaped($0) }
+
+            var block = ""
+            if !safe.isEmpty {
+                let readsResp = try await Self.post("/agent-reads", token: token, body: ["steps": safe], timeout: 180)
+                block = readsResp["block"] as? String ?? ""
+            }
+            if !refused.isEmpty {
+                block += "\n• REFUSED (never auto-run, they can change data): \(refused.joined(separator: ", "))"
+                    + "\n  If the user asked for one of these, put it in proposedWriteActions so they can confirm it."
+            }
             let resolveMsg = userMsg
                 + "\n\nREAD RESULTS (you requested these; use them to produce concrete proposedWriteActions, needReads MUST be []):\n"
                 + block
@@ -343,6 +389,44 @@ final class ActionAgentClient {
             throw ActionAgentError.badResponse
         }
         return plan
+    }
+
+    /// Tool-slug verbs that can CHANGE something. A slug carrying any of them is never eligible for
+    /// the auto-executed read phase, whatever the planner claims — the confirmation gate is the
+    /// whole product promise, and a step that runs without one has already broken it.
+    private static let mutatingVerbs: Set<String> = [
+        "CREATE", "ADD", "SEND", "POST", "UPDATE", "EDIT", "MODIFY", "PATCH", "PUT", "UPSERT",
+        "DELETE", "REMOVE", "DESTROY", "TRASH", "ARCHIVE", "CLEAR", "EMPTY", "RESTORE",
+        "MOVE", "RENAME", "SET", "WRITE", "UPLOAD", "INSERT", "APPEND", "REPLACE", "MERGE",
+        "REPLY", "FORWARD", "SHARE", "INVITE", "ASSIGN", "TRANSFER", "GRANT", "REVOKE",
+        "FOLLOW", "UNFOLLOW", "SUBSCRIBE", "UNSUBSCRIBE", "WATCH", "JOIN", "LEAVE",
+        "LIKE", "UNLIKE", "VOTE", "PIN", "UNPIN", "MUTE", "BLOCK", "SNOOZE",
+        "APPROVE", "REJECT", "SUBMIT", "PUBLISH", "CANCEL", "CLOSE", "REOPEN",
+        "RUN", "EXECUTE", "TRIGGER", "START", "STOP", "ENABLE", "DISABLE", "OPERATION",
+        "BOOK", "PAY", "CHARGE", "REFUND", "IMPORT", "SYNC", "DUPLICATE",
+    ]
+
+    /// Verbs that mean a tool only LOOKS things up. A slug must carry one of these to be eligible
+    /// for the auto-executed read phase.
+    private static let readingVerbs: Set<String> = [
+        "GET", "LIST", "FETCH", "SEARCH", "READ", "FIND", "QUERY", "RETRIEVE", "LOOKUP",
+        "VIEW", "SHOW", "COUNT", "DESCRIBE", "DETAILS", "DETAIL", "INFO", "STATUS", "STATS",
+    ]
+
+    /// True when a tool slug is safe to auto-run without confirmation.
+    ///
+    /// An ALLOW-list (it must name a reading verb) AND a DENY-list (it must name no mutating verb).
+    /// The allow-list is the load-bearing half: a deny-list alone fails OPEN on every verb nobody
+    /// thought of — GITHUB_STAR_A_REPOSITORY, HACKERNEWS_UPVOTE_ITEM — and auto-running one of those
+    /// is exactly the confirmation bypass this gate exists to prevent. Refusing a genuine read costs
+    /// only one confirmation (the refusal is handed back to the resolve phase, which re-proposes it
+    /// as a confirmable write), so the conservative direction is the cheap one.
+    static func isReadShaped(_ slug: String) -> Bool {
+        // The first token is the toolkit (GMAIL_…), never the verb.
+        let tokens = slug.split(separator: "_").dropFirst().map { $0.uppercased() }
+        guard !tokens.isEmpty else { return false }
+        guard tokens.contains(where: { readingVerbs.contains($0) }) else { return false }
+        return !tokens.contains { mutatingVerbs.contains($0) }
     }
 
     // MARK: On-device planning engine
@@ -450,18 +534,22 @@ final class ActionAgentClient {
 
     // MARK: Plumbing
 
-    /// Authed JSON POST to the relay.
-    private static func post(_ path: String, token: String, body: [String: Any]) async throws -> [String: Any] {
+    /// Authed JSON POST to the relay. `timeout` matches what the route can actually take: the read
+    /// executor runs real third-party calls and declares `maxDuration = 300` server-side, so the old
+    /// flat 75s client timeout cut off reads the relay was still legitimately running.
+    private static func post(_ path: String, token: String, body: [String: Any],
+                             timeout: TimeInterval = 75) async throws -> [String: Any] {
         guard let url = URL(string: base + path) else { throw ActionAgentError.badResponse }
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "content-type")
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.timeoutInterval = 75
+        req.timeoutInterval = timeout
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         let (data, resp) = try await URLSession.shared.data(for: req)
         let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(code) else {
+            if code == 401 { throw ActionAgentError.notSignedIn }
             let msg = ((try? JSONSerialization.jsonObject(with: data)) as? [String: Any])?["error"] as? String
             throw ActionAgentError.http(code, msg ?? "")
         }
@@ -547,30 +635,102 @@ final class ActionAgentClient {
 
     private static func repairInvalidActions(_ plan: inout [String: Any], schemas: [String: Any]) async {
         guard var proposed = plan["proposedWriteActions"] as? [[String: Any]] else { return }
+        var unfillable: [Int] = []   // indices turned into an input request instead of a doomed call
         for (i, p) in proposed.enumerated() {
             guard var action = p["action"] as? [String: Any],
                   (action["type"] as? String)?.lowercased() == "composio",
                   let slug = action["tool"] as? String,
                   let ip = schemas[slug] as? [String: Any] else { continue }
-            let args = action["arguments"] as? [String: Any] ?? [:]
+            var args = action["arguments"] as? [String: Any] ?? [:]
             let errs = validate(args, ip: ip)
-            guard !errs.isEmpty,
-                  let ipJSON = try? JSONSerialization.data(withJSONObject: ip),
-                  let argsJSON = try? JSONSerialization.data(withJSONObject: args) else { continue }
-            let prompt = "Tool: \(slug)\nJSON schema of its input:\n\(String(data: ipJSON, encoding: .utf8) ?? "")"
-                + "\n\nCurrent (INVALID) arguments:\n\(String(data: argsJSON, encoding: .utf8) ?? "")"
-                + "\n\nValidation errors:\n- \(errs.joined(separator: "\n- "))"
-                + "\n\nReturn ONLY the corrected arguments JSON object. Keep the user's values; fix shapes/types; drop unknown fields."
-            guard let out = try? await runLLM(
-                system: "You repair tool-call arguments. Reply with ONLY a JSON object — the corrected arguments — no prose, no fence.",
-                user: prompt
-            ), let fixed = try? firstJSON(out) else { continue }
-            if validate(fixed, ip: ip).count < errs.count {
-                action["arguments"] = fixed
-                var item = p; item["action"] = action
-                proposed[i] = item
+            if !errs.isEmpty,
+               let ipJSON = try? JSONSerialization.data(withJSONObject: ip),
+               let argsJSON = try? JSONSerialization.data(withJSONObject: args) {
+                let prompt = "Tool: \(slug)\nJSON schema of its input:\n\(String(data: ipJSON, encoding: .utf8) ?? "")"
+                    + "\n\nCurrent (INVALID) arguments:\n\(String(data: argsJSON, encoding: .utf8) ?? "")"
+                    + "\n\nValidation errors:\n- \(errs.joined(separator: "\n- "))"
+                    + "\n\nReturn ONLY the corrected arguments JSON object. Keep the user's values; fix shapes/types; drop unknown fields."
+                if let out = try? await runLLM(
+                    system: "You repair tool-call arguments. Reply with ONLY a JSON object — the corrected arguments — no prose, no fence.",
+                    user: prompt
+                ), let fixed = try? firstJSON(out), validate(fixed, ip: ip).count < errs.count {
+                    args = fixed
+                    action["arguments"] = fixed
+                    var item = p; item["action"] = action
+                    proposed[i] = item
+                }
+            }
+            // Still missing REQUIRED values? Executing would just bounce off the tool's schema with
+            // an error the user can do nothing about. Ask them instead: the plan already has a
+            // first-class shape for that (inputRequest → editable fields in the feed → same tool).
+            // ONLY for a single-step plan: the feed renders an inputRequest INSTEAD of the proposed
+            // writes, so converting one step of a batch would silently swallow the others.
+            let missing = missingRequired(args, ip: ip)
+            if !missing.isEmpty, proposed.count == 1, plan["inputRequest"] == nil {
+                let label = (p["label"] as? String) ?? slug
+                plan["inputRequest"] = inputRequest(tool: slug, label: label, args: args, ip: ip, missing: missing)
+                unfillable.append(i)
             }
         }
+        for i in unfillable.reversed() { proposed.remove(at: i) }
         plan["proposedWriteActions"] = proposed
+    }
+
+    /// Required schema keys with no usable value in `args`.
+    private static func missingRequired(_ args: [String: Any], ip: [String: Any]) -> [String] {
+        guard ip["properties"] is [String: Any] else { return [] }
+        return ((ip["required"] as? [String]) ?? []).filter { key in
+            guard let v = args[key] else { return true }
+            if let s = v as? String { return s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            if let a = v as? [Any] { return a.isEmpty }
+            return v is NSNull
+        }
+    }
+
+    /// Build the `inputRequest` the feed renders as editable fields. Every required key becomes a
+    /// field, PREFILLED with whatever the planner already resolved, so submitting can't lose the
+    /// values it did get right (the feed rebuilds the call from these fields alone).
+    private static func inputRequest(tool: String, label: String, args: [String: Any],
+                                     ip: [String: Any], missing: [String]) -> [String: Any] {
+        let props = (ip["properties"] as? [String: Any]) ?? [:]
+        let required = (ip["required"] as? [String]) ?? []
+        // Required keys first (they're what's blocking), then anything already filled in.
+        var keys = required
+        for k in args.keys.sorted() where !keys.contains(k) && props[k] != nil { keys.append(k) }
+        let fields: [[String: Any]] = keys.prefix(8).map { key in
+            let spec = props[key] as? [String: Any] ?? [:]
+            let title = (spec["title"] as? String) ?? key.replacingOccurrences(of: "_", with: " ").capitalized
+            let hint = (spec["description"] as? String) ?? ""
+            let long = ["body", "message", "text", "content", "description", "comment"]
+                .contains { key.lowercased().contains($0) }
+            return [
+                "key": key,
+                "label": title,
+                "placeholder": String(hint.prefix(80)),
+                "value": stringValue(args[key]),
+                "required": required.contains(key),
+                "multiline": long,
+            ]
+        }
+        let names = missing.map { $0.replacingOccurrences(of: "_", with: " ") }.joined(separator: ", ")
+        return [
+            "tool": tool,
+            "label": label,
+            "prompt": String(format: L("I still need: %@"), names),
+            "fields": fields,
+        ]
+    }
+
+    /// Render an existing argument as editable text (containers keep their JSON form; the executor
+    /// re-types them on the way out — see ComposioStore.retyped).
+    private static func stringValue(_ value: Any?) -> String {
+        guard let value, !(value is NSNull) else { return "" }
+        if let s = value as? String { return s }
+        if let n = value as? NSNumber {
+            return CFGetTypeID(n) == CFBooleanGetTypeID() ? (n.boolValue ? "true" : "false") : n.stringValue
+        }
+        if let d = try? JSONSerialization.data(withJSONObject: value, options: [.sortedKeys]),
+           let s = String(data: d, encoding: .utf8) { return s }
+        return ""
     }
 }

@@ -16,9 +16,12 @@ struct ActionConfirmView: View {
                     width: 460,
                     drawsCard: false) {
             VStack(alignment: .leading, spacing: 12) {
-                ForEach(fields, id: \.0) { label, value in
-                    GlassLabeledValue(label: label) {
-                        Text(value)
+                // Keyed by POSITION, not by label: a connected-app action can carry an argument
+                // whose pretty name collides with a fixed row ("app", "action"), and duplicate
+                // ForEach ids drop rows — silently hiding part of what is about to be sent.
+                ForEach(Array(fields.enumerated()), id: \.offset) { row in
+                    GlassLabeledValue(label: row.element.0) {
+                        Text(row.element.1)
                             .font(.system(.body))
                             .textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -77,7 +80,12 @@ struct ActionConfirmView: View {
     }
 
     /// The key fields shown in the card, labelled.
-    private var fields: [(String, String)] {
+    private var fields: [(String, String)] { Self.fields(for: action) }
+
+    /// Exposed so the JARVIS feed's inline confirm row can disclose the SAME details before its own
+    /// Confirm button. The feed used to show only the planner's one-line label, so the primary
+    /// confirmation path revealed less about a write than this fallback sheet did.
+    static func fields(for action: VerbaAction) -> [(String, String)] {
         switch action {
         case let .calendarEvent(title, start, end, notes):
             var f: [(String, String)] = [(L("Title"), title), (L("Starts"), Self.fmt(start))]
@@ -112,13 +120,17 @@ struct ActionConfirmView: View {
             return [(L("Action"), label), ("Script", script)]
         case let .openURL(label, url):
             return [(L("Open"), label), ("URL", url.absoluteString)]
-        case let .composio(tool, _, arguments):
-            // Tool slug first, then every argument the model filled, so the user sees
-            // EXACTLY what will be sent to the connected app before confirming.
-            var f: [(String, String)] = [(L("Tool"), tool)]
-            for (k, v) in arguments.sorted(by: { $0.key < $1.key }) where !v.isEmpty {
-                f.append((k.replacingOccurrences(of: "_", with: " ").capitalized, v))
+        case let .composio(tool, label, arguments):
+            // App + tool first, then EVERY argument the model filled, so the user sees exactly what
+            // will be sent to the connected app before confirming. Empty values are shown as empty
+            // rather than hidden: a blank recipient is precisely what the user needs to catch here.
+            var f: [(String, String)] = [(L("App"), ComposioStore.prettyToolName(tool)), (L("Tool"), tool)]
+            if !label.isEmpty, label != tool { f.append((L("Action"), label)) }
+            for (k, v) in arguments.sorted(by: { $0.key < $1.key }) {
+                let pretty = k.replacingOccurrences(of: "_", with: " ").capitalized
+                f.append((pretty, v.isEmpty ? L("(empty)") : v))
             }
+            if arguments.isEmpty { f.append((L("Details"), L("No values were filled in."))) }
             return f
         case let .completeTask(match):
             return [(L("Task"), match)]
@@ -133,13 +145,19 @@ struct ActionConfirmView: View {
         return f.string(from: date)
     }
 
-    // The macOS default calendar / reminders list the event or reminder will be created in, so the
-    // user can see WHERE it goes (set the default in Calendar.app / Reminders.app to change it).
+    // WHERE the event or reminder will actually land. This must mirror ActionExecutor's own
+    // resolution (the user's pick in Settings ▸ Action mode WINS over the macOS default): showing
+    // the system default while the executor writes to a different calendar makes the confirmation
+    // card describe something other than what is about to happen.
     private static let store = EKEventStore()
     static var defaultEventCalendar: String {
-        store.defaultCalendarForNewEvents?.title ?? L("Default calendar")
+        let chosen = Settings.shared.eventCalendarID
+        if !chosen.isEmpty, let cal = store.calendar(withIdentifier: chosen) { return cal.title }
+        return store.defaultCalendarForNewEvents?.title ?? L("Default calendar")
     }
     static var defaultReminderList: String {
-        store.defaultCalendarForNewReminders()?.title ?? L("Default list")
+        let chosen = Settings.shared.reminderListID
+        if !chosen.isEmpty, let cal = store.calendar(withIdentifier: chosen) { return cal.title }
+        return store.defaultCalendarForNewReminders()?.title ?? L("Default list")
     }
 }

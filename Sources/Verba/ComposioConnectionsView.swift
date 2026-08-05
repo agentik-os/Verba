@@ -98,6 +98,12 @@ struct ComposioConnectionsView: View {
                 Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange).font(.system(size: 12))
                 Text(err).font(.caption).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
+                // A dead-end error message is only half the fix: give the user the retry.
+                Button { store.lastError = nil; store.refresh() } label: {
+                    Text(L("Retry")).font(.system(size: 10.5, weight: .semibold))
+                        .padding(.horizontal, 9).padding(.vertical, 3)
+                        .overlay(Capsule().stroke(Color.primary.opacity(0.18), lineWidth: 1))
+                }.buttonStyle(.plain).foregroundStyle(.primary)
                 Button { store.lastError = nil } label: { Image(systemName: "xmark").font(.system(size: 10)) }
                     .buttonStyle(.plain).foregroundStyle(.secondary)
             }
@@ -111,8 +117,15 @@ struct ComposioConnectionsView: View {
         let total = allApps.count
         let connected = store.connections.values.filter { $0.uppercased() == "ACTIVE" }.count
         return HStack(spacing: 5) {
-            Text(String(format: L("%d apps you can connect"), total))
-                .font(.system(size: 11)).foregroundStyle(.secondary)
+            if store.loading {
+                // The grid shows the BUNDLED fallback catalog until the live one lands. Without this
+                // the first seconds look like a complete, tiny catalog with nothing happening.
+                ProgressView().controlSize(.small).scaleEffect(0.6).frame(width: 12, height: 12)
+                Text(L("Loading your apps…")).font(.system(size: 11)).foregroundStyle(.secondary)
+            } else {
+                Text(String(format: L("%d apps you can connect"), total))
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+            }
             if connected > 0 {
                 Text("·").foregroundStyle(.secondary)
                 Text(String(format: L("%d connected"), connected))
@@ -162,6 +175,7 @@ struct ComposioConnectionsView: View {
                     header
                     searchField.padding(.horizontal, 24).padding(.bottom, 6)
                     filterBar.padding(.horizontal, 24).padding(.bottom, 6)
+                    countLabel.padding(.horizontal, 24).padding(.bottom, 6)
                     errorBanner.padding(.horizontal, 24).padding(.bottom, 6)
                     ScrollView {
                         LazyVGrid(columns: cols, spacing: 12) {
@@ -441,6 +455,7 @@ struct AppActionsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var actions: [ComposioAction] = []
     @State private var loading = true
+    @State private var loadError: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -461,6 +476,18 @@ struct AppActionsView: View {
                         ProgressView()
                         Text(L("Loading actions…")).font(.system(size: 12)).foregroundStyle(.secondary)
                     }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let err = loadError {
+                    // A failed fetch used to render as "no actions available", which reads as a
+                    // limitation of the app instead of a problem we can retry.
+                    VStack(spacing: 10) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 18)).foregroundStyle(.orange)
+                        Text(L("Couldn't load this app's actions.")).font(.system(size: 13, weight: .medium))
+                        Text(err).font(.system(size: 11)).foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                        Button(L("Retry")) { Task { await load() } }.glassButton()
+                    }
+                    .padding(24).frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if actions.isEmpty {
                     Text(L("No actions available for this app yet."))
                         .font(.system(size: 13)).foregroundStyle(.secondary)
@@ -476,10 +503,18 @@ struct AppActionsView: View {
         }
         .frame(width: 560, height: 620)
         .background(VisualEffectView().ignoresSafeArea())
-        .task {
-            actions = await ComposioStore.shared.actions(for: app.slug)
-            loading = false
+        .task { await load() }
+    }
+
+    private func load() async {
+        loading = true
+        loadError = nil
+        do {
+            actions = try await ComposioStore.shared.actions(for: app.slug)
+        } catch {
+            loadError = error.localizedDescription
         }
+        loading = false
     }
 
     private var logo: some View {
@@ -527,6 +562,8 @@ struct CredentialConnectView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var fields: [ComposioField] = []
     @State private var loading = true
+    @State private var loadError: String?
+    @State private var submitError: String?
 
     private var ready: Bool {
         fields.allSatisfy { !$0.required || !$0.value.trimmingCharacters(in: .whitespaces).isEmpty }
@@ -549,14 +586,42 @@ struct CredentialConnectView: View {
                     Text(L("Enter your credentials to connect")).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
+                // ALWAYS reachable. This sheet used to render its Cancel button only in the
+                // fields-loaded branch, so a slow or failed /connect-fields left the user inside a
+                // modal with no button and no Esc, and the only way out was quitting the app.
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark").font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.secondary).padding(6).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).keyboardShortcut(.cancelAction).help(L("Close (Esc)"))
             }
             .padding(.horizontal, 20).padding(.vertical, 16)
             Divider()
             if loading {
-                ProgressView().frame(maxWidth: .infinity).padding(40)
+                VStack(spacing: 10) {
+                    ProgressView()
+                    Text(L("Loading what this app needs…")).font(.system(size: 12)).foregroundStyle(.secondary)
+                }.frame(maxWidth: .infinity).padding(40)
             } else if fields.isEmpty {
-                Text(L("Couldn't load the connection details. Try again.")).font(.system(size: 12))
-                    .foregroundStyle(.secondary).padding(24)
+                // "It failed" and "there is nothing to fill in" are different answers: only the
+                // first is worth retrying, and offering Retry on the second loops forever.
+                VStack(alignment: .leading, spacing: 10) {
+                    if let err = loadError {
+                        Text(L("Couldn't load the connection details.")).font(.system(size: 13, weight: .medium))
+                        Text(err).font(.system(size: 11)).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        HStack(spacing: 10) {
+                            Button(L("Cancel")) { dismiss() }.glassButton()
+                            Button(L("Retry")) { Task { await load() } }.glassProminentButton()
+                        }
+                    } else {
+                        Text(L("This app can't be connected from Verba yet.")).font(.system(size: 13, weight: .medium))
+                        Text(L("It doesn't publish the credentials it needs."))
+                            .font(.system(size: 11)).foregroundStyle(.secondary)
+                        Button(L("Close")) { dismiss() }.glassProminentButton()
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading).padding(24)
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
@@ -579,28 +644,50 @@ struct CredentialConnectView: View {
                         }
                     }.padding(18)
                 }
-                HStack(spacing: 10) {
-                    Button(L("Cancel")) { dismiss() }.glassButton()
-                    Spacer()
-                    Button {
-                        var dict: [String: String] = [:]
-                        for f in fields { dict[f.name] = f.value }
-                        store.connectWithCredentials(toolkitSlug: app.slug, auth: app.auth, fields: dict)
-                        dismiss()
-                    } label: {
-                        Text(L("Connect")).frame(maxWidth: 120)
+                VStack(alignment: .leading, spacing: 8) {
+                    if let err = submitError {
+                        Text(err).font(.system(size: 11)).foregroundStyle(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    .glassProminentButton().disabled(!ready).keyboardShortcut(.defaultAction)
+                    HStack(spacing: 10) {
+                        Button(L("Cancel")) { dismiss() }.glassButton()
+                        Spacer()
+                        Button {
+                            // Submitting needs a signed-in session (/connect is authed). Checking
+                            // BEFORE dismissing keeps the credentials the user just typed instead of
+                            // closing the sheet and dropping them on a 401.
+                            guard (AuthToken.current ?? "").isEmpty == false else {
+                                submitError = L("Sign in to Verba first, then connect this app.")
+                                return
+                            }
+                            var dict: [String: String] = [:]
+                            for f in fields { dict[f.name] = f.value }
+                            store.connectWithCredentials(toolkitSlug: app.slug, auth: app.auth, fields: dict)
+                            dismiss()
+                        } label: {
+                            Text(L("Connect")).frame(maxWidth: 120)
+                        }
+                        .glassProminentButton().disabled(!ready).keyboardShortcut(.defaultAction)
+                    }
                 }
                 .padding(.horizontal, 18).padding(.vertical, 14)
             }
         }
         .frame(width: 460, height: 480)
         .background(VisualEffectView().ignoresSafeArea())
-        .task {
-            fields = await store.connectFields(toolkitSlug: app.slug, auth: app.auth)
-            loading = false
+        .task { await load() }
+    }
+
+    private func load() async {
+        loading = true
+        loadError = nil
+        do {
+            fields = try await store.connectFields(toolkitSlug: app.slug, auth: app.auth)
+        } catch {
+            fields = []
+            loadError = error.localizedDescription
         }
+        loading = false
     }
 }
 
