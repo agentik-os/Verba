@@ -1,6 +1,20 @@
 // swift-tools-version:6.0
 import PackageDescription
 
+// The updater contract suite (Tests/UpdaterContractTests.swift) is pure Foundation + XCTest: it
+// reads local fixtures and repo files as data and depends on no product target. Declaring it
+// standalone means `swift test` verifies the Sparkle feed/version contract WITHOUT building the
+// app — and, on a non-Apple host, without WhisperKit/FluidAudio/Sparkle/AppKit, none of which
+// exist there. So on macOS the package is the app plus the tests; anywhere else it is the tests
+// alone, which is what makes the contract checkable from Linux CI.
+let contractTests: Target = .testTarget(
+    name: "UpdaterContractTests",
+    path: "Tests",
+    swiftSettings: [ .swiftLanguageMode(.v5) ]
+)
+
+#if os(macOS)
+
 let package = Package(
     name: "Verba",
     platforms: [.macOS(.v14)],
@@ -30,6 +44,19 @@ let package = Package(
             name: "VerbaWidget",
             path: "Sources/VerbaWidget",
             swiftSettings: [ .swiftLanguageMode(.v5) ]
-        )
+        ),
+        contractTests,
     ]
 )
+
+#else
+
+// Non-Apple host: only the contract tests. Dependencies are omitted deliberately — resolving
+// three macOS-only packages to run an offline XML/version check would make `swift test` need
+// network and a checkout it can never build.
+let package = Package(
+    name: "Verba",
+    targets: [ contractTests ]
+)
+
+#endif
