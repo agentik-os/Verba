@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cors, getComposio, notConfigured, requireUid } from "../_lib";
-import { isReadOnly } from "@/lib/composio-rw";
+import { cors, friendlyToolError, getComposio, notConfigured, requireUid, toolFailed, type ToolResult } from "../_lib";
+import { isReadOnly, resolveToolMeta } from "@/lib/composio-rw";
 
 export const runtime = "nodejs";
 // JARVIS planning (2-phase Opus + Composio reads) + reprompting can run tens of seconds;
@@ -16,24 +16,14 @@ export const maxDuration = 300;
 
 const MAX_READ_STEPS = 4;
 
-const versionCache = new Map<string, string | undefined>();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function execTool(composio: any, slug: string, uid: string, args: Record<string, unknown>) {
-  if (!versionCache.has(slug)) {
-    let v: string | undefined;
-    try {
-      const raw = (await composio.tools.getRawComposioTools({ tools: [slug], limit: 1 })) as {
-        slug: string;
-        version?: string;
-      }[];
-      v = raw.find((t) => t.slug === slug)?.version ?? raw[0]?.version;
-    } catch {
-      v = undefined;
-    }
-    versionCache.set(slug, v);
-  }
-  const version = versionCache.get(slug);
-  return composio.tools.execute(slug, { userId: uid, arguments: args, ...(version ? { version } : {}) });
+  const { version } = await resolveToolMeta(composio, slug);
+  return (await composio.tools.execute(slug, {
+    userId: uid,
+    arguments: args,
+    ...(version ? { version } : {}),
+  })) as ToolResult;
 }
 
 // Raw tool payloads are enormous (a calendar list repeats etag/htmlLink/iCalUID/creator/organizer/
@@ -100,9 +90,16 @@ export async function POST(req: NextRequest) {
       if (!isReadOnly(slug)) return { tool: slug, ok: false, error: "Refused: not a read-only tool." };
       try {
         const result = await execTool(composio, slug, auth.uid, step.args ?? {});
+        // A failed read RESOLVES with { successful:false, error } — it does not throw. Treating it
+        // as data fed `{"data":{},"error":"invalid_grant","successful":false}` to the on-device
+        // model under a prompt that says "list ONLY items present in the read block", so an auth
+        // failure came back to the user as a confident "you have no unread emails".
+        if (toolFailed(result)) {
+          return { tool: slug, ok: false, error: friendlyToolError(result.error, slug) };
+        }
         return { tool: slug, ok: true, data: result };
       } catch (e) {
-        return { tool: slug, ok: false, error: e instanceof Error ? e.message : "Read failed." };
+        return { tool: slug, ok: false, error: friendlyToolError(e instanceof Error ? e.message : null, slug) };
       }
     }),
   );

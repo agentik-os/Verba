@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cors, getComposio, notConfigured, requireUid } from "../_lib";
-import { loadReadWriteCatalog, isReadOnly, validateArgs, type CatalogTool } from "@/lib/composio-rw";
+import { cors, friendlyToolError, getComposio, notConfigured, requireUid, toolFailed, type ToolResult } from "../_lib";
+import { loadReadWriteCatalog, isReadOnly, resolveToolMeta, validateArgs, type CatalogTool } from "@/lib/composio-rw";
 import { plannerSystem } from "@/lib/planner-prompt";
 import { rankByLexical, topMatches } from "@/lib/lexical";
 
@@ -97,7 +97,18 @@ async function callPlanner(
   }
   const data = await r.json().catch(() => null);
   if (!r.ok) {
-    return { ok: false, status: r.status, error: data?.error?.message ?? "Planner failed." };
+    // NEVER forward Anthropic's status or message. Its 401 (the OWNER's key is bad) would arrive at
+    // the app as this route's 401, i.e. "Sign in to use connected apps." — telling the user to fix
+    // a problem only the operator can. Its 429 message quotes the owner's organisation rate limits
+    // verbatim onto a customer's screen. Map to what is true FOR THE USER, keep the detail in logs.
+    console.error(`[composio/agent] planner upstream ${r.status}:`, data?.error?.message ?? "");
+    if (r.status === 401 || r.status === 403) {
+      return { ok: false, status: 503, error: "The action assistant is temporarily unavailable." };
+    }
+    if (r.status === 429) {
+      return { ok: false, status: 429, error: "The action assistant is busy right now. Try again in a moment." };
+    }
+    return { ok: false, status: 502, error: "The action assistant couldn't complete that. Try again." };
   }
   const text: string = (data?.content ?? [])
     .filter((b: { type: string }) => b.type === "text")
@@ -152,28 +163,17 @@ function buildResponse(plan: PlanJSON, reads: ReadResult[]) {
 }
 
 // Composio's manual execution requires a CONCRETE toolkit version (it rejects calls with none:
-// "Toolkit version not specified"). Resolve each tool's version by slug once, cache it per warm
-// instance, and pass it on every read — same fix the /execute route uses for writes. Without this,
-// EVERY auto-run read (Gmail fetch, Calendar list, Linear search, …) failed and the planner could
-// never gather context.
-const versionCache = new Map<string, string | undefined>();
+// "Toolkit version not specified"). resolveToolMeta resolves it by slug and caches SUCCESSES
+// only, shared with /execute and /agent-reads. Without a version, EVERY auto-run read (Gmail
+// fetch, Calendar list, Linear search, …) failed and the planner could never gather context.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function execTool(composio: any, slug: string, uid: string, args: Record<string, unknown>) {
-  if (!versionCache.has(slug)) {
-    let v: string | undefined;
-    try {
-      const raw = (await composio.tools.getRawComposioTools({ tools: [slug], limit: 1 })) as {
-        slug: string;
-        version?: string;
-      }[];
-      v = raw.find((t) => t.slug === slug)?.version ?? raw[0]?.version;
-    } catch {
-      v = undefined;
-    }
-    versionCache.set(slug, v);
-  }
-  const version = versionCache.get(slug);
-  return composio.tools.execute(slug, { userId: uid, arguments: args, ...(version ? { version } : {}) });
+  const { version } = await resolveToolMeta(composio, slug);
+  return (await composio.tools.execute(slug, {
+    userId: uid,
+    arguments: args,
+    ...(version ? { version } : {}),
+  })) as ToolResult;
 }
 
 export async function POST(req: NextRequest) {
@@ -270,9 +270,15 @@ export async function POST(req: NextRequest) {
     }
     try {
       const result = await execTool(composio, slug, uid, step.args ?? {});
-      reads.push({ tool: slug, ok: true, data: result });
+      // A failed read RESOLVES with { successful:false, error }; it does not throw. Recording it as
+      // data would feed the resolve phase an error envelope dressed up as a result.
+      if (toolFailed(result)) {
+        reads.push({ tool: slug, ok: false, error: friendlyToolError(result.error, slug) });
+      } else {
+        reads.push({ tool: slug, ok: true, data: result });
+      }
     } catch (e) {
-      reads.push({ tool: slug, ok: false, error: e instanceof Error ? e.message : "Read failed." });
+      reads.push({ tool: slug, ok: false, error: friendlyToolError(e instanceof Error ? e.message : null, slug) });
     }
   }
 
