@@ -15,31 +15,100 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to build (e.g. 0.9.94) — omit to use the pushed tag"
+        description: "Version to build, e.g. 0.9.94 (required on a manual run — there is no tag to read)"
         required: false
 
-concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
+permissions:
+  contents: read
+  actions: write   # only to hand off to verify-release.yml at the end
 
 jobs:
+  # Cheap Linux job: resolve + validate the version and prove every secret is usable, in seconds,
+  # before a ~40-minute macOS build burns. It also produces the NORMALIZED version that keys the
+  # build job's concurrency group — the reason this is a separate job at all. A workflow-level
+  # `concurrency` key cannot see a step output, so keying it on `github.ref_name` (tag "v0.9.98")
+  # vs `inputs.version` ("0.9.98") put a tag push and a manual run of the SAME version into
+  # DIFFERENT groups, which is exactly the collision the group exists to prevent. `needs.*` IS
+  # available to a job-level key, so the normalized value can be used there.
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      # The input is read through env, never interpolated into the shell body: a value containing
+      # a quote or `$(…)` would otherwise be evaluated on the runner.
+      - name: Resolve and validate version
+        id: ver
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          set -euo pipefail
+          if [ -n "${INPUT_VERSION:-}" ]; then
+            V="$INPUT_VERSION"
+          elif [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            V="${GITHUB_REF_NAME#v}"
+          else
+            # On workflow_dispatch GITHUB_REF_NAME is the BRANCH, not a tag. The old fallback
+            # turned an empty input into V="main", which built and PUBLISHED a release stamped
+            # "main" — a version Sparkle ranks below every numeric one, silently freezing the
+            # update feed for the whole installed base.
+            echo "::error::No version given. On a manual run the version input is required (there is no tag to read)."
+            exit 1
+          fi
+          V="${V#v}"   # tolerate a typed "v0.9.98"; every doc writes the tag with the v
+          if ! printf '%s' "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Version '$V' is not MAJOR.MINOR.PATCH (digits only, e.g. 0.9.98)."
+            exit 1
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Building version: $V"
+
+      # A missing secret used to surface ~40 minutes in, after the build and a full Apple
+      # notarization round trip — and `base64 --decode` of an empty string exits 0, so it wrote a
+      # silent 0-byte key. Fail in seconds instead. Values are never printed.
+      - name: Preflight required secrets
+        env:
+          APPLE_CERT_P12_BASE64: ${{ secrets.APPLE_CERT_P12_BASE64 }}
+          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+          APPLE_DEVID: ${{ secrets.APPLE_DEVID }}
+          NOTARY_KEY_BASE64: ${{ secrets.NOTARY_KEY_BASE64 }}
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+          RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          set -euo pipefail
+          MISSING=0
+          for S in APPLE_CERT_P12_BASE64 APPLE_CERT_PASSWORD APPLE_DEVID \
+                   NOTARY_KEY_BASE64 NOTARY_KEY_ID NOTARY_ISSUER_ID \
+                   SPARKLE_ED_PRIVATE_KEY RELEASES_TOKEN; do
+            eval "V=\${$S:-}"
+            if [ -z "$V" ]; then echo "::error::Required secret $S is unset or empty."; MISSING=1; fi
+          done
+          [ "$MISSING" = "0" ] || exit 1
+          # The publish step targets agentik-os/Verba-releases with RELEASES_TOKEN; prove it can
+          # read that repo now rather than after the build.
+          GH_TOKEN="$RELEASES_TOKEN" gh api repos/agentik-os/Verba-releases >/dev/null \
+            || { echo "::error::RELEASES_TOKEN cannot reach agentik-os/Verba-releases."; exit 1; }
+          echo "All required secrets present; RELEASES_TOKEN reaches the releases repo."
+
   release:
+    needs: resolve
     # macOS 26 (Tahoe) runner — Xcode 26 ships the macOS 26 SDK the app compiles against (it uses the
     # Liquid Glass APIs: glassEffect / GlassEffectContainer / .buttonStyle(.glass)). Older runners
     # (macos-15 = Xcode 16 = macOS 15 SDK) lack those symbols and fail to build.
     runs-on: macos-26
     timeout-minutes: 60
+    # Keyed on the RESOLVED, normalized version so a tag push of v0.9.98 and a manual run of
+    # 0.9.98 serialize instead of racing each other onto the same release. cancel-in-progress
+    # stays false on purpose: cancelling mid-notarization is worse than queueing.
+    concurrency:
+      group: release-${{ needs.resolve.outputs.version }}
+      cancel-in-progress: false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Resolve version from tag or input
-        id: ver
-        run: |
-          if [ -n "${{ github.event.inputs.version }}" ]; then V="${{ github.event.inputs.version }}"
-          else V="${GITHUB_REF_NAME#v}"; fi
-          echo "version=$V" >> "$GITHUB_OUTPUT"
-          echo "Building version: $V"
 
       - name: Select newest Xcode 26 (macOS 26 SDK)
         run: |
@@ -68,20 +137,34 @@ jobs:
           # Make our keychain the default + first in the search list so codesign finds the identity.
           security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | sed s/\"//g)
           security default-keychain -s "$KEYCHAIN"
+          # `security find-identity` exits 0 even when it finds NOTHING ("0 valid identities
+          # found"), so it is not a gate on its own — grep for the identity we actually sign with.
           security find-identity -v -p codesigning "$KEYCHAIN"
+          security find-identity -v -p codesigning "$KEYCHAIN" | grep -q "Developer ID Application" \
+            || { echo "::error::No 'Developer ID Application' identity in the build keychain after import."; exit 1; }
           rm -f "$CERT_PATH"
 
       - name: Write App Store Connect API key (for notarization)
         env:
           NOTARY_KEY_BASE64: ${{ secrets.NOTARY_KEY_BASE64 }}
         run: |
+          set -euo pipefail
           echo "$NOTARY_KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
+          # `base64 --decode` of an empty string exits 0 and leaves a 0-byte file, which only
+          # fails ~30 minutes later inside notarytool. Assert the bytes landed.
+          [ -s "$RUNNER_TEMP/AuthKey.p8" ] \
+            || { echo "::error::AuthKey.p8 is empty — NOTARY_KEY_BASE64 did not decode."; exit 1; }
 
       - name: Write Sparkle EdDSA private key
         env:
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         run: |
+          set -euo pipefail
           printf '%s' "$SPARKLE_ED_PRIVATE_KEY" > "$RUNNER_TEMP/sparkle_ed_private.key"
+          # printf of an empty secret writes a 0-byte file and exits 0. release.sh re-checks this
+          # too, but catching it here keeps the failure next to its cause.
+          [ -s "$RUNNER_TEMP/sparkle_ed_private.key" ] \
+            || { echo "::error::Sparkle EdDSA key file is empty — SPARKLE_ED_PRIVATE_KEY is unset."; exit 1; }
 
       - name: Fetch the bundled Parakeet model (Git LFS from Hugging Face)
         run: |
@@ -102,7 +185,7 @@ jobs:
 
       - name: Build, sign, notarize + publish release
         env:
-          VERSION: ${{ steps.ver.outputs.version }}
+          VERSION: ${{ needs.resolve.outputs.version }}
           DEVID: ${{ secrets.APPLE_DEVID }}
           NOTARY_KEY: ${{ runner.temp }}/AuthKey.p8
           NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
@@ -115,6 +198,20 @@ jobs:
         run: |
           set -euo pipefail
           ./release.sh
+
+      # release.sh already gates on the published URLs being downloadable. What it cannot do from
+      # inside its own run is prove the DMG installs and launches on a clean Mac — that needs a
+      # fresh runner. Hand off to verify-release.yml so that check actually happens instead of
+      # waiting for someone to remember to click it.
+      - name: Hand off to verify-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.resolve.outputs.version }}
+        run: |
+          set -euo pipefail
+          gh workflow run verify-release.yml --repo "$GITHUB_REPOSITORY" \
+            -f version="$VERSION" -f expect_latest=true
+          echo "Dispatched verify-release for $VERSION — watch it in the Actions tab."
 
       - name: Cleanup secrets from runner
         if: always()

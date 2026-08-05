@@ -1,9 +1,12 @@
 name: Verify release (installs & launches)
 
-# Proves a published DMG actually installs and launches — on a real macOS runner, since the VPS is
-# Linux. Downloads the public DMG, mounts it, checks the code signature, the STAPLED notarization
-# ticket and Gatekeeper's verdict, copies the .app to /Applications like a user would, and launches
-# it (a menu-bar / LSUIElement app: success = the process is running).
+# Proves a published release is actually consumable — on a real macOS runner, since the VPS is
+# Linux. It checks BOTH things a user depends on:
+#   1. the DMG installs and launches (signature, notarization, Gatekeeper, real launch), and
+#   2. the auto-update feed works (appcast fetchable through /releases/latest/download/,
+#      well-formed, advertising this version, with a resolvable enclosure).
+# It also verifies the STABLE Verba.dmg asset — the one every website download button points at,
+# which the versioned-DMG-only check used to skip entirely.
 #
 #   gh workflow run verify-release.yml --repo agentik-os/Verba -f version=0.9.95
 
@@ -13,20 +16,101 @@ on:
       version:
         description: "Version to verify (e.g. 0.9.95)"
         required: true
+      expect_latest:
+        description: "Assert this version is what /releases/latest/ serves (leave true for a just-cut release)"
+        required: false
+        type: boolean
+        default: true
+
+env:
+  RELEASES_REPO: agentik-os/Verba-releases
 
 jobs:
   verify:
     runs-on: macos-26
     timeout-minutes: 20
     steps:
-      - name: Download the published DMG
+      # Read through env, never interpolated into a shell body (an input with a quote or `$(…)`
+      # would otherwise be evaluated on the runner).
+      - name: Validate version input
+        id: ver
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
           set -euo pipefail
-          V="${{ github.event.inputs.version }}"
-          URL="https://github.com/agentik-os/Verba-releases/releases/download/v${V}/Verba-${V}.dmg"
+          V="${INPUT_VERSION#v}"
+          if ! printf '%s' "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Version '$V' is not MAJOR.MINOR.PATCH (digits only, e.g. 0.9.98)."
+            exit 1
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+
+      # Everything below hits the public URLs exactly as an end user and an installed Sparkle
+      # client do — including the /releases/latest/download/ indirection, which is where a
+      # mispublished release actually bites and which the versioned URL cannot detect.
+      - name: The update feed is live and advertises this version
+        env:
+          V: ${{ steps.ver.outputs.version }}
+          EXPECT_LATEST: ${{ github.event.inputs.expect_latest }}
+        run: |
+          set -euo pipefail
+          # Default (expect_latest=true) fetches through /releases/latest/, the exact indirection
+          # SUFeedURL uses — the only path that catches a release published without becoming
+          # 'latest'. Set it false to audit an older release through its own tag.
+          if [ "${EXPECT_LATEST:-true}" = "false" ]; then
+            BASE="https://github.com/$RELEASES_REPO/releases/download/v$V"
+          else
+            BASE="https://github.com/$RELEASES_REPO/releases/latest/download"
+          fi
+          echo "BASE=$BASE" >> "$GITHUB_ENV"
+          curl -fsSL --retry 3 -o appcast.xml "$BASE/appcast.xml"
+          xmllint --noout appcast.xml || { echo "::error::published appcast.xml is not well-formed XML"; exit 1; }
+          grep -q "sparkle:version=\"$V\"" appcast.xml \
+            || { echo "::error::latest appcast does not advertise sparkle:version=\"$V\" (is 'latest' pointing elsewhere?)"; exit 1; }
+          grep -q 'sparkle:edSignature="' appcast.xml \
+            || { echo "::error::latest appcast carries no sparkle:edSignature — clients would reject the update"; exit 1; }
+          ENC=$(grep -o '<enclosure[^>]*url="[^"]*"' appcast.xml | grep -o 'url="[^"]*"' | cut -d'"' -f2 | head -1)
+          echo "enclosure: $ENC"
+          curl -fsSL --retry 3 -o /dev/null "$ENC" \
+            || { echo "::error::the appcast enclosure URL does not resolve: $ENC"; exit 1; }
+          echo "✅ appcast live, well-formed, signed, version $V, enclosure downloadable"
+
+      - name: The website download link resolves to this version
+        env:
+          V: ${{ steps.ver.outputs.version }}
+          EXPECT_LATEST: ${{ github.event.inputs.expect_latest }}
+        run: |
+          set -euo pipefail
+          # Verba.dmg is the stable asset name behind /releases/latest/download/Verba.dmg, which
+          # every download button on the site uses. Nothing verified it before.
+          curl -fsSL --retry 3 -o verba-stable.dmg "$BASE/Verba.dmg"
+          ls -lh verba-stable.dmg
+          if [ "${EXPECT_LATEST:-true}" != "false" ]; then
+            TAG=$(curl -fsSL "https://api.github.com/repos/$RELEASES_REPO/releases/latest" \
+              | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4)
+            [ "$TAG" = "v$V" ] \
+              || { echo "::error::GitHub 'latest' on $RELEASES_REPO is '$TAG', not 'v$V' — the site serves the wrong build."; exit 1; }
+            echo "✅ latest = $TAG, stable Verba.dmg downloadable"
+          else
+            echo "✅ stable Verba.dmg downloadable from v$V (latest-pointer check skipped)"
+          fi
+
+      - name: Download the published versioned DMG
+        env:
+          V: ${{ steps.ver.outputs.version }}
+        run: |
+          set -euo pipefail
+          URL="https://github.com/$RELEASES_REPO/releases/download/v${V}/Verba-${V}.dmg"
           echo "Downloading $URL"
           curl -fL --retry 3 -o verba.dmg "$URL"
           ls -lh verba.dmg
+          # The stable and versioned assets are copies of one build; if they differ, one of them
+          # is stale and half the users get a different binary from the other half.
+          if ! cmp -s verba.dmg verba-stable.dmg; then
+            echo "::error::Verba.dmg and Verba-${V}.dmg differ — the stable asset is stale."
+            exit 1
+          fi
+          echo "✅ stable and versioned DMGs are identical"
 
       - name: Mount the DMG
         id: mount
@@ -41,37 +125,93 @@ jobs:
           echo "mount=$MNT" >> "$GITHUB_OUTPUT"
           echo "app=$APP" >> "$GITHUB_OUTPUT"
 
-      - name: Code signature is valid
+      # The version the user installs must be the version we claim to have released. Nothing
+      # checked this before, so a bundle stamped with a different (or older) version could ship
+      # and only surface as clients silently never updating.
+      - name: The installed bundle carries the released version
+        env:
+          V: ${{ steps.ver.outputs.version }}
+          APP: ${{ steps.mount.outputs.app }}
         run: |
           set -euo pipefail
-          codesign --verify --deep --strict --verbose=2 "${{ steps.mount.outputs.app }}"
-          echo "--- identity ---"
-          codesign -dvv "${{ steps.mount.outputs.app }}" 2>&1 | grep -E "Authority|TeamIdentifier|Identifier" | head
+          for KEY in CFBundleVersion CFBundleShortVersionString; do
+            GOT=$(/usr/libexec/PlistBuddy -c "Print :$KEY" "$APP/Contents/Info.plist")
+            echo "$KEY = $GOT"
+            [ "$GOT" = "$V" ] || { echo "::error::$KEY is '$GOT', expected '$V'"; exit 1; }
+          done
+          FEED=$(/usr/libexec/PlistBuddy -c "Print :SUFeedURL" "$APP/Contents/Info.plist")
+          KEYED=$(/usr/libexec/PlistBuddy -c "Print :SUPublicEDKey" "$APP/Contents/Info.plist")
+          echo "SUFeedURL = $FEED"
+          [ -n "$KEYED" ] || { echo "::error::shipped bundle has no SUPublicEDKey — it can never accept an update"; exit 1; }
+          curl -fsSL --retry 3 -o /dev/null "$FEED" \
+            || { echo "::error::the SUFeedURL baked into the shipped app does not resolve: $FEED"; exit 1; }
+          echo "✅ bundle is v$V and its own feed URL resolves"
 
-      - name: Notarization ticket stapled (non-fatal — Gatekeeper still checks online)
-        continue-on-error: true
+      - name: Code signature is valid and issued to our Developer ID
+        env:
+          APP: ${{ steps.mount.outputs.app }}
         run: |
-          echo "--- app ---"; xcrun stapler validate "${{ steps.mount.outputs.app }}" || echo "app NOT stapled"
-          echo "--- dmg ---"; xcrun stapler validate verba.dmg || echo "dmg NOT stapled"
+          set -euo pipefail
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          echo "--- identity ---"
+          codesign -dvv "$APP" 2>&1 | grep -E "Authority|TeamIdentifier|Identifier" | head
+          # Assert the authority, don't just print it: an ad-hoc or third-party signature would
+          # otherwise pass this step silently.
+          codesign -dvv "$APP" 2>&1 | grep -q "Authority=Developer ID Application" \
+            || { echo "::error::app is not signed by a 'Developer ID Application' authority"; exit 1; }
+          codesign -dvv "$APP" 2>&1 | grep -q "TeamIdentifier=975755H4ZC" \
+            || { echo "::error::app is not signed by team 975755H4ZC"; exit 1; }
+
+      - name: Notarization ticket is stapled to the DMG
+        run: |
+          set -euo pipefail
+          # HARD gate: the DMG is what users download, and sign-and-notarize.sh staples it with no
+          # `|| true`, so this must hold.
+          xcrun stapler validate verba.dmg \
+            || { echo "::error::the published DMG has no stapled notarization ticket"; exit 1; }
+          echo "✅ DMG stapled"
+
+      - name: Notarization ticket on the inner .app (known gap — reported, not fatal)
+        env:
+          APP: ${{ steps.mount.outputs.app }}
+        run: |
+          set -euo pipefail
+          # The .app inside the DMG is snapshotted into the image BEFORE `stapler staple` runs on
+          # it (make-dmg.sh copies the app, then sign-and-notarize.sh staples the local copy), so
+          # the shipped app is unstapled and its first launch needs an ONLINE Gatekeeper check.
+          # Fixing that needs a two-pass notarization in sign-and-notarize.sh, which is outside
+          # this workflow. Report it loudly rather than pretend it passed.
+          if xcrun stapler validate "$APP"; then
+            echo "✅ inner .app is stapled"
+          else
+            echo "::warning::the .app inside the DMG is NOT stapled — offline first launch will be blocked by Gatekeeper. Fix: staple the app before building the DMG (two-pass notarization in sign-and-notarize.sh)."
+          fi
 
       - name: Gatekeeper accepts it (would launch on a user's Mac)
+        env:
+          APP: ${{ steps.mount.outputs.app }}
         run: |
           set -euo pipefail
-          spctl --assess --type execute --verbose=4 "${{ steps.mount.outputs.app }}"
+          spctl --assess --type execute --verbose=4 "$APP"
 
       - name: Install to /Applications like a user
         id: install
+        env:
+          APP: ${{ steps.mount.outputs.app }}
+          MNT: ${{ steps.mount.outputs.mount }}
         run: |
           set -euo pipefail
-          cp -R "${{ steps.mount.outputs.app }}" /Applications/
-          APPNAME=$(basename "${{ steps.mount.outputs.app }}")
+          cp -R "$APP" /Applications/
+          APPNAME=$(basename "$APP")
           echo "installed=/Applications/$APPNAME" >> "$GITHUB_OUTPUT"
-          hdiutil detach "${{ steps.mount.outputs.mount }}" || true
+          hdiutil detach "$MNT" || true
 
       - name: Launch it and confirm the process runs
+        env:
+          INSTALLED: ${{ steps.install.outputs.installed }}
         run: |
           set -euo pipefail
-          open "${{ steps.install.outputs.installed }}"
+          open "$INSTALLED"
           echo "Waiting for com.agentik.verba to come up…"
           for i in $(seq 1 20); do
             if pgrep -f "/Applications/.*Verba.app/Contents/MacOS/Verba" >/dev/null; then
