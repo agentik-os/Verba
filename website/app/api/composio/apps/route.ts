@@ -998,4 +998,12 @@ const APPS = [
 ];
 
 export async function OPTIONS() { return new NextResponse(null, { status: 204, headers: cors }); }
-export async function GET() { return NextResponse.json({ apps: APPS }, { headers: cors }); }
+
+// The payload is a compile-time constant (~70 KB) and the app refetches it on every refresh, so
+// let it be cached rather than re-serialized by a Node lambda each time.
+export async function GET() {
+  return NextResponse.json(
+    { apps: APPS },
+    { headers: { ...cors, "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400" } }
+  );
+}

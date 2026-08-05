@@ -5,6 +5,12 @@ import { plannerSystem } from "@/lib/planner-prompt";
 import { rankByLexical, topMatches } from "@/lib/lexical";
 
 export const runtime = "nodejs";
+// This is the JARVIS hot path: EVERY utterance calls it, and loadReadWriteCatalog does one
+// connectedAccounts.list plus up to two Composio calls per connected toolkit, in series. Ten
+// connected apps on a cold cache is ~21 serial round-trips, far past Vercel's 10-15s default,
+// which surfaced as "took too long" with no explanation. /agent carries the same guard for the
+// same workload; this route was the only one on that path without it.
+export const maxDuration = 60;
 
 // POST { transcript, timezone?, locale?, nowISO?, shortcuts?, searchTargets?, disabled? }
 //   -> { systemPlan, systemResolve, schemas: { slug: inputParameters } }
