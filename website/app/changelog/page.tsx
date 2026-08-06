@@ -18,8 +18,17 @@ const DAYS: Day[] = [
   {
     date: "August 6, 2026",
     tag: "Today",
-    summary: "Your dictation stays in the language you speak, and your connected apps stop working from an old list.",
+    summary: "An input that sends no sound now names itself, your dictation stays in the language you speak, and your connected apps stop working from an old list.",
     entries: [
+      {
+        version: "0.9.104",
+        title: "A silent input device now tells you it is the one at fault",
+        items: [
+          "When Verba records and not one sound ever reaches it, it now says so and names the input it recorded from, instead of flashing a generic “Didn't catch that” that told you nothing. The message explains that this device is sending no audio, and a button opens System Settings ▸ Sound ▸ Input so you can pick a working microphone and watch its level meter move.",
+          "This happens when the selected input announces a microphone but never sends any. A Bluetooth speaker is the usual culprit: the moment it connects it becomes your system default input, and every dictation quietly produces an empty recording.",
+          "A dictation where sound did reach Verba but no words were recognised keeps the short “Didn't catch that” message it always had.",
+        ],
+      },
       {
         version: "0.9.103",
         title: "Connected apps keep up with what you just connected",
