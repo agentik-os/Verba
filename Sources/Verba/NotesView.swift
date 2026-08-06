@@ -1436,7 +1436,7 @@ struct NotesView: View {
                 case .parakeet: transcriber = ParakeetTranscriber.shared
                 }
                 var text = try await transcriber.transcribe(fileURL: url,
-                    language: s.language.isEmpty ? nil : s.language, hint: DictionaryStore.shared.hint())
+                    language: s.transcriptionLanguage, hint: DictionaryStore.shared.hint())
                 text = DictionaryStore.shared.apply(to: text)
                 if s.voiceCommands { text = VoiceCommands.apply(text) }
                 if Task.isCancelled { return }

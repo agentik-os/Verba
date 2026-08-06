@@ -109,7 +109,9 @@ enum Pipeline {
 
         // 1. Transcribe with the selected engine.
         status(s.engine.isLocal ? "Transcribing locally…" : "Transcribing…")
-        let lang = s.language.isEmpty ? nil : s.language
+        // Explicit Spoken language, else the Primary language, else auto-detect. Never re-derived
+        // here: an unpinned engine re-detects per chunk and drifts a French dictation into English.
+        let lang = s.transcriptionLanguage
         let transcriber: Transcriber
         switch s.engine {
         case .openAI:   transcriber = OpenAITranscriber()

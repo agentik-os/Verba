@@ -684,7 +684,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let readable = try await AudioInput.readable(url)
                 defer { AudioInput.cleanup(readable, original: url) }
                 var text = try await transcriber.transcribe(fileURL: readable,
-                    language: s.language.isEmpty ? nil : s.language, hint: DictionaryStore.shared.hint())
+                    language: s.transcriptionLanguage, hint: DictionaryStore.shared.hint())
                 text = DictionaryStore.shared.apply(to: text)
                 if Task.isCancelled { return }
                 guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {

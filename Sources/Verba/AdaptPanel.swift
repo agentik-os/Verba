@@ -206,7 +206,7 @@ struct AdaptPanel: View {
                 case .whisper:  transcriber = LocalTranscriber.shared
                 case .parakeet: transcriber = ParakeetTranscriber.shared
                 }
-                let text = try await transcriber.transcribe(fileURL: url, language: nil,
+                let text = try await transcriber.transcribe(fileURL: url, language: s.transcriptionLanguage,
                                                              hint: DictionaryStore.shared.hint())
                 let intent = text.trimmingCharacters(in: .whitespacesAndNewlines)
                 await MainActor.run {
