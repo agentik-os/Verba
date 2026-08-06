@@ -73,6 +73,22 @@ enum MicDevices {
         inputs().first { $0.uid == uid }?.name
     }
 
+    /// The Mac's own microphone. macOS gives the built-in input this stable CoreAudio UID, which is
+    /// why it can be named as a constant instead of guessed from a device name that changes with the
+    /// system language.
+    static let builtInInputUID = "BuiltInMicrophoneDevice"
+
+    /// The built-in microphone, or nil when this Mac has none (a Mac mini or a Mac Pro with nothing
+    /// attached, or a machine where CoreAudio names it differently).
+    ///
+    /// nil means "change nothing", exactly like `id(forUID:)`: it is the answer to "is there a
+    /// device we KNOW is wired in", and when there is not, the caller must leave the user's input
+    /// alone rather than move it somewhere arbitrary. This is the recovery target for a system
+    /// default input that turns out to send no audio (see `AudioRecorder.builtInRecoveryToApply`).
+    static func builtInInput() -> Device? {
+        inputs().first { $0.uid == builtInInputUID }
+    }
+
     @discardableResult
     static func setDefaultInput(_ id: AudioDeviceID) -> Bool {
         var addr = address(kAudioHardwarePropertyDefaultInputDevice)

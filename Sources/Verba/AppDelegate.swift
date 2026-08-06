@@ -1710,7 +1710,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Start capturing FIRST (the recorder is pre-armed, so record() is instant) so the
             // first spoken word is never clipped, THEN do the slower frontmost-app / selection
             // captures and overlay work while audio is already flowing.
-            guard self.recorder.start() else { self.resetOneShotFlags(); self.flashError("Couldn't start recording"); return }
+            guard self.recorder.start() else {
+                // The recorder logs WHY on its own line; this one records that a dictation was
+                // asked for and never began, so the log shows the press even when nothing started.
+                VerbaLog.audio.error("capture: dictation start refused by AudioRecorder.start()")
+                self.resetOneShotFlags(); self.flashError("Couldn't start recording"); return
+            }
             EngineManager.prewarmForRecording()   // reload a lazily-unloaded local model behind the speaking time
             LocalLLM.prewarmForRecording()        // and the AI model too, so the rewrite doesn't start with a cold load
             self.recordStartedAt = Date()
@@ -1955,6 +1960,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // did nothing wrong and a two-second "Didn't catch that" is a dead end, because it names
             // neither the device that was used nor the one thing that fixes it. Signal seen and no
             // words is genuinely empty speech and keeps the flash it always had.
+            //
+            // Logged before the branch, so the log ties the capture's verdict to what the user was
+            // actually shown: the recorder's own lines say what the microphone did, this one says
+            // what came of it.
+            VerbaLog.audio.log("capture: nothing transcribed sawSignal=\(self.recorder.sawSignal ? "true" : "false", privacy: .public) device=\(self.recorder.captureDeviceName ?? "unknown", privacy: .public) firstSignalMs=\(self.recorder.firstSignalMs ?? -1, privacy: .public)")
             if case TranscribeError.empty = error, !recorder.sawSignal {
                 promptSilentInput()
             } else {
