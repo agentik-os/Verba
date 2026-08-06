@@ -1339,3 +1339,195 @@ final class TranscriptionLanguageContractTests: XCTestCase {
         XCTAssertFalse(body.contains("translate"), "Translate has its own target language and must not be consulted here")
     }
 }
+
+// MARK: - Stuck capture contract
+
+/// Contract tests for the two ends of ONE failure: a capture that never stops.
+///
+/// What bought this suite, observed live on a real Mac: a dictation started at 14:27:29 was still
+/// recording more than six minutes later, its .m4a still growing (444444 then 467788 bytes six
+/// seconds apart) with Verba holding the descriptor, and no second trigger press ever came. The
+/// default trigger is a TOGGLE, so a recording only ends on a second press; nothing in the audio
+/// path capped a capture, so a press that never landed left the microphone open indefinitely. And
+/// while it ran, the live-recorder guard in `start()` refused EVERY later dictation in EVERY mode,
+/// which is exactly how it was reported: it does not work, does not work, then suddenly works
+/// again. All the user ever saw was a two-second "Couldn't start recording", which named neither
+/// the cause nor the cure.
+///
+/// Same technique and the same stated limits as `CaptureContractTests` above: the production
+/// sources are read AS DATA (`RepoFile`), never imported, because the app target is macOS-only and
+/// could not build on Linux CI. These prove the ceiling and the refusal reason are PRESENT, armed
+/// on both start paths, cancelled per capture, and routed to a stop that PROCESSES the audio. They
+/// do NOT prove a timer ever fired: only running the app on a Mac does that. Every assertion has a
+/// negative twin naming the pre-fix shape, so a checker that would pass on the old source is a
+/// failing checker.
+final class StuckCaptureContractTests: XCTestCase {
+
+    private func audioRecorder() throws -> String { try RepoFile.contents(of: "Sources/Verba/AudioRecorder.swift") }
+    private func appDelegate() throws -> String { try RepoFile.contents(of: "Sources/Verba/AppDelegate.swift") }
+
+    /// One function body, so an assertion reads the function itself rather than any other mention
+    /// of the same identifiers elsewhere in the file.
+    private func body(of signature: String, in source: String, _ what: String) throws -> String {
+        let bodies = Regex.captures("\(signature) \\{([\\s\\S]*?)\\n    \\}", in: source)
+        XCTAssertEqual(bodies.count, 1, "\(what) should be readable as exactly one function")
+        return try XCTUnwrap(bodies.first)
+    }
+
+    // MARK: The ceiling
+
+    /// The fact the whole failure rests on: nothing capped a capture. No maxRecord, no maxDuration,
+    /// no autoStop, no record(forDuration:) existed anywhere in Sources/Verba, so a toggle whose
+    /// second press never landed recorded until the disk or the user gave up.
+    func testACaptureHasAHardCeiling() throws {
+        let source = try audioRecorder()
+        XCTAssertTrue(source.contains("static let maxCaptureSeconds: TimeInterval = 600"),
+                      "a capture must have a named maximum duration, not an unbounded run")
+        XCTAssertTrue(source.contains("private var ceilingTimer: Timer?"),
+                      "the ceiling needs its own timer, separate from the signal watcher's")
+        XCTAssertFalse(source.contains("private var signalTimer: Timer?\n\n    /// The encoder settings"),
+                       "the pre-fix shape is the bug itself: the signal watcher was the ONLY per-capture timer, and nothing bounded the capture")
+    }
+
+    /// Both start paths have to be capped. The fast path (a pre-armed recorder) is the one a normal
+    /// dictation takes, so a ceiling wired only into the cold path would leave every real dictation
+    /// exactly as unbounded as before.
+    func testTheCeilingIsArmedOnBothStartPaths() throws {
+        let source = try audioRecorder()
+        XCTAssertEqual(Regex.captures(#"\n\s+(armCaptureCeiling\(\))\n"#, in: source).count, 2,
+                       "the pre-armed path and the cold path must both arm the ceiling")
+        XCTAssertFalse(source.contains("                beginSignalWatch(rec)\n                logCaptureStart(path: \"prearmed\", started: true)"),
+                       "the pre-fix fast path went straight from the signal watch to the log line with no ceiling armed")
+        XCTAssertFalse(source.contains("            beginSignalWatch(rec)\n            logCaptureStart(path: \"cold\", started: true)"),
+                       "the pre-fix cold path did the same")
+        // Latency: the ceiling is armed AFTER record() has already returned true, exactly like the
+        // signal watch, so neither path waits on a Timer being built.
+        XCTAssertEqual(Regex.captures(#"if rec\.record\(\) \{[\s\S]{0,400}?(armCaptureCeiling\(\))"#, in: source).count, 1,
+                       "the fast path must call record() first and only then arm the ceiling")
+    }
+
+    /// A ceiling that outlives its capture is worse than none: it would end the NEXT dictation early.
+    /// It is cancelled by the same `stop()` that ends the sampler, cancelled again when a stale
+    /// recorder is torn down, and re-armed from scratch per capture.
+    func testTheCeilingIsCancelledInStopAndReArmedPerCapture() throws {
+        let source = try audioRecorder()
+        let stop = try body(of: #"func stop\(\) -> URL\?"#, in: source, "stop()")
+        XCTAssertTrue(stop.contains("endCaptureCeiling()"),
+                      "stop() must cancel the ceiling it armed, or it fires during the following capture")
+        XCTAssertFalse(stop.contains("armCaptureCeiling()"),
+                       "stop() must never arm one: a ceiling belongs to a running capture")
+        XCTAssertFalse(source.contains("endSignalWatch()\n        recorder = nil"),
+                       "the pre-fix stop() ended the sampler and nothing else, which is where a ceiling would have leaked")
+        let arm = try body(of: #"private func armCaptureCeiling\(\)"#, in: source, "armCaptureCeiling()")
+        XCTAssertTrue(arm.hasPrefix("\n        endCaptureCeiling()"),
+                      "arming must cancel any previous ceiling FIRST, so two captures can never share one")
+        XCTAssertFalse(source.contains("        endSignalWatch()\n\n        let chosen = chosenMicToApply()"),
+                       "the pre-fix reset in start() cancelled the sampler alone; a torn-down stale recorder must not leave its ceiling running either")
+    }
+
+    /// The part that decides whether this fix is a fix or a new bug: hitting the ceiling must not
+    /// throw the recording away. The recorder therefore hands the capture to its OWNER, which ends
+    /// it through the ordinary stop path, and the recorder never deletes the buffer itself.
+    func testTheCeilingProcessesTheAudioInsteadOfDiscardingIt() throws {
+        let source = try audioRecorder()
+        XCTAssertTrue(source.contains("var onCaptureCeiling: (() -> Void)?"),
+                      "the recorder must be able to notify its owner, since only the owner can process a finished dictation")
+        let fired = try body(of: #"private func captureCeilingReached\(\)"#, in: source, "captureCeilingReached()")
+        XCTAssertTrue(fired.contains("owner()"),
+                      "the ceiling must hand the capture to its owner rather than end it behind the owner's back")
+        XCTAssertFalse(fired.contains("removeItem"),
+                       "the ceiling must never delete the buffer: what it holds is the user's dictation")
+        XCTAssertTrue(fired.contains("guard recorder != nil else { return }"),
+                      "a ceiling that fires after the capture already ended must do nothing")
+        XCTAssertTrue(fired.contains("capture: ceiling reached after"),
+                      "the ceiling must be visible in the log, on the same `capture:` family as the rest of the path")
+    }
+
+    /// The delegate's half. The capture is ended through the SAME path the user's own second press
+    /// takes — `stopAndProcess()` for a dictation, `stopTodoCapture()` for a voice to-do — so the
+    /// audio is transcribed and delivered. `cancelRecording()` would have deleted it.
+    func testTheDelegateEndsACeilingCaptureThroughTheNormalStopPath() throws {
+        let delegate = try appDelegate()
+        XCTAssertTrue(delegate.contains("recorder.onCaptureCeiling = { [weak self] in self?.endCaptureAtCeiling() }"),
+                      "the ceiling must be wired at launch, or the recorder has no owner to hand the capture to")
+        XCTAssertFalse(delegate.contains("overlay.model.onPauseToggle = { [weak self] in self?.togglePause() }\n        overlay.prepare()"),
+                       "the pre-fix launch wiring set every other callback and none for a runaway capture")
+        let ended = try body(of: #"private func endCaptureAtCeiling\(\)"#, in: delegate, "endCaptureAtCeiling()")
+        XCTAssertTrue(ended.contains("stopAndProcess()"),
+                      "a dictation must end at the ceiling exactly as a second trigger press ends it")
+        XCTAssertTrue(ended.contains("stopTodoCapture()"),
+                      "a voice to-do holds the same shared recorder and must end through its own normal stop")
+        XCTAssertFalse(ended.contains("cancelRecording()"),
+                       "the cancel path DELETES the buffer: ending at the ceiling must never take it")
+        XCTAssertFalse(ended.contains("flashError("),
+                       "flashError forces state = .idle and hides the overlay, which would tear down the pill of the dictation this just sent")
+        XCTAssertTrue(ended.contains("Recording ended automatically after"),
+                      "a recording the app ended by itself must say so, or it reads as another random failure")
+    }
+
+    // MARK: The refusal
+
+    /// While a capture is stuck, every later `start()` returns false. The caller cannot explain that
+    /// unless the recorder says WHICH refusal it was, so the reason is exposed and is not writable
+    /// from outside: a caller that could write it could fake the way out it prints.
+    func testTheRecorderSaysWhyAStartWasRefused() throws {
+        let source = try audioRecorder()
+        XCTAssertTrue(source.contains("private(set) var refusalReason: StartRefusal?"),
+                      "the refusal reason must be exposed, and only the recorder may set it")
+        for c in ["case alreadyLive", "case alreadyPaused", "case failed"] {
+            XCTAssertTrue(source.contains(c), "the refusal reason must distinguish \(c)")
+        }
+        XCTAssertFalse(source.contains("\n    var refusalReason"),
+                       "a publicly settable reason lets a caller fake the cause of a refusal")
+        XCTAssertEqual(Regex.captures(#"guard !live\.isRecording, !isPaused else \{[\s\S]{0,500}?(refusalReason = isPaused \? \.alreadyPaused : \.alreadyLive)"#, in: source).count, 1,
+                       "the live-recorder guard must record which of the two cases it refused on")
+        XCTAssertFalse(source.contains("guard !live.isRecording, !isPaused else {\n                VerbaLog.audio.error(\"AudioRecorder.start() refused"),
+                       "the pre-fix guard logged and returned false with nothing the caller could read")
+        XCTAssertEqual(Regex.captures(#"(refusalReason = \.failed)"#, in: source).count, 2,
+                       "both genuine-failure exits (record() refused, and the throwing build) must be marked as failures, not as a live capture")
+        XCTAssertEqual(Regex.captures(#"\n        (refusalReason = nil)\n"#, in: source).count, 1,
+                       "an accepted start must clear the previous reason, below the live guard like every other per-capture reset")
+    }
+
+    /// The message the user actually gets. "Couldn't start recording" is true and useless: the fix
+    /// is one keypress away and it named neither the cause nor that keypress, so the report was a
+    /// microphone that had simply stopped working.
+    func testALiveCaptureRefusalTellsTheUserTheWayOut() throws {
+        let delegate = try appDelegate()
+        XCTAssertTrue(delegate.contains("A recording is already running. Press your trigger again to send it, or Esc to cancel."),
+                      "the refusal must name what is happening AND how to end it")
+        XCTAssertFalse(delegate.contains("self.resetOneShotFlags(); self.flashError(\"Couldn't start recording\"); return"),
+                       "the pre-fix dictation refusal is the dead end itself: a two-second flash that explains nothing")
+        XCTAssertFalse(delegate.contains("guard self.recorder.start() else { self.finishTodoCapture(error: \"Couldn't start recording.\"); return }"),
+                       "the voice to-do trigger hits the same refusal and must not keep the unactionable message either")
+        XCTAssertEqual(Regex.captures(#"case \.some\(\.alreadyLive\), \.some\(\.alreadyPaused\):\s*\n\s*(self\.flashError\(Self\.liveCaptureRefusalMessage, seconds: 4\))"#, in: delegate).count, 1,
+                       "the actionable message must be reached from the already-live/paused reason, and stay long enough to read")
+        XCTAssertEqual(Regex.captures(#"(static let liveCaptureRefusalMessage)"#, in: delegate).count, 1,
+                       "the message must be stated once and shared by every trigger that can hit the refusal")
+        // It stays a flash. A modal for a problem one keypress solves would be worse than the bug.
+        XCTAssertFalse(delegate.contains("liveCaptureRefusalMessage)\n        alert.runModal"),
+                       "the refusal must not become a modal: the fix is a keypress, not a dialog")
+    }
+
+    /// Polarity, and the reason the reason exists: a GENUINE failure (record() refused, the recorder
+    /// could not be built) is not a live capture, and telling that user to press their trigger again
+    /// would send them in a circle. It keeps the old message.
+    func testAGenuineFailureKeepsTheOldMessage() throws {
+        let delegate = try appDelegate()
+        XCTAssertEqual(Regex.captures(#"default:\s*\n\s*(self\.flashError\("Couldn't start recording"\))"#, in: delegate).count, 1,
+                       "a genuine audio-stack failure must keep the plain message, not the press-your-trigger one")
+        XCTAssertEqual(Regex.captures(#"default:\s*\n\s*(self\.finishTodoCapture\(error: "Couldn't start recording\."\))"#, in: delegate).count, 1,
+                       "same for the voice to-do trigger")
+    }
+
+    /// House style, and it is load-bearing here because both strings above are new user-facing copy:
+    /// no em dash and no en dash in anything the user reads.
+    func testTheNewUserFacingStringsCarryNoDashes() throws {
+        let delegate = try appDelegate()
+        for line in delegate.split(separator: "\n") where line.contains("A recording is already running")
+            || line.contains("Recording ended automatically after") {
+            XCTAssertFalse(line.contains("\u{2014}"), "em dash in a user-facing string: \(line)")
+            XCTAssertFalse(line.contains("\u{2013}"), "en dash in a user-facing string: \(line)")
+        }
+    }
+}
