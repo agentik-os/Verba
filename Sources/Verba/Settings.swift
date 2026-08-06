@@ -626,6 +626,25 @@ final class Settings: ObservableObject {
         return translateLanguages.contains(name) ? name : ""
     }
 
+    /// THE language every transcription is pinned to — the single answer for every engine and every
+    /// call site. Two settings can supply it, in this order:
+    ///  1. the explicit "Spoken language" picker (`language`, already an ISO code) — an explicit
+    ///     choice always wins;
+    ///  2. otherwise the Primary language (`mainLanguage`, a display NAME) mapped to its ISO code.
+    /// nil ONLY when neither is configured, which is the real auto-detect case.
+    ///
+    /// Why this exists: passing nil whenever the Spoken picker is empty let Whisper/Parakeet
+    /// re-detect the language per chunk, and a French dictation would come back partly in English.
+    /// A user who has told Verba their everyday language has already answered the question, so the
+    /// engine must never be asked to guess it again. This is transcription INPUT only — it has no
+    /// bearing on Translate's output target or on any rewriting prompt (see `languageDirective`).
+    var transcriptionLanguage: String? {
+        let spoken = language.trimmingCharacters(in: .whitespaces)
+        if !spoken.isEmpty { return spoken }
+        let code = languageCode(forName: mainLanguage.trimmingCharacters(in: .whitespaces))
+        return code.isEmpty ? nil : code
+    }
+
     /// A directive injected into every reprompt mode so output defaults to the user's main language
     /// when the spoken language is ambiguous, WITHOUT overriding a clearly-spoken other language or an
     /// explicit request. nil when set to auto-detect. Never applied to Translate (it has its own target).

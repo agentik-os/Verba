@@ -221,7 +221,7 @@ struct FileTranscribeView: View {
         Gamification.shared.flag(.transcribedFile)
         state = "working"; error = ""; result = ""
         let source = url.lastPathComponent
-        let lang = settings.language.isEmpty ? nil : settings.language
+        let lang = settings.transcriptionLanguage
         let t: Transcriber
         switch settings.engine {
         case .openAI:   t = OpenAITranscriber()

@@ -802,3 +802,184 @@ final class CaptureContractTests: XCTestCase {
                        "both failure callbacks must drop a poisoned armed recorder so prewarm() can build a healthy one")
     }
 }
+
+// MARK: - Transcription language contract
+
+/// Contract tests for the language a transcription is pinned to.
+///
+/// The bug these exist for: `Settings` held the user's Primary language (`mainLanguage`), but every
+/// call site derived the engine's language from the OPTIONAL "Spoken language" picker alone and
+/// passed `nil` whenever it was empty. `nil` means auto-detect, and both on-device engines detect
+/// per audio window — so a French dictation from a user whose Primary language is French could come
+/// back partly, or entirely, in English. The user had already answered the question; the engine was
+/// asked to guess it anyway.
+///
+/// Same technique and the same stated limits as the capture suite above: the production sources are
+/// read AS DATA (`RepoFile`), never imported, because the app target is macOS-only and would not
+/// build on Linux CI. These prove the resolution ORDER is what it claims to be and that no
+/// production call site still bypasses it. They do NOT prove Whisper or Parakeet honour the code
+/// they are handed — only a real dictation on a Mac does that. Every assertion has a negative twin:
+/// the specific broken form must be ABSENT, so a checker that would pass on the pre-fix source is a
+/// failing checker.
+final class TranscriptionLanguageContractTests: XCTestCase {
+
+    private func settings() throws -> String { try RepoFile.contents(of: "Sources/Verba/Settings.swift") }
+
+    /// The body of `var transcriptionLanguage: String?`, so the assertions below read the resolver
+    /// itself rather than any other mention of the same identifiers elsewhere in Settings.
+    private func resolverBody() throws -> String {
+        let source = try settings()
+        let bodies = Regex.captures(#"var transcriptionLanguage: String\? \{([\s\S]*?)\n    \}"#, in: source)
+        XCTAssertEqual(bodies.count, 1, "there must be exactly ONE transcription-language resolver — a second one is a second answer")
+        return try XCTUnwrap(bodies.first)
+    }
+
+    // MARK: The resolver itself
+
+    /// One helper, on Settings, returning an optional code. If it is not optional there is no way to
+    /// express auto-detect; if it lives anywhere else the call sites will keep re-deriving it.
+    func testSettingsExposesASingleOptionalResolver() throws {
+        let source = try settings()
+        XCTAssertEqual(Regex.captures(#"var (transcriptionLanguage): String\?"#, in: source).count, 1,
+                       "Settings must expose exactly one `transcriptionLanguage: String?`")
+    }
+
+    /// Precedence, and it is the whole point of the helper: an explicit "Spoken language" is an
+    /// explicit instruction and outranks the Primary language. The broken order would silently
+    /// ignore the picker for anyone who also set a Primary language.
+    func testExplicitSpokenLanguageIsReadAndReturnedFirst() throws {
+        let body = try resolverBody()
+        let spoken = try XCTUnwrap(body.range(of: "language.trimmingCharacters"),
+                                   "the resolver must read the explicit Spoken language setting")
+        let primary = try XCTUnwrap(body.range(of: "mainLanguage"),
+                                    "the resolver must fall back to the Primary language")
+        XCTAssertTrue(spoken.lowerBound < primary.lowerBound,
+                      "the explicit Spoken language must be consulted BEFORE mainLanguage, otherwise the picker is outranked by the fallback")
+        XCTAssertEqual(Regex.captures(#"if !spoken\.isEmpty \{ (return spoken) \}"#, in: body).count, 1,
+                       "a non-empty Spoken language must return immediately — anything else lets the fallback overwrite an explicit choice")
+    }
+
+    /// The fix itself: an empty picker must fall through to the Primary language, mapped to ISO,
+    /// instead of going straight to nil. `return nil` sitting on the empty-picker branch is exactly
+    /// the pre-fix behaviour and must not reappear.
+    func testPrimaryLanguageIsTheFallbackThroughTheISOMap() throws {
+        let body = try resolverBody()
+        XCTAssertTrue(body.contains("languageCode(forName:"),
+                      "the Primary language is a display NAME, so it must go through the name→ISO map before reaching an engine")
+        XCTAssertFalse(body.contains("guard !spoken.isEmpty else { return nil }"),
+                       "returning nil on an empty picker is the regression: it discards a configured Primary language and re-enables per-chunk auto-detect")
+    }
+
+    /// Auto-detect must remain REACHABLE — this is not a fix that pins everyone to something. nil is
+    /// the answer when neither setting is configured, and also when the Primary language is a name
+    /// the ISO map does not carry (a Mac in a language Verba does not list).
+    func testAutoDetectSurvivesWhenNeitherSettingIsConfigured() throws {
+        let body = try resolverBody()
+        XCTAssertEqual(Regex.captures(#"return (code\.isEmpty \? nil : code)"#, in: body).count, 1,
+                       "the only nil must come from an unmapped/absent Primary language, so auto-detect stays reachable but is never the default for a configured user")
+    }
+
+    // MARK: Behaviour, against the map the app actually ships
+
+    /// A model of the documented contract, driven by the REAL `languageNameToCode` table parsed out
+    /// of Settings.swift. It cannot import the type (macOS-only target), so it re-states the rule —
+    /// which is only worth anything because the tests above pin the production body to that same
+    /// rule, and because the table is read rather than duplicated.
+    private func resolve(spoken: String, primary: String, map: [String: String]) -> String? {
+        let spoken = spoken.trimmingCharacters(in: .whitespaces)
+        if !spoken.isEmpty { return spoken }
+        let code = map[primary.trimmingCharacters(in: .whitespaces)] ?? ""
+        return code.isEmpty ? nil : code
+    }
+
+    private func shippedLanguageMap() throws -> [String: String] {
+        let source = try settings()
+        let table = try XCTUnwrap(Regex.captures(#"let languageNameToCode: \[String: String\] = \[([\s\S]*?)\n\]"#, in: source).first,
+                                  "the name→ISO table must stay parseable — the engines are handed its values")
+        var map: [String: String] = [:]
+        let regex = try NSRegularExpression(pattern: #""([A-Za-z ]+)": "([a-z]{2})""#)
+        for match in regex.matches(in: table, range: NSRange(table.startIndex..., in: table)) {
+            guard let name = Range(match.range(at: 1), in: table),
+                  let code = Range(match.range(at: 2), in: table) else { continue }
+            map[String(table[name])] = String(table[code])
+        }
+        XCTAssertGreaterThan(map.count, 10, "the parsed table is nearly empty — the parser broke, so every assertion below is vacuous")
+        return map
+    }
+
+    /// The reported bug, stated as a test: French Primary language, no explicit picker, must reach
+    /// every engine as "fr" rather than as nil.
+    func testFrenchPrimaryLanguageResolvesToFR() throws {
+        let map = try shippedLanguageMap()
+        XCTAssertEqual(map["French"], "fr", "the shipped table must map French to the ISO code both engines expect")
+        XCTAssertEqual(resolve(spoken: "", primary: "French", map: map), "fr",
+                       "a French user with no explicit picker must be pinned to fr — passing nil here is what let the transcript drift to English")
+        XCTAssertNotNil(resolve(spoken: "", primary: "French", map: map))
+    }
+
+    /// The precedence and the auto-detect escape hatch, end to end.
+    func testResolutionOrderAndAutoDetectEndToEnd() throws {
+        let map = try shippedLanguageMap()
+        XCTAssertEqual(resolve(spoken: "en", primary: "French", map: map), "en",
+                       "an explicit Spoken language must override the Primary language, not the other way round")
+        XCTAssertEqual(resolve(spoken: "de", primary: "", map: map), "de",
+                       "an explicit picker alone is still honoured")
+        XCTAssertNil(resolve(spoken: "", primary: "", map: map),
+                     "both empty is the real auto-detect case and must stay nil")
+        XCTAssertNil(resolve(spoken: "", primary: "Klingon", map: map),
+                     "a Primary language the ISO map does not carry must fall back to auto-detect, never to a bogus code")
+    }
+
+    // MARK: No call site bypasses it
+
+    /// Every `.transcribe(fileURL:…)` in the app, found by scanning the sources rather than by a
+    /// hand-written list, must take its `language:` from the resolver. A list would go stale the
+    /// first time someone adds a seventh call site; the scan will not.
+    func testNoProductionCallSiteBypassesTheResolver() throws {
+        let directory = RepoFile.root.appendingPathComponent("Sources/Verba")
+        let files = try FileManager.default.contentsOfDirectory(atPath: directory.path).filter { $0.hasSuffix(".swift") }.sorted()
+        XCTAssertFalse(files.isEmpty, "no sources found — the scan below would pass vacuously")
+
+        var callSites = 0
+        for file in files {
+            let source = try RepoFile.contents(of: "Sources/Verba/\(file)")
+            for argument in Regex.captures(#"\.transcribe\(fileURL: [\s\S]{0,80}?language: ([^,\n]+),"#, in: source) {
+                callSites += 1
+                let argument = argument.trimmingCharacters(in: .whitespaces)
+                if argument.contains("transcriptionLanguage") { continue }
+                // A local binding is fine as long as the binding itself came from the resolver.
+                let bound = Regex.captures(#"let \#(argument) = ([^\n]+)"#, in: source)
+                XCTAssertTrue(bound.contains { $0.contains("transcriptionLanguage") },
+                              "\(file) passes `language: \(argument)` — every transcription must be pinned through Settings.transcriptionLanguage, and `nil` or a re-derived picker read is the bug")
+            }
+        }
+        XCTAssertGreaterThanOrEqual(callSites, 6,
+                                    "the scanner found \(callSites) call sites; the known production paths are Pipeline, AppDelegate to-do capture, NotesView, FileTranscribeView, AdaptPanel and FeedbackView, so a lower count means the pattern stopped matching and this test is vacuous")
+    }
+
+    /// The two forms that WERE the bug, pinned as absent by name. The scan above would catch them,
+    /// but naming them keeps the failure message pointed at the actual mistake.
+    func testTheTwoBrokenFormsAreGoneFromEveryCallSite() throws {
+        for file in ["Pipeline", "AppDelegate", "NotesView", "FileTranscribeView", "AdaptPanel", "FeedbackView"] {
+            let source = try RepoFile.contents(of: "Sources/Verba/\(file).swift")
+            XCTAssertFalse(source.contains("language: s.language.isEmpty ? nil : s.language"),
+                           "\(file) still re-derives the language from the picker alone, ignoring the Primary language")
+            XCTAssertFalse(source.contains("settings.language.isEmpty ? nil : settings.language"),
+                           "\(file) still re-derives the language from the picker alone, ignoring the Primary language")
+            XCTAssertFalse(source.contains(".transcribe(fileURL: url, language: nil"),
+                           "\(file) still hard-codes auto-detect, which is what let a French dictation come back in English")
+        }
+    }
+
+    /// The blast radius stays where it belongs: this change pins transcription INPUT only. Translate
+    /// keeps its own output target and the reprompt directive keeps its own softer rule, so nothing
+    /// here should have touched either.
+    func testOutputLanguagePathsAreUntouched() throws {
+        let source = try settings()
+        XCTAssertTrue(source.contains("var languageDirective: String?"),
+                      "the reprompt directive must survive — it governs OUTPUT language and is a different question from what the engine transcribes")
+        let body = try resolverBody()
+        XCTAssertFalse(body.contains("languageDirective"), "the transcription resolver must not reach into the output-language directive")
+        XCTAssertFalse(body.contains("translate"), "Translate has its own target language and must not be consulted here")
+    }
+}
