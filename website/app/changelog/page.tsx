@@ -16,8 +16,69 @@ type Day = { date: string; tag?: string; window?: string; summary: string; entri
 
 const DAYS: Day[] = [
   {
-    date: "July 26, 2026",
+    date: "August 6, 2026",
     tag: "Today",
+    summary: "Your dictation stays in the language you speak, and your connected apps stop working from an old list.",
+    entries: [
+      {
+        version: "0.9.103",
+        title: "Connected apps keep up with what you just connected",
+        items: [
+          "Connecting an app, disconnecting one or switching to another account left Action mode working from the list of tools it had loaded earlier. The app showed as connected while your voice commands still could not reach it, sometimes until you quit and reopened Verba. That list is now refreshed the moment a connection changes, and signing out clears the previous account's connections instead of leaving them on screen.",
+          "When two refreshes happened to run at the same time, the slower one could finish last and put the older list back. The newer answer now wins.",
+        ],
+      },
+      {
+        version: "0.9.102",
+        title: "Your dictation stays in the language you speak",
+        items: [
+          "A dictation in your language could come back partly, or entirely, in another one. Verba was letting the engine guess the language again on every few seconds of audio, so a single dictation could switch languages halfway through. It now transcribes in the language you have set, everywhere you dictate: the main shortcut, notes, to-do capture, file transcription, the Adapt panel and feedback.",
+          "Auto-detect is still there if you switch languages often. Leave the language unset and Verba keeps detecting it for you.",
+        ],
+      },
+    ],
+  },
+  {
+    date: "August 5, 2026",
+    summary: "The microphone stops going dead until you relaunch, updates reach you again, and Verba stops pretending a failed update check went fine.",
+    entries: [
+      {
+        version: "0.9.101",
+        title: "The microphone no longer goes dead until you relaunch",
+        items: [
+          "Once a recording had stopped on its own, every later attempt to dictate was refused, in every mode, until you quit and reopened Verba. That could happen after an audio glitch, a change of audio device, a microphone unplugged, a headset powered off or a switch to your AirPods. Verba now throws the dead recording away and starts a new one normally.",
+          "A dictation you had paused is no longer thrown away when something else tries to start a recording.",
+          "If you have refused microphone access, macOS never asks you again, so the message Verba flashed was a dead end you could not act on. It now opens the Microphone settings pane so you can grant access right there.",
+          "When the Fn key needs a permission Verba could not detect, it now names what to grant instead of silently doing nothing.",
+          "A microphone you had chosen that is no longer connected now falls back to your system default input instead of being treated as an error.",
+          "A shortcut that starts nothing now tells you why, instead of looking like a broken microphone.",
+        ],
+      },
+      {
+        version: "0.9.100",
+        title: "Updates reach you again",
+        items: [
+          "If you have been sitting on 0.9.97 wondering why nothing new ever arrived, here is why: 0.9.98 and 0.9.99 were written but never came out as an installable build, so no copy of Verba was ever offered them. 0.9.100 is the first release to actually reach you since 0.9.97, and it brings everything those two were meant to bring.",
+          "Verba could advertise a version that no longer exists. The last version it had ever seen stayed pinned in the menu bar and in the update prompt even after a later check found nothing, so you could be invited to install a release that had been pulled. That version is now cleared the moment a check comes back empty, and a build that matches the one you are already running is never offered to you as an update.",
+          "A failed update check used to look exactly like a successful one. Being offline, a release feed that does not answer, a download whose signature does not verify: none of them said anything, and Settings kept showing a reassuring “last checked” time for a check that never got anywhere. Failures are now recorded, and “last checked” only moves when the check really completed.",
+          "Your auto-update preference is applied from the very first check. Verba used to start looking for updates a moment before it had finished reading that setting, so the first check after a launch could ignore it.",
+          "The version Verba reports in Settings, feedback and error reports now falls back to the build number instead of showing “0” when the display version is missing.",
+        ],
+      },
+      {
+        version: "Under the hood",
+        title: "A release can no longer strand you on an old version",
+        items: [
+          "The release pipeline now refuses to publish anything that is not strictly newer than what is already out, and it checks the shape of the version number before a build even starts. A lower or oddly shaped version is exactly what freezes everyone silently: every installed copy compares it against what it already runs, finds nothing newer, and reports that you are up to date, forever.",
+          "A live release is never deleted to make room for a retry. The old publish step removed the existing release first, which threw away a release people were downloading and opened a window where both the update feed and the download button pointed at nothing. New releases are now staged out of sight and only become visible once every file is attached.",
+          "After publishing, the pipeline downloads the update feed and the installer from the public addresses your copy of Verba and the website actually use, and fails the release if one of them is missing or points at the wrong build. A missing signing secret now stops the run in seconds instead of forty minutes later, after a full build and notarization.",
+          "The update path now has its own test suite: that 0.9.99 is read as older than 0.9.100, that every entry in the feed carries its signature and size, and that an update installs the newest version rather than an intermediate one.",
+        ],
+      },
+    ],
+  },
+  {
+    date: "July 26, 2026",
     summary: "Your lists keep their order, long dictations survive, and the local model answers fast again.",
     entries: [
       {
