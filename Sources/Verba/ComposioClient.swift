@@ -123,6 +123,13 @@ final class ComposioStore: ObservableObject {
     /// caches `resetForAccountChange` just cleared.
     private var accountEpoch = 0
 
+    /// Claimed by every tool sync BEFORE it awaits `/tools`, and re-checked before it commits.
+    /// The epoch alone only rejects answers for a PREVIOUS account: two syncs racing for the SAME
+    /// account (a disconnect landing right behind a connect) both pass the epoch check, so whichever
+    /// response arrived last won, even when it was the older request describing a stale toolkit set.
+    /// A monotonic generation makes that impossible — only the newest claim may write the caches.
+    private var toolsSyncGeneration = 0
+
     private static let base = "https://verba.run/api/composio"
     private init() {
         // Returning from an OAuth flow in the browser → re-check connection state.
@@ -145,6 +152,7 @@ final class ComposioStore: ObservableObject {
     @MainActor
     func resetForAccountChange() {
         accountEpoch &+= 1
+        toolsSyncGeneration &+= 1
         connections = [:]
         pending = []
         connectedTools = []
@@ -503,6 +511,11 @@ final class ComposioStore: ObservableObject {
     private func syncTools(active: [String], force: Bool = false) async throws {
         let want = Set(active.map { $0.lowercased() })
         guard force || want != toolsToolkits else { return }
+        // Claim the caches for THIS sync: every request already in flight is now stale and will
+        // refuse to commit below. Claimed before the empty-set branch too, so clearing the cache
+        // can't be undone by an older fetch that lands after it.
+        toolsSyncGeneration &+= 1
+        let generation = toolsSyncGeneration
         guard !want.isEmpty else {
             connectedTools = []
             toolsToolkits = []
@@ -511,6 +524,7 @@ final class ComposioStore: ObservableObject {
         let epoch = accountEpoch
         let fetched = try await tools(for: want.sorted())
         guard epoch == accountEpoch else { return }   // signed out / switched account mid-fetch
+        guard generation == toolsSyncGeneration else { return }   // a newer sync superseded this one
         connectedTools = fetched
         toolsToolkits = want
     }
