@@ -47,6 +47,15 @@ final class AuthSession: NSObject, ASWebAuthenticationPresentationContextProvidi
             let token = comps.queryItems?.first(where: { $0.name == "token" })?.value
             AuthToken.set(token)
 
+            // Connected apps are account-scoped and the store is a singleton: without this reset a
+            // second account inherited the first one's Connected badges, its "Connecting…" cards and
+            // its executable tools. Re-warming right after is what makes the freshly signed-in
+            // account's apps usable in Action mode without reopening the connections view.
+            Task { @MainActor in
+                ComposioStore.shared.resetForAccountChange()
+                ComposioStore.shared.refresh()
+            }
+
             // The server returns this account's stable referral code → adopt it as the identity.
             // Re-key any data written under the device-minted uid so nothing forks on sign-in.
             if let code = comps.queryItems?.first(where: { $0.name == "code" })?.value, !code.isEmpty {
@@ -85,6 +94,7 @@ final class AuthSession: NSObject, ASWebAuthenticationPresentationContextProvidi
     func signOut() {
         let old = Settings.shared.uid
         AuthToken.set(nil)                          // drop the app-session token (the device secret stays: it still authenticates the device uid)
+        ComposioStore.shared.resetForAccountChange()  // connected apps belong to the account, not the device: drop their statuses, pending OAuth and cached tools
         Settings.shared.referralCode = ""           // empty referral → uid resolves to the device-minted "anon-…" uid
         Settings.shared.proEmail = ""
         Settings.shared.isPro = false               // Pro is account-bound; signing out drops the entitlement
