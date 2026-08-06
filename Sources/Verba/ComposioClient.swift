@@ -113,14 +113,46 @@ final class ComposioStore: ObservableObject {
     /// card would fall back to "Connect" forever right after a successful connect.
     private var assumedActive: Set<String> = []
 
+    /// The toolkit set `connectedTools` was fetched for (lowercased). Comparing against it is what
+    /// lets the cheap connections reload notice "a new app went ACTIVE" and re-fetch the tools,
+    /// without hitting /tools on every one of the 45 poll ticks that change nothing.
+    private var toolsToolkits: Set<String> = []
+
+    /// Bumped on every account change. Async work captures it before awaiting and drops its result
+    /// if it no longer matches, so a slow answer for the PREVIOUS account cannot repopulate the
+    /// caches `resetForAccountChange` just cleared.
+    private var accountEpoch = 0
+
     private static let base = "https://verba.run/api/composio"
     private init() {
         // Returning from an OAuth flow in the browser → re-check connection state.
         NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification,
                                                object: nil, queue: .main) { [weak self] _ in
-            guard let self, !self.apps.isEmpty else { return }
+            guard let self else { return }
+            // Gate on a session (or an OAuth still in flight), NOT on the catalog: `/apps` is a
+            // separate, independently failing request, and when it failed `apps` stayed empty and
+            // this observer silently skipped the one refresh the OAuth return depends on.
+            guard AuthToken.current != nil || !self.pending.isEmpty else { return }
             self.refreshConnections()
         }
+    }
+
+    /// Drop everything scoped to the signed-in account and reject anything still in flight for it.
+    /// The store is a singleton, so without this a sign-out (or a switch to another account) kept
+    /// the previous user's connection statuses, pending OAuth and executable tools. The PUBLIC
+    /// catalog (`apps`, `didLoadOnce`) is deliberately kept: it carries no user data and dropping
+    /// it would send the grid back to its bundled fallback for no reason.
+    @MainActor
+    func resetForAccountChange() {
+        accountEpoch &+= 1
+        connections = [:]
+        pending = []
+        connectedTools = []
+        assumedActive = []
+        toolsToolkits = []
+        toolSchemas = [:]
+        didLoadConnections = false
+        lastError = nil
     }
 
     /// True when the toolkit has an active connected account.
@@ -210,8 +242,12 @@ final class ComposioStore: ObservableObject {
                 problems.append(error.localizedDescription)
             }
 
+            let epoch = self.accountEpoch
             do {
                 let c = try await Self.request("GET", "/connections")
+                // A sign-out / account switch while this was in flight already cleared the caches;
+                // writing the old account's answer over them is exactly what the epoch prevents.
+                guard epoch == self.accountEpoch else { return }
                 // Fold the (possibly multi-account) payload with ACTIVE winning, and clear any
                 // pending OAuth that has since gone ACTIVE.
                 let map = self.merged(Self.foldConnections(c))
@@ -220,15 +256,10 @@ final class ComposioStore: ObservableObject {
                 self.pending = self.pending.filter { (map[$0] ?? "").uppercased() != "ACTIVE" }
                 if map.values.contains(where: { $0.uppercased() == "ACTIVE" }) { Gamification.shared.flag(.connectedApp) }
 
-                // Warm the tools cache for ACTIVE toolkits (for the Action-mode prompt).
-                // Written out rather than as a ternary: `try await` may not appear on the right of
-                // a non-assignment operator, and a failed fetch must leave the previous cache alone.
-                let active = map.filter { $0.value.uppercased() == "ACTIVE" }.map(\.key)
-                if active.isEmpty {
-                    self.connectedTools = []
-                } else {
-                    self.connectedTools = try await self.tools(for: active)
-                }
+                // Warm the tools cache for ACTIVE toolkits (for the Action-mode prompt). A full
+                // refresh always re-fetches (`force`), so an explicit reload still picks up tools
+                // that changed server-side for an unchanged set of toolkits.
+                try await self.syncTools(active: Self.activeToolkits(map), force: true)
             } catch {
                 problems.append(error.localizedDescription)
             }
@@ -373,13 +404,23 @@ final class ComposioStore: ObservableObject {
     /// Refresh ONLY the connection statuses (cheap; used on focus + while polling).
     func refreshConnections() { Task { @MainActor in await reloadConnections() } }
 
+    /// Every caller already runs on the main actor (the poll, the focus refresh, connect/disconnect),
+    /// and it mutates @Published state, so the isolation is stated rather than assumed.
+    @MainActor
     private func reloadConnections() async {
+        let epoch = accountEpoch
         guard let c = try? await Self.request("GET", "/connections") else { return }
+        guard epoch == accountEpoch else { return }   // account changed while this was in flight
         let map = merged(Self.foldConnections(c))
         connections = map
         // A pending OAuth that's now ACTIVE has succeeded — stop showing "Connecting…". Failures
         // and timeouts are handled by the poll; focus-refresh only promotes successes here.
         pending = pending.filter { (map[$0] ?? "").uppercased() != "ACTIVE" }
+        // The whole point of the cheap reload: this is the path an OAuth return actually takes
+        // (poll tick + focus refresh), so the tools of a toolkit that just went ACTIVE have to land
+        // HERE. Without it the badge flipped to Connected while the Action-mode prompt kept the tool
+        // list from before the connection, until a full refresh happened to run.
+        try? await syncTools(active: Self.activeToolkits(map))
     }
 
     /// Disconnect a connected app (deletes its connected account on Composio).
@@ -441,6 +482,37 @@ final class ComposioStore: ObservableObject {
                 toolkit: d["toolkit"] as? String ?? ""
             )
         }
+    }
+
+    /// The toolkits of a folded connections map that are usable right now (lowercased by `fold`).
+    private static func activeToolkits(_ map: [String: String]) -> [String] {
+        map.filter { $0.value.uppercased() == "ACTIVE" }.map(\.key)
+    }
+
+    /// Bring `connectedTools` in line with the toolkits that are ACTIVE right now.
+    ///
+    /// Both refresh paths go through here so the Action-mode tool cache can never drift from the
+    /// badges again. It re-fetches only when the toolkit SET changed (or on `force`), because
+    /// `reloadConnections` runs on every focus and on all 45 ticks of the OAuth poll, and a /tools
+    /// round-trip per tick would be pure waste while the set is unchanged.
+    ///
+    /// Throws like `tools(for:)` so a full refresh can still report WHY the warm-up failed; a
+    /// failure deliberately leaves both the previous cache and `toolsToolkits` alone, so the next
+    /// sync retries instead of the Action prompt losing every connected app to one flaky request.
+    @MainActor
+    private func syncTools(active: [String], force: Bool = false) async throws {
+        let want = Set(active.map { $0.lowercased() })
+        guard force || want != toolsToolkits else { return }
+        guard !want.isEmpty else {
+            connectedTools = []
+            toolsToolkits = []
+            return
+        }
+        let epoch = accountEpoch
+        let fetched = try await tools(for: want.sorted())
+        guard epoch == accountEpoch else { return }   // signed out / switched account mid-fetch
+        connectedTools = fetched
+        toolsToolkits = want
     }
 
     // MARK: Execute
