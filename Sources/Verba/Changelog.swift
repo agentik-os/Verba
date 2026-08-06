@@ -34,8 +34,15 @@ enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
             date: "August 6, 2026", tag: "Today",
-            summary: "An input that sends no sound now names itself and Verba steps off it on its own, a recording that fails leaves a trace, your dictation stays in the language you speak, and your connected apps stop working from an old list.",
+            summary: "A dictation can no longer record forever, an input that sends no sound now names itself and Verba steps off it on its own, a recording that fails leaves a trace, your dictation stays in the language you speak, and your connected apps stop working from an old list.",
             entries: [
+                ChangelogEntry(version: "0.9.106",
+                    title: "A dictation can no longer record forever",
+                    items: [
+                        "With tap to start, tap again to send, a recording whose second tap never landed simply kept going, silently, holding your microphone. A recording now ends on its own after 10 minutes, and what you said is sent to be transcribed rather than thrown away.",
+                        "While that recording was still running, every new dictation was refused, so Verba looked completely deaf until the old recording was finally ended. A recording that runs long now closes itself, and the next dictation starts normally.",
+                        "If you do try to dictate while a recording is already running, Verba now tells you what is happening and how to end it: press your trigger again to send it, or Esc to cancel. It used to flash a two second “Couldn't start recording” that explained nothing.",
+                    ]),
                 ChangelogEntry(version: "0.9.105",
                     title: "Verba steps off a microphone that sends nothing, on its own",
                     items: [
