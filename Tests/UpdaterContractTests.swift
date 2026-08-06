@@ -801,6 +801,139 @@ final class CaptureContractTests: XCTestCase {
         XCTAssertEqual(Regex.captures(#"if recorder === armed \{ (discardArmed\(\)) \}"#, in: source).count, 2,
                        "both failure callbacks must drop a poisoned armed recorder so prewarm() can build a healthy one")
     }
+
+    // MARK: The silent input
+
+    /// The dead end this group exists for, observed on a real machine: the system default input was
+    /// a Bluetooth speaker that advertises a microphone and sends no audio, so Verba recorded a
+    /// 28-byte file, threw `TranscribeError.empty` and flashed "Didn't catch that". Mic access was
+    /// granted, the recorder was healthy, and the working built-in mic sat unselected. The app was
+    /// working perfectly and looked broken, because nothing it said named the device or a next step.
+    ///
+    /// The recorder therefore has to REMEMBER whether any audio reached it, per capture: without
+    /// that fact, "no words" and "no sound at all" are indistinguishable at the failure site.
+    func testTheRecorderRemembersWhetherAnyAudioEverReachedIt() throws {
+        let source = try audioRecorder()
+        XCTAssertTrue(source.contains("private(set) var sawSignal = false"),
+                      "the recorder must expose whether the capture ever saw signal, and only the recorder may set it")
+        XCTAssertTrue(source.contains("private static let signalFloorDB: Float"),
+                      "the floor that separates 'no samples at all' from 'a quiet room' has to be a named constant, not a literal buried in the sampler")
+        XCTAssertEqual(Regex.captures(#"(self\.sawSignal = true)"#, in: source).count, 1,
+                       "the latch is one-way and set in exactly one place: a second writer is a second answer")
+        XCTAssertFalse(source.contains("\n    var sawSignal"),
+                       "sawSignal must not be publicly settable — a caller that can write it can fake a silent capture")
+        // The verdict is read from the meter that already exists, not from a second audio tap.
+        XCTAssertTrue(Regex.captures(#"rec\.updateMeters\(\)\s*\n\s*guard rec\.averagePower\(forChannel: 0\) > (Self\.signalFloorDB)"#, in: source).count == 1,
+                      "the sampler must reuse averagePower, the same reading level() already takes")
+    }
+
+    /// Reset polarity, and it is the one that can destroy a live dictation if it is wrong: `start()`
+    /// refuses when a recording is already live or paused, and that refusal must leave the running
+    /// capture's verdict alone. Resetting above the guard would clear the flag of the recording that
+    /// is still going, so a genuine capture could report itself silent.
+    func testTheSignalVerdictIsResetPerCaptureBelowTheLiveGuard() throws {
+        let source = try audioRecorder()
+        // The statement, at start()'s own indentation, not the property declaration above it.
+        let reset = try XCTUnwrap(source.range(of: "\n        sawSignal = false"),
+                                  "every start() must begin with a clean verdict")
+        let guardClause = try XCTUnwrap(source.range(of: "guard !live.isRecording, !isPaused else"),
+                                        "the live-recorder guard is where the refusal happens")
+        XCTAssertTrue(guardClause.lowerBound < reset.lowerBound,
+                      "the reset must sit BELOW the live-recorder guard, otherwise a refused start() wipes the running capture's verdict")
+        XCTAssertTrue(source.contains("captureDeviceName = nil"),
+                      "the device name belongs to one capture and must not survive into the next one")
+    }
+
+    /// Both start paths have to be watched. The fast path (a pre-armed recorder) is the one a normal
+    /// dictation takes, so a watch wired only into the cold path would report "no signal" for every
+    /// successful capture and blame a working microphone.
+    func testBothStartPathsWatchTheInputLevel() throws {
+        let source = try audioRecorder()
+        XCTAssertFalse(source.contains("armed = nil; armedURL = nil\n                return true"),
+                       "the pre-fix fast path returned without ever observing the input level")
+        XCTAssertFalse(source.contains("currentURL = url\n            return true"),
+                       "the pre-fix slow path returned without ever observing the input level")
+        XCTAssertEqual(Regex.captures(#"(beginSignalWatch\(rec\))"#, in: source).count, 2,
+                       "the fast path and the cold path must both start the watch")
+        // Latency: the watch is armed AFTER record() has already returned true, so neither path waits on it.
+        XCTAssertTrue(Regex.captures(#"if rec\.record\(\) \{[\s\S]{0,200}?(beginSignalWatch\(rec\))"#, in: source).count == 1,
+                      "the fast path must call record() first and only then arm the watch")
+    }
+
+    /// `stop()` ends the sampling and NOTHING else: the whole point is that the caller reads the
+    /// verdict after the capture has ended. Clearing it there would make the failure site blind
+    /// again, which is the original bug with extra steps.
+    func testStopEndsTheSamplingButKeepsTheVerdict() throws {
+        let source = try audioRecorder()
+        let body = try XCTUnwrap(Regex.captures(#"func stop\(\) -> URL\? \{([\s\S]*?)\n    \}"#, in: source).first,
+                                 "stop() should be readable on its own")
+        XCTAssertTrue(body.contains("endSignalWatch()"), "stop() must stop the meter sampler it started")
+        XCTAssertFalse(body.contains("sawSignal = false"),
+                       "stop() must NOT clear the verdict: the caller reads it after the capture ends")
+        XCTAssertFalse(body.contains("captureDeviceName = nil"),
+                       "the device name must survive stop(), which has already restored the previous default input")
+    }
+
+    /// Naming the device is what turns the message from a shrug into an instruction, and the name
+    /// has to come from `MicDevices` — the one place that talks to CoreAudio. A second copy of that
+    /// code in the delegate would be a second thing to keep correct.
+    func testTheCaptureDeviceIsNamedThroughMicDevices() throws {
+        let recorder = try audioRecorder()
+        let devices = try micDevices()
+        let delegate = try appDelegate()
+        XCTAssertTrue(devices.contains("static func defaultInputName() -> String?"),
+                      "MicDevices must be able to name the current default input, not only resolve its id and UID")
+        XCTAssertTrue(devices.contains("return stringProp(id, kAudioObjectPropertyName)"),
+                      "the name must be read off the device like defaultInputUID does, not by enumerating every input")
+        XCTAssertTrue(recorder.contains("captureDeviceName = MicDevices.defaultInputName()"),
+                      "the recorder must capture the device name while the capture is running, since stop() restores the previous default")
+        XCTAssertFalse(delegate.contains("kAudioHardwarePropertyDefaultInputDevice"),
+                       "the delegate must ask MicDevices, never re-derive the default input with its own CoreAudio call")
+    }
+
+    /// The failure site itself. `TranscribeError.empty` plus "no signal ever seen" is not the same
+    /// event as `TranscribeError.empty` plus "we heard a room": the first one is a device the user
+    /// must replace, the second one is silence they chose. The pre-fix source treated both as one
+    /// two-second flash, which named neither the device nor a way out.
+    func testASilentInputGetsANamedActionableAlertInsteadOfAFlash() throws {
+        let delegate = try appDelegate()
+        XCTAssertFalse(delegate.contains("if benign {\n            flashInfo(\"Didn't catch that\")"),
+                       "the pre-fix shape is the dead end itself: every empty transcription got the same unactionable flash")
+        XCTAssertEqual(Regex.captures(#"if case TranscribeError\.empty = error, !recorder\.sawSignal \{\s*\n\s*(promptSilentInput\(\))"#, in: delegate).count, 1,
+                       "an empty transcription from a capture that saw NO signal must route to the actionable prompt")
+        XCTAssertTrue(delegate.contains("No sound reached Verba from \\(named)"),
+                      "the message must name the device that was actually recorded from")
+        XCTAssertTrue(delegate.contains("recorder.captureDeviceName.map"),
+                      "the name shown must be the recorder's captured device, not the current default (which stop() has already restored)")
+    }
+
+    /// Polarity, and the reason the flag exists at all: a capture that DID hear something and still
+    /// transcribed to nothing is ordinary empty speech (an accidental key tap), and it must keep the
+    /// quiet flash. Promoting that to a modal alert would nag every user who brushed the trigger.
+    func testAnEmptyCaptureThatDidHearSomethingKeepsTheQuietFlash() throws {
+        let delegate = try appDelegate()
+        XCTAssertEqual(Regex.captures(#"promptSilentInput\(\)\s*\n\s*\} else \{\s*\n\s*(flashInfo\("Didn't catch that"\))"#, in: delegate).count, 1,
+                       "the signal-was-seen branch must still flash 'Didn't catch that' rather than open an alert")
+        XCTAssertFalse(delegate.contains("if benign {\n            promptSilentInput()"),
+                       "a silent-input alert on EVERY benign failure would fire on too-short taps too")
+    }
+
+    /// An alert with no button that changes anything is the same dead end in a bigger window. The
+    /// prompt must open the pane where the input can actually be swapped, and it must never print a
+    /// raw Optional at the user when the device name cannot be read.
+    func testTheSilentInputAlertOffersTheInputPaneAndNeverShowsAnEmptyName() throws {
+        let delegate = try appDelegate()
+        XCTAssertTrue(delegate.contains("com.apple.preference.sound?input"),
+                      "the prompt must open Sound ▸ Input, the pane with a live input meter where the user can see the replacement work")
+        XCTAssertTrue(delegate.contains("Open Sound Settings"),
+                      "the fix has to be one button, not a sentence describing where to click")
+        XCTAssertTrue(delegate.contains("?? \"your current microphone\""),
+                      "an unreadable device name must degrade to a readable phrase, never to an empty pair of quotes")
+        XCTAssertFalse(delegate.contains("private func promptSilentInput() {\n        flashInfo("),
+                       "the prompt must not be a flash in disguise: a two-second banner is the dead end this fix replaces")
+        XCTAssertEqual(Regex.captures(#"private func promptSilentInput\(\) \{[\s\S]*?(\.init\(title: "Later", role: \.cancel)"#, in: delegate).count, 1,
+                       "the alert must be dismissible without doing anything, like every other Verba prompt")
+    }
 }
 
 // MARK: - Transcription language contract

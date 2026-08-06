@@ -17,6 +17,26 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
     private var armed: AVAudioRecorder?
     private var armedURL: URL?
 
+    /// True once the input level crossed `signalFloorDB` at any point during the CURRENT capture,
+    /// reset by every `start()`. False after a capture means literally nothing reached us: the
+    /// selected input device fed no audio at all, which is a different failure from "the user said
+    /// nothing" and needs a different answer (see the no-signal alert in AppDelegate).
+    private(set) var sawSignal = false
+
+    /// Name of the input device this capture actually recorded from, read once the recorder is
+    /// running (so it reflects the chosen-mic switch), and kept after `stop()` has restored the
+    /// previous default so the failure path can still name the device.
+    private(set) var captureDeviceName: String?
+
+    /// Level floor, in dBFS, above which we call it signal. An input that delivers no samples meters
+    /// at -160 dB while even a silent room through a working mic sits far above -60, so the gap is
+    /// wide and this test never has to be clever. Deliberately conservative: reading real audio as
+    /// "no signal" would blame the user's device for their own silence.
+    private static let signalFloorDB: Float = -60
+
+    /// Samples the meter while recording; invalidated as soon as it has an answer.
+    private var signalTimer: Timer?
+
     /// The encoder settings used for every recording (shared by prewarm + start).
     private let recorderSettings: [String: Any] = [
         AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
@@ -120,6 +140,34 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         restoreDefaultInput = nil
     }
 
+    /// Watch the input level for the rest of this capture and latch `sawSignal` the first time it
+    /// crosses the floor. Started only AFTER `record()` has already returned true, so neither the
+    /// fast nor the slow start path waits on it, and it stops itself the moment it has an answer:
+    /// a normal dictation pays for a handful of `updateMeters()` calls and nothing more.
+    /// A paused recorder is skipped rather than concluded on, so a resume keeps being watched.
+    private func beginSignalWatch(_ rec: AVAudioRecorder) {
+        endSignalWatch()
+        captureDeviceName = MicDevices.defaultInputName()
+        let t = Timer(timeInterval: 0.15, repeats: true) { [weak self, weak rec] timer in
+            // Nothing left to watch (the owner or the recorder went away): stop the timer rather
+            // than let the run loop keep firing it forever.
+            guard let self, let rec else { timer.invalidate(); return }
+            guard rec.isRecording else { return }   // paused: keep watching for the resume
+            rec.updateMeters()
+            guard rec.averagePower(forChannel: 0) > Self.signalFloorDB else { return }
+            self.sawSignal = true
+            timer.invalidate()
+            self.signalTimer = nil
+        }
+        RunLoop.main.add(t, forMode: .common)   // keeps sampling while a menu is tracking
+        signalTimer = t
+    }
+
+    private func endSignalWatch() {
+        signalTimer?.invalidate()
+        signalTimer = nil
+    }
+
     /// Ask for mic permission (macOS prompts once). Completion on main thread.
     ///
     /// The status is READ FRESH on every call rather than cached: the user can grant or revoke
@@ -179,6 +227,13 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
             isPaused = false
             restoreMic()   // it held a default-input switch we never restored
         }
+        // A fresh capture: nothing has been heard yet and no device is bound. Reset BELOW the guard
+        // above, never before it, so a start() that refuses because a recording is already live
+        // leaves that live recording's signal state intact.
+        sawSignal = false
+        captureDeviceName = nil
+        endSignalWatch()
+
         let chosen = chosenMicToApply()
 
         // Fast path: a recorder is already armed (prepared) AND either no specific
@@ -190,6 +245,7 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
                 recorder = rec
                 currentURL = armedURL
                 armed = nil; armedURL = nil
+                beginSignalWatch(rec)
                 return true
             }
             // Prepared recorder refused to start — fall through to a fresh attempt.
@@ -211,6 +267,7 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
             guard rec.record() else { restoreMic(); return false }
             recorder = rec
             currentURL = url
+            beginSignalWatch(rec)
             return true
         } catch {
             VerbaLog.audio.error("recorder start failed: \(error.localizedDescription, privacy: .public)")
@@ -244,6 +301,9 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
     func stop() -> URL? {
         guard let rec = recorder else { restoreMic(); return nil }
         rec.stop()
+        // Only the sampler stops here: `sawSignal` and `captureDeviceName` describe the capture that
+        // just ended and the caller reads them after this returns.
+        endSignalWatch()
         recorder = nil
         isPaused = false
         restoreMic()

@@ -41,6 +41,15 @@ enum MicDevices {
         return stringProp(id, kAudioDevicePropertyDeviceUID)
     }
 
+    /// Human-readable name of the current system default input device, if any. Read straight off the
+    /// device (exactly like `defaultInputUID`) rather than by scanning `inputs()`, so naming the
+    /// device stays two property reads instead of a full enumeration of the audio hardware.
+    /// This is what lets a failed capture NAME the device it recorded from.
+    static func defaultInputName() -> String? {
+        guard let id = defaultInputID() else { return nil }
+        return stringProp(id, kAudioObjectPropertyName)
+    }
+
     static func defaultInputID() -> AudioDeviceID? {
         var addr = address(kAudioHardwarePropertyDefaultInputDevice)
         var dev = AudioDeviceID(0)

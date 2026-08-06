@@ -1024,6 +1024,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             size: NSSize(width: 400, height: 230))
     }
 
+    /// The capture ran, the file was written, and not one sample above the noise floor reached us:
+    /// the input device Verba recorded from sends no audio. Mic access is granted and the recorder
+    /// is healthy, so nothing in the app can fix it; only picking another input can. Name the device
+    /// (the user usually has no idea which one is selected) and offer the switch.
+    ///
+    /// System Settings ▸ Sound ▸ Input is the surface, not Verba's own picker: it is the pane that
+    /// shows a live input meter, so the user can SEE the replacement working before dictating again,
+    /// and it fixes the system default for every other app too. Verba's own list stays one click
+    /// away in the menu bar and the message says so.
+    ///
+    /// No once-per-session latch on purpose: while this lasts, every dictation produces nothing at
+    /// all, so a quiet flash would be the dead end all over again. It stops the moment audio reaches
+    /// Verba, which is exactly when the user has fixed it.
+    private func promptSilentInput() {
+        let named = recorder.captureDeviceName.map { "\"\($0)\"" } ?? "your current microphone"
+        showGlassAlert(
+            icon: "mic.slash", tint: .orange,
+            title: "No sound reached Verba",
+            message: "No sound reached Verba from \(named). That input is selected but sends no audio, which is common with Bluetooth speakers that advertise a microphone. Choose a different microphone (your Mac's built-in one always works) in System Settings ▸ Sound ▸ Input, or from Microphone in the Verba menu bar, then try again.",
+            buttons: [
+                .init(title: "Later", role: .cancel, action: {}),
+                .init(title: "Open Sound Settings", isDefault: true) {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.sound?input") {
+                        NSWorkspace.shared.open(url)
+                    }
+                },
+            ],
+            size: NSSize(width: 420, height: 260))
+    }
+
     private func promptTapPermissions() {
         // Never nag during onboarding (the permissions slide handles it), and only once per session.
         if tapPermissionNagged || !Settings.shared.onboarded || onboardingWC?.window?.isVisible == true { return }
@@ -1918,7 +1948,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         stopQuipsIfNoInflight()
         overlay.model.recording = false
         if benign {
-            flashInfo("Didn't catch that")
+            // "Nothing was transcribed" has two causes that look identical here and are not the same
+            // problem at all. If the capture never saw one sample above the noise floor, the selected
+            // input sent NOTHING (a Bluetooth speaker that advertises a microphone it never feeds is
+            // the usual culprit, and it becomes the system default the moment it connects). The user
+            // did nothing wrong and a two-second "Didn't catch that" is a dead end, because it names
+            // neither the device that was used nor the one thing that fixes it. Signal seen and no
+            // words is genuinely empty speech and keeps the flash it always had.
+            if case TranscribeError.empty = error, !recorder.sawSignal {
+                promptSilentInput()
+            } else {
+                flashInfo("Didn't catch that")
+            }
         } else if error is TimeoutError {
             flashError("Timed out — try again")
         } else if let re = error as? RepromptError, let m = re.errorDescription {
