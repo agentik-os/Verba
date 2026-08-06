@@ -83,6 +83,49 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
     /// Samples the meter while recording; invalidated as soon as it has an answer.
     private var signalTimer: Timer?
 
+    // MARK: - The hard capture ceiling
+
+    /// The longest a single capture is allowed to run, in seconds.
+    ///
+    /// The default trigger is a TOGGLE (tap to start, tap again to send), so a recording only ends
+    /// on a SECOND press. When that press never lands — a missed trigger, a tap eaten by another
+    /// app, a user who believed it was push-to-talk — nothing in the audio path ever ends the
+    /// capture: it ran past six minutes on a real Mac, the .m4a still growing, and while it ran the
+    /// live-recorder guard in `start()` refused EVERY later dictation in EVERY mode, so the
+    /// microphone looked completely dead. Ten minutes is far longer than any real dictation and far
+    /// shorter than a runaway, and hitting it is not an error: the audio is finished and processed
+    /// exactly like a normal stop (see `onCaptureCeiling`), never discarded.
+    static let maxCaptureSeconds: TimeInterval = 600
+
+    /// Fires once, `maxCaptureSeconds` after `record()` was accepted. Armed per capture beside the
+    /// signal watcher and invalidated by the same `stop()`, so it can never outlive its capture.
+    private var ceilingTimer: Timer?
+
+    /// Called on the main run loop when the ceiling fires, so the OWNER ends the capture through the
+    /// same stop path a second trigger press takes and the audio is transcribed and delivered like
+    /// any other dictation.
+    ///
+    /// The recorder deliberately does not stop itself here: only the owner knows what to do with a
+    /// finished file, and a stop performed alone would leave that file with nobody to process it —
+    /// the audio would be silently lost, which is worse than the stuck capture. The one exception is
+    /// an owner that wired nothing (see `captureCeilingReached`), where a hot microphone forever is
+    /// the worse of the two.
+    var onCaptureCeiling: (() -> Void)?
+
+    /// Why the last `start()` refused, so the caller can say something the user can ACT on. A bare
+    /// "Couldn't start recording" names neither the cause nor the cure, and the most common cause by
+    /// far is a capture that is already running and one keypress from being sent. Reset to nil at
+    /// the top of every start that gets past the live-recorder guard.
+    enum StartRefusal {
+        /// A capture is running right now. The way out is the trigger (or Esc), never a retry.
+        case alreadyLive
+        /// A capture the user PAUSED still holds the recorder. Same way out.
+        case alreadyPaused
+        /// The audio stack itself said no: `record()` returned false, or the recorder could not be built.
+        case failed
+    }
+    private(set) var refusalReason: StartRefusal?
+
     /// The encoder settings used for every recording (shared by prewarm + start).
     private let recorderSettings: [String: Any] = [
         AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
@@ -232,6 +275,47 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         signalTimer = nil
     }
 
+    /// Arm the hard ceiling for THIS capture. Called only after `record()` has already returned true,
+    /// exactly like `beginSignalWatch`, so neither start path waits on it: building a Timer and
+    /// adding it to the run loop costs nothing measurable and happens with audio already flowing.
+    /// Re-armed per capture (the first thing it does is cancel any previous one), so two captures can
+    /// never share a ceiling and a torn-down capture can never leave one behind.
+    private func armCaptureCeiling() {
+        endCaptureCeiling()
+        let t = Timer(timeInterval: Self.maxCaptureSeconds, repeats: false) { [weak self] _ in
+            self?.captureCeilingReached()
+        }
+        RunLoop.main.add(t, forMode: .common)   // keeps counting while a menu is tracking
+        ceilingTimer = t
+    }
+
+    private func endCaptureCeiling() {
+        ceilingTimer?.invalidate()
+        ceilingTimer = nil
+    }
+
+    /// The ceiling fired. Hand the capture to its owner so it ends the SAME way a second trigger
+    /// press ends it: the file is finished, transcribed and delivered. Nothing is discarded here.
+    ///
+    /// A capture that is PAUSED is ended too. The clock measures how long the recorder has held the
+    /// microphone, not how long it spent recording, and a capture paused for ten minutes blocks
+    /// every other dictation exactly like a running one does.
+    private func captureCeilingReached() {
+        ceilingTimer = nil
+        guard recorder != nil else { return }   // already stopped: nothing left to end
+        let elapsed = String(format: "%.1f", Date().timeIntervalSince(captureStartedAt ?? Date()))
+        VerbaLog.audio.log("capture: ceiling reached after \(elapsed, privacy: .public)s (limit \(Int(Self.maxCaptureSeconds), privacy: .public)s), ending the capture so the dictation is processed and the microphone is free")
+        guard let owner = onCaptureCeiling else {
+            // No owner wired (a panel that records into its own AudioRecorder and never set one).
+            // Stopping alone leaves the finished file with nobody to process it, which loses the
+            // audio, but a microphone held open forever is worse: end it and say so.
+            VerbaLog.audio.error("capture: ceiling reached with no owner to process the audio, stopping the capture anyway")
+            _ = stop()
+            return
+        }
+        owner()
+    }
+
     /// Ask for mic permission (macOS prompts once). Completion on main thread.
     ///
     /// The status is READ FRESH on every call rather than cached: the user can grant or revoke
@@ -282,6 +366,10 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         // waiting for resume(), so it refuses exactly like a running one.
         if let live = recorder {
             guard !live.isRecording, !isPaused else {
+                // Name WHICH of the two it was: the caller turns this into the way out it shows the
+                // user, and "press your trigger again to send it" is only true because a capture is
+                // genuinely still holding the microphone.
+                refusalReason = isPaused ? .alreadyPaused : .alreadyLive
                 VerbaLog.audio.error("AudioRecorder.start() refused: a recording is already live or paused")
                 return false
             }
@@ -297,7 +385,9 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         sawSignal = false
         captureDeviceName = nil
         captureDeviceUID = nil
+        refusalReason = nil
         endSignalWatch()
+        endCaptureCeiling()   // a torn-down stale recorder must not leave its ceiling running
 
         let chosen = chosenMicToApply()
         // Part 2. A recovery switch is a device switch exactly like a chosen mic, so it disqualifies
@@ -315,6 +405,7 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
                 currentURL = armedURL
                 armed = nil; armedURL = nil
                 beginSignalWatch(rec)
+                armCaptureCeiling()
                 logCaptureStart(path: "prearmed", started: true)
                 return true
             }
@@ -337,6 +428,7 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
             rec.isMeteringEnabled = true
             rec.prepareToRecord()
             guard rec.record() else {
+                refusalReason = .failed
                 logCaptureStart(path: "cold", started: false)
                 restoreMic()
                 return false
@@ -344,9 +436,11 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
             recorder = rec
             currentURL = url
             beginSignalWatch(rec)
+            armCaptureCeiling()
             logCaptureStart(path: "cold", started: true)
             return true
         } catch {
+            refusalReason = .failed
             VerbaLog.audio.error("recorder start failed: \(error.localizedDescription, privacy: .public)")
             restoreMic()
             return false
@@ -395,9 +489,10 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
     func stop() -> URL? {
         guard let rec = recorder else { restoreMic(); return nil }
         rec.stop()
-        // Only the sampler stops here: `sawSignal` and `captureDeviceName` describe the capture that
-        // just ended and the caller reads them after this returns.
+        // Only the sampler and the ceiling stop here: `sawSignal` and `captureDeviceName` describe
+        // the capture that just ended and the caller reads them after this returns.
         endSignalWatch()
+        endCaptureCeiling()
         recorder = nil
         isPaused = false
         restoreMic()

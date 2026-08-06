@@ -174,6 +174,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ChordMonitor.shared.escapeShouldCancel = { [weak self] in self?.escapeHasSomethingToCancel() ?? false }
         overlay.model.onCancel = { [weak self] in self?.cancelEverything() }
         overlay.model.onPauseToggle = { [weak self] in self?.togglePause() }
+        // The capture hit AudioRecorder's hard ceiling: end it here, through the very same path a
+        // second trigger press takes, so the audio is transcribed and delivered instead of lost.
+        recorder.onCaptureCeiling = { [weak self] in self?.endCaptureAtCeiling() }
         overlay.prepare()   // warm the floating panel so it appears instantly
         ChordMonitor.shared.start()
         // Don't request any permission before the user reaches the onboarding permissions
@@ -613,7 +616,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Fresh cold start: the shared recorder was re-armed by the phantom-Fn abort; reusing
             // that hastily-prepared recorder captured silence, so build a clean one.
             self.recorder.releaseArmed()
-            guard self.recorder.start() else { self.finishTodoCapture(error: "Couldn't start recording."); return }
+            guard self.recorder.start() else {
+                // Same refusal and the same way out as the dictation path: when a capture is already
+                // live, "Couldn't start recording." sends the user looking for a broken microphone
+                // instead of the one keypress that frees it.
+                switch self.recorder.refusalReason {
+                case .some(.alreadyLive), .some(.alreadyPaused):
+                    self.finishTodoCapture(error: Self.liveCaptureRefusalMessage)
+                default:
+                    self.finishTodoCapture(error: "Couldn't start recording.")
+                }
+                return
+            }
             EngineManager.prewarmForRecording()   // reload a lazily-unloaded local model behind the speaking time
             LocalLLM.prewarmForRecording()        // and the AI model too, so the rewrite doesn't start with a cold load
             self.todoCaptureRecording = true
@@ -1714,7 +1728,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 // The recorder logs WHY on its own line; this one records that a dictation was
                 // asked for and never began, so the log shows the press even when nothing started.
                 VerbaLog.audio.error("capture: dictation start refused by AudioRecorder.start()")
-                self.resetOneShotFlags(); self.flashError("Couldn't start recording"); return
+                self.resetOneShotFlags()
+                // "Couldn't start recording" names neither the cause nor the cure, and the commonest
+                // cause is a capture that is STILL RUNNING and one keypress from being sent (a
+                // toggle trigger whose second press never landed). Say which of the two happened and
+                // how to get out of it; a flash, not a modal, because the fix is that keypress.
+                switch self.recorder.refusalReason {
+                case .some(.alreadyLive), .some(.alreadyPaused):
+                    self.flashError(Self.liveCaptureRefusalMessage, seconds: 4)
+                default:
+                    self.flashError("Couldn't start recording")
+                }
+                return
             }
             EngineManager.prewarmForRecording()   // reload a lazily-unloaded local model behind the speaking time
             LocalLLM.prewarmForRecording()        // and the AI model too, so the rewrite doesn't start with a cold load
@@ -1775,6 +1800,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// What to say when `AudioRecorder.start()` refuses because a capture is ALREADY LIVE (or
+    /// paused, which holds the microphone just the same). Stated once, shown by every trigger that
+    /// can hit that refusal. It names the cause AND the two keys that end it, because the bare
+    /// "Couldn't start recording" left the user pressing a trigger that could not work until the
+    /// stuck capture was ended, with nothing on screen saying so.
+    static let liveCaptureRefusalMessage =
+        "A recording is already running. Press your trigger again to send it, or Esc to cancel."
+
     /// A short silent tail kept recording after the user stops, so the last word (people routinely
     /// release the trigger a beat before the final syllable lands) still makes it into the file.
     /// Normal finalize only — cancel/discard paths stop the recorder immediately.
@@ -1785,6 +1818,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Keep capturing for a brief tail so the trailing last word lands, then finalize. Silent:
         // the pill flips to processing right after; the user just gets the whole sentence.
         recorder.stop(afterTail: Self.stopTailSeconds) { [weak self] url in self?.finishStop(url) }
+    }
+
+    /// The shared recorder hit its hard capture ceiling (`AudioRecorder.maxCaptureSeconds`).
+    ///
+    /// With a toggle trigger a recording only ends on a SECOND press, so a press that never landed
+    /// left the microphone open indefinitely AND had every later dictation refused by the
+    /// live-recorder guard in `start()`. The ceiling is the way out of that, and it ends the capture
+    /// through the ordinary stop path for whatever the capture belongs to, so the words the user DID
+    /// speak are transcribed and delivered exactly as if they had pressed the trigger themselves.
+    /// Nothing is discarded.
+    ///
+    /// The message goes to the menu-bar flash rather than `flashError`: that one forces
+    /// `state = .idle` and takes the overlay down, which on a dictation now PROCESSING would tear
+    /// down the pill of the very recording this just sent.
+    private func endCaptureAtCeiling() {
+        VerbaLog.audio.error("capture: ceiling reached, ending the capture from the delegate state=\(String(describing: self.state), privacy: .public) todoCapture=\(self.todoCaptureRecording ? "true" : "false", privacy: .public)")
+        let sent: Bool
+        if todoCaptureRecording {
+            stopTodoCapture()          // a voice to-do: same path as its own second press
+            sent = true
+        } else if state == .recording {
+            stopAndProcess()           // a dictation: same path as a second trigger press
+            sent = true
+        } else {
+            // Nobody is driving this capture any more (the state machine moved on and left the
+            // recorder running, which is the stuck state itself). There is no pipeline to hand the
+            // file to, so just free the microphone; the buffer stays in the temp folder for the
+            // 48 h sweeper rather than being deleted.
+            _ = recorder.stop()
+            sent = false
+        }
+        let minutes = Int(AudioRecorder.maxCaptureSeconds / 60)
+        let ended = "Recording ended automatically after \(minutes) minutes"
+        flashStatusItemMessage(sent ? ended + ", sending it now" : ended, isError: false)
     }
 
     private func finishStop(_ url: URL?) {
@@ -2350,7 +2417,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// A non-blocking RED error flash in the overlay (same place as the jokes) + error sound.
     /// Replaces the annoying "click OK" modal alerts for transcription/rewrite failures.
-    private func flashError(_ message: String) {
+    ///
+    /// `seconds` is how long it stays up, and it defaults to the 2 seconds every existing caller
+    /// already got. Only a message the user has to ACT on asks for longer: a sentence naming a
+    /// keypress cannot be read and acted upon in the time a two-word failure needs.
+    private func flashError(_ message: String, seconds: TimeInterval = 2.0) {
         // R10: the minimal style never shows the overlay — mirror the error onto the menu bar.
         if Settings.shared.overlayStyle == .minimal { flashStatusItemMessage(message, isError: true) }
         overlay.model.recording = false
@@ -2364,7 +2435,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         state = .idle
         SoundFX.error()
         overlay.show()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { [weak self] in
             guard let self, self.state == .idle else { return }
             self.overlay.model.error = false
             self.overlay.model.title = ""
