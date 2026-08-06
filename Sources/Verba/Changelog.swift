@@ -34,8 +34,16 @@ enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
             date: "August 6, 2026", tag: "Today",
-            summary: "An input that sends no sound now names itself, your dictation stays in the language you speak, and your connected apps stop working from an old list.",
+            summary: "An input that sends no sound now names itself and Verba steps off it on its own, a recording that fails leaves a trace, your dictation stays in the language you speak, and your connected apps stop working from an old list.",
             entries: [
+                ChangelogEntry(version: "0.9.105",
+                    title: "Verba steps off a microphone that sends nothing, on its own",
+                    items: [
+                        "If the microphone Verba is recording from sends no sound at all, Verba now switches by itself to your Mac’s built-in microphone for the next dictation, and tells you it did. A dictation that would have come back empty a second time comes back with your words instead.",
+                        "This only happens when you have not picked a microphone yourself and Verba was simply following your system default, and only after a recording that heard nothing. If you did choose a microphone, Verba never overrules you.",
+                        "It stops as soon as sound comes through again, so an input that went quiet only for a moment goes back to being used normally.",
+                        "When something does go wrong with a recording, Verba now writes down what happened: which microphone it used, whether any sound arrived, how long the input took to deliver its first sound, and how much was recorded. Until now a failed dictation left almost no trace, which made this kind of problem very hard to track down. Nothing about what you said is written down, only facts about the audio device.",
+                    ]),
                 ChangelogEntry(version: "0.9.104",
                     title: "A silent input device now tells you it is the one at fault",
                     items: [
