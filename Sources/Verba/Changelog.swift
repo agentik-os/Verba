@@ -36,7 +36,7 @@ enum Changelog {
             date: "August 6, 2026", tag: "Today",
             summary: "A dictation can no longer record forever, an input that sends no sound now names itself and Verba steps off it on its own, a recording that fails leaves a trace, your dictation stays in the language you speak, and your connected apps stop working from an old list.",
             entries: [
-                ChangelogEntry(version: "0.9.106",
+                ChangelogEntry(version: "0.9.107",
                     title: "A dictation can no longer record forever",
                     items: [
                         "With tap to start, tap again to send, a recording whose second tap never landed simply kept going, silently, holding your microphone. A recording now ends on its own after 10 minutes, and what you said is sent to be transcribed rather than thrown away.",
