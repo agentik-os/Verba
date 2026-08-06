@@ -936,6 +936,229 @@ final class CaptureContractTests: XCTestCase {
     }
 }
 
+// MARK: - Capture diagnostics contract
+
+/// Contract tests for the capture path's OBSERVABILITY and for the built-in-microphone recovery.
+///
+/// What bought this suite: a user reported dictation that worked, then did not, and a live failing
+/// session 24 minutes long produced ONE line in the unified log. Twelve reviews of a byte-identical
+/// trigger, engine and transcription path found no regression, because the app was not saying
+/// enough for anyone to find one. An undiagnosable failure is a permanent failure, so the shape of
+/// the diagnostics is pinned here exactly like the guards above.
+///
+/// Same technique and the same stated limits as `CaptureContractTests`: the sources are read AS
+/// DATA, never imported, so this runs on Linux CI where the macOS app cannot even be built. These
+/// prove the log lines and the recovery conditions are PRESENT and correctly bounded in the source.
+/// They do NOT prove a single byte was ever written to the unified log. Only running the app on a
+/// Mac does that. Every assertion below fails against the pre-fix sources.
+final class CaptureDiagnosticsContractTests: XCTestCase {
+
+    private func audioRecorder() throws -> String { try RepoFile.contents(of: "Sources/Verba/AudioRecorder.swift") }
+    private func micDevices() throws -> String { try RepoFile.contents(of: "Sources/Verba/MicDevices.swift") }
+    private func appDelegate() throws -> String { try RepoFile.contents(of: "Sources/Verba/AppDelegate.swift") }
+
+    /// A capture that fails has to say WHICH device fed it, and both start paths have to say it. The
+    /// pre-fix source returned from each path in silence, so a failing session could not even be
+    /// attributed to a device, let alone to a cause.
+    func testEveryStartLogsThePathTheDeviceAndWhetherRecordWasAccepted() throws {
+        let source = try audioRecorder()
+        XCTAssertFalse(source.contains("beginSignalWatch(rec)\n                return true"),
+                       "the pre-fix fast path returned without logging anything at all")
+        XCTAssertFalse(source.contains("beginSignalWatch(rec)\n            return true"),
+                       "the pre-fix cold path returned without logging anything at all")
+        XCTAssertTrue(source.contains("logCaptureStart(path: \"prearmed\", started: true)"),
+                      "the prearmed fast path must be identifiable in the log: it is the path a normal dictation takes")
+        XCTAssertTrue(source.contains("logCaptureStart(path: \"cold\", started: true)"),
+                      "the cold path must be distinguishable from the fast one, since taking it at all is a fact worth seeing")
+        XCTAssertTrue(source.contains("logCaptureStart(path: \"cold\", started: false)"),
+                      "a record() that was REFUSED is the most important start of all and must not be the one that goes unlogged")
+        for field in ["capture: start path=", "device=", "uid=", "chosenMicSwitch=", "record="] {
+            XCTAssertTrue(source.contains(field),
+                          "the start line must carry \(field): naming the device without its uid cannot tell two identically named inputs apart")
+        }
+    }
+
+    /// Level, not decoration. The unified log keeps `.info` and `.debug` messages in MEMORY only, so
+    /// a diagnostic logged there is gone by the time anyone asks the user for a log, which is
+    /// exactly the failure being fixed. Default level persists to disk and survives to the report.
+    func testCaptureDiagnosticsAreLoggedAtDefaultLevelSoTheySurviveToDisk() throws {
+        let source = try audioRecorder()
+        XCTAssertTrue(source.contains("VerbaLog.audio.log(\"capture: start"),
+                      "the start line must be logged at default level so `log show` still has it after the fact")
+        XCTAssertFalse(source.contains("VerbaLog.audio.info(\"capture:"),
+                       "an .info capture diagnostic is memory-only: it would be missing from every log a user sends back")
+        XCTAssertFalse(source.contains("VerbaLog.audio.debug(\"capture:"),
+                       "same for .debug, and it is off by default on top of that")
+    }
+
+    /// THE number. An input that takes hundreds of milliseconds (or seconds) to deliver its first
+    /// sample is a device waking up, which is what a Bluetooth input in A2DP mode does while it
+    /// negotiates SCO/HFP. Without this measurement, "it works, then it does not" cannot be told
+    /// apart from a code fault, which is how twelve reviews found nothing.
+    func testTheFirstSignalLatencyIsMeasuredFromRecordAndLogged() throws {
+        let source = try audioRecorder()
+        XCTAssertFalse(source.contains("self.sawSignal = true\n            timer.invalidate()"),
+                       "the pre-fix watcher latched the verdict and threw the timing away")
+        XCTAssertTrue(source.contains("private(set) var firstSignalMs: Int?"),
+                      "the latency must be readable after the capture, not only printed once")
+        XCTAssertTrue(source.contains("captureStartedAt = Date()"),
+                      "the clock has to start where record() was accepted, not where the file was created")
+        XCTAssertEqual(Regex.captures(#"let ms = Int\(Date\(\)\.timeIntervalSince\(self\.captureStartedAt[\s\S]{0,60}?(\* 1000)\)"#, in: source).count, 1,
+                       "the latency must be measured from captureStartedAt and reported in milliseconds")
+        XCTAssertTrue(source.contains("capture: first signal after \\(ms"),
+                      "the measurement is worthless if it is not on its own grep-able line")
+    }
+
+    /// The other half of the same diagnosis, and the reason the peak is tracked at all: on a capture
+    /// that NEVER crosses the floor, the peak is the only number that separates a device sending
+    /// literally nothing from a live device the user spoke too far from. The pre-fix watcher
+    /// discarded every reading below the floor, so a silent capture reported no number whatsoever.
+    func testThePeakLevelIsKeptEvenWhileItStaysUnderTheSignalFloor() throws {
+        let source = try audioRecorder()
+        XCTAssertFalse(source.contains("> Self.signalFloorDB else { return }"),
+                       "the pre-fix guard dropped every sub-floor reading, which is precisely the reading a silent capture needs")
+        XCTAssertTrue(source.contains("else { self.notePeak(rec); return }"),
+                      "a reading under the floor must still update the peak before the sampler moves on")
+        XCTAssertTrue(source.contains("private(set) var peakLevelDB: Float"),
+                      "the peak belongs to the capture and must be readable after it, like sawSignal")
+        XCTAssertTrue(source.contains("private static let meterFloorDB: Float = -160"),
+                      "the reset value must be the meter's own floor, so an unstarted capture never reports a peak it did not measure")
+    }
+
+    /// The end of a capture is where the two facts a bug report needs come together: how long it ran
+    /// and how much audio came out of it. A 28-byte file after 20 seconds of speaking is a complete
+    /// diagnosis on its own, and the pre-fix source printed neither number.
+    func testTheEndOfCaptureLineCarriesDurationSizeAndTheSignalVerdict() throws {
+        let source = try audioRecorder()
+        XCTAssertFalse(source.contains("let finished = currentURL\n        // Re-arm"),
+                       "the pre-fix stop() went straight from the finished URL to the re-arm, recording nothing about the capture")
+        XCTAssertTrue(source.contains("finishCapture(finished)"),
+                      "stop() must hand the finished capture to the one place that reports it")
+        for field in ["capture: stop device=", "seconds=", "bytes=", "sawSignal=", "firstSignalMs=", "peakDB="] {
+            XCTAssertTrue(source.contains(field), "the stop line must carry \(field)")
+        }
+    }
+
+    /// Privacy, and it is a hard line rather than a preference: these lines exist to be sent to us by
+    /// a user. Device names and dB readings are hardware facts; a file path under the user's home and
+    /// anything they dictated are not ours to publish. The file's SIZE answers the question without
+    /// naming the file.
+    func testTheCaptureDiagnosticsCarryNoPathAndNothingPersonal() throws {
+        let source = try audioRecorder()
+        let captureLines = source.split(separator: "\n").filter { $0.contains("VerbaLog.audio") && $0.contains("capture: ") }
+        XCTAssertGreaterThanOrEqual(captureLines.count, 5,
+                                    "one failing dictation has to produce several lines, not the single line that made this undiagnosable")
+        for line in captureLines {
+            XCTAssertFalse(line.contains(".path"), "a capture log line must never carry a filesystem path: \(line)")
+            XCTAssertFalse(line.contains("currentURL"), "a capture log line must never carry the recording URL: \(line)")
+            XCTAssertFalse(line.contains("text"), "a capture log line must never carry transcribed text: \(line)")
+        }
+        XCTAssertTrue(source.contains("resourceValues(forKeys: [.fileSizeKey])"),
+                      "the size is read off the file, which is the one fact about it that may be logged")
+    }
+
+    /// A capture that saw nothing is an ERROR, not a note, and it has to name the device: "no sound
+    /// reached Verba" is only actionable when the user can see WHICH input produced the silence.
+    func testASilentCaptureIsLoggedAsAnErrorThatNamesTheDevice() throws {
+        let source = try audioRecorder()
+        XCTAssertEqual(Regex.captures(#"if !sawSignal \{\s*\n\s*(VerbaLog\.audio\.error\("capture: no signal from )"#, in: source).count, 1,
+                       "a capture that saw zero signal must be logged at error level, immediately, and never as an ordinary note")
+        XCTAssertTrue(source.contains("capture: no signal from \\(device"),
+                      "the error must name the device it recorded from, not just report that nothing arrived")
+        XCTAssertFalse(source.contains("VerbaLog.audio.log(\"capture: no signal"),
+                       "logging the silent case at default level would bury it under the ordinary stop lines")
+    }
+
+    // MARK: The built-in microphone recovery
+
+    /// Part 2, and the whole safety argument for it: three conditions, ALL required. Any one of them
+    /// missing turns a recovery into Verba overruling a choice the user made.
+    func testTheBuiltInRecoveryNeedsAllThreeConditions() throws {
+        let recorder = try audioRecorder()
+        let devices = try micDevices()
+        XCTAssertEqual(Regex.captures(#"guard let silent = silentDefaultUID, (Settings\.shared\.micUID\.isEmpty) else \{ return nil \}"#, in: recorder).count, 1,
+                       "condition 1 and 2: a remembered silent device AND no mic chosen by the user, in one guard so neither can be dropped alone")
+        XCTAssertEqual(Regex.captures(#"guard MicDevices\.defaultInputUID\(\) == silent else \{ (silentDefaultUID = nil)"#, in: recorder).count, 1,
+                       "condition 3: if the default input is no longer the device we blamed, the user already fixed it and we must stay out of the way")
+        XCTAssertTrue(devices.contains("static let builtInInputUID = \"BuiltInMicrophoneDevice\""),
+                      "the fallback target must be the stable CoreAudio UID, never a device name that changes with the system language")
+        XCTAssertFalse(recorder.contains("if let rec = armed, chosen == nil {"),
+                       "the pre-fix fast path would reuse a recorder bound to the device that just produced nothing")
+        XCTAssertTrue(recorder.contains("if let rec = armed, chosen == nil, recovery == nil {"),
+                      "a pending recovery is a device switch and must take the cold path, exactly like a chosen mic")
+    }
+
+    /// The memory is the dangerous half: remembered too eagerly, it moves a user's microphone for
+    /// them after a stray key tap. It is written only below every guard, and any capture that hears
+    /// something erases it.
+    func testTheSilentDeviceMemoryIsBoundedAndClearedOnSuccess() throws {
+        let source = try audioRecorder()
+        let body = try XCTUnwrap(Regex.captures(#"private func noteSilentDefault\(after seconds: TimeInterval\) \{([\s\S]*?)\n    \}"#, in: source).first,
+                                 "the memory rule should be readable as one function")
+        XCTAssertTrue(body.contains("if sawSignal { silentDefaultUID = nil"),
+                      "a capture that heard anything must clear the blame outright: the recovery lasts exactly as long as the problem")
+        XCTAssertTrue(body.contains("guard Settings.shared.micUID.isEmpty else { return }"),
+                      "a user who picked their own microphone must never be second-guessed, so nothing is remembered in that case")
+        XCTAssertTrue(body.contains("seconds >= Self.minSecondsToBlameDevice"),
+                      "a capture too short to have been measured must not be allowed to blame a healthy device")
+        let guardEnd = try XCTUnwrap(body.range(of: "minSecondsToBlameDevice"))
+        let write = try XCTUnwrap(body.range(of: "silentDefaultUID = uid"),
+                                  "the blame has to be recorded somewhere")
+        XCTAssertTrue(guardEnd.upperBound < write.lowerBound,
+                      "the write must sit BELOW every guard, otherwise the bounds are decoration")
+        XCTAssertTrue(source.contains("private static let minSecondsToBlameDevice: TimeInterval = 1.0"),
+                      "the minimum must be a named constant, not a literal buried in the check")
+    }
+
+    /// "If the built-in mic cannot be resolved, change nothing and just log." A Mac with no built-in
+    /// input exists, and moving that user's default somewhere arbitrary would be worse than the
+    /// silence we are trying to fix.
+    func testAnUnresolvableBuiltInMicrophoneChangesNothingAndOnlyLogs() throws {
+        let recorder = try audioRecorder()
+        let devices = try micDevices()
+        XCTAssertEqual(Regex.captures(#"guard let builtIn = MicDevices\.builtInInput\(\) else \{[\s\S]{0,400}?(return nil)"#, in: recorder).count, 1,
+                       "an unresolvable built-in mic must return nil (change nothing), never pick some other device")
+        XCTAssertTrue(recorder.contains("no built-in microphone to fall back to"),
+                      "changing nothing still has to be said out loud, or the recovery's absence is invisible")
+        XCTAssertTrue(devices.contains("static func builtInInput() -> Device?"),
+                      "resolving the built-in mic belongs in MicDevices, the one place that talks to CoreAudio")
+        XCTAssertEqual(Regex.captures(#"private func applyBuiltInRecovery\(_ builtIn: AudioDeviceID\?\) \{\s*\n\s*(guard let builtIn else \{ return \})"#, in: recorder).count, 1,
+                       "the switch must refuse to run on a nil device rather than reach CoreAudio with one")
+    }
+
+    /// A recovery is one capture long. It borrows the default input exactly like a chosen mic does,
+    /// which means the previous device is read BEFORE the switch and restored by stop() after, or the
+    /// user's whole system is left pointing at Verba's choice.
+    func testTheRecoverySwitchIsRecordedSoStopRestoresIt() throws {
+        let source = try audioRecorder()
+        let body = try XCTUnwrap(Regex.captures(#"private func applyBuiltInRecovery\(_ builtIn: AudioDeviceID\?\) \{([\s\S]*?)\n    \}"#, in: source).first,
+                                 "the recovery switch should be readable as one function")
+        let read = try XCTUnwrap(body.range(of: "let current = MicDevices.defaultInputID()"),
+                                 "the previous default has to be read")
+        let set = try XCTUnwrap(body.range(of: "MicDevices.setDefaultInput(builtIn)"),
+                                "the switch has to happen")
+        XCTAssertTrue(read.upperBound < set.lowerBound,
+                      "reading the previous default AFTER switching would record Verba's own choice as the thing to restore")
+        XCTAssertTrue(body.contains("if restoreDefaultInput == nil { restoreDefaultInput = current }"),
+                      "a chosen-mic switch already in place must not have its original device overwritten")
+        XCTAssertTrue(body.contains("capture: recovery, recording from the built-in microphone because"),
+                      "a recovery that changes which device the user records from must say so")
+    }
+
+    /// The delegate's half: the recorder's lines say what the microphone did, this one says what came
+    /// of it. Without it the log shows a healthy-looking capture and never mentions that the user was
+    /// shown nothing.
+    func testTheDelegateLogsTheOutcomeOfACaptureThatProducedNothing() throws {
+        let delegate = try appDelegate()
+        XCTAssertFalse(delegate.contains("guard self.recorder.start() else { self.resetOneShotFlags(); self.flashError(\"Couldn't start recording\"); return }"),
+                       "the pre-fix form failed a dictation start with a two-second flash and not one line in the log")
+        XCTAssertTrue(delegate.contains("capture: dictation start refused by AudioRecorder.start()"),
+                      "a dictation that never began must be visible in the log, not only on screen for two seconds")
+        XCTAssertTrue(delegate.contains("capture: nothing transcribed sawSignal="),
+                      "the empty-result branch must record the signal verdict that decided which message the user got")
+    }
+}
+
 // MARK: - Transcription language contract
 
 /// Contract tests for the language a transcription is pinned to.
