@@ -367,7 +367,7 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         let device = captureDeviceName ?? MicDevices.defaultInputName() ?? "unknown"
         let uid = captureDeviceUID ?? MicDevices.defaultInputUID() ?? "unknown"
         let age = String(format: "%.1f", Date().timeIntervalSince(createdAt))
-        VerbaLog.audio.log("capture: start path=\(path, privacy: .public) device=\(device, privacy: .public) uid=\(uid, privacy: .public) chosenMicSwitch=\(restoreDefaultInput != nil ? "yes" : "no", privacy: .public) record=\(started ? "true" : "false", privacy: .public) sinceInit=\(age, privacy: .public)s")
+        VerbaLog.audio.log("capture: start path=\(path, privacy: .public) device=\(device, privacy: .public) uid=\(uid, privacy: .public) chosenMicSwitch=\(self.restoreDefaultInput != nil ? "yes" : "no", privacy: .public) record=\(started ? "true" : "false", privacy: .public) sinceInit=\(age, privacy: .public)s")
     }
 
     private(set) var isPaused = false
@@ -421,7 +421,7 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         let device = captureDeviceName ?? "unknown"
         let elapsed = String(format: "%.2f", seconds)
         let peak = String(format: "%.1f", peakLevelDB)
-        VerbaLog.audio.log("capture: stop device=\(device, privacy: .public) uid=\(captureDeviceUID ?? "unknown", privacy: .public) seconds=\(elapsed, privacy: .public) bytes=\(bytes, privacy: .public) sawSignal=\(sawSignal ? "true" : "false", privacy: .public) firstSignalMs=\(firstSignalMs ?? -1, privacy: .public) peakDB=\(peak, privacy: .public)")
+        VerbaLog.audio.log("capture: stop device=\(device, privacy: .public) uid=\(self.captureDeviceUID ?? "unknown", privacy: .public) seconds=\(elapsed, privacy: .public) bytes=\(bytes, privacy: .public) sawSignal=\(self.sawSignal ? "true" : "false", privacy: .public) firstSignalMs=\(self.firstSignalMs ?? -1, privacy: .public) peakDB=\(peak, privacy: .public)")
         if !sawSignal {
             VerbaLog.audio.error("capture: no signal from \(device, privacy: .public) in \(elapsed, privacy: .public)s, peak \(peak, privacy: .public)dBFS never crossed \(Int(Self.signalFloorDB), privacy: .public)dBFS, \(bytes, privacy: .public) bytes written")
         }
