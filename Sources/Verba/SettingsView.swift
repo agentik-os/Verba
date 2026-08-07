@@ -667,6 +667,20 @@ struct SettingsView: View {
              footer: settings.isPro
              ? L("Thanks! Unlimited dictation, editable mode prompts and custom modes. Your subscription is active for this email.")
              : L("Already subscribed? Enter your checkout email and Verify to restore.")) {
+            // Signed out (Entitlement.check returns .signedOut): the check cannot even reach
+            // the server, so say so up front, with the fix right here. Before this row the
+            // card sat silent, which a paying customer reads as "my subscription is gone".
+            if AuthToken.current == nil {
+                HStack(alignment: .top, spacing: 10) {
+                    statusLabel(L("You are signed out. Sign in to restore your subscription."),
+                                system: "person.crop.circle.badge.exclamationmark", tint: .orange)
+                    Spacer()
+                    Button { startSignIn() } label: { Text(signingIn ? L("Signing in…") : L("Sign in")) }
+                        .glassButton().controlSize(.small).disabled(signingIn)
+                }
+                .padding(.horizontal, 11).padding(.vertical, 9)
+                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.orange.opacity(0.1)))
+            }
             labeledField(L("Email used at checkout"), $restoreEmail, prompt: L("you@example.com"))
             HStack {
                 Button {
@@ -682,7 +696,15 @@ struct SettingsView: View {
                             // Only on a confirmed Pro result do we reconcile the displayed account
                             // identity with the email the user just verified — never on free-typing.
                             if ok, !typed.isEmpty { settings.proEmail = typed }
-                            verifyMsg = ok ? L("Pro unlocked ✓") : L("No active subscription for this email.")
+                            if ok {
+                                verifyMsg = L("Pro unlocked ✓")
+                            } else if AuthToken.current == nil {
+                                // The check came back .signedOut: the server was never asked, so
+                                // "no active subscription" would be a lie. Name the real state.
+                                verifyMsg = L("You are signed out. Sign in to restore your subscription.")
+                            } else {
+                                verifyMsg = L("No active subscription for this email.")
+                            }
                         }
                     }
                     if AuthToken.current == nil {
@@ -691,7 +713,7 @@ struct SettingsView: View {
                                 guard email != nil else {
                                     verifying = false
                                     settings.needsReauth = true
-                                    verifyMsg = L("Sign in to restore your subscription, then try again.")
+                                    verifyMsg = L("You are signed out. Sign in to restore your subscription.")
                                     return
                                 }
                                 doVerify()
