@@ -18,9 +18,26 @@ enum LocalLLM {
     //   2. content:   optional pinned SHA-256 of the tarball (enforced when set), and the
     //                 archive is extracted with a path-sanitiser that rejects `..` and
     //                 absolute paths (defeats tar path-traversal writes outside binDir)
-    //   3. provenance: the extracted Mach-O must carry a valid Apple code signature, be
-    //                 notarised (Gatekeeper/`spctl` accepts it), and — when a Team ID is
-    //                 pinned below — be signed by that exact Developer ID team.
+    //   3. provenance: three codesign checks on the extracted Mach-O, all required —
+    //                 a. `codesign --verify --deep --strict`: the signature is present and intact
+    //                    (rejects unsigned and tampered binaries)
+    //                 b. `codesign --verify -R "=notarized"`: Apple notarized this exact binary,
+    //                    asserted in the form that is correct for a bare CLI executable
+    //                 c. a designated-requirement match pinning the Developer ID team below
+    //                    (`anchor apple generic` + the exact team OU): only Ollama's signing
+    //                    identity can produce a binary that passes
+    //
+    // WHY GATE 3b IS codesign AND NOT AN spctl ASSESSMENT: Gatekeeper's execute-type spctl
+    // assessment evaluates APPLICATION BUNDLES, so it rejects every bare command-line Mach-O
+    // with rc=3 ("the code is valid but does not seem to be an app") no matter how validly
+    // signed and notarized the binary is. That assessment shipped here once as the
+    // notarization gate and silently broke the engine install for EVERYONE. Verified
+    // empirically on macOS 27 against the real Ollama 0.32.6 tarball: `codesign --verify`
+    // PASS, `codesign --verify -R "=notarized"` PASS, team match PASS, the spctl execute
+    // assessment FAIL rc=3, and the binary itself runs fine. Do not reinstate that
+    // assessment for a CLI binary; the notarization requirement above asserts the same
+    // fact in the correct form. Every gate decision is logged via VerbaLog so a refused
+    // install names the exact gate instead of looking like a network failure.
     //
     /// Hosts we accept the engine download from. Ollama's own `ollama.com/download/...` now 307-redirects
     /// to GitHub Releases (github.com → *.githubusercontent.com), so pinning a single host broke the
@@ -106,6 +123,7 @@ enum LocalLLM {
     static func installBinary(_ done: @escaping (Bool) -> Void) {
         // Gate 1 (transport): HTTPS + a host on the allowlist (GitHub Releases + Ollama).
         guard engineURL.scheme == "https", let h0 = engineURL.host, allowedDownloadHosts.contains(h0) else {
+            VerbaLog.app.error("engine install: transport gate REFUSED the download URL (not HTTPS on an allowed host)")
             DispatchQueue.main.async { done(false) }; return
         }
         var req = URLRequest(url: engineURL)
@@ -115,11 +133,16 @@ enum LocalLLM {
             // Reject if the response ended up on an off-allowlist host or non-HTTPS. The code-signature
             // gate below is the real integrity check, so accepting any of GitHub's release hosts is safe.
             if let final = resp?.url, final.scheme != "https" || !(final.host.map { allowedDownloadHosts.contains($0) } ?? false) {
+                let landed = final.absoluteString
+                VerbaLog.app.error("engine install: transport gate REFUSED a redirect off the host allowlist (\(landed, privacy: .public))")
                 if let tmp { try? FileManager.default.removeItem(at: tmp) }
                 finish(false); return
             }
             guard err == nil, let tmp,
                   (resp as? HTTPURLResponse).map({ (200..<300).contains($0.statusCode) }) ?? true else {
+                let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
+                let reason = err?.localizedDescription ?? "HTTP \(status)"
+                VerbaLog.app.error("engine install: download failed before any integrity gate ran (\(reason, privacy: .public))")
                 if let tmp { try? FileManager.default.removeItem(at: tmp) }
                 finish(false); return
             }
@@ -133,11 +156,15 @@ enum LocalLLM {
                 try? FileManager.default.removeItem(at: extractDir)
             }
             do { try FileManager.default.moveItem(at: tmp, to: tgz) }
-            catch { try? FileManager.default.removeItem(at: tmp); finish(false); return }
+            catch {
+                VerbaLog.app.error("engine install: could not stage the downloaded archive: \(error.localizedDescription, privacy: .public)")
+                try? FileManager.default.removeItem(at: tmp); finish(false); return
+            }
 
             // Gate 2a (content): pinned SHA-256 of the tarball, when configured.
             if let pin = pinnedTarballSHA256?.lowercased(), !pin.isEmpty {
                 guard let digest = sha256Hex(of: tgz), digest == pin else {
+                    VerbaLog.app.error("engine install: content gate REFUSED the tarball (SHA-256 does not match the pinned hash)")
                     cleanup(); finish(false); return
                 }
             }
@@ -145,31 +172,53 @@ enum LocalLLM {
             // Gate 2b (content): path-sanitised extraction — refuse any archive entry that
             // escapes the staging directory via "..", an absolute path, or a leading "/".
             try? FileManager.default.createDirectory(at: extractDir, withIntermediateDirectories: true)
-            guard archiveEntriesAreSafe(tgz) else { cleanup(); finish(false); return }
+            guard archiveEntriesAreSafe(tgz) else {
+                VerbaLog.app.error("engine install: archive safety gate REFUSED the tarball (an entry escapes the extraction directory)")
+                cleanup(); finish(false); return
+            }
             let tar = Process()
             tar.executableURL = URL(fileURLWithPath: "/usr/bin/tar")
             // -P NOT passed: tar then refuses absolute paths and strips a leading "/" by
             // default; combined with the pre-scan above this blocks traversal outside extractDir.
             tar.arguments = ["-xzf", tgz.path, "-C", extractDir.path]
-            do { try tar.run() } catch { cleanup(); finish(false); return }
+            do { try tar.run() } catch {
+                VerbaLog.app.error("engine install: tarball extraction could not start: \(error.localizedDescription, privacy: .public)")
+                cleanup(); finish(false); return
+            }
             tar.waitUntilExit()
-            guard tar.terminationStatus == 0 else { cleanup(); finish(false); return }
+            guard tar.terminationStatus == 0 else {
+                let rc = tar.terminationStatus
+                VerbaLog.app.error("engine install: tarball extraction failed (tar rc=\(rc))")
+                cleanup(); finish(false); return
+            }
 
             // Find the extracted binary INSIDE the sanitised staging dir only.
-            guard let staged = findOllamaBinary(in: extractDir) else { cleanup(); finish(false); return }
+            guard let staged = findOllamaBinary(in: extractDir) else {
+                VerbaLog.app.error("engine install: no ollama binary found inside the extracted archive")
+                cleanup(); finish(false); return
+            }
 
-            // Gate 3 (provenance): valid Apple code signature + notarisation (+ pinned team).
+            // Gate 3 (provenance): signature + notarization + pinned team. Each sub-gate logs
+            // its own refusal inside verifyCodeSignature, so no extra log line here on failure.
             guard verifyCodeSignature(at: staged) else { cleanup(); finish(false); return }
 
             // Only now is it safe: move into place, make executable, and run.
             let dest = binDir.appendingPathComponent("ollama")
             try? FileManager.default.removeItem(at: dest)
             do { try FileManager.default.moveItem(at: staged, to: dest) }
-            catch { cleanup(); finish(false); return }
+            catch {
+                VerbaLog.app.error("engine install: could not move the verified binary into place: \(error.localizedDescription, privacy: .public)")
+                cleanup(); finish(false); return
+            }
             cleanup()
             _ = try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: dest.path)
+            let destPath = dest.path
+            VerbaLog.app.info("engine install: engine installed and verified at \(destPath, privacy: .public)")
             startServe(dest.path)
-            poll(20) { done($0) }
+            poll(20) { up in
+                if !up { VerbaLog.app.error("engine install: engine verified but the server did not come up on 127.0.0.1:11434") }
+                done(up)
+            }
         }.resume()
     }
 
@@ -226,9 +275,12 @@ enum LocalLLM {
         return nil
     }
 
-    /// Verify the downloaded binary's Apple code signature + notarisation before we trust it.
-    /// Requires: `codesign --verify` (intact signature) AND Gatekeeper assessment via `spctl`
-    /// (notarised / accepted), AND — when `pinnedTeamID` is set — an exact TeamIdentifier match.
+    /// Verify the downloaded binary's provenance before we trust it. Three gates, all required:
+    /// an intact Apple code signature (`codesign --verify`), Apple notarization asserted in the
+    /// form that is correct for a bare CLI Mach-O (`codesign --verify -R "=notarized"`), and a
+    /// designated-requirement match pinning Ollama's exact Developer ID team (`pinnedTeamID`).
+    /// See the integrity-policy block at the top of this file for why an spctl assessment must
+    /// NOT be used here. Every gate decision is logged so a refused binary names its gate.
     private static func verifyCodeSignature(at bin: URL) -> Bool {
         func run(_ launchPath: String, _ args: [String]) -> (Int32, String) {
             let p = Process()
@@ -240,17 +292,88 @@ enum LocalLLM {
             p.waitUntilExit()
             return (p.terminationStatus, String(data: data, encoding: .utf8) ?? "")
         }
-        // 1. Signature must be present and intact.
-        guard run("/usr/bin/codesign", ["--verify", "--deep", "--strict", bin.path]).0 == 0 else { return false }
-        // 2. Must be a real Developer ID binary signed by OLLAMA's exact team, anchored to Apple.
-        //    NOTE: `spctl --assess --type execute` is NOT used here — it rejects a bare notarised CLI
-        //    Mach-O ("valid but does not seem to be an app"), which silently broke every local install.
-        //    A codesign designated-requirement check (Apple anchor + Ollama's Developer ID team OU) is
-        //    the correct, stronger guarantee for a command-line binary: only Ollama can produce it.
+        let path = bin.path
+        // Gate 3a (signature): must be present and intact. Rejects unsigned and tampered binaries.
+        let sig = run("/usr/bin/codesign", ["--verify", "--deep", "--strict", path])
+        guard sig.0 == 0 else {
+            let rc = sig.0
+            let detail = sig.1.trimmingCharacters(in: .whitespacesAndNewlines)
+            VerbaLog.app.error("engine install: signature gate REFUSED the binary (codesign --verify rc=\(rc)): \(detail, privacy: .public)")
+            return false
+        }
+        // Gate 3b (notarization): Apple must have notarized this exact binary. This is the
+        // requirement-based form that is correct for a bare CLI executable; the execute-type
+        // spctl assessment rejects every non-app Mach-O by design (see the policy block above).
+        let notarization = run("/usr/bin/codesign", ["--verify", "-R", "=notarized", "--strict", path])
+        guard notarization.0 == 0 else {
+            let rc = notarization.0
+            let detail = notarization.1.trimmingCharacters(in: .whitespacesAndNewlines)
+            VerbaLog.app.error("engine install: notarization gate REFUSED the binary (codesign -R =notarized rc=\(rc)): \(detail, privacy: .public)")
+            return false
+        }
+        // Gate 3c (team): must be signed by OLLAMA's exact team, anchored to Apple. Only
+        // Ollama's Developer ID identity can produce a binary that satisfies this requirement.
         let team = pinnedTeamID ?? "3MU9H2V9Y9"   // Ollama = Infra Technologies, Inc (3MU9H2V9Y9)
         let requirement = "anchor apple generic and certificate leaf[subject.OU]=\"\(team)\""
-        guard run("/usr/bin/codesign", ["-v", "-R=\(requirement)", bin.path]).0 == 0 else { return false }
+        let teamCheck = run("/usr/bin/codesign", ["--verify", "-R", "=\(requirement)", path])
+        guard teamCheck.0 == 0 else {
+            let rc = teamCheck.0
+            VerbaLog.app.error("engine install: team gate REFUSED the binary (rc=\(rc)), it is not signed by the pinned Ollama team \(team, privacy: .public)")
+            return false
+        }
+        VerbaLog.app.info("engine install: binary passed all provenance gates (signature intact, notarized, team \(team, privacy: .public))")
         return true
+    }
+
+    // MARK: reinstall / repair
+
+    /// Force a clean reinstall of the local engine copy that VERBA manages. For a user whose
+    /// engine is broken, half-downloaded, or from an older Ollama: stops the server if Verba
+    /// started it, removes Verba's own engine copy, then runs the normal hardened download and
+    /// verify path again. Safe to call repeatedly; also safe when nothing is installed yet.
+    ///
+    /// Two boundaries this deliberately never crosses:
+    ///   1. It only ever deletes Verba's OWN copy under Application Support/Verba/ollama
+    ///      (`binDir`). An Ollama the user installed themselves (Homebrew, /usr/local/bin,
+    ///      /Applications/Ollama.app) is never touched, and a server Verba did not start is
+    ///      never stopped.
+    ///   2. It never deletes downloaded MODELS. Models live under the user's ~/.ollama
+    ///      directory and can be many gigabytes; repairing the engine binary must never cost
+    ///      the user a model re-download.
+    ///
+    /// Progress is surfaced through `LocalSetupProgress.shared` (repair flag + the normal
+    /// model phases once the engine is back) and the outcome through `done`. Every download
+    /// and integrity gate decision along the way is logged by installBinary/verifyCodeSignature.
+    static func reinstallEngine(_ done: @escaping (Bool) -> Void) {
+        VerbaLog.app.info("engine repair: clean reinstall requested")
+        Task { @MainActor in LocalSetupProgress.shared.beginEngineRepair() }
+        // 1. Stop the server, but ONLY the process Verba itself started. A user-run
+        //    `ollama serve` or the Ollama app is theirs; we never signal it. No blocking
+        //    wait here: the multi-minute download below gives the terminated process ample
+        //    time to release port 11434 before the fresh binary needs it.
+        if let p = serverProc, p.isRunning {
+            p.terminate()
+            VerbaLog.app.info("engine repair: stopped the server Verba had started")
+        }
+        serverProc = nil
+        // 2. Remove Verba's own engine copy: the binary plus any half-downloaded tarball or
+        //    staging leftovers. `binDir` is Application Support/Verba/ollama and nothing else,
+        //    so this can never touch a user-installed Ollama or the ~/.ollama models.
+        try? FileManager.default.removeItem(at: binDir)
+        VerbaLog.app.info("engine repair: removed Verba's own engine copy, models and user installs untouched")
+        // 3. Normal hardened path again: download, gate, verify, start.
+        installBinary { ok in
+            if ok {
+                VerbaLog.app.info("engine repair: reinstall complete, engine verified and server running")
+            } else {
+                VerbaLog.app.error("engine repair: reinstall failed, see the engine install gate lines above for the exact gate")
+            }
+            Task { @MainActor in LocalSetupProgress.shared.finishEngineRepair(ok) }
+            // Re-run the model check so a repaired engine comes back fully usable. Models were
+            // never deleted, so an already-downloaded model finishes instantly (no re-pull).
+            if ok { setupFullyLocal() }
+            done(ok)
+        }
     }
 
     // MARK: models

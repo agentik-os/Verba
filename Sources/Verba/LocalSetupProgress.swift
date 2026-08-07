@@ -27,6 +27,9 @@ final class LocalSetupProgress: ObservableObject {
     @Published var whisperProgress: Double = 0
     /// AI model (Ollama / qwen3) download, 0…1.
     @Published var modelProgress: Double = 0
+    /// True while a user-requested clean reinstall of the local engine is in flight
+    /// (`LocalLLM.reinstallEngine`). UI can bind a spinner + disable the repair button on this.
+    @Published var isRepairingEngine = false
 
     // Per-model "finished its attempt" + success flags, so we only reach .ready when the required
     // downloads actually completed (and .failed if a required one couldn't). Whisper is a SECONDARY
@@ -81,6 +84,8 @@ final class LocalSetupProgress: ObservableObject {
         modelDone ? L("AI model ready")
                   : L("Downloading the AI model…") + " \(Int((modelProgress * 100).rounded()))%"
     }
+    /// Status line for a user-requested engine repair (empty when no repair is running).
+    var repairLabel: String { isRepairingEngine ? L("Reinstalling the local engine…") : "" }
 
     // MARK: orchestration
 
@@ -153,6 +158,19 @@ final class LocalSetupProgress: ObservableObject {
     func reportModel(_ p: Double) {
         modelProgress = max(modelProgress, min(p, 1))
         if !modelDone { phase = engineDone ? .pullingModel : .installingEngine }
+    }
+
+    /// Called by `LocalLLM.reinstallEngine` when a user-requested clean reinstall starts.
+    func beginEngineRepair() {
+        isRepairingEngine = true
+    }
+
+    /// Called by `LocalLLM.reinstallEngine` with the reinstall outcome. On success the normal
+    /// model phases take over (setupFullyLocal re-reports them); on failure the terminal
+    /// `.failed` phase surfaces the standard retry hint in the setup UI.
+    func finishEngineRepair(_ ok: Bool) {
+        isRepairingEngine = false
+        if !ok { phase = .failed }
     }
 
     /// Called by `LocalLLM.setupFullyLocal` when the model is present/pulled (or failed).
