@@ -33,7 +33,20 @@ struct ChangelogDay: Identifiable {
 enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
-            date: "August 6, 2026", tag: "Today",
+            date: "August 7, 2026", tag: "Today",
+            summary: "The local model can be installed again, you can repair a broken engine yourself, a failed setup now says what failed, and restoring a subscription tells you when you are signed out.",
+            entries: [
+                ChangelogEntry(version: "0.9.108",
+                    title: "The local model can be installed again",
+                    items: [
+                        "Setting up the offline model works again. Verba checks the engine it downloads before it will run it, and one of those checks was asking the wrong question: it asked your Mac to approve the engine the way it approves an application, but the engine is a command-line tool, so the answer was always no. The engine was correctly signed and approved by Apple the whole time, and Verba refused it anyway. Anyone who tried to set up the offline model recently hit this. It is now verified the right way, and the setup completes.",
+                        "If the offline engine is broken or half-installed, you can now reinstall or repair it yourself instead of being stuck. Your downloaded models are never touched by this, and neither is a copy of the engine you installed on your own.",
+                        "When something goes wrong while setting up the offline model, Verba now records what failed. Until now a failed setup was silent and looked exactly like a network problem, which is why this one took so long to find.",
+                        "Also in this release: restoring a subscription no longer fails silently when you are signed out. Verba now tells you that you are signed out and offers to sign you in, which is what actually restores it.",
+                    ]),
+            ]),
+        ChangelogDay(
+            date: "August 6, 2026",
             summary: "A dictation can no longer record forever, an input that sends no sound now names itself and Verba steps off it on its own, a recording that fails leaves a trace, your dictation stays in the language you speak, and your connected apps stop working from an old list.",
             entries: [
                 ChangelogEntry(version: "0.9.107",
