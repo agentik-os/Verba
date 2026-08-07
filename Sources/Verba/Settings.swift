@@ -880,6 +880,14 @@ final class Settings: ObservableObject {
             if isPro {
                 Task { try? await Task.sleep(nanoseconds: 1_800_000_000_000); _ = await self.verifyPro() }
             }
+        case .signedOut:
+            // No app-session token, so the server was never asked: for revocation this is
+            // exactly .unreachable (keep the last known state, NEVER downgrade), the only
+            // difference is that the fix is sign-in, which the restore card now says.
+            // Migration twin of the branch above: an account email with no token yet gets
+            // the one-click re-auth prompt. No 30-minute revalidate here, it cannot succeed
+            // until sign-in mints a token, and sign-in re-verifies on its own.
+            if !proEmail.isEmpty { needsReauth = true }
         }
         return isPro
     }

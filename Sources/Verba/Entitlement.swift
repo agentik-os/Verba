@@ -61,7 +61,7 @@ enum Entitlement {
     /// never lose Pro because of a flaky network, an expired token, or a missing server key.
     ///
     /// EVERY STATE, and where it comes from (see website/app/api/entitlement/route.ts):
-    ///   no token locally      .unreachable  migration or signed out, not a revoke
+    ///   no token locally      .signedOut    signed out (or pre-token migration), not a revoke
     ///   transport error       .unreachable  offline, DNS, TLS, timeout
     ///   401 unauthenticated   .unreachable  token rejected, drives the re-auth flow
     ///   503 not configured    .unreachable  server has no Stripe key, it cannot answer
@@ -74,7 +74,14 @@ enum Entitlement {
     /// their Stripe checkout email can still unlock Pro. The server honours it ONLY alongside a
     /// valid token, so this never becomes a way to probe arbitrary emails.
     static func check(email: String? = nil) async -> ProStatus {
-        guard AuthToken.current != nil else { return .unreachable }   // migration: no token yet ≠ revoke
+        guard AuthToken.current != nil else {
+            // Signed out (or pre-token migration): there is nothing to ask the server WITH, so
+            // this is "we could not even ask", never a revoke. It used to hide inside
+            // .unreachable, which read as a network problem and left the restore card silent
+            // for a paying customer whose only problem was being signed out.
+            VerbaLog.app.log("entitlement: no app session token, user is signed out, keeping last known state without asking the server")
+            return .signedOut
+        }
         var comps = URLComponents(string: endpoint)
         if let email = email?.trimmingCharacters(in: .whitespacesAndNewlines), !email.isEmpty {
             comps?.queryItems = [URLQueryItem(name: "email", value: email)]
@@ -100,4 +107,7 @@ enum Entitlement {
 
 /// Result of an entitlement check. `.inactive` is an explicit server "no" and is the only real
 /// revoke; `.unreachable` means "unknown", and callers must keep the last known state.
-enum ProStatus { case active, inactive, unreachable }
+/// `.signedOut` is the third non-answer: no app-session token, so the server was never asked.
+/// For revocation it behaves exactly like `.unreachable` (keep the last known state); it exists
+/// so the UI can say "sign in" instead of implying an outage or, worse, a lost subscription.
+enum ProStatus { case active, inactive, unreachable, signedOut }

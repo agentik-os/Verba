@@ -1531,3 +1531,133 @@ final class StuckCaptureContractTests: XCTestCase {
         }
     }
 }
+
+// =====================================================================================
+// MARK: - The signed-out entitlement check (source contracts)
+// =====================================================================================
+
+/// The failure these tests pin down: "Verify and restore" silently did nothing for a SIGNED-OUT
+/// user. Sign-out writes an EMPTY `app_session_token` to the Keychain (Auth.swift), so
+/// `AuthToken.current` is nil and `Entitlement.check()` bailed at its first guard with
+/// `.unreachable` WITHOUT ever asking the server. `.unreachable` deliberately means "unknown,
+/// keep the last known state" so that a real outage never revokes Pro — the right meaning for a
+/// flaky network and exactly the wrong one here, because the UI had no way to tell "try again
+/// later" from "sign in". A paying customer with an active Stripe subscription tapped restore,
+/// nothing happened, and the silence read as "my subscription is gone".
+///
+/// The fix names the state: `check()` returns `.signedOut`, the restore card says sign-in is the
+/// fix, and the path logs. For revocation, `.signedOut` behaves exactly like `.unreachable`:
+/// it never downgrades anyone.
+final class SignedOutEntitlementContractTests: XCTestCase {
+
+    private func entitlement() throws -> String { try RepoFile.contents(of: "Sources/Verba/Entitlement.swift") }
+    private func settings() throws -> String { try RepoFile.contents(of: "Sources/Verba/Settings.swift") }
+    private func settingsView() throws -> String { try RepoFile.contents(of: "Sources/Verba/SettingsView.swift") }
+
+    // MARK: The status
+
+    /// A missing token is a knowable, nameable state. Folding it into .unreachable is what made
+    /// the restore card silent: no caller could distinguish "sign in" from "try again later".
+    func testAMissingTokenIsItsOwnStatusNotUnreachable() throws {
+        let source = try entitlement()
+        XCTAssertTrue(source.contains("enum ProStatus { case active, inactive, unreachable, signedOut }"),
+                      "ProStatus must carry the signed-out case beside the three originals")
+        XCTAssertEqual(Regex.captures(#"guard AuthToken\.current != nil else \{[\s\S]{0,600}?(return \.signedOut)"#, in: source).count, 1,
+                       "the first guard in check() must return .signedOut when there is no app-session token")
+        XCTAssertFalse(source.contains("guard AuthToken.current != nil else { return .unreachable }"),
+                       "the pre-fix guard is the bug itself: no token collapsed into .unreachable and the server was never asked")
+    }
+
+    /// The other half of the contract, so the new case cannot dilute the old one: every REAL
+    /// unknown (bad URL, 401, non-2xx, transport error) still comes back .unreachable, and a
+    /// real outage behaves exactly as before.
+    func testUnreachableStillCoversEveryRealOutage() throws {
+        let source = try entitlement()
+        XCTAssertEqual(Regex.captures(#"(return \.unreachable)"#, in: source).count, 4,
+                       "check() must keep its four .unreachable exits: bad URL, 401, non-2xx, and the transport catch")
+        XCTAssertTrue(source.contains("guard code != 401 else { return .unreachable }"),
+                      "a rejected token is still an unknown, not a revoke and not a signed-out claim")
+        XCTAssertTrue(source.contains("catch { return .unreachable }"),
+                      "offline / DNS / TLS / timeout must stay .unreachable, keeping the last known state")
+    }
+
+    // MARK: Never a revoke
+
+    /// .signedOut is "we could not even ask", so the verifyPro branch may neither revoke nor
+    /// grant: the last known state stands, exactly as it does for .unreachable.
+    func testTheSignedOutBranchKeepsTheLastKnownStateAndNeverTouchesPro() throws {
+        let source = try settings()
+        let branches = Regex.captures(#"case \.signedOut:([\s\S]*?)\n        \}"#, in: source)
+        XCTAssertEqual(branches.count, 1, "verifyPro must handle .signedOut in exactly one branch")
+        let branch = try XCTUnwrap(branches.first)
+        XCTAssertFalse(branch.contains("isPro = false"),
+                       "signed out is not a revoke: only an explicit server no (200, active:false) may downgrade")
+        XCTAssertFalse(branch.contains("isPro = true"),
+                       "signed out is not a grant either: the server was never asked")
+        XCTAssertTrue(branch.contains("if !proEmail.isEmpty { needsReauth = true }"),
+                      "the migration case (account email, no token yet) must still surface the one-click re-auth prompt")
+    }
+
+    /// The .unreachable branch is untouched: keep the last known state, prompt re-auth for the
+    /// migration case, and quietly revalidate a Pro user in 30 minutes.
+    func testTheUnreachableBranchBehavesExactlyAsBefore() throws {
+        let source = try settings()
+        XCTAssertTrue(source.contains("if !proEmail.isEmpty && AuthToken.current == nil { needsReauth = true }"),
+                      "the migration re-auth prompt must survive on the .unreachable branch")
+        XCTAssertTrue(source.contains("Task { try? await Task.sleep(nanoseconds: 1_800_000_000_000); _ = await self.verifyPro() }"),
+                      "a Pro user behind a real outage must keep the quiet 30-minute revalidation")
+    }
+
+    // MARK: The card
+
+    /// The card itself must name the state, with the fix right there: a signed-out user sees
+    /// "you are signed out" and a Sign in button, before they even tap Verify.
+    func testTheRestoreCardNamesTheSignedOutStateAndOffersSignIn() throws {
+        let source = try settingsView()
+        XCTAssertEqual(Regex.captures(#"statusLabel\(L\("You are signed out\. Sign in to restore your subscription\."\),[\s\S]{0,300}?(startSignIn\(\))"#, in: source).count, 1,
+                       "the signed-out notice must sit in the restore card WITH the sign-in action, not as bare text")
+    }
+
+    /// The verify tap's outcomes. A failed check while signed out must say signed out; calling it
+    /// "no active subscription" is the exact lie that made a paying customer think they lost Pro.
+    func testAFailedVerifyWhileSignedOutSaysSignedOutNotNoSubscription() throws {
+        let source = try settingsView()
+        XCTAssertEqual(Regex.captures(#"else if AuthToken\.current == nil \{[\s\S]{0,400}?(You are signed out\. Sign in to restore your subscription\.)"#, in: source).count, 1,
+                       "a false verify with no token must resolve to the signed-out message, not the no-subscription one")
+        XCTAssertFalse(source.contains(#"verifyMsg = ok ? L("Pro unlocked ✓") : L("No active subscription for this email.")"#),
+                       "the pre-fix two-way message read every non-yes as 'no active subscription', signed-out included")
+        XCTAssertFalse(source.contains("Sign in to restore your subscription, then try again."),
+                       "the pre-fix cancel copy never said the user WAS signed out; the card now names the state plainly")
+        XCTAssertTrue(source.contains(#"L("No active subscription for this email.")"#),
+                      "a genuine server no must keep its own message: it is a different fact than being signed out")
+    }
+
+    // MARK: The log
+
+    /// The silent no-op is never invisible again: the signed-out early return logs on the same
+    /// unified-log facade as the rest of the app, before it returns.
+    func testTheSignedOutPathIsLogged() throws {
+        let source = try entitlement()
+        XCTAssertEqual(Regex.captures(#"guard AuthToken\.current != nil else \{[\s\S]{0,500}?(VerbaLog\.app\.log\("entitlement: no app session token)[\s\S]{0,200}?return \.signedOut"#, in: source).count, 1,
+                       "the signed-out guard must log its entitlement: line before returning")
+        // The explicit-self VerbaLog gotcha (a property interpolated without self. broke a release)
+        // cannot recur here as long as this file's log lines interpolate nothing. Pin that.
+        for line in source.split(separator: "\n") where line.contains("VerbaLog") {
+            XCTAssertFalse(line.contains("\\("),
+                           "Entitlement.swift log lines are interpolation-free by contract; an interpolation here re-opens the explicit-self gotcha: \(line)")
+        }
+    }
+
+    // MARK: House style
+
+    /// The new copy is user-facing, so the house rule binds: no em dash, no en dash.
+    func testTheNewSignedOutStringsCarryNoDashes() throws {
+        let source = try settingsView()
+        let lines = source.split(separator: "\n").filter { $0.contains("You are signed out") }
+        XCTAssertFalse(lines.isEmpty, "the signed-out copy must exist for this check to mean anything")
+        for line in lines {
+            XCTAssertFalse(line.contains("\u{2014}"), "em dash in a user-facing string: \(line)")
+            XCTAssertFalse(line.contains("\u{2013}"), "en dash in a user-facing string: \(line)")
+        }
+    }
+}
