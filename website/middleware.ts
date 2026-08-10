@@ -1,5 +1,5 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
 
 // The /atelier internal docs site is gated for confidential content (fundraising, investors).
 // Three ways in, checked in order: magic link (?key=<password> → sets a 30-day cookie and
@@ -43,7 +43,34 @@ function allow(): NextResponse {
   return res;
 }
 
-export default clerkMiddleware(async (auth, req) => {
+// The macOS app authenticates its site calls with an app-session token,
+// "Authorization: Bearer v1.<base64url payload>.<hex hmac>" (lib/apptoken.ts).
+// That value has three dot-separated segments — the shape of a JWT — so Clerk's
+// session parsing inside clerkMiddleware tries to decode it as one and THROWS,
+// turning every app call into a 500 (MIDDLEWARE_INVOCATION_FAILED) before the
+// route can answer. The routes below verify the token themselves via
+// verifyAppToken and return their own 401 on a bad one, so when a request to
+// one of them carries a "Bearer v1." header, skip Clerk entirely and let the
+// route answer. Requests WITHOUT that header (web sessions on the dual-auth
+// routes, unauthenticated probes) keep the exact current Clerk path, and no
+// real Clerk JWT starts with "v1." (they are base64 "eyJ…"), so nothing else
+// changes behavior.
+const APP_TOKEN_PATHS = new Set([
+  "/api/entitlement", // verifyAppToken only
+  "/api/portal", // Clerk web session first (try/caught), then app token
+  "/api/username", // Clerk web session first (try/caught), then app token
+  "/api/beta-signup", // verifyAppToken only
+  "/api/feedback", // verifyAppToken only
+  "/api/reprompt", // deprecated 410, no auth at all — the app still calls it with the token
+]);
+
+function isAppTokenRequest(req: NextRequest): boolean {
+  const pathname = req.nextUrl.pathname.replace(/\/+$/, "");
+  if (!APP_TOKEN_PATHS.has(pathname) && !pathname.startsWith("/api/composio/")) return false;
+  return req.headers.get("authorization")?.startsWith("Bearer v1.") ?? false;
+}
+
+const withClerk = clerkMiddleware(async (auth, req) => {
   const { pathname, searchParams } = req.nextUrl;
   if (pathname === "/atelier" || pathname.startsWith("/atelier/")) {
     const expected = process.env.ATELIER_PASSWORD;
@@ -88,6 +115,12 @@ export default clerkMiddleware(async (auth, req) => {
   // Non-atelier paths: defer to Clerk's default handling.
   return undefined;
 });
+
+export default function middleware(req: NextRequest, event: NextFetchEvent) {
+  // App-token calls never reach Clerk's JWT parser; the route answers itself.
+  if (isAppTokenRequest(req)) return NextResponse.next();
+  return withClerk(req, event);
+}
 
 export const config = {
   matcher: [
