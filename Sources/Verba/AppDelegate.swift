@@ -2065,6 +2065,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Older Sessions still processing behind this failed one → restore the processing pill.
         if SessionStore.shared.hasInflight {
             state = .processing; statusLine = "Transcribing…"; showProcessingOverlay()
+        } else if state == .processing {
+            // Nothing left in flight: .processing must not outlive the last Session, or every
+            // idle-gated surface (transform picker, mode picker) is dead from here on. The flash
+            // helpers above reset to .idle themselves; the silent-input alert shows a window and
+            // resets nothing. Only .processing steps down; .recording belongs to a newer dictation.
+            state = .idle; overlay.hide()
         }
     }
 

@@ -34,8 +34,15 @@ enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
             date: "August 10, 2026", tag: "Today",
-            summary: "An update you postponed is offered again once you are done dictating, and a pending update stays visible in the menu bar until it is installed.",
+            summary: "The transform key responds again after a dictation that captured no sound, an update you postponed is offered again once you are done dictating, and a pending update stays visible in the menu bar until it is installed.",
             entries: [
+                ChangelogEntry(version: "0.9.110",
+                    title: "The transform key works again after a silent dictation",
+                    items: [
+                        "After a dictation that captured no sound, the transform key stopped responding entirely, with no error and no flash. Verba was still waiting on that empty dictation internally, so every press was quietly refused. That wait is now released the moment nothing is left to process, and the key responds again.",
+                        "The mode picker was caught by the same wait and could refuse to open after a silent dictation. It opens normally again.",
+                        "Dictation itself was never affected, which is exactly why this was easy to miss: you could keep dictating normally while the transform key looked dead. Quitting and reopening Verba was the only way out. It is fixed now.",
+                    ]),
                 ChangelogEntry(version: "0.9.109",
                     title: "An update you said Not Now to comes back on its own",
                     items: [
