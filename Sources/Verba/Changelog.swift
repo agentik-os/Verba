@@ -42,6 +42,8 @@ enum Changelog {
                         "After a dictation that captured no sound, the transform key stopped responding entirely, with no error and no flash. Verba was still waiting on that empty dictation internally, so every press was quietly refused. That wait is now released the moment nothing is left to process, and the key responds again.",
                         "The mode picker was caught by the same wait and could refuse to open after a silent dictation. It opens normally again.",
                         "Dictation itself was never affected, which is exactly why this was easy to miss: you could keep dictating normally while the transform key looked dead. Pressing Escape or restarting Verba would clear it. It never gets stuck now.",
+                        "A dictation that takes a long time to come back can now be diagnosed. Verba records how long each stage of turning your speech into text actually took, so a slow one can be traced to the exact stage that consumed the time instead of being a mystery. Only durations and stage names are recorded, never a single word of what you said.",
+                        "One preparation step no longer waits on another. When a mode needs to look at your screen, Verba was doing that first and only then gathering the list of available shortcuts, one after the other. They now happen at the same time, which removes a delay before your words are even sent for transcription.",
                     ]),
                 ChangelogEntry(version: "0.9.109",
                     title: "An update you said Not Now to comes back on its own",
