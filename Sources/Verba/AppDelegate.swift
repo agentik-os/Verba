@@ -206,17 +206,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 || self.todoCaptureRecording || NotesController.shared.isRecording
         }
         // Present Sparkle's "install & relaunch?" prompt as a Liquid Glass panel (GlassAlertView)
-        // instead of a stock NSAlert. "Not Now" (Esc) keeps working — the update installs on quit.
+        // instead of a stock NSAlert. "Not Now" (Esc) keeps working — and is REMEMBERED: Verba
+        // may never quit, so the Updater records the postpone and re-offers on a later idle
+        // moment instead of relying on Sparkle's install-on-next-quit fallback alone.
         Updater.shared.presentRelaunchPrompt = { [weak self] install in
             self?.showGlassAlert(
                 icon: "arrow.triangle.2.circlepath",
                 title: "Install update and relaunch now?",
-                message: "A dictation is recording or still processing. Relaunching now will discard it. Choose Not Now to keep working — the update installs on the next quit.",
+                message: "A dictation is recording or still processing. Relaunching now will discard it. Choose Not Now to keep working. Verba will offer the update again later, when nothing is running.",
                 buttons: [
-                    .init(title: "Not Now", role: .cancel, action: {}),
+                    .init(title: "Not Now", role: .cancel, action: { Updater.shared.recordPostpone() }),
                     .init(title: "Install & Relaunch", isDefault: true, action: install),
                 ],
                 size: NSSize(width: 400, height: 230))
+        }
+        // The later, calmer re-offer of a postponed install: shown only when the app is idle and
+        // the Updater's bounds allow it (a few times a day at most). Never clobber another alert
+        // that is already on screen; the next quiet tick will retry.
+        Updater.shared.presentReofferPrompt = { [weak self] install in
+            guard let self, self.alertWindow == nil else { return }
+            let v = Updater.shared.latestVersion.map { " (v\($0))" } ?? ""
+            self.showGlassAlert(
+                icon: "arrow.down.circle.fill", tint: VerbaAppearance.shared.accentColor,
+                title: "Finish updating Verba?",
+                message: "The update\(v) you postponed is ready. Installing takes a few seconds and relaunches Verba. Nothing is recording or processing right now.",
+                buttons: [
+                    .init(title: "Not Now", role: .cancel, action: { Updater.shared.recordPostpone() }),
+                    .init(title: "Install & Relaunch", isDefault: true, action: install),
+                ],
+                size: NSSize(width: 400, height: 210))
         }
         // Silent check shortly after launch so the menu/icon reflect availability without a popup.
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) { Updater.shared.checkInBackground() }
@@ -2463,6 +2481,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let color: NSColor = .white
         let cfg = NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)
         let updateReady = Updater.shared.updateAvailable
+        // An update that has sat unapplied for days gets a louder (but still calm) surface: an
+        // orange badge instead of blue, an explicit tooltip, and a "waiting for N days" menu line.
+        let updatePendingDays = Updater.shared.updatePendingSince.map {
+            Int(Date().timeIntervalSince($0) / 86_400)
+        } ?? 0
+        let updateLongPending = updateReady
+            && Updater.shared.updatePendingSince.map {
+                Date().timeIntervalSince($0) >= Updater.longPendingThreshold
+            } == true
         // Subtle "background work happening" indicator: a small dot (or count when >1) when Sessions
         // are still processing — so the user knows dictations are landing in Recent results.
         let inflightCount = SessionStore.shared.inflight.count
@@ -2472,10 +2499,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 color.set()
                 rect.fill(using: .sourceAtop)
                 // Availability badge: a small dot in the top-right corner when an update is ready.
+                // It turns orange once the update has been waiting for days, so a long-stranded
+                // pending install no longer hides behind the same quiet blue dot.
                 if updateReady {
                     let d: CGFloat = 5
                     let dot = NSRect(x: rect.maxX - d, y: rect.maxY - d, width: d, height: d)
-                    NSColor.systemBlue.setFill()
+                    (updateLongPending ? NSColor.systemOrange : NSColor.systemBlue).setFill()
                     NSBezierPath(ovalIn: dot).fill()
                 } else if inflightCount > 0 {
                     // Processing badge in the top-right: a count when several Sessions run, else a dot.
@@ -2504,9 +2533,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             tinted.isTemplate = false
             button.image = tinted
         }
+        let updateTip = "Verba update ready" + (Updater.shared.latestVersion.map { " (v\($0))" } ?? "")
         button.toolTip = updateReady
-            ? "Verba update ready" + (Updater.shared.latestVersion.map { " (v\($0))" } ?? "")
-            : (inflightCount > 0 ? "Verba — \(inflightCount) dictation\(inflightCount == 1 ? "" : "s") processing" : nil)
+            ? (updateLongPending
+                ? updateTip + ", waiting for \(updatePendingDays) days. Open the menu to install."
+                : updateTip)
+            : (inflightCount > 0 ? "Verba: \(inflightCount) dictation\(inflightCount == 1 ? "" : "s") processing" : nil)
         button.contentTintColor = nil
         updateStatusPulse()
         statusItem.menu = buildMenu()
@@ -2542,13 +2574,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Prominent "an update is ready" item at the very top when Sparkle found a newer version.
         if Updater.shared.updateAvailable {
             let v = Updater.shared.latestVersion.map { " (v\($0))" } ?? ""
-            let upd = NSMenuItem(title: "Install update\(v) — relaunch", action: #selector(installUpdate), keyEquivalent: "")
+            let upd = NSMenuItem(title: "Install update\(v) and relaunch", action: #selector(installUpdate), keyEquivalent: "")
             upd.target = self
             upd.image = NSImage(systemSymbolName: "arrow.down.circle.fill", accessibilityDescription: "Install update")
             let font = NSFont.menuFont(ofSize: 0)
             upd.attributedTitle = NSAttributedString(string: upd.title,
                 attributes: [.font: NSFont.boldSystemFont(ofSize: font.pointSize)])
             menu.addItem(upd)
+            // Honest pending state: a menu-bar app may never quit, so an update can sit staged
+            // for weeks behind a tiny badge. After a few days, say so in plain words (a calm
+            // disabled line, no modal) so the wait is visible instead of silent.
+            if let since = Updater.shared.updatePendingSince,
+               Date().timeIntervalSince(since) >= Updater.longPendingThreshold {
+                let days = Int(Date().timeIntervalSince(since) / 86_400)
+                let info = NSMenuItem(title: "This update has been waiting for \(days) days. It installs in seconds.",
+                                      action: nil, keyEquivalent: "")
+                info.isEnabled = false
+                menu.addItem(info)
+            }
             menu.addItem(.separator())
         }
 
