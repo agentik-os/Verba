@@ -34,7 +34,7 @@ enum Changelog {
     static let days: [ChangelogDay] = [
         ChangelogDay(
             date: "August 10, 2026", tag: "Today",
-            summary: "The transform key responds again after a dictation that captured no sound, an update you postponed is offered again once you are done dictating, and a pending update stays visible in the menu bar until it is installed.",
+            summary: "The transform key responds again after a dictation that captured no sound, an update you postponed is offered again once you are done dictating, a pending update stays visible in the menu bar until it is installed, and signing in to restore a paid subscription works again.",
             entries: [
                 ChangelogEntry(version: "0.9.110",
                     title: "The transform key works again after a silent dictation",
@@ -50,6 +50,12 @@ enum Changelog {
                         "Nothing ever interrupts a dictation in progress. The offer only comes back when Verba is idle, never while you are recording or while your words are being processed.",
                         "A pending update is visible from the menu bar until it is installed, so you can see something is waiting and install it whenever it suits you.",
                         "The version that installs is always the newest one available at the moment you accept, not the one you originally postponed.",
+                    ]),
+                ChangelogEntry(version: "website",
+                    title: "Signing in and restoring a subscription works again",
+                    items: [
+                        "Verba could tell people with a perfectly valid, active subscription that there was no subscription for their email. Nothing was wrong with anyone's account or payment. The site was refusing the app's own sign-in credential before it ever reached the part that looks up your subscription, so the answer the app got back was not really a no, it was no answer at all, and the app showed the worst possible reading of it.",
+                        "The fix is on the website, so it applies to everyone immediately and there is nothing to update. Open Verba, use Verify or restore your purchase, and your Pro comes back.",
                     ]),
             ]),
         ChangelogDay(
