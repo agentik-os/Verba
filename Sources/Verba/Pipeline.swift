@@ -1,5 +1,65 @@
 import Foundation
 import NaturalLanguage
+import os
+
+/// Per-dictation phase timing, so a single slow or failing dictation explains itself in
+/// `log show`. Emits one "pipeline: <phase> ms=…" line the moment a phase completes, plus one
+/// "pipeline: summary …" line with the stop-to-delivered total and the ordered per-phase
+/// breakdown. All lines go through `VerbaLog.app.log` — the DEFAULT level, which persists in
+/// the unified log where `.info` is memory-only and gone by the time anyone runs `log show`
+/// (exactly like the surviving `capture:` lines in AudioRecorder).
+///
+/// Monotonic (`DispatchTime`), so a wall-clock adjustment can never fake a duration. Logs
+/// phase names, durations, and the engine label ONLY: never transcript text, user words,
+/// file paths, or any personal data.
+///
+/// `@unchecked Sendable`: created on the main thread in `finishStop`, handed through the
+/// session Task into the pipeline; all mutable state sits behind `lock`. After a timeout,
+/// `withTimeout`'s abandoned worker may still mark late phases AFTER the failure summary —
+/// those stray lines are deliberate: they show where the abandoned work eventually got to.
+final class PipelineTiming: @unchecked Sendable {
+    private let lock = NSLock()
+    private let startedAt: DispatchTime
+    private var phaseStart: DispatchTime
+    private var phases: [(name: String, ms: Int)] = []
+
+    /// `startedAt` anchors the clock at the moment the user's stop was requested.
+    init(startedAt: DispatchTime = .now()) {
+        self.startedAt = startedAt
+        self.phaseStart = startedAt
+    }
+
+    private static func elapsedMS(from: DispatchTime, to: DispatchTime) -> Int {
+        // Monotonic and sequenced under the lock, so `to >= from` always holds.
+        Int((to.uptimeNanoseconds - from.uptimeNanoseconds) / 1_000_000)
+    }
+
+    /// Close the phase that began at the previous mark (or at the stop) and log its duration.
+    /// `detail` is extra grep-able context (e.g. the engine label) — never user content.
+    func mark(_ name: String, detail: String = "") {
+        lock.lock()
+        let now = DispatchTime.now()
+        let ms = Self.elapsedMS(from: phaseStart, to: now)
+        phaseStart = now
+        phases.append((name, ms))
+        lock.unlock()
+        if detail.isEmpty {
+            VerbaLog.app.log("pipeline: \(name, privacy: .public) ms=\(ms, privacy: .public)")
+        } else {
+            VerbaLog.app.log("pipeline: \(name, privacy: .public) ms=\(ms, privacy: .public) \(detail, privacy: .public)")
+        }
+    }
+
+    /// One line for the whole dictation: total stop-to-now plus the per-phase breakdown, so a
+    /// single log line names which phase ate the time.
+    func summary(outcome: String) {
+        lock.lock()
+        let total = Self.elapsedMS(from: startedAt, to: DispatchTime.now())
+        let breakdown = phases.map { "\($0.name)=\($0.ms)" }.joined(separator: " ")
+        lock.unlock()
+        VerbaLog.app.log("pipeline: summary outcome=\(outcome, privacy: .public) total_ms=\(total, privacy: .public) \(breakdown, privacy: .public)")
+    }
+}
 
 /// Thrown when a stage (transcription / reprompt) runs past its deadline so a hung
 /// backend can't spin the overlay forever. Surfaced to the user as a clear error.
@@ -104,6 +164,7 @@ enum Pipeline {
                     selection: String? = nil,
                     editLast: Bool = false,
                     actionMode: Bool = false,
+                    timing: PipelineTiming? = nil,
                     status: @escaping (String) -> Void) async throws -> PipelineResult {
         let s = Settings.shared
 
@@ -118,8 +179,14 @@ enum Pipeline {
         case .whisper:  transcriber = LocalTranscriber.shared
         case .parakeet: transcriber = ParakeetTranscriber.shared
         }
+        let hint = DictionaryStore.shared.hint()
+        timing?.mark("setup", detail: "engine=\(engineLabel(s))")
+        // The transcribe phase spans the engine's whole call: any queue wait behind an earlier
+        // dictation, a cold model load, and the decode itself. The engine's own log lines
+        // (e.g. WhisperKit's model loading) land INSIDE this bracket and sub-divide it.
         var original = try await transcriber.transcribe(fileURL: audioURL, language: lang,
-                                                         hint: DictionaryStore.shared.hint())
+                                                         hint: hint)
+        timing?.mark("transcribe")
         // Apply custom dictionary spellings to the raw transcript.
         original = DictionaryStore.shared.apply(to: original)
         // Voice commands ("new line", "comma", "scratch that", …) → real formatting.
@@ -265,6 +332,16 @@ enum Pipeline {
                 // off, we DON'T hard-fail every command: we fall back to a screenless intent pass so
                 // self-contained commands keep working, and surface a prompt only if the command truly
                 // needed the screen (handled below). Context mode keeps the hard requirement.
+                // The Shortcuts inventory (a synchronous `shortcuts list` Process, ~0.5-2s) is only
+                // needed to BUILD the agentic prompt below, yet it used to run serialized AFTER the
+                // screenshot. Start it now, off the cooperative pool, so it overlaps the screen
+                // capture; identical output, one less blocking step on the path. Detached on purpose:
+                // never blocks a pipeline thread, and if this branch throws (permission errors) the
+                // stray finished Process is harmless.
+                let agenticPath = s.agenticActions || actionMode   // read once: gates the prefetch AND the branch below
+                let shortcutsTask: Task<[String], Never>? = agenticPath
+                    ? Task.detached(priority: .userInitiated) { ActionExecutor().availableShortcuts() }
+                    : nil
                 var png: Data? = nil
                 if wantsScreen {
                     if ScreenCapture.hasPermission() {
@@ -273,6 +350,7 @@ enum Pipeline {
                             throw RepromptError.unavailable("Couldn't capture the screen. If Screen Recording was just enabled, quit and reopen Verba, then try again.")
                         }
                         png = shot
+                        timing?.mark("screenshot")
                     } else if profile.vision {
                         // Context mode is inherently screen-grounded — without the permission it can't run.
                         ScreenCapture.requestPermission()
@@ -296,8 +374,8 @@ enum Pipeline {
                 // never lost. The agentic-action path runs when Labs "Agentic actions" is on OR in the
                 // dedicated Action mode (Fn+X), which forces it regardless of the Labs toggle. The
                 // model is given the user's actual Shortcuts so it can match a request to a real name.
-                if s.agenticActions || actionMode {
-                    let shortcuts = ActionExecutor().availableShortcuts()
+                if agenticPath {
+                    let shortcuts = await shortcutsTask?.value ?? []
                     // Connected apps (Composio): tools are cached by ComposioStore.refresh()
                     // (warmed at launch / when managing connections) — never fetched here, so
                     // an empty cache just means the block is omitted from the prompt.
@@ -379,6 +457,7 @@ enum Pipeline {
                 status(Quips.current())   // fun, ever-changing geek line instead of "Restructuring…"
                 reprompted = try await r.reprompt(transcript: original, systemPrompt: sys)
             }
+            timing?.mark("reprompt")
 
             // GUARANTEE (not just a prompt): strip any leading model preamble before it can reach
             // the clipboard. The system prompt asks for no preamble, but models still slip one in
@@ -429,6 +508,7 @@ enum Pipeline {
             if let fixed = try? await normalizeLanguage(reprompted, model: s.claudeModel) {
                 reprompted = fixed
             }
+            timing?.mark("language_guard")
         }
 
         return PipelineResult(original: original,

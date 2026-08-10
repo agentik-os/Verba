@@ -57,6 +57,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var capturedBundleID: String?
     private var capturedTarget: PasteTarget?  // app + focused field captured at record start, so auto-paste can restore focus across Space/app switches
     private var capturedSelection: String?  // text selected in the active app when recording started
+    // Monotonic anchor for the per-dictation "pipeline:" phase log (PipelineTiming), set the
+    // instant a stop is requested so the recorder's finalize tail is measured too. Consumed
+    // (and cleared) by finishStop; the recorder runs one capture at a time, so one slot is enough.
+    private var captureStopRequestedAt: DispatchTime?
     private var forcedProfile: Profile?     // set when a profile-specific shortcut started the dictation
     private var actionModeRecording = false  // Fn+X Action mode: this recording's request CONTROLS the Mac (confirm → execute)
 
@@ -1833,6 +1837,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func stopAndProcess() {
         levelTimer?.invalidate(); levelTimer = nil
+        captureStopRequestedAt = .now()   // anchor the "pipeline:" phase clock at the user's stop
         // Keep capturing for a brief tail so the trailing last word lands, then finalize. Silent:
         // the pill flips to processing right after; the user just gets the whole sentence.
         recorder.stop(afterTail: Self.stopTailSeconds) { [weak self] url in self?.finishStop(url) }
@@ -1873,12 +1878,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func finishStop(_ url: URL?) {
+        // Phase clock for this dictation, anchored where the stop was REQUESTED (stopAndProcess),
+        // so the tail + file finalize + callback delivery are visible as their own phase instead
+        // of vanishing into the black box the capture logs used to end on.
+        let timing = PipelineTiming(startedAt: captureStopRequestedAt ?? .now())
+        captureStopRequestedAt = nil
         guard let url else {
             // R3: even this early-out must clear the one-shot flags (editLast/action/forced/…)
             // or they'd silently misroute the NEXT dictation.
             resetOneShotFlags()
             state = .idle; overlay.hide(); return
         }
+        timing.mark("finalize")
         SoundFX.stop()
 
         // Snapshot this recording's whole context, then free the recorder immediately so the user
@@ -1910,14 +1921,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         overlay.model.paused = false
         showProcessingOverlay()
 
-        runSession(ctx, forcedProfile: forced, selection: selection, editLast: editingLast)
+        timing.mark("prep")   // context snapshot, profile lookup, overlay flip, before dispatch
+        runSession(ctx, forcedProfile: forced, selection: selection, editLast: editingLast, timing: timing)
     }
 
     /// Spawn the concurrent processing Task for a Session. Several of these can run at once; each is
     /// tracked by Session id so Esc can cancel them all. On success it delivers (or, if the user has
     /// since moved to an unrelated app, lands in the Sessions list with Copy); on failure it records
     /// the error on the Session and surfaces it without blocking the recorder.
-    private func runSession(_ ctx: SessionContext, forcedProfile forced: Profile?, selection: String?, editLast: Bool = false) {
+    private func runSession(_ ctx: SessionContext, forcedProfile forced: Profile?, selection: String?, editLast: Bool = false, timing: PipelineTiming = PipelineTiming()) {
         let session = ctx.session
         SessionStore.shared.start(session)
         let url = ctx.audioURL
@@ -1928,11 +1940,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             kind: .dictation,
             label: ctx.actionMode ? L("Processing command…") : L("Transcribing…"))
         sessionTasks[session.id] = Task {
+            timing.mark("task_start")   // dispatch latency: runSession bookkeeping + Task scheduling
             do {
                 // Hard ceiling so a hung transcription/reprompt backend can't spin forever, sized
                 // to how long the user actually spoke (see processingTimeout(for:)).
                 let result = try await withTimeout(seconds: self.processingTimeout(for: ctx)) {
-                    try await Pipeline.run(audioURL: url, frontmostBundleID: bundleID, forcedProfile: forced, selection: selection, editLast: editLast, actionMode: ctx.actionMode) { [weak self] s in
+                    try await Pipeline.run(audioURL: url, frontmostBundleID: bundleID, forcedProfile: forced, selection: selection, editLast: editLast, actionMode: ctx.actionMode, timing: timing) { [weak self] s in
                         DispatchQueue.main.async {
                             guard let self else { return }
                             session.status = s.lowercased().contains("transcrib") ? .transcribing : .processing
@@ -1952,11 +1965,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self.finish(ctx: ctx, result: result)
                     ActivityCenter.shared.finish(activityToken, ok: true, resultLabel: L("Done"))
                 }
+                // Main hop + finish(): paste/clipboard delivery, or the review sheet being shown.
+                timing.mark("deliver")
+                timing.summary(outcome: "delivered")
             } catch is CancellationError {
                 // user cancelled, handled by cancelEverything()
                 await MainActor.run { self.purgeAudio(ctx.audioURL); ActivityCenter.shared.drop(activityToken) }   // R12: cancelled → buffer never needed again
             } catch {
                 VerbaLog.app.error("session \(session.id.uuidString, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")   // R14
+                // The failing dictation still explains itself: total so far + every phase that
+                // completed. The phase that died is the one missing from the breakdown.
+                timing.summary(outcome: "failed")
                 // Classify BEFORE reporting. A silent or too-short capture is a non-event the code
                 // already knows to drop, but it was auto-filed first and only judged benign after,
                 // so every user who tapped the key by accident opened a bug ticket (VER-52, VER-54).
