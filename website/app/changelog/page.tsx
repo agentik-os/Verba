@@ -16,8 +16,24 @@ type Day = { date: string; tag?: string; window?: string; summary: string; entri
 
 const DAYS: Day[] = [
   {
-    date: "August 7, 2026",
+    date: "August 10, 2026",
     tag: "Today",
+    summary: "An update you postponed is offered again once you are done dictating, and a pending update stays visible in the menu bar until it is installed.",
+    entries: [
+      {
+        version: "0.9.109",
+        title: "An update you said Not Now to comes back on its own",
+        items: [
+          "Verba lives in your menu bar and most people never quit it. So when you said Not Now to an update because you were in the middle of a dictation, that update used to sit and wait for a quit that might never come, leaving you on an old version without realising it. Verba now remembers that you postponed it and offers it again once you are done.",
+          "Nothing ever interrupts a dictation in progress. The offer only comes back when Verba is idle, never while you are recording or while your words are being processed.",
+          "A pending update is visible from the menu bar until it is installed, so you can see something is waiting and install it whenever it suits you.",
+          "The version that installs is always the newest one available at the moment you accept, not the one you originally postponed.",
+        ],
+      },
+    ],
+  },
+  {
+    date: "August 7, 2026",
     summary: "The local model can be installed again, you can repair a broken engine yourself, a failed setup now says what failed, and restoring a subscription tells you when you are signed out.",
     entries: [
       {
