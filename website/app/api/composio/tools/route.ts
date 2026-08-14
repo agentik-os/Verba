@@ -42,8 +42,14 @@ async function fetchToolkitsBounded(
         // Stop claiming new work as soon as one toolkit fails. Promise.all rejects on the first
         // rejection, so the response is already decided at this point, and the serial loop this
         // replaced stopped issuing calls there too. Without this the other workers keep walking the
-        // cursor and fire every remaining toolkit AFTER the request is gone, which is precisely
-        // wrong when the thing that failed was a rate limit.
+        // cursor and fire every remaining toolkit AFTER the request is gone.
+        //
+        // MEASURED LIMIT, so nobody trusts this further than it goes: this bounds a FAST failure
+        // only. Against an invalid API key (an immediate 401) eight toolkits stop after four
+        // round-trips. Against a RATE LIMIT it bounds nothing, because @composio/client retries a
+        // 429 twice with backoff, which makes the failing call the slowest in the run: twenty
+        // toolkits all completed before it ever threw. Bounding that case means capping the SDK's
+        // own retries for catalog fetches, not a flag here.
         failed = true;
         throw e;
       }
