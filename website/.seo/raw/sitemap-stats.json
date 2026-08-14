@@ -1,10 +1,23 @@
 {
-  "url_count": 13,
+  "url_count": 30,
   "sample_urls": [
-    "https://verba.run/",
+    "https://verba.run",
+    "https://verba.run/best-mac-dictation-app",
     "https://verba.run/compare",
+    "https://verba.run/features",
+    "https://verba.run/docs",
     "https://verba.run/changelog",
+    "https://verba.run/blog",
     "https://verba.run/acknowledgements",
+    "https://verba.run/privacy",
+    "https://verba.run/terms",
+    "https://verba.run/contact",
+    "https://verba.run/features/jarvis-voice-agent",
+    "https://verba.run/features/dictation-modes",
+    "https://verba.run/features/voice-notes",
+    "https://verba.run/features/voice-tasks",
+    "https://verba.run/features/live-translation",
+    "https://verba.run/features/context-mode",
     "https://verba.run/vs/wispr-flow",
     "https://verba.run/vs/talktastic",
     "https://verba.run/vs/superwhisper",
@@ -12,7 +25,6 @@
     "https://verba.run/vs/aqua-voice",
     "https://verba.run/vs/willow-voice",
     "https://verba.run/vs/voiceink",
-    "https://verba.run/vs/apple-dictation",
-    "https://verba.run/vs/otter-ai"
+    "https://verba.run/vs/apple-dictation"
   ]
 }

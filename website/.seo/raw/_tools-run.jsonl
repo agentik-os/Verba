@@ -1,6 +1,6 @@
-{"tool":"lighthouse-seo","output":"lighthouse-seo.json","rc":127,"ts":"2026-06-12T11:48:01+02:00"}
-{"tool":"head-fetch","output":"page.html","rc":0,"ts":"2026-06-12T11:48:02+02:00"}
-{"tool":"page-meta-parser","output":"page-meta.json","rc":0,"ts":"2026-06-12T11:48:02+02:00"}
-{"tool":"robots-fetch","output":"robots.txt","rc":0,"ts":"2026-06-12T11:48:03+02:00"}
-{"tool":"sitemap-fetch","output":"sitemap.xml","rc":0,"ts":"2026-06-12T11:48:03+02:00"}
-{"tool":"sitemap-parser","output":"sitemap-stats.json","rc":0,"ts":"2026-06-12T11:48:03+02:00"}
+{"tool":"lighthouse-seo","output":"lighthouse-seo.json","rc":1,"ts":"2026-07-26T00:31:34+02:00"}
+{"tool":"head-fetch","output":"page.html","rc":0,"ts":"2026-07-26T00:31:34+02:00"}
+{"tool":"page-meta-parser","output":"page-meta.json","rc":0,"ts":"2026-07-26T00:31:34+02:00"}
+{"tool":"robots-fetch","output":"robots.txt","rc":0,"ts":"2026-07-26T00:31:34+02:00"}
+{"tool":"sitemap-fetch","output":"sitemap.xml","rc":0,"ts":"2026-07-26T00:31:35+02:00"}
+{"tool":"sitemap-parser","output":"sitemap-stats.json","rc":0,"ts":"2026-07-26T00:31:35+02:00"}

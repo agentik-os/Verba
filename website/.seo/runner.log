@@ -7,3 +7,12 @@ FILES=<none>
 URL=https://verba.run
 seo gather done
 [2026-06-12T11:48:03+02:00] PHASE 1 done rc=0
+[2026-07-26T00:31:32+02:00] audit-runner seo on .
+[2026-07-26T00:31:32+02:00] PHASE 1 gather: /home/vibe/.omega/lib/audit-gather/seo.sh
+─── seo gather ───
+RAW_DIR=.seo/raw
+PROJECT_PATH=.
+FILES=<none>
+URL=https://verba.run
+seo gather done
+[2026-07-26T00:31:35+02:00] PHASE 1 done rc=0

@@ -9,36 +9,28 @@
     "sitemap-parser"
   ],
   "tools_skipped": [],
-  "findings_total": 1,
+  "findings_total": 0,
   "findings_by_severity": {
     "critical": 0,
     "high": 0,
     "medium": 0,
-    "low": 1,
+    "low": 0,
     "info": 0
   },
-  "findings": [
-    {
-      "tool": "head-parser",
-      "severity": "low",
-      "location": "https://verba.run",
-      "rule": "description-length",
-      "message": "meta description length 208 (recommended 120-160)",
-      "suggested_fix": "Adjust to 120-160 chars."
-    }
-  ],
+  "findings": [],
   "metrics": {
     "page_meta": {
       "title_present": true,
-      "title_length": 63,
+      "title_length": 56,
       "description_present": true,
-      "description_length": 208,
+      "description_length": 141,
       "canonical": "https://verba.run",
       "viewport": "width=device-width, initial-scale=1",
       "robots": null,
       "og_keys": [
         "title",
         "description",
+        "url",
         "site_name",
         "locale",
         "image:alt",
@@ -61,15 +53,15 @@
       "schema_count": 2,
       "h1_count": 1,
       "img_no_alt": 0,
-      "html_size_bytes": 164191
+      "html_size_bytes": 146920
     },
-    "sitemap_url_count": 13,
+    "sitemap_url_count": 30,
     "sitemap_sample_urls": [
-      "https://verba.run/",
+      "https://verba.run",
+      "https://verba.run/best-mac-dictation-app",
       "https://verba.run/compare",
-      "https://verba.run/changelog",
-      "https://verba.run/acknowledgements",
-      "https://verba.run/vs/wispr-flow"
+      "https://verba.run/features",
+      "https://verba.run/docs"
     ],
     "robots_txt_present": true
   },
@@ -80,15 +72,15 @@
     },
     {
       "file": "page-meta.json",
-      "size": 8489
+      "size": 12751
     },
     {
       "file": "robots.txt",
-      "size": 451
+      "size": 489
     },
     {
       "file": "sitemap-stats.json",
-      "size": 537
+      "size": 1031
     }
   ]
 }

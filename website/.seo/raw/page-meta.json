@@ -1,29 +1,30 @@
 {
   "url": "https://verba.run",
-  "title": "Verba: AI Dictation for Mac | Private Voice to Text, On-Device",
-  "meta_description": "Verba is the most complete AI dictation app for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and JARVIS, a voice agent that acts on 1,000+ connected apps. Private by design, $9.99/mo.",
+  "title": "Verba, the Mac Voice Agent | Private Dictation that Acts",
+  "meta_description": "Verba is the private Mac voice agent: dictate and it acts across 1,000+ apps. On-device voice-to-text, your data stays on your Mac. $9.99/mo.",
   "canonical": "https://verba.run",
   "viewport": "width=device-width, initial-scale=1",
   "robots": null,
   "og": {
-    "title": "Verba: AI Dictation for Mac | Private Voice to Text",
-    "description": "On-device voice-to-text with AI cleanup, live translation, and JARVIS, a voice agent acting on 1,000+ apps. Private by design, $9.99/mo.",
+    "title": "Verba, the Mac Voice Agent | Dictation that Acts",
+    "description": "The private Mac voice agent: dictate and it acts across 1,000+ apps. On-device voice-to-text, AI cleanup, live translation. Your data stays on your Mac. $9.99/mo.",
+    "url": "https://verba.run",
     "site_name": "Verba",
     "locale": "en_US",
     "image:alt": "Verba. Speak it. Send it clean.",
     "image:type": "image/png",
-    "image": "https://verba.run/opengraph-image?65330548e216059d",
+    "image": "https://verba.run/opengraph-image?597f5ecf0c724298",
     "image:width": "1200",
     "image:height": "630",
     "type": "website"
   },
   "twitter": {
     "card": "summary_large_image",
-    "title": "Verba: AI Dictation for Mac | Private Voice to Text",
-    "description": "On-device voice-to-text with AI cleanup, live translation, and JARVIS, a voice agent acting on 1,000+ apps. Private by design.",
+    "title": "Verba, the Mac Voice Agent | Dictation that Acts",
+    "description": "The private Mac voice agent, dictation that acts on 1,000+ apps. On-device voice-to-text, your data stays on your Mac.",
     "image:alt": "Verba. Speak it. Send it clean.",
     "image:type": "image/png",
-    "image": "https://verba.run/opengraph-image?65330548e216059d",
+    "image": "https://verba.run/opengraph-image?597f5ecf0c724298",
     "image:width": "1200",
     "image:height": "630"
   },
@@ -36,13 +37,21 @@
           "name": "Verba",
           "applicationCategory": "UtilitiesApplication",
           "operatingSystem": "macOS 14+",
-          "description": "AI dictation for Mac: on-device voice-to-text, AI cleanup in any app, live translation, and JARVIS, a voice agent that acts on 1,000+ connected apps.",
+          "description": "The private Mac voice agent: on-device voice-to-text and AI cleanup in any app, plus JARVIS, which acts on 1,000+ connected apps. Your data stays on your Mac.",
           "url": "https://verba.run",
           "downloadUrl": "https://github.com/agentik-os/Verba-releases/releases/latest/download/Verba.dmg",
+          "softwareVersion": "0.9.29",
           "offers": {
             "@type": "Offer",
             "price": "9.99",
-            "priceCurrency": "USD"
+            "priceCurrency": "USD",
+            "availability": "https://schema.org/InStock",
+            "priceValidUntil": "2027-12-31",
+            "url": "https://verba.run"
+          },
+          "creator": {
+            "@type": "Person",
+            "name": "Gareth Simono"
           },
           "featureList": [
             "On-device voice-to-text, private by default",
@@ -55,10 +64,34 @@
           ]
         },
         {
+          "@type": "WebSite",
+          "name": "Verba",
+          "url": "https://verba.run",
+          "inLanguage": "en",
+          "publisher": {
+            "@id": "https://verba.run/#org"
+          }
+        },
+        {
+          "@id": "https://verba.run/#org",
           "@type": "Organization",
           "name": "Agentik OS",
           "url": "https://verba.run",
-          "logo": "https://verba.run/icon.png"
+          "logo": "https://verba.run/icon.png",
+          "founder": {
+            "@type": "Person",
+            "name": "Gareth Simono"
+          },
+          "sameAs": [
+            "https://github.com/agentik-os",
+            "https://www.instagram.com/verba.run/",
+            "https://www.tiktok.com/@verba.run",
+            "https://www.youtube.com/@VerbaRun",
+            "https://x.com/verba_run",
+            "https://www.reddit.com/user/VerbaRun/",
+            "https://es.pinterest.com/verbarun/",
+            "https://t.me/verbarun"
+          ]
         }
       ]
     },
@@ -87,7 +120,7 @@
           "name": "What languages does it understand?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "On-device transcription covers about 99 languages worldwide, with a faster option for 25 European languages. It writes back in the language you spoke."
+            "text": "On-device transcription covers ~99 languages worldwide, with a faster option for 25 European languages. It writes back in the language you spoke."
           }
         },
         {
@@ -95,15 +128,15 @@
           "name": "How do the AI modes work?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Verba ships six modes: Flow (verbatim, no AI, the default), Polish (resolves your self-corrections), Intent, Translate, Context, and Coding. Each mode is a system prompt that shapes how the model rewrites your speech. Context also takes a screenshot to ground the output in what is on your screen. You can edit any prompt, or just describe what you need and AI builds you a custom mode."
+            "text": "Verba ships six modes: Raw (verbatim, no AI, the default), Polish (resolves your self-corrections), Intent, Translate, Context, and Prompt (turns what you say into an optimized prompt for any AI, including coding agents). Each mode is a system prompt that shapes how the model rewrites your speech. Context also takes a screenshot to ground the output in what is on your screen. You can edit any prompt, or just describe what you need and AI builds you a custom mode."
           }
         },
         {
           "@type": "Question",
-          "name": "Do I need an API key?",
+          "name": "Do I need to set anything up?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "No. Verba works out of the box, on-device. If you want more control, you can connect your own AI engine, that part is entirely optional, and your data stays private either way."
+            "text": "No. Verba can run fully private AI on-device, or connect the AI account you already use, with no extra setup. You never pay a markup on someone else's servers."
           }
         },
         {
@@ -111,7 +144,7 @@
           "name": "What is Context mode?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Context mode takes a screenshot of your screen, analyzes it with AI, and writes based on what you say and what it sees. Say \"reply to this email\" and it drafts a reply to the message on screen. It requires macOS Screen Recording permission and an AI engine capable of understanding images."
+            "text": "Context mode takes a screenshot of your screen, analyzes it with a vision model, and writes based on what you say and what it sees. Say \"reply to this email\" and it drafts a reply to the message on screen. It requires macOS Screen Recording permission and a connected AI account that supports vision."
           }
         },
         {
@@ -127,7 +160,7 @@
           "name": "Is my data private?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "In on-device mode your audio never leaves your Mac. Transcripts are saved to your local history by default. You can turn history off entirely (nothing written, nothing synced) or auto-delete entries after 7, 30, or 90 days. When you sign in, your history, notes, and stats sync to your account so they follow you across Macs; signed out, nothing is uploaded. API keys live in your macOS Keychain, and you can delete all your synced data at any time."
+            "text": "In on-device mode your audio never leaves your Mac. Transcripts are saved to your local history by default. You can turn history off entirely (nothing written, nothing synced) or auto-delete entries after 7, 30, or 90 days. When you sign in, your history, notes, and stats sync to your account so they follow you across Macs; signed out, nothing is uploaded. API keys live in your macOS Keychain, and you can delete all your account data at any time."
           }
         },
         {
@@ -161,12 +194,60 @@
             "@type": "Answer",
             "text": "Pick a target language once in the Translate mode (English, French, Spanish, German, Italian, Portuguese, Dutch, Russian, Chinese, Japanese, Korean, Arabic, Hindi, Turkish, Polish). Then just speak in whatever language is natural to you and Verba writes the result in your chosen language, every time, preserving tone, names, numbers and code. You can also make a dedicated mode per language and auto-switch it by app."
           }
+        },
+        {
+          "@type": "Question",
+          "name": "How much does Verba cost?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Raw dictation is free forever and unlimited, with no card. Pro is $9.99 per month or $84 per year (a saving versus monthly), or a one-time $149 Founder's Edition lifetime license, all billed securely through Stripe. Pro has a 7-day trial, and you connect the AI plan you already use so there are no hidden token charges."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is Verba accurate, and how good is the transcription?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Verba uses state-of-the-art on-device speech models for fast, high-accuracy voice-to-text on Apple Silicon Macs. Its AI cleanup layer then automatically fixes filler words, punctuation, and formatting in whatever app you're typing in, so the final text reads polished rather than raw."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does Verba have a free trial or refund?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes - raw dictation is free forever and unlimited with no card, so you can use Verba indefinitely without paying. The paid AI features have a 7-day Pro trial (card required), then $9.99/mo, $84/yr, or a $149 one-time lifetime. Billing is handled through Stripe, so subscriptions can be managed and cancelled at any time."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does Verba work offline?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes - in on-device mode Verba transcribes your voice locally, so core dictation works without an internet connection and your audio never leaves your Mac. You only need a connection for AI features like AI cleanup with a hosted model, live translation, or the JARVIS agent (a fully local AI model lets you run AI offline too)."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is my data and audio private with Verba?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes - in on-device mode your audio never leaves your Mac, since transcription runs entirely locally. With JARVIS, the action plan is generated on your Mac by your own AI (your own AI plan, your key, or a local model), never a server key, and every action runs only after you confirm. The keys that connect your apps are held by a secure relay, never on your Mac, and you can run AI fully locally for maximum privacy."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What can the JARVIS voice agent actually do?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "JARVIS is Verba's voice agent that takes action across 1,000+ connected apps - so you can speak commands to send emails, create calendar events, update tasks, and more without leaving your current app. It plans on your Mac with your own AI, shows you the steps, and only acts once you confirm. The keys that connect your apps are held by a secure relay, never on your Mac."
+          }
         }
       ]
     }
   ],
   "h1_count": 1,
   "img_no_alt": 0,
-  "links_total": 24,
-  "html_size_bytes": 164191
+  "links_total": 52,
+  "html_size_bytes": 146920
 }

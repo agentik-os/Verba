@@ -3,6 +3,7 @@ Allow: /
 Disallow: /account
 Disallow: /app-auth
 Disallow: /api
+Disallow: /atelier
 
 User-Agent: GPTBot
 User-Agent: OAI-SearchBot
@@ -19,5 +20,6 @@ Allow: /
 Disallow: /account
 Disallow: /app-auth
 Disallow: /api
+Disallow: /atelier
 
 Sitemap: https://verba.run/sitemap.xml
