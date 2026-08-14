@@ -3,9 +3,10 @@ import { cors, getComposio, notConfigured, requireUid } from "../_lib";
 import { fetchToolkitTools, toolPriority } from "@/lib/composio-rw";
 
 export const runtime = "nodejs";
-// One Composio round-trip per requested toolkit, four in flight at a time (see CONCURRENCY below).
-// Even so, ten connected apps on a cold cache cost three waves plus their wide-fallback fetches,
-// which is past Vercel's 10-15s platform default, and this runs on every app refresh.
+// Up to TWO Composio round-trips per requested toolkit (a curated fetch, plus the wide fallback
+// when the curated set comes back thin), four toolkits in flight at a time (see CONCURRENCY).
+// Ten connected apps on a cold cache is still well past Vercel's 10-15s platform default, and this
+// runs on every app refresh.
 export const maxDuration = 60;
 
 // GET ?toolkits=GMAIL,NOTION -> lightweight tool catalog for those toolkits
@@ -32,9 +33,20 @@ async function fetchToolkitsBounded(
 ): Promise<ToolkitTools[]> {
   const results: ToolkitTools[] = new Array(toolkits.length);
   let next = 0;
+  let failed = false;
   const worker = async () => {
-    for (let i = next++; i < toolkits.length; i = next++) {
-      results[i] = await fetchToolkitTools(composio, toolkits[i]);
+    for (let i = next++; i < toolkits.length && !failed; i = next++) {
+      try {
+        results[i] = await fetchToolkitTools(composio, toolkits[i]);
+      } catch (e) {
+        // Stop claiming new work as soon as one toolkit fails. Promise.all rejects on the first
+        // rejection, so the response is already decided at this point, and the serial loop this
+        // replaced stopped issuing calls there too. Without this the other workers keep walking the
+        // cursor and fire every remaining toolkit AFTER the request is gone, which is precisely
+        // wrong when the thing that failed was a rate limit.
+        failed = true;
+        throw e;
+      }
     }
   };
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, toolkits.length) }, worker));
@@ -53,10 +65,19 @@ export async function GET(req: NextRequest) {
   if (!composio) return notConfigured();
 
   try {
-    let toolkits = (req.nextUrl.searchParams.get("toolkits") ?? "")
-      .split(",")
-      .map((s) => s.trim().toUpperCase())
-      .filter(Boolean);
+    // Deduped like the ACTIVE-connections branch below. Serial execution used to make a repeated
+    // slug free (the first fetch warmed the cache for the rest), but the pool starts its workers
+    // before any of them can write the cache, so `?toolkits=GMAIL,GMAIL,GMAIL,GMAIL` would fire
+    // four concurrent fetches for one toolkit. A duplicate also only ever duplicated entries in
+    // the catalog the model is shown.
+    let toolkits = [
+      ...new Set(
+        (req.nextUrl.searchParams.get("toolkits") ?? "")
+          .split(",")
+          .map((s) => s.trim().toUpperCase())
+          .filter(Boolean)
+      ),
+    ];
 
     if (toolkits.length === 0) {
       const list = await composio.connectedAccounts.list({ userIds: [auth.uid] });
@@ -86,7 +107,7 @@ export async function GET(req: NextRequest) {
     const rawByToolkit = await fetchToolkitsBounded(composio as never, toolkits);
     const tools: { slug: string; name: string; description: string; toolkit: string }[] = [];
     toolkits.forEach((toolkit, i) => {
-      const ranked = [...rawByToolkit[i]].sort((a, b) => toolPriority(b.slug) - toolPriority(a.slug));
+      const ranked = [...(rawByToolkit[i] ?? [])].sort((a, b) => toolPriority(b.slug) - toolPriority(a.slug));
       for (const t of ranked.slice(0, MAX_PER_TOOLKIT)) {
         tools.push({
           slug: t.slug,

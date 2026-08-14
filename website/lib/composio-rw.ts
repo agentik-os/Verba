@@ -296,19 +296,33 @@ export async function fetchToolkitTools(
   // are the ones users actually invoke — and it includes core reads like GITHUB_LIST_REPOSITORIES
   // that a flat alphabetical limit:200 of a 600-tool app silently drops. Fall back to a wide flat
   // fetch if the curated set comes back thin.
-  let raw = ((await composio.tools.getRawComposioTools({ toolkits: [tk], important: true, limit: 60 } as never)) as RawTool[]) ?? [];
-  if (raw.length < 12) {
-    const wide = ((await composio.tools.getRawComposioTools({ toolkits: [tk], limit: 200 })) as RawTool[]) ?? [];
-    // Keep the wide set only when it is actually WIDER. This used to assign it unconditionally, so
-    // a hiccup on this SECOND call threw away a perfectly good curated set: the toolkit went from
-    // "thin but real" to empty because the fallback meant to enrich it failed. The wide fetch is a
-    // superset of the curated one for the same toolkit, so fewer tools here always means a bad call.
-    if (wide.length > raw.length) raw = wide;
+  let raw: RawTool[];
+  try {
+    raw = ((await composio.tools.getRawComposioTools({ toolkits: [tk], important: true, limit: 60 } as never)) as RawTool[]) ?? [];
+    if (raw.length < 12) {
+      const wide = ((await composio.tools.getRawComposioTools({ toolkits: [tk], limit: 200 })) as RawTool[]) ?? [];
+      // Keep the wide set only when it is actually WIDER. This used to assign it unconditionally, so
+      // a hiccup on this SECOND call threw away a perfectly good curated set: the toolkit went from
+      // "thin but real" to empty because the fallback meant to enrich it failed. The wide fetch is a
+      // superset of the curated one for the same toolkit, so fewer tools here always means a bad call.
+      if (wide.length > raw.length) raw = wide;
+    }
+  } catch (e) {
+    // A RATE LIMIT DOES NOT COME BACK AS AN EMPTY LIST, IT THROWS. @composio/client treats 429 as
+    // retryable, then throws a status error once its retries are spent, and _lib.ts already renders
+    // that error string to the user. So the stale-tools path below has to cover the THROW too:
+    // without this catch, the exact incident this cache is being hardened against still answers
+    // /tools with a 502 and the app shows no tools at all for an app the user sees as connected.
+    // With nothing to fall back on, rethrow, so a genuine hard failure surfaces as an error instead
+    // of masquerading as an app that legitimately has no tools.
+    const stale = toolkitToolsCache.get(tk);
+    if (stale?.tools.length) return stale.tools;
+    throw e;
   }
-  // NEVER CACHE AN EMPTY RESULT. A Composio hiccup or a rate-limit window makes both fetches above
-  // return [] for a toolkit that really has tools, and writing that answers /tools with ZERO tools
-  // for the whole 10-minute window: the Mac app then shows a connected app with an empty tool list
-  // and latches it. So on an empty fetch, leave the cache UNSET so the very next request retries,
+  // NEVER CACHE AN EMPTY RESULT. A Composio hiccup can hand back an empty page for a toolkit that
+  // really has tools, and writing that answers /tools with ZERO tools for the whole 10-minute
+  // window: the Mac app then shows a connected app with an empty tool list and latches it. So on
+  // an empty fetch, leave the cache UNSET so the very next request retries,
   // and if a previous non-empty entry exists serve it even though it has expired. Stale tools beat
   // no tools for a prompt catalog, and this can only ever return MORE tools than before, never less.
   if (raw.length === 0) {
