@@ -1,5 +1,21 @@
 import AppKit
 import Foundation
+import os
+
+/// Unified-log channel for the connected-apps relay client, in its own category so a connected-apps
+/// problem can be read back off a user's machine with:
+/// `log stream --predicate 'subsystem == "com.agentik.verba" AND category == "composio"'`
+/// (the assembled app's bundle id, set by bundle.sh, is `com.agentik.verba`).
+///
+/// The subsystem expression is deliberately IDENTICAL to `VerbaLog`'s in Log.swift, fallback
+/// included: an unbundled `swift build` binary has no bundle id, and a fallback of our own would
+/// put these lines on a different subsystem than every other line the app logs, so one predicate
+/// would return half the story in exactly the build a developer uses to reproduce this bug.
+/// Declared here rather than as a fifth `VerbaLog` category to keep this fix inside the Composio
+/// files. This client used to log NOTHING, which is why a silently empty tool list was impossible
+/// to diagnose from a user report.
+private let composioLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "run.verba.app",
+                                 category: "composio")
 
 // MARK: - Models
 
@@ -54,6 +70,11 @@ enum ComposioError: LocalizedError {
     /// payload). Carrying it as an error is what keeps a failed write off the "done" path.
     case toolFailed(String, String)
     case browserFailed
+    /// `/tools` answered 200 with an EMPTY catalog for toolkits that ARE connected. That is a
+    /// FAILURE state, not a steady one (see `syncTools`), so it travels as an error: `refresh()`
+    /// rebuilds `lastError` from the problems it collected, and a notice that did not arrive as a
+    /// thrown error would be wiped by that rebuild before the banner ever rendered it.
+    case toolsEmpty
 
     var errorDescription: String? {
         switch self {
@@ -70,6 +91,8 @@ enum ComposioError: LocalizedError {
                 : String(format: L("%@ couldn't complete that: %@"), app, reason)
         case .browserFailed:
             return L("Couldn't open your browser to finish connecting.")
+        case .toolsEmpty:
+            return L("Tools list came back empty; retrying automatically.")
         }
     }
 }
@@ -247,6 +270,7 @@ final class ComposioStore: ObservableObject {
                 }
                 if !parsed.isEmpty { self.apps = parsed }
             } catch {
+                composioLog.error("refresh: /apps failed: \(error.localizedDescription, privacy: .public)")
                 problems.append(error.localizedDescription)
             }
 
@@ -269,6 +293,7 @@ final class ComposioStore: ObservableObject {
                 // that changed server-side for an unchanged set of toolkits.
                 try await self.syncTools(active: Self.activeToolkits(map), force: true)
             } catch {
+                composioLog.error("refresh: /connections or tools warm-up failed: \(error.localizedDescription, privacy: .public)")
                 problems.append(error.localizedDescription)
             }
 
@@ -417,7 +442,16 @@ final class ComposioStore: ObservableObject {
     @MainActor
     private func reloadConnections() async {
         let epoch = accountEpoch
-        guard let c = try? await Self.request("GET", "/connections") else { return }
+        let c: [String: Any]
+        do {
+            c = try await Self.request("GET", "/connections")
+        } catch {
+            // Same silent return as before (the poll runs 45 times and the focus refresh fires on
+            // every activation, so neither may raise a banner), but the reason now reaches the
+            // unified log instead of vanishing into a `try?`.
+            composioLog.error("connections reload failed: \(error.localizedDescription, privacy: .public)")
+            return
+        }
         guard epoch == accountEpoch else { return }   // account changed while this was in flight
         let map = merged(Self.foldConnections(c))
         connections = map
@@ -507,6 +541,11 @@ final class ComposioStore: ObservableObject {
     /// Throws like `tools(for:)` so a full refresh can still report WHY the warm-up failed; a
     /// failure deliberately leaves both the previous cache and `toolsToolkits` alone, so the next
     /// sync retries instead of the Action prompt losing every connected app to one flaky request.
+    ///
+    /// An empty answer for a NON-empty toolkit set is treated as a failure too, with one difference:
+    /// `connectedTools` IS emptied (the UI must not claim tools the relay just said are not there),
+    /// but `toolsToolkits` is still left unrecorded so the retry happens. Recording it was the latch
+    /// that kept Action mode toolless until the next app launch.
     @MainActor
     private func syncTools(active: [String], force: Bool = false) async throws {
         let want = Set(active.map { $0.lowercased() })
@@ -519,14 +558,43 @@ final class ComposioStore: ObservableObject {
         guard !want.isEmpty else {
             connectedTools = []
             toolsToolkits = []
+            composioLog.log("tools sync: no active toolkit, cache cleared")
             return
         }
         let epoch = accountEpoch
-        let fetched = try await tools(for: want.sorted())
+        let mode = force ? "force" : "changed"
+        composioLog.log("tools sync: fetching for \(want.count, privacy: .public) toolkit(s) reason=\(mode, privacy: .public)")
+        let fetched: [ComposioTool]
+        do {
+            fetched = try await tools(for: want.sorted())
+        } catch {
+            // Both caches are deliberately left alone (see the doc comment), so the next sync
+            // retries. Logged because this failed in complete silence before.
+            composioLog.error("tools sync: fetch failed: \(error.localizedDescription, privacy: .public)")
+            throw error
+        }
         guard epoch == accountEpoch else { return }   // signed out / switched account mid-fetch
         guard generation == toolsSyncGeneration else { return }   // a newer sync superseded this one
         connectedTools = fetched
+        // An EMPTY catalog for toolkits that ARE connected is a FAILURE state, not a steady one.
+        // Recording `want` here is what latched the bug: the next cheap reload saw
+        // `want == toolsToolkits`, skipped the fetch, and Action mode stayed toolless until the app
+        // was restarted, while Settings kept showing every connection. So publish the honest empty
+        // list, leave `toolsToolkits` mismatched so every later reload retries, and say so out loud.
+        guard !fetched.isEmpty else {
+            composioLog.error("tools sync: EMPTY result for \(want.count, privacy: .public) connected toolkit(s), not latching, will retry")
+            let notice = ComposioError.toolsEmpty
+            lastError = notice.localizedDescription
+            throw notice
+        }
         toolsToolkits = want
+        // Retract our OWN "retrying automatically" notice now that the retry has worked. The cheap
+        // reload swallows the throw above (`try?`), so this success path is the only thing that can
+        // ever take that banner down: without it, one empty tick mid-poll left a stale line
+        // promising a retry that had already succeeded, for the rest of the session. Matched on the
+        // exact text so a connect, disconnect or catalog error someone else put there is untouched.
+        if lastError == ComposioError.toolsEmpty.localizedDescription { lastError = nil }
+        composioLog.log("tools sync: \(fetched.count, privacy: .public) tool(s) for \(want.count, privacy: .public) toolkit(s)")
     }
 
     // MARK: Execute
