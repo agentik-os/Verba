@@ -296,11 +296,25 @@ export async function fetchToolkitTools(
   // are the ones users actually invoke — and it includes core reads like GITHUB_LIST_REPOSITORIES
   // that a flat alphabetical limit:200 of a 600-tool app silently drops. Fall back to a wide flat
   // fetch if the curated set comes back thin.
-  let raw = (await composio.tools.getRawComposioTools({ toolkits: [tk], important: true, limit: 60 } as never)) as RawTool[];
-  if (!raw || raw.length < 12) {
-    raw = (await composio.tools.getRawComposioTools({ toolkits: [tk], limit: 200 })) as RawTool[];
+  let raw = ((await composio.tools.getRawComposioTools({ toolkits: [tk], important: true, limit: 60 } as never)) as RawTool[]) ?? [];
+  if (raw.length < 12) {
+    const wide = ((await composio.tools.getRawComposioTools({ toolkits: [tk], limit: 200 })) as RawTool[]) ?? [];
+    // Keep the wide set only when it is actually WIDER. This used to assign it unconditionally, so
+    // a hiccup on this SECOND call threw away a perfectly good curated set: the toolkit went from
+    // "thin but real" to empty because the fallback meant to enrich it failed. The wide fetch is a
+    // superset of the curated one for the same toolkit, so fewer tools here always means a bad call.
+    if (wide.length > raw.length) raw = wide;
   }
-  raw = raw ?? [];
+  // NEVER CACHE AN EMPTY RESULT. A Composio hiccup or a rate-limit window makes both fetches above
+  // return [] for a toolkit that really has tools, and writing that answers /tools with ZERO tools
+  // for the whole 10-minute window: the Mac app then shows a connected app with an empty tool list
+  // and latches it. So on an empty fetch, leave the cache UNSET so the very next request retries,
+  // and if a previous non-empty entry exists serve it even though it has expired. Stale tools beat
+  // no tools for a prompt catalog, and this can only ever return MORE tools than before, never less.
+  if (raw.length === 0) {
+    const stale = toolkitToolsCache.get(tk);
+    return stale?.tools.length ? stale.tools : [];
+  }
   toolkitToolsCache.set(tk, { at: Date.now(), tools: raw });
   return raw;
 }
