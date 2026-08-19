@@ -1,7 +1,25 @@
 // The ACTION PLANNER system prompt. Built per request with the user's NOW/timezone/locale,
-// their connected-app tool catalog (read/write tagged), local Shortcuts, search targets and
-// disabled actions. Returned text drives a single Anthropic completion that emits the Plan
-// JSON contract the agent endpoint parses (see app/api/composio/agent/route.ts).
+// their connected-app tool catalog (read/write tagged), local Shortcuts, search targets, disabled
+// actions and any extra kinds the client declared it can execute itself. Returned text drives a
+// single Anthropic completion that emits the Plan JSON contract the agent endpoint parses (see
+// app/api/composio/agent/route.ts).
+//
+// TWO CLIENTS SHARE THIS ONE PROMPT and they do NOT execute the same kinds: the Mac has no
+// create_task executor, the phone owns Verba's to-do list. So a kind only one of them can run is
+// gated behind `capabilities` rather than added to the shared vocabulary, because a plan proposing
+// an action the client then fails on is worse than the missing feature.
+//
+// The gate is per-REQUEST, not per-route, and that is load-bearing, because the two routes that
+// build this prompt do NOT split by client the way their names suggest. Verified against both
+// clients rather than assumed:
+//   • app/api/composio/agent-context is the SHARED one. It is the macOS app's ONLY planner path
+//     (Sources/Verba/ActionAgentClient.swift:333) and also the phone's BYOK fallback (VerbaMobile
+//     src/lib/jarvis.ts runPlanByok). A route-level switch here would hand the Mac an action it
+//     cannot execute; a per-request one cannot.
+//   • app/api/composio/agent is PHONE-EXCLUSIVE and its primary path (jarvis.ts runPlan). No Swift
+//     source posts to it — the macOS app's relay calls are /agent-context, /agent-reads, /execute,
+//     /connect, /connections, /connect-fields. It does not read `capabilities` yet, so the phone
+//     cannot get a to-do proposed on a healthy relay until it does.
 
 export interface PlannerCtx {
   nowISO: string;
@@ -16,8 +34,39 @@ export interface PlannerCtx {
   shortcuts: string[];
   searchTargets: string[];
   disabled: string[];
+  /// Extra action kinds THIS client declares it can execute ITSELF, opt-in and additive: an absent
+  /// or empty list emits nothing, so every existing caller (the macOS path) keeps a byte-identical
+  /// prompt. A mirror of `disabled` rather than an overload of it, because a kind that IS available
+  /// cannot be announced inside a list captioned "never emit", and because it extends to the next
+  /// device-owned kind without another one-off flag. Only names in CAPABILITY_BLOCKS are honoured:
+  /// the client sends a KEY that selects server-owned text, never text of its own.
+  capabilities?: string[];
   phase: "plan" | "resolve";
 }
+
+/// Vocabulary emitted ONLY for a client that declared the matching capability, and the reason this
+/// is a keyed lookup rather than an interpolation: `disabled`, `shortcuts` and `searchTargets` are
+/// raw `.join()`s of client strings straight into the prompt, so a client can already write into
+/// the model's context through them. A capability must not widen that hole, so nothing a client
+/// sends is ever rendered — the name only chooses which of these fixed blocks is appended.
+///
+/// A Map, not a Record: a Record lookup on "toString" or "constructor" returns an inherited
+/// function whose source would land in the prompt, and a Map has no such keys.
+const CAPABILITY_BLOCKS = new Map<string, string>([
+  // Mirrors VerbaMobile src/lib/jarvis.ts (CREATE_TASK_CONTRACT, normalizeCreateTask, executeAction
+  // case "create_task"): the phone owns Verba's to-do list and pushes straight to the same Convex
+  // `tasks` table the Mac reads. Kept near-verbatim from that file so the emitted shape and the
+  // executor cannot drift apart; the phone appends this client-side today and can drop it once it
+  // declares the capability instead.
+  [
+    "create_task",
+    `
+
+ADDITIONAL WRITE ACTION, AVAILABLE ON THIS DEVICE — VERBA'S OWN TO-DO LIST:
+   create_task: {"type":"create_task","text":"<the to-do, in the user's own words>","due":"ISO8601"?,"project":"<list name>"?}
+This device owns the user's Verba to-do list and writes to it directly, so create_task IS available here even when the local reminder / calendar_event kinds are not. Use it whenever the user wants something PUT ON their list ("add milk to my to-do list", "put call the plumber on my list", "I need to book a dentist"), and prefer it over a disabled local kind for a plain to-do. Set classification:"reminder" and kind:"create_task". Fill "due" only when the user actually gave a time, and "project" only when they named a list. It is a WRITE like any other: propose it in proposedWriteActions, never auto-run it, and never put it in needReads. Do NOT use it to complete, rename or re-schedule a task that already exists.`,
+  ],
+]);
 
 export function plannerSystem(c: PlannerCtx): string {
   const tools = c.toolCatalog.length
@@ -28,6 +77,17 @@ export function plannerSystem(c: PlannerCtx): string {
   const sc = c.shortcuts.length ? c.shortcuts.map((s) => `  • ${s}`).join("\n") : "  (none)";
   const st = c.searchTargets.length ? c.searchTargets.join(", ") : "(none)";
   const dis = c.disabled.length ? c.disabled.join(", ") : "(none)";
+  // Appended DEAD LAST, after the DISABLED ACTIONS paragraph, on purpose: that paragraph tells the
+  // model to substitute a connected app for an unavailable local kind and to fall back to chat when
+  // none covers the goal, so a capability announced before it is contradicted a line later — "add
+  // milk to my list" on a phone with `reminder` disabled and no tasks app connected could only end
+  // as chat. Empty string when nothing is declared, which is what keeps every existing caller's
+  // prompt byte-identical. Deduped so a client repeating a name cannot print the same block twice,
+  // and unknown names are dropped silently: a capability this build does not know is one the model
+  // must not be told about.
+  const caps = [...new Set(c.capabilities ?? [])]
+    .map((k) => CAPABILITY_BLOCKS.get(k) ?? "")
+    .join("");
   const phaseRules =
     c.phase === "plan"
       ? `PHASE = plan. If you must observe before proposing, emit needReads (READ-only slugs) and leave proposedWriteActions EMPTY. If no read is needed, fill proposedWriteActions now and set needReads to [].`
@@ -116,5 +176,5 @@ LOCAL SHORTCUTS:
 ${sc}
 SEARCH TARGETS: ${st}
 DISABLED ACTIONS (never emit): ${dis}
-A disabled kind is UNAVAILABLE on this device — never propose it, but don't give up either: when a connected app can achieve the same goal, propose THAT instead (reminder/calendar_event → a GOOGLECALENDAR or GOOGLETASKS tool; email_draft → the connected email app's send/draft tool; search → open_url). Only fall back to chat when no connected app covers the goal.`;
+A disabled kind is UNAVAILABLE on this device — never propose it, but don't give up either: when a connected app can achieve the same goal, propose THAT instead (reminder/calendar_event → a GOOGLECALENDAR or GOOGLETASKS tool; email_draft → the connected email app's send/draft tool; search → open_url). Only fall back to chat when no connected app covers the goal.${caps}`;
 }
