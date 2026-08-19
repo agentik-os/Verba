@@ -44,7 +44,34 @@ final class AuthSession: NSObject, ASWebAuthenticationPresentationContextProvidi
 
             // The app-session token proves this device belongs to the account; it authorizes
             // the protected API routes and the Convex device registration below.
-            let token = comps.queryItems?.first(where: { $0.name == "token" })?.value
+            //
+            // NO TOKEN = FAILED SIGN-IN, never a silent sign-out. A callback that carries an email but
+            // no token (the server-side link step failed, or answered without one) used to be written
+            // straight through, and `AuthToken.set(nil)` CLEARS the Keychain — so a user who was
+            // ALREADY signed in came back from a "Done!" web page holding no token at all, and from
+            // then on every JARVIS plan and every authed connected-apps call threw `.notSignedIn`.
+            // Bail BEFORE mutating anything: the stored token, the account identity and the connected
+            // apps all survive untouched, and the failure travels the same `nil` path a cancelled
+            // sign-in already takes, which every caller treats as a failure rather than a success.
+            guard let token = comps.queryItems?.first(where: { $0.name == "token" })?.value,
+                  !token.isEmpty else {
+                VerbaLog.app.error("sign-in callback carried no app-session token; keeping the stored one")
+                ErrorReporter.report("sign-in callback carried no app-session token",
+                                     context: ["area": "auth"])
+                completion(nil)
+                // Say it out loud: the web page's own "Done!" is the last thing the user saw, and two
+                // of the four sign-in entry points just reset their button on `nil`, so without this
+                // the failure would be invisible.
+                DispatchQueue.main.async {
+                    NSApp.activate(ignoringOtherApps: true)
+                    let alert = NSAlert()
+                    alert.messageText = "Sign-in didn't complete"
+                    alert.informativeText = "The web step finished but this Mac didn't receive a session, so nothing changed here. Please try signing in again."
+                    alert.addButton(withTitle: "OK")
+                    _ = alert.runModal()
+                }
+                return
+            }
             AuthToken.set(token)
 
             // Connected apps are account-scoped and the store is a singleton: without this reset a
