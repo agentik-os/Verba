@@ -216,7 +216,16 @@ enum Pipeline {
         // on, and DON'T deliver the unprocessed transcript (notice == no paste, see finish()).
         // Edit-last is exempt: it always reprompts regardless of the global toggle (see above), so
         // it never hits this branch.
-        if !profile.raw && !s.repromptEnabled && !editingLast {
+        // Action mode (Fn+X) is exempt for the same reason, and this branch used to swallow it: the
+        // notice returns BEFORE the caller's action branch, so the pipeline flashed "AI rewriting is
+        // off" and JARVIS never opened — the agent was never asked for a plan. The guard exists to
+        // stop an UNPROCESSED TRANSCRIPT being pasted as content, and Action mode never pastes: the
+        // caller finalizes the session and hands the raw transcript to the action agent (it controls
+        // the Mac, it doesn't type). So the premise doesn't hold here, and the toggle has no business
+        // silently disabling a separate, explicitly-invoked surface. Nothing changes for ordinary
+        // dictation: any non-Action dictation in an AI mode still gets the notice and still refuses to
+        // deliver the raw transcript.
+        if !profile.raw && !s.repromptEnabled && !editingLast && !actionMode {
             return PipelineResult(
                 original: original,
                 reprompted: original,
