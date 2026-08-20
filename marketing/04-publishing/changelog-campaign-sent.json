@@ -1,0 +1,269 @@
+{
+  "campaign": "changelog-its-shipped",
+  "posted": {
+    "f01": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-07T19:19:23.391839+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4d5139a87cea9edd919d4b\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"The first version of Verba could do one thing: press Fn, talk, and your words type themse"
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-07T19:20:02.804119+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4d513c2bae7b3caaab7033\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Verba's very first release: press a key, talk, get text. Here's where it all began.\\n\\nVe"
+      }
+    },
+    "f02": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-07T20:00:16.264587+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4d5acc41af6654dfa7be03\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Dictate on one Mac, find it on the next. Your history and stats now sync across every Mac"
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-07T20:00:23.636999+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4d5ad3581f5e3afbd83376\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Your dictation history now syncs across all your Macs\\n\\nIf you use Verba on more than on"
+      }
+    },
+    "f03": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-07T21:00:06.593147+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4d68d33f73b54e62caecdb\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Correct a name once and Verba remembers it. The dictionary now learns from your own corre"
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-07T21:00:16.401904+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4d68ddc632c54e4a9626a2\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Verba's dictionary now learns your corrections automatically\\n\\nFix a misspelled name or "
+      }
+    },
+    "f04": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-07T22:00:14.311967+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4d76ea953dd503baa33aba\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Drag a voice memo onto Verba and get clean text back. File transcription now handles What"
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-07T22:00:19.000238+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4d76f0fc34018d269e8038\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"You can now drag and drop audio files, including WhatsApp voice notes, into Verba for tra"
+      }
+    },
+    "f05": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-07T23:00:13.408847+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4d84f719033e411eae0a17\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Say make a Cooking project with a Chocolate cake task and the full shopping list, and Ver"
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-07T23:00:24.354744+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4d850319e53c9ba3c57cff\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Verba's Task Manager can now build an entire project structure from one spoken request\\n\\"
+      }
+    },
+    "f06": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-08T00:00:12.470851+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4d93087875c39ff5f6f12a\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Select any text in any app, say fix grammar or translate to English, and Verba just does "
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-08T00:00:18.796436+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4d930e94577bc69ef23730\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Transform any selected text by voice, in any app, plus a new Styles layer\\n\\nHighlight te"
+      }
+    },
+    "f07": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-08T01:00:21.115778+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4da11ee2e1da71933a7d9d\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Context mode reads what is actually on your screen before it acts, so a request like summ"
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-08T01:00:28.989882+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4da12841244cbf62d53657\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Context mode genuinely reads your screen before acting\\n\\nContext mode looks at what is o"
+      }
+    },
+    "f08": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-08T02:00:09.019030+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4daf256e3ef4020c021fb5\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Your history, your call. Turn it off completely so nothing is written down, or set it to "
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-08T02:00:21.296385+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4daf317c155dabc2bc0599\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"New history controls: switch it off entirely, auto delete, or wipe everything with one cl"
+      }
+    },
+    "f09": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-08T03:00:08.998939+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4dbd3504ff9f27f6951442\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"New Polish mode follows your self corrections and writes the final version you meant, not"
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-08T03:00:18.158572+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4dbd3fc3727a59d9bffe70\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"New Polish mode writes what you meant, not what you said out loud\\n\\nPolish mode listens "
+      }
+    },
+    "f10": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-08T04:00:23.828540+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4dcb4fd91a547d8216e30d\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Verba turned into a game you can actually win: levels, XP, a daily words goal, weekly lea"
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-08T04:00:28.884518+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4dcb593d4cf543c2f647b9\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Verba now has a full Achievements system: levels, leagues, streaks and badges\\n\\nA new Ac"
+      }
+    },
+    "f11": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-08T05:00:10.830896+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4dd955111ae0c4459404eb\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"The entire app now speaks your language, not just the transcription. Sidebar, settings, e"
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-08T05:00:20.394274+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4dd95fd7077ef09485c231\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"The whole app is now translated, not just dictation\\n\\nVerba's interface, sidebar, settin"
+      }
+    },
+    "f12": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-08T06:00:10.435415+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4de76641d6fdf7e671c366\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Meet JARVIS: say what you want however it comes out, remind me in 10 to grab the cake or "
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-08T06:00:22.413851+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4de7723bc881378c335f08\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Meet JARVIS, Verba's voice agent that connects to 1,000+ apps\\n\\nJARVIS understands what "
+      }
+    },
+    "f13": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-08T07:00:07.666923+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4df5730d382f6d14f2e0f9\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Some notes deserve their own lock. You can now password protect any note individually, en"
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-08T07:00:12.428763+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4df5791371944af9bb92b3\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"You can now lock individual notes with their own password\\n\\nAny note can now have its ow"
+      }
+    },
+    "f14": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-08T08:00:09.234791+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4e03835890ee512b015214\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"New Prompt mode turns rambling dictation into a clean, engineered prompt: task, context, "
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-08T08:00:37.317915+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4e039c692922508a764160\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"New Prompt mode writes a clean, structured prompt from your rambling dictation\\n\\nPrompt "
+      }
+    },
+    "f15": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-08T09:00:08.094402+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4e1194a6b3d8e50cfe46f4\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Translating into the wrong language mid task used to mean a trip to Settings. Now a small"
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-08T09:00:12.786305+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4e119a23ce8ffd1448b3fb\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Switch your Translate output language without leaving the recording pill\\n\\nA small langu"
+      }
+    },
+    "f16": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-08T10:00:29.816921+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4e1fb28aee0f5c73e432e1\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Release the trigger a beat early and your last word used to vanish. Verba now keeps liste"
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-08T10:00:34.820888+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4e1fbfabc94c07d2725f97\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Verba no longer cuts off the last word of your sentence\\n\\nVerba now keeps the microphone"
+      }
+    },
+    "f17": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-08T11:00:10.654084+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4e2db5db13852ad5e3a288\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"New Features page: see everything Verba can do, grouped as Essentials, Advanced and Power"
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-08T11:00:50.688236+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4e2ddd9b728eb9fbcbe7ca\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"New Features page lets you turn Verba's capabilities on one at a time\\n\\nA new Features p"
+      }
+    },
+    "f18": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-08T12:00:11.652800+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4e3bc513795da8e56ce1d7\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Verba now runs fully offline on your Mac by default. Your words never leave your device, "
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-08T12:00:21.297413+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4e3bcf3cede3b9bbb69a7e\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Verba now runs fully offline by default, nothing leaves your Mac\\n\\nSetup now recommends "
+      }
+    },
+    "f19": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-08T13:00:18.286414+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4e49d977d6e451501b6f72\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Pick your engine and Verba actually sticks to it. Context mode no longer quietly switches"
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-08T13:00:28.240745+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4e49e61228f61d115128af\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Whatever AI engine you choose, Verba now respects it everywhere\\n\\nYour chosen engine now"
+      }
+    },
+    "f20": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-08T14:00:17.299433+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4e57e550b86ec3bb37187f\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"JARVIS now reshapes a slightly off plan into a working one instead of failing, and it sta"
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-08T14:00:34.374402+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4e57fe565ddf085ab6ed85\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"JARVIS is now noticeably faster and self-corrects imperfect plans\\n\\nJARVIS can now resha"
+      }
+    },
+    "f21": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-08T15:00:17.916113+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4e65fa5a4ba24ef637486f\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Keep dozens of modes but only see the ones you need. Every mode now has an on off toggle,"
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-08T15:00:24.033355+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4e660414f076eef9da75b2\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"You can now turn individual modes on and off, and save groups of them\\n\\nEvery mode now h"
+      }
+    },
+    "f22": {
+      "twitter": {
+        "ok": true,
+        "ts": "2026-07-08T16:00:14.066375+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4e7406904a61a88727108c\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Raw dictation is now free forever, no card, no trial clock. Press Fn and talk, as much as"
+      },
+      "reddit": {
+        "ok": true,
+        "ts": "2026-07-08T16:00:24.368233+00:00",
+        "resp": "{\n  \"posted\": true,\n  \"post\": {\n    \"recycling\": {\n      \"enabled\": false,\n      \"gapFreq\": \"month\",\n      \"recycleCount\": 0,\n      \"contentVariations\": [],\n      \"contentVariationIndex\": 0\n    },\n    \"_id\": \"6a4e7413cda0a5dffae7ea56\",\n    \"userId\": \"6a43a90601cdaa0f2ce2da9c\",\n    \"title\": \"\",\n    \"content\": \"Raw dictation is free forever, no trial, no card required\\n\\nRaw dictation is now free fo"
+      }
+    }
+  }
+}

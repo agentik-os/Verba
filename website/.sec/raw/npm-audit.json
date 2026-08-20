@@ -1,0 +1,444 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "@clerk/nextjs": {
+      "name": "@clerk/nextjs",
+      "severity": "critical",
+      "isDirect": true,
+      "via": [
+        "@clerk/shared",
+        {
+          "source": 1106156,
+          "name": "@clerk/nextjs",
+          "dependency": "@clerk/nextjs",
+          "title": "@clerk/backend Performs Insufficient Verification of Data Authenticity",
+          "url": "https://github.com/advisories/GHSA-9mp4-77wg-rwx9",
+          "severity": "high",
+          "cwe": [
+            "CWE-345"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
+          },
+          "range": ">=6.2.10 <6.23.3"
+        },
+        {
+          "source": 1117128,
+          "name": "@clerk/nextjs",
+          "dependency": "@clerk/nextjs",
+          "title": "Official Clerk JavaScript SDKs: Middleware-based route protection bypass",
+          "url": "https://github.com/advisories/GHSA-vqx2-fgx2-5wq9",
+          "severity": "critical",
+          "cwe": [
+            "CWE-436",
+            "CWE-863"
+          ],
+          "cvss": {
+            "score": 9.1,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N"
+          },
+          "range": ">=6.0.0-snapshot.vb87a27f <6.39.2"
+        },
+        {
+          "source": 1120353,
+          "name": "@clerk/nextjs",
+          "dependency": "@clerk/nextjs",
+          "title": "Clerk has an authorization bypass when combining organization, billing, or reverification checks",
+          "url": "https://github.com/advisories/GHSA-w24r-5266-9c3c",
+          "severity": "high",
+          "cwe": [
+            "CWE-754",
+            "CWE-863"
+          ],
+          "cvss": {
+            "score": 8.1,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N"
+          },
+          "range": ">=6.0.0 <=6.39.2"
+        }
+      ],
+      "effects": [],
+      "range": "4.25.2-snapshot.3bf4d1a - 4.25.2-snapshot.bffe9d9 || 4.25.3-snapshot.09b5917 - 6.39.2 || 7.0.0-canary.v20251209150846 - 7.0.0-snapshot.v20260303200735 || 7.0.1-canary.v20260303211310 - 7.0.1-canary.v20260304021901 || 7.0.2-canary.v20260304025552 - 7.0.2-snapshot.v20260309193756 || 7.0.3-canary.v20260309212303 - 7.0.4-snapshot.v20260310165744 || 7.0.5-canary.v20260311015003 - 7.0.5-snapshot.v20260320211535 || 7.0.6-canary.v20260317165823 - 7.0.6-canary.v20260320105540 || 7.0.7-canary.v20260320124654 - 7.0.7-snapshot.v20260327200941 || 7.0.8-canary.v20260325192814 - 7.0.8-snapshot.v20260331162920 || 7.0.9-canary.v20260401005640 - 7.0.11-canary.v20260407012548 || 7.0.12-canary.v20260407013936 - 7.0.12-snapshot.v20260408154640 || 7.0.13-canary.v20260408184934 - 7.1.0-snapshot.v20260413190318 || 7.1.1-canary.v20260413184503 - 7.2.0-snapshot.v20260414205636 || 7.2.1-canary.v20260414213403 - 7.2.1-canary.v20260415142102 || 7.2.2-canary.v20260415142548 - 7.2.2-snapshot.v20260416221307 || 7.2.3-canary.v20260416174321 - 7.2.3-canary.v20260417194309 || 7.2.4-canary.v20260417200155 - 7.2.4-snapshot.v20260421194054 || 7.2.5-canary.v20260422163039 - 7.2.5-canary.v20260422165959 || 7.2.6-canary.v20260422213819 - 7.2.6-snapshot.v20260423044224 || 7.2.7-canary.v20260424223357 - 7.2.7-canary.v20260425023419 || 7.2.8-canary.v20260425025027 - 7.2.8-snapshot.v20260429150611 || 7.2.9-canary.v20260429155628 - 7.2.9-canary.v20260430175623 || 7.2.10-canary.v20260430183935 - 7.3.0-canary.v20260501062222 || 7.3.1-canary.v20260501153259 - 7.3.1-snapshot.v20260501171802 || 7.3.2-canary.v20260505194523 - 7.3.2-canary.v20260506230029 || 7.3.3-canary.v20260507023520 - 7.3.3-snapshot.v20260508180306 || 7.3.4-canary.v20260508190534 - 7.3.4-snapshot.v20260513155808 || 7.3.5-canary.v20260514171305 - 7.3.5-snapshot.v20260515233846 || 7.3.6-canary.v20260515235351 - 7.3.6-snapshot.v20260522175603 || 7.3.7-canary.v20260518160549 - 7.3.7-canary.v20260518191051 || 7.3.8-canary.v20260518192440 - 7.4.0-snapshot.v20260527161602 || 7.4.1-canary.v20260521140614 - 7.4.1-canary.v20260522193509 || 7.5.1-canary.v20260610135056 - 7.5.1-canary.v20260610150055",
+      "nodes": [
+        "node_modules/@clerk/nextjs"
+      ],
+      "fixAvailable": {
+        "name": "@clerk/nextjs",
+        "version": "6.39.6",
+        "isSemVerMajor": false
+      }
+    },
+    "@clerk/shared": {
+      "name": "@clerk/shared",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "js-cookie"
+      ],
+      "effects": [
+        "@clerk/nextjs"
+      ],
+      "range": "0.18.0-mytag.691991c - 3.47.5 || 4.0.0-canary.v20251209150846 - 4.13.1-canary.v20260522193509",
+      "nodes": [
+        "node_modules/@clerk/shared"
+      ],
+      "fixAvailable": {
+        "name": "@clerk/nextjs",
+        "version": "6.39.6",
+        "isSemVerMajor": false
+      }
+    },
+    "convex": {
+      "name": "convex",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        "ws"
+      ],
+      "effects": [],
+      "range": "1.31.8-alpha.0 - 1.41.0",
+      "nodes": [
+        "node_modules/convex"
+      ],
+      "fixAvailable": true
+    },
+    "js-cookie": {
+      "name": "js-cookie",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1120607,
+          "name": "js-cookie",
+          "dependency": "js-cookie",
+          "title": "JavaScript Cookie: Per-instance prototype hijack in assign() enables cookie-attribute injection",
+          "url": "https://github.com/advisories/GHSA-qjx8-664m-686j",
+          "severity": "high",
+          "cwe": [
+            "CWE-1321"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
+          },
+          "range": "<=3.0.5"
+        }
+      ],
+      "effects": [
+        "@clerk/shared"
+      ],
+      "range": "<=3.0.5",
+      "nodes": [
+        "node_modules/js-cookie"
+      ],
+      "fixAvailable": {
+        "name": "@clerk/nextjs",
+        "version": "6.39.6",
+        "isSemVerMajor": false
+      }
+    },
+    "next": {
+      "name": "next",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        {
+          "source": 1124172,
+          "name": "next",
+          "dependency": "next",
+          "title": "Next.js: Denial of Service in App Router using Server Actions",
+          "url": "https://github.com/advisories/GHSA-m99w-x7hq-7vfj",
+          "severity": "high",
+          "cwe": [
+            "CWE-834"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=13.0.0 <15.5.21"
+        },
+        {
+          "source": 1124185,
+          "name": "next",
+          "dependency": "next",
+          "title": "Next.js: Server-Side Request Forgery in Server Actions on custom servers",
+          "url": "https://github.com/advisories/GHSA-89xv-2m56-2m9x",
+          "severity": "high",
+          "cwe": [
+            "CWE-918"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=14.1.1 <15.5.21"
+        },
+        {
+          "source": 1124187,
+          "name": "next",
+          "dependency": "next",
+          "title": "Next.js: Cache confusion of response bodies for requests with bodies",
+          "url": "https://github.com/advisories/GHSA-68g3-v927-f742",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-524"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=13.0.0 <15.5.21"
+        },
+        {
+          "source": 1124189,
+          "name": "next",
+          "dependency": "next",
+          "title": "Next.js: Cache confusion of response bodies for requests with bodies containing invalid UTF-8 byte sequences",
+          "url": "https://github.com/advisories/GHSA-4633-3j49-mh5q",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-116"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=13.0.0 <15.5.21"
+        },
+        {
+          "source": 1124191,
+          "name": "next",
+          "dependency": "next",
+          "title": "Next.js: Unbounded Server Action payload in Edge runtime",
+          "url": "https://github.com/advisories/GHSA-4c39-4ccg-62r3",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-770"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=13.0.0 <15.5.21"
+        },
+        {
+          "source": 1124193,
+          "name": "next",
+          "dependency": "next",
+          "title": "Next.js: Server-Side Request Forgery in rewrites via attacker-controlled destination hostname",
+          "url": "https://github.com/advisories/GHSA-p9j2-gv94-2wf4",
+          "severity": "high",
+          "cwe": [
+            "CWE-918"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=12.0.0 <15.5.21"
+        },
+        {
+          "source": 1124195,
+          "name": "next",
+          "dependency": "next",
+          "title": "Next.js: Denial of Service in the Image Optimization API using SVGs",
+          "url": "https://github.com/advisories/GHSA-q8wf-6r8g-63ch",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-407"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=15.5.0 <15.5.21"
+        },
+        {
+          "source": 1124197,
+          "name": "next",
+          "dependency": "next",
+          "title": "Next.js: Unauthenticated disclosure of internal Server Function endpoints",
+          "url": "https://github.com/advisories/GHSA-955p-x3mx-jcvp",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-201"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=13.0.0 <15.5.21"
+        },
+        "postcss",
+        "sharp"
+      ],
+      "effects": [],
+      "range": "9.3.4-canary.0 - 16.3.0-preview.7",
+      "nodes": [
+        "node_modules/next"
+      ],
+      "fixAvailable": {
+        "name": "next",
+        "version": "15.5.22",
+        "isSemVerMajor": false
+      }
+    },
+    "postcss": {
+      "name": "postcss",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        {
+          "source": 1117015,
+          "name": "postcss",
+          "dependency": "postcss",
+          "title": "PostCSS has XSS via Unescaped </style> in its CSS Stringify Output",
+          "url": "https://github.com/advisories/GHSA-qx2v-qp2m-jg93",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-79"
+          ],
+          "cvss": {
+            "score": 6.1,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N"
+          },
+          "range": "<8.5.10"
+        },
+        {
+          "source": 1124252,
+          "name": "postcss",
+          "dependency": "postcss",
+          "title": "PostCSS: Arbitrary file read and information disclosure via attacker-controlled sourceMappingURL in CSS comments",
+          "url": "https://github.com/advisories/GHSA-6g55-p6wh-862q",
+          "severity": "high",
+          "cwe": [
+            "CWE-22",
+            "CWE-200"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+          },
+          "range": "<=8.5.11"
+        },
+        {
+          "source": 1124288,
+          "name": "postcss",
+          "dependency": "postcss",
+          "title": "PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) leads to Arbitrary .map File Disclosure",
+          "url": "https://github.com/advisories/GHSA-r28c-9q8g-f849",
+          "severity": "high",
+          "cwe": [
+            "CWE-22"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+          },
+          "range": "<=8.5.17"
+        }
+      ],
+      "effects": [
+        "next"
+      ],
+      "range": "<=8.5.17",
+      "nodes": [
+        "node_modules/next/node_modules/postcss",
+        "node_modules/postcss"
+      ],
+      "fixAvailable": {
+        "name": "next",
+        "version": "15.5.22",
+        "isSemVerMajor": false
+      }
+    },
+    "sharp": {
+      "name": "sharp",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1124066,
+          "name": "sharp",
+          "dependency": "sharp",
+          "title": "sharp inherited vulnerabilities in libvips: CVE-2026-33327, CVE-2026-33328, CVE-2026-35590, CVE-2026-35591",
+          "url": "https://github.com/advisories/GHSA-f88m-g3jw-g9cj",
+          "severity": "high",
+          "cwe": [
+            "CWE-1395"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<0.35.0"
+        }
+      ],
+      "effects": [
+        "next"
+      ],
+      "range": "<0.35.0",
+      "nodes": [
+        "node_modules/sharp"
+      ],
+      "fixAvailable": {
+        "name": "next",
+        "version": "15.5.22",
+        "isSemVerMajor": false
+      }
+    },
+    "ws": {
+      "name": "ws",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1123259,
+          "name": "ws",
+          "dependency": "ws",
+          "title": "ws: Memory exhaustion DoS from tiny fragments and data chunks",
+          "url": "https://github.com/advisories/GHSA-96hv-2xvq-fx4p",
+          "severity": "high",
+          "cwe": [
+            "CWE-400",
+            "CWE-770",
+            "CWE-1050"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=8.0.0 <8.21.0"
+        }
+      ],
+      "effects": [
+        "convex"
+      ],
+      "range": "8.0.0 - 8.20.1",
+      "nodes": [
+        "node_modules/ws"
+      ],
+      "fixAvailable": true
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 7,
+      "critical": 1,
+      "total": 8
+    },
+    "dependencies": {
+      "prod": 91,
+      "dev": 89,
+      "optional": 63,
+      "peer": 3,
+      "peerOptional": 0,
+      "total": 244
+    }
+  }
+}

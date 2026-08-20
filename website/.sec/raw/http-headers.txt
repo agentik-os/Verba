@@ -1,0 +1,21 @@
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline
+content-type: text/html; charset=utf-8
+date: Sat, 25 Jul 2026 22:32:04 GMT
+etag: "75fa742821210abb0813af989af85896"
+server: Vercel
+strict-transport-security: max-age=63072000
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+x-clerk-auth-reason: session-token-and-uat-missing
+x-clerk-auth-status: signed-out
+x-matched-path: /
+x-nextjs-prerender: 1
+x-nextjs-stale-time: 300
+x-vercel-cache: PRERENDER
+x-vercel-id: fra1::2gb5p-1785018724746-fbe9517e0157
+content-length: 148178
+

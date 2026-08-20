@@ -1,0 +1,28 @@
+{
+  "captured_at": "2026-07-26T00:31:44+02:00",
+  "directories": {
+    ".next": {"bytes": 277531737, "files": 1175}
+  },
+  "top_files": [
+    {"size": 189766, "path": ".next/static/chunks/framework-e54b663a2888b5de.js"},
+    {"size": 173382, "path": ".next/static/chunks/1255-5c680abb9db89955.js"},
+    {"size": 173020, "path": ".next/static/chunks/4bd1b696-f785427dddbba9fb.js"},
+    {"size": 128962, "path": ".next/static/chunks/main-aea3d9624f6ebe28.js"},
+    {"size": 112594, "path": ".next/static/chunks/polyfills-42372ed130431b0a.js"},
+    {"size": 107445, "path": ".next/static/chunks/2730-73bb88c1c413cf9b.js"},
+    {"size": 76713, "path": ".next/static/chunks/app/page-51f9937ed5d3d725.js"},
+    {"size": 67211, "path": ".next/static/chunks/8007-bb490bc9250e6eba.js"},
+    {"size": 42508, "path": ".next/static/css/e707b126bf576509.css"},
+    {"size": 39470, "path": ".next/static/chunks/2825-5ef3431d688772c0.js"},
+    {"size": 16604, "path": ".next/static/chunks/1734-f0658b81438c3230.js"},
+    {"size": 9061, "path": ".next/static/chunks/app/layout-97a7afae2e6e5fd1.js"},
+    {"size": 8538, "path": ".next/static/chunks/2619-3c9e02e22d10480a.js"},
+    {"size": 7130, "path": ".next/static/css/22db4ff7dea75830.css"},
+    {"size": 5488, "path": ".next/static/chunks/app/app-auth/page-97dbeaf5270ae757.js"},
+    {"size": 5313, "path": ".next/static/chunks/app/account/page-969da0a0fda6441a.js"},
+    {"size": 4526, "path": ".next/static/chunks/app/atelier/layout-bde881da4ac64f54.js"},
+    {"size": 3503, "path": ".next/static/chunks/webpack-8ee761816d692108.js"},
+    {"size": 2674, "path": ".next/static/chunks/app/_not-found/page-d213cfadfa7bdb5f.js"},
+    {"size": 2351, "path": ".next/static/7eRlhgDKv1ciYOl84ORgx/_buildManifest.js"}
+  ]
+}

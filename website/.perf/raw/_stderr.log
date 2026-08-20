@@ -1,0 +1,12 @@
+Runtime error encountered: The CHROME_PATH environment variable must be set to a Chrome/Chromium executable no older than Chrome stable.
+Error
+    at new LauncherError (file:///home/vibe/.npm/_npx/0f94ee7615faf582/node_modules/chrome-launcher/dist/utils.js:22:22)
+    at new ChromePathNotSetError (file:///home/vibe/.npm/_npx/0f94ee7615faf582/node_modules/chrome-launcher/dist/utils.js:28:9)
+    at Module.linux (file:///home/vibe/.npm/_npx/0f94ee7615faf582/node_modules/chrome-launcher/dist/chrome-finder.js:124:15)
+    at Launcher.getFirstInstallation (file:///home/vibe/.npm/_npx/0f94ee7615faf582/node_modules/chrome-launcher/dist/chrome-launcher.js:135:43)
+    at Launcher.launch (file:///home/vibe/.npm/_npx/0f94ee7615faf582/node_modules/chrome-launcher/dist/chrome-launcher.js:203:43)
+    at Module.launch (file:///home/vibe/.npm/_npx/0f94ee7615faf582/node_modules/chrome-launcher/dist/chrome-launcher.js:33:20)
+    at getDebuggableChrome (file:///home/vibe/.npm/_npx/0f94ee7615faf582/node_modules/lighthouse/cli/run.js:85:25)
+    at runLighthouse (file:///home/vibe/.npm/_npx/0f94ee7615faf582/node_modules/lighthouse/cli/run.js:204:30)
+    at begin (file:///home/vibe/.npm/_npx/0f94ee7615faf582/node_modules/lighthouse/cli/bin.js:134:10)
+    at async file:///home/vibe/.npm/_npx/0f94ee7615faf582/node_modules/lighthouse/cli/index.js:10:1

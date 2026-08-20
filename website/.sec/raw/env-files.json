@@ -1,0 +1,9 @@
+{
+  "captured_at": "2026-07-26T00:32:04+02:00",
+  "env_files": [
+    {"path": ".env.local", "in_gitignore": true, "tracked_by_git": false},
+    {"path": ".vercel/.env.preview.local", "in_gitignore": true, "tracked_by_git": false},
+    {"path": ".vercel/.env.production.local", "in_gitignore": true, "tracked_by_git": false},
+    {"path": ".env.example", "in_gitignore": true, "tracked_by_git": true}
+  ]
+}

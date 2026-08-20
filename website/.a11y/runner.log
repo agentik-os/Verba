@@ -1,0 +1,9 @@
+[2026-07-26T00:31:34+02:00] audit-runner a11y on .
+[2026-07-26T00:31:34+02:00] PHASE 1 gather: /home/vibe/.omega/lib/audit-gather/a11y.sh
+─── a11y gather ───
+RAW_DIR=.a11y/raw
+PROJECT_PATH=.
+FILES=<none>
+URL=https://verba.run/blog
+a11y gather done
+[2026-07-26T00:31:39+02:00] PHASE 1 done rc=0

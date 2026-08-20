@@ -232,12 +232,12 @@
     "v20": {
       "twitter": {
         "ok": false,
-        "ts": "2026-08-14T10:00:02.360956+00:00",
+        "ts": "2026-08-20T14:00:12.374108+00:00",
         "resp": "omega-zernio: GET /accounts failed (HTTP 402): Account paused: payment required"
       },
       "linkedin": {
         "ok": false,
-        "ts": "2026-08-14T10:00:02.493759+00:00",
+        "ts": "2026-08-20T14:00:12.496146+00:00",
         "resp": "omega-zernio: GET /accounts failed (HTTP 402): Account paused: payment required"
       }
     }

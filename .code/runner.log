@@ -1,0 +1,9 @@
+[2026-08-10T14:05:28+02:00] audit-runner codeaudit on .
+[2026-08-10T14:05:28+02:00] PHASE 1 gather: /home/vibe/.omega/lib/audit-gather/code.sh
+─── code gather ───
+RAW_DIR=.code/raw
+PROJECT_PATH=.
+FILES=Sources/Verba/AppDelegate.swift Sources/Verba/Changelog.swift website/app/changelog/page.tsx
+URL=<none>
+code gather done
+[2026-08-10T14:05:28+02:00] PHASE 1 done rc=0

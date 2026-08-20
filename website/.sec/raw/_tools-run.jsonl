@@ -1,0 +1,4 @@
+{"tool":"npm-audit","output":"npm-audit.json","rc":1,"ts":"2026-07-26T00:32:03+02:00"}
+{"tool":"gitleaks","output":"gitleaks.json","rc":0,"ts":"2026-07-26T00:32:04+02:00"}
+{"tool":"env-file-scanner","output":"env-files.json","rc":0,"ts":"2026-07-26T00:32:04+02:00"}
+{"tool":"http-headers","output":"http-headers.txt","rc":0,"ts":"2026-07-26T00:32:05+02:00"}

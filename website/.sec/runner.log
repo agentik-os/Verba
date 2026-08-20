@@ -1,0 +1,9 @@
+[2026-07-26T00:31:41+02:00] audit-runner sec on .
+[2026-07-26T00:31:41+02:00] PHASE 1 gather: /home/vibe/.omega/lib/audit-gather/sec.sh
+─── sec gather ───
+RAW_DIR=.sec/raw
+PROJECT_PATH=.
+FILES=<none>
+URL=https://verba.run
+sec gather done
+[2026-07-26T00:32:05+02:00] PHASE 1 done rc=0

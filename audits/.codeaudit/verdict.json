@@ -1,0 +1,59 @@
+{
+  "audit": "code",
+  "score": 89,
+  "score_raw": "256/285",
+  "score_normalized": 89,
+  "grade": "A",
+  "confidence": "medium",
+  "skill_used": "codeaudit",
+  "ticket": "verba-worker-codeaudit-optx",
+  "preamble_version": "1.0",
+  "scope": "commit 4c67951 (merge 9d75a20): failSession .processing latch fix + changelog 0.9.110 (Sources/Verba/AppDelegate.swift, Sources/Verba/Changelog.swift, website/app/changelog/page.tsx)",
+  "read_only_mission": true,
+  "v2_inputs_note": "--user-need and --hinge were not passed as CLI flags; both were supplied verbatim in the mission text and adopted as such (dispatched session, L3: decide and proceed instead of request_redispatch).",
+  "user_need_match": {
+    "quote": "le else-if peut-il ecraser un etat legitime; y a-t-il d'autres chemins qui laissent .processing orphelin; coherence overlay/statusLine; changelogs identiques et valides",
+    "addressed": true,
+    "evidence": "Q1: the else-if (AppDelegate.swift:2068-2074) is doubly guarded: .recording is unreachable there (early return via wasLatest at :2020/:2037) and the branch tests state == .processing explicitly; failSession is synchronous @MainActor with no suspension between the gate and the mutation. The flashInfo/flashError branches set state = .idle synchronously (:2432, :2459) BEFORE :2066, so the else-if never fires after a flash and overlay.hide() can never kill a visible flash. Q2: all 8 writers of state = .processing (:1907, :2067, :2174, :2196, :2221, :2308, :2329, :2905) were traced to a reset path (finish :2113 all branches, failSession post-fix, cancelEverything :1280 ending state = .idle at :1341); no other orphan path found. Q3: statusLine is only read under .processing (:2608, :2618-2621), quips stop at :2038, refreshUI fires via the state didSet (:42). Q4: changelog 0.9.110 byte-identical between app and site, tsc --noEmit exit 0, structural Swift checks pass.",
+    "edge_cases_covered": [
+      "double silent failure with two inflight sessions (restore branch then step-down)",
+      "todo-capture success flash colliding with the step-down: unreachable interleaving (gates :624 and :329)",
+      "minimal overlay style (R10): overlay never shown, hide() is a no-op, the alert still appears",
+      "glass alert visible when the step-down fires: separate alertWindow (:3211), unaffected by overlay.hide()"
+    ]
+  },
+  "falsifiable_tests": [
+    {"name": "exact blast radius of the commit", "hypothesis": "the diff touches more than the 3 declared files or more than the latch branch", "command": "git diff 71eb429..9d75a20 --stat && git diff 71eb429..9d75a20 -- <3 files>", "expected": "3 files, one else-if + changelog entries", "actual": "3 files changed, 24 insertions(+), 2 deletions(-); single else-if hunk at AppDelegate.swift:2068", "passed": true},
+    {"name": "flash helpers reset state synchronously (comment claim)", "hypothesis": "flashInfo/flashError set .idle only in their delayed closure, so the else-if would fire and hide a visible flash", "command": "sed -n '2421,2468p' Sources/Verba/AppDelegate.swift", "expected": "state = .idle before the asyncAfter", "actual": "flashInfo sets state = .idle at :2432, flashError at :2459, both before their asyncAfter", "passed": true},
+    {"name": "complete() removes the failed session from inflight before the hasInflight test", "hypothesis": "the just-failed session still counts as inflight at :2066, making the fix dead code", "command": "sed -n '61,67p' Sources/Verba/SessionStore.swift", "expected": "inflight.removeAll in complete()", "actual": "SessionStore.swift:62 inflight.removeAll { $0.id == session.id }", "passed": true},
+    {"name": "sweep of all state = .processing writers", "hypothesis": "another writer leaves .processing with no reset path (orphan the fix does not cover)", "command": "grep -n 'state = .processing' Sources/Verba/AppDelegate.swift", "expected": "every writer paired with a reset path", "actual": "8 writers, each traced: handoff :1907 -> runSession -> finish/failSession; restore branches :2067/:2174/:2196/:2221/:2308/:2329; redo :2905 -> runSession; cancelEverything :1341 resets .idle", "passed": true},
+    {"name": "changelog content parity app vs site", "hypothesis": "0.9.110 strings diverge between Changelog.swift and page.tsx", "command": "extract both 0.9.110 blocks + Aug 10 summary to files, diff", "expected": "identical", "actual": "DIFF: IDENTICAL (byte-for-byte, 3 items each side)", "passed": true},
+    {"name": "website typecheck", "hypothesis": "the new tsx object breaks the Day/Entry types", "command": "cd website && npx tsc --noEmit", "expected": "exit 0", "actual": "zero output, EXIT: 0", "passed": true},
+    {"name": "Swift structural syntax (no toolchain on this Linux box)", "hypothesis": "unbalanced brackets/quotes or illegal trailing comma in Changelog.swift", "command": "string/comment-aware python bracket scanner over Changelog.swift", "expected": "balanced; array-literal trailing commas legal", "actual": "BALANCED: all brackets/parens/braces and quotes balanced; entry shape matches neighbors", "passed": true},
+    {"name": "the idle-gates the changelog claims are revived", "hypothesis": "the transform key / mode picker are gated elsewhere and the fix does not revive them", "command": "sed -n '1176,1180p;1474,1480p' Sources/Verba/AppDelegate.swift", "expected": "guards on state == .idle / state == .processing", "actual": "showTransformPicker guard state == .idle at :1178; changeMode returns on .processing at :1475 (+ :1479)", "passed": true},
+    {"name": "single-resume timeout race and cancel sites", "hypothesis": "a cancelled or timed-out session task can bypass failSession AND cancelEverything, leaving .processing", "command": "grep -n 'sessionTasks' AppDelegate.swift; sed -n '55,82p' Sources/Verba/Pipeline.swift", "expected": "only cancelEverything cancels session tasks; withTimeout resumes exactly once", "actual": "only cancel site :1309 (cancelEverything, which sets state=.idle at :1341); TimeoutRace registers one continuation, finish() is idempotent", "passed": true}
+  ],
+  "hinge_findings": [
+    {"location": "Sources/Verba/AppDelegate.swift:2068-2074", "concern": "the step-down could clobber .recording or a legitimate overlay", "verified_safe_by": "wasLatest gate :2020 + early return :2037 make the branch unreachable while recording; explicit state == .processing test; synchronous @MainActor body (no await between :2020 and :2074); sole call site :1976 inside await MainActor.run"},
+    {"location": "Sources/Verba/AppDelegate.swift:2053-2057", "concern": "the else-if must fire on the promptSilentInput path and ONLY on paths that did not already reset state", "verified_safe_by": "promptSilentInput (:1072) never touches state; every other branch (flashInfo :2432, flashError :2459) resets .idle synchronously first, so the else-if is dead there"},
+    {"location": "Sources/Verba/AppDelegate.swift:2073", "concern": "overlay.hide() could dismiss the silent-input alert the user must read", "verified_safe_by": "showGlassAlert (:3211) presents a separate alertWindow panel, not the overlay"}
+  ],
+  "findings": [
+    {"id": "F1", "severity": "medium", "location": "Tests/UpdaterContractTests.swift (only suite)", "category": "test-coverage", "issue": "The dictation state machine (state/inflight/overlay) has zero automated tests; the .processing latch shipped and was only caught by a user-visible dead key, and this fix lands with no regression test. The only suite is the Updater contract (70 tests, Linux-runnable).", "suggested_fix": "Extract the failSession/finish state-transition decision into a pure, AppKit-free reducer and add a Linux-runnable contract test: silent failure with 0/1 remaining inflight sessions must yield .idle/.processing respectively."},
+    {"id": "F2", "severity": "low", "location": "git main (local ahead 2 of origin/main)", "category": "config-drift", "issue": "Merge 9d75a20 is not pushed; the fix and the 0.9.110 changelog exist only locally (L0), and the live site does not show 0.9.110 until deploy.", "suggested_fix": "Push main and deploy the website (out of scope for this read-only audit)."},
+    {"id": "F3", "severity": "low", "location": "Sources/Verba/AppDelegate.swift:2073", "category": "observability", "issue": "The latch release is silent: no VerbaLog line when the step-down fires, so a future recurrence of an orphaned .processing (or an unexpected step-down) leaves no trace, exactly like the original bug.", "suggested_fix": "Log one line in the else-if branch (state stepped down .processing -> .idle, no inflight left)."},
+    {"id": "F4", "severity": "info", "location": "Sources/Verba/AppDelegate.swift:2015/:1976", "category": "contracts", "issue": "latestShowsOverlay has a single call site that always passes true: dead parameter generality (pre-existing, not introduced by this commit)."},
+    {"id": "F5", "severity": "info", "location": "Sources/Verba/AppDelegate.swift (3308 lines)", "category": "entropy", "issue": "The file is past the ~2000-line refactor alarm; the state machine's safety currently rests on whole-file manual reasoning (this audit is the evidence). Pre-existing."},
+    {"id": "F6", "severity": "info", "location": ".code/evidence-summary.json", "category": "falsified", "issue": "The gather's 5 'high' oversized-file findings all point at .vercel/output build artifacts (minified bundles): falsified as out-of-scope, contribute zero to the score."}
+  ],
+  "issues_found_and_fixed": [],
+  "edge_cases": [
+    {"finding_id": "hinge", "scenario": "Two sessions inflight, both fail silent: first fail takes the restore branch (:2066-2067, hasInflight true), second takes the step-down (:2068-2074).", "covered_by_existing_test": false, "evidence_gathered": "static trace of both passes through failSession; complete() removes each failed session before the test (SessionStore.swift:62)"},
+    {"finding_id": "hinge", "scenario": "Todo-capture success flash on screen when the last inflight session fails silent: overlay.hide() would cut the flash short, but the interleaving is unreachable (todo cannot start under .processing, gate :624; dictation cannot start during a todo capture, gate :329; idle+inflight is only ever transient within one synchronous MainActor run).", "covered_by_existing_test": false, "evidence_gathered": "gates read at :624, :329; finishTodoCapture :773-801"}
+  ],
+  "cross_audit_links": [],
+  "evidence_summary_path": ".code/evidence-summary.json",
+  "confidence_basis": "Every static claim was directly verified by reading the cited lines and by 9 falsifiable tests (all listed with actual outputs); the changelog half has runtime evidence (tsc exit 0). Confidence stays medium, not high, for one honest reason: the Swift app cannot be built or run on this Linux box (Package.swift gates the app target behind #if os(macOS)), so the fix's behavior was never observed at runtime; a macOS build + a manual silent-dictation repro (mute input, dictate, then press the transform key) remains the missing L1 evidence.",
+  "banned_phrase_check": "passed (no occurrences of looks correct / should be fine / appears to work / streamlined / to save time)",
+  "finished_at": "2026-08-10T14:20:00+02:00"
+}

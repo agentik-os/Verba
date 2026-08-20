@@ -1,0 +1,2 @@
+{"tool":"semgrep","reason":"command 'semgrep' not found; hint: pip install semgrep","ts":"2026-07-26T00:32:04+02:00"}
+{"tool":"semgrep","reason":"semgrep is python-only; npm package is unrelated","ts":"2026-07-26T00:32:04+02:00"}

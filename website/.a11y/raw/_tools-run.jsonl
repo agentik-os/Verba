@@ -1,0 +1,3 @@
+{"tool":"axe-core","output":"axe.json","rc":0,"ts":"2026-07-26T00:31:37+02:00"}
+{"tool":"pa11y","output":"pa11y.json","rc":1,"ts":"2026-07-26T00:31:38+02:00"}
+{"tool":"lighthouse-a11y","output":"lighthouse-a11y.json","rc":1,"ts":"2026-07-26T00:31:39+02:00"}

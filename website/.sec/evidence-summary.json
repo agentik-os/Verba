@@ -1,0 +1,196 @@
+{
+  "audit": "sec",
+  "tools_run": [
+    "npm-audit",
+    "gitleaks",
+    "env-file-scanner",
+    "http-headers"
+  ],
+  "tools_skipped": [
+    {
+      "tool": "semgrep",
+      "reason": "command 'semgrep' not found; hint: pip install semgrep"
+    },
+    {
+      "tool": "semgrep",
+      "reason": "semgrep is python-only; npm package is unrelated"
+    }
+  ],
+  "findings_total": 14,
+  "findings_by_severity": {
+    "critical": 5,
+    "high": 5,
+    "medium": 2,
+    "low": 2,
+    "info": 0
+  },
+  "findings": [
+    {
+      "tool": "env-file-scanner",
+      "severity": "critical",
+      "location": ".env.example",
+      "rule": "env-tracked-by-git",
+      "message": "Env/secrets file is tracked by git: .env.example",
+      "suggested_fix": "git rm --cached + add to .gitignore + rotate any leaked secrets."
+    },
+    {
+      "tool": "gitleaks",
+      "severity": "critical",
+      "location": "audits/atelier-code.md:39",
+      "rule": "curl-auth-user",
+      "message": "Discovered a potential basic authorization token provided in a curl command, which could compromise the curl accessed resource.",
+      "suggested_fix": "Rotate the credential immediately. Remove from git history (BFG / git filter-repo).",
+      "commit": "cdfc53988ea3e3d3d17b69f6cc21e21b28eac978",
+      "match_preview": "verba:wrongpass\u2026",
+      "also_reported_by": [
+        "gitleaks"
+      ]
+    },
+    {
+      "tool": "npm-audit",
+      "severity": "critical",
+      "location": "package: @clerk/nextjs",
+      "rule": "vuln",
+      "message": "@clerk/nextjs: @clerk/shared; @clerk/backend Performs Insufficient Verification of Data Authenticity; Official Clerk JavaScript SDKs: Middleware-based route protection bypass",
+      "suggested_fix": "npm audit fix",
+      "range": "4.25.2-snapshot.3bf4d1a - 4.25.2-snapshot.bffe9d9 || 4.25.3-snapshot.09b5917 - 6.39.2 || 7.0.0-canary.v20251209150846 - 7.0.0-snapshot.v20260303200735 || 7.0.1-canary.v20260303211310 - 7.0.1-canary.v20260304021901 || 7.0.2-canary.v20260304025552 - 7.0.2-snapshot.v20260309193756 || 7.0.3-canary.v20260309212303 - 7.0.4-snapshot.v20260310165744 || 7.0.5-canary.v20260311015003 - 7.0.5-snapshot.v20260320211535 || 7.0.6-canary.v20260317165823 - 7.0.6-canary.v20260320105540 || 7.0.7-canary.v20260320124654 - 7.0.7-snapshot.v20260327200941 || 7.0.8-canary.v20260325192814 - 7.0.8-snapshot.v20260331162920 || 7.0.9-canary.v20260401005640 - 7.0.11-canary.v20260407012548 || 7.0.12-canary.v20260407013936 - 7.0.12-snapshot.v20260408154640 || 7.0.13-canary.v20260408184934 - 7.1.0-snapshot.v20260413190318 || 7.1.1-canary.v20260413184503 - 7.2.0-snapshot.v20260414205636 || 7.2.1-canary.v20260414213403 - 7.2.1-canary.v20260415142102 || 7.2.2-canary.v20260415142548 - 7.2.2-snapshot.v20260416221307 || 7.2.3-canary.v20260416174321 - 7.2.3-canary.v20260417194309 || 7.2.4-canary.v20260417200155 - 7.2.4-snapshot.v20260421194054 || 7.2.5-canary.v20260422163039 - 7.2.5-canary.v20260422165959 || 7.2.6-canary.v20260422213819 - 7.2.6-snapshot.v20260423044224 || 7.2.7-canary.v20260424223357 - 7.2.7-canary.v20260425023419 || 7.2.8-canary.v20260425025027 - 7.2.8-snapshot.v20260429150611 || 7.2.9-canary.v20260429155628 - 7.2.9-canary.v20260430175623 || 7.2.10-canary.v20260430183935 - 7.3.0-canary.v20260501062222 || 7.3.1-canary.v20260501153259 - 7.3.1-snapshot.v20260501171802 || 7.3.2-canary.v20260505194523 - 7.3.2-canary.v20260506230029 || 7.3.3-canary.v20260507023520 - 7.3.3-snapshot.v20260508180306 || 7.3.4-canary.v20260508190534 - 7.3.4-snapshot.v20260513155808 || 7.3.5-canary.v20260514171305 - 7.3.5-snapshot.v20260515233846 || 7.3.6-canary.v20260515235351 - 7.3.6-snapshot.v20260522175603 || 7.3.7-canary.v20260518160549 - 7.3.7-canary.v20260518191051 || 7.3.8-canary.v20260518192440 - 7.4.0-snapshot.v20260527161602 || 7.4.1-canary.v20260521140614 - 7.4.1-canary.v20260522193509 || 7.5.1-canary.v20260610135056 - 7.5.1-canary.v20260610150055"
+    },
+    {
+      "tool": "gitleaks",
+      "severity": "critical",
+      "location": "website/.seo/raw/page.html:1",
+      "rule": "generic-api-key",
+      "message": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+      "suggested_fix": "Rotate the credential immediately. Remove from git history (BFG / git filter-repo).",
+      "commit": "dcfe2716723211ef9a2f0a66ba8f594b9ced45ea",
+      "match_preview": "pk_live_Y2xlcmsudmVy\u2026"
+    },
+    {
+      "tool": "gitleaks",
+      "severity": "critical",
+      "location": "website/convex/feedback.ts:6",
+      "rule": "generic-api-key",
+      "message": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+      "suggested_fix": "Rotate the credential immediately. Remove from git history (BFG / git filter-repo).",
+      "commit": "4b1a42f015720be41ed7e4a6c9891cdfc36133a1",
+      "match_preview": "df407ce003d909a5e485\u2026"
+    },
+    {
+      "tool": "http-headers",
+      "severity": "high",
+      "location": "HTTP response",
+      "rule": "missing-content-security-policy",
+      "message": "Missing security header: content-security-policy",
+      "suggested_fix": "Add content-security-policy to your reverse-proxy / framework config."
+    },
+    {
+      "tool": "npm-audit",
+      "severity": "high",
+      "location": "package: @clerk/shared",
+      "rule": "vuln",
+      "message": "@clerk/shared: js-cookie",
+      "suggested_fix": "npm audit fix",
+      "range": "0.18.0-mytag.691991c - 3.47.5 || 4.0.0-canary.v20251209150846 - 4.13.1-canary.v20260522193509"
+    },
+    {
+      "tool": "npm-audit",
+      "severity": "high",
+      "location": "package: convex",
+      "rule": "vuln",
+      "message": "convex: ws",
+      "suggested_fix": "npm audit fix",
+      "range": "1.31.8-alpha.0 - 1.41.0"
+    },
+    {
+      "tool": "npm-audit",
+      "severity": "high",
+      "location": "package: js-cookie",
+      "rule": "vuln",
+      "message": "js-cookie: JavaScript Cookie: Per-instance prototype hijack in assign() enables cookie-attribute injection",
+      "suggested_fix": "npm audit fix",
+      "range": "<=3.0.5"
+    },
+    {
+      "tool": "npm-audit",
+      "severity": "high",
+      "location": "package: next",
+      "rule": "vuln",
+      "message": "next: Next.js: Denial of Service in App Router using Server Actions; Next.js: Server-Side Request Forgery in Server Actions on custom servers; Next.js: Cache confusion of response bodies for requests with bodies",
+      "suggested_fix": "npm audit fix",
+      "range": "9.3.4-canary.0 - 16.3.0-preview.7"
+    },
+    {
+      "tool": "http-headers",
+      "severity": "medium",
+      "location": "HTTP response",
+      "rule": "missing-x-content-type-options",
+      "message": "Missing security header: x-content-type-options",
+      "suggested_fix": "Add x-content-type-options to your reverse-proxy / framework config."
+    },
+    {
+      "tool": "http-headers",
+      "severity": "medium",
+      "location": "HTTP response",
+      "rule": "missing-x-frame-options",
+      "message": "Missing security header: x-frame-options",
+      "suggested_fix": "Add x-frame-options to your reverse-proxy / framework config."
+    },
+    {
+      "tool": "http-headers",
+      "severity": "low",
+      "location": "HTTP response",
+      "rule": "missing-referrer-policy",
+      "message": "Missing security header: referrer-policy",
+      "suggested_fix": "Add referrer-policy to your reverse-proxy / framework config."
+    },
+    {
+      "tool": "http-headers",
+      "severity": "low",
+      "location": "HTTP response",
+      "rule": "missing-permissions-policy",
+      "message": "Missing security header: permissions-policy",
+      "suggested_fix": "Add permissions-policy to your reverse-proxy / framework config."
+    }
+  ],
+  "metrics": {
+    "npm_audit": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 7,
+      "critical": 1,
+      "total": 8
+    },
+    "gitleaks_finding_count": 4,
+    "env_files_total": 4,
+    "env_files_in_git": 1,
+    "security_headers_present": [
+      "strict-transport-security"
+    ],
+    "security_headers_missing": [
+      "content-security-policy",
+      "x-content-type-options",
+      "x-frame-options",
+      "referrer-policy",
+      "permissions-policy"
+    ]
+  },
+  "evidence_index": [
+    {
+      "file": "env-files.json",
+      "size": 406
+    },
+    {
+      "file": "gitleaks.json",
+      "size": 5387
+    },
+    {
+      "file": "http-headers.txt",
+      "size": 681
+    },
+    {
+      "file": "npm-audit.json",
+      "size": 14490
+    }
+  ]
+}

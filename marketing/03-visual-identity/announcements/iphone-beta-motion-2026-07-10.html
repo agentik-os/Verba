@@ -1,0 +1,145 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  :root{
+    --bg:#050507; --fg:#f4f4f6;
+    --dim:rgba(244,244,246,0.80); --muted:rgba(244,244,246,0.56); --faint:rgba(244,244,246,0.40);
+    --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.14);
+    --accent:#f4ede0; --rec:#ff5a4d;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1080px;height:1350px}
+  body{position:relative;overflow:hidden;color:var(--fg);
+    font-family:"Inter","Inter Variable",-apple-system,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:geometricPrecision;
+    font-feature-settings:"kern" 1,"ss01" 1,"cv01" 1;
+    background:
+      radial-gradient(900px 900px at 50% 64%, rgba(244,237,224,0.08), transparent 58%),
+      radial-gradient(800px 700px at 20% 100%, rgba(255,90,77,0.05), transparent 62%),
+      var(--bg);}
+  .grain{position:absolute;inset:0;pointer-events:none;opacity:0.028;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");}
+
+  .scene{position:absolute;inset:0;transform-origin:50% 56%}
+  .head{position:absolute;top:96px;left:0;right:0;text-align:center}
+  .eyebrow{display:inline-flex;align-items:center;gap:11px;padding:9px 20px;border-radius:100px;
+    border:1px solid var(--border-strong);background:rgba(255,255,255,0.025);
+    font-size:17px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted)}
+  .eyebrow .d{width:10px;height:10px;border-radius:50%;background:var(--rec)}
+  h1{margin-top:26px;font-size:74px;font-weight:600;letter-spacing:-0.04em;line-height:0.98}
+  h1 .g{color:rgba(244,244,246,0.34)}
+
+  .phone{position:absolute;left:50%;top:392px;transform:translateX(-50%);
+    width:472px;height:966px;border-radius:70px;
+    background:linear-gradient(150deg,#3a3a40 0%,#1c1c20 26%,#101012 60%,#0a0a0c 100%);padding:15px;
+    box-shadow:inset 0 0 0 1.5px rgba(255,255,255,0.10),inset 0 2px 3px rgba(255,255,255,0.22),
+      inset 0 -3px 6px rgba(0,0,0,0.6),0 60px 120px rgba(0,0,0,0.66),0 24px 56px rgba(0,0,0,0.5);}
+  .screen{position:relative;width:100%;height:100%;border-radius:56px;overflow:hidden;
+    background:radial-gradient(900px 700px at 60% 0%,#0d0d11,#060608 60%);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.05)}
+  .island{position:absolute;top:24px;left:50%;transform:translateX(-50%);width:108px;height:31px;background:#000;border-radius:17px;z-index:5;
+    display:flex;align-items:center;justify-content:flex-end;padding-right:11px}
+  .island .cam{width:10px;height:10px;border-radius:50%;background:#0d0d18;box-shadow:inset 0 0 0 1px rgba(90,120,160,0.35)}
+  .status{position:absolute;top:30px;left:0;right:0;padding:0 38px;display:flex;justify-content:space-between;align-items:center;z-index:4}
+  .status .time{font-size:19px;font-weight:600}
+  .status .bat{width:31px;height:15px;border-radius:4px;border:1.5px solid rgba(244,244,246,0.6);position:relative}
+  .status .bat::after{content:"";position:absolute;inset:2px;right:9px;background:var(--fg);border-radius:1px}
+  .app{position:absolute;top:104px;left:0;right:0;bottom:0;padding:0 34px}
+  .apphdr{display:flex;align-items:center;gap:11px;margin-bottom:38px}
+  .apphdr .m{width:33px;height:33px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center}
+  .apphdr .m svg{width:17px;height:17px}
+  .apphdr .n{font-size:23px;font-weight:700;letter-spacing:-0.02em}
+  .apphdr .live{margin-left:auto;display:flex;align-items:center;gap:9px;font-size:17px;color:var(--muted);font-weight:500}
+  .apphdr .live .r{width:12px;height:12px;border-radius:50%;background:var(--rec)}
+  .wave{display:flex;align-items:center;gap:5px;height:66px;margin-bottom:36px;padding:0 2px}
+  .wave i{width:5px;border-radius:3px;background:rgba(244,244,246,0.30)}
+  .wave i.a{background:var(--accent)}
+  .lbl{font-size:15px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);margin-bottom:12px}
+  .you{font-size:24px;line-height:1.42;color:var(--dim);font-weight:400;margin-bottom:32px}
+  .div{height:1px;background:var(--border);margin-bottom:32px}
+  .writes{font-size:25px;line-height:1.5;color:var(--fg);font-weight:400;min-height:180px}
+  .caret{display:inline-block;width:2px;height:26px;background:var(--accent);vertical-align:-4px;margin-left:2px}
+
+  .foot{position:absolute;bottom:70px;left:0;right:0;text-align:center;font-size:22px;font-weight:600;color:var(--faint);letter-spacing:-0.01em}
+</style>
+</head>
+<body>
+  <div class="grain"></div>
+  <div class="scene" id="scene">
+    <div class="head" id="head">
+      <div class="eyebrow"><span class="d"></span> iPhone · Private beta</div>
+      <h1>Verba is coming<br><span class="g">to iPhone.</span></h1>
+    </div>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="island"><span class="cam"></span></div>
+        <div class="status">
+          <div class="time">9:41</div>
+          <div class="bat"></div>
+        </div>
+        <div class="app">
+          <div class="apphdr">
+            <div class="m"><svg viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="12" rx="3" fill="#0a0a0d"/><path d="M5 11a7 7 0 0 0 14 0" stroke="#0a0a0d" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="18" x2="12" y2="22" stroke="#0a0a0d" stroke-width="2" stroke-linecap="round"/></svg></div>
+            <div class="n">Verba</div>
+            <div class="live"><span class="r" id="rec"></span> Listening</div>
+          </div>
+          <div class="wave" id="wave"></div>
+          <div class="lbl">You say</div>
+          <div class="you">"reply to Sarah, we'll have the proposal ready by Friday and ask if they want a call"</div>
+          <div class="div"></div>
+          <div class="lbl">Verba writes</div>
+          <div class="writes"><span id="typed"></span><span class="caret" id="caret"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot" id="foot">verba.run</div>
+  </div>
+
+  <script>
+    const qs=new URLSearchParams(location.search);
+    const f=parseInt(qs.get('f')||'0'), N=parseInt(qs.get('n')||'72');
+    const t=N>1?f/(N-1):0;
+    const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+    const easeOut=x=>1-Math.pow(1-x,3);
+    const seg=(x,a,b)=>clamp((x-a)/(b-a),0,1);
+
+    // calm push-in
+    const s=1.0+0.035*easeOut(t);
+    document.getElementById('scene').style.transform=`scale(${s})`;
+
+    // headline fade/rise in
+    const h=easeOut(seg(t,0.0,0.22));
+    const head=document.getElementById('head');
+    head.style.opacity=h; head.style.transform=`translateY(${(1-h)*24}px)`;
+    const foot=document.getElementById('foot');
+    const fo=easeOut(seg(t,0.15,0.4)); foot.style.opacity=fo;
+
+    // waveform: deterministic gentle motion
+    const base=[16,26,40,56,70,50,34,46,64,80,60,40,24,36,54,74,56,38,26,44,66,52,32,22,30,48,38,26];
+    const wave=document.getElementById('wave');
+    base.forEach((bh,i)=>{
+      const el=document.createElement('i');
+      const mv=1+0.35*Math.sin(t*Math.PI*4 + i*0.55);
+      el.style.height=(bh*mv).toFixed(1)+'px';
+      if(i>=8&&i<=17) el.className='a';
+      wave.appendChild(el);
+    });
+
+    // rec dot breathing
+    document.getElementById('rec').style.opacity=(0.55+0.45*(0.5+0.5*Math.sin(t*Math.PI*6))).toFixed(2);
+
+    // typing out "Verba writes"
+    const full="Hi Sarah,\n\nThanks for reaching out. We'll have the proposal ready by Friday. Would it help to hop on a call?";
+    const start=0.30, end=0.92;
+    const nchars=Math.floor(full.length*easeOut(seg(t,start,end)));
+    document.getElementById('typed').innerHTML=full.slice(0,nchars).replace(/\n/g,'<br>');
+    // caret blink (frame-based) + hide once done
+    const done=nchars>=full.length;
+    const blink=(Math.floor(f/6)%2===0);
+    document.getElementById('caret').style.opacity=(done? (blink?1:0) : 1);
+  </script>
+</body>
+</html>

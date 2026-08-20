@@ -1,0 +1,33 @@
+{
+  "audit": "a11y",
+  "tools_run": [
+    "axe-core",
+    "pa11y",
+    "lighthouse-a11y"
+  ],
+  "tools_skipped": [],
+  "findings_total": 0,
+  "findings_by_severity": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0,
+    "info": 0
+  },
+  "findings": [],
+  "metrics": {},
+  "evidence_index": [
+    {
+      "file": "axe.json",
+      "size": 253178
+    },
+    {
+      "file": "lighthouse-a11y.json",
+      "size": 3
+    },
+    {
+      "file": "pa11y.json",
+      "size": 3
+    }
+  ]
+}

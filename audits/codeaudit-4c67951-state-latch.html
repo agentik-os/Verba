@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verba, codeaudit 4c67951 : latch .processing + changelog 0.9.110</title>
+<style>
+  :root{
+    --bg:#faf9f6; --card:#ffffff; --ink:#1a1a1e; --muted:#6b6b74; --line:#e7e5df;
+    --accent:#4f6df5; --ok:#1a9e6b; --warn:#c77d0a; --bad:#d5484a; --info:#6b6b74;
+    --chip:#f0eee9;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#121216; --card:#1b1b21; --ink:#ececf1; --muted:#9a9aa5; --line:#2a2a32;
+      --accent:#8fa4ff; --ok:#3ecf95; --warn:#e6a23c; --bad:#f07577; --info:#9a9aa5;
+      --chip:#26262e;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#121216; --card:#1b1b21; --ink:#ececf1; --muted:#9a9aa5; --line:#2a2a32;
+    --accent:#8fa4ff; --ok:#3ecf95; --warn:#e6a23c; --bad:#f07577; --info:#9a9aa5;
+    --chip:#26262e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
+  main{max-width:880px;margin:0 auto;padding:48px 24px 80px}
+  h1{font-size:1.7rem;line-height:1.3;margin:0 0 6px;letter-spacing:-.02em}
+  h2{font-size:1.15rem;margin:2.2em 0 .6em;letter-spacing:-.01em}
+  .sub{color:var(--muted);margin:0 0 28px}
+  .scorecard{display:flex;gap:20px;align-items:center;background:var(--card);
+    border:1px solid var(--line);border-radius:14px;padding:22px 26px;margin:24px 0;flex-wrap:wrap}
+  .score{font-size:3rem;font-weight:700;color:var(--ok);line-height:1}
+  .score small{font-size:1.1rem;color:var(--muted);font-weight:500}
+  .verdictline{flex:1;min-width:240px}
+  .verdictline strong{display:block;font-size:1.05rem}
+  .verdictline span{color:var(--muted);font-size:.92rem}
+  .chip{display:inline-block;background:var(--chip);border-radius:999px;padding:2px 11px;
+    font-size:.8rem;color:var(--muted);margin:2px 4px 2px 0}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);
+    border-radius:12px;overflow:hidden;font-size:.92rem}
+  .twrap{overflow-x:auto}
+  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  tr:last-child td{border-bottom:none}
+  .sev{font-weight:700;font-size:.78rem;letter-spacing:.04em}
+  .sev.m{color:var(--warn)} .sev.l{color:var(--accent)} .sev.i{color:var(--info)}
+  code{background:var(--chip);border-radius:5px;padding:1px 6px;font-size:.85em;
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+  .q{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--ok);
+    border-radius:10px;padding:14px 18px;margin:12px 0}
+  .q h3{margin:0 0 4px;font-size:.98rem}
+  .q p{margin:0;color:var(--muted);font-size:.92rem}
+  .note{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--warn);
+    border-radius:10px;padding:14px 18px;margin:18px 0;font-size:.92rem}
+  ul{padding-left:1.2em} li{margin:.35em 0}
+  footer{margin-top:48px;color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padding-top:16px}
+  @media print{body{background:#fff;color:#000}.scorecard,.q,.note,table{border-color:#ccc}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Verba : codeaudit du fix "latch .processing"</h1>
+  <p class="sub">Commit <code>4c67951</code> (merge <code>9d75a20</code>, HEAD local) : else-if dans <code>failSession</code> + entrees changelog 0.9.110 (app + site). Audit read-only, protocole /codeaudit v3, 2026-08-10.</p>
+
+  <div class="scorecard">
+    <div class="score">89<small>/100</small></div>
+    <div class="verdictline">
+      <strong>Grade A : le fix est correct, minimal et sur.</strong>
+      <span>Brut 256/285 sur 11 phases applicables. Confiance medium : tout le statique est verifie ligne a ligne et le site a une preuve runtime (tsc exit 0), mais le binaire macOS n'est pas executable sur cette box Linux.</span>
+    </div>
+    <div>
+      <span class="chip">3 fichiers</span><span class="chip">+24 / -2</span>
+      <span class="chip">9 tests falsifiables</span><span class="chip">refutation : 3/3 tiennent</span>
+    </div>
+  </div>
+
+  <h2>Les 4 questions de la mission</h2>
+
+  <div class="q"><h3>1. Le else-if peut-il ecraser un etat legitime ? Non.</h3>
+  <p><code>.recording</code> est doublement protege : la branche est inatteignable pendant un enregistrement (gate <code>wasLatest</code> a la ligne 2020 + early return 2037) et elle teste explicitement <code>state == .processing</code>. <code>failSession</code> est synchrone <code>@MainActor</code>, sans suspension entre la gate et la mutation, et son unique call site (1976) est dans <code>MainActor.run</code>. Les branches flash remettent <code>.idle</code> de facon synchrone (flashInfo 2432, flashError 2459) avant le test 2066 : le else-if est mort apres un flash, son <code>overlay.hide()</code> ne coupe jamais un flash visible. L'alerte "No sound reached Verba" vit dans une fenetre separee (<code>alertWindow</code>, 3211) : le hide ne la touche pas.</p></div>
+
+  <div class="q"><h3>2. D'autres chemins laissent-ils .processing orphelin ? Aucun trouve.</h3>
+  <p>Les 8 ecrivains de <code>state = .processing</code> (1907, 2067, 2174, 2196, 2221, 2308, 2329, 2905) sont chacun traces vers un reset : <code>finish</code> (2113, toutes branches), <code>failSession</code> post-fix, ou <code>cancelEverything</code> (1280, finit par <code>state = .idle</code> a 1341). <code>withTimeout</code> (Pipeline.swift 59) est une course single-resume ; le seul cancel des tasks de session est 1309, dans <code>cancelEverything</code>. Le redo (2905) repasse par le pipeline standard. <code>SessionStore.complete()</code> retire bien la session echouee de l'inflight (SessionStore.swift 62) avant le test <code>hasInflight</code> : la precondition du fix tient.</p></div>
+
+  <div class="q"><h3>3. Coherence overlay / statusLine apres le step-down ? Oui.</h3>
+  <p><code>statusLine</code> n'est lu que sous <code>.processing</code> (2608, 2618 a 2621) : sa non-remise a zero est inoffensive, et chaque re-entree en <code>.processing</code> le reecrit d'abord. Les quips sont deja stoppes (2038) avant la branche. <code>refreshUI()</code> part via le <code>didSet</code> de <code>state</code> (42) : le glyphe menu repasse au micro.</p></div>
+
+  <div class="q"><h3>4. Changelogs identiques et valides ? Oui.</h3>
+  <p>0.9.110 byte-for-byte identique entre <code>Changelog.swift</code> et <code>page.tsx</code> (diff = IDENTICAL, resume du jour inclus). <code>tsc --noEmit</code> : exit 0. Swift : verification structurelle (brackets et quotes equilibres, forme d'appel identique aux voisins) faute de toolchain sur cette box. Zero tiret long, zero nom de techno interdit, ordre des versions et tag "Today" corrects. Le claim du changelog correspond aux vraies gates revivees : transform picker (1178) et mode picker (1475, 1479).</p></div>
+
+  <h2>Refutation adversariale</h2>
+  <p>Les trois conclusions ont ete attaquees (verificateur independant puis reprise en main apres sa mort sur limite de session) et tiennent toutes. La piste restante, un flash de <code>finishTodoCapture</code> (773 a 801) coupe par le step-down, est un interleaving inatteignable : une capture todo ne demarre pas sous <code>.processing</code> (gate 624), une dictee ne demarre pas pendant une capture todo (gate 329), et l'etat idle avec session inflight n'est jamais persistant.</p>
+
+  <h2>Findings, ranges par morsure</h2>
+  <div class="twrap"><table>
+    <tr><th>ID</th><th>Sev</th><th>Ou</th><th>Quoi</th></tr>
+    <tr><td>F1</td><td class="sev m">MEDIUM</td><td>Tests/</td><td>Zero test sur la machine d'etats de dictee ; ce fix arrive sans test de regression alors que la classe de bug (latch) est exactement ce qu'un test de transitions attrape. Suggestion : extraire la decision de transition en reducer pur, testable sur Linux comme les 70 tests du contrat Updater.</td></tr>
+    <tr><td>F2</td><td class="sev l">LOW</td><td>git</td><td>Merge 9d75a20 non pousse (local ahead 2 d'origin/main) : le fix et le changelog n'existent que localement, et le site live ne montre pas 0.9.110 avant deploy (L0).</td></tr>
+    <tr><td>F3</td><td class="sev l">LOW</td><td>AppDelegate.swift 2073</td><td>Le step-down ne logge rien : une recidive d'orphelin <code>.processing</code> serait invisible, comme le bug d'origine. Une ligne VerbaLog dans la branche suffirait.</td></tr>
+    <tr><td>F4</td><td class="sev i">INFO</td><td>2015 / 1976</td><td><code>latestShowsOverlay</code> toujours true a son unique call site : parametre mort (pre-existant).</td></tr>
+    <tr><td>F5</td><td class="sev i">INFO</td><td>AppDelegate.swift</td><td>3308 lignes, au-dela de l'alarme refactor (~2000) : la surete de la machine d'etats repose sur du raisonnement manuel fichier entier (pre-existant).</td></tr>
+    <tr><td>F6</td><td class="sev i">INFO</td><td>.code/</td><td>Les 5 "high" du gather programmatique pointent des artefacts de build .vercel/output : falsifies, hors scope, zero impact score.</td></tr>
+  </table></div>
+
+  <div class="note"><strong>Ce qui manque pour une confiance high :</strong> une preuve L1 sur le binaire. Sur un Mac : build, entree muette (haut-parleur Bluetooth qui annonce un micro), dictee silencieuse, puis verifier que la touche transform et le mode picker repondent sans relancer l'app.</div>
+
+  <footer>codeaudit v3, Gestalt-Popper. Hinge : <code>failSession</code> (AppDelegate.swift 2015 a 2075). Evidence machine : <code>audits/.codeaudit/verdict.json</code> (9 tests falsifiables avec sorties reelles), <code>audits/.codeaudit/verdict.md</code>. Mission read-only : aucun fichier de Sources/ ni de code du site modifie. Worker : verba-worker-codeaudit-optx.</footer>
+</main>
+</body>
+</html>

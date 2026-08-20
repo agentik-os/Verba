@@ -1,0 +1,9 @@
+[2026-07-26T00:31:42+02:00] audit-runner perf on .
+[2026-07-26T00:31:42+02:00] PHASE 1 gather: /home/vibe/.omega/lib/audit-gather/perf.sh
+─── perf gather ───
+RAW_DIR=.perf/raw
+PROJECT_PATH=.
+FILES=<none>
+URL=https://verba.run/blog
+perf gather done
+[2026-07-26T00:31:44+02:00] PHASE 1 done rc=0

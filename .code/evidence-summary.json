@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "audit": "codeaudit",
+  "user_need": "le else-if peut-il ecraser un etat legitime; y a-t-il d'autres chemins qui laissent .processing orphelin; coherence overlay/statusLine; changelogs identiques et valides",
+  "hinge": "Sources/Verba/AppDelegate.swift:failSession~2068",
+  "provenance": {
+    "runner": "omega-audit-runner",
+    "gather_mode": "programmatic",
+    "registry": "/home/vibe/.omega/skills/audits/registry.toml"
+  },
+  "evidence": {
+    "audit": "code",
+    "tools_run": [
+      "large-file-scanner"
+    ],
+    "tools_skipped": [],
+    "findings_total": 5,
+    "findings_by_severity": {
+      "critical": 0,
+      "high": 5,
+      "medium": 0,
+      "low": 0,
+      "info": 0
+    },
+    "findings": [
+      {
+        "tool": "large-file-scanner",
+        "severity": "high",
+        "location": ".vercel/output/functions/middleware.func/index.js",
+        "rule": "oversized-file",
+        "message": "File is 286 KB \u2014 likely needs splitting (god file / kitchen sink)",
+        "suggested_fix": "Split by domain. Aim for < 500 LOC per module."
+      },
+      {
+        "tool": "large-file-scanner",
+        "severity": "high",
+        "location": ".vercel/output/static/_next/static/chunks/framework-ec21dd808c5d3f81.js",
+        "rule": "oversized-file",
+        "message": "File is 185 KB \u2014 likely needs splitting (god file / kitchen sink)",
+        "suggested_fix": "Split by domain. Aim for < 500 LOC per module."
+      },
+      {
+        "tool": "large-file-scanner",
+        "severity": "high",
+        "location": "website/.vercel/output/functions/middleware.func/index.js",
+        "rule": "oversized-file",
+        "message": "File is 250 KB \u2014 likely needs splitting (god file / kitchen sink)",
+        "suggested_fix": "Split by domain. Aim for < 500 LOC per module."
+      },
+      {
+        "tool": "large-file-scanner",
+        "severity": "high",
+        "location": "website/.vercel/output/static/_next/static/chunks/1255-5c680abb9db89955.js",
+        "rule": "oversized-file",
+        "message": "File is 169 KB \u2014 likely needs splitting (god file / kitchen sink)",
+        "suggested_fix": "Split by domain. Aim for < 500 LOC per module."
+      },
+      {
+        "tool": "large-file-scanner",
+        "severity": "high",
+        "location": "website/.vercel/output/static/_next/static/chunks/framework-e54b663a2888b5de.js",
+        "rule": "oversized-file",
+        "message": "File is 185 KB \u2014 likely needs splitting (god file / kitchen sink)",
+        "suggested_fix": "Split by domain. Aim for < 500 LOC per module."
+      }
+    ],
+    "metrics": {
+      "top_largest_source_files": [
+        {
+          "size": 293467,
+          "path": ".vercel/output/functions/middleware.func/index.js"
+        },
+        {
+          "size": 256809,
+          "path": "website/.vercel/output/functions/middleware.func/index.js"
+        },
+        {
+          "size": 189766,
+          "path": "website/.vercel/output/static/_next/static/chunks/framework-e54b663a2888b5de.js"
+        },
+        {
+          "size": 189766,
+          "path": ".vercel/output/static/_next/static/chunks/framework-ec21dd808c5d3f81.js"
+        },
+        {
+          "size": 173382,
+          "path": "website/.vercel/output/static/_next/static/chunks/1255-5c680abb9db89955.js"
+        }
+      ]
+    },
+    "evidence_index": [
+      {
+        "file": "large-files.json",
+        "size": 1585
+      }
+    ]
+  }
+}
